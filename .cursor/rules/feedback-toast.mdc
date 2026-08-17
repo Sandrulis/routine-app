@@ -1,0 +1,20 @@
+---
+description: Server action atbildes — uznirstošs toast ar hover aizturēšanu
+globs: app/**/*.tsx
+alwaysApply: false
+---
+
+# Atbilžu toast (FeedbackToast)
+
+Visas **server action** un saglabāšanas atbildes rādi ar **`useFeedbackToast()`**.
+
+| Kas | Kur |
+|-----|-----|
+| Provider | `FeedbackToastProvider` — tikai `app/layout.tsx` |
+| Hook | `useFeedbackToast()` → `showFeedback`, `clearFeedback` |
+| UI | `FeedbackToast` — `app/components/feedback-toast.tsx` |
+
+Hover uz toast apstādina taimeri; peles noiešana aizver uzreiz. Auto-aizveras pēc ~5 s.
+
+- ❌ `alert()` vai `window.confirm()` operāciju rezultātiem
+- ❌ Atsevišķs toast katrā lapā — izmanto provideri un hook

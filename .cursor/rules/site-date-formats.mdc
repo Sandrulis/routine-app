@@ -1,0 +1,12 @@
+---
+description: Datumu formāti
+alwaysApply: true
+---
+
+# Datumu formāti
+
+Lietotājam redzamos **datumus** formatē ar **`formatDisplayDateDdMmYy()`** no `app/lib/format-display-date.ts` — formāts **`dd.mm.yy`**.
+
+DB un iekšējais stāvoklis: **ISO** `YYYY-MM-DD`. Jaunam „šodienas” datumam: **`todayIsoDate()`**.
+
+- ❌ `toLocaleDateString()` lietotāja redzamiem datumiem

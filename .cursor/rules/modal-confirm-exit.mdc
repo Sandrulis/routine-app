@@ -1,0 +1,19 @@
+---
+description: Modāļi — apstiprinājums pirms aizvēršanas
+globs: app/**/*.tsx
+alwaysApply: false
+---
+
+# Modāļi — apstiprinājums pirms aizvēršanas
+
+Visiem jaunajiem modāliem izmanto **`AppModal`** (`app/components/app-modal.tsx`). Formu modāļiem obligāti `dirty`. Dzēšanai — `ConfirmModal`.
+
+| Darbība | Rezultāts |
+|---------|-----------|
+| Klikšķis ārpus, `dirty={false}` | Aizver uzreiz |
+| Klikšķis ārpus, `dirty={true}` | Apstiprinājums |
+| Escape / × | Aizver uzreiz |
+| Enter formas modālī | Submit |
+
+- ❌ `window.confirm()` — izmanto iebūvēto apstiprinājuma modālu
+- ❌ Tieša `<dialog>` bez `AppModal`

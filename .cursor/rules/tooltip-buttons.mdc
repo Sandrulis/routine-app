@@ -1,0 +1,13 @@
+---
+description: Tooltip — nevis title
+globs: app/**/*.tsx
+alwaysApply: false
+---
+
+# Tooltip — nevis title
+
+Ikonu pogām izmanto **`Tooltip`** (`app/components/tooltip.tsx`) vai **`IconActionButton`**. `title` atribūtu neizmanto.
+
+- Fons: **melns**, teksts: **balts**
+- ❌ `<button title="Edit">` — izmanto `Tooltip`
+- ❌ Ikona bez tooltip un bez `aria-label`

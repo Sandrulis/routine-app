@@ -1,0 +1,101 @@
+"use client";
+
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useState, type FormEvent } from "react";
+import {
+  authCardClassName,
+  authInputClassName,
+  authPrimaryButtonClassName,
+} from "@/app/components/auth-form-styles";
+import { useFeedbackToast } from "@/app/components/feedback-toast-provider";
+import { useTranslations } from "@/app/components/translations-provider";
+
+export function LoginForm() {
+  const { t } = useTranslations();
+  const router = useRouter();
+  const { showFeedback, clearFeedback } = useFeedbackToast();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [pending, setPending] = useState(false);
+
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    clearFeedback();
+    setPending(true);
+    showFeedback({
+      type: "success",
+      text: t("auth.login.success", "Veiksmīgi ienāci."),
+    });
+    router.push("/dashboard");
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className={`${authCardClassName} space-y-4`}>
+      <div>
+        <h1 className="text-2xl font-semibold tracking-tight text-zinc-900">
+          {t("auth.login.title", "Ienākt")}
+        </h1>
+        <p className="mt-1 text-sm text-zinc-500">
+          {t("auth.login.subtitle", "Pieslēdzies savam Routine kontam.")}
+        </p>
+      </div>
+
+      <label className="block">
+        <span className="text-sm font-semibold text-zinc-700">
+          {t("auth.fields.email", "E-pasts")}
+        </span>
+        <input
+          required
+          type="email"
+          autoComplete="email"
+          value={email}
+          onChange={(event) => setEmail(event.target.value)}
+          placeholder={t("auth.fields.email_placeholder", "vards@uznemums.lv")}
+          className={authInputClassName}
+        />
+      </label>
+
+      <label className="block">
+        <span className="text-sm font-semibold text-zinc-700">
+          {t("auth.fields.password", "Parole")}
+        </span>
+        <input
+          required
+          type="password"
+          autoComplete="current-password"
+          value={password}
+          onChange={(event) => setPassword(event.target.value)}
+          className={authInputClassName}
+        />
+      </label>
+
+      <div className="flex justify-end">
+        <Link
+          href="/forgot-password"
+          className="text-sm font-medium text-zinc-500 transition hover:text-zinc-900"
+        >
+          {t("auth.login.forgot", "Aizmirsi paroli?")}
+        </Link>
+      </div>
+
+      <button
+        type="submit"
+        disabled={pending}
+        className={authPrimaryButtonClassName}
+      >
+        {t("auth.login.submit", "Ienākt")}
+      </button>
+
+      <p className="text-center text-sm text-zinc-500">
+        {t("auth.login.no_account", "Nav konta?")}{" "}
+        <Link
+          href="/signup"
+          className="font-semibold text-zinc-900 underline decoration-zinc-300 underline-offset-2"
+        >
+          {t("auth.signup.submit", "Reģistrēties")}
+        </Link>
+      </p>
+    </form>
+  );
+}

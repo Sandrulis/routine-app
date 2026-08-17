@@ -1,0 +1,13 @@
+---
+description: When the user says "README update", bump patch version and add a CHANGELOG.md entry
+globs: README.md,DEVELOPER.md,CHANGELOG.md,package.json
+alwaysApply: false
+---
+
+# README update
+
+- **`CHANGELOG.md`** — every release entry (`## vX.Y.Z`, newest first).
+- **`README.md`** — short overview, under 150 lines, `**Current version:**`.
+- **`DEVELOPER.md`** — technical documentation.
+
+Default bump is patch +0.0.1. Reset `## Unreleased` to `- (none)`.

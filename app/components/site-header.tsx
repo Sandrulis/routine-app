@@ -1,0 +1,53 @@
+"use client";
+
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { useTranslations } from "@/app/components/translations-provider";
+
+const AUTH_PATHS = new Set(["/login", "/signup", "/forgot-password"]);
+
+export function SiteHeader() {
+  const pathname = usePathname();
+  const { t } = useTranslations();
+  const isAuthPage = AUTH_PATHS.has(pathname);
+
+  return (
+    <header className="sticky top-0 z-30 border-b border-zinc-200 bg-white/95 backdrop-blur-sm">
+      <div className="mx-auto flex h-14 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">
+        <Link
+          href="/"
+          className="inline-flex items-center gap-2 text-sm font-semibold text-zinc-900"
+        >
+          <span className="inline-flex size-7 items-center justify-center rounded-lg bg-zinc-900 text-white">
+            <i className="fas fa-layer-group text-[11px]" aria-hidden="true" />
+          </span>
+          {t("app.name", "Routine")}
+        </Link>
+
+        {isAuthPage ? (
+          <Link
+            href="/"
+            className="text-sm font-medium text-zinc-500 transition hover:text-zinc-900"
+          >
+            {t("site.back_home", "Uz sākumu")}
+          </Link>
+        ) : (
+          <div className="flex items-center gap-2">
+            <Link
+              href="/login"
+              className="rounded-lg px-3 py-2 text-sm font-medium text-zinc-700 transition hover:bg-zinc-100"
+            >
+              {t("auth.login.submit", "Ienākt")}
+            </Link>
+            <Link
+              href="/signup"
+              className="rounded-lg bg-zinc-900 px-3 py-2 text-sm font-semibold text-white transition hover:bg-zinc-700"
+            >
+              {t("auth.signup.submit", "Reģistrēties")}
+            </Link>
+          </div>
+        )}
+      </div>
+    </header>
+  );
+}

@@ -1,0 +1,126 @@
+@import "tailwindcss";
+
+@theme {
+  --radius-xs: 0.0625rem;
+  --radius-sm: 0.125rem;
+  --radius-md: 0.1875rem;
+  --radius-lg: 0.25rem;
+  --radius-xl: 0.375rem;
+  --radius-2xl: 0.5rem;
+  --radius-3xl: 0.75rem;
+  --radius-4xl: 1rem;
+  --radius: 0.125rem;
+}
+
+:root {
+  --app-sidebar-width-expanded: 260px;
+  --app-content-inset-left: 1.25rem;
+}
+
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: clip;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-geist-sans), "Segoe UI", system-ui, sans-serif;
+  background: #f4f4f5;
+  color: #18181b;
+  overflow-x: clip;
+}
+
+button:not(:disabled),
+[type="button"]:not(:disabled),
+[type="submit"]:not(:disabled),
+[type="reset"]:not(:disabled),
+[role="button"]:not([aria-disabled="true"]) {
+  cursor: pointer;
+}
+
+button:disabled,
+[type="button"]:disabled,
+[type="submit"]:disabled,
+[type="reset"]:disabled {
+  cursor: not-allowed;
+}
+
+.page {
+  width: 100%;
+  min-width: 0;
+  padding: 1.5rem 1rem 2.5rem var(--app-content-inset-left);
+}
+
+.landing-preview-frame {
+  animation: landing-float 7s ease-in-out infinite;
+}
+
+.landing-preview-float {
+  animation: landing-float 6s ease-in-out infinite reverse;
+}
+
+.landing-preview-card-lift {
+  animation: landing-card-nudge 4.5s ease-in-out infinite;
+}
+
+.landing-online-dot {
+  animation: landing-pulse 2s ease-in-out infinite;
+}
+
+@keyframes landing-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes landing-card-nudge {
+  0%,
+  100% {
+    transform: translate(0, 0);
+  }
+  50% {
+    transform: translate(3px, -5px);
+  }
+}
+
+@keyframes landing-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-preview-frame,
+  .landing-preview-float,
+  .landing-preview-card-lift,
+  .landing-online-dot {
+    animation: none;
+  }
+}
+
+dialog:not([open]) {
+  display: none !important;
+}
+
+input[aria-invalid="true"],
+select[aria-invalid="true"],
+textarea[aria-invalid="true"] {
+  border-color: #fecaca;
+  background-color: #fef2f2;
+}
+
+input[aria-invalid="true"]:focus,
+select[aria-invalid="true"]:focus,
+textarea[aria-invalid="true"]:focus {
+  border-color: #f87171;
+  box-shadow: 0 0 0 2px rgb(239 68 68 / 0.1);
+}
