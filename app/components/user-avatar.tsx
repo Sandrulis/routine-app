@@ -1,3 +1,6 @@
+"use client";
+
+import { useState } from "react";
 import type { TeamMember } from "@/app/lib/team";
 
 export function UserAvatar({
@@ -7,12 +10,29 @@ export function UserAvatar({
   member: TeamMember;
   size?: "xs" | "sm" | "md";
 }) {
+  const [imgError, setImgError] = useState(false);
   const sizeClassName =
     size === "xs"
       ? "h-5 w-5 text-[9px]"
       : size === "sm"
         ? "h-7 w-7 text-[10px]"
         : "h-8 w-8 text-xs";
+  const pixels = size === "xs" ? 20 : size === "sm" ? 28 : 32;
+  const avatarUrl = member.avatarUrl?.trim() || null;
+
+  if (avatarUrl && !imgError) {
+    return (
+      <img
+        src={avatarUrl}
+        alt=""
+        width={pixels}
+        height={pixels}
+        referrerPolicy="no-referrer"
+        className={`inline-flex shrink-0 rounded-full object-cover ${sizeClassName}`}
+        onError={() => setImgError(true)}
+      />
+    );
+  }
 
   return (
     <span

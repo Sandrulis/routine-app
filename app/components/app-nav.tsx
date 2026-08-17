@@ -19,7 +19,7 @@ import {
 } from "@/app/components/sortable-task-group";
 import { SubtaskDetailModal } from "@/app/components/subtask-detail-modal";
 import { TeamInviteModal } from "@/app/components/team-invite-modal";
-import { OptionalTooltip, Tooltip } from "@/app/components/tooltip";
+import { OverflowTooltip, Tooltip } from "@/app/components/tooltip";
 import { useFeedbackToast } from "@/app/components/feedback-toast-provider";
 import { useTranslations } from "@/app/components/translations-provider";
 import { MemberLastOnline } from "@/app/components/member-last-online";
@@ -87,13 +87,17 @@ function TreeName({
   );
 
   return (
-    <OptionalTooltip label={description} className="min-w-0 flex-1">
+    <OverflowTooltip
+      label={label}
+      extraLabel={description}
+      className="min-w-0 flex-1"
+    >
       <span
-        className={`min-w-0 flex-1 ${href || onToggle ? "" : "pointer-events-none"}`}
+        className={`block min-w-0 w-full ${href || onToggle ? "" : "pointer-events-none"}`}
       >
         {name}
       </span>
-    </OptionalTooltip>
+    </OverflowTooltip>
   );
 }
 
@@ -344,8 +348,10 @@ export function AppNav() {
   const { t } = useTranslations();
   const { showFeedback } = useFeedbackToast();
   const { lists, tasks, listTasks, childTasks, subtasks, addList, updateList, deleteList, updateTask, deleteTask, reorderTasks } = useLists();
-  const files = useListFiles();
-  const { members, currentUser, inviteMember } = useTeam();
+  const files = useListFiles().filter((file) =>
+    lists.some((list) => list.id === file.listId),
+  );
+  const { members, currentUser, currentTeam, inviteMember } = useTeam();
   const [inviteOpen, setInviteOpen] = useState(false);
   const [createListOpen, setCreateListOpen] = useState(false);
   const [parentCreate, setParentCreate] = useState<ParentCreateContext | null>(
@@ -638,9 +644,10 @@ export function AppNav() {
             expanded={isExpanded("lists", true)}
             isParentActive={pathname === "/lists"}
             onToggle={() => toggleTree("lists", true)}
-            onAdd={() => setCreateListOpen(true)}
+            onAdd={currentTeam ? () => setCreateListOpen(true) : undefined}
           >
-            {lists.map((list) => (
+            {lists.length > 0 ? (
+              lists.map((list) => (
                 <NavTreeSection
                   key={list.id}
                   href={`/lists/${list.id}`}
@@ -677,7 +684,14 @@ export function AppNav() {
                 >
                   {renderTaskTree(list.id, null)}
                 </NavTreeSection>
-            ))}
+              ))
+            ) : (
+              <p className="px-2 py-1.5 text-[12px] text-zinc-400">
+                {currentTeam
+                  ? t("lists.empty", "Vēl nav sarakstu.")
+                  : t("teams.required.empty_members", "Vispirms izveido komandu.")}
+              </p>
+            )}
           </NavTreeSection>
 
           <NavTreeSection
@@ -690,9 +704,9 @@ export function AppNav() {
             expanded={isExpanded("team", true)}
             isParentActive={isTeam}
             onToggle={() => toggleTree("team", true)}
-            onAdd={() => setInviteOpen(true)}
+            onAdd={currentTeam ? () => setInviteOpen(true) : undefined}
           >
-            {members.length > 0 ? (
+            {currentTeam && members.length > 0 ? (
               members.map((member) => {
                 const href = `/team/${member.id}`;
                 return (
@@ -702,14 +716,18 @@ export function AppNav() {
                     className={rowClassName(pathname === href)}
                   >
                     <UserAvatar member={member} size="xs" />
-                    <span className="min-w-0 flex-1 truncate">{member.name}</span>
+                    <OverflowTooltip label={member.name} className="min-w-0 flex-1">
+                      <span className="block min-w-0 truncate">{member.name}</span>
+                    </OverflowTooltip>
                     <MemberLastOnline lastOnlineAt={member.lastOnlineAt} />
                   </Link>
                 );
               })
             ) : (
               <p className="px-2 py-1.5 text-[12px] text-zinc-400">
-                {t("team.empty", "Komandā vēl nav biedru.")}
+                {currentTeam
+                  ? t("team.empty", "Komandā vēl nav biedru.")
+                  : t("teams.required.empty_members", "Vispirms izveido komandu.")}
               </p>
             )}
           </NavTreeSection>
@@ -748,11 +766,6 @@ export function AppNav() {
         }}
         onCreated={(task) => {
           expandTree(task.parentId ?? task.listId);
-          showFeedback({
-            type: "success",
-            text: t("subtasks.created", "Apakšuzdevums pievienots."),
-          });
-          router.push(`/lists/${task.listId}/tasks/${task.id}`);
         }}
       />
 

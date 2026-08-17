@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type FormEvent } from "react";
 import {
   AppModal,
   appModalSplitPanelMaxWidthClassName,
@@ -13,6 +13,7 @@ import { NameFormModal } from "@/app/components/name-form-modal";
 import { StatusControl, useStatusLabels } from "@/app/components/status-control";
 import { AssigneeCell, DateCell } from "@/app/components/subtask-table";
 import { TaskAttachments } from "@/app/components/task-attachments";
+import { Tooltip } from "@/app/components/tooltip";
 import { UserAvatar } from "@/app/components/user-avatar";
 import { useFeedbackToast } from "@/app/components/feedback-toast-provider";
 import { useTranslations } from "@/app/components/translations-provider";
@@ -111,6 +112,12 @@ export function SubtaskDetailModal({
   } = useLists();
   const { members } = useTeam();
   const [draft, setDraft] = useState<SubtaskDraft>(emptyDraft);
+  const [createdTaskId, setCreatedTaskId] = useState<string | null>(null);
+  const [forceCreate, setForceCreate] = useState(false);
+  const createParentRef = useRef<{ listId: string; parentId: string } | null>(
+    null,
+  );
+  const titleInputRef = useRef<HTMLInputElement>(null);
   const snapshotRef = useRef<SubtaskDraft>(emptyDraft);
   const [pendingFiles, setPendingFiles] = useState<
     Array<{ id: string; file: File; name: string; previewUrl: string | null }>
@@ -132,8 +139,11 @@ export function SubtaskDetailModal({
     revokeOnClose: boolean;
   } | null>(null);
 
-  const isCreate = Boolean(createFor) && !taskId;
-  const task = taskId ? (tasks.find((item) => item.id === taskId) ?? null) : null;
+  const isCreate = forceCreate || (Boolean(createFor) && !taskId && !createdTaskId);
+  const activeTaskId = forceCreate ? null : (taskId ?? createdTaskId);
+  const task = activeTaskId
+    ? (tasks.find((item) => item.id === activeTaskId) ?? null)
+    : null;
   const parentListId = task?.listId ?? createFor?.listId;
   const list = parentListId
     ? (lists.find((item) => item.id === parentListId) ?? null)
@@ -150,6 +160,19 @@ export function SubtaskDetailModal({
   const createdOn = createdAt ? formatDisplayDateDdMmYy(createdAt) : "";
 
   useEffect(() => {
+    if (createFor) {
+      createParentRef.current = createFor;
+      return;
+    }
+    if (task?.listId && task.parentId) {
+      createParentRef.current = {
+        listId: task.listId,
+        parentId: task.parentId,
+      };
+    }
+  }, [createFor, task]);
+
+  useEffect(() => {
     if (!open) return;
     const next = task ? draftFromTask(task) : emptyDraft;
     snapshotRef.current = next;
@@ -158,6 +181,8 @@ export function SubtaskDetailModal({
 
   useEffect(() => {
     if (open) return;
+    setCreatedTaskId(null);
+    setForceCreate(false);
     setFileToDelete(null);
     setFileToRename(null);
     setFileToView((current) => {
@@ -343,6 +368,30 @@ export function SubtaskDetailModal({
   const trimmedTitle = draft.title.trim();
   const dirty = !draftsEqual(draft, snapshotRef.current);
   const canSave = Boolean(trimmedTitle) && dirty;
+  const showAddNew =
+    Boolean(trimmedTitle) &&
+    !canSave &&
+    Boolean(
+      createFor || (task?.listId && task.parentId) || createParentRef.current,
+    );
+
+  function startNewSubtask() {
+    setForceCreate(true);
+    setCreatedTaskId(null);
+    snapshotRef.current = emptyDraft;
+    setDraft(emptyDraft);
+    setPendingFiles((current) => {
+      for (const item of current) {
+        if (item.previewUrl) URL.revokeObjectURL(item.previewUrl);
+      }
+      return [];
+    });
+  }
+
+  useLayoutEffect(() => {
+    if (!open || !forceCreate || draft.title.trim()) return;
+    titleInputRef.current?.focus();
+  }, [draft.title, forceCreate, open]);
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
@@ -351,10 +400,11 @@ export function SubtaskDetailModal({
     const next = normalizeDraft(draft);
 
     if (isCreate) {
-      if (!createFor) return;
+      const parent = createFor ?? createParentRef.current;
+      if (!parent) return;
       const created = addTask({
-        listId: createFor.listId,
-        parentId: createFor.parentId,
+        listId: parent.listId,
+        parentId: parent.parentId,
         kind: "subtask",
         title: next.title,
         description: next.description,
@@ -376,8 +426,13 @@ export function SubtaskDetailModal({
       setPendingFiles([]);
       snapshotRef.current = next;
       setDraft(next);
+      setForceCreate(false);
+      setCreatedTaskId(created.id);
       onCreated?.(created);
-      onOpenChange(false);
+      showFeedback({
+        type: "success",
+        text: t("subtasks.created", "Apakšuzdevums pievienots."),
+      });
       return;
     }
 
@@ -424,7 +479,9 @@ export function SubtaskDetailModal({
       }
       dirty={dirty}
       blocking={
-        fileToDelete !== null || fileToRename !== null || fileToView !== null
+        fileToDelete !== null ||
+        fileToRename !== null ||
+        fileToView !== null
       }
       panelMaxWidthClassName={appModalSplitPanelMaxWidthClassName}
       headerMeta={
@@ -455,6 +512,7 @@ export function SubtaskDetailModal({
                 {t("tasks.fields.title", "Nosaukums")}
               </label>
               <input
+                ref={titleInputRef}
                 id="subtask-title"
                 value={draft.title}
                 onChange={(event) => {
@@ -646,6 +704,18 @@ export function SubtaskDetailModal({
           >
             {t("actions.save", "Saglabāt")}
           </button>
+          {showAddNew ? (
+            <Tooltip label={t("actions.add_new", "Pievienot jaunu")} align="end">
+              <button
+                type="button"
+                aria-label={t("actions.add_new", "Pievienot jaunu")}
+                onClick={startNewSubtask}
+                className="inline-flex size-10 items-center justify-center rounded-2xl bg-zinc-100 text-zinc-700 transition hover:bg-zinc-200"
+              >
+                <i className="fas fa-plus text-sm" aria-hidden="true" />
+              </button>
+            </Tooltip>
+          ) : null}
         </div>
       </form>
     </AppModal>

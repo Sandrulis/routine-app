@@ -6,7 +6,6 @@ import {
   useContext,
   useEffect,
   useMemo,
-  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -28,11 +27,14 @@ import {
   randomListColorId,
   normalizeStoredLists,
   normalizeStoredTasks,
+  scopedStorageKey,
   type WorkList,
   type WorkListKind,
   type WorkTask,
   type WorkTaskStatus,
 } from "@/app/lib/lists";
+import { useAuthSession } from "@/app/lib/auth/use-auth-session";
+import { useTeam } from "@/app/lib/team-store";
 import {
   TASK_ACTIVITY_STORAGE_KEY,
   TASK_FILES_STORAGE_KEY,
@@ -108,70 +110,117 @@ type ListsContextValue = {
 const ListsContext = createContext<ListsContextValue | null>(null);
 
 export function ListsProvider({ children }: { children: ReactNode }) {
-  const loadedFromStorage = useRef(false);
-  const [lists, setLists] = useState<WorkList[]>(createDefaultLists);
-  const [tasks, setTasks] = useState<WorkTask[]>(createDefaultTasks);
-  const [activities, setActivities] = useState<TaskActivity[]>(
-    createDefaultActivities,
-  );
-  const [files, setFiles] = useState<TaskFile[]>(createDefaultTaskFiles);
+  const { user: authUser, isReady: authReady } = useAuthSession();
+  const { isReady: teamReady, currentTeam } = useTeam();
+  const userId = authUser?.id ?? null;
+  const teamId = currentTeam?.id ?? null;
+  const scopeKey = `${userId ?? "anon"}:${teamId ?? ""}`;
+  const canLoad = authReady && teamReady;
+  const [lists, setLists] = useState<WorkList[]>([]);
+  const [tasks, setTasks] = useState<WorkTask[]>([]);
+  const [activities, setActivities] = useState<TaskActivity[]>([]);
+  const [files, setFiles] = useState<TaskFile[]>([]);
+  const [loadedScope, setLoadedScope] = useState<string | null>(null);
   const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
-    if (loadedFromStorage.current) return;
-    loadedFromStorage.current = true;
+    if (!canLoad) return;
+
+    const listsKey = scopedStorageKey(LISTS_STORAGE_KEY, userId, teamId);
+    const tasksKey = scopedStorageKey(TASKS_STORAGE_KEY, userId, teamId);
+    const activitiesKey = scopedStorageKey(
+      TASK_ACTIVITY_STORAGE_KEY,
+      userId,
+      teamId,
+    );
+    const filesKey = scopedStorageKey(TASK_FILES_STORAGE_KEY, userId, teamId);
+    const useDefaults = !userId;
+    setIsReady(false);
+
+    if (userId && !teamId) {
+      setLists([]);
+      setTasks([]);
+      setActivities([]);
+      setFiles([]);
+      setLoadedScope(scopeKey);
+      setIsReady(true);
+      return;
+    }
 
     try {
-      const storedLists = window.localStorage.getItem(LISTS_STORAGE_KEY);
-      const storedTasks = window.localStorage.getItem(TASKS_STORAGE_KEY);
-      const storedActivities = window.localStorage.getItem(
-        TASK_ACTIVITY_STORAGE_KEY,
-      );
-      const storedFiles = window.localStorage.getItem(TASK_FILES_STORAGE_KEY);
+      const storedLists = window.localStorage.getItem(listsKey);
+      const storedTasks = window.localStorage.getItem(tasksKey);
+      const storedActivities = window.localStorage.getItem(activitiesKey);
+      const storedFiles = window.localStorage.getItem(filesKey);
       setLists(
         storedLists
-          ? (normalizeStoredLists(JSON.parse(storedLists)) ?? createDefaultLists())
-          : createDefaultLists(),
+          ? (normalizeStoredLists(JSON.parse(storedLists)) ??
+            (useDefaults ? createDefaultLists() : []))
+          : useDefaults
+            ? createDefaultLists()
+            : [],
       );
       setTasks(
         storedTasks
-          ? (normalizeStoredTasks(JSON.parse(storedTasks)) ?? createDefaultTasks())
-          : createDefaultTasks(),
+          ? (normalizeStoredTasks(JSON.parse(storedTasks)) ??
+            (useDefaults ? createDefaultTasks() : []))
+          : useDefaults
+            ? createDefaultTasks()
+            : [],
       );
       setActivities(
         storedActivities
           ? (normalizeStoredActivities(JSON.parse(storedActivities)) ??
-            createDefaultActivities())
-          : createDefaultActivities(),
+            (useDefaults ? createDefaultActivities() : []))
+          : useDefaults
+            ? createDefaultActivities()
+            : [],
       );
       setFiles(
-        mergeDefaultTaskFiles(
-          storedFiles
-            ? (normalizeStoredTaskFiles(JSON.parse(storedFiles)) ??
-              createDefaultTaskFiles())
-            : createDefaultTaskFiles(),
-        ),
+        useDefaults
+          ? mergeDefaultTaskFiles(
+              storedFiles
+                ? (normalizeStoredTaskFiles(JSON.parse(storedFiles)) ??
+                  createDefaultTaskFiles())
+                : createDefaultTaskFiles(),
+            )
+          : storedFiles
+            ? (normalizeStoredTaskFiles(JSON.parse(storedFiles)) ?? [])
+            : [],
       );
     } catch {
-      setLists(createDefaultLists());
-      setTasks(createDefaultTasks());
-      setFiles(createDefaultTaskFiles());
+      setLists(useDefaults ? createDefaultLists() : []);
+      setTasks(useDefaults ? createDefaultTasks() : []);
+      setActivities(useDefaults ? createDefaultActivities() : []);
+      setFiles(useDefaults ? createDefaultTaskFiles() : []);
     } finally {
-      ensureDefaultTaskFileContents();
+      if (useDefaults) ensureDefaultTaskFileContents();
+      setLoadedScope(scopeKey);
       setIsReady(true);
     }
-  }, []);
+  }, [canLoad, scopeKey, teamId, userId]);
 
   useEffect(() => {
     if (!isReady) return;
-    window.localStorage.setItem(LISTS_STORAGE_KEY, JSON.stringify(lists));
-    window.localStorage.setItem(TASKS_STORAGE_KEY, JSON.stringify(tasks));
+    if (loadedScope !== scopeKey) return;
+    if (userId && !teamId) return;
     window.localStorage.setItem(
-      TASK_ACTIVITY_STORAGE_KEY,
+      scopedStorageKey(LISTS_STORAGE_KEY, userId, teamId),
+      JSON.stringify(lists),
+    );
+    window.localStorage.setItem(
+      scopedStorageKey(TASKS_STORAGE_KEY, userId, teamId),
+      JSON.stringify(tasks),
+    );
+    window.localStorage.setItem(
+      scopedStorageKey(TASK_ACTIVITY_STORAGE_KEY, userId, teamId),
       JSON.stringify(activities),
     );
-    window.localStorage.setItem(TASK_FILES_STORAGE_KEY, JSON.stringify(files));
-  }, [activities, files, isReady, lists, tasks]);
+    window.localStorage.setItem(
+      scopedStorageKey(TASK_FILES_STORAGE_KEY, userId, teamId),
+      JSON.stringify(files),
+    );
+  }, [activities, files, isReady, lists, loadedScope, scopeKey, tasks, teamId, userId]);
 
   const addList = useCallback(
     (input: {

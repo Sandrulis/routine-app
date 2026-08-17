@@ -10,10 +10,10 @@ import {
 import { useFeedbackToast } from "@/app/components/feedback-toast-provider";
 import { ListBadge } from "@/app/components/list-badge";
 import { NameFormModal } from "@/app/components/name-form-modal";
-import { OptionalTooltip } from "@/app/components/tooltip";
+import { OverflowTooltip } from "@/app/components/tooltip";
 import { useTranslations } from "@/app/components/translations-provider";
 import { useTeam } from "@/app/lib/team-store";
-import type { WorkTeam } from "@/app/lib/team";
+import { teamRankLabel, type WorkTeam } from "@/app/lib/team";
 
 function TeamAvatar({
   team,
@@ -37,8 +37,11 @@ export function TeamSwitcher() {
   const menuRef = useRef<HTMLDivElement | null>(null);
   const { t } = useTranslations();
   const { showFeedback } = useFeedbackToast();
-  const { teams, currentTeam, addTeam, updateTeam, deleteTeam, selectTeam } =
+  const { isReady, teams, currentTeam, currentUser, addTeam, updateTeam, deleteTeam, selectTeam } =
     useTeam();
+  const needsTeam = isReady && teams.length === 0;
+  const rank = teamRankLabel(currentUser.role, t);
+  const teamRank = rank ?? t("teams.rank.owner", "Īpašnieks");
   const [open, setOpen] = useState(false);
   const [formTeam, setFormTeam] = useState<WorkTeam | "new" | null>(null);
   const [deleteTeamTarget, setDeleteTeamTarget] = useState<WorkTeam | null>(null);
@@ -78,6 +81,8 @@ export function TeamSwitcher() {
   }, [itemMenu, open]);
 
   const editingTeam = formTeam && formTeam !== "new" ? formTeam : null;
+  const teamLabel = currentTeam?.name ?? t("teams.add.title", "Jauna komanda");
+  const formOpen = needsTeam || formTeam !== null;
 
   function openTeamActions(event: MouseEvent<HTMLButtonElement>, team: WorkTeam) {
     event.preventDefault();
@@ -91,36 +96,47 @@ export function TeamSwitcher() {
   return (
     <div
       ref={menuRef}
-      className="relative flex h-12 shrink-0 items-center justify-between gap-2 px-4"
+      className="relative shrink-0 px-2 py-2"
     >
-      <span className="min-w-0 truncate text-[15px] font-semibold text-zinc-900">
-        {currentTeam.name}
-      </span>
-      <OptionalTooltip
-        label={open ? null : currentTeam.name}
-        className="shrink-0"
+      <button
+        type="button"
+        onClick={() => {
+          if (needsTeam) return;
+          setOpen((current) => !current);
+        }}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        aria-label={teamLabel}
+        className={`flex w-full min-h-12 items-center gap-2.5 rounded-lg px-2 py-1.5 text-left transition ${
+          open ? "bg-zinc-100 ring-2 ring-zinc-300 ring-offset-2" : "hover:bg-zinc-100"
+        }`}
       >
-        <button
-          type="button"
-          onClick={() => setOpen((current) => !current)}
-          aria-haspopup="menu"
-          aria-expanded={open}
-          aria-label={currentTeam.name}
-          className={`inline-flex shrink-0 rounded-lg transition ${
-            open ? "ring-2 ring-zinc-300 ring-offset-2" : "hover:opacity-90"
-          }`}
-        >
+        {currentTeam ? (
           <TeamAvatar team={currentTeam} />
-        </button>
-      </OptionalTooltip>
+        ) : (
+          <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-zinc-100 text-zinc-400">
+            <i className="fas fa-plus text-[11px]" aria-hidden="true" />
+          </span>
+        )}
+        <OverflowTooltip label={teamLabel} className="min-w-0 flex-1">
+          <span className="flex min-w-0 flex-1 flex-col leading-tight">
+            <span className="truncate text-[15px] font-semibold text-zinc-900">
+              {teamLabel}
+            </span>
+            {rank ? (
+              <span className="truncate text-[11px] text-zinc-400">{rank}</span>
+            ) : null}
+          </span>
+        </OverflowTooltip>
+      </button>
 
       {open ? (
         <div
           role="menu"
-          className="absolute top-full right-2 z-[70] mt-1 w-[248px] overflow-hidden rounded-xl bg-white py-2 shadow-[0_12px_40px_rgba(15,23,42,0.16)] ring-1 ring-zinc-200/80"
+          className="absolute top-full left-2 z-[70] mt-1 w-[248px] overflow-hidden rounded-xl bg-white py-2 shadow-[0_12px_40px_rgba(15,23,42,0.16)] ring-1 ring-zinc-200/80"
         >
           {teams.map((team) => {
-            const isCurrent = team.id === currentTeam.id;
+            const isCurrent = team.id === currentTeam?.id;
             return (
               <div
                 key={team.id}
@@ -138,9 +154,18 @@ export function TeamSwitcher() {
                   className="flex min-w-0 flex-1 items-center gap-3 px-3 py-2 text-left"
                 >
                   <TeamAvatar team={team} />
-                  <span className="min-w-0 flex-1 truncate text-[13px] font-medium text-zinc-900">
-                    {team.name}
-                  </span>
+                  <OverflowTooltip label={team.name} className="min-w-0 flex-1">
+                    <span className="block min-w-0">
+                      <span className="block truncate text-[13px] font-medium text-zinc-900">
+                        {team.name}
+                      </span>
+                      {rank ? (
+                        <span className="mt-0.5 block truncate text-[11px] text-zinc-400">
+                          {rank}
+                        </span>
+                      ) : null}
+                    </span>
+                  </OverflowTooltip>
                 </button>
                 <span className="flex shrink-0 items-center pr-1">
                   <button
@@ -223,8 +248,10 @@ export function TeamSwitcher() {
       />
 
       <NameFormModal
-        open={formTeam !== null}
+        open={formOpen}
+        blocking={needsTeam}
         onOpenChange={(nextOpen) => {
+          if (!nextOpen && needsTeam) return;
           if (!nextOpen) setFormTeam(null);
         }}
         title={
@@ -238,10 +265,15 @@ export function TeamSwitcher() {
                 "teams.edit.description",
                 "Maini komandas nosaukumu, izskatu vai logotipu.",
               )
-            : t(
-                "teams.add.description",
-                "Norādi nosaukumu, izvēlies avatāra izskatu vai pievieno logotipu.",
-              )
+            : needsTeam
+              ? t(
+                  "teams.required.description",
+                  "Lai sāktu darbu, izveido savu komandu. Modālis aizvērsies pēc pievienošanas.",
+                )
+              : t(
+                  "teams.add.description",
+                  "Norādi nosaukumu, izvēlies avatāra izskatu vai pievieno logotipu.",
+                )
         }
         nameLabel={t("lists.fields.name", "Nosaukums")}
         namePlaceholder={t(
@@ -259,6 +291,7 @@ export function TeamSwitcher() {
         showDescription={false}
         showLogo
         showIcons={false}
+        rankLabel={teamRank}
         initialValue={
           editingTeam
             ? {

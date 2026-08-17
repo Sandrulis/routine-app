@@ -122,9 +122,9 @@ export function AppModal({
 
     function handleKeyDown(event: KeyboardEvent) {
       if (modalDepthRef.current !== openModalCount) return;
-      if (blocking) return;
 
       if (event.key === "Escape") {
+        if (blocking) return;
         if (confirmExitOpen) {
           event.preventDefault();
           setConfirmExitOpen(false);
@@ -216,15 +216,16 @@ export function AppModal({
               </div>
               <div className="flex shrink-0 items-center gap-1">
                 {headerMeta}
-                <button
-                  type="button"
-                  onClick={closeDirectly}
-                  disabled={blocking}
-                  aria-label={t("actions.close", "Aizvērt")}
-                  className="rounded-lg p-2 text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-700 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  <i className="fas fa-times" aria-hidden="true" />
-                </button>
+                {blocking ? null : (
+                  <button
+                    type="button"
+                    onClick={closeDirectly}
+                    aria-label={t("actions.close", "Aizvērt")}
+                    className="rounded-lg p-2 text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-700"
+                  >
+                    <i className="fas fa-times" aria-hidden="true" />
+                  </button>
+                )}
               </div>
             </div>
             <div className="mt-6">{children}</div>

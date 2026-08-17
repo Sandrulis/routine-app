@@ -161,11 +161,11 @@ export function Tooltip({
               position: "fixed",
               top: position?.top ?? 0,
               left: position?.left ?? 0,
-              zIndex: 50,
+              zIndex: 80,
               opacity: isPositioned ? 1 : 0,
               pointerEvents: "none",
             }}
-            className={`w-max max-w-[min(18rem,calc(100vw-1.5rem))] whitespace-normal rounded-md bg-black px-3 py-1.5 text-[11px] font-medium leading-snug text-white shadow-lg ${textAlignClass}`}
+            className={`w-max max-w-[min(22rem,calc(100vw-1.5rem))] whitespace-pre-wrap rounded-md bg-black px-3 py-1.5 text-[11px] font-medium leading-snug text-white shadow-lg ${textAlignClass}`}
           >
             {label}
           </span>,
@@ -191,5 +191,64 @@ export function Tooltip({
       </span>
       {tooltipNode}
     </>
+  );
+}
+
+function isElementOverflowing(element: HTMLElement): boolean {
+  return (
+    element.scrollWidth > element.clientWidth + 1 ||
+    element.scrollHeight > element.clientHeight + 1
+  );
+}
+
+export function OverflowTooltip({
+  label,
+  extraLabel,
+  children,
+  className = "",
+  align = "start",
+}: {
+  label: string;
+  extraLabel?: string | null;
+  children: ReactNode;
+  className?: string;
+  align?: "center" | "start" | "end";
+}) {
+  const measureRef = useRef<HTMLSpanElement>(null);
+  const [truncated, setTruncated] = useState(false);
+
+  const updateTruncation = useCallback(() => {
+    const root = measureRef.current;
+    if (!root) return;
+    const nodes = [root, ...Array.from(root.querySelectorAll<HTMLElement>("*"))];
+    setTruncated(nodes.some(isElementOverflowing));
+  }, []);
+
+  useLayoutEffect(() => {
+    updateTruncation();
+    const root = measureRef.current;
+    if (!root || typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(updateTruncation);
+    observer.observe(root);
+    return () => observer.disconnect();
+  }, [extraLabel, label, updateTruncation]);
+
+  const extra = extraLabel?.trim() || "";
+  const tooltipText = truncated
+    ? [label.trim(), extra].filter(Boolean).join("\n")
+    : extra;
+
+  const content = (
+    <span ref={measureRef} className={`min-w-0 ${className}`.trim()}>
+      {children}
+    </span>
+  );
+
+  if (!tooltipText) return content;
+
+  return (
+    <Tooltip label={tooltipText} className={className} align={align}>
+      {content}
+    </Tooltip>
   );
 }

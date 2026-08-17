@@ -264,14 +264,6 @@ export function TaskDetailPage({
             }
           }
         }}
-        onCreated={(task) => {
-          setCreateSubtaskOpen(false);
-          showFeedback({
-            type: "success",
-            text: t("subtasks.created", "Apakšuzdevums pievienots."),
-          });
-          router.push(`/lists/${list.id}/tasks/${task.id}`);
-        }}
       />
 
       <ParentCreateFlow

@@ -11,13 +11,13 @@
 
 ## Sānjosla
 
-`app/components/app-nav.tsx` — fiksēta kreisā josla. Galvenē `TeamSwitcher`: kreisajā komandas nosaukums, labajā avatārs (iniciāļi / logotips). Hover uz avatāra rāda komandas nosaukuma tooltip; klikšķis atver komandu sarakstu un **Pievienot jaunu komandu**. Hover uz rindas rāda `...` (Labot / Dzēst) pirms ķeksīša; pēdējo komandu dzēst nevar.
+`app/components/app-nav.tsx` — fiksēta kreisā josla. Galvenē `TeamSwitcher`: kreisajā avatārs (iniciāļi / logotips), pa labi nosaukums un amats (`teamRankLabel`). Apgrieztiem nosaukumiem `OverflowTooltip`. Klikšķis uz avatāra atver komandu sarakstu un **Pievienot jaunu komandu**. Hover uz rindas rāda `...` (Labot / Dzēst) pirms ķeksīša; pēdējo komandu dzēst nevar. Pieslēgtam lietotājam bez komandas `NameFormModal` ir `blocking` — aizveras tikai pēc pievienošanas.
 
 | Rinda | Saturs |
 |---|---|
 | Sākums | `/dashboard` komandas todo board |
 | Saraksts | `/lists` visu uzdevumu kopsavilkums; chevron izver koku |
-| Saraksts (bērns) | `/lists/[listId]` projekta 3 logi (Projekti, Klienti) |
+| Saraksts (bērns) | `/lists/[listId]` projekta logi: Uzdevumi | Faili augšā, Saraksts pilnā platumā |
 | Uzdevums | `/lists/[listId]/tasks/[taskId]` apakšuzdevumu tabula; ikona `fas fa-list-check` |
 | Komanda | `/team` biedri ar pēdējo tiešsaistes zīmi |
 | Uzstādījumi | `/settings` |
@@ -49,7 +49,7 @@ Route group `app/(marketing)/` - bez sānjoslas. Galvene `SiteHeader`, kājene `
 | `/terms` | Lietošanas noteikumi |
 | `/cookies` | Sīkdatņu politika + iestatījumu poga |
 
-Auth pagaidām ir frontend: pēc Ienākt / Reģistrēties rāda toast un atver `/dashboard`. Backend nav pieslēgts. Iziet ved uz `/`.
+Auth: e-pasta Ienākt / Reģistrēties joprojām frontend (toast + `/dashboard`). **Turpināt ar Google** ir īsts Supabase OAuth (sk. Google OAuth). Iziet ved uz `/`.
 
 Legal teksti: `app/lib/legal/documents.ts`. UI: `LegalDocumentView` ar **Saturs** sānjoslu (`sticky` zem galvenes): klikšķis ritina uz sadaļu, josla paliek redzama visā dokumentā.
 
@@ -67,7 +67,7 @@ Legal teksti: `app/lib/legal/documents.ts`. UI: `LegalDocumentView` ar **Saturs*
 |---|---|---|
 | Sākums | `/dashboard` | `TeamTodoBoard` — kolonnas Darāms, Procesā, Gatavs |
 | Saraksts | `/lists` | `ListsOverviewPage` — kartītes ar uzdevumiem un apakšuzdevumiem, grupēti pēc statusa |
-| Projekts (saraksts) | `/lists/[listId]` | `ListWindowsBoard` — logi Uzdevumi, Faili, Saraksts; kārtība cookie `routine-app-list-window-order` |
+| Projekts (saraksts) | `/lists/[listId]` | `ListWindowsBoard` — augšā 2 kolonnas Uzdevumi | Faili; zem tām Saraksts pilnā platumā; kārtība cookie `routine-app-list-window-order` |
 | Uzdevums | `/lists/[listId]/tasks/[taskId]` | `SubtaskTable` — nosaukums, atbildīgais, sākums, termiņš, statuss |
 | Fails | `/lists/[listId]/files/[fileId]` | `FileDetailPage` — priekšskatījums, lejupielāde, pārsaukšana, dzēšana |
 | Apakšuzdevums | tas pats uzdevuma ceļš + modālis | `SubtaskDetailModal` — lauki kreisajā, vēsture labajā |
@@ -85,7 +85,7 @@ Ceļa josla: `app/components/page-breadcrumb.tsx`. Labajā malā `NotificationsM
 
 ## Apakšuzdevuma modālis
 
-`app/components/subtask-detail-modal.tsx` + `AppModal` (`dirty`, saglabāšana tikai pēc izmaiņām). `headerMeta` rāda `izveidots {date}` no aktivitātes `kind === "created"` (`formatDisplayDateDdMmYy`); jaunam nesaglabātam apakšuzdevumam datums nav.
+`app/components/subtask-detail-modal.tsx` + `AppModal` (`dirty`, saglabāšana tikai pēc izmaiņām). Saglabāt **neaizver** modāli un nepāriet uz citu lapu; aizver X / ESC / Atcelt. Pēc jauna apakšuzdevuma izveides paliek edit mode. Poga **Pievienot jaunu** (tikai plus + tooltip `actions.add_new`) rādās, kad ir nosaukums un Saglabāt nav aktīvs; klikšķis atver tukšu formu tajā pašā modālī. `headerMeta` rāda `izveidots {date}` no aktivitātes `kind === "created"` (`formatDisplayDateDdMmYy`); jaunam nesaglabātam apakšuzdevumam datums nav.
 
 | Lauks | Uzvedība |
 |---|---|
@@ -107,10 +107,11 @@ Failu metadati: `TaskFile` (`id`, `taskId`, `name`, `mimeType`, `size`, `hasCont
 
 Hierarhija: **Saraksts → mape / uzdevumu saraksts / fails → apakšuzdevumi tikai zem uzdevumu saraksta**.
 
-- Tipi un seed: `app/lib/lists.ts` (`WorkTaskKind`: `folder` \| `task` \| `subtask`)
-- Stāvoklis: `app/lib/lists-store.tsx`
+- Tipi un seed: `app/lib/lists.ts` (`WorkTaskKind`: `folder` \| `task` \| `subtask`; `scopedStorageKey(base, userId, teamId)`)
+- Stāvoklis: `app/lib/lists-store.tsx` — pieslēgtam lietotājam atslēgas `base:userId:teamId`; bez komandas tukšs koks (nav demo seed)
 - Saraksta faili kokā: `app/lib/list-files.ts`
 - Jauna saraksta formā var izvēlēties ikonu un fona krāsu; bez ikonas rāda iniciāļus. `NameFormModal` ar `showAppearance`; komandai `showLogo` + `showIcons={false}` (tikai krāsas + logotips)
+- Projekta **Saraksts** logs: uzdevumu kartītes `repeat(auto-fit, minmax(min(100%, 16rem), 1fr))` — cik ietilpst, tik kolonnas (2–4)
 
 ## Statusa kontrole
 
@@ -124,7 +125,9 @@ Hierarhija: **Saraksts → mape / uzdevumu saraksts / fails → apakšuzdevumi t
 
 - Biedri: `app/lib/team.ts`, `app/lib/team-store.tsx`
 - Komandas (`WorkTeam`): `id`, `name`, `initials`, `icon`, `color`, `logoUrl`; CRUD `addTeam` / `updateTeam` / `deleteTeam` / `selectTeam`
-- UI: `app/components/team-switcher.tsx`; jauna/labot komanda caur `NameFormModal`
+- Pieslēgtam lietotājam komandas un biedri ir per user (`teamsStorageKey`, `membersStorageKey`); demo biedri (Anna u.c.) logged-in sesijā nav
+- Jauna komanda: izveidotājs kļūst **Īpašnieks** (`OWNER_TEAM_ROLE` / `teams.rank.owner`); rangs zem vārda, komandas nosaukuma un modālī tikai ja ir komanda
+- UI: `app/components/team-switcher.tsx`; jauna/labot komanda caur `NameFormModal` (`blocking`, ja `needsTeam`)
 - Attēlojums: `app/components/member-last-online.tsx`, loģika `app/lib/last-online.ts`
 
 | Intervāls | Attēlojums |
@@ -157,8 +160,9 @@ app/
     site-footer.tsx               # Publiskā kājene
     landing-page.tsx              # Landing saturs
     landing-app-preview.tsx       # Hero dashboard vizuālis
-    login-form.tsx                # Ienākt
-    signup-form.tsx               # Reģistrēties
+    login-form.tsx                # Ienākt + Google
+    signup-form.tsx               # Reģistrēties + Google
+    google-auth-button.tsx        # Turpināt ar Google
     forgot-password-form.tsx      # Aizmirsi paroli
     legal-document-view.tsx       # Legal lapas + fiksēta satura TOC
     cookie-consent-provider.tsx   # Piekrišanas stāvoklis
@@ -168,7 +172,7 @@ app/
     app-shell.tsx                 # Layout ar sānjoslu
     lists-overview-page.tsx       # Saraksta kopsavilkums
     list-summary.tsx              # Uzdevumu kartītes ar statusu grupām
-    list-windows-board.tsx        # 3 logi ar DnD
+    list-windows-board.tsx        # Uzdevumi | Faili + Saraksts, DnD
     task-detail-page.tsx          # Apakšuzdevumu tabula
     subtask-table.tsx             # Tabula un DateCell
     subtask-detail-modal.tsx      # Apakšuzdevuma modālis
@@ -201,8 +205,14 @@ app/
     team-todo.ts                  # Todo tipi un seed
     format-display-date.ts        # dd.mm.yy
     i18n/messages.ts              # lv + en teksti
+    supabase/                     # env, browser/server klienti, session refresh
+    auth/                         # Google OAuth, sesija, display mapping
+    users/ensure-profile.ts       # public.users rinda pēc OAuth
+    security/safe-redirect-path.ts
+app/auth/callback/route.ts        # OAuth code → session
+proxy.ts                          # Supabase session refresh
 scripts/                          # audit-check.mjs, apply-migrations.mjs, test-supabase.mjs
-supabase/migrations/              # 001_schema.sql
+supabase/migrations/              # 001_schema.sql, 002_users_is_admin.sql
 .github/workflows/                # secret-scan.yml, security-audit.yml, security-smoke.yml
 .gitleaks.toml                    # default rules + i18n translation key allowlist
 .cursor/rules/                    # README bump, commits
@@ -249,21 +259,35 @@ npm run db:test      # Postgres pieslēgums + public tabulu saraksts
 npm run db:migrate   # pending faili no supabase/migrations/
 ```
 
-Lietotne vēl lasa datus no `localStorage`. Migrācija `001_schema.sql` ir sagatavota; `db:test` apstiprina API projektu, bet Postgres pieprasa pareizu datubāzes paroli (ne `anon` atslēgu).
+Lietotne vēl lasa sarakstus no `localStorage` (scoped per user + team). Migrācijas `001_schema.sql` un `002_users_is_admin.sql` sagatavo `public.users` (FK uz `auth.users`, `is_admin`, pirmais reģistrētais ir admin). `db:test` apstiprina API projektu, bet Postgres pieprasa pareizu datubāzes paroli (ne `anon` atslēgu).
+
+## Google OAuth
+
+Login un signup rāda **Turpināt ar Google**. Client ID un Secret **nav** `.env` — tos ievada Supabase Dashboard → Authentication → Providers → Google.
+
+1. Google Cloud → APIs & Services → Credentials → **OAuth 2.0 Client ID** (Web application)
+2. Authorized JavaScript origins: `http://localhost:3120`
+3. Authorized redirect URI: `https://ozaoaaqmknoxtwywzara.supabase.co/auth/v1/callback`
+4. Supabase → Authentication → Providers → Google → Enable, ielīmē Client ID un Client Secret
+5. Supabase → Authentication → URL Configuration:
+   - Site URL: `http://localhost:3120`
+   - Redirect URLs: `http://localhost:3120/auth/callback`
+
+Aplikācijas callback: `/auth/callback` (`app/auth/callback/route.ts`). `redirectTo` ņem `window.location.origin`. Pēc Google pieslēgšanās `ensure_user_profile` izveido `public.users` rindu. Pirmais reģistrētais saņem `is_admin = true`, pārējie `false`.
 
 ## Dati
 
-Pirmajā versijā lietotnes dati glabājas `localStorage`. Datubāze un īstā autentifikācija nav pieslēgtas.
+Pirmajā versijā lietotnes dati glabājas `localStorage`. Pieslēgtam lietotājam komandas atslēgas ir `base:userId`, sarakstu/uzdevumu atslēgas `base:userId:teamId` (`scopedStorageKey`). Google sesija ir Supabase Auth; e-pasta login vēl nav backend.
 
 | Atslēga | Saturs |
 |---|---|
-| `routine-app-work-lists` | Saraksti |
+| `routine-app-work-lists` | Saraksti (`:userId:teamId` ja ir sesija) |
 | `routine-app-work-tasks-v3` | Uzdevumi un apakšuzdevumi (`kind`) |
 | `routine-app-task-activity` | Apakšuzdevumu vēsture |
 | `routine-app-task-files` | Apakšuzdevumu pielikumu metadati |
 | `routine-app-task-file-content:{id}` | Pielikuma saturs (data URL) |
 | `routine-app-list-files` | Saraksta faili kokā |
-| `routine-app-team-members` | Komandas biedri |
+| `routine-app-team-members` | Komandas biedri (`:userId` ja ir sesija) |
 | `routine-app-teams` | Komandu saraksts (`WorkTeam`) |
 | `routine-app-current-team-id` | Aktīvā komanda |
 | `routine-app-notifications` | Paziņojumi (lasīts/nelasīts) |
@@ -288,7 +312,6 @@ GitHub Actions pēc push palaiž secret scan, atkarību auditu un security smoke
 
 ## Roadmap
 
-- Datubāze un īstā autentifikācija (login / signup / parole); env un `db:migrate` jau ir
-- Pielikumu, saraksta failu un paziņojumu backend (tagad `localStorage`)
+- Datubāze un īstā e-pasta autentifikācija; Google OAuth poga jau ir
 - Pielikumu, saraksta failu un paziņojumu backend (tagad `localStorage`)
 - Atkārtojami rutīnas uzdevumi

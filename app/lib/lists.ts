@@ -35,6 +35,15 @@ export type ListColor = {
 export const LISTS_STORAGE_KEY = "routine-app-work-lists";
 export const TASKS_STORAGE_KEY = "routine-app-work-tasks-v3";
 
+export function scopedStorageKey(
+  base: string,
+  userId: string | null,
+  teamId: string | null,
+): string {
+  if (userId && teamId) return `${base}:${userId}:${teamId}`;
+  return base;
+}
+
 export const LIST_COLORS: ListColor[] = [
   { id: "black", bg: "#18181b", fg: "#ffffff" },
   { id: "midnight", bg: "#0f172a", fg: "#ffffff" },

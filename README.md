@@ -2,7 +2,7 @@
 
 Komandas darba rīks ar publisku landing lapu un sānjoslas lietotni. Gaišs Next.js frontend.
 
-**Current version:** `0.1.0`
+**Current version:** `0.1.1`
 
 ## Palaist
 
@@ -16,15 +16,15 @@ Atver [http://localhost:3120](http://localhost:3120).
 ## Kas iekšā
 
 - **Landing** — `/` ar dashboard vizuāli, pārdošanas blokiem, Ienākt / Reģistrēties un sīkdatņu popup
-- **Auth** — `/login`, `/signup`, `/forgot-password` (pagaidām frontend, bez backend)
+- **Auth** — `/login`, `/signup`, `/forgot-password`; e-pasts pagaidām frontend, **Turpināt ar Google** caur Supabase
 - **Legal** — `/privacy`, `/terms`, `/cookies` ar fiksētu satura sānjoslu; kājene arī lietotnē
-- **Sānjosla** — Sākums ved uz `/dashboard` (komandas todo board)
-- **Trīs skati** — Saraksts (kopsavilkums), projekts (3 logi), uzdevums (apakšuzdevumu tabula)
+- **Sānjosla** — Sākums ved uz `/dashboard` (komandas todo board); apgrieztiem nosaukumiem overflow tooltip
+- **Trīs skati** — Saraksts (kopsavilkums), projekts (Uzdevumi | Faili augšā, Saraksts zem tiem), uzdevums (apakšuzdevumu tabula)
 - Sānjoslas koks rāda sarakstus un ligzdotos uzdevumus; apakšuzdevumi paliek tabulā
-- **Komanda** — biedri, uzaicināšana, pēdējā tiešsaistes laika zīme
-- Apakšuzdevuma modālis: apraksts, datumi, atbildīgie, statuss, pielikumi
+- **Komanda** — pieslēgtam lietotājam bez komandas bloķējošs izveides modālis; rangs Īpašnieks; biedri per user + team
+- Apakšuzdevuma modālis: apraksts, datumi, atbildīgie, statuss, pielikumi; Saglabāt neatver citu lapu
 - Satura joslā **paziņojumi** (zvaniņš labajā malā)
-- Dati pagaidām `localStorage`; Supabase env un migrāciju skripti ir sagatavoti
+- Dati pagaidām `localStorage` (scoped per user + team); Google sesija un `public.users` caur Supabase
 
 ## Skripti
 

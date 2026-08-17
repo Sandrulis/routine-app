@@ -5,7 +5,8 @@ create table if not exists public.users (
   name text not null,
   avatar text not null,
   role text not null check (role in ('Vadītājs', 'Projektu vadītājs', 'Darbinieks')),
-  manager_id uuid references public.users (id) on delete set null
+  manager_id uuid references public.users (id) on delete set null,
+  is_admin boolean not null default false
 );
 
 create table if not exists public.projects (

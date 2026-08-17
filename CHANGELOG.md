@@ -4,6 +4,14 @@
 
 - (none)
 
+## v0.1.1
+
+**Google pieslēgšanās, obligāta komanda un saraksta skats**
+
+- Login un signup: **Turpināt ar Google** caur Supabase OAuth (`/auth/callback`); e-pasta forma joprojām frontend
+- Pieslēgtam lietotājam bez komandas bloķējošs **Jauna komanda** modālis; rangs **Īpašnieks**; saraksti un biedri per user + team
+- Saraksta lapa: **Uzdevumi** | **Faili** augšā, **Saraksts** pilnā platumā ar horizontāliem uzdevumu blokiem (cik ietilpst); apakšuzdevuma Saglabāt paliek modālī
+
 ## v0.1.0
 
 **GitHub drošības pārbaudes un Supabase setup**

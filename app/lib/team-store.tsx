@@ -6,25 +6,31 @@ import {
   useContext,
   useEffect,
   useMemo,
-  useRef,
   useState,
   type ReactNode,
 } from "react";
+import type { User } from "@supabase/supabase-js";
+import { mapUserDisplay } from "@/app/lib/auth/map-user-display";
+import { useAuthSession } from "@/app/lib/auth/use-auth-session";
 import {
-  CURRENT_TEAM_ID_STORAGE_KEY,
+  CURRENT_USER_ID,
   DEFAULT_TEAM_ID,
   TEAM_CHANGE_EVENT,
-  TEAM_STORAGE_KEY,
-  TEAMS_STORAGE_KEY,
   createDefaultMembers,
   createDefaultTeams,
   createMemberId,
+  createOwnerMember,
   createTeamId,
+  currentTeamIdStorageKey,
   getCurrentUser,
   initialsFromName,
-  normalizeStoredMembers,
+  membersStorageKey,
+  normalizeStoredMembersByTeam,
   normalizeStoredTeams,
+  OWNER_TEAM_ROLE,
+  teamsStorageKey,
   toneForIndex,
+  type MembersByTeam,
   type TeamMember,
   type WorkTeam,
 } from "@/app/lib/team";
@@ -48,7 +54,7 @@ type TeamContextValue = {
   members: TeamMember[];
   currentUser: TeamMember;
   teams: WorkTeam[];
-  currentTeam: WorkTeam;
+  currentTeam: WorkTeam | null;
   inviteMember: (input: InviteMemberInput) => TeamMember;
   addTeam: (input: AddTeamInput) => WorkTeam;
   updateTeam: (teamId: string, input: AddTeamInput) => void;
@@ -58,124 +64,245 @@ type TeamContextValue = {
 
 const TeamContext = createContext<TeamContextValue | null>(null);
 
-function persistMembers(members: TeamMember[]) {
-  window.localStorage.setItem(TEAM_STORAGE_KEY, JSON.stringify(members));
-  window.dispatchEvent(new Event(TEAM_CHANGE_EVENT));
+function ownerFromAuth(user: User): TeamMember {
+  const display = mapUserDisplay(user);
+  return createOwnerMember({
+    id: user.id,
+    name: display.name,
+    email: display.email,
+    avatarUrl: display.avatarUrl,
+  });
+}
+
+function withOwnerOnTeams(
+  teams: WorkTeam[],
+  membersByTeam: MembersByTeam,
+  owner: TeamMember,
+): MembersByTeam {
+  const next = { ...membersByTeam };
+  for (const team of teams) {
+    if (!next[team.id] || next[team.id].length === 0) {
+      next[team.id] = [{ ...owner }];
+    }
+  }
+  return next;
 }
 
 export function TeamProvider({ children }: { children: ReactNode }) {
-  const loadedFromStorage = useRef(false);
-  const [members, setMembers] = useState<TeamMember[]>(createDefaultMembers);
-  const [teams, setTeams] = useState<WorkTeam[]>(createDefaultTeams);
-  const [currentTeamId, setCurrentTeamId] = useState(DEFAULT_TEAM_ID);
+  const { user: authUser, isReady: authReady } = useAuthSession();
+  const [membersByTeam, setMembersByTeam] = useState<MembersByTeam>({});
+  const [teams, setTeams] = useState<WorkTeam[]>([]);
+  const [currentTeamId, setCurrentTeamId] = useState("");
+  const [loadedScope, setLoadedScope] = useState<string | null>(null);
   const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
-    if (loadedFromStorage.current) return;
-    loadedFromStorage.current = true;
+    if (!authReady) return;
+
+    const userId = authUser?.id ?? null;
+    setIsReady(false);
+    const nextTeamsKey = teamsStorageKey(userId);
+    const nextTeamIdKey = currentTeamIdStorageKey(userId);
+    const nextMembersKey = membersStorageKey(userId);
 
     try {
-      const storedValue = window.localStorage.getItem(TEAM_STORAGE_KEY);
-      const storedMembers = storedValue
-        ? normalizeStoredMembers(JSON.parse(storedValue))
-        : null;
-      setMembers(storedMembers ?? createDefaultMembers());
-
-      const storedTeamsValue = window.localStorage.getItem(TEAMS_STORAGE_KEY);
+      const storedTeamsValue = window.localStorage.getItem(nextTeamsKey);
       const storedTeams = storedTeamsValue
         ? normalizeStoredTeams(JSON.parse(storedTeamsValue))
         : null;
-      const nextTeams = storedTeams ?? createDefaultTeams();
+      const nextTeams = storedTeams ?? (userId ? [] : createDefaultTeams());
       setTeams(nextTeams);
 
-      const storedTeamId = window.localStorage.getItem(CURRENT_TEAM_ID_STORAGE_KEY);
+      const storedTeamId = window.localStorage.getItem(nextTeamIdKey);
       setCurrentTeamId(
         storedTeamId && nextTeams.some((team) => team.id === storedTeamId)
           ? storedTeamId
-          : (nextTeams[0]?.id ?? DEFAULT_TEAM_ID),
+          : (nextTeams[0]?.id ?? ""),
       );
+
+      const storedMembersValue = window.localStorage.getItem(nextMembersKey);
+      const storedMembers = storedMembersValue
+        ? normalizeStoredMembersByTeam(JSON.parse(storedMembersValue))
+        : null;
+
+      if (userId && authUser) {
+        setMembersByTeam(
+          withOwnerOnTeams(
+            nextTeams,
+            storedMembers ?? {},
+            ownerFromAuth(authUser),
+          ),
+        );
+      } else {
+        setMembersByTeam(
+          storedMembers ?? { [DEFAULT_TEAM_ID]: createDefaultMembers() },
+        );
+      }
     } catch {
-      setMembers(createDefaultMembers());
-      setTeams(createDefaultTeams());
-      setCurrentTeamId(DEFAULT_TEAM_ID);
+      setTeams(userId ? [] : createDefaultTeams());
+      setCurrentTeamId(userId ? "" : DEFAULT_TEAM_ID);
+      setMembersByTeam(
+        userId && authUser
+          ? {}
+          : { [DEFAULT_TEAM_ID]: createDefaultMembers() },
+      );
     } finally {
+      setLoadedScope(userId);
       setIsReady(true);
     }
-  }, []);
+  }, [authReady, authUser]);
 
   useEffect(() => {
     if (!isReady) return;
-    persistMembers(members);
-  }, [isReady, members]);
+    const userId = authUser?.id ?? null;
+    if (loadedScope !== userId) return;
+    window.localStorage.setItem(
+      membersStorageKey(userId),
+      JSON.stringify(membersByTeam),
+    );
+    window.dispatchEvent(new Event(TEAM_CHANGE_EVENT));
+  }, [authUser?.id, isReady, loadedScope, membersByTeam]);
 
   useEffect(() => {
     if (!isReady) return;
-    window.localStorage.setItem(TEAMS_STORAGE_KEY, JSON.stringify(teams));
-    window.localStorage.setItem(CURRENT_TEAM_ID_STORAGE_KEY, currentTeamId);
-  }, [currentTeamId, isReady, teams]);
+    const userId = authUser?.id ?? null;
+    if (loadedScope !== userId) return;
+    window.localStorage.setItem(teamsStorageKey(userId), JSON.stringify(teams));
+    window.localStorage.setItem(currentTeamIdStorageKey(userId), currentTeamId);
+  }, [authUser?.id, currentTeamId, isReady, loadedScope, teams]);
 
-  const inviteMember = useCallback((input: InviteMemberInput) => {
-    const member: TeamMember = {
-      id: createMemberId(),
-      name: input.name.trim(),
-      email: input.email.trim(),
-      role: input.role.trim(),
-      initials: initialsFromName(input.name),
-      toneClassName: toneForIndex(0),
-      lastOnlineAt: null,
-    };
+  const inviteMember = useCallback(
+    (input: InviteMemberInput) => {
+      const member: TeamMember = {
+        id: createMemberId(),
+        name: input.name.trim(),
+        email: input.email.trim(),
+        role: input.role.trim(),
+        initials: initialsFromName(input.name),
+        toneClassName: toneForIndex(0),
+        lastOnlineAt: null,
+      };
 
-    setMembers((current) => {
-      member.toneClassName = toneForIndex(current.length);
-      return [...current, member];
-    });
-    return member;
-  }, []);
+      setMembersByTeam((current) => {
+        if (!currentTeamId) return current;
+        const list = current[currentTeamId] ?? [];
+        member.toneClassName = toneForIndex(list.length);
+        return {
+          ...current,
+          [currentTeamId]: [...list, member],
+        };
+      });
+      return member;
+    },
+    [currentTeamId],
+  );
 
   useEffect(() => {
-    if (!isReady) return;
+    if (!isReady || !currentTeamId) return;
+    const userId = authUser?.id ?? CURRENT_USER_ID;
 
     function touchCurrentUser() {
       const seenAt = new Date().toISOString();
-      setMembers((current) => {
-        const user = getCurrentUser(current);
-        if (!user) return current;
-        return current.map((member) =>
-          member.id === user.id ? { ...member, lastOnlineAt: seenAt } : member,
-        );
+      setMembersByTeam((current) => {
+        const list = current[currentTeamId] ?? [];
+        const user = getCurrentUser(list, userId);
+        if (!list.some((member) => member.id === user.id)) return current;
+        return {
+          ...current,
+          [currentTeamId]: list.map((member) =>
+            member.id === user.id ? { ...member, lastOnlineAt: seenAt } : member,
+          ),
+        };
       });
     }
 
     touchCurrentUser();
     const timer = window.setInterval(touchCurrentUser, 20_000);
     return () => window.clearInterval(timer);
-  }, [isReady]);
-
-  const currentUser = useMemo(() => getCurrentUser(members), [members]);
+  }, [authUser?.id, currentTeamId, isReady]);
 
   const currentTeam = useMemo(
-    () =>
-      teams.find((team) => team.id === currentTeamId) ??
-      teams[0] ??
-      createDefaultTeams()[0],
+    () => teams.find((team) => team.id === currentTeamId) ?? teams[0] ?? null,
     [currentTeamId, teams],
   );
 
-  const addTeam = useCallback((input: AddTeamInput) => {
-    const trimmed = input.name.trim();
-    const team: WorkTeam = {
-      id: createTeamId(),
-      name: trimmed,
-      initials: initialsFromName(trimmed),
-      icon: input.icon ?? null,
-      color: input.color ?? randomListColorId(),
-      logoUrl: input.logoUrl ?? null,
-    };
+  const members = useMemo(() => {
+    const list = currentTeam ? (membersByTeam[currentTeam.id] ?? []) : [];
+    if (!authUser) return list;
 
-    setTeams((current) => [...current, team]);
-    setCurrentTeamId(team.id);
-    return team;
-  }, []);
+    const display = mapUserDisplay(authUser);
+    const overlayId = authUser.id;
+    const next = list.map((member) =>
+      member.id === overlayId
+        ? {
+            ...member,
+            name: display.name || member.name,
+            email: display.email || member.email,
+            initials: initialsFromName(display.name || member.name),
+            avatarUrl: display.avatarUrl ?? member.avatarUrl,
+            role: member.role || OWNER_TEAM_ROLE,
+          }
+        : member,
+    );
+
+    const selfIndex = next.findIndex((member) => member.id === overlayId);
+    if (selfIndex > 0) {
+      const [self] = next.splice(selfIndex, 1);
+      next.unshift(self);
+    }
+    return next;
+  }, [authUser, currentTeam, membersByTeam]);
+
+  const currentUser = useMemo(() => {
+    if (authUser) {
+      const display = mapUserDisplay(authUser);
+      const fromTeam = members.find((member) => member.id === authUser.id);
+      const name = display.name || fromTeam?.name || "";
+      return {
+        id: authUser.id,
+        name,
+        email: display.email || fromTeam?.email || "",
+        initials: initialsFromName(name),
+        role: currentTeam ? fromTeam?.role || OWNER_TEAM_ROLE : "",
+        toneClassName: fromTeam?.toneClassName ?? toneForIndex(0),
+        lastOnlineAt: fromTeam?.lastOnlineAt ?? null,
+        avatarUrl: display.avatarUrl,
+      };
+    }
+
+    const base = getCurrentUser(members);
+    return currentTeam ? base : { ...base, role: "" };
+  }, [authUser, currentTeam, members]);
+
+  const addTeam = useCallback(
+    (input: AddTeamInput) => {
+      const trimmed = input.name.trim();
+      const team: WorkTeam = {
+        id: createTeamId(),
+        name: trimmed,
+        initials: initialsFromName(trimmed),
+        icon: input.icon ?? null,
+        color: input.color ?? randomListColorId(),
+        logoUrl: input.logoUrl ?? null,
+      };
+
+      const owner = authUser
+        ? ownerFromAuth(authUser)
+        : {
+            ...getCurrentUser(members),
+            role: OWNER_TEAM_ROLE,
+          };
+
+      setTeams((current) => [...current, team]);
+      setCurrentTeamId(team.id);
+      setMembersByTeam((current) => ({
+        ...current,
+        [team.id]: [{ ...owner, lastOnlineAt: new Date().toISOString() }],
+      }));
+      return team;
+    },
+    [authUser, members],
+  );
 
   const updateTeam = useCallback((teamId: string, input: AddTeamInput) => {
     const trimmed = input.name.trim();
@@ -203,10 +330,17 @@ export function TeamProvider({ children }: { children: ReactNode }) {
       if (next.length === current.length) return current;
       removed = true;
       setCurrentTeamId((id) =>
-        id === teamId ? (next[0]?.id ?? DEFAULT_TEAM_ID) : id,
+        id === teamId ? (next[0]?.id ?? "") : id,
       );
       return next;
     });
+    if (removed) {
+      setMembersByTeam((current) => {
+        const next = { ...current };
+        delete next[teamId];
+        return next;
+      });
+    }
     return removed;
   }, []);
 

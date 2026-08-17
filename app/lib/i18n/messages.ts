@@ -86,6 +86,14 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
     "auth.fields.email_placeholder": "vards@uznemums.lv",
     "auth.fields.password": "Parole",
     "auth.fields.password_confirm": "Atkārtot paroli",
+    "auth.google.continue": "Turpināt ar Google",
+    "auth.google.or": "vai",
+    "auth.google.signing_in": "Pieslēdzas...",
+    "auth.google.failed": "Neizdevās pieslēgties ar Google.",
+    "auth.google.not_configured":
+      "Google nav iestatīts. Pievieno Supabase atslēgas .env.local.",
+    "auth.google.not_enabled":
+      "Google nav ieslēgts Supabase projektā. Authentication → Providers → Google → Enable.",
     "legal.common.updated_at": "17.08.26",
     "legal.nav.updated_at": "Atjaunināts {date}",
     "legal.toc.label": "Saturs",
@@ -520,6 +528,10 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
     "teams.add.title": "Jauna komanda",
     "teams.add.description":
       "Norādi nosaukumu, izvēlies avatāra izskatu vai pievieno logotipu.",
+    "teams.required.description":
+      "Lai sāktu darbu, izveido savu komandu. Modālis aizvērsies pēc pievienošanas.",
+    "teams.rank.owner": "Īpašnieks",
+    "teams.required.empty_members": "Vispirms izveido komandu.",
     "teams.fields.name_placeholder": "Piemēram, Studio, Klienti",
     "teams.logo.drop": "Ievelc logotipu šeit vai",
     "teams.logo.remove": "Noņemt logotipu",
@@ -561,6 +573,7 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
       "Profila rediģēšanu šeit pielāgosi nākamajā solī.",
     "actions.save": "Saglabāt",
     "actions.add": "Pievienot",
+    "actions.add_new": "Pievienot jaunu",
     "actions.edit": "Labot",
     "actions.rename": "Pārsaukt",
     "actions.view": "Apskatīt",
@@ -654,6 +667,14 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
     "auth.fields.email_placeholder": "name@company.com",
     "auth.fields.password": "Password",
     "auth.fields.password_confirm": "Repeat password",
+    "auth.google.continue": "Continue with Google",
+    "auth.google.or": "or",
+    "auth.google.signing_in": "Signing in...",
+    "auth.google.failed": "Could not sign in with Google.",
+    "auth.google.not_configured":
+      "Google is not set up. Add Supabase keys to .env.local.",
+    "auth.google.not_enabled":
+      "Google is not enabled in the Supabase project. Authentication → Providers → Google → Enable.",
     "legal.common.updated_at": "17.08.26",
     "legal.nav.updated_at": "Updated {date}",
     "legal.toc.label": "Contents",
@@ -1081,6 +1102,10 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
     "teams.add.title": "New team",
     "teams.add.description":
       "Enter a name, choose avatar appearance, or add a logo.",
+    "teams.required.description":
+      "Create your team to get started. The dialog closes after you add it.",
+    "teams.rank.owner": "Owner",
+    "teams.required.empty_members": "Create a team first.",
     "teams.fields.name_placeholder": "e.g. Studio, Clients",
     "teams.logo.drop": "Drop a logo here or",
     "teams.logo.remove": "Remove logo",
@@ -1121,6 +1146,7 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
       "You can customize profile editing in the next step.",
     "actions.save": "Save",
     "actions.add": "Add",
+    "actions.add_new": "Add new",
     "actions.edit": "Edit",
     "actions.rename": "Rename",
     "actions.view": "View",

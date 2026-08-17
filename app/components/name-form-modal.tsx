@@ -33,6 +33,8 @@ export function NameFormModal({
   showIcons = true,
   initialValue,
   onCreate,
+  blocking = false,
+  rankLabel = null,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -49,6 +51,8 @@ export function NameFormModal({
   showIcons?: boolean;
   initialValue?: NameFormInput | null;
   onCreate: (input: NameFormInput) => void;
+  blocking?: boolean;
+  rankLabel?: string | null;
 }) {
   const { t } = useTranslations();
   const { showFeedback } = useFeedbackToast();
@@ -175,6 +179,7 @@ export function NameFormModal({
       title={title}
       description={description}
       dirty={dirty}
+      blocking={blocking}
       panelMaxWidthClassName={showAppearance ? "max-w-xl" : undefined}
     >
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -185,7 +190,7 @@ export function NameFormModal({
                 ? t("lists.fields.icon_and_name", "Ikona un nosaukums")
                 : t("lists.fields.name", "Nosaukums")}
             </p>
-            <div className="mt-2 flex items-center gap-2">
+            <div className="mt-2 flex items-start gap-2">
               <button
                 ref={badgeRef}
                 type="button"
@@ -212,14 +217,21 @@ export function NameFormModal({
                   size="lg"
                 />
               </button>
-              <input
-                id="name-form-title"
-                value={name}
-                onChange={(event) => setName(event.target.value)}
-                className="min-h-11 min-w-0 flex-1 rounded-xl border border-zinc-200 bg-white px-3 text-sm text-zinc-900 outline-none transition placeholder:text-zinc-400 focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
-                placeholder={namePlaceholder}
-                autoFocus
-              />
+              <div className="min-w-0 flex-1">
+                <input
+                  id="name-form-title"
+                  value={name}
+                  onChange={(event) => setName(event.target.value)}
+                  className="min-h-11 w-full rounded-xl border border-zinc-200 bg-white px-3 text-sm text-zinc-900 outline-none transition placeholder:text-zinc-400 focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+                  placeholder={namePlaceholder}
+                  autoFocus
+                />
+                {rankLabel ? (
+                  <p className="mt-1 truncate text-[12px] text-zinc-400">
+                    {rankLabel}
+                  </p>
+                ) : null}
+              </div>
             </div>
             <ListAppearancePicker
               open={appearanceOpen}
@@ -311,13 +323,15 @@ export function NameFormModal({
           </div>
         ) : null}
         <div className="flex justify-end gap-2 border-t border-zinc-100 pt-4">
-          <button
-            type="button"
-            onClick={() => onOpenChange(false)}
-            className="inline-flex min-h-10 items-center justify-center rounded-2xl bg-zinc-100 px-4 text-sm font-semibold text-zinc-700 transition hover:bg-zinc-200"
-          >
-            {t("actions.cancel", "Atcelt")}
-          </button>
+          {blocking ? null : (
+            <button
+              type="button"
+              onClick={() => onOpenChange(false)}
+              className="inline-flex min-h-10 items-center justify-center rounded-2xl bg-zinc-100 px-4 text-sm font-semibold text-zinc-700 transition hover:bg-zinc-200"
+            >
+              {t("actions.cancel", "Atcelt")}
+            </button>
+          )}
           <button
             type="submit"
             disabled={!trimmedName || Boolean(snapshot && !dirty)}

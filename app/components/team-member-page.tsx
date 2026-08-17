@@ -5,6 +5,7 @@ import { SectionPage } from "@/app/components/section-page";
 import { UserAvatar } from "@/app/components/user-avatar";
 import { useTranslations } from "@/app/components/translations-provider";
 import { useTeam } from "@/app/lib/team-store";
+import { teamRankLabel } from "@/app/lib/team";
 
 export function TeamMemberPage({ memberId }: { memberId: string }) {
   const { t } = useTranslations();
@@ -42,7 +43,10 @@ export function TeamMemberPage({ memberId }: { memberId: string }) {
   }
 
   return (
-    <SectionPage title={member.name} subtitle={member.role || member.email}>
+    <SectionPage
+      title={member.name}
+      subtitle={teamRankLabel(member.role, t) || member.email}
+    >
       <div className="flex items-start gap-4 rounded-3xl border border-zinc-200 bg-white px-5 py-6">
         <UserAvatar member={member} />
         <div className="min-w-0 text-sm text-zinc-500">

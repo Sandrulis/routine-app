@@ -4,10 +4,12 @@ import { SectionPage } from "@/app/components/section-page";
 import { UserAvatar } from "@/app/components/user-avatar";
 import { useTranslations } from "@/app/components/translations-provider";
 import { useTeam } from "@/app/lib/team-store";
+import { teamRankLabel } from "@/app/lib/team";
 
 export default function ProfileSettingsPage() {
   const { t } = useTranslations();
-  const { currentUser } = useTeam();
+  const { currentUser, teams } = useTeam();
+  const rank = teams.length === 0 ? null : teamRankLabel(currentUser.role, t);
 
   return (
     <SectionPage
@@ -23,7 +25,7 @@ export default function ProfileSettingsPage() {
           <div>
             <p className="text-sm font-semibold text-zinc-900">{currentUser.name}</p>
             <p className="text-sm text-zinc-500">
-              {[currentUser.role, currentUser.email].filter(Boolean).join(" - ")}
+              {[rank, currentUser.email].filter(Boolean).join(" - ")}
             </p>
           </div>
         </div>

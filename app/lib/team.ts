@@ -9,11 +9,25 @@ export type TeamMember = {
   email: string;
   toneClassName: string;
   lastOnlineAt: string | null;
+  avatarUrl?: string | null;
 };
 
 export const CURRENT_USER_ID = "anna";
 export const TEAM_STORAGE_KEY = "routine-app-team-members";
 export const TEAM_CHANGE_EVENT = "routine-app-team-change";
+export const OWNER_TEAM_ROLE = "owner";
+
+export function teamRankLabel(
+  role: string,
+  t: (key: string, fallback: string) => string,
+): string | null {
+  const trimmed = role.trim();
+  if (!trimmed) return null;
+  if (trimmed === OWNER_TEAM_ROLE) {
+    return t("teams.rank.owner", "Īpašnieks");
+  }
+  return trimmed;
+}
 
 const MEMBER_TONES = [
   "bg-sky-100 text-sky-800",
@@ -112,6 +126,41 @@ export const TEAMS_STORAGE_KEY = "routine-app-teams";
 export const CURRENT_TEAM_ID_STORAGE_KEY = "routine-app-current-team-id";
 export const DEFAULT_TEAM_ID = "team-routine";
 
+export type MembersByTeam = Record<string, TeamMember[]>;
+
+export function teamsStorageKey(userId: string | null): string {
+  return userId ? `${TEAMS_STORAGE_KEY}:${userId}` : TEAMS_STORAGE_KEY;
+}
+
+export function membersStorageKey(userId: string | null): string {
+  return userId ? `${TEAM_STORAGE_KEY}:${userId}` : TEAM_STORAGE_KEY;
+}
+
+export function createOwnerMember(input: {
+  id: string;
+  name: string;
+  email: string;
+  avatarUrl?: string | null;
+}): TeamMember {
+  const name = input.name.trim() || input.email.trim() || "User";
+  return {
+    id: input.id,
+    name,
+    initials: initialsFromName(name),
+    role: OWNER_TEAM_ROLE,
+    email: input.email.trim(),
+    toneClassName: toneForIndex(0),
+    lastOnlineAt: new Date().toISOString(),
+    avatarUrl: input.avatarUrl ?? null,
+  };
+}
+
+export function currentTeamIdStorageKey(userId: string | null): string {
+  return userId
+    ? `${CURRENT_TEAM_ID_STORAGE_KEY}:${userId}`
+    : CURRENT_TEAM_ID_STORAGE_KEY;
+}
+
 export function createTeamId(): string {
   if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
     return `team-${crypto.randomUUID()}`;
@@ -199,8 +248,15 @@ export function getTeamMember(
   return members.find((member) => member.id === id) ?? null;
 }
 
-export function getCurrentUser(members: TeamMember[]): TeamMember {
-  return getTeamMember(members, CURRENT_USER_ID) ?? members[0] ?? TEAM_MEMBERS[0];
+export function getCurrentUser(
+  members: TeamMember[],
+  userId?: string | null,
+): TeamMember {
+  return (
+    getTeamMember(members, userId ?? CURRENT_USER_ID) ??
+    members[0] ??
+    TEAM_MEMBERS[0]
+  );
 }
 
 export function normalizeStoredMembers(value: unknown): TeamMember[] | null {
@@ -237,10 +293,51 @@ export function normalizeStoredMembers(value: unknown): TeamMember[] | null {
           ? item.lastOnlineAt
           : demoLastOnlineAt(id, index);
 
+      const avatarUrl =
+        "avatarUrl" in item &&
+        typeof item.avatarUrl === "string" &&
+        (item.avatarUrl.startsWith("http") ||
+          item.avatarUrl.startsWith("data:image/"))
+          ? item.avatarUrl
+          : null;
+
       if (!id || !name) return null;
-      return { id, name, initials, role, email, toneClassName, lastOnlineAt };
+      const member: TeamMember = {
+        id,
+        name,
+        initials,
+        role,
+        email,
+        toneClassName,
+        lastOnlineAt,
+        ...(avatarUrl ? { avatarUrl } : {}),
+      };
+      return member;
     })
     .filter((item): item is TeamMember => item !== null);
 
   return members;
+}
+
+export function normalizeStoredMembersByTeam(
+  value: unknown,
+): MembersByTeam | null {
+  if (Array.isArray(value)) {
+    const members = normalizeStoredMembers(value);
+    return members && members.length > 0
+      ? { [DEFAULT_TEAM_ID]: members }
+      : null;
+  }
+
+  if (typeof value !== "object" || value === null) return null;
+
+  const next: MembersByTeam = {};
+  for (const [teamId, raw] of Object.entries(value)) {
+    const members = normalizeStoredMembers(raw);
+    if (teamId && members && members.length > 0) {
+      next[teamId] = members;
+    }
+  }
+
+  return Object.keys(next).length > 0 ? next : null;
 }

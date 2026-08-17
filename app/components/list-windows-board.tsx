@@ -47,12 +47,14 @@ function WindowCard({
   title,
   icon,
   action,
+  className = "",
   children,
 }: {
   id: ListWindowId;
   title: string;
   icon: string;
   action?: ReactNode;
+  className?: string;
   children: ReactNode;
 }) {
   const { t } = useTranslations();
@@ -74,7 +76,7 @@ function WindowCard({
       }}
       className={`flex min-h-[16rem] flex-col rounded-2xl border border-zinc-200 bg-white shadow-sm ${
         isDragging ? "z-10 shadow-lg ring-2 ring-blue-200" : ""
-      }`}
+      } ${className}`.trim()}
     >
       <header className="flex items-center gap-2 border-b border-zinc-100 px-3 py-2.5">
         <DragHandle
@@ -229,12 +231,12 @@ function OverviewWindow({
   }
 
   return (
-    <ul className="space-y-3">
+    <ul className="grid gap-3 [grid-template-columns:repeat(auto-fit,minmax(min(100%,16rem),1fr))]">
       {tasks.map((task) => {
         const children = subtasks(task.id);
         const progress = taskProgress(task, children);
         return (
-          <li key={task.id} className="rounded-xl bg-zinc-50 px-3 py-2.5">
+          <li key={task.id} className="min-w-0 rounded-xl bg-zinc-50 px-3 py-2.5">
             <Link
               href={`/lists/${listId}/tasks/${task.id}`}
               className="block"
@@ -408,8 +410,13 @@ export function ListWindowsBoard({
       onDragEnd={handleDragEnd}
     >
       <SortableContext items={order} strategy={rectSortingStrategy}>
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {order.map((id) => windows[id])}
+        <div className="flex flex-col gap-4">
+          <div className="grid gap-4 md:grid-cols-2">
+            {order
+              .filter((id) => id !== "overview")
+              .map((id) => windows[id])}
+          </div>
+          {windows.overview}
         </div>
       </SortableContext>
     </DndContext>

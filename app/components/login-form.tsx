@@ -1,23 +1,36 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useState, type FormEvent } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useState, type FormEvent } from "react";
 import {
   authCardClassName,
   authInputClassName,
   authPrimaryButtonClassName,
 } from "@/app/components/auth-form-styles";
 import { useFeedbackToast } from "@/app/components/feedback-toast-provider";
+import { AuthDivider, GoogleAuthButton } from "@/app/components/google-auth-button";
 import { useTranslations } from "@/app/components/translations-provider";
 
 export function LoginForm() {
   const { t } = useTranslations();
   const router = useRouter();
   const { showFeedback, clearFeedback } = useFeedbackToast();
+  const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [pending, setPending] = useState(false);
+
+  useEffect(() => {
+    if (searchParams.get("error") !== "google") {
+      return;
+    }
+
+    showFeedback({
+      type: "error",
+      text: t("auth.google.failed", "Neizdevās pieslēgties ar Google."),
+    });
+  }, [searchParams, showFeedback, t]);
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -86,6 +99,9 @@ export function LoginForm() {
       >
         {t("auth.login.submit", "Ienākt")}
       </button>
+
+      <AuthDivider />
+      <GoogleAuthButton disabled={pending} />
 
       <p className="text-center text-sm text-zinc-500">
         {t("auth.login.no_account", "Nav konta?")}{" "}

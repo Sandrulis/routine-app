@@ -10,12 +10,13 @@ import { UserAvatar } from "@/app/components/user-avatar";
 import { useFeedbackToast } from "@/app/components/feedback-toast-provider";
 import { useTranslations } from "@/app/components/translations-provider";
 import { useTeam } from "@/app/lib/team-store";
+import { teamRankLabel } from "@/app/lib/team";
 
 export default function TeamPage() {
   const { t } = useTranslations();
   const router = useRouter();
   const { showFeedback } = useFeedbackToast();
-  const { members, inviteMember, isReady } = useTeam();
+  const { members, currentTeam, inviteMember, isReady } = useTeam();
   const [inviteOpen, setInviteOpen] = useState(false);
 
   return (
@@ -26,20 +27,24 @@ export default function TeamPage() {
         "Visi komandas biedri. Uzaicini jaunu biedru ar pluszīmi.",
       )}
       actions={
-        <button
-          type="button"
-          onClick={() => setInviteOpen(true)}
-          className="inline-flex min-h-10 items-center justify-center gap-2 rounded-2xl bg-blue-700 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-800"
-        >
-          <i className="fas fa-plus text-xs" aria-hidden="true" />
-          {t("team.invite.button", "Uzaicināt")}
-        </button>
+        currentTeam ? (
+          <button
+            type="button"
+            onClick={() => setInviteOpen(true)}
+            className="inline-flex min-h-10 items-center justify-center gap-2 rounded-2xl bg-blue-700 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-800"
+          >
+            <i className="fas fa-plus text-xs" aria-hidden="true" />
+            {t("team.invite.button", "Uzaicināt")}
+          </button>
+        ) : null
       }
     >
       <div className="grid gap-3">
         {isReady && members.length === 0 ? (
           <div className="rounded-3xl border border-dashed border-zinc-200 bg-white px-6 py-12 text-center text-sm text-zinc-500">
-            {t("team.empty", "Komandā vēl nav biedru.")}
+            {currentTeam
+              ? t("team.empty", "Komandā vēl nav biedru.")
+              : t("teams.required.empty_members", "Vispirms izveido komandu.")}
           </div>
         ) : (
           members.map((member) => (
@@ -52,7 +57,9 @@ export default function TeamPage() {
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-semibold text-zinc-900">{member.name}</p>
                 <p className="mt-0.5 text-sm text-zinc-500">
-                  {[member.role, member.email].filter(Boolean).join(" - ")}
+                  {[teamRankLabel(member.role, t), member.email]
+                    .filter(Boolean)
+                    .join(" - ")}
                 </p>
               </div>
               <MemberLastOnline lastOnlineAt={member.lastOnlineAt} />

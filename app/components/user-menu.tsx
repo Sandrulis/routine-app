@@ -5,13 +5,19 @@ import { useEffect, useRef, useState } from "react";
 import { ChangePasswordModal } from "@/app/components/change-password-modal";
 import { useFeedbackToast } from "@/app/components/feedback-toast-provider";
 import { useTranslations } from "@/app/components/translations-provider";
+import { OverflowTooltip } from "@/app/components/tooltip";
 import { UserAvatar } from "@/app/components/user-avatar";
-import type { TeamMember } from "@/app/lib/team";
+import { createClient } from "@/app/lib/supabase/client";
+import { isSupabaseConfigured } from "@/app/lib/supabase/env";
+import { useTeam } from "@/app/lib/team-store";
+import { teamRankLabel, type TeamMember } from "@/app/lib/team";
 
 export function UserMenu({ user }: { user: TeamMember }) {
   const router = useRouter();
   const menuRef = useRef<HTMLDivElement | null>(null);
   const { t } = useTranslations();
+  const { teams } = useTeam();
+  const rank = teams.length === 0 ? null : teamRankLabel(user.role, t);
   const { showFeedback } = useFeedbackToast();
   const [open, setOpen] = useState(false);
   const [passwordOpen, setPasswordOpen] = useState(false);
@@ -58,10 +64,14 @@ export function UserMenu({ user }: { user: TeamMember }) {
         }`}
       >
         <UserAvatar member={user} size="xs" />
-        <span className="flex min-w-0 flex-1 flex-col leading-tight">
-          <span className="truncate text-[13px] text-zinc-800">{user.name}</span>
-          <span className="truncate text-[11px] text-zinc-400">{user.role}</span>
-        </span>
+        <OverflowTooltip label={user.name} className="min-w-0 flex-1">
+          <span className="flex min-w-0 flex-1 flex-col leading-tight">
+            <span className="truncate text-[13px] text-zinc-800">{user.name}</span>
+            {rank ? (
+              <span className="truncate text-[11px] text-zinc-400">{rank}</span>
+            ) : null}
+          </span>
+        </OverflowTooltip>
         <i className="fas fa-chevron-up text-[9px] text-zinc-400" aria-hidden="true" />
       </button>
 
@@ -128,11 +138,16 @@ export function UserMenu({ user }: { user: TeamMember }) {
             role="menuitem"
             onClick={() =>
               closeAnd(() => {
-                showFeedback({
-                  type: "info",
-                  text: t("user_menu.sign_out_done", "Tu izgāji no sistēmas."),
-                });
-                router.push("/");
+                void (async () => {
+                  if (isSupabaseConfigured()) {
+                    await createClient().auth.signOut();
+                  }
+                  showFeedback({
+                    type: "info",
+                    text: t("user_menu.sign_out_done", "Tu izgāji no sistēmas."),
+                  });
+                  router.push("/");
+                })();
               })
             }
             className="flex w-full items-start gap-3 px-3 py-2 text-left transition hover:bg-zinc-100"

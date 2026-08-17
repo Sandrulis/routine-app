@@ -9,6 +9,7 @@ import {
   authPrimaryButtonClassName,
 } from "@/app/components/auth-form-styles";
 import { useFeedbackToast } from "@/app/components/feedback-toast-provider";
+import { AuthDivider, GoogleAuthButton } from "@/app/components/google-auth-button";
 import { useTranslations } from "@/app/components/translations-provider";
 
 export function SignupForm() {
@@ -163,6 +164,25 @@ export function SignupForm() {
       >
         {t("auth.signup.submit", "Reģistrēties")}
       </button>
+
+      <AuthDivider />
+      <GoogleAuthButton
+        disabled={pending}
+        onBeforeSignIn={() => {
+          if (accepted) {
+            return true;
+          }
+
+          showFeedback({
+            type: "error",
+            text: t(
+              "auth.signup.terms_required",
+              "Lai reģistrētos, piekrīti noteikumiem.",
+            ),
+          });
+          return false;
+        }}
+      />
 
       <p className="text-center text-sm text-zinc-500">
         {t("auth.signup.has_account", "Jau ir konts?")}{" "}

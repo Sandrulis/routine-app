@@ -10,12 +10,14 @@ import { useFeedbackToast } from "@/app/components/feedback-toast-provider";
 import { useTranslations } from "@/app/components/translations-provider";
 import { getTaskTree, type WorkTask } from "@/app/lib/lists";
 import { useLists } from "@/app/lib/lists-store";
+import { useTeam } from "@/app/lib/team-store";
 
 export function ListsOverviewPage() {
   const { t } = useTranslations();
   const router = useRouter();
   const { showFeedback } = useFeedbackToast();
   const { lists, tasks, addList, isReady } = useLists();
+  const { currentTeam } = useTeam();
   const [createListOpen, setCreateListOpen] = useState(false);
   const [addTarget, setAddTarget] = useState<WorkTask | null>(null);
 
@@ -43,17 +45,25 @@ export function ListsOverviewPage() {
         "Visu uzdevumu un apakšuzdevumu kopsavilkums.",
       )}
       actions={
-        <button
-          type="button"
-          onClick={() => setCreateListOpen(true)}
-          className="inline-flex min-h-10 items-center justify-center gap-2 rounded-2xl bg-blue-700 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-800"
-        >
-          <i className="fas fa-plus text-xs" aria-hidden="true" />
-          {t("lists.add.button", "Pievienot")}
-        </button>
+        currentTeam ? (
+          <button
+            type="button"
+            onClick={() => setCreateListOpen(true)}
+            className="inline-flex min-h-10 items-center justify-center gap-2 rounded-2xl bg-blue-700 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-800"
+          >
+            <i className="fas fa-plus text-xs" aria-hidden="true" />
+            {t("lists.add.button", "Pievienot")}
+          </button>
+        ) : null
       }
     >
-      {hasTasks ? (
+      {lists.length === 0 ? (
+        <div className="rounded-xl border border-dashed border-zinc-200 bg-white px-6 py-12 text-center text-sm text-zinc-500">
+          {currentTeam
+            ? t("lists.empty", "Vēl nav sarakstu.")
+            : t("teams.required.empty_members", "Vispirms izveido komandu.")}
+        </div>
+      ) : hasTasks ? (
         <div className="space-y-3">
           {lists.map((list) => {
             const tree = getTaskTree(tasks, list.id);
@@ -121,14 +131,6 @@ export function ListsOverviewPage() {
         open={addTarget !== null}
         onOpenChange={(open) => {
           if (!open) setAddTarget(null);
-        }}
-        onCreated={(created) => {
-          if (!addTarget) return;
-          showFeedback({
-            type: "success",
-            text: t("subtasks.created", "Apakšuzdevums pievienots."),
-          });
-          router.push(`/lists/${addTarget.listId}/tasks/${created.id}`);
         }}
       />
     </SectionPage>
