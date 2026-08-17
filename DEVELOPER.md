@@ -201,7 +201,8 @@ app/
     team-todo.ts                  # Todo tipi un seed
     format-display-date.ts        # dd.mm.yy
     i18n/messages.ts              # lv + en teksti
-scripts/                          # audit-check.mjs
+scripts/                          # audit-check.mjs, apply-migrations.mjs, test-supabase.mjs
+supabase/migrations/              # 001_schema.sql
 .github/workflows/                # secret-scan.yml, security-audit.yml, security-smoke.yml
 .gitleaks.toml                    # default rules + i18n translation key allowlist
 .cursor/rules/                    # README bump, commits
@@ -229,6 +230,26 @@ gitleaks detect --redact -v --exit-code=2 --log-opts=-1
 `npm run audit:check` (`scripts/audit-check.mjs`) krīt pie katra HIGH/CRITICAL advisory, izņemot `ACCEPTED_ADVISORIES`. Tranzitīvās atkarības pinotas caur `overrides` (`postcss`, `sharp`, `uuid`, `js-yaml`, `nanoid`, `brace-expansion`).
 
 Pilns audits: **`security-check.md`** (pašreiz **6.5 / 10**, pārbaude v0.1.0).
+
+## Supabase
+
+Kopē `.env.example` uz `.env.local`. URL ir tikai projekta hosts (`https://PROJECT_REF.supabase.co`), **ne** `/rest/v1/`.
+
+| Mainīgais | Kur ņemt |
+|-----------|----------|
+| `NEXT_PUBLIC_SUPABASE_URL` | Settings → API → Project URL |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Settings → API → `anon` `public` |
+| `SUPABASE_SERVICE_ROLE_KEY` | Settings → API → `service_role` (secret, Reveal) |
+| `SUPABASE_DB_PASSWORD` | Settings → Database → Database password |
+| `SUPABASE_DB_REGION` | Connection string reģions (šim projektam `eu-west-2`) |
+| `DATABASE_URL` | Optional: pilns pooler URI, ja parole/hosts neiet cauri |
+
+```bash
+npm run db:test      # Postgres pieslēgums + public tabulu saraksts
+npm run db:migrate   # pending faili no supabase/migrations/
+```
+
+Lietotne vēl lasa datus no `localStorage`. Migrācija `001_schema.sql` ir sagatavota; `db:test` apstiprina API projektu, bet Postgres pieprasa pareizu datubāzes paroli (ne `anon` atslēgu).
 
 ## Dati
 
@@ -267,6 +288,7 @@ GitHub Actions pēc push palaiž secret scan, atkarību auditu un security smoke
 
 ## Roadmap
 
-- Datubāze un īstā autentifikācija (login / signup / parole)
+- Datubāze un īstā autentifikācija (login / signup / parole); env un `db:migrate` jau ir
+- Pielikumu, saraksta failu un paziņojumu backend (tagad `localStorage`)
 - Pielikumu, saraksta failu un paziņojumu backend (tagad `localStorage`)
 - Atkārtojami rutīnas uzdevumi

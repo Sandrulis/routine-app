@@ -24,7 +24,7 @@ Atver [http://localhost:3120](http://localhost:3120).
 - **Komanda** — biedri, uzaicināšana, pēdējā tiešsaistes laika zīme
 - Apakšuzdevuma modālis: apraksts, datumi, atbildīgie, statuss, pielikumi
 - Satura joslā **paziņojumi** (zvaniņš labajā malā)
-- Dati pagaidām `localStorage` - bez datubāzes
+- Dati pagaidām `localStorage`; Supabase env un migrāciju skripti ir sagatavoti
 
 ## Skripti
 
@@ -36,5 +36,9 @@ Atver [http://localhost:3120](http://localhost:3120).
 | `npm run typecheck` | TypeScript pārbaude |
 | `npm run lint` | ESLint |
 | `npm run audit:check` | HIGH/CRITICAL atkarību pārbaude |
+| `npm run db:test` | Pieslēgums Supabase Postgres un `public` tabulu saraksts |
+| `npm run db:migrate` | Pending `supabase/migrations/*.sql` |
+
+Kopē `.env.example` uz `.env.local`. `NEXT_PUBLIC_SUPABASE_URL` ir projekta hosts (`https://….supabase.co`), bez `/rest/v1/`.
 
 Tehniskā dokumentācija: [DEVELOPER.md](DEVELOPER.md). Drošības audits: [`security-check.md`](security-check.md). Izmaiņu vēsture: [CHANGELOG.md](CHANGELOG.md).

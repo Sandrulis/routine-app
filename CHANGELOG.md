@@ -6,11 +6,12 @@
 
 ## v0.1.0
 
-**GitHub drošības pārbaudes**
+**GitHub drošības pārbaudes un Supabase setup**
 
 - Trīs GitHub Actions pie katra push/PR: secret scan (gitleaks), atkarību audits (`npm run audit:check`) un security smoke (typecheck, lint, build, galvenes, `eval()`)
 - `package.json` overrides pin `postcss` / `sharp` un citas tranzitīvās HIGH atkarības; HTTPS vidē HSTS
 - `security-check.md` sākotnējais audits (**6.5 / 10**)
+- `.env.example` ar Supabase URL/atslēgām; `npm run db:test` un `npm run db:migrate` (Postgres pooler, `eu-west-2`)
 
 ## v0.0.4
 

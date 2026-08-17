@@ -11,7 +11,9 @@
     "start": "node --max-http-header-size=65536 ./node_modules/next/dist/bin/next start -p 3120",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
-    "audit:check": "node scripts/audit-check.mjs"
+    "audit:check": "node scripts/audit-check.mjs",
+    "db:migrate": "node scripts/apply-migrations.mjs",
+    "db:test": "node scripts/test-supabase.mjs"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
@@ -29,6 +31,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.2.12",
+    "pg": "^8.21.0",
     "tailwindcss": "^4",
     "typescript": "^5"
   },
