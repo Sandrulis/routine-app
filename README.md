@@ -2,7 +2,7 @@
 
 Komandas darba rīks ar publisku landing lapu un sānjoslas lietotni. Gaišs Next.js frontend.
 
-**Current version:** `0.0.4`
+**Current version:** `0.1.0`
 
 ## Palaist
 
@@ -35,5 +35,6 @@ Atver [http://localhost:3120](http://localhost:3120).
 | `npm run build` | Produkcijas būve |
 | `npm run typecheck` | TypeScript pārbaude |
 | `npm run lint` | ESLint |
+| `npm run audit:check` | HIGH/CRITICAL atkarību pārbaude |
 
-Tehniskā dokumentācija: [DEVELOPER.md](DEVELOPER.md). Izmaiņu vēsture: [CHANGELOG.md](CHANGELOG.md).
+Tehniskā dokumentācija: [DEVELOPER.md](DEVELOPER.md). Drošības audits: [`security-check.md`](security-check.md). Izmaiņu vēsture: [CHANGELOG.md](CHANGELOG.md).

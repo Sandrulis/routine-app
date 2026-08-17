@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { statusClassName, useStatusLabels, WORK_TASK_STATUSES } from "@/app/components/status-control";
 import { SubtaskTable } from "@/app/components/subtask-table";
 import { UserAvatar } from "@/app/components/user-avatar";
@@ -56,12 +56,10 @@ function TaskSummarySection({
     ),
   );
   const ancestors = getTaskAncestors(tasks, task);
-  const grouped = useMemo(() => {
-    return STATUS_ORDER.map((status) => ({
-      status,
-      items: children.filter((item) => item.status === status),
-    })).filter((group) => group.items.length > 0);
-  }, [children]);
+  const grouped = STATUS_ORDER.map((status) => ({
+    status,
+    items: children.filter((item) => item.status === status),
+  })).filter((group) => group.items.length > 0);
 
   const statusLabel = useStatusLabels();
 

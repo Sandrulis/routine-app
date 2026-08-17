@@ -201,7 +201,34 @@ app/
     team-todo.ts                  # Todo tipi un seed
     format-display-date.ts        # dd.mm.yy
     i18n/messages.ts              # lv + en teksti
+scripts/                          # audit-check.mjs
+.github/workflows/                # secret-scan.yml, security-audit.yml, security-smoke.yml
+.gitleaks.toml                    # default rules + i18n translation key allowlist
+.cursor/rules/                    # README bump, commits
+security-check.md                 # Drošības audits
 ```
+
+## CI / Security checks
+
+Trīs GitHub Actions darbplūsmas palaižas pie katra push un pull request:
+
+| Workflow | File | Ko pārbauda |
+|----------|------|-------------|
+| **Secret scan** | `.github/workflows/secret-scan.yml` | gitleaks — API keys, tokens, paroles git vēsturē |
+| **Security audit** | `.github/workflows/security-audit.yml` | `npm run audit:check` — HIGH un CRITICAL atkarības |
+| **Security smoke** | `.github/workflows/security-smoke.yml` | TypeScript, lint, production build, `requireAuth` uz `actions.ts` (kad būs), nav `eval()`, drošības galvenes |
+
+> `GITLEAKS_LICENSE` repo secret ir vajadzīgs tikai **organization** kontiem. Šis repo pieder individuālam kontam, tāpēc scan strādā arī privātam repo bez licences.
+
+`.gitleaks.toml` paplašina noklusējuma noteikumus (`useDefault = true`) un pievieno i18n atslēgu allowlist, lai `generic-api-key` nesajauktu `legal.privacy.retention.p1` ar credential. Lokāli:
+
+```bash
+gitleaks detect --redact -v --exit-code=2 --log-opts=-1
+```
+
+`npm run audit:check` (`scripts/audit-check.mjs`) krīt pie katra HIGH/CRITICAL advisory, izņemot `ACCEPTED_ADVISORIES`. Tranzitīvās atkarības pinotas caur `overrides` (`postcss`, `sharp`, `uuid`, `js-yaml`, `nanoid`, `brace-expansion`).
+
+Pilns audits: **`security-check.md`** (pašreiz **6.5 / 10**, pārbaude v0.1.0).
 
 ## Dati
 
@@ -232,8 +259,11 @@ Pirms release:
 
 ```bash
 npm run typecheck
+npm run lint
 npm run build
 ```
+
+GitHub Actions pēc push palaiž secret scan, atkarību auditu un security smoke — lokālās pārbaudes joprojām ir pirmais vārti.
 
 ## Roadmap
 

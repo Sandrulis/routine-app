@@ -1,0 +1,16 @@
+# Gitleaks configuration. Keeps every default rule and only silences a known
+# class of false positives.
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "i18n translation keys (t(key, fallback) maps) are not credentials"
+# The generic-api-key rule fires on `key: "legal.privacy.retention.p1"` once the
+# key is long enough to pass its entropy threshold. Real credentials do not look
+# like this: the pattern below requires the whole secret to be dot-separated
+# lowercase identifiers with no uppercase, hyphens or base64 padding, which rules
+# out JWTs (Supabase keys), hex digests and provider tokens such as xoxb-…
+regexes = [
+  '''^[a-z][a-z0-9_]*(?:\.[a-z0-9_]+)+$''',
+]

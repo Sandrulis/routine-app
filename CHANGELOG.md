@@ -4,6 +4,14 @@
 
 - (none)
 
+## v0.1.0
+
+**GitHub drošības pārbaudes**
+
+- Trīs GitHub Actions pie katra push/PR: secret scan (gitleaks), atkarību audits (`npm run audit:check`) un security smoke (typecheck, lint, build, galvenes, `eval()`)
+- `package.json` overrides pin `postcss` / `sharp` un citas tranzitīvās HIGH atkarības; HTTPS vidē HSTS
+- `security-check.md` sākotnējais audits (**6.5 / 10**)
+
 ## v0.0.4
 
 **Publiskā landing lapa, auth un sīkdatnes**
