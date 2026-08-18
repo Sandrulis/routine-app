@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { OptionalTooltip } from "@/app/components/tooltip";
+import { LoadingState } from "@/app/components/loading-state";
 import { useTranslations } from "@/app/components/translations-provider";
 import { UserAvatar } from "@/app/components/user-avatar";
 import { getLastOnlineDisplay } from "@/app/lib/last-online";
@@ -73,7 +74,7 @@ export function NotificationsMenu() {
   const menuRef = useRef<HTMLDivElement | null>(null);
   const { t } = useTranslations();
   const { members, currentUser } = useTeam();
-  const { items, unreadCount, markRead, markAllRead } = useNotifications();
+  const { items, isLoading, unreadCount, markRead, markAllRead } = useNotifications();
   const [open, setOpen] = useState(false);
   const [now, setNow] = useState(() => Date.now());
   const label = t("notifications.label", "Paziņojumi");
@@ -149,7 +150,9 @@ export function NotificationsMenu() {
             ) : null}
           </div>
 
-          {items.length === 0 ? (
+          {isLoading ? (
+            <LoadingState compact className="justify-center py-6" />
+          ) : items.length === 0 ? (
             <p className="px-3 py-6 text-center text-[13px] text-zinc-400">
               {t("notifications.empty", "Nav paziņojumu")}
             </p>

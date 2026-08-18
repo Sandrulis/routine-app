@@ -9,6 +9,7 @@ import {
 } from "@/app/components/create-item-menu";
 import { useFeedbackToast } from "@/app/components/feedback-toast-provider";
 import { ListBadge } from "@/app/components/list-badge";
+import { LoadingSpinner } from "@/app/components/loading-state";
 import { NameFormModal } from "@/app/components/name-form-modal";
 import { OverflowTooltip } from "@/app/components/tooltip";
 import { useTranslations } from "@/app/components/translations-provider";
@@ -101,7 +102,7 @@ export function TeamSwitcher() {
       <button
         type="button"
         onClick={() => {
-          if (needsTeam) return;
+          if (!isReady || needsTeam) return;
           setOpen((current) => !current);
         }}
         aria-haspopup="menu"
@@ -113,15 +114,19 @@ export function TeamSwitcher() {
       >
         {currentTeam ? (
           <TeamAvatar team={currentTeam} />
-        ) : (
+        ) : isReady ? (
           <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-zinc-100 text-zinc-400">
             <i className="fas fa-plus text-[11px]" aria-hidden="true" />
+          </span>
+        ) : (
+          <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-zinc-100 text-zinc-400">
+            <LoadingSpinner size="sm" className="text-zinc-400" />
           </span>
         )}
         <OverflowTooltip label={teamLabel} className="min-w-0 flex-1">
           <span className="flex min-w-0 flex-1 flex-col leading-tight">
             <span className="truncate text-[15px] font-semibold text-zinc-900">
-              {teamLabel}
+              {isReady ? teamLabel : t("common.loading", "Ielādē…")}
             </span>
             {rank ? (
               <span className="truncate text-[11px] text-zinc-400">{rank}</span>

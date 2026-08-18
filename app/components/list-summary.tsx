@@ -1,23 +1,16 @@
 "use client";
 
 import { useState } from "react";
-import { statusClassName, useStatusLabels, WORK_TASK_STATUSES } from "@/app/components/status-control";
-import { useTaskStatuses } from "@/app/lib/task-statuses";
-import { SubtaskTable } from "@/app/components/subtask-table";
+import { GroupedSubtaskTables } from "@/app/components/grouped-subtask-tables";
 import { UserAvatar } from "@/app/components/user-avatar";
 import { OptionalTooltip } from "@/app/components/tooltip";
 import { useTranslations } from "@/app/components/translations-provider";
 import { formatDisplayDateDdMmYy } from "@/app/lib/format-display-date";
+import { compareTasksByStatusPriority } from "@/app/lib/list-statuses";
 import { getTaskAncestors, isTaskActiveInLists, isTaskDeleted, isWorkFolder, workItemIcon, type WorkTask } from "@/app/lib/lists";
 import { useLists } from "@/app/lib/lists-store";
+import { useTaskStatuses } from "@/app/lib/task-statuses";
 import { useTeam } from "@/app/lib/team-store";
-import { useIsAdmin } from "@/app/lib/users/use-is-admin";
-import {
-  listAccessCapabilities,
-  resolveListAccessLevel,
-} from "@/app/lib/list-access";
-
-const STATUS_ORDER = WORK_TASK_STATUSES;
 
 function dateRange(task: WorkTask, children: WorkTask[]) {
   const dates = [
@@ -41,7 +34,6 @@ function TaskSummarySection({
   defaultExpanded,
   nested = false,
   onOpenTask,
-  onAddSubtask,
 }: {
   listId: string;
   listName: string;
@@ -49,31 +41,30 @@ function TaskSummarySection({
   defaultExpanded: boolean;
   nested?: boolean;
   onOpenTask: (task: WorkTask) => void;
-  onAddSubtask: (task: WorkTask) => void;
 }) {
   const { t } = useTranslations();
-  const { members, currentUser, roles } = useTeam();
-  const { isAdmin } = useIsAdmin();
-  const { lists, tasks, childTasks, subtasks } = useLists();
-  const list = lists.find((item) => item.id === listId) ?? null;
-  const canCreateTasks = list
-    ? listAccessCapabilities(
-        resolveListAccessLevel(list, currentUser, roles, isAdmin),
-      ).canCreateTasks
-    : false;
+  const { members } = useTeam();
+  const { tasks, childTasks, subtasks } = useLists();
   const [expanded, setExpanded] = useState(defaultExpanded);
-  const statusLabel = useStatusLabels();
-  const { colorFor, labelFor, statuses } = useTaskStatuses();
+  const { statuses } = useTaskStatuses(listId);
   const folder = isWorkFolder(task);
   const children = subtasks(task.id);
-  const nestedItems = childTasks(task.id).filter((item) =>
-    isWorkFolder(item)
-      ? !isTaskDeleted(item)
-      : isTaskActiveInLists(item, statuses),
-  );
-  const visibleChildren = children.filter((item) =>
-    isTaskActiveInLists(item, statuses),
-  );
+  const nestedItems = childTasks(task.id)
+    .filter((item) =>
+      isWorkFolder(item)
+        ? !isTaskDeleted(item)
+        : isTaskActiveInLists(item, statuses),
+    )
+    .slice()
+    .sort((left, right) =>
+      compareTasksByStatusPriority(left, right, statuses),
+    );
+  const visibleChildren = children
+    .filter((item) => isTaskActiveInLists(item, statuses))
+    .slice()
+    .sort((left, right) =>
+      compareTasksByStatusPriority(left, right, statuses),
+    );
   const range = dateRange(task, [...nestedItems, ...children]);
   const assignees = members.filter((member) =>
     [task, ...nestedItems, ...children].some((item) =>
@@ -81,10 +72,6 @@ function TaskSummarySection({
     ),
   );
   const ancestors = getTaskAncestors(tasks, task);
-  const grouped = STATUS_ORDER.map((status) => ({
-    status,
-    items: visibleChildren.filter((item) => item.status === status),
-  })).filter((group) => group.items.length > 0);
 
   const crumb = [t("nav.lists", "Saraksts"), listName, ...ancestors.map((item) => item.title)]
     .filter(Boolean)
@@ -165,7 +152,6 @@ function TaskSummarySection({
                   defaultExpanded
                   nested
                   onOpenTask={onOpenTask}
-                  onAddSubtask={onAddSubtask}
                 />
               ))}
             </div>
@@ -179,66 +165,16 @@ function TaskSummarySection({
             ) : null
           ) : visibleChildren.length === 0 ? (
             nestedItems.length === 0 ? (
-            <div className="px-1 py-2">
-              <p className="text-sm text-zinc-400">
+              <p className="px-1 py-2 text-sm text-zinc-400">
                 {t("subtasks.empty", "Šim uzdevumam vēl nav apakšuzdevumu.")}
               </p>
-              {canCreateTasks ? (
-                <button
-                  type="button"
-                  onClick={() => onAddSubtask(task)}
-                  className="mt-2 text-[13px] font-medium text-zinc-400 hover:text-zinc-700"
-                >
-                  + {t("lists.overview.add_task", "Pievienot uzdevumu")}
-                </button>
-              ) : null}
-            </div>
             ) : null
           ) : (
-            grouped.map((group) => {
-              const groupColor = colorFor(group.status);
-              return (
-              <div key={group.status}>
-                <div className="mb-2 flex items-center gap-2">
-                  <span
-                    className={`inline-flex min-h-6 items-center rounded-md px-2 text-[11px] font-semibold tracking-wide uppercase ${
-                      groupColor ? "text-white" : statusClassName(group.status)
-                    }`}
-                    style={groupColor ? { backgroundColor: groupColor } : undefined}
-                  >
-                    {labelFor(group.status) || statusLabel[group.status]}
-                  </span>
-                  <span className="text-[12px] text-zinc-400">
-                    {group.items.length}
-                  </span>
-                  {canCreateTasks ? (
-                    <button
-                      type="button"
-                      onClick={() => onAddSubtask(task)}
-                      className="ml-auto text-[12px] font-medium text-emerald-600 hover:text-emerald-700"
-                    >
-                      + {t("actions.add", "Pievienot")}
-                    </button>
-                  ) : null}
-                </div>
-                <SubtaskTable
-                  embedded
-                  listId={listId}
-                  tasks={group.items}
-                  onOpenTask={onOpenTask}
-                />
-                {canCreateTasks ? (
-                  <button
-                    type="button"
-                    onClick={() => onAddSubtask(task)}
-                    className="mt-1 px-1 text-[13px] text-zinc-400 hover:text-zinc-700"
-                  >
-                    + {t("lists.overview.add_task", "Pievienot uzdevumu")}
-                  </button>
-                ) : null}
-              </div>
-              );
-            })
+            <GroupedSubtaskTables
+              listId={listId}
+              tasks={visibleChildren}
+              onOpenTask={onOpenTask}
+            />
           )}
         </div>
       ) : null}
@@ -251,15 +187,19 @@ export function ListSummary({
   listName,
   tasks,
   onOpenTask,
-  onAddSubtask,
 }: {
   listId: string;
   listName: string;
   tasks: WorkTask[];
   onOpenTask: (task: WorkTask) => void;
-  onAddSubtask: (task: WorkTask) => void;
 }) {
   const { t } = useTranslations();
+  const { statuses } = useTaskStatuses(listId);
+  const orderedTasks = tasks
+    .slice()
+    .sort((left, right) =>
+      compareTasksByStatusPriority(left, right, statuses),
+    );
 
   if (tasks.length === 0) {
     return (
@@ -271,7 +211,7 @@ export function ListSummary({
 
   return (
     <div className="space-y-3">
-      {tasks.map((task, index) => (
+      {orderedTasks.map((task, index) => (
         <TaskSummarySection
           key={task.id}
           listId={listId}
@@ -279,7 +219,6 @@ export function ListSummary({
           task={task}
           defaultExpanded={index === 0}
           onOpenTask={onOpenTask}
-          onAddSubtask={onAddSubtask}
         />
       ))}
     </div>

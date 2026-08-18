@@ -2,6 +2,7 @@
 
 import { SectionPage } from "@/app/components/section-page";
 import { LanguageSwitcher } from "@/app/components/language-switcher";
+import { LoadingState } from "@/app/components/loading-state";
 import { UserAvatar } from "@/app/components/user-avatar";
 import { useTranslations } from "@/app/components/translations-provider";
 import { useTeam } from "@/app/lib/team-store";
@@ -9,8 +10,22 @@ import { teamRankLabel } from "@/app/lib/team";
 
 export default function ProfileSettingsPage() {
   const { t } = useTranslations();
-  const { currentUser, teams, roles } = useTeam();
+  const { currentUser, teams, roles, isReady } = useTeam();
   const rank = teams.length === 0 ? null : teamRankLabel(currentUser.role, t, roles);
+
+  if (!isReady) {
+    return (
+      <SectionPage
+        title={t("user_menu.settings", "Personīgie uzstādījumi")}
+        subtitle={t(
+          "profile.page.subtitle",
+          "Tavs profils, valoda un paziņojumi.",
+        )}
+      >
+        <LoadingState />
+      </SectionPage>
+    );
+  }
 
   return (
     <SectionPage

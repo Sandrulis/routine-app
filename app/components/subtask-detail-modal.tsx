@@ -13,6 +13,7 @@ import { NameFormModal } from "@/app/components/name-form-modal";
 import { StatusControl, useStatusLabels } from "@/app/components/status-control";
 import { AssigneeCell, DateCell } from "@/app/components/subtask-table";
 import { TaskAttachments } from "@/app/components/task-attachments";
+import { TaskChecklists } from "@/app/components/task-checklists";
 import { RelativeTime } from "@/app/components/relative-time";
 import { Tooltip } from "@/app/components/tooltip";
 import { UserAvatar } from "@/app/components/user-avatar";
@@ -35,7 +36,15 @@ import {
   taskFilePreviewUrl,
   type TaskActivity,
 } from "@/app/lib/task-activity";
+import { assigneeDisplayNames } from "@/app/lib/assignees";
 import { isTaskDeleted, type WorkTask, type WorkTaskStatus } from "@/app/lib/lists";
+import {
+  checklistsEqual,
+  checklistProgress,
+  normalizeTaskChecklists,
+  taskHasIncompleteChecklists,
+  type TaskChecklist,
+} from "@/app/lib/task-checklists";
 import { useTaskStatuses } from "@/app/lib/task-statuses";
 
 type SubtaskDraft = {
@@ -45,6 +54,7 @@ type SubtaskDraft = {
   startDate: string | null;
   dueDate: string | null;
   assigneeIds: string[];
+  checklists: TaskChecklist[];
 };
 
 const emptyDraft: SubtaskDraft = {
@@ -54,6 +64,7 @@ const emptyDraft: SubtaskDraft = {
   startDate: null,
   dueDate: null,
   assigneeIds: [],
+  checklists: [],
 };
 
 function draftFromTask(task: WorkTask): SubtaskDraft {
@@ -64,6 +75,10 @@ function draftFromTask(task: WorkTask): SubtaskDraft {
     startDate: task.startDate,
     dueDate: task.dueDate,
     assigneeIds: [...task.assigneeIds],
+    checklists: (task.checklists ?? []).map((list) => ({
+      ...list,
+      items: list.items.map((item) => ({ ...item })),
+    })),
   };
 }
 
@@ -72,6 +87,7 @@ function normalizeDraft(draft: SubtaskDraft): SubtaskDraft {
     ...draft,
     title: draft.title.trim(),
     description: draft.description.trim(),
+    checklists: normalizeTaskChecklists(draft.checklists),
   };
 }
 
@@ -83,7 +99,8 @@ function draftsEqual(left: SubtaskDraft, right: SubtaskDraft) {
     a.description === b.description &&
     a.startDate === b.startDate &&
     a.dueDate === b.dueDate &&
-    sameIds(a.assigneeIds, b.assigneeIds)
+    sameIds(a.assigneeIds, b.assigneeIds) &&
+    checklistsEqual(a.checklists, b.checklists)
   );
 }
 
@@ -124,6 +141,11 @@ export function SubtaskDetailModal({
   );
   const titleInputRef = useRef<HTMLInputElement>(null);
   const snapshotRef = useRef<SubtaskDraft>(emptyDraft);
+  const persistChecklistsTimerRef = useRef<number | null>(null);
+  const persistChecklistsTargetRef = useRef<{
+    taskId: string;
+    checklists: TaskChecklist[];
+  } | null>(null);
   const [pendingFiles, setPendingFiles] = useState<
     Array<{ id: string; file: File; name: string; previewUrl: string | null }>
   >([]);
@@ -171,6 +193,43 @@ export function SubtaskDetailModal({
       null,
     );
   const createdOn = createdAt ? formatDisplayDateDdMmYy(createdAt) : "";
+  const checklistBlocked = taskHasIncompleteChecklists(draft.checklists);
+  const checklistsProgress = checklistProgress(draft.checklists);
+  const checklistBlockedLabel = t(
+    "subtasks.checklist.incomplete",
+    "Vispirms izpildi visus kontrolsaraksta punktus.",
+  );
+
+  function flushChecklistPersist() {
+    if (persistChecklistsTimerRef.current) {
+      window.clearTimeout(persistChecklistsTimerRef.current);
+      persistChecklistsTimerRef.current = null;
+    }
+    const pending = persistChecklistsTargetRef.current;
+    if (!pending) return;
+    persistChecklistsTargetRef.current = null;
+    updateTask(pending.taskId, {
+      checklists: normalizeTaskChecklists(pending.checklists),
+    });
+  }
+
+  function commitChecklists(next: TaskChecklist[]) {
+    setDraft((current) => ({ ...current, checklists: next }));
+    if (!task || isCreate || deleted || (!access.canEditTasks && !access.canChangeStatus)) {
+      return;
+    }
+    snapshotRef.current = {
+      ...snapshotRef.current,
+      checklists: normalizeTaskChecklists(next),
+    };
+    persistChecklistsTargetRef.current = { taskId: task.id, checklists: next };
+    if (persistChecklistsTimerRef.current) {
+      window.clearTimeout(persistChecklistsTimerRef.current);
+    }
+    persistChecklistsTimerRef.current = window.setTimeout(() => {
+      flushChecklistPersist();
+    }, 300);
+  }
 
   useEffect(() => {
     if (createFor) {
@@ -194,6 +253,7 @@ export function SubtaskDetailModal({
 
   useEffect(() => {
     if (open) return;
+    flushChecklistPersist();
     setCreatedTaskId(null);
     setForceCreate(false);
     setFileToDelete(null);
@@ -213,7 +273,7 @@ export function SubtaskDetailModal({
   }, [open]);
 
   const statusLabel = useStatusLabels();
-  const { labelFor } = useTaskStatuses();
+  const { labelFor } = useTaskStatuses(parentListId);
 
   function historyStatusName(statusId: string | undefined) {
     if (!statusId) return "—";
@@ -233,10 +293,12 @@ export function SubtaskDetailModal({
       });
     }
     if (item.kind === "assignees") {
-      const names = (item.assigneeIds ?? [])
-        .map((id) => members.find((member) => member.id === id)?.name)
-        .filter(Boolean)
-        .join(", ");
+      const names = assigneeDisplayNames(
+        item.assigneeIds ?? [],
+        members,
+        roles,
+        t,
+      );
       return t("subtasks.history.assignees", "Piesaistītie: {names}", {
         names: names || t("todo.fields.unassigned", "Nepiešķirts"),
       });
@@ -403,6 +465,7 @@ export function SubtaskDetailModal({
     );
 
   function startNewSubtask() {
+    flushChecklistPersist();
     setForceCreate(true);
     setCreatedTaskId(null);
     snapshotRef.current = emptyDraft;
@@ -441,6 +504,7 @@ export function SubtaskDetailModal({
         startDate: next.startDate,
         dueDate: next.dueDate,
         assigneeIds: next.assigneeIds,
+        checklists: next.checklists,
       });
       for (const item of pendingFiles) {
         const upload =
@@ -464,6 +528,7 @@ export function SubtaskDetailModal({
     }
 
     if (!task) return;
+    flushChecklistPersist();
     updateTask(task.id, {
       title: next.title,
       description: next.description,
@@ -471,6 +536,7 @@ export function SubtaskDetailModal({
       startDate: next.startDate,
       dueDate: next.dueDate,
       assigneeIds: next.assigneeIds,
+      checklists: next.checklists,
     });
     snapshotRef.current = next;
     setDraft(next);
@@ -606,6 +672,7 @@ export function SubtaskDetailModal({
                 </p>
                 <div className="mt-1.5">
                   <StatusControl
+                    listId={parentListId}
                     status={draft.status}
                     statusChangedAt={
                       deleted
@@ -616,11 +683,24 @@ export function SubtaskDetailModal({
                     }
                     deleted={deleted}
                     disabled={!access.canChangeStatus || deleted}
+                    completeBlocked={checklistBlocked}
+                    completeBlockedLabel={checklistBlockedLabel}
+                    checklistProgress={
+                      checklistsProgress.total > 0 ? checklistsProgress : null
+                    }
                     onChange={(status) => {
                       setDraft((current) => ({ ...current, status }));
                       if (!isCreate && task && !deleted && access.canChangeStatus) {
-                        updateTask(task.id, { status });
-                        snapshotRef.current = { ...snapshotRef.current, status };
+                        flushChecklistPersist();
+                        updateTask(task.id, {
+                          status,
+                          checklists: normalizeTaskChecklists(draft.checklists),
+                        });
+                        snapshotRef.current = {
+                          ...snapshotRef.current,
+                          status,
+                          checklists: normalizeTaskChecklists(draft.checklists),
+                        };
                       }
                     }}
                   />
@@ -674,6 +754,18 @@ export function SubtaskDetailModal({
                 </div>
               </div>
             </div>
+
+            <TaskChecklists
+              checklists={draft.checklists}
+              disabled={
+                deleted ||
+                (isCreate ? !access.canCreateTasks : !access.canEditTasks && !access.canChangeStatus)
+              }
+              structureLocked={
+                isCreate ? !access.canCreateTasks : !access.canEditTasks
+              }
+              onChange={commitChecklists}
+            />
 
             <TaskAttachments
               files={[

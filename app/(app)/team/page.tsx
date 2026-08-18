@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { SectionPage } from "@/app/components/section-page";
+import { LoadingState } from "@/app/components/loading-state";
 import { TeamInviteModal } from "@/app/components/team-invite-modal";
 import { MemberLastOnline } from "@/app/components/member-last-online";
 import { UserAvatar } from "@/app/components/user-avatar";
@@ -40,7 +41,9 @@ export default function TeamPage() {
       }
     >
       <div className="grid gap-3">
-        {isReady && members.length === 0 ? (
+        {!isReady ? (
+          <LoadingState />
+        ) : members.length === 0 ? (
           <div className="rounded-3xl border border-dashed border-zinc-200 bg-white px-6 py-12 text-center text-sm text-zinc-500">
             {currentTeam
               ? t("team.empty", "Komandā vēl nav biedru.")

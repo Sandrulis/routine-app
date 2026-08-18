@@ -299,6 +299,7 @@ export const ru: Record<string, string> = {
   "roles.admin": "Администратор",
   "roles.system_admin": "Системный администратор",
   "roles.user": "Пользователь",
+  "common.loading": "Загрузка…",
   "common.name": "Имя",
   "common.email": "Эл. почта",
   "common.actions": "Действия",
@@ -358,6 +359,7 @@ export const ru: Record<string, string> = {
   "nav.expand": "Развернуть",
   "nav.collapse": "Свернуть",
   "nav.more": "Ещё",
+  "nav.drag": "Переместить",
   "breadcrumb.label": "Путь",
   "team.page.subtitle":
     "Все участники команды. Пригласите нового участника значком плюса.",
@@ -425,6 +427,32 @@ export const ru: Record<string, string> = {
   "lists.overview.subtitle": "Сводка по всем задачам и подзадачам.",
   "lists.overview.empty": "Пока нет задач.",
   "lists.overview.add_task": "Добавить задачу",
+  "lists.statuses.title": "Статусы",
+  "lists.statuses.menu_description": "Системные статусы и статусы списка",
+  "lists.statuses.description":
+    "Перетаскивайте статусы между группами — группа меняется автоматически. Системный статус можно переименовать в рамках этой команды. В каждой группе должен быть хотя бы один статус. В группах Не начато и Закрыто может быть только один статус.",
+  "lists.statuses.system": "Системные статусы",
+  "lists.statuses.system.hint":
+    "Эти статусы задаёт система. Их можно использовать во всех списках.",
+  "lists.statuses.custom": "Статусы списка",
+  "lists.statuses.custom.hint":
+    "Только в этом списке. Видны участникам команды.",
+  "lists.statuses.custom.empty": "Пока нет статусов списка.",
+  "lists.statuses.form.description":
+    "Укажите название статуса, цвет и группу.",
+  "lists.statuses.form.system_description":
+    "Название действует только в этой команде. У других команд остаётся системное название.",
+  "lists.statuses.hide": "Скрыть",
+  "lists.statuses.show": "Показать",
+  "lists.statuses.hidden": "Скрыт",
+  "lists.statuses.system.badge": "Система",
+  "lists.statuses.renamed": "Переименован",
+  "lists.statuses.reset_default": "Вернуть название по умолчанию",
+  "lists.statuses.reset_done": "Системное название восстановлено.",
+  "lists.statuses.group.empty": "В этой группе пока нет статусов.",
+  "dashboard.subtitle": "Ваши задачи и работа по спискам.",
+  "dashboard.my_tasks": "Мои задачи",
+  "dashboard.my_tasks.empty": "Вам пока не назначены задачи.",
   "lists.add.title": "Новый список",
   "lists.add.description":
     "Список объединяет проекты или клиентов, у каждого — свои задачи и настройки.",
@@ -631,6 +659,7 @@ export const ru: Record<string, string> = {
   "subtasks.status.changed_at": "Статус изменён",
   "status.next": "Следующий статус",
   "status.complete": "Завершить",
+  "status.complete_ask": "Готово?",
   "status.deleted": "Удалён",
   "status.group.not_started": "Не начато",
   "status.group.active": "Активно",
@@ -653,6 +682,12 @@ export const ru: Record<string, string> = {
   "subtasks.attachments.title": "Вложения",
   "subtasks.attachments.drop": "Перетащите файлы сюда или",
   "subtasks.attachments.browse": "выберите",
+  "subtasks.checklist.title": "Чек-лист",
+  "subtasks.checklist.add": "Добавить список",
+  "subtasks.checklist.name_placeholder": "Название списка",
+  "subtasks.checklist.item_placeholder": "Новый пункт",
+  "subtasks.checklist.incomplete":
+    "Сначала отметьте все пункты чек-листа.",
   "subtasks.modal.history": "История",
   "subtasks.history.empty": "Записей истории пока нет.",
   "subtasks.comment.placeholder": "Напишите комментарий",
@@ -830,6 +865,7 @@ export const ru: Record<string, string> = {
   "errors.status_group_invalid": "Выберите группу статуса.",
   "errors.status_exists": "Статус с таким кодом уже существует.",
   "errors.status_create_failed": "Не удалось добавить статус.",
+  "errors.status_label_required": "Укажите название статуса.",
   "errors.role_create_failed": "Не удалось добавить роль.",
   "errors.role_reorder_failed": "Не удалось изменить порядок ролей.",
   "errors.role_update_failed": "Не удалось сохранить роль.",
@@ -839,4 +875,10 @@ export const ru: Record<string, string> = {
   "errors.status_update_failed": "Не удалось сохранить статус.",
   "errors.status_delete_failed": "Не удалось удалить статус.",
   "errors.status_reorder_failed": "Не удалось изменить порядок статусов.",
+  "errors.status_group_min_one":
+    "В каждой группе должен быть хотя бы один статус.",
+  "errors.status_closed_one_visible":
+    "В группах Не начато и Закрыто может быть только один статус.",
+  "errors.status_singleton_group":
+    "В группах Не начато и Закрыто может быть только один статус.",
 };

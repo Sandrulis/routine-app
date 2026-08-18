@@ -1,5 +1,5 @@
-import { TeamTodoBoard } from "@/app/components/team-todo-board";
+import { DashboardHomePage } from "@/app/components/dashboard-home-page";
 
 export default function DashboardPage() {
-  return <TeamTodoBoard />;
+  return <DashboardHomePage />;
 }

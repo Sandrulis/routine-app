@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { SectionPage } from "@/app/components/section-page";
+import { LoadingState } from "@/app/components/loading-state";
 import { useTranslations } from "@/app/components/translations-provider";
 import { useProjects } from "@/app/lib/projects-store";
 
@@ -16,7 +17,7 @@ export function ProjectDetailPage({ projectId }: { projectId: string }) {
         title={t("projects.detail.loading", "Ielādē projektu")}
         subtitle={t("projects.page.subtitle", "Aktīvie projekti, kuros komanda šobrīd strādā.")}
       >
-        <div className="h-32 rounded-3xl border border-zinc-200 bg-white" />
+        <LoadingState />
       </SectionPage>
     );
   }

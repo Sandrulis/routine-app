@@ -19,26 +19,35 @@ export function useNotifications() {
   const userId = authUser?.id ?? null;
   const teamId = currentTeam?.id ?? null;
   const [items, setItems] = useState<AppNotification[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const refresh = useCallback(() => {
+  const refresh = useCallback((options?: { silent?: boolean }) => {
     if (!authReady || !teamReady) return;
     if (!teamId || (userId && !teamId)) {
       setItems([]);
+      setIsLoading(false);
       return;
     }
+    if (!options?.silent) setIsLoading(true);
     void fetchAppNotifications(teamId)
       .then(setItems)
       .catch((error) => {
         console.error("Failed to load notifications", error);
         setItems([]);
+      })
+      .finally(() => {
+        setIsLoading(false);
       });
   }, [authReady, teamId, teamReady, userId]);
 
   useEffect(() => {
     refresh();
-    window.addEventListener(NOTIFICATIONS_CHANGE_EVENT, refresh);
+    function handleChange() {
+      refresh({ silent: true });
+    }
+    window.addEventListener(NOTIFICATIONS_CHANGE_EVENT, handleChange);
     return () => {
-      window.removeEventListener(NOTIFICATIONS_CHANGE_EVENT, refresh);
+      window.removeEventListener(NOTIFICATIONS_CHANGE_EVENT, handleChange);
     };
   }, [refresh]);
 
@@ -67,5 +76,5 @@ export function useNotifications() {
     });
   }
 
-  return { items, unreadCount, markRead, markAllRead };
+  return { items, isLoading, unreadCount, markRead, markAllRead };
 }

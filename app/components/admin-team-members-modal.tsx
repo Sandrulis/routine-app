@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { listAdminTeamMembersAction } from "@/app/(app)/admin/actions";
 import { AppModal } from "@/app/components/app-modal";
 import { ListBadge } from "@/app/components/list-badge";
+import { LoadingState } from "@/app/components/loading-state";
 import { MemberLastOnline } from "@/app/components/member-last-online";
 import { useTranslations } from "@/app/components/translations-provider";
 import { UserAvatar } from "@/app/components/user-avatar";
@@ -91,9 +92,7 @@ export function AdminTeamMembersModal({
           </div>
 
           {loading ? (
-            <div className="flex justify-center py-8 text-zinc-500">
-              <i className="fas fa-circle-notch fa-spin text-lg" aria-hidden="true" />
-            </div>
+            <LoadingState compact className="justify-center py-8" />
           ) : loadFailed ? (
             <p className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
               {t("admin.teams.members.load_failed", "Neizdevās ielādēt biedrus.")}

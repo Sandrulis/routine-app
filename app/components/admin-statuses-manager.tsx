@@ -1,17 +1,19 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useState, useTransition, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import {
   closestCenter,
   DndContext,
   PointerSensor,
+  pointerWithin,
+  useDroppable,
   useSensor,
   useSensors,
+  type CollisionDetection,
   type DragEndEvent,
 } from "@dnd-kit/core";
 import {
-  arrayMove,
   SortableContext,
   useSortable,
   verticalListSortingStrategy,
@@ -34,6 +36,13 @@ import { IconActionButton } from "@/app/components/icon-action-button";
 import { StatusGlyph } from "@/app/components/status-control";
 import { useTranslations } from "@/app/components/translations-provider";
 import { translateActionError } from "@/app/lib/i18n/action-errors";
+import {
+  groupWouldBeEmpty,
+  isSingletonStatusGroup,
+  LIST_STATUS_GROUPS,
+  moveStatusInLayout,
+  statusGroupDroppableId,
+} from "@/app/lib/list-statuses";
 import type {
   SiteLanguageSummary,
   TaskStatusSummary,
@@ -43,7 +52,13 @@ const GROUP_OPTIONS = [
   { value: "not_started", labelKey: "status.group.not_started", fallback: "Nav sākts" },
   { value: "active", labelKey: "status.group.active", fallback: "Aktīvs" },
   { value: "closed", labelKey: "status.group.closed", fallback: "Slēgts" },
-];
+] as const;
+
+const collisionDetection: CollisionDetection = (args) => {
+  const pointerHits = pointerWithin(args);
+  if (pointerHits.length > 0) return pointerHits;
+  return closestCenter(args);
+};
 
 type StatusDraft = {
   id: string;
@@ -143,6 +158,21 @@ export function AdminStatusesManager({
     clearFeedback();
 
     startTransition(async () => {
+      if (editingId) {
+        const current = statuses.find((status) => status.id === editingId);
+        if (
+          current &&
+          current.groupKey !== draft.groupKey &&
+          groupWouldBeEmpty(statuses, [], editingId)
+        ) {
+          showFeedback({
+            type: "error",
+            text: translateActionError(t, "errors.status_group_min_one"),
+          });
+          return;
+        }
+      }
+
       const result = editingId
         ? await updateTaskStatusAction(editingId, {
             labels: draft.labels,
@@ -171,6 +201,14 @@ export function AdminStatusesManager({
     if (!deleteTarget) return;
 
     startTransition(async () => {
+      if (groupWouldBeEmpty(statuses, [], deleteTarget.id)) {
+        showFeedback({
+          type: "error",
+          text: translateActionError(t, "errors.status_group_min_one"),
+        });
+        return;
+      }
+
       const result = await deleteTaskStatusAction(deleteTarget.id);
       if (!result.ok) {
         showFeedback({ type: "error", text: translateActionError(t, result.error) });
@@ -190,14 +228,83 @@ export function AdminStatusesManager({
     const { active, over } = event;
     if (!over || active.id === over.id || isPending) return;
 
-    const oldIndex = statuses.findIndex((status) => status.id === active.id);
-    const newIndex = statuses.findIndex((status) => status.id === over.id);
-    if (oldIndex < 0 || newIndex < 0) return;
+    const order = LIST_STATUS_GROUPS.flatMap((groupId) =>
+      statuses
+        .filter((status) => status.groupKey === groupId)
+        .map((status) => status.id),
+    );
+    const moved = moveStatusInLayout(
+      statuses,
+      order,
+      String(active.id),
+      String(over.id),
+    );
+    if (!moved) return;
 
-    const next = arrayMove(statuses, oldIndex, newIndex);
+    if (
+      moved.fromGroup !== moved.toGroup &&
+      groupWouldBeEmpty(statuses, [], String(active.id))
+    ) {
+      showFeedback({
+        type: "error",
+        text: translateActionError(t, "errors.status_group_min_one"),
+      });
+      return;
+    }
+
+    const byId = new Map(moved.catalog.map((status) => [status.id, status]));
+    let next = moved.order
+      .map((id) => byId.get(id))
+      .filter((status): status is TaskStatusSummary => Boolean(status));
+    if (isSingletonStatusGroup(moved.toGroup)) {
+      next = next.map((status) =>
+        status.groupKey === moved.toGroup && status.id !== String(active.id)
+          ? { ...status, groupKey: "active" }
+          : status,
+      );
+    }
     setStatuses(next);
 
+    const current = statuses.find((status) => status.id === active.id);
+    const displaced = next.filter(
+      (status) =>
+        status.groupKey === "active" &&
+        statuses.some(
+          (item) => item.id === status.id && item.groupKey === moved.toGroup,
+        ),
+    );
     startTransition(async () => {
+      if (moved.fromGroup !== moved.toGroup && current) {
+        const updateResult = await updateTaskStatusAction(current.id, {
+          labels: current.labels,
+          color: current.color,
+          groupKey: moved.toGroup,
+        });
+        if (!updateResult.ok) {
+          showFeedback({
+            type: "error",
+            text: translateActionError(t, updateResult.error),
+          });
+          setStatuses(initialStatuses);
+          return;
+        }
+      }
+      for (const status of displaced) {
+        const result = await updateTaskStatusAction(status.id, {
+          labels: status.labels,
+          color: status.color,
+          groupKey: "active",
+        });
+        if (!result.ok) {
+          showFeedback({
+            type: "error",
+            text: translateActionError(t, result.error),
+          });
+          setStatuses(initialStatuses);
+          return;
+        }
+      }
+
       const result = await reorderTaskStatusesAction(next.map((status) => status.id));
       if (!result.ok) {
         showFeedback({ type: "error", text: translateActionError(t, result.error) });
@@ -225,43 +332,68 @@ export function AdminStatusesManager({
         <div className="overflow-x-auto">
           <DndContext
             sensors={sensors}
-            collisionDetection={closestCenter}
+            collisionDetection={collisionDetection}
             onDragEnd={handleDragEnd}
           >
             <table className="min-w-full border-collapse text-sm">
               <thead className="bg-zinc-50 text-left text-[11px] font-semibold uppercase tracking-wider text-zinc-400">
                 <tr>
                   <th className="w-10 px-3 py-3" />
-                  <th className="px-5 py-3">{t("admin.statuses.label", "Nosaukums")}</th>
-                  <th className="px-5 py-3">{t("admin.statuses.color", "Krāsa")}</th>
-                  <th className="px-5 py-3">{t("admin.statuses.group", "Grupa")}</th>
-                  <th className="px-5 py-3 text-right">{t("common.actions", "Darbības")}</th>
+                  <th className="px-5 py-3">
+                    {t("admin.statuses.label", "Nosaukums")}
+                  </th>
+                  <th className="px-5 py-3">
+                    {t("admin.statuses.color", "Krāsa")}
+                  </th>
+                  <th className="px-5 py-3 text-right">
+                    {t("common.actions", "Darbības")}
+                  </th>
                 </tr>
               </thead>
               <SortableContext
-                items={statuses.map((status) => status.id)}
+                items={LIST_STATUS_GROUPS.flatMap((groupId) =>
+                  statuses
+                    .filter((status) => status.groupKey === groupId)
+                    .map((status) => status.id),
+                )}
                 strategy={verticalListSortingStrategy}
               >
-                <tbody className="divide-y divide-zinc-100">
-                  {statuses.map((status) => (
-                    <SortableStatusRow
-                      key={status.id}
-                      status={status}
-                      languages={languages}
-                      dragLabel={t("admin.statuses.drag", "Mainīt secību")}
-                      disabled={isPending}
-                      onEdit={openEdit}
-                      onDelete={setDeleteTarget}
-                      t={t}
-                    />
-                  ))}
-                  {statuses.length === 0 ? (
-                    <tr>
-                      <td colSpan={5} className="px-5 py-8 text-center text-zinc-500">
-                        {t("admin.statuses.empty", "Nav neviena statusa.")}
-                      </td>
-                    </tr>
-                  ) : null}
+                <tbody>
+                  {GROUP_OPTIONS.map((group) => {
+                    const groupStatuses = statuses.filter(
+                      (status) => status.groupKey === group.value,
+                    );
+                    return (
+                      <GroupSection
+                        key={group.value}
+                        id={statusGroupDroppableId(group.value)}
+                        label={t(group.labelKey, group.fallback)}
+                        empty={groupStatuses.length === 0}
+                        emptyLabel={t(
+                          "lists.statuses.group.empty",
+                          "Šajā grupā vēl nav statusu.",
+                        )}
+                      >
+                        {groupStatuses.map((status) => (
+                          <SortableStatusRow
+                            key={status.id}
+                            status={status}
+                            languages={languages}
+                            dragLabel={t("admin.statuses.drag", "Mainīt secību")}
+                            disabled={isPending}
+                            canDelete={!groupWouldBeEmpty(statuses, [], status.id)}
+                            deleteDisabledLabel={t(
+                              "errors.status_group_min_one",
+                              "Katrā grupā jābūt vismaz vienam statusam.",
+                            )}
+                            onEdit={openEdit}
+                            onDelete={setDeleteTarget}
+                            t={t}
+                          />
+                        ))}
+                      </GroupSection>
+                    );
+                  })}
                 </tbody>
               </SortableContext>
             </table>
@@ -397,11 +529,51 @@ export function AdminStatusesManager({
   );
 }
 
+function GroupSection({
+  id,
+  label,
+  empty,
+  emptyLabel,
+  children,
+}: {
+  id: string;
+  label: string;
+  empty: boolean;
+  emptyLabel: string;
+  children: ReactNode;
+}) {
+  const { setNodeRef, isOver } = useDroppable({ id });
+
+  return (
+    <>
+      <tr>
+        <td
+          colSpan={4}
+          ref={setNodeRef}
+          className={`border-t border-zinc-200 bg-zinc-50 px-5 py-2.5 ${
+            isOver ? "bg-sky-50" : ""
+          }`}
+        >
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-zinc-400">
+            {label}
+          </p>
+          {empty ? (
+            <p className="pt-1 text-sm text-zinc-400">{emptyLabel}</p>
+          ) : null}
+        </td>
+      </tr>
+      {children}
+    </>
+  );
+}
+
 function SortableStatusRow({
   status,
   languages,
   dragLabel,
   disabled,
+  canDelete,
+  deleteDisabledLabel,
   onEdit,
   onDelete,
   t,
@@ -410,6 +582,8 @@ function SortableStatusRow({
   languages: SiteLanguageSummary[];
   dragLabel: string;
   disabled: boolean;
+  canDelete: boolean;
+  deleteDisabledLabel: string;
   onEdit: (status: TaskStatusSummary) => void;
   onDelete: (status: TaskStatusSummary) => void;
   t: ReturnType<typeof useTranslations>["t"];
@@ -422,8 +596,6 @@ function SortableStatusRow({
     transition,
     isDragging,
   } = useSortable({ id: status.id, disabled });
-
-  const groupOption = GROUP_OPTIONS.find((option) => option.value === status.groupKey);
 
   return (
     <tr
@@ -467,9 +639,6 @@ function SortableStatusRow({
           <span className="font-mono text-[11px] text-zinc-500">{status.color}</span>
         </div>
       </td>
-      <td className="px-5 py-4 text-zinc-600">
-        {groupOption ? t(groupOption.labelKey, groupOption.fallback) : status.groupKey}
-      </td>
       <td className="px-5 py-4">
         <div className="flex justify-end gap-1">
           <IconActionButton
@@ -478,9 +647,10 @@ function SortableStatusRow({
             onClick={() => onEdit(status)}
           />
           <IconActionButton
-            label={t("actions.delete", "Dzēst")}
+            label={canDelete ? t("actions.delete", "Dzēst") : deleteDisabledLabel}
             icon="fas fa-trash"
             variant="delete"
+            disabled={!canDelete}
             onClick={() => onDelete(status)}
           />
         </div>

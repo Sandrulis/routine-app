@@ -1,12 +1,16 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { ListWindowsBoard } from "@/app/components/list-windows-board";
+import { ListSummary } from "@/app/components/list-summary";
+import { LoadingState } from "@/app/components/loading-state";
 import { createMenuAnchorFromEvent } from "@/app/components/create-item-menu";
 import { ParentCreateFlow, type ParentCreateContext } from "@/app/components/parent-create-flow";
 import { SectionPage } from "@/app/components/section-page";
+import { SubtaskDetailModal } from "@/app/components/subtask-detail-modal";
 import { useTranslations } from "@/app/components/translations-provider";
+import { isWorkSubtask } from "@/app/lib/lists";
 import { useLists } from "@/app/lib/lists-store";
 import { useTeam } from "@/app/lib/team-store";
 import { useIsAdmin } from "@/app/lib/users/use-is-admin";
@@ -17,12 +21,14 @@ import {
 
 export function ListDetailPage({ listId }: { listId: string }) {
   const { t } = useTranslations();
+  const router = useRouter();
   const { lists, listTasks, isReady } = useLists();
   const { currentUser, roles } = useTeam();
   const { isAdmin } = useIsAdmin();
   const [parentCreate, setParentCreate] = useState<ParentCreateContext | null>(
     null,
   );
+  const [openedSubtaskId, setOpenedSubtaskId] = useState<string | null>(null);
   const list = lists.find((item) => item.id === listId) ?? null;
   const tasks = listTasks(listId);
   const listAccess = list
@@ -37,7 +43,7 @@ export function ListDetailPage({ listId }: { listId: string }) {
         title={t("lists.detail.loading", "Ielādē sarakstu")}
         subtitle={t("lists.page.subtitle", "Saraksti ar uzdevumiem.")}
       >
-        <div className="h-32 rounded-3xl border border-zinc-200 bg-white" />
+        <LoadingState />
       </SectionPage>
     );
   }
@@ -100,7 +106,28 @@ export function ListDetailPage({ listId }: { listId: string }) {
         ) : undefined
       }
     >
-      <ListWindowsBoard listId={list.id} tasks={tasks} />
+      <ListSummary
+        listId={list.id}
+        listName={list.name}
+        tasks={tasks}
+        onOpenTask={(task) => {
+          if (isWorkSubtask(task)) {
+            setOpenedSubtaskId(task.id);
+            return;
+          }
+          router.push(`/lists/${task.listId}/tasks/${task.id}`);
+        }}
+      />
+
+      <SubtaskDetailModal
+        taskId={openedSubtaskId}
+        open={openedSubtaskId !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setOpenedSubtaskId(null);
+          }
+        }}
+      />
 
       <ParentCreateFlow
         context={parentCreate}

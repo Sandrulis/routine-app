@@ -4,11 +4,12 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { ListSummary } from "@/app/components/list-summary";
 import { ListFormModal } from "@/app/components/list-form-modal";
+import { LoadingState } from "@/app/components/loading-state";
 import { SectionPage } from "@/app/components/section-page";
 import { SubtaskDetailModal } from "@/app/components/subtask-detail-modal";
 import { useFeedbackToast } from "@/app/components/feedback-toast-provider";
 import { useTranslations } from "@/app/components/translations-provider";
-import { getListTasks, isWorkSubtask, type WorkTask } from "@/app/lib/lists";
+import { getListTasks, isWorkSubtask } from "@/app/lib/lists";
 import { useLists } from "@/app/lib/lists-store";
 import { useTeam } from "@/app/lib/team-store";
 
@@ -19,7 +20,6 @@ export function ListsOverviewPage() {
   const { lists, tasks, addList, isReady } = useLists();
   const { currentTeam } = useTeam();
   const [createListOpen, setCreateListOpen] = useState(false);
-  const [addTarget, setAddTarget] = useState<WorkTask | null>(null);
   const [openedSubtaskId, setOpenedSubtaskId] = useState<string | null>(null);
 
   if (!isReady) {
@@ -31,7 +31,7 @@ export function ListsOverviewPage() {
           "Visu uzdevumu un apakšuzdevumu kopsavilkums.",
         )}
       >
-        <div className="h-32 rounded-3xl border border-zinc-200 bg-white" />
+        <LoadingState />
       </SectionPage>
     );
   }
@@ -82,7 +82,6 @@ export function ListsOverviewPage() {
                   }
                   router.push(`/lists/${task.listId}/tasks/${task.id}`);
                 }}
-                onAddSubtask={setAddTarget}
               />
             );
           })}
@@ -122,16 +121,10 @@ export function ListsOverviewPage() {
 
       <SubtaskDetailModal
         taskId={openedSubtaskId}
-        createFor={
-          addTarget
-            ? { listId: addTarget.listId, parentId: addTarget.id }
-            : null
-        }
-        open={openedSubtaskId !== null || addTarget !== null}
+        open={openedSubtaskId !== null}
         onOpenChange={(open) => {
           if (!open) {
             setOpenedSubtaskId(null);
-            setAddTarget(null);
           }
         }}
       />

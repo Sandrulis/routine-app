@@ -2,9 +2,11 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useMemo, useState, type MouseEvent, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type CSSProperties, type MouseEvent, type ReactNode } from "react";
 import { DragHandle } from "@/app/components/drag-handle";
 import { ListFormModal } from "@/app/components/list-form-modal";
+import { ListStatusesModal } from "@/app/components/list-statuses-modal";
+import { LoadingState } from "@/app/components/loading-state";
 import { NameFormModal } from "@/app/components/name-form-modal";
 import { ParentCreateFlow, type ParentCreateContext } from "@/app/components/parent-create-flow";
 import { ConfirmModal } from "@/app/components/confirm-modal";
@@ -14,10 +16,13 @@ import {
   type CreateMenuAnchor,
 } from "@/app/components/create-item-menu";
 import {
-  SortableTaskGroup,
-  SortableTaskItem,
-  type SortableTaskHandle,
-} from "@/app/components/sortable-task-group";
+  NavTreeDnd,
+  NavTreeRootDrop,
+  NavTreeSortableGroup,
+  NavTreeSortableItem,
+  useNavTreeDrag,
+  type NavTreeSortableHandle,
+} from "@/app/components/nav-tree-dnd";
 import { SubtaskDetailModal } from "@/app/components/subtask-detail-modal";
 import { TeamInviteModal } from "@/app/components/team-invite-modal";
 import { TeamRolesModal } from "@/app/components/team-roles-modal";
@@ -49,6 +54,7 @@ import {
   fileIconClassName,
   filePageHref,
   renameStoredListFile,
+  placeStoredListFile,
   reorderStoredListFiles,
   type ListFile,
 } from "@/app/lib/list-files";
@@ -56,6 +62,12 @@ import { useListFiles } from "@/app/lib/use-list-files";
 import { useTeam } from "@/app/lib/team-store";
 import { useIsAdmin } from "@/app/lib/users/use-is-admin";
 import { useTaskStatuses } from "@/app/lib/task-statuses";
+import {
+  navListRootDroppableId,
+  resolveNavTreePlacement,
+  type NavTreeDropIntent,
+  type NavTreeItemData,
+} from "@/app/lib/nav-tree-move";
 import {
   listAccessCapabilities,
   resolveListAccessLevel,
@@ -152,7 +164,10 @@ function rowHoverActionClassName(forceVisible: boolean) {
   }`;
 }
 
-function rowClassName(active: boolean) {
+function rowClassName(active: boolean, highlighted = false) {
+  if (highlighted && !active) {
+    return "flex h-8 w-full min-w-0 items-center gap-1.5 rounded-md bg-blue-50 px-1.5 text-[13px] text-zinc-900 ring-1 ring-inset ring-blue-200";
+  }
   return `flex h-8 w-full min-w-0 items-center gap-1.5 rounded-md px-1.5 text-[13px] transition ${
     active
       ? "bg-zinc-100 font-medium text-zinc-900"
@@ -198,6 +213,10 @@ function NavTreeSection({
   status,
   isPrivate = false,
   dragHandle,
+  setRowRef,
+  rowStyle,
+  itemId,
+  highlighted = false,
   children,
 }: {
   href?: string;
@@ -219,10 +238,23 @@ function NavTreeSection({
   onAdd?: (event: MouseEvent<HTMLButtonElement>) => void;
   onMore?: (event: MouseEvent<HTMLButtonElement>) => void;
   moreOpen?: boolean;
-  dragHandle?: SortableTaskHandle | null;
+  dragHandle?: {
+    attributes: NavTreeSortableHandle["attributes"];
+    listeners: NavTreeSortableHandle["listeners"];
+    isDragging: boolean;
+  } | null;
+  setRowRef?: (node: HTMLElement | null) => void;
+  rowStyle?: CSSProperties;
+  itemId?: string;
+  highlighted?: boolean;
   children?: ReactNode;
 }) {
   const { t } = useTranslations();
+  const drag = useNavTreeDrag();
+  const isDropTarget =
+    Boolean(itemId && drag.overId === itemId && drag.activeId && drag.activeId !== itemId);
+  const nestHighlight =
+    highlighted || (isDropTarget && drag.intent === "inside");
   const toggleLabel = expanded
     ? t("nav.collapse", "Sakļaut")
     : t("nav.expand", "Izvērst");
@@ -235,7 +267,11 @@ function NavTreeSection({
   return (
     <div className={dragHandle?.isDragging ? "opacity-70" : undefined}>
       <div className="group/row">
-        <div className={`${rowClassName(isParentActive)} relative`}>
+        <div
+          ref={setRowRef}
+          style={rowStyle}
+          className={`${rowClassName(isParentActive, nestHighlight)} relative`}
+        >
           {rowLink && href ? (
             <Link
               href={href}
@@ -325,7 +361,7 @@ function NavTreeSection({
               onPointerDown={(event) => event.stopPropagation()}
             >
               <DragHandle
-                label={t("subtasks.drag", "Mainīt secību")}
+                label={t("nav.drag", "Pārvietot")}
                 attributes={dragHandle.attributes}
                 listeners={dragHandle.listeners}
               />
@@ -397,11 +433,12 @@ export function AppNav() {
   const router = useRouter();
   const { t } = useTranslations();
   const { showFeedback } = useFeedbackToast();
-  const { lists, tasks, listTasks, childTasks, subtasks, addList, updateList, deleteList, updateTask, deleteTask, reorderTasks } = useLists();
-  const files = useListFiles().filter((file) =>
+  const { lists, tasks, listTasks, childTasks, subtasks, addList, updateList, deleteList, updateTask, deleteTask, reorderTasks, moveWorkItem, isReady: listsReady } = useLists();
+  const { files: storedFiles } = useListFiles();
+  const files = storedFiles.filter((file) =>
     lists.some((list) => list.id === file.listId),
   );
-  const { members, roles, currentUser, currentTeam, inviteMember } = useTeam();
+  const { members, roles, currentUser, currentTeam, inviteMember, isReady: teamReady } = useTeam();
   const { isAdmin } = useIsAdmin();
   const { statuses } = useTaskStatuses();
   const [inviteOpen, setInviteOpen] = useState(false);
@@ -423,6 +460,7 @@ export function AppNav() {
     null,
   );
   const [rolesModalOpen, setRolesModalOpen] = useState(false);
+  const [statusesList, setStatusesList] = useState<WorkList | null>(null);
   const [editTarget, setEditTarget] = useState<
     | { kind: "list"; list: WorkList }
     | { kind: "task"; task: WorkTask }
@@ -547,25 +585,67 @@ export function AppNav() {
           : null;
   const itemMenuAccess = accessForList(itemMenuList);
 
-  function reorderTreeItems(orderedIds: string[]) {
-    reorderTasks(orderedIds);
-    reorderStoredListFiles(orderedIds);
+  function placeNavItem(
+    listId: string,
+    activeId: string,
+    overId: string,
+    intent: NavTreeDropIntent,
+  ) {
+    const placement = resolveNavTreePlacement({
+      activeId,
+      overId,
+      listId,
+      tasks,
+      files,
+      intent,
+    });
+    if (!placement) return;
+    const task = tasks.find((item) => item.id === activeId) ?? null;
+    const file = files.find((item) => item.id === activeId) ?? null;
+    if (task) {
+      if (isWorkSubtask(task)) {
+        reorderTasks(placement.orderedIds);
+      } else {
+        moveWorkItem(task.id, placement.nextParentId, placement.orderedIds);
+        reorderStoredListFiles(placement.orderedIds);
+      }
+    } else if (file) {
+      placeStoredListFile(file.id, placement.nextParentId, placement.orderedIds);
+      reorderTasks(placement.orderedIds);
+    }
+    if (placement.nestIntoId) expandTree(placement.nestIntoId);
+  }
+
+  function navOverlayLabel(id: string) {
+    return (
+      tasks.find((item) => item.id === id)?.title ??
+      files.find((item) => item.id === id)?.name ??
+      ""
+    );
   }
 
   function renderFileRow(listId: string, file: ListFile, canReorder: boolean) {
     const href = filePageHref(listId, file.id);
+    const data: NavTreeItemData = {
+      kind: "file",
+      listId,
+      parentId: file.parentId,
+    };
     return (
-      <SortableTaskItem key={file.id} id={file.id} disabled={!canReorder}>
+      <NavTreeSortableItem key={file.id} id={file.id} data={data} disabled={!canReorder}>
         {(handle) => (
           <NavTreeSection
             href={href}
             icon={fileIconClassName(file.name)}
             iconClassName=""
             leaf
+            itemId={file.id}
             label={file.name}
             expanded={false}
             isParentActive={activeFileId === file.id}
             onToggle={() => undefined}
+            setRowRef={handle.setNodeRef}
+            rowStyle={handle.style}
             dragHandle={canReorder ? handle : null}
             moreOpen={itemMenu?.kind === "file" && itemMenu.id === file.id}
             onMore={
@@ -580,7 +660,7 @@ export function AppNav() {
             }
           />
         )}
-      </SortableTaskItem>
+      </NavTreeSortableItem>
     );
   }
 
@@ -634,15 +714,11 @@ export function AppNav() {
       );
     }
 
-    const canReorder = mixed.length > 1 && listAccess.canEditTasks;
+    const canReorder = listAccess.canEditTasks;
     const mixedIds = mixed.map((item) => item.id);
 
     return (
-      <SortableTaskGroup
-        itemIds={mixedIds}
-        contextId={`nav-${listId}-${parentId ?? "root"}`}
-        onReorder={showFiles ? reorderTreeItems : undefined}
-      >
+      <NavTreeSortableGroup itemIds={mixedIds}>
         {mixed.map((entry) => {
           if (entry.kind === "file") {
             return renderFileRow(listId, entry.file, canReorder);
@@ -651,8 +727,18 @@ export function AppNav() {
           const task = entry.task;
           const href = `/lists/${listId}/tasks/${task.id}`;
           const folder = isWorkFolder(task);
+          const data: NavTreeItemData = {
+            kind: isWorkSubtask(task) ? "subtask" : folder ? "folder" : "task",
+            listId,
+            parentId: task.parentId,
+          };
           return (
-            <SortableTaskItem key={task.id} id={task.id} disabled={!canReorder}>
+            <NavTreeSortableItem
+              key={task.id}
+              id={task.id}
+              data={data}
+              disabled={!canReorder}
+            >
               {(handle) => (
                 <NavTreeSection
                   href={href}
@@ -660,6 +746,7 @@ export function AppNav() {
                   status={isWorkSubtask(task) ? task.status : undefined}
                   swapOnHover={!isWorkSubtask(task)}
                   leaf={isWorkSubtask(task)}
+                  itemId={task.id}
                   label={task.title}
                   description={task.description}
                   addLabel={
@@ -679,6 +766,8 @@ export function AppNav() {
                   expanded={isExpanded(task.id, false)}
                   isParentActive={activeTaskIds.has(task.id)}
                   onToggle={() => toggleTree(task.id, false)}
+                  setRowRef={handle.setNodeRef}
+                  rowStyle={handle.style}
                   dragHandle={canReorder ? handle : null}
                   moreOpen={itemMenu?.kind === "task" && itemMenu.id === task.id}
                   onMore={
@@ -711,10 +800,10 @@ export function AppNav() {
                   {isWorkSubtask(task) ? null : renderTaskTree(listId, task.id)}
                 </NavTreeSection>
               )}
-            </SortableTaskItem>
+            </NavTreeSortableItem>
           );
         })}
-      </SortableTaskGroup>
+      </NavTreeSortableGroup>
     );
   }
 
@@ -743,12 +832,29 @@ export function AppNav() {
             onToggle={() => toggleTree("lists", true)}
             onAdd={currentTeam ? () => setCreateListOpen(true) : undefined}
           >
-            {lists.length > 0 ? (
+            {listsReady ? (
+              lists.length > 0 ? (
               lists.map((list) => {
                 const listAccess = accessForList(list);
+                const canDrag = listAccess.canEditTasks;
                 return (
-                <NavTreeSection
+                <NavTreeDnd
                   key={list.id}
+                  renderOverlay={(id) => (
+                    <div className="max-w-[11rem] truncate rounded-md border border-zinc-200 bg-white/90 px-2 py-1 text-[13px] font-medium text-zinc-900 shadow-lg">
+                      {navOverlayLabel(id)}
+                    </div>
+                  )}
+                  onPlace={(activeId, overId, intent) =>
+                    placeNavItem(list.id, activeId, overId, intent)
+                  }
+                >
+                  <NavTreeRootDrop
+                    id={navListRootDroppableId(list.id)}
+                    disabled={!canDrag}
+                  >
+                    {({ setNodeRef, isOver }) => (
+                <NavTreeSection
                   href={`/lists/${list.id}`}
                   icon={list.kind === "folder" ? "far fa-folder" : undefined}
                   swapOnHover={list.kind === "folder"}
@@ -765,6 +871,8 @@ export function AppNav() {
                   expanded={isExpanded(list.id, true)}
                   isParentActive={pathname === `/lists/${list.id}`}
                   onToggle={() => toggleTree(list.id, true)}
+                  setRowRef={setNodeRef}
+                  highlighted={isOver}
                   moreOpen={itemMenu?.kind === "list" && itemMenu.id === list.id}
                   onMore={
                     listAccess.canEditList || listAccess.canDeleteList
@@ -790,6 +898,9 @@ export function AppNav() {
                 >
                   {renderTaskTree(list.id, null)}
                 </NavTreeSection>
+                    )}
+                  </NavTreeRootDrop>
+                </NavTreeDnd>
                 );
               })
             ) : (
@@ -798,6 +909,9 @@ export function AppNav() {
                   ? t("lists.empty", "Vēl nav sarakstu.")
                   : t("teams.required.empty_members", "Vispirms izveido komandu.")}
               </p>
+            )
+            ) : (
+              <LoadingState compact />
             )}
           </NavTreeSection>
 
@@ -819,7 +933,8 @@ export function AppNav() {
                 : undefined
             }
           >
-            {currentTeam && members.length > 0 ? (
+            {teamReady ? (
+              currentTeam && members.length > 0 ? (
               members.map((member) => {
                 const href = `/team/${member.id}`;
                 return (
@@ -842,6 +957,9 @@ export function AppNav() {
                   ? t("team.empty", "Komandā vēl nav biedru.")
                   : t("teams.required.empty_members", "Vispirms izveido komandu.")}
               </p>
+            )
+            ) : (
+              <LoadingState compact />
             )}
           </NavTreeSection>
         </nav>
@@ -933,6 +1051,14 @@ export function AppNav() {
 
       <TeamRolesModal open={rolesModalOpen} onOpenChange={setRolesModalOpen} />
 
+      <ListStatusesModal
+        list={statusesList}
+        open={statusesList !== null}
+        onOpenChange={(open) => {
+          if (!open) setStatusesList(null);
+        }}
+      />
+
       <CreateItemMenu
         open={itemMenu !== null}
         anchor={itemMenu?.anchor ?? null}
@@ -970,6 +1096,15 @@ export function AppNav() {
                           id: "edit",
                           icon: "fas fa-pen",
                           title: t("actions.edit", "Labot"),
+                        },
+                        {
+                          id: "statuses",
+                          icon: "fas fa-circle-dot",
+                          title: t("lists.statuses.title", "Statusi"),
+                          description: t(
+                            "lists.statuses.menu_description",
+                            "Sistēmas un saraksta statusi",
+                          ),
                         },
                       ]
                     : []),
@@ -1032,6 +1167,10 @@ export function AppNav() {
               setEditTarget({ kind: "task", task });
             }
             if (file) setEditTarget({ kind: "file", file });
+            return;
+          }
+          if (id === "statuses") {
+            if (list) setStatusesList(list);
             return;
           }
           if (id === "delete") {

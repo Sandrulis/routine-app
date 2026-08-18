@@ -12,7 +12,7 @@ import { createPortal } from "react-dom";
 import { Tooltip } from "@/app/components/tooltip";
 import { RelativeTime } from "@/app/components/relative-time";
 import { useTranslations } from "@/app/components/translations-provider";
-import type { WorkTaskStatus } from "@/app/lib/lists";
+import { fadeHexColor, type WorkTaskStatus } from "@/app/lib/lists";
 import { useTaskStatuses } from "@/app/lib/task-statuses";
 
 export const WORK_TASK_STATUSES: WorkTaskStatus[] = [
@@ -30,10 +30,20 @@ const STATUS_GROUPS: {
   { id: "closed", statuses: ["done"] },
 ];
 
-export function statusClassName(status: WorkTaskStatus) {
-  if (status === "done") return "bg-emerald-500 text-white";
-  if (status === "in_progress") return "bg-orange-500 text-white";
-  return "bg-zinc-400 text-white";
+const DELETED_STATUS_COLOR = "#ef4444";
+
+export function statusClassName(status: WorkTaskStatus, muted = false) {
+  if (status === "done") {
+    return muted
+      ? "bg-emerald-500/25 text-emerald-600"
+      : "bg-emerald-500 text-white";
+  }
+  if (status === "in_progress") {
+    return muted
+      ? "bg-orange-500/25 text-orange-600"
+      : "bg-orange-500 text-white";
+  }
+  return muted ? "bg-zinc-400/25 text-zinc-500" : "bg-zinc-400 text-white";
 }
 
 export function statusDotClassName(status: WorkTaskStatus) {
@@ -161,6 +171,10 @@ export function StatusControl({
   trailing,
   revealActionsOnHover = false,
   actionsForced = false,
+  listId = null,
+  completeBlocked = false,
+  completeBlockedLabel,
+  checklistProgress = null,
 }: {
   status: WorkTaskStatus;
   onChange: (next: WorkTaskStatus) => void;
@@ -171,10 +185,14 @@ export function StatusControl({
   trailing?: ReactNode;
   revealActionsOnHover?: boolean;
   actionsForced?: boolean;
+  listId?: string | null;
+  completeBlocked?: boolean;
+  completeBlockedLabel?: string;
+  checklistProgress?: { done: number; total: number; percent: number } | null;
 }) {
   const { t } = useTranslations();
-  const { labelFor, colorFor, nextStatusId, groupedStatuses, statuses } =
-    useTaskStatuses();
+  const { labelFor, colorFor, nextStatusId, groupedStatuses, statuses, groupKeyFor } =
+    useTaskStatuses(listId);
   const labels = useStatusLabels();
   const rootRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
@@ -186,11 +204,16 @@ export function StatusControl({
     null,
   );
   const nextStatus = nextStatusId(status) as WorkTaskStatus | null;
+  const nextIsClosed = nextStatus
+    ? groupKeyFor(nextStatus) === "closed"
+    : false;
+  const nextBlocked = completeBlocked && nextIsClosed;
   const currentStatus = statuses.find((row) => row.id === status);
   const closedStatus =
     [...statuses].reverse().find((row) => row.groupKey === "closed")?.id ?? "done";
   const isDone = currentStatus?.groupKey === "closed" || status === "done";
-  const statusColor = deleted ? "#71717a" : colorFor(status);
+  const muted = isDone || deleted;
+  const statusColor = deleted ? DELETED_STATUS_COLOR : colorFor(status);
   const statusLabel = deleted
     ? t("status.deleted", "Dzēsts")
     : labelFor(status) || labels[status];
@@ -275,18 +298,31 @@ export function StatusControl({
     ? ""
     : "pointer-events-none opacity-0 group-hover/row:pointer-events-auto group-hover/row:opacity-100 group-focus-within/row:pointer-events-auto group-focus-within/row:opacity-100";
   const splitOnHover = revealActionsOnHover;
-  const pillStyle = statusColor ? { backgroundColor: statusColor } : undefined;
-  const pillColorClass = statusColor ? "text-white" : statusClassName(status);
+  const pillStyle = statusColor
+    ? {
+        backgroundColor: muted ? fadeHexColor(statusColor) : statusColor,
+        color: muted ? statusColor : undefined,
+      }
+    : undefined;
+  const pillColorClass = statusColor
+    ? muted
+      ? ""
+      : "text-white"
+    : statusClassName(status, muted);
   const extraActionsClassName = `inline-flex items-center gap-1 ${hoverRevealClassName}`.trim();
+  const checklistTotal = checklistProgress?.total ?? 0;
+  const checklistPercent = checklistProgress?.percent ?? 0;
+  const showChecklistProgress = checklistTotal > 0;
 
   return (
     <div className="inline-flex flex-col items-start gap-0.5">
-      <div ref={rootRef} className="relative inline-flex items-center gap-1">
+      <div ref={rootRef} className="relative inline-flex items-start gap-1">
+      <div className="inline-flex flex-col">
       <div
         className={
           splitOnHover
-            ? "inline-flex h-8"
-            : `inline-flex h-8 overflow-hidden rounded-md ${pillColorClass}`
+            ? "inline-flex h-8 shrink-0"
+            : `inline-flex h-8 shrink-0 overflow-hidden rounded-md ${pillColorClass}`
         }
         style={splitOnHover ? undefined : pillStyle}
       >
@@ -308,7 +344,7 @@ export function StatusControl({
               ? t("subtasks.restore", "Atjaunot")
               : t("subtasks.table.status", "Statuss")
           }
-          className={`px-2.5 text-[11px] font-semibold tracking-wide uppercase disabled:cursor-not-allowed ${
+          className={`whitespace-nowrap px-2.5 text-[11px] font-semibold tracking-wide uppercase disabled:cursor-not-allowed ${
             splitOnHover
               ? `${pillColorClass} ${
                   extrasVisible
@@ -321,16 +357,27 @@ export function StatusControl({
         >
           {statusLabel}
         </button>
-        <Tooltip label={t("status.next", "Nākamais statuss")} className="h-full">
+        <Tooltip
+          label={
+            nextBlocked && completeBlockedLabel
+              ? completeBlockedLabel
+              : t("status.next", "Nākamais statuss")
+          }
+          className="h-full"
+        >
           <button
             type="button"
-            disabled={controlsDisabled || !nextStatus || deleted}
+            disabled={controlsDisabled || !nextStatus || deleted || nextBlocked}
             onClick={() => {
-              if (controlsDisabled || !nextStatus || deleted) return;
+              if (controlsDisabled || !nextStatus || deleted || nextBlocked) {
+                return;
+              }
               onChange(nextStatus);
             }}
             aria-label={t("status.next", "Nākamais statuss")}
-            className={`inline-flex h-full w-7 items-center justify-center border-l border-white/30 disabled:cursor-not-allowed disabled:opacity-40 ${
+            className={`inline-flex h-full w-7 items-center justify-center border-l ${
+              muted ? "border-current/20" : "border-white/30"
+            } disabled:cursor-not-allowed disabled:opacity-40 ${
               splitOnHover ? `rounded-r-md ${pillColorClass}` : ""
             } ${hoverRevealClassName}`.trim()}
             style={splitOnHover ? pillStyle : undefined}
@@ -339,19 +386,57 @@ export function StatusControl({
           </button>
         </Tooltip>
       </div>
+      {showChecklistProgress ? (
+        <Tooltip
+          label={t("lists.windows.progress", "{done}/{total}", {
+            done: checklistProgress?.done ?? 0,
+            total: checklistTotal,
+          })}
+          className="w-full"
+        >
+          <div
+            className="mt-0.5 h-1.5 w-full overflow-hidden rounded-full bg-zinc-200"
+            role="progressbar"
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={checklistPercent}
+            aria-label={t("lists.windows.progress", "{done}/{total}", {
+              done: checklistProgress?.done ?? 0,
+              total: checklistTotal,
+            })}
+          >
+            <div
+              className="h-full rounded-full bg-emerald-500"
+              style={{ width: `${checklistPercent}%` }}
+            />
+          </div>
+        </Tooltip>
+      ) : null}
+      </div>
 
       <span className={extraActionsClassName}>
-      <Tooltip label={t("status.complete", "Pabeigt")}>
+      <Tooltip
+        label={
+          completeBlocked && !isDone && completeBlockedLabel
+            ? completeBlockedLabel
+            : t("status.complete", "Pabeigt")
+        }
+      >
         <button
           type="button"
-          disabled={controlsDisabled || isDone}
-          onClick={() => onChange(closedStatus as WorkTaskStatus)}
+          disabled={controlsDisabled || isDone || (completeBlocked && !isDone)}
+          onClick={() => {
+            if (completeBlocked && !isDone) return;
+            onChange(closedStatus as WorkTaskStatus);
+          }}
           aria-label={t("status.complete", "Pabeigt")}
           aria-pressed={isDone}
           className={`inline-flex size-8 items-center justify-center rounded-md transition ${
-            isDone
-              ? "bg-emerald-100 text-emerald-700"
-              : "bg-zinc-100 text-zinc-500 hover:bg-zinc-200"
+            deleted
+              ? "bg-red-100 text-red-600"
+              : isDone
+                ? "bg-emerald-100 text-emerald-700"
+                : "bg-zinc-100 text-zinc-500 hover:bg-zinc-200"
           } disabled:cursor-not-allowed`}
         >
           <i className="fas fa-check text-[12px]" aria-hidden="true" />
@@ -406,17 +491,23 @@ export function StatusControl({
                       </p>
                       {group.statuses.map((item) => {
                         const selected = item === status;
+                        const optionBlocked =
+                          completeBlocked &&
+                          groupKeyFor(item) === "closed" &&
+                          !selected;
                         return (
                           <button
                             key={item}
                             type="button"
                             role="option"
                             aria-selected={selected}
+                            disabled={optionBlocked}
                             onClick={() => {
+                              if (optionBlocked) return;
                               onChange(item);
                               setOpen(false);
                             }}
-                            className={`flex w-full items-center gap-2.5 px-3 py-1.5 text-left text-[13px] font-medium tracking-wide uppercase transition ${
+                            className={`flex w-full items-center gap-2.5 px-3 py-1.5 text-left text-[13px] font-medium tracking-wide uppercase transition disabled:cursor-not-allowed disabled:opacity-40 ${
                               selected
                                 ? "bg-zinc-100 text-zinc-900"
                                 : "text-zinc-700 hover:bg-zinc-50"

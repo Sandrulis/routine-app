@@ -16,7 +16,7 @@
 
 | Rinda | Saturs |
 |---|---|
-| Sākums | `/dashboard` komandas todo board |
+| Sākums | `/dashboard` `DashboardHomePage` — Mani uzdevumi un darbs pa sarakstiem pēc statusa prioritātes |
 | Saraksts | `/lists` visu uzdevumu kopsavilkums; chevron izver koku |
 | Saraksts (bērns) | `/lists/[listId]` projekta logi: Uzdevumi | Faili augšā, Saraksts pilnā platumā |
 | Uzdevums | `/lists/[listId]/tasks/[taskId]` apakšuzdevumu tabula; ikona `fas fa-list-check` |
@@ -33,7 +33,9 @@ Uzvedība:
 - Uzdevuma rindā `fas fa-list-check`; hover laikā ikonas vietā chevron.
 - Apakšuzdevuma rindā krāsains aplītis; hover neaizstāj ar chevron.
 - Saraksta `+` atver izveides formu, ja loma ļauj veidot sarakstus un saraksta pieeja ir **pilna labošana**. Mapes `+` — mape, uzdevumu saraksts vai faila augšupielāde. Uzdevuma `+` atver apakšuzdevuma modāli (tikai `full_edit`).
+- Saraksta `...` ar `canEditList`: **Labot**, **Statusi** (`ListStatusesModal`), **Dzēst**.
 - Faila rinda atver `/lists/[listId]/files/[fileId]`.
+- Vilkšana (`NavTreeDnd`, `app/components/nav-tree-dnd.tsx`): mapes, uzdevumus un failus var ievilkt mapē (mapes rinda iezīmējas) vai iznest ārā (uz saraksta nosaukumu vai kaimiņu). Drop līnija ir `fixed` portal virs overlay (`z-1100`); overlay paliek blakus kursoram. Loģika: `app/lib/nav-tree-move.ts`. Apakšuzdevumi paliek zem sava uzdevuma. Mapi nevar ielikt sevī.
 
 Vecie `/projects` ceļi novirza uz `/lists`.
 
@@ -67,15 +69,17 @@ Legal teksti: `app/lib/legal/documents.ts`. UI: `LegalDocumentView` ar **Saturs*
 
 | Klikšķis | Lapa | UI |
 |---|---|---|
-| Sākums | `/dashboard` | `TeamTodoBoard` — kolonnas Darāms, Procesā, Gatavs |
-| Saraksts | `/lists` | `ListsOverviewPage` — kartītes ar uzdevumiem un apakšuzdevumiem; klikšķis atver `SubtaskDetailModal` uz vietas |
-| Projekts (saraksts) | `/lists/[listId]` | `ListWindowsBoard` — Uzdevumi | Faili; zem tām Saraksts ar mapēm, nested uzdevumiem un arhīvu; kārtība cookie `routine-app-list-window-order` |
-| Uzdevums | `/lists/[listId]/tasks/[taskId]` | `SubtaskTable` — nosaukums, atbildīgais, sākums, termiņš, statuss; arhīvs, pārvietošana, mīkstā dzēšana; hover rāda darbības |
+| Sākums | `/dashboard` | `DashboardHomePage` — Mani uzdevumi (piesaistītie, bez slēgtiem) un sarakstu kopsavilkums; grupēšana pēc statusa pretēji picker; apakšuzdevuma klikšķis atver modāli |
+| Saraksts | `/lists` | `ListsOverviewPage` — kartītes ar uzdevumiem un apakšuzdevumiem pēc statusa prioritātes; klikšķis atver `SubtaskDetailModal` uz vietas |
+| Projekts (saraksts) | `/lists/[listId]` | `ListWindowsBoard` — Uzdevumi (vilktā secība) | Faili; zem tām Saraksts ar mapēm, nested uzdevumiem pēc statusa un arhīvu; kārtība cookie `routine-app-list-window-order` |
+| Uzdevums | `/lists/[listId]/tasks/[taskId]` | `GroupedSubtaskTables` / `SubtaskTable` — viena tabula ar statusu galvenēm, arhīvs, pārvietošana, mīkstā dzēšana; hover rāda darbības |
 | Fails | `/lists/[listId]/files/[fileId]` | `FileDetailPage` — priekšskatījums, lejupielāde, pārsaukšana, dzēšana |
-| Apakšuzdevums | uzdevuma ceļš vai saraksta skats + modālis | `SubtaskDetailModal` — lauki kreisajā, vēsture labajā |
+| Apakšuzdevums | uzdevuma ceļš vai saraksta skats + modālis | `SubtaskDetailModal` — lauki kreisajā, Check List pirms pielikumiem, vēsture labajā |
 | Administrācija | `/admin` | horizontāla apakšizvēlne: lietotāji, komandas, lomas, statusi, valodas, tulkojumi, uzstādījumi; tikai `is_admin` |
 
 Ceļa josla: `app/components/page-breadcrumb.tsx`. Labajā malā `AdminPanelButton` (`fas fa-users-cog`, tikai `is_admin`), `NotificationsMenu` (zvaniņš) un valodas kods, ja aktīvas valodas > 1.
+
+Ielāde: `LoadingState` (`app/components/loading-state.tsx`, `fas fa-circle-notch fa-spin`) lapās, sānjoslā, paziņojumos un admin čaulā, kamēr store `isReady` vai fetch nav pabeigts. Tukšs stāvoklis rādās tikai pēc ielādes.
 
 ## Administrācijas panelis
 
@@ -95,7 +99,7 @@ Ceļa josla: `app/components/page-breadcrumb.tsx`. Labajā malā `AdminPanelButt
 - Klienta pārbaude: `useIsAdmin()` caur RPC `current_user_is_admin()` (ikona)
 - Lietotāju saraksts caur ielogotā admin sesiju (RLS `008_admin_list_access.sql`); jauna lietotāja izveide ar service role
 - Valodas, tulkojumi, uzstādījumi caur to pašu sesiju (RLS `010_site_admin_session_access.sql`); `site_*` SELECT arī `anon`
-- Migrācijas: `003` admin RPC, `006` valodas/tulkojumi/uzstādījumi, `007` RU, `008` admin list access, `009` `users` aktivitātes lauki, `010` site admin session RLS, `011` `users.language_code`, `012`/`016`/`018` statusi, `017`/`020`/`021` lomas, `013`/`014`/`019` privāti saraksti, `022`/`023` sarakstu pieeju līmeņi, `024` `work_tasks.deleted_at`
+- Migrācijas: `003` admin RPC, `006` valodas/tulkojumi/uzstādījumi, `007` RU, `008` admin list access, `009` `users` aktivitātes lauki, `010` site admin session RLS, `011` `users.language_code`, `012`/`016`/`018` statusi, `017`/`020`/`021` lomas, `013`/`014`/`019` privāti saraksti, `022`/`023` sarakstu pieeju līmeņi, `024` `work_tasks.deleted_at`, `025` kataloga statusa check, `027`/`028`/`030` saraksta statusi, `029` `work_tasks.checklists`, `031` `team_status_labels`
 
 ## Paziņojumi
 
@@ -109,15 +113,16 @@ Ceļa josla: `app/components/page-breadcrumb.tsx`. Labajā malā `AdminPanelButt
 
 ## Apakšuzdevuma modālis
 
-`app/components/subtask-detail-modal.tsx` + `AppModal` (`dirty` no nosaukuma, apraksta, datumiem, atbildīgajiem — **statuss dirty neskaita**). Statusa maiņa esošam apakšuzdevumam `updateTask` uzreiz. Saglabāt **neaizver** modāli un nepāriet uz citu lapu; aizver X / ESC / Atcelt. Pēc jauna apakšuzdevuma izveides paliek edit mode. Poga **Pievienot jaunu** (tikai plus + tooltip `actions.add_new`) rādās, kad ir nosaukums un Saglabāt nav aktīvs; klikšķis atver tukšu formu tajā pašā modālī. `headerMeta` rāda `izveidots {date}` no aktivitātes `kind === "created"` (`formatDisplayDateDdMmYy`); jaunam nesaglabātam apakšuzdevumam datums nav. Atverams arī no saraksta loga un `/lists` kopsavilkuma, bez navigācijas.
+`app/components/subtask-detail-modal.tsx` + `AppModal` (`dirty` no nosaukuma, apraksta, datumiem, atbildīgajiem — **statuss un čeklisti dirty neskaita**). Statusa maiņa esošam apakšuzdevumam `updateTask` uzreiz. Čeklisti esošam uzdevumam persistējas uzreiz (tekstam debounce). Saglabāt **neaizver** modāli un nepāriet uz citu lapu; aizver X / ESC / Atcelt. Pēc jauna apakšuzdevuma izveides paliek edit mode. Poga **Pievienot jaunu** (tikai plus + tooltip `actions.add_new`) rādās, kad ir nosaukums un Saglabāt nav aktīvs; klikšķis atver tukšu formu tajā pašā modālī. `headerMeta` rāda `izveidots {date}` no aktivitātes `kind === "created"` (`formatDisplayDateDdMmYy`); jaunam nesaglabātam apakšuzdevumam datums nav. Atverams arī no saraksta loga un `/lists` kopsavilkuma, bez navigācijas.
 
 | Lauks | Uzvedība |
 |---|---|
 | Nosaukums | Trekns, lielāks teksts, bez rāmja un fona |
 | Apraksts | Piezīmes |
 | Sākums / Termiņš | `DateCell` — klikšķis atver pārlūka datuma izvēli (`showPicker`); zem datuma atlikušās vai kavētās dienas (`calendarDaysFromToday`); `disabled`, ja nav `canEditTasks` |
-| Statuss | `StatusControl` — krāsaina poga; nākamais (`fa-angle-right`) un Check. Tabulā bez hover tikai nosaukums, hover rāda `>` / Check / pārvietot / dzēst (bez animācijas). Klikšķis uz nosaukuma atver picker. `comment` līmenī statusu drīkst mainīt izpildītājs |
+| Statuss | `StatusControl` — krāsaina poga; nākamais (`fa-angle-right`) un Check. Tabulā bez hover tikai nosaukums, hover rāda `>` / Check / pārvietot / dzēst (bez animācijas). Klikšķis uz nosaukuma atver picker. `comment` līmenī statusu drīkst mainīt izpildītājs. Ja ir čeklista punkti, zem pogas zaļa progresa josla; slēgto grupu un Check tikai pie 100% |
 | Projekts, atbildīgie | Saraksta badge, `AssigneeCell` |
+| Check List | `TaskChecklists` — pirms pielikumiem; vairāki saraksti ar nosaukumu; nākamais tukšais punkts parādās pēc teksta; atzīmēšana ar ķeksīti. Struktūru labo `canEditTasks`; punktus atzīmē arī `canChangeStatus` |
 | Pielikumi | `TaskAttachments` — drag-and-drop vai **pārlūko**; kartītes ar priekšskatījumu; `disabled` bez `edit` / `full_edit` |
 | Faila `...` | `CreateItemMenu`: Apskatīt, Pārsaukt, Dzēst. Klikšķis uz kartītes arī atver apskati. Izvēlne ar `data-app-modal-ignore-backdrop`, lai neaizvērtu apakšuzdevuma modāli |
 | Dzēst failu | Tikai `ConfirmModal` (`files.delete.*`) |
@@ -135,8 +140,10 @@ Hierarhija: **Saraksts → mape / uzdevumu saraksts / fails → apakšuzdevumi t
 - Stāvoklis: `app/lib/lists-store.tsx` — ielāde no `work_lists` / `work_tasks`; pieslēgtam lietotājam bez komandas tukšs koks (nav dummy datu)
 - Saraksta faili kokā: `app/lib/list-files.ts`
 - Jauns/labot sarakstu: `ListFormModal` — izskats, privāts slēdzis, **noklusējuma pieeja**; slēdzis **Pielāgot katrai lomai** parāda lomu līmeņus un paslēpj globālo izvēli (privātam arī biedriem un „nav pieejas”)
-- Apakšuzdevumu tabula (`SubtaskTable`): pie Pievienot arhīva poga rāda aktīvos **un** arhivētos; pabeigšana fade-out vietā; miskaste aiz Check (`deleted_at`, nav statusa katalogā); klikšķis uz dzēstā atjauno; **Pārvietot** (`fa-exchange-alt`) atver `MoveSubtaskModal`; zem statusa `RelativeTime`; jaunam uzdevumam `statusChangedAt` = izveides laiks
-- Projekta **Saraksts** logs: uzdevumu kartītes `repeat(auto-fit, minmax(min(100%, 16rem), 1fr))`. Mape rāda nested uzdevumus un to apakšuzdevumus (`getDescendantSubtasks`); arhīva poga kartītē parāda pabeigtos, progresa josla paliek. Klikšķis uz apakšuzdevuma atver `SubtaskDetailModal` uz vietas. Apakšuzdevuma aplītis un nosaukums ir statusa krāsā
+- Apakšuzdevumu tabula (`SubtaskTable` + `GroupedSubtaskTables`): viena tabula ar `groupByStatus` galvenēm iekšā; pie Pievienot arhīva poga (`IconActionButton` `variant="delete"`, aktīva paliek sarkanīga) rāda aktīvos **un** arhivētos; pabeigšana fade-out vietā; miskaste aiz Check (`deleted_at`, nav statusa katalogā); klikšķis uz dzēstā atjauno; **Pārvietot** (`fa-exchange-alt`) atver `MoveSubtaskModal`; slēgtajiem/dzēstajiem **rindai** viegls fons (`fadeHexColor` 0.88; dzēstajiem `#ef4444`); statusa pogai atsevišķi blāvs fons; zem statusa `RelativeTime` un, ja ir čeklista punkti, zaļa progresa josla; jaunam uzdevumam `statusChangedAt` = izveides laiks; `reorderable={false}` (Sākums) slēpj kārtību, bet statusu joprojām var vilkt
+- Vilkšana: `app/components/task-drop-line.tsx` (`TaskDropLine`, `dropHintFromEvent`, `frozenSortingStrategy`, `groupedStatusCollisionDetection`). Vilkšanas laikā saraksts neslīd; drop ir bieza zila līnija. Starp statusu grupām vilkšana **tikai maina statusu**, nesamaina vietām ar cita grupas pēdējo uzdevumu
+- Kopsavilkums (`ListSummary` Sākumā un `/lists`): sadalītie uzdevumi un apakšuzdevumi pēc `statusesByPriorityDesc` / `compareTasksByStatusPriority` (`app/lib/list-statuses.ts`) - pretēji picker (slēgts → aktīvs → nav sākts). Slēgtie paliek ārpus aktīvā saraksta
+- Projekta **Saraksts** logs: uzdevumu kartītes `repeat(auto-fit, minmax(min(100%, 16rem), 1fr))` tādā pašā statusa secībā. Mape rāda nested uzdevumus un to apakšuzdevumus (`OverviewSubtaskList`); grupēšana pēc statusa; aplītis hover rāda check + tooltip `status.complete_ask` (pabeidz / atver atpakaļ); arhīva poga kartītē parāda pabeigtos, progresa josla paliek. Klikšķis uz apakšuzdevuma atver `SubtaskDetailModal` uz vietas. Apakšuzdevuma aplītis un nosaukums ir statusa krāsā. Logs **Uzdevumi** paliek vilktā `sortOrder` secībā
 
 ## Sarakstu pieejas
 
@@ -155,12 +162,20 @@ Prioritāte: biedra rinda (`work_list_viewers.access_level`) → lomas rinda (`w
 
 `app/components/status-control.tsx` — vienots `WorkTaskStatus` redaktors tabulā un apakšuzdevuma modālī.
 
-- Krāsas un nosaukumi no `task_statuses` (`useTaskStatuses`); fallback `todo` pelēks, `in_progress` oranžs, `done` zaļš
+- Krāsas un nosaukumi no `useTaskStatuses(listId)`: sistēmas `task_statuses` plus šī saraksta `list_statuses`. Bez `listId` (Sākums) saplūdina visus sarakstu statusus etiķetēm. `useSystemTaskStatuses()` ir tikai katalogs.
+- Fallback `todo` pelēks, `in_progress` oranžs, `done` zaļš
+- Slēgtās grupas statusiem (`done` u.c.) poga ir **blāva**: `fadeHexColor` sajauc krāsu ar baltu, teksts paliek statusa krāsā
+- Dzēstajiem (`deletedAt`) etiķete `status.deleted`, krāsa `#ef4444` ar to pašu blāvo fonu; Check poga `bg-red-100 text-red-600`
 - Koka / Saraksta loga aplītis: `statusDotClassName` (fons + apmale tās pašas); teksts: `statusTextClassName`
 - Picker portal `z-80`, `data-app-modal-ignore-backdrop`; ESC aizver tikai picker
-- Nākamais statuss: todo → in_progress → done
+- Nākamais statuss: `nextStatusId` pēc kataloga `sort_order` (ne tikai todo → in_progress → done)
+- Sākuma / saraksta kopsavilkuma grupēšana ir **pretēja** picker: `statusesByPriorityDesc` (piem. IZM → IN PROGRESS → TO DO). Picker paliek Nav sākts → Aktīvs → Slēgts
+- `work_tasks.status` ir brīvs teksts pēc `025_work_tasks_catalog_status.sql` (noņemts check tikai uz todo / in_progress / done)
 - Tabulā `revealActionsOnHover`: bez hover tikai statusa nosaukums; hover (vai atvērts picker / pārvietošana) rāda `>` un trailing pogas, vieta rezervēta, bez animācijas
 - Zem pogas `RelativeTime` (`app/components/relative-time.tsx`, `getLastOnlineDisplay`); tooltipā precīzais `dd.mm.yy hh:mm`
+- Ja apakšuzdevumam ir čeklista punkti (`work_tasks.checklists`), zem statusa pogas zaļa progresa josla (`checklistProgress`). Slēgtās grupas statusus un Pabeigt bloķē, kamēr `taskHasIncompleteChecklists`; **aktīvās** (un nav sākts) grupas statusus var mainīt arī ar nepabeigtiem punktiem. `updateTask` noraida slēgto statusu, ja punkti nav izpildīti
+
+Saraksta statusi: `ListStatusesModal` (`app/components/list-statuses-modal.tsx`) no saraksta `...`. Sistēmas statusi ir lasāmi; komanda var pārsaukt sistēmas statusu šai komandai (`team_status_labels`). Komanda pievieno / labo / dzēš / kārto tikai šī saraksta ierakstus (`list_statuses`, ID `lsts-…`). Dzēšot savu statusu, uzdevumi ar to atgriežas uz `todo`. Nav sākts un slēgts paliek singleton grupas. Rakstīšana: `work_list_has_access(list_id, 'edit')`. CRUD: `lists-store` `addListStatus` / `updateListStatus` / `deleteListStatus` / `reorderListStatuses` / `renameSystemStatus`.
 
 ## Komanda un pēdējā tiešsaiste
 
@@ -194,7 +209,7 @@ app/
     privacy/ terms/ cookies/
   (app)/
     layout.tsx                    # AppProviders + sānjosla
-    dashboard/page.tsx            # Komandas todo board
+    dashboard/page.tsx            # Sākums: Mani uzdevumi + saraksti
     lists/                        # Kopsavilkums, 3 logi, uzdevums, fails
     team/ settings/ projects/
     admin/                        # users, teams, roles, statuses, languages, …
@@ -213,18 +228,25 @@ app/
     cookie-consent-provider.tsx   # Piekrišanas stāvoklis
     cookie-consent-dialog.tsx     # Popup un iestatījumi
     app-nav.tsx                   # Sānjosla
+    nav-tree-dnd.tsx              # Koka DnD: mapē / ārā, drop līnija
+    list-statuses-modal.tsx       # Saraksta Statusi (sistēma + komandas)
     team-switcher.tsx             # Komandas pārslēdzējs, CRUD
     app-shell.tsx                 # Layout ar sānjoslu
+    dashboard-home-page.tsx       # Sākums: Mani uzdevumi + saraksti
     lists-overview-page.tsx       # Saraksta kopsavilkums
     list-form-modal.tsx           # Jauns/labot sarakstu + pieejas
     list-summary.tsx              # Uzdevumu kartītes ar statusu grupām
-    list-windows-board.tsx        # Uzdevumi | Faili + Saraksts, DnD
+    list-windows-board.tsx        # Uzdevumi | Faili + Saraksts, DnD, mapes čeks
     task-detail-page.tsx          # Apakšuzdevumu tabula
-    subtask-table.tsx             # Tabula, DateCell, arhīvs, fade-out
+    grouped-subtask-tables.tsx    # Viena tabula ar statusu grupām
+    subtask-table.tsx             # Tabula, DateCell, arhīvs, rindas fons
+    task-drop-line.tsx            # Zila drop līnija, frozen sort, grupu collision
     move-subtask-modal.tsx        # Apakšuzdevuma pārvietošana pie cita uzdevuma
     subtask-detail-modal.tsx      # Apakšuzdevuma modālis
-    status-control.tsx            # Statusa poga un picker
+    task-checklists.tsx           # Check List pirms pielikumiem
+    status-control.tsx            # Statusa poga, picker, čeklista josla
     relative-time.tsx             # Relatīvais laiks (min / h / d / m)
+    loading-state.tsx             # Ielādes spinneris lapās, kokā un modāļos
     team-roles-modal.tsx          # Komandas lomu saraksts
     team-role-access-modal.tsx    # Pieejas pašai lomai
     team-permission-fields.tsx    # Nav + actions slēdži
@@ -250,11 +272,14 @@ app/
     notifications-menu.tsx        # Paziņojumu panelis
     list-badge.tsx                # Saraksta ikona / iniciāļi / logotips
     member-last-online.tsx        # Tiešsaistes zīme
-    team-todo-board.tsx           # Dashboard board
+    team-todo-board.tsx           # Komandas kanban (nav Sākuma lapa)
   lib/
     consent/cookie-consent.ts     # Piekrišanas modelis
     legal/documents.ts            # Privacy / terms / cookies teksti
     lists.ts                      # Sarakstu/uzdevumu tipi, krāsas
+    task-checklists.ts            # Čeklistu tipi, progress, incomplete helper
+    list-statuses.ts              # Saraksta statusu tipi un kataloga merge
+    nav-tree-move.ts              # Koka drop: mape / ārā / secība
     list-access.ts                # Saraksta pieeju līmeņi un resolve
     lists-store.tsx               # Saraksti un uzdevumi no Postgres
     list-windows.ts               # Logu kārtība (preferences cookie)
@@ -264,7 +289,7 @@ app/
     team-store.tsx                # Komandas, biedri un lomas no Postgres
     team-permissions.ts           # Nav + actions pieeju modelis
     last-online.ts                # min / h / d / m
-    task-statuses.tsx             # Statusu katalogs klientā
+    task-statuses.tsx             # Statusu katalogs + saraksta merge
     notifications.ts              # Paziņojumu tipi
     use-notifications.ts          # Paziņojumi no Postgres
     team-todo.ts                  # Todo tipi
@@ -285,7 +310,7 @@ app/
 app/auth/callback/route.ts        # OAuth code → session
 proxy.ts                          # Supabase session refresh
 scripts/                          # audit-check.mjs, apply-migrations.mjs, test-supabase.mjs
-supabase/migrations/              # 001–024: shēma, admin, valodas, work data, lomas, statusi, sarakstu pieejas, deleted_at
+supabase/migrations/              # 001–031: shēma, admin, valodas, work data, lomas, statusi, sarakstu pieejas, deleted_at, kataloga statusi, list_statuses, checklists, team_status_labels
 .github/workflows/                # secret-scan.yml, security-audit.yml, security-smoke.yml
 .gitleaks.toml                    # default rules + i18n translation key allowlist
 .cursor/rules/                    # README bump, commits
@@ -363,16 +388,18 @@ RLS (`005_work_data.sql`): `authenticated` drīkst SELECT/INSERT/UPDATE/DELETE t
 | `team_roles` | Komandas lomas un `permissions` JSON |
 | `system_default_roles` | Admin noklusējuma lomas jaunām komandām |
 | `task_statuses` | Uzdevumu statusu katalogs (nosaukumi, krāsa, grupa) |
+| `list_statuses` | Komandas statusi vienam sarakstam (`lsts-…`) |
+| `team_status_labels` | Komandas overlay sistēmas statusu nosaukumiem |
 | `work_lists` | Saraksti (`kind`, `is_private`, `default_access_level`, `created_by`) |
 | `work_list_viewers` | Privāta saraksta biedri + `access_level` |
 | `work_list_viewer_roles` | Saraksta lomu pieeja + `access_level` |
-| `work_tasks` | Mapes, uzdevumi, apakšuzdevumi (`kind` + `parent_id` + `deleted_at`) |
+| `work_tasks` | Mapes, uzdevumi, apakšuzdevumi (`kind` + `parent_id` + `deleted_at`; `status` = kataloga ID; `checklists` JSONB) |
 | `task_assignees` | Uzdevuma atbildīgie (`member_id`) |
 | `task_activities` | Vēsture (izveide, statuss, komentāri, faili) |
 | `task_files` | Apakšuzdevumu pielikumi + saturs |
 | `list_files` | Saraksta faili kokā + saturs |
 | `app_notifications` | Paziņojumi |
-| `team_todos` | Dashboard todo board |
+| `team_todos` | Komandas kanban (`TeamTodoBoard`), nav Sākuma lapa |
 
 localStorage paliek tikai UI preferencei:
 

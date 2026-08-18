@@ -4,6 +4,44 @@
 
 - (none)
 
+## v0.1.11
+
+**Arhīva rindas, grupēta tabula un drop līnija**
+
+- Arhīvā pabeigtajiem un dzēstajiem apakšuzdevumiem viegls rindas fons statusa krāsā, lai tie uzreiz atšķiras
+- Viena tabula ar statusu galvenēm; vilkšana starp grupām maina statusu; zila drop līnija
+- Arhīva poga aktīva ir sarkanīga; mapes Sarakstā aplītis hover pabeidz uzdevumu
+
+## v0.1.10
+
+**Sadalīto uzdevumu secība pēc statusa**
+
+- Sākumā un saraksta kopsavilkumā uzdevumi un apakšuzdevumi ir pretējā secībā pret statusu picker: vispirms tālākie aktīvie (piem. IZM), tad IN PROGRESS, tad TO DO
+- Tā pati kārtība Saraksta logā; slēgtie paliek arhīvā; vilktā secība paliek logā Uzdevumi
+
+## v0.1.9
+
+**Arhīva statusu krāsas**
+
+- Pabeigtiem arhivētiem apakšuzdevumiem statusa bloks ir blāvā statusa krāsā
+- Dzēstajiem statuss ir sarkanīgs ar blāvu fonu; blakus poga arī sarkanīgā tonī
+
+## v0.1.8
+
+**Apakšuzdevumu Check List**
+
+- Apakšuzdevuma modalī pirms pielikumiem var pievienot čeklistus ar nosaukumu; nākamais punkts parādās, tiklīdz iepriekšējā ir teksts
+- Slēgto statusu grupu un Pabeigt var izvēlēties tikai pie 100%; aktīvos statusus var mainīt arī ar nepabeigtiem punktiem
+- Sarakstā zem statusa pogas zaļa progresa josla
+
+## v0.1.7
+
+**Sākuma skats, saraksta statusi un koka vilkšana**
+
+- Sākums rāda Mani uzdevumi un darbu pa sarakstiem; ielāde ar spinneri, ne tukšu saturu
+- Saraksta `...` → Statusi: sistēmas katalogs plus komandas statusi tikai šim sarakstam
+- Sānjoslas kokā mapes, uzdevumus un failus var ievilkt mapē vai iznest ārā; drop līnija paliek virs vilktā bloka
+
 ## v0.1.6
 
 **Mapes sarakstā, apakšuzdevuma modālis uz vietas un relatīvie laiki**

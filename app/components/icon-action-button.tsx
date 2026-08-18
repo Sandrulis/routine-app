@@ -18,6 +18,12 @@ const variantClassName = {
   muted: "text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700",
 };
 
+const pressedClassName = {
+  edit: "bg-sky-50 text-sky-700",
+  delete: "bg-red-100 text-red-600",
+  muted: "bg-zinc-100 text-zinc-800",
+};
+
 export function IconActionButton({
   label,
   icon,
@@ -37,7 +43,7 @@ export function IconActionButton({
         aria-label={label}
         aria-pressed={pressed}
         className={`inline-flex h-8 w-8 items-center justify-center rounded-lg transition disabled:cursor-not-allowed disabled:opacity-40 ${
-          pressed ? "bg-zinc-100 text-zinc-800" : variantClassName[variant]
+          pressed ? pressedClassName[variant] : variantClassName[variant]
         }`}
       >
         <i className={`${icon} text-sm`} aria-hidden="true" />

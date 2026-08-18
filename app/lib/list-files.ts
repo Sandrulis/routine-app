@@ -118,14 +118,58 @@ export function nextItemSortOrder(items: Array<{ sortOrder: number }>): number {
   return items.reduce((max, item) => Math.max(max, item.sortOrder), -1) + 1;
 }
 
+function persistListFilePatches(
+  patches: Array<{ id: string; parentId?: string | null; sortOrder?: number }>,
+) {
+  if (patches.length === 0 || !listFilesTeamId) return;
+  void import("@/app/lib/db/work-data")
+    .then(async ({ updateListFileRow }) => {
+      for (const patch of patches) {
+        await updateListFileRow(patch.id, {
+          parentId: patch.parentId,
+          sortOrder: patch.sortOrder,
+        });
+      }
+    })
+    .catch((error) => {
+      console.error("Failed to update list files", error);
+    });
+}
+
 export function reorderStoredListFiles(orderedIds: string[]) {
   const all = readAllListFiles();
+  const patches: Array<{ id: string; sortOrder: number }> = [];
   const next = all.map((file) => {
     const index = orderedIds.indexOf(file.id);
     if (index < 0) return file;
+    patches.push({ id: file.id, sortOrder: index });
     return { ...file, sortOrder: index };
   });
   writeAllListFiles(next);
+  persistListFilePatches(patches);
+}
+
+export function placeStoredListFile(
+  fileId: string,
+  parentId: string | null,
+  orderedIds: string[],
+) {
+  const all = readAllListFiles();
+  const patches: Array<{ id: string; parentId?: string | null; sortOrder: number }> =
+    [];
+  const next = all.map((file) => {
+    if (file.id === fileId) {
+      const sortOrder = Math.max(0, orderedIds.indexOf(fileId));
+      patches.push({ id: file.id, parentId, sortOrder });
+      return { ...file, parentId, sortOrder };
+    }
+    const index = orderedIds.indexOf(file.id);
+    if (index < 0) return file;
+    patches.push({ id: file.id, sortOrder: index });
+    return { ...file, sortOrder: index };
+  });
+  writeAllListFiles(next);
+  persistListFilePatches(patches);
 }
 
 export function childListFiles(

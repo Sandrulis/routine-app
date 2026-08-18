@@ -7,12 +7,14 @@ import {
   type ListFile,
 } from "@/app/lib/list-files";
 
-export function useListFiles(): ListFile[] {
+export function useListFiles(): { files: ListFile[]; isReady: boolean } {
   const [files, setFiles] = useState<ListFile[]>([]);
+  const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
     function refresh() {
       setFiles(readAllListFiles());
+      setIsReady(true);
     }
 
     refresh();
@@ -24,5 +26,5 @@ export function useListFiles(): ListFile[] {
     };
   }, []);
 
-  return files;
+  return { files, isReady };
 }

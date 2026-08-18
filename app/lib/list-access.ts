@@ -154,10 +154,13 @@ export function resolveListAccessLevel(
 
 export function userIsAssignee(
   assigneeIds: string[],
-  currentUser: Pick<TeamMember, "id" | "userId">,
+  currentUser: Pick<TeamMember, "id" | "userId" | "roleId">,
 ): boolean {
   if (assigneeIds.includes(currentUser.id)) return true;
-  return Boolean(currentUser.userId && assigneeIds.includes(currentUser.userId));
+  if (currentUser.userId && assigneeIds.includes(currentUser.userId)) {
+    return true;
+  }
+  return Boolean(currentUser.roleId && assigneeIds.includes(currentUser.roleId));
 }
 
 export function accessIds(map: Record<string, ListAccessLevel>): string[] {

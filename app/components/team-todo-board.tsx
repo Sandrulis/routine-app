@@ -30,6 +30,7 @@ import {
   appModalWidePanelMaxWidthClassName,
 } from "@/app/components/app-modal";
 import { DragHandle } from "@/app/components/drag-handle";
+import { LoadingState } from "@/app/components/loading-state";
 import { useFeedbackToast } from "@/app/components/feedback-toast-provider";
 import { SectionPage } from "@/app/components/section-page";
 import { useTranslations } from "@/app/components/translations-provider";
@@ -688,6 +689,20 @@ export function TeamTodoBoard() {
         return withoutActive.filter((item) => item.status === column.status);
       });
     });
+  }
+
+  if (!authReady || !teamReady || !isHydrated) {
+    return (
+      <SectionPage
+        title={t("todo.page.title", "Komandas darbi")}
+        subtitle={t(
+          "todo.page.subtitle",
+          "Pievieno, piešķir un pārvieto uzdevumus starp kolonnām.",
+        )}
+      >
+        <LoadingState />
+      </SectionPage>
+    );
   }
 
   return (

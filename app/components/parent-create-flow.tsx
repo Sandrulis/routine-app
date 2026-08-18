@@ -38,7 +38,7 @@ export function ParentCreateFlow({
   const router = useRouter();
   const { showFeedback } = useFeedbackToast();
   const { addTask, listTasks, childTasks } = useLists();
-  const files = useListFiles();
+  const { files } = useListFiles();
   const [step, setStep] = useState<"choice" | "folder" | "task">("choice");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const contextRef = useRef(context);

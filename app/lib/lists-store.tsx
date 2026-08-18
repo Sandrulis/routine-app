@@ -22,6 +22,7 @@ import {
   type WorkTaskKind,
   listColorById,
   randomListColorId,
+  isClosedTaskStatus,
   type WorkList,
   type WorkListKind,
   type WorkTask,
@@ -33,6 +34,7 @@ import {
   type ListAccessLevel,
 } from "@/app/lib/list-access";
 import { useAuthSession } from "@/app/lib/auth/use-auth-session";
+import { memberIdsNotifiedForAssignees } from "@/app/lib/assignees";
 import { useTeam } from "@/app/lib/team-store";
 import {
   appendNotifications,
@@ -61,16 +63,33 @@ import {
   deleteListRow,
   deleteTaskFileRow,
   deleteTaskRow,
+  deleteTeamStatusLabel,
   fetchTeamWorkspace,
   insertActivity,
   insertList,
+  insertListStatus,
   insertTask,
   insertTaskFile,
   updateListRow,
+  updateListStatusRow,
+  updateListStatusSortOrders,
+  deleteListStatusRow,
   updateTaskFileName,
+  formatSupabaseError,
   updateTaskRow,
   updateTaskSortOrders,
+  upsertTeamStatusLabel,
 } from "@/app/lib/db/work-data";
+import {
+  createListStatusId,
+  isListStatusGroup,
+  normalizeStatusColor,
+  type ListStatus,
+} from "@/app/lib/list-statuses";
+import {
+  normalizeTaskChecklists,
+  taskHasIncompleteChecklists,
+} from "@/app/lib/task-checklists";
 
 type ListsContextValue = {
   isReady: boolean;
@@ -104,6 +123,9 @@ type ListsContextValue = {
         | "viewerRoleIds"
         | "viewerUserAccess"
         | "viewerRoleAccess"
+        | "hiddenStatusIds"
+        | "statusOrder"
+        | "statusGroupOverrides"
       >
     >,
   ) => void;
@@ -121,13 +143,18 @@ type ListsContextValue = {
     patch: Partial<
       Pick<
         WorkTask,
-        "title" | "description" | "status" | "assigneeIds" | "startDate" | "dueDate" | "deletedAt"
+        "title" | "description" | "status" | "assigneeIds" | "startDate" | "dueDate" | "deletedAt" | "checklists"
       >
     >,
   ) => void;
   hideTask: (taskId: string) => void;
   restoreTask: (taskId: string) => void;
   moveSubtask: (taskId: string, parentId: string) => void;
+  moveWorkItem: (
+    taskId: string,
+    parentId: string | null,
+    orderedIds: string[],
+  ) => void;
   deleteTask: (taskId: string) => void;
   addTaskComment: (taskId: string, text: string) => void;
   addTaskFile: (taskId: string, file: File) => Promise<TaskFile>;
@@ -139,6 +166,26 @@ type ListsContextValue = {
   childTasks: (parentId: string) => WorkTask[];
   subtasks: (parentId: string) => WorkTask[];
   reorderTasks: (orderedIds: string[]) => void;
+  listStatuses: ListStatus[];
+  addListStatus: (
+    listId: string,
+    input: { label: string; color: string; groupKey: string },
+  ) => ListStatus | null;
+  updateListStatus: (
+    statusId: string,
+    patch: Partial<Pick<ListStatus, "label" | "color" | "groupKey">>,
+  ) => void;
+  deleteListStatus: (statusId: string) => void;
+  reorderListStatuses: (listId: string, orderedIds: string[]) => void;
+  reassignTasksOffStatus: (
+    listId: string,
+    fromStatusId: string,
+    preferredStatusIds: string[],
+    closedStatusIds?: string[],
+  ) => void;
+  teamStatusLabels: Record<string, string>;
+  renameSystemStatus: (statusId: string, label: string) => void;
+  resetSystemStatusLabel: (statusId: string) => void;
 };
 
 const ListsContext = createContext<ListsContextValue | null>(null);
@@ -154,18 +201,28 @@ export function ListsProvider({ children }: { children: ReactNode }) {
   const [tasks, setTasks] = useState<WorkTask[]>([]);
   const [activities, setActivities] = useState<TaskActivity[]>([]);
   const [files, setFiles] = useState<TaskFile[]>([]);
+  const [listStatuses, setListStatuses] = useState<ListStatus[]>([]);
+  const [teamStatusLabels, setTeamStatusLabels] = useState<Record<string, string>>(
+    {},
+  );
   const [isReady, setIsReady] = useState(false);
   const listsRef = useRef(lists);
   listsRef.current = lists;
+  const listStatusesRef = useRef(listStatuses);
+  listStatusesRef.current = listStatuses;
+  const tasksRef = useRef(tasks);
+  tasksRef.current = tasks;
   const assignmentNotifyRef = useRef({
     actorId: "",
     memberIds: [] as string[],
+    members: [] as typeof members,
     userId,
     teamId,
   });
   assignmentNotifyRef.current = {
     actorId: currentUser.id,
     memberIds: members.map((member) => member.id),
+    members,
     userId,
     teamId,
   };
@@ -179,6 +236,8 @@ export function ListsProvider({ children }: { children: ReactNode }) {
       setTasks([]);
       setActivities([]);
       setFiles([]);
+      setListStatuses([]);
+      setTeamStatusLabels({});
       hydrateListFiles(null, [], {});
       hydrateTaskFileContents({});
       setIsReady(true);
@@ -190,6 +249,8 @@ export function ListsProvider({ children }: { children: ReactNode }) {
       setTasks([]);
       setActivities([]);
       setFiles([]);
+      setListStatuses([]);
+      setTeamStatusLabels({});
       hydrateListFiles(null, [], {});
       hydrateTaskFileContents({});
       setIsReady(true);
@@ -204,6 +265,8 @@ export function ListsProvider({ children }: { children: ReactNode }) {
         setTasks(workspace.tasks);
         setActivities(workspace.activities);
         setFiles(workspace.taskFiles);
+        setListStatuses(workspace.listStatuses);
+        setTeamStatusLabels(workspace.teamStatusLabels);
         hydrateListFiles(teamId, workspace.listFiles, workspace.listFileContents);
         hydrateTaskFileContents(workspace.taskFileContents);
       })
@@ -214,6 +277,8 @@ export function ListsProvider({ children }: { children: ReactNode }) {
         setTasks([]);
         setActivities([]);
         setFiles([]);
+        setListStatuses([]);
+        setTeamStatusLabels({});
         hydrateListFiles(teamId, [], {});
         hydrateTaskFileContents({});
       })
@@ -265,6 +330,9 @@ export function ListsProvider({ children }: { children: ReactNode }) {
         viewerRoleIds,
         viewerUserAccess,
         viewerRoleAccess,
+        hiddenStatusIds: [],
+        statusOrder: [],
+        statusGroupOverrides: {},
       };
 
       setLists((current) => [...current, list]);
@@ -300,6 +368,9 @@ export function ListsProvider({ children }: { children: ReactNode }) {
           | "viewerRoleIds"
           | "viewerUserAccess"
           | "viewerRoleAccess"
+          | "hiddenStatusIds"
+          | "statusOrder"
+          | "statusGroupOverrides"
         >
       >,
     ) => {
@@ -364,6 +435,7 @@ export function ListsProvider({ children }: { children: ReactNode }) {
 
   const deleteList = useCallback((listId: string) => {
     setLists((current) => current.filter((list) => list.id !== listId));
+    setListStatuses((current) => current.filter((status) => status.listId !== listId));
     setTasks((current) => {
       const removedIds = new Set(
         current.filter((task) => task.listId === listId).map((task) => task.id),
@@ -409,6 +481,7 @@ export function ListsProvider({ children }: { children: ReactNode }) {
         startDate: null,
         dueDate: null,
         sortOrder: 0,
+        checklists: [],
       };
       setTasks((current) => {
         if (task.kind === "subtask") {
@@ -455,7 +528,7 @@ export function ListsProvider({ children }: { children: ReactNode }) {
       patch: Partial<
         Pick<
           WorkTask,
-          "title" | "description" | "status" | "assigneeIds" | "startDate" | "dueDate" | "deletedAt"
+          "title" | "description" | "status" | "assigneeIds" | "startDate" | "dueDate" | "deletedAt" | "checklists"
         >
       >,
     ) => {
@@ -465,6 +538,28 @@ export function ListsProvider({ children }: { children: ReactNode }) {
           return current.map((task) =>
             task.id === taskId ? { ...task, ...patch } : task,
           );
+        }
+
+        const nextChecklists =
+          patch.checklists !== undefined
+            ? normalizeTaskChecklists(patch.checklists)
+            : (existing.checklists ?? []);
+        const catalog = listStatusesRef.current.filter(
+          (status) => status.listId === existing.listId,
+        );
+        const requestedStatus = patch.status;
+        const closingBlocked =
+          Boolean(requestedStatus) &&
+          requestedStatus !== existing.status &&
+          isClosedTaskStatus(requestedStatus as WorkTaskStatus, catalog) &&
+          taskHasIncompleteChecklists(nextChecklists);
+        if (closingBlocked) {
+          const { status: ignoredStatus, ...rest } = patch;
+          void ignoredStatus;
+          patch = rest;
+        }
+        if (patch.checklists !== undefined) {
+          patch = { ...patch, checklists: nextChecklists };
         }
 
         const nextEvents: TaskActivity[] = [];
@@ -493,14 +588,17 @@ export function ListsProvider({ children }: { children: ReactNode }) {
               assigneeIds: patch.assigneeIds,
             }),
           );
-          const addedIds = patch.assigneeIds.filter(
-            (id) => !existing.assigneeIds.includes(id),
+          const notify = assignmentNotifyRef.current;
+          const addedIds = memberIdsNotifiedForAssignees(
+            patch.assigneeIds.filter(
+              (id) => !existing.assigneeIds.includes(id),
+            ),
+            notify.members,
           );
           const parentId =
             existing.kind === "subtask" && existing.parentId
               ? existing.parentId
               : existing.id;
-          const notify = assignmentNotifyRef.current;
           const extra = notificationsForNewAssignees({
             actorId: notify.actorId,
             addedIds,
@@ -560,7 +658,7 @@ export function ListsProvider({ children }: { children: ReactNode }) {
         };
 
         void updateTaskRow(taskId, dbPatch).catch((error) => {
-          console.error("Failed to update task", error);
+          console.error("Failed to update task", formatSupabaseError(error));
         });
 
         return current.map((task) =>
@@ -686,6 +784,33 @@ export function ListsProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
+  const moveWorkItem = useCallback(
+    (taskId: string, parentId: string | null, orderedIds: string[]) => {
+      setTasks((current) => {
+        const existing = current.find((task) => task.id === taskId);
+        if (!existing || existing.kind === "subtask") return current;
+        if (parentId && collectTaskSubtreeIds(current, taskId).includes(parentId)) {
+          return current;
+        }
+        const sortOrder = Math.max(0, orderedIds.indexOf(taskId));
+        void updateTaskRow(taskId, { parentId, sortOrder }).catch((error) => {
+          console.error("Failed to move work item", error);
+        });
+        const next = current.map((task) => {
+          if (task.id === taskId) return { ...task, parentId, sortOrder };
+          const index = orderedIds.indexOf(task.id);
+          if (index < 0) return task;
+          return { ...task, sortOrder: index };
+        });
+        void updateTaskSortOrders(orderedIds).catch((error) => {
+          console.error("Failed to reorder after move", error);
+        });
+        return next;
+      });
+    },
+    [],
+  );
+
   const deleteTask = useCallback((taskId: string) => {
     let removedIds: string[] = [];
     setTasks((current) => {
@@ -715,6 +840,204 @@ export function ListsProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
+  const addListStatus = useCallback(
+    (
+      listId: string,
+      input: { label: string; color: string; groupKey: string },
+    ) => {
+      const label = input.label.trim();
+      if (!label) return null;
+      const sortOrder =
+        listStatuses
+          .filter((status) => status.listId === listId)
+          .reduce((max, status) => Math.max(max, status.sortOrder), -1) + 1;
+      const status: ListStatus = {
+        id: createListStatusId(),
+        listId,
+        labels: {},
+        label,
+        color: normalizeStatusColor(input.color),
+        sortOrder,
+        groupKey: isListStatusGroup(input.groupKey) ? input.groupKey : "active",
+      };
+      setListStatuses((current) => [...current, status]);
+      if (teamId) {
+        void insertListStatus(teamId, status).catch((error) => {
+          console.error("Failed to save list status", error);
+        });
+      }
+      return status;
+    },
+    [listStatuses, teamId],
+  );
+
+  const updateListStatus = useCallback(
+    (
+      statusId: string,
+      patch: Partial<Pick<ListStatus, "label" | "color" | "groupKey">>,
+    ) => {
+      setListStatuses((current) =>
+        current.map((status) => {
+          if (status.id !== statusId) return status;
+          const label = patch.label?.trim() || status.label;
+          return {
+            ...status,
+            labels: patch.label !== undefined ? {} : status.labels,
+            label,
+            color:
+              patch.color !== undefined
+                ? normalizeStatusColor(patch.color)
+                : status.color,
+            groupKey:
+              patch.groupKey !== undefined
+                ? isListStatusGroup(patch.groupKey)
+                  ? patch.groupKey
+                  : status.groupKey
+                : status.groupKey,
+          };
+        }),
+      );
+      void updateListStatusRow(statusId, patch).catch((error) => {
+        console.error("Failed to update list status", error);
+      });
+    },
+    [],
+  );
+
+  const deleteListStatus = useCallback((statusId: string) => {
+    setListStatuses((current) => current.filter((status) => status.id !== statusId));
+    void deleteListStatusRow(statusId).catch((error) => {
+      console.error("Failed to delete list status", error);
+    });
+  }, []);
+
+  const reassignTasksOffStatus = useCallback(
+    (
+      listId: string,
+      fromStatusId: string,
+      preferredStatusIds: string[],
+      closedStatusIds: string[] = [],
+    ) => {
+      if (preferredStatusIds.length === 0) return;
+      const now = new Date().toISOString();
+      const closed = new Set(closedStatusIds);
+      const changes: {
+        taskId: string;
+        fromStatus: string;
+        toStatus: string;
+      }[] = [];
+
+      for (const task of tasksRef.current) {
+        if (task.listId !== listId || task.status !== fromStatusId) continue;
+        const incomplete = taskHasIncompleteChecklists(task.checklists ?? []);
+        const toStatus =
+          preferredStatusIds.find(
+            (statusId) => !(closed.has(statusId) && incomplete),
+          ) ?? preferredStatusIds[0];
+        if (!toStatus || toStatus === task.status) continue;
+        changes.push({
+          taskId: task.id,
+          fromStatus: task.status,
+          toStatus,
+        });
+      }
+
+      if (changes.length === 0) return;
+
+      const byId = new Map(changes.map((change) => [change.taskId, change.toStatus]));
+      setTasks((current) =>
+        current.map((task) => {
+          const toStatus = byId.get(task.id);
+          if (!toStatus) return task;
+          return {
+            ...task,
+            status: toStatus as WorkTaskStatus,
+            statusChangedAt: now,
+          };
+        }),
+      );
+
+      const actorId = assignmentNotifyRef.current.actorId;
+      const teamIdForSave = assignmentNotifyRef.current.teamId;
+      const nextEvents = changes.map((change) =>
+        createActivity({
+          actorId,
+          taskId: change.taskId,
+          kind: "status",
+          fromStatus: change.fromStatus as WorkTaskStatus,
+          toStatus: change.toStatus as WorkTaskStatus,
+          at: now,
+        }),
+      );
+      setActivities((current) => [...current, ...nextEvents]);
+      for (const change of changes) {
+        void updateTaskRow(change.taskId, {
+          status: change.toStatus as WorkTaskStatus,
+          statusChangedAt: now,
+        }).catch((error) => {
+          console.error("Failed to reassign task status", error);
+        });
+      }
+      if (teamIdForSave) {
+        for (const event of nextEvents) {
+          void insertActivity(teamIdForSave, event).catch((error) => {
+            console.error("Failed to save status activity", error);
+          });
+        }
+      }
+    },
+    [],
+  );
+
+  const renameSystemStatus = useCallback(
+    (statusId: string, label: string) => {
+      const trimmed = label.trim();
+      if (!statusId.trim() || !trimmed) return;
+      setTeamStatusLabels((current) => ({ ...current, [statusId]: trimmed }));
+      if (teamId) {
+        void upsertTeamStatusLabel(teamId, statusId, trimmed).catch((error) => {
+          console.error("Failed to rename system status", error);
+        });
+      }
+    },
+    [teamId],
+  );
+
+  const resetSystemStatusLabel = useCallback(
+    (statusId: string) => {
+      if (!statusId.trim()) return;
+      setTeamStatusLabels((current) => {
+        if (!(statusId in current)) return current;
+        const next = { ...current };
+        delete next[statusId];
+        return next;
+      });
+      if (teamId) {
+        void deleteTeamStatusLabel(teamId, statusId).catch((error) => {
+          console.error("Failed to reset system status label", error);
+        });
+      }
+    },
+    [teamId],
+  );
+
+  const reorderListStatuses = useCallback(
+    (listId: string, orderedIds: string[]) => {
+      setListStatuses((current) =>
+        current.map((status) => {
+          if (status.listId !== listId) return status;
+          const index = orderedIds.indexOf(status.id);
+          if (index < 0) return status;
+          return { ...status, sortOrder: index };
+        }),
+      );
+      void updateListStatusSortOrders(orderedIds).catch((error) => {
+        console.error("Failed to reorder list statuses", error);
+      });
+    },
+    [],
+  );
+
   const updateTaskStatus = useCallback(
     (taskId: string, status: WorkTaskStatus) => {
       updateTask(taskId, { status });
@@ -727,6 +1050,7 @@ export function ListsProvider({ children }: { children: ReactNode }) {
       isReady,
       lists,
       tasks,
+      listStatuses,
       addList,
       updateList,
       deleteList,
@@ -735,6 +1059,7 @@ export function ListsProvider({ children }: { children: ReactNode }) {
       hideTask,
       restoreTask,
       moveSubtask,
+      moveWorkItem,
       deleteTask,
       updateTaskStatus,
       addTaskComment,
@@ -742,6 +1067,14 @@ export function ListsProvider({ children }: { children: ReactNode }) {
       renameTaskFile,
       removeTaskFile,
       reorderTasks,
+      addListStatus,
+      updateListStatus,
+      deleteListStatus,
+      reorderListStatuses,
+      reassignTasksOffStatus,
+      teamStatusLabels,
+      renameSystemStatus,
+      resetSystemStatusLabel,
       taskActivities: (taskId: string) =>
         activities
           .filter((item) => item.taskId === taskId)
@@ -767,10 +1100,20 @@ export function ListsProvider({ children }: { children: ReactNode }) {
       hideTask,
       restoreTask,
       moveSubtask,
+      moveWorkItem,
       files,
       isReady,
       lists,
+      listStatuses,
       reorderTasks,
+      addListStatus,
+      updateListStatus,
+      deleteListStatus,
+      reorderListStatuses,
+      reassignTasksOffStatus,
+      teamStatusLabels,
+      renameSystemStatus,
+      resetSystemStatusLabel,
       tasks,
       updateTask,
       updateTaskStatus,
@@ -786,4 +1129,8 @@ export function useLists() {
     throw new Error("useLists must be used within ListsProvider");
   }
   return context;
+}
+
+export function useListsOptional() {
+  return useContext(ListsContext);
 }

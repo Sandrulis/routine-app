@@ -5,6 +5,10 @@ import {
   parseListAccessLevel,
   type ListAccessLevel,
 } from "@/app/lib/list-access";
+import {
+  parseTaskChecklists,
+  type TaskChecklist,
+} from "@/app/lib/task-checklists";
 
 export type WorkListKind = "list" | "folder";
 
@@ -22,7 +26,27 @@ export type WorkList = {
   viewerRoleIds: string[];
   viewerUserAccess: Record<string, ListAccessLevel>;
   viewerRoleAccess: Record<string, ListAccessLevel>;
+  hiddenStatusIds: string[];
+  statusOrder: string[];
+  statusGroupOverrides: Record<string, string>;
 };
+
+export function parseIdList(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return value.filter(
+    (id): id is string => typeof id === "string" && id.trim().length > 0,
+  );
+}
+
+function parseStatusGroupMap(value: unknown): Record<string, string> {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return {};
+  const result: Record<string, string> = {};
+  for (const [id, group] of Object.entries(value as Record<string, unknown>)) {
+    if (!id.trim() || typeof group !== "string" || !group.trim()) continue;
+    result[id] = group;
+  }
+  return result;
+}
 
 export type WorkTaskStatus = "todo" | "in_progress" | "done";
 export type WorkTaskKind = "task" | "subtask" | "folder";
@@ -41,6 +65,7 @@ export type WorkTask = {
   startDate: string | null;
   dueDate: string | null;
   sortOrder: number;
+  checklists: TaskChecklist[];
 };
 
 export type ListColor = {
@@ -250,6 +275,19 @@ export function parseHexColor(value: string): string | null {
   return null;
 }
 
+export function fadeHexColor(value: string, whiteMix = 0.58): string {
+  const hex = parseHexColor(value);
+  if (!hex) return value;
+  const mix = Math.min(1, Math.max(0, whiteMix));
+  const mixChannel = (start: number) =>
+    Math.round(start + (255 - start) * mix)
+      .toString(16)
+      .padStart(2, "0");
+  return `#${mixChannel(Number.parseInt(hex.slice(1, 3), 16))}${mixChannel(
+    Number.parseInt(hex.slice(3, 5), 16),
+  )}${mixChannel(Number.parseInt(hex.slice(5, 7), 16))}`;
+}
+
 function contrastFg(hex: string): string {
   const raw = hex.replace("#", "");
   const r = Number.parseInt(raw.slice(0, 2), 16);
@@ -396,6 +434,13 @@ export function normalizeStoredLists(value: unknown): WorkList[] | null {
         viewerRoleIds: Object.keys(viewerRoleAccess),
         viewerUserAccess,
         viewerRoleAccess,
+        hiddenStatusIds: parseIdList(
+          "hiddenStatusIds" in item ? item.hiddenStatusIds : [],
+        ),
+        statusOrder: parseIdList("statusOrder" in item ? item.statusOrder : []),
+        statusGroupOverrides: parseStatusGroupMap(
+          "statusGroupOverrides" in item ? item.statusGroupOverrides : {},
+        ),
       };
     })
     .filter((item): item is WorkList => item !== null);
@@ -485,6 +530,9 @@ export function normalizeStoredTasks(value: unknown): WorkTask[] | null {
         (typeof item.deletedAt === "string" || item.deletedAt === null)
           ? item.deletedAt
           : null;
+      const checklists = parseTaskChecklists(
+        "checklists" in item ? item.checklists : [],
+      );
 
       if (!id || !listId || !title) return null;
       return {
@@ -501,6 +549,7 @@ export function normalizeStoredTasks(value: unknown): WorkTask[] | null {
         startDate,
         dueDate,
         sortOrder,
+        checklists,
       };
     })
     .filter((item): item is WorkTask => item !== null);

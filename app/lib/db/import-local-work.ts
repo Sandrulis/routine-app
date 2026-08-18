@@ -109,7 +109,7 @@ export async function importLocalWorkIfNeeded(
       }
     }
 
-    await importTeamWorkspace(userId, team, members);
+    await importTeamWorkspace(userId, team.id);
   }
 
   window.localStorage.setItem(flag, "1");
@@ -118,11 +118,8 @@ export async function importLocalWorkIfNeeded(
 
 async function importTeamWorkspace(
   userId: string,
-  team: WorkTeam,
-  members: TeamMember[],
+  teamId: string,
 ) {
-  const teamId = team.id;
-  const memberIds = new Set(members.map((member) => member.id));
   const lists =
     normalizeStoredLists(
       readJson(scopedStorageKey(LISTS_STORAGE_KEY, userId, teamId)),
@@ -156,10 +153,7 @@ async function importTeamWorkspace(
     await insertList(teamId, list);
   }
   for (const task of sortTasksForInsert(tasks)) {
-    await insertTask(teamId, {
-      ...task,
-      assigneeIds: task.assigneeIds.filter((id) => memberIds.has(id)),
-    });
+    await insertTask(teamId, task);
   }
   for (const activity of activities) {
     try {

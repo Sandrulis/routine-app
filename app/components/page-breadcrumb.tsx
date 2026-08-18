@@ -28,9 +28,10 @@ function CrumbIcon({ className }: { className: string }) {
 export function PageBreadcrumb() {
   const pathname = usePathname();
   const { t } = useTranslations();
-  const { lists, tasks } = useLists();
-  const files = useListFiles();
-  const { members } = useTeam();
+  const { lists, tasks, isReady: listsReady } = useLists();
+  const { files, isReady: filesReady } = useListFiles();
+  const { members, isReady: teamReady } = useTeam();
+  const loadingLabel = t("common.loading", "Ielādē…");
 
   const crumbs = useMemo<Crumb[]>(() => {
     const parts = pathname.split("/").filter(Boolean);
@@ -57,7 +58,9 @@ export function PageBreadcrumb() {
       if (parts[1]) {
         items.push({
           href: `/lists/${parts[1]}`,
-          label: list?.name ?? t("lists.detail.missing", "Saraksts nav atrasts"),
+          label: listsReady
+            ? (list?.name ?? t("lists.detail.missing", "Saraksts nav atrasts"))
+            : loadingLabel,
           icon: list ? (
             <ListBadge
               name={list.name}
@@ -90,7 +93,10 @@ export function PageBreadcrumb() {
         }
         items.push({
           href: `/lists/${parts[1]}/tasks/${parts[3]}`,
-          label: task?.title ?? t("tasks.detail.missing", "Uzdevums nav atrasts"),
+          label:
+            listsReady
+              ? (task?.title ?? t("tasks.detail.missing", "Uzdevums nav atrasts"))
+              : loadingLabel,
           icon: (
             <CrumbIcon
               className={
@@ -138,7 +144,9 @@ export function PageBreadcrumb() {
         }
         items.push({
           href: `/lists/${parts[1]}/files/${parts[3]}`,
-          label: file?.name ?? t("files.detail.missing", "Fails nav atrasts"),
+          label: filesReady
+            ? (file?.name ?? t("files.detail.missing", "Fails nav atrasts"))
+            : loadingLabel,
           icon: (
             <CrumbIcon
               className={file ? fileIconClassName(file.name) : "fas fa-file"}
@@ -160,7 +168,9 @@ export function PageBreadcrumb() {
         const member = members.find((item) => item.id === parts[1]);
         items.push({
           href: `/team/${parts[1]}`,
-          label: member?.name ?? t("team.detail.missing", "Biedrs nav atrasts"),
+          label: teamReady
+            ? (member?.name ?? t("team.detail.missing", "Biedrs nav atrasts"))
+            : loadingLabel,
           icon: member ? (
             <UserAvatar member={member} size="xs" />
           ) : (
@@ -222,7 +232,7 @@ export function PageBreadcrumb() {
         icon: <CrumbIcon className="fas fa-house" />,
       },
     ];
-  }, [files, lists, members, pathname, t, tasks]);
+  }, [files, filesReady, lists, listsReady, loadingLabel, members, pathname, t, tasks, teamReady]);
 
   return (
     <header className="sticky top-0 z-20 border-b border-zinc-200 bg-white/95 py-2.5 pr-4 pl-[var(--app-content-inset-left)] backdrop-blur-sm md:pr-6">

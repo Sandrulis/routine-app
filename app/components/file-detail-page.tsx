@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { ConfirmModal } from "@/app/components/confirm-modal";
 import { FilePreview } from "@/app/components/file-preview";
+import { LoadingState } from "@/app/components/loading-state";
 import { NameFormModal } from "@/app/components/name-form-modal";
 import { SectionPage } from "@/app/components/section-page";
 import { useFeedbackToast } from "@/app/components/feedback-toast-provider";
@@ -30,7 +31,7 @@ export function FileDetailPage({
   const router = useRouter();
   const { showFeedback } = useFeedbackToast();
   const { lists, isReady } = useLists();
-  const files = useListFiles();
+  const { files, isReady: filesReady } = useListFiles();
   const [renameOpen, setRenameOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [content, setContent] = useState<string | null>(null);
@@ -45,13 +46,13 @@ export function FileDetailPage({
     setContent(readListFileContent(file.id));
   }, [file]);
 
-  if (!isReady) {
+  if (!isReady || !filesReady) {
     return (
       <SectionPage
         title={t("files.detail.loading", "Ielādē failu")}
         subtitle={t("lists.page.subtitle", "Saraksti ar uzdevumiem.")}
       >
-        <div className="h-32 rounded-3xl border border-zinc-200 bg-white" />
+        <LoadingState />
       </SectionPage>
     );
   }

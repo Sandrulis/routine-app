@@ -12,6 +12,7 @@ import {
   OWNER_TEAM_ROLE,
 } from "@/app/lib/team";
 import { DEFAULT_LIST_COLOR, randomListColorId } from "@/app/lib/lists";
+import { groupWouldBeEmpty, isSingletonStatusGroup } from "@/app/lib/list-statuses";
 import {
   createFullTeamPermissions,
   normalizeTeamPermissionSet,
@@ -1089,6 +1090,22 @@ function slugifyStatusId(value: string): string {
   return slug.slice(0, 48);
 }
 
+async function displaceSingletonOccupants(
+  supabase: Awaited<ReturnType<typeof getSessionClient>>,
+  groupKey: string,
+  keepId: string,
+) {
+  if (!isSingletonStatusGroup(groupKey) || !keepId) return;
+  const { error } = await supabase
+    .from("task_statuses")
+    .update({ group_key: "active" })
+    .eq("group_key", groupKey)
+    .neq("id", keepId);
+  if (error) {
+    console.error("displaceSingletonOccupants failed:", error.message, error.code);
+  }
+}
+
 export async function createTaskStatus(input: TaskStatusInput): Promise<ActionResult> {
   const labels = normalizeStatusLabels(input.labels);
   const label = primaryStatusLabel(labels);
@@ -1142,6 +1159,7 @@ export async function createTaskStatus(input: TaskStatusInput): Promise<ActionRe
     return { ok: false, error: "errors.status_create_failed" };
   }
 
+  await displaceSingletonOccupants(supabase, groupKey, uniqueId);
   return { ok: true };
 }
 
@@ -1165,6 +1183,28 @@ export async function updateTaskStatus(
   }
 
   const supabase = await getSessionClient();
+  const { data: currentRow } = await supabase
+    .from("task_statuses")
+    .select("id, group_key")
+    .eq("id", statusId)
+    .maybeSingle();
+  const currentGroup =
+    currentRow && typeof currentRow.group_key === "string"
+      ? currentRow.group_key
+      : null;
+
+  if (currentGroup && currentGroup !== groupKey) {
+    const { data: allRows } = await supabase
+      .from("task_statuses")
+      .select("id, group_key");
+    const items = ((allRows ?? []) as { id: string; group_key: string }[]).map(
+      (row) => ({ id: row.id, groupKey: row.group_key }),
+    );
+    if (groupWouldBeEmpty(items, [], statusId)) {
+      return { ok: false, error: "errors.status_group_min_one" };
+    }
+  }
+
   const { error } = await supabase
     .from("task_statuses")
     .update({ label, labels, color, group_key: groupKey })
@@ -1174,6 +1214,7 @@ export async function updateTaskStatus(
     return { ok: false, error: "errors.status_update_failed" };
   }
 
+  await displaceSingletonOccupants(supabase, groupKey, statusId);
   return { ok: true };
 }
 
@@ -1186,6 +1227,16 @@ export async function deleteTaskStatus(statusId: string): Promise<ActionResult> 
   }
 
   const supabase = await getSessionClient();
+  const { data: allRows } = await supabase
+    .from("task_statuses")
+    .select("id, group_key");
+  const items = ((allRows ?? []) as { id: string; group_key: string }[]).map(
+    (row) => ({ id: row.id, groupKey: row.group_key }),
+  );
+  if (groupWouldBeEmpty(items, [], statusId)) {
+    return { ok: false, error: "errors.status_group_min_one" };
+  }
+
   const { error } = await supabase
     .from("task_statuses")
     .delete()

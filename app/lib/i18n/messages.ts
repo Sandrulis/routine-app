@@ -305,6 +305,7 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
     "roles.admin": "Administrators",
     "roles.system_admin": "Sistēmas administrators",
     "roles.user": "Lietotājs",
+    "common.loading": "Ielādē…",
     "common.name": "Vārds",
     "common.email": "E-pasts",
     "common.actions": "Darbības",
@@ -361,6 +362,7 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
     "nav.expand": "Izvērst",
     "nav.collapse": "Sakļaut",
     "nav.more": "Vairāk",
+    "nav.drag": "Pārvietot",
     "breadcrumb.label": "Ceļš",
     "team.page.subtitle":
       "Visi komandas biedri. Uzaicini jaunu biedru ar pluszīmi.",
@@ -428,6 +430,32 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
       "Visu uzdevumu un apakšuzdevumu kopsavilkums.",
     "lists.overview.empty": "Vēl nav uzdevumu.",
     "lists.overview.add_task": "Pievienot uzdevumu",
+    "lists.statuses.title": "Statusi",
+    "lists.statuses.menu_description": "Sistēmas un saraksta statusi",
+    "lists.statuses.description":
+      "Bīdi statusus arī starp grupām — tad grupa nomainās automātiski. Sistēmas statusu var pārsaukt šīs komandas ietvaros. Katrā grupā jābūt vismaz vienam statusam. Grupās Nav sākts un Slēgts drīkst būt tikai viens statuss.",
+    "lists.statuses.system": "Sistēmas statusi",
+    "lists.statuses.system.hint":
+      "Šos statusus definē sistēma. Tos var izmantot visos sarakstos.",
+    "lists.statuses.custom": "Saraksta statusi",
+    "lists.statuses.custom.hint":
+      "Tikai šajā sarakstā. Redzami komandas biedriem.",
+    "lists.statuses.custom.empty": "Vēl nav saraksta statusu.",
+    "lists.statuses.form.description":
+      "Norādi statusa nosaukumu, krāsu un grupu.",
+    "lists.statuses.form.system_description":
+      "Nosaukums attiecas tikai uz šo komandu. Citām komandām paliek sistēmas nosaukums.",
+    "lists.statuses.hide": "Paslēpt",
+    "lists.statuses.show": "Rādīt",
+    "lists.statuses.hidden": "Paslēpts",
+    "lists.statuses.system.badge": "Sistēma",
+    "lists.statuses.renamed": "Pārsaukts",
+    "lists.statuses.reset_default": "Atjaunot noklusējuma nosaukumu",
+    "lists.statuses.reset_done": "Atjaunots sistēmas nosaukums.",
+    "lists.statuses.group.empty": "Šajā grupā vēl nav statusu.",
+    "dashboard.subtitle": "Tavi uzdevumi un darbs pa sarakstiem.",
+    "dashboard.my_tasks": "Mani uzdevumi",
+    "dashboard.my_tasks.empty": "Tev vēl nav piesaistītu uzdevumu.",
     "lists.add.title": "Jauns saraksts",
     "lists.add.description":
       "Saraksts grupē projektus vai klientus, katram ar saviem uzdevumiem un iestatījumiem.",
@@ -629,6 +657,7 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
     "subtasks.status.changed_at": "Statuss mainīts",
     "status.next": "Nākamais statuss",
     "status.complete": "Pabeigt",
+    "status.complete_ask": "Pabeidzi?",
     "status.deleted": "Dzēsts",
     "status.group.not_started": "Nav sākts",
     "status.group.active": "Aktīvs",
@@ -649,6 +678,12 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
     "subtasks.attachments.title": "Pielikumi",
     "subtasks.attachments.drop": "Ievelc failus šeit vai",
     "subtasks.attachments.browse": "pārlūko",
+    "subtasks.checklist.title": "Check List",
+    "subtasks.checklist.add": "Pievienot sarakstu",
+    "subtasks.checklist.name_placeholder": "Saraksta nosaukums",
+    "subtasks.checklist.item_placeholder": "Jauns punkts",
+    "subtasks.checklist.incomplete":
+      "Vispirms izpildi visus kontrolsaraksta punktus.",
     "subtasks.modal.history": "Vēsture",
     "subtasks.history.empty": "Vēl nav vēstures ierakstu.",
     "subtasks.comment.placeholder": "Raksti komentāru",
@@ -821,6 +856,7 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
     "errors.status_group_invalid": "Izvēlies statusa grupu.",
     "errors.status_exists": "Statuss ar šādu kodu jau eksistē.",
     "errors.status_create_failed": "Neizdevās pievienot statusu.",
+    "errors.status_label_required": "Norādi statusa nosaukumu.",
     "errors.role_create_failed": "Neizdevās pievienot lomu.",
     "errors.role_reorder_failed": "Neizdevās mainīt lomu secību.",
     "errors.role_update_failed": "Neizdevās saglabāt lomu.",
@@ -830,6 +866,12 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
     "errors.status_update_failed": "Neizdevās saglabāt statusu.",
     "errors.status_delete_failed": "Neizdevās dzēst statusu.",
     "errors.status_reorder_failed": "Neizdevās mainīt statusu secību.",
+    "errors.status_group_min_one":
+      "Katrā grupā jābūt vismaz vienam statusam.",
+    "errors.status_closed_one_visible":
+      "Grupās Nav sākts un Slēgts drīkst būt tikai viens statuss.",
+    "errors.status_singleton_group":
+      "Grupās Nav sākts un Slēgts drīkst būt tikai viens statuss.",
   },
   en: {
     "app.name": "Routine",
@@ -1128,6 +1170,7 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
     "roles.admin": "Administrator",
     "roles.system_admin": "System administrator",
     "roles.user": "User",
+    "common.loading": "Loading…",
     "common.name": "Name",
     "common.email": "Email",
     "common.actions": "Actions",
@@ -1183,6 +1226,7 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
     "nav.expand": "Expand",
     "nav.collapse": "Collapse",
     "nav.more": "More",
+    "nav.drag": "Move",
     "breadcrumb.label": "Path",
     "team.page.subtitle": "All teammates. Invite a new member with the plus icon.",
     "team.invite.title": "Invite teammate",
@@ -1248,6 +1292,32 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
     "lists.overview.subtitle": "A summary of all tasks and subtasks.",
     "lists.overview.empty": "No tasks yet.",
     "lists.overview.add_task": "Add task",
+    "lists.statuses.title": "Statuses",
+    "lists.statuses.menu_description": "System and list statuses",
+    "lists.statuses.description":
+      "Drag statuses between groups to change the group automatically. A system status can be renamed for this team. Each group must keep at least one status. Not started and closed can have only one status.",
+    "lists.statuses.system": "System statuses",
+    "lists.statuses.system.hint":
+      "These statuses are defined by the system. They can be used in every list.",
+    "lists.statuses.custom": "List statuses",
+    "lists.statuses.custom.hint":
+      "Only in this list. Visible to team members.",
+    "lists.statuses.custom.empty": "No list statuses yet.",
+    "lists.statuses.form.description":
+      "Enter the status name, color, and group.",
+    "lists.statuses.form.system_description":
+      "The name applies only to this team. Other teams keep the system name.",
+    "lists.statuses.hide": "Hide",
+    "lists.statuses.show": "Show",
+    "lists.statuses.hidden": "Hidden",
+    "lists.statuses.system.badge": "System",
+    "lists.statuses.renamed": "Renamed",
+    "lists.statuses.reset_default": "Reset to default name",
+    "lists.statuses.reset_done": "System name restored.",
+    "lists.statuses.group.empty": "No statuses in this group yet.",
+    "dashboard.subtitle": "Your tasks and work grouped by lists.",
+    "dashboard.my_tasks": "My tasks",
+    "dashboard.my_tasks.empty": "You have no assigned tasks yet.",
     "lists.add.title": "New list",
     "lists.add.description":
       "A list groups projects or clients, each with its own tasks and settings.",
@@ -1444,6 +1514,7 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
     "subtasks.status.changed_at": "Status changed",
     "status.next": "Next status",
     "status.complete": "Complete",
+    "status.complete_ask": "Done?",
     "status.deleted": "Deleted",
     "status.group.not_started": "Not started",
     "status.group.active": "Active",
@@ -1464,6 +1535,11 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
     "subtasks.attachments.title": "Attachments",
     "subtasks.attachments.drop": "Drop files here or",
     "subtasks.attachments.browse": "browse",
+    "subtasks.checklist.title": "Check List",
+    "subtasks.checklist.add": "Add checklist",
+    "subtasks.checklist.name_placeholder": "Checklist name",
+    "subtasks.checklist.item_placeholder": "New item",
+    "subtasks.checklist.incomplete": "Complete all checklist items first.",
     "subtasks.modal.history": "History",
     "subtasks.history.empty": "No history yet.",
     "subtasks.comment.placeholder": "Write a comment",
@@ -1634,6 +1710,7 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
     "errors.status_group_invalid": "Choose a status group.",
     "errors.status_exists": "A status with this code already exists.",
     "errors.status_create_failed": "Could not add the status.",
+    "errors.status_label_required": "Enter a status name.",
     "errors.role_create_failed": "Could not add the role.",
     "errors.role_reorder_failed": "Could not reorder roles.",
     "errors.role_update_failed": "Could not save the role.",
@@ -1643,6 +1720,12 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
     "errors.status_update_failed": "Could not save the status.",
     "errors.status_delete_failed": "Could not delete the status.",
     "errors.status_reorder_failed": "Could not reorder statuses.",
+    "errors.status_group_min_one":
+      "Each group must have at least one status.",
+    "errors.status_closed_one_visible":
+      "Not started and closed can have only one status.",
+    "errors.status_singleton_group":
+      "Not started and closed can have only one status.",
   },
   ru,
 };

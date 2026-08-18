@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { SectionPage } from "@/app/components/section-page";
+import { LoadingState } from "@/app/components/loading-state";
 import { UserAvatar } from "@/app/components/user-avatar";
 import { useTranslations } from "@/app/components/translations-provider";
 import { useTeam } from "@/app/lib/team-store";
@@ -18,7 +19,7 @@ export function TeamMemberPage({ memberId }: { memberId: string }) {
         title={t("team.detail.loading", "Ielādē biedru")}
         subtitle={t("team.page.subtitle", "Visi komandas biedri.")}
       >
-        <div className="h-32 rounded-3xl border border-zinc-200 bg-white" />
+        <LoadingState />
       </SectionPage>
     );
   }

@@ -2,6 +2,7 @@ import { createClient } from "@/app/lib/supabase/client";
 import type { AppNotification } from "@/app/lib/notifications";
 import type { ListFile } from "@/app/lib/list-files";
 import type { WorkList, WorkTask } from "@/app/lib/lists";
+import { parseTaskChecklists } from "@/app/lib/task-checklists";
 import {
   DEFAULT_LIST_ACCESS_LEVEL,
   parseListAccessLevel,
@@ -10,7 +11,17 @@ import {
 import { initialsFromName, type MembersByTeam, type RolesByTeam, type TeamMember, type TeamRole, type WorkTeam } from "@/app/lib/team";
 import { normalizeTeamPermissionSet } from "@/app/lib/team-permissions";
 import type { TaskActivity, TaskFile } from "@/app/lib/task-activity";
-import type { TodoItem } from "@/app/lib/team-todo";
+import { isTodoStatus, type TodoItem } from "@/app/lib/team-todo";
+import {
+  isListStatusGroup,
+  mapListStatusRow,
+  normalizeStatusColor,
+  normalizeStatusLabels,
+  parseStatusGroupOverrides,
+  parseTeamStatusLabels,
+  primaryStatusLabel,
+  type ListStatus,
+} from "@/app/lib/list-statuses";
 
 function db() {
   return createClient();
@@ -18,6 +29,56 @@ function db() {
 
 function dateOrNull(value: string | null | undefined): string | null {
   return value && /^\d{4}-\d{2}-\d{2}/.test(value) ? value.slice(0, 10) : null;
+}
+
+async function replaceTaskAssignees(taskId: string, assigneeIds: string[]) {
+  const supabase = db();
+  const [{ error: delMembers }, { error: delRoles }] = await Promise.all([
+    supabase.from("task_assignees").delete().eq("task_id", taskId),
+    supabase.from("task_assignee_roles").delete().eq("task_id", taskId),
+  ]);
+  if (delMembers) throw new Error(formatSupabaseError(delMembers));
+  if (delRoles) throw new Error(formatSupabaseError(delRoles));
+  if (assigneeIds.length === 0) return;
+
+  const [membersRes, rolesRes] = await Promise.all([
+    supabase.from("team_members").select("id").in("id", assigneeIds),
+    supabase.from("team_roles").select("id").in("id", assigneeIds),
+  ]);
+  if (membersRes.error) throw new Error(formatSupabaseError(membersRes.error));
+  if (rolesRes.error) throw new Error(formatSupabaseError(rolesRes.error));
+
+  const memberIds = new Set((membersRes.data ?? []).map((row) => row.id));
+  const roleIds = new Set((rolesRes.data ?? []).map((row) => row.id));
+  const memberRows = assigneeIds
+    .filter((id) => memberIds.has(id))
+    .map((memberId) => ({ task_id: taskId, member_id: memberId }));
+  const roleRows = assigneeIds
+    .filter((id) => roleIds.has(id) && !memberIds.has(id))
+    .map((roleId) => ({ task_id: taskId, role_id: roleId }));
+
+  if (memberRows.length > 0) {
+    const { error } = await supabase.from("task_assignees").insert(memberRows);
+    if (error) throw new Error(formatSupabaseError(error));
+  }
+  if (roleRows.length > 0) {
+    const { error } = await supabase.from("task_assignee_roles").insert(roleRows);
+    if (error) throw new Error(formatSupabaseError(error));
+  }
+}
+
+export function formatSupabaseError(error: unknown): string {
+  if (!error || typeof error !== "object") return String(error);
+  const e = error as {
+    message?: string;
+    code?: string;
+    details?: string;
+    hint?: string;
+  };
+  const parts = [e.message, e.code, e.details, e.hint].filter(
+    (part): part is string => Boolean(part && String(part).trim()),
+  );
+  return parts.join(" | ") || String(error);
 }
 
 export function teamToRow(team: WorkTeam, createdBy: string) {
@@ -265,6 +326,8 @@ export type TeamWorkspace = {
   taskFileContents: Record<string, string>;
   listFiles: ListFile[];
   listFileContents: Record<string, string>;
+  listStatuses: ListStatus[];
+  teamStatusLabels: Record<string, string>;
   notifications: AppNotification[];
   todos: TodoItem[];
 };
@@ -279,16 +342,18 @@ export async function fetchTeamWorkspace(teamId: string): Promise<TeamWorkspace>
     listFilesRes,
     notificationsRes,
     todosRes,
+    listStatusesRes,
+    teamStatusLabelsRes,
   ] = await Promise.all([
     supabase
       .from("work_lists")
-      .select("id, name, description, icon, color, kind, is_private, created_by, default_access_level")
+      .select("id, name, description, icon, color, kind, is_private, created_by, default_access_level, hidden_status_ids, status_order, status_group_overrides")
       .eq("team_id", teamId)
       .order("created_at", { ascending: true }),
     supabase
       .from("work_tasks")
       .select(
-        "id, list_id, parent_id, kind, title, description, status, status_changed_at, deleted_at, start_date, due_date, sort_order",
+        "id, list_id, parent_id, kind, title, description, status, status_changed_at, deleted_at, start_date, due_date, sort_order, checklists",
       )
       .eq("team_id", teamId)
       .order("sort_order", { ascending: true }),
@@ -318,6 +383,15 @@ export async function fetchTeamWorkspace(teamId: string): Promise<TeamWorkspace>
       .select("id, title, description, status, assignee_id, due_date")
       .eq("team_id", teamId)
       .order("created_at", { ascending: true }),
+    supabase
+      .from("list_statuses")
+      .select("id, list_id, label, labels, color, sort_order, group_key")
+      .eq("team_id", teamId)
+      .order("sort_order", { ascending: true }),
+    supabase
+      .from("team_status_labels")
+      .select("status_id, label")
+      .eq("team_id", teamId),
   ]);
 
   const errors = [
@@ -328,24 +402,40 @@ export async function fetchTeamWorkspace(teamId: string): Promise<TeamWorkspace>
     listFilesRes.error,
     notificationsRes.error,
     todosRes.error,
+    listStatusesRes.error,
+    teamStatusLabelsRes.error,
   ].filter(Boolean);
   if (errors[0]) throw errors[0];
 
   const taskIds = (tasksRes.data ?? []).map((row) => row.id);
   let assigneeRows: { task_id: string; member_id: string }[] = [];
+  let assigneeRoleRows: { task_id: string; role_id: string }[] = [];
   if (taskIds.length > 0) {
-    const assigneesRes = await supabase
-      .from("task_assignees")
-      .select("task_id, member_id")
-      .in("task_id", taskIds);
+    const [assigneesRes, assigneeRolesRes] = await Promise.all([
+      supabase
+        .from("task_assignees")
+        .select("task_id, member_id")
+        .in("task_id", taskIds),
+      supabase
+        .from("task_assignee_roles")
+        .select("task_id, role_id")
+        .in("task_id", taskIds),
+    ]);
     if (assigneesRes.error) throw assigneesRes.error;
+    if (assigneeRolesRes.error) throw assigneeRolesRes.error;
     assigneeRows = assigneesRes.data ?? [];
+    assigneeRoleRows = assigneeRolesRes.data ?? [];
   }
 
   const assigneesByTask = new Map<string, string[]>();
   for (const row of assigneeRows) {
     const list = assigneesByTask.get(row.task_id) ?? [];
     list.push(row.member_id);
+    assigneesByTask.set(row.task_id, list);
+  }
+  for (const row of assigneeRoleRows) {
+    const list = assigneesByTask.get(row.task_id) ?? [];
+    list.push(row.role_id);
     assigneesByTask.set(row.task_id, list);
   }
 
@@ -428,6 +518,19 @@ export async function fetchTeamWorkspace(teamId: string): Promise<TeamWorkspace>
         viewerRoleIds: Object.keys(viewerRoleAccess),
         viewerUserAccess,
         viewerRoleAccess,
+        hiddenStatusIds: Array.isArray(row.hidden_status_ids)
+          ? row.hidden_status_ids.filter(
+              (id: unknown): id is string =>
+                typeof id === "string" && id.trim().length > 0,
+            )
+          : [],
+        statusOrder: Array.isArray(row.status_order)
+          ? row.status_order.filter(
+              (id: unknown): id is string =>
+                typeof id === "string" && id.trim().length > 0,
+            )
+          : [],
+        statusGroupOverrides: parseStatusGroupOverrides(row.status_group_overrides),
       };
     }),
     tasks: (tasksRes.data ?? []).map((row) => ({
@@ -444,6 +547,7 @@ export async function fetchTeamWorkspace(teamId: string): Promise<TeamWorkspace>
       startDate: row.start_date,
       dueDate: row.due_date,
       sortOrder: row.sort_order,
+      checklists: parseTaskChecklists(row.checklists),
     })),
     activities: (activitiesRes.data ?? []).map((row) => ({
       id: row.id,
@@ -462,6 +566,8 @@ export async function fetchTeamWorkspace(teamId: string): Promise<TeamWorkspace>
     taskFileContents,
     listFiles,
     listFileContents,
+    listStatuses: (listStatusesRes.data ?? []).map(mapListStatusRow),
+    teamStatusLabels: parseTeamStatusLabels(teamStatusLabelsRes.data),
     notifications: (notificationsRes.data ?? []).map((row) => ({
       id: row.id,
       kind: row.kind,
@@ -476,7 +582,7 @@ export async function fetchTeamWorkspace(teamId: string): Promise<TeamWorkspace>
       id: row.id,
       title: row.title,
       description: row.description,
-      status: row.status,
+      status: isTodoStatus(row.status) ? row.status : "todo",
       assigneeId: row.assignee_id,
       dueDate: row.due_date,
     })),
@@ -506,6 +612,9 @@ export async function insertList(
     is_private: list.isPrivate,
     created_by: options?.createdBy ?? list.createdBy ?? null,
     default_access_level: list.defaultAccessLevel,
+    hidden_status_ids: list.hiddenStatusIds ?? [],
+    status_order: list.statusOrder ?? [],
+    status_group_overrides: list.statusGroupOverrides ?? {},
   });
   if (error) throw error;
 
@@ -573,6 +682,9 @@ export async function updateListRow(
       | "viewerRoleIds"
       | "viewerUserAccess"
       | "viewerRoleAccess"
+      | "hiddenStatusIds"
+      | "statusOrder"
+      | "statusGroupOverrides"
     >
   > & { createdBy?: string | null },
 ) {
@@ -585,6 +697,15 @@ export async function updateListRow(
   if (patch.isPrivate !== undefined) rowPatch.is_private = patch.isPrivate;
   if (patch.defaultAccessLevel !== undefined) {
     rowPatch.default_access_level = patch.defaultAccessLevel;
+  }
+  if (patch.hiddenStatusIds !== undefined) {
+    rowPatch.hidden_status_ids = patch.hiddenStatusIds;
+  }
+  if (patch.statusOrder !== undefined) {
+    rowPatch.status_order = patch.statusOrder;
+  }
+  if (patch.statusGroupOverrides !== undefined) {
+    rowPatch.status_group_overrides = patch.statusGroupOverrides;
   }
 
   if (Object.keys(rowPatch).length > 0) {
@@ -631,17 +752,10 @@ export async function insertTask(teamId: string, task: WorkTask) {
     start_date: dateOrNull(task.startDate),
     due_date: dateOrNull(task.dueDate),
     sort_order: task.sortOrder,
+    checklists: task.checklists ?? [],
   });
   if (error) throw error;
-  if (task.assigneeIds.length > 0) {
-    const { error: assigneeError } = await supabase.from("task_assignees").insert(
-      task.assigneeIds.map((memberId) => ({
-        task_id: task.id,
-        member_id: memberId,
-      })),
-    );
-    if (assigneeError) throw assigneeError;
-  }
+  await replaceTaskAssignees(task.id, task.assigneeIds);
 }
 
 export async function updateTaskRow(
@@ -659,6 +773,7 @@ export async function updateTaskRow(
       | "dueDate"
       | "parentId"
       | "sortOrder"
+      | "checklists"
     >
   >,
 ) {
@@ -677,25 +792,13 @@ export async function updateTaskRow(
   if (patch.dueDate !== undefined) row.due_date = dateOrNull(patch.dueDate);
   if (patch.parentId !== undefined) row.parent_id = patch.parentId;
   if (patch.sortOrder !== undefined) row.sort_order = patch.sortOrder;
+  if (patch.checklists !== undefined) row.checklists = patch.checklists;
   if (Object.keys(row).length > 0) {
     const { error } = await supabase.from("work_tasks").update(row).eq("id", taskId);
-    if (error) throw error;
+    if (error) throw new Error(formatSupabaseError(error));
   }
   if (patch.assigneeIds) {
-    const { error: delError } = await supabase
-      .from("task_assignees")
-      .delete()
-      .eq("task_id", taskId);
-    if (delError) throw delError;
-    if (patch.assigneeIds.length > 0) {
-      const { error: insError } = await supabase.from("task_assignees").insert(
-        patch.assigneeIds.map((memberId) => ({
-          task_id: taskId,
-          member_id: memberId,
-        })),
-      );
-      if (insError) throw insError;
-    }
+    await replaceTaskAssignees(taskId, patch.assigneeIds);
   }
 }
 
@@ -787,6 +890,18 @@ export async function updateListFileName(fileId: string, name: string, mimeType:
     .from("list_files")
     .update({ name, mime_type: mimeType })
     .eq("id", fileId);
+  if (error) throw error;
+}
+
+export async function updateListFileRow(
+  fileId: string,
+  patch: { parentId?: string | null; sortOrder?: number },
+) {
+  const row: Record<string, unknown> = {};
+  if (patch.parentId !== undefined) row.parent_id = patch.parentId;
+  if (patch.sortOrder !== undefined) row.sort_order = patch.sortOrder;
+  if (Object.keys(row).length === 0) return;
+  const { error } = await db().from("list_files").update(row).eq("id", fileId);
   if (error) throw error;
 }
 
@@ -905,7 +1020,7 @@ export async function fetchTeamTodos(teamId: string): Promise<TodoItem[]> {
     id: row.id,
     title: row.title,
     description: row.description,
-    status: row.status,
+    status: isTodoStatus(row.status) ? row.status : "todo",
     assigneeId: row.assignee_id,
     dueDate: row.due_date,
   }));
@@ -933,3 +1048,91 @@ export function sortTasksForInsert(tasks: WorkTask[]): WorkTask[] {
   }
   return ordered;
 }
+
+export async function insertListStatus(teamId: string, status: ListStatus) {
+  const supabase = db();
+  const label = status.label.trim();
+  const { error } = await supabase.from("list_statuses").insert({
+    id: status.id,
+    list_id: status.listId,
+    team_id: teamId,
+    label,
+    labels: {},
+    color: normalizeStatusColor(status.color),
+    sort_order: status.sortOrder,
+    group_key: status.groupKey,
+  });
+  if (error) throw error;
+}
+
+export async function updateListStatusRow(
+  statusId: string,
+  patch: Partial<Pick<ListStatus, "labels" | "label" | "color" | "groupKey" | "sortOrder">>,
+) {
+  const supabase = db();
+  const next: Record<string, unknown> = {};
+  if (patch.label !== undefined) {
+    next.label = patch.label.trim();
+    next.labels = {};
+  } else if (patch.labels) {
+    const labels = normalizeStatusLabels(patch.labels);
+    next.labels = labels;
+    next.label = primaryStatusLabel(labels, "");
+  }
+  if (patch.color !== undefined) next.color = normalizeStatusColor(patch.color);
+  if (patch.groupKey !== undefined) {
+    next.group_key = isListStatusGroup(patch.groupKey) ? patch.groupKey : "active";
+  }
+  if (patch.sortOrder !== undefined) next.sort_order = patch.sortOrder;
+  if (Object.keys(next).length === 0) return;
+  const { error } = await supabase.from("list_statuses").update(next).eq("id", statusId);
+  if (error) throw error;
+}
+
+export async function deleteListStatusRow(statusId: string) {
+  const { error } = await db().from("list_statuses").delete().eq("id", statusId);
+  if (error) throw error;
+}
+
+export async function updateListStatusSortOrders(orderedIds: string[]) {
+  const supabase = db();
+  for (let index = 0; index < orderedIds.length; index += 1) {
+    const { error } = await supabase
+      .from("list_statuses")
+      .update({ sort_order: index })
+      .eq("id", orderedIds[index]);
+    if (error) throw error;
+  }
+}
+
+export async function upsertTeamStatusLabel(
+  teamId: string,
+  statusId: string,
+  label: string,
+) {
+  const trimmed = label.trim();
+  if (!trimmed) {
+    await deleteTeamStatusLabel(teamId, statusId);
+    return;
+  }
+  const { error } = await db().from("team_status_labels").upsert(
+    {
+      team_id: teamId,
+      status_id: statusId,
+      label: trimmed,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "team_id,status_id" },
+  );
+  if (error) throw error;
+}
+
+export async function deleteTeamStatusLabel(teamId: string, statusId: string) {
+  const { error } = await db()
+    .from("team_status_labels")
+    .delete()
+    .eq("team_id", teamId)
+    .eq("status_id", statusId);
+  if (error) throw error;
+}
+

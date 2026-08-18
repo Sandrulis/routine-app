@@ -4,20 +4,15 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { createMenuAnchorFromEvent } from "@/app/components/create-item-menu";
-import { DragHandle } from "@/app/components/drag-handle";
+import { GroupedSubtaskTables } from "@/app/components/grouped-subtask-tables";
 import { IconActionButton } from "@/app/components/icon-action-button";
+import { ListWindowsBoard } from "@/app/components/list-windows-board";
+import { LoadingState } from "@/app/components/loading-state";
 import { ParentCreateFlow, type ParentCreateContext } from "@/app/components/parent-create-flow";
 import { SectionPage } from "@/app/components/section-page";
-import {
-  SortableTaskGroup,
-  SortableTaskItem,
-} from "@/app/components/sortable-task-group";
 import { SubtaskDetailModal } from "@/app/components/subtask-detail-modal";
-import { SubtaskTable } from "@/app/components/subtask-table";
-import { OptionalTooltip } from "@/app/components/tooltip";
-import { useFeedbackToast } from "@/app/components/feedback-toast-provider";
 import { useTranslations } from "@/app/components/translations-provider";
-import { isWorkFolder, isWorkSubtask, workItemIcon } from "@/app/lib/lists";
+import { isWorkFolder, isWorkSubtask } from "@/app/lib/lists";
 import { useLists } from "@/app/lib/lists-store";
 import { useTeam } from "@/app/lib/team-store";
 import { useIsAdmin } from "@/app/lib/users/use-is-admin";
@@ -25,13 +20,6 @@ import {
   listAccessCapabilities,
   resolveListAccessLevel,
 } from "@/app/lib/list-access";
-import {
-  childListFiles,
-  fileIconClassName,
-  filePageHref,
-  reorderStoredListFiles,
-} from "@/app/lib/list-files";
-import { useListFiles } from "@/app/lib/use-list-files";
 
 export function TaskDetailPage({
   listId,
@@ -42,11 +30,9 @@ export function TaskDetailPage({
 }) {
   const { t } = useTranslations();
   const router = useRouter();
-  const { showFeedback } = useFeedbackToast();
-  const { lists, tasks, childTasks, subtasks, isReady, reorderTasks } = useLists();
+  const { lists, tasks, childTasks, subtasks, isReady } = useLists();
   const { currentUser, roles } = useTeam();
   const { isAdmin } = useIsAdmin();
-  const files = useListFiles();
   const [parentCreate, setParentCreate] = useState<ParentCreateContext | null>(
     null,
   );
@@ -66,28 +52,6 @@ export function TaskDetailPage({
     : opened;
   const children = parent ? subtasks(parent.id) : [];
   const nested = parent ? childTasks(parent.id) : [];
-  const folderFiles =
-    isFolder && parent && list
-      ? childListFiles(files, list.id, parent.id)
-      : [];
-  const folderEntries = [
-    ...nested.map((item) => ({
-      kind: "task" as const,
-      id: item.id,
-      sortOrder: item.sortOrder,
-      task: item,
-    })),
-    ...folderFiles.map((file) => ({
-      kind: "file" as const,
-      id: file.id,
-      sortOrder: file.sortOrder,
-      file,
-    })),
-  ].sort((left, right) =>
-    left.sortOrder !== right.sortOrder
-      ? left.sortOrder - right.sortOrder
-      : left.id.localeCompare(right.id),
-  );
 
   if (!isReady) {
     return (
@@ -95,7 +59,7 @@ export function TaskDetailPage({
         title={t("tasks.detail.loading", "Ielādē uzdevumu")}
         subtitle={t("lists.page.subtitle", "Saraksti ar uzdevumiem.")}
       >
-        <div className="h-32 rounded-3xl border border-zinc-200 bg-white" />
+        <LoadingState />
       </SectionPage>
     );
   }
@@ -160,7 +124,7 @@ export function TaskDetailPage({
             <IconActionButton
               label={t("subtasks.archive", "Arhīvs")}
               icon="fas fa-archive"
-              variant="muted"
+              variant="delete"
               pressed={archiveOpen}
               onClick={() => setArchiveOpen((current) => !current)}
             />
@@ -169,118 +133,22 @@ export function TaskDetailPage({
       }
     >
       {isFolder ? (
-        folderEntries.length > 0 ? (
-          <SortableTaskGroup
-            itemIds={folderEntries.map((item) => item.id)}
-            contextId={`folder-${parent.id}`}
-            onReorder={(orderedIds) => {
-              reorderTasks(orderedIds);
-              reorderStoredListFiles(orderedIds);
-            }}
-          >
-            <ul className="overflow-hidden rounded-2xl border border-zinc-200 bg-white">
-              {folderEntries.map((entry) => {
-                const canReorder =
-                  folderEntries.length > 1 && listAccess.canEditTasks;
-                if (entry.kind === "file") {
-                  return (
-                    <SortableTaskItem
-                      key={entry.file.id}
-                      id={entry.file.id}
-                      as="li"
-                      disabled={!canReorder}
-                      className="border-b border-zinc-100 last:border-b-0"
-                    >
-                      {({ attributes, listeners, isDragging }) => (
-                        <div
-                          className={`flex items-center gap-1 px-2 py-1 ${
-                            isDragging ? "bg-zinc-50 shadow-sm" : "hover:bg-zinc-50"
-                          }`}
-                        >
-                          {canReorder ? (
-                            <span onPointerDown={(event) => event.stopPropagation()}>
-                              <DragHandle
-                                label={t("subtasks.drag", "Mainīt secību")}
-                                attributes={attributes}
-                                listeners={listeners}
-                              />
-                            </span>
-                          ) : null}
-                          <Link
-                            href={filePageHref(list.id, entry.file.id)}
-                            className="flex min-w-0 flex-1 items-center gap-2 px-2 py-2 text-sm font-medium text-zinc-900"
-                          >
-                            <i
-                              className={`${fileIconClassName(entry.file.name)} w-4 text-center text-[13px]`}
-                              aria-hidden="true"
-                            />
-                            <span className="truncate">{entry.file.name}</span>
-                          </Link>
-                        </div>
-                      )}
-                    </SortableTaskItem>
-                  );
-                }
-
-                const item = entry.task;
-                return (
-                  <SortableTaskItem
-                    key={item.id}
-                    id={item.id}
-                    as="li"
-                    disabled={!canReorder}
-                    className="border-b border-zinc-100 last:border-b-0"
-                  >
-                    {({ attributes, listeners, isDragging }) => (
-                      <div
-                        className={`flex items-center gap-1 px-2 py-1 ${
-                          isDragging ? "bg-zinc-50 shadow-sm" : "hover:bg-zinc-50"
-                        }`}
-                      >
-                        {canReorder ? (
-                          <span onPointerDown={(event) => event.stopPropagation()}>
-                            <DragHandle
-                              label={t("subtasks.drag", "Mainīt secību")}
-                              attributes={attributes}
-                              listeners={listeners}
-                            />
-                          </span>
-                        ) : null}
-                        <Link
-                          href={`/lists/${list.id}/tasks/${item.id}`}
-                          className="flex min-w-0 flex-1 items-center gap-2 px-2 py-2 text-sm font-medium text-zinc-900"
-                        >
-                          <i
-                            className={`${workItemIcon(item)} w-4 text-center text-[12px] text-zinc-400`}
-                            aria-hidden="true"
-                          />
-                          <span className="truncate">
-                            <OptionalTooltip label={item.description}>
-                              <span className="block truncate">{item.title}</span>
-                            </OptionalTooltip>
-                          </span>
-                        </Link>
-                      </div>
-                    )}
-                  </SortableTaskItem>
-                );
-              })}
-            </ul>
-          </SortableTaskGroup>
-        ) : (
-          <div className="rounded-2xl border border-dashed border-zinc-200 bg-white px-6 py-12 text-center text-sm text-zinc-500">
-            {t("folders.empty", "Šajā mapē vēl nav uzdevumu.")}
-          </div>
-        )
-      ) : (
-        <SubtaskTable
+        <ListWindowsBoard
           listId={list.id}
-          tasks={children}
-          view={archiveOpen ? "with-archive" : "active"}
-          onOpenTask={(task) => {
-            router.push(`/lists/${list.id}/tasks/${task.id}`);
-          }}
+          parentId={parent.id}
+          tasks={nested}
         />
+      ) : (
+        <div className="overflow-hidden rounded-xl border border-zinc-200 bg-white px-3 py-3">
+          <GroupedSubtaskTables
+            listId={list.id}
+            tasks={children}
+            includeClosed={archiveOpen}
+            onOpenTask={(task) => {
+              router.push(`/lists/${list.id}/tasks/${task.id}`);
+            }}
+          />
+        </div>
       )}
 
       <SubtaskDetailModal

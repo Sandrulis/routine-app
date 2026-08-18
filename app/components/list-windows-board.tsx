@@ -4,6 +4,7 @@ import {
   DndContext,
   PointerSensor,
   closestCenter,
+  useDroppable,
   useSensor,
   useSensors,
   type DragEndEvent,
@@ -16,16 +17,31 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import Link from "next/link";
-import { useEffect, useRef, useState, type ChangeEvent, type ReactNode } from "react";
+import { useEffect, useId, useRef, useState, type ChangeEvent, type ReactNode } from "react";
+import { AssigneeFaces } from "@/app/components/assignee-faces";
 import { DragHandle } from "@/app/components/drag-handle";
 import {
   SortableTaskGroup,
   SortableTaskItem,
 } from "@/app/components/sortable-task-group";
-import { statusDotClassName, statusTextClassName } from "@/app/components/status-control";
-import { useTaskStatuses } from "@/app/lib/task-statuses";
+import {
+  dropHintFromEvent,
+  frozenSortingStrategy,
+  groupedStatusCollisionDetection,
+  insertAtEdge,
+  parseStatusGroupDropId,
+  statusGroupDropId,
+  TaskDropLine,
+  type DropHint,
+} from "@/app/components/task-drop-line";
+import { statusClassName, statusDotClassName, statusTextClassName } from "@/app/components/status-control";
+import {
+  useSystemTaskStatuses,
+  useTaskStatuses,
+} from "@/app/lib/task-statuses";
 import { OptionalTooltip, Tooltip } from "@/app/components/tooltip";
 import { SubtaskDetailModal } from "@/app/components/subtask-detail-modal";
+import { LoadingState } from "@/app/components/loading-state";
 import { useTranslations } from "@/app/components/translations-provider";
 import {
   addStoredListFile,
@@ -42,6 +58,12 @@ import {
   type ListWindowId,
 } from "@/app/lib/list-windows";
 import {
+  compareTasksByStatusPriority,
+  mergeStatusCatalog,
+  resolveStatusIdForTask,
+  statusesByPriorityDesc,
+} from "@/app/lib/list-statuses";
+import {
   getDescendantSubtasks,
   getDescendantWorkItems,
   isClosedTaskStatus,
@@ -50,6 +72,7 @@ import {
   isWorkFolder,
   taskProgress,
   type WorkTask,
+  type WorkTaskStatus,
 } from "@/app/lib/lists";
 import { useLists } from "@/app/lib/lists-store";
 import { useListFiles } from "@/app/lib/use-list-files";
@@ -60,6 +83,7 @@ import {
   resolveListAccessLevel,
   userIsAssignee,
 } from "@/app/lib/list-access";
+import { taskHasIncompleteChecklists } from "@/app/lib/task-checklists";
 
 function isListedInWindow(
   item: WorkTask,
@@ -166,7 +190,7 @@ function TasksWindowItem({
 }) {
   const { t } = useTranslations();
   const { tasks: allTasks, childTasks, subtasks } = useLists();
-  const { statuses } = useTaskStatuses();
+  const { statuses } = useTaskStatuses(listId);
   const folder = isWorkFolder(task);
   const nestedItems = folder
     ? childTasks(task.id).filter((item) =>
@@ -234,10 +258,12 @@ function TasksWindow({
   listId,
   tasks,
   archiveOpen,
+  contextId,
 }: {
   listId: string;
   tasks: WorkTask[];
   archiveOpen: boolean;
+  contextId: string;
 }) {
   const { t } = useTranslations();
 
@@ -254,7 +280,7 @@ function TasksWindow({
   return (
     <SortableTaskGroup
       itemIds={tasks.map((task) => task.id)}
-      contextId={`list-tasks-${listId}`}
+      contextId={contextId}
     >
       <ul className="space-y-1.5">
         {tasks.map((task) => (
@@ -296,11 +322,17 @@ function TasksWindow({
 function FilesWindow({
   listId,
   files,
+  loading,
 }: {
   listId: string;
   files: ListFile[];
+  loading?: boolean;
 }) {
   const { t } = useTranslations();
+
+  if (loading) {
+    return <LoadingState compact className="justify-center py-8" />;
+  }
 
   if (files.length === 0) {
     return (
@@ -332,6 +364,333 @@ function FilesWindow({
   );
 }
 
+function OverviewStatusHeader({
+  statusId,
+  label,
+  count,
+  color,
+}: {
+  statusId: string;
+  label: string;
+  count: number;
+  color: string | null;
+}) {
+  const { setNodeRef, isOver } = useDroppable({
+    id: statusGroupDropId(statusId),
+  });
+  return (
+    <div
+      ref={setNodeRef}
+      className={`mb-1 flex items-center gap-2 px-1 ${isOver ? "rounded-md bg-emerald-50" : ""}`}
+    >
+      <span
+        className={`inline-flex min-h-5 items-center rounded-md px-1.5 text-[10px] font-semibold tracking-wide uppercase ${
+          color ? "text-white" : statusClassName("todo")
+        }`}
+        style={color ? { backgroundColor: color } : undefined}
+      >
+        {label}
+      </span>
+      <span className="text-[11px] text-zinc-400">{count}</span>
+    </div>
+  );
+}
+
+function OverviewSubtaskRow({
+  listId,
+  task,
+  canDrag,
+  canToggle,
+  checklistBlocked,
+  onOpen,
+  onComplete,
+}: {
+  listId: string;
+  task: WorkTask;
+  canDrag: boolean;
+  canToggle: boolean;
+  checklistBlocked: boolean;
+  onOpen: () => void;
+  onComplete: () => void;
+}) {
+  const { t } = useTranslations();
+  const { colorFor, statuses } = useTaskStatuses(listId);
+  const done = isClosedTaskStatus(task.status, statuses);
+  const statusColor = colorFor(task.status);
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({
+    id: task.id,
+    disabled: !canDrag,
+    animateLayoutChanges: () => false,
+  });
+
+  return (
+    <li
+      ref={setNodeRef}
+      style={{
+        transform: CSS.Transform.toString(transform),
+        transition,
+      }}
+      className={`flex min-w-0 items-center gap-2 ${
+        isDragging ? "relative z-10 opacity-40" : ""
+      }`}
+    >
+      {canDrag ? (
+        <span
+          className="shrink-0"
+          onPointerDown={(event) => event.stopPropagation()}
+        >
+          <DragHandle
+            label={t("subtasks.drag", "Mainīt secību")}
+            attributes={attributes}
+            listeners={listeners}
+          />
+        </span>
+      ) : null}
+      <OptionalTooltip
+        label={
+          checklistBlocked
+            ? t(
+                "subtasks.checklist.incomplete",
+                "Vispirms izpildi visus kontrolsaraksta punktus.",
+              )
+            : done
+              ? null
+              : t("status.complete_ask", "Pabeidzi?")
+        }
+      >
+        <button
+          type="button"
+          aria-pressed={done}
+          aria-label={
+            done
+              ? task.title
+              : t("status.complete_ask", "Pabeidzi?")
+          }
+          disabled={!canToggle || checklistBlocked}
+          onPointerDown={(event) => event.stopPropagation()}
+          onClick={(event) => {
+            event.stopPropagation();
+            if (checklistBlocked) return;
+            onComplete();
+          }}
+          className={`inline-flex size-4 shrink-0 items-center justify-center rounded-full border ${
+            statusColor ? "" : statusDotClassName(task.status)
+          } ${
+            done
+              ? "text-white"
+              : "text-transparent hover:text-white"
+          } disabled:cursor-not-allowed disabled:opacity-60`}
+          style={
+            statusColor
+              ? { backgroundColor: statusColor, borderColor: statusColor }
+              : undefined
+          }
+        >
+          <i className="fas fa-check text-[8px]" aria-hidden="true" />
+        </button>
+      </OptionalTooltip>
+      <button
+        type="button"
+        onClick={onOpen}
+        className={`min-w-0 flex-1 truncate text-left text-[13px] ${
+          statusColor ? "" : statusTextClassName(task.status)
+        } ${done ? "line-through" : "hover:opacity-80"}`}
+        style={statusColor ? { color: statusColor } : undefined}
+      >
+        {task.title}
+      </button>
+      <AssigneeFaces assigneeIds={task.assigneeIds} />
+    </li>
+  );
+}
+
+function OverviewSubtaskList({
+  listId,
+  tasks,
+  onOpenSubtask,
+}: {
+  listId: string;
+  tasks: WorkTask[];
+  onOpenSubtask: (task: WorkTask) => void;
+}) {
+  const dndContextId = useId();
+  const { lists, listStatuses, updateTask, updateTaskStatus, reorderTasks } =
+    useLists();
+  const { currentUser, roles } = useTeam();
+  const { isAdmin } = useIsAdmin();
+  const { statuses, colorFor, labelFor } = useTaskStatuses(listId);
+  const { statuses: systemStatuses } = useSystemTaskStatuses();
+  const [dropHint, setDropHint] = useState<DropHint | null>(null);
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+  );
+  const list = lists.find((item) => item.id === listId) ?? null;
+  const access = listAccessCapabilities(
+    list ? resolveListAccessLevel(list, currentUser, roles, isAdmin) : null,
+  );
+  const groups = statusesByPriorityDesc(statuses)
+    .map((status) => ({
+      status,
+      items: tasks.filter((task) => task.status === status.id),
+    }))
+    .filter((group) => group.items.length > 0);
+  const closedStatusId =
+    [...statuses].reverse().find((status) => status.groupKey === "closed")
+      ?.id ?? "done";
+  const openStatusId =
+    statuses.find((status) => status.groupKey === "not_started")?.id ?? "todo";
+
+  function handleDragEnd(event: DragEndEvent) {
+    const hint = dropHintFromEvent(event);
+    setDropHint(null);
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const activeTask = tasks.find((task) => task.id === active.id);
+    if (!activeTask) return;
+    const canDragStatus =
+      access.canEditTasks ||
+      (access.canComment && userIsAssignee(activeTask.assigneeIds, currentUser));
+    const canDragOrder = access.canEditTasks;
+    if (!canDragStatus && !canDragOrder) return;
+
+    const headerStatusId = parseStatusGroupDropId(over.id);
+    const overTask = headerStatusId
+      ? null
+      : tasks.find((task) => task.id === over.id);
+    if (!headerStatusId && !overTask) return;
+    const targetStatusId = headerStatusId ?? overTask?.status;
+    if (!targetStatusId) return;
+    const resolvedStatus = resolveStatusIdForTask(
+      targetStatusId,
+      mergeStatusCatalog(systemStatuses, listStatuses, listId),
+      statuses,
+    );
+    if (!resolvedStatus) return;
+    const edge = hint?.edge ?? "before";
+
+    if (resolvedStatus !== activeTask.status) {
+      if (!canDragStatus) return;
+      updateTask(activeTask.id, {
+        status: resolvedStatus as WorkTaskStatus,
+      });
+      if (canDragOrder) {
+        const targetIds = tasks
+          .filter(
+            (task) =>
+              task.status === resolvedStatus && task.id !== activeTask.id,
+          )
+          .map((task) => task.id);
+        reorderTasks(
+          insertAtEdge(
+            targetIds,
+            activeTask.id,
+            overTask?.id ?? null,
+            edge,
+            Boolean(headerStatusId),
+          ),
+        );
+      }
+      return;
+    }
+
+    if (!canDragOrder) return;
+    const groupIds = tasks
+      .filter((task) => task.status === activeTask.status)
+      .map((task) => task.id);
+    const nextIds = insertAtEdge(
+      groupIds,
+      activeTask.id,
+      overTask?.id ?? null,
+      edge,
+      Boolean(headerStatusId),
+    );
+    if (nextIds.some((id, index) => id !== groupIds[index])) {
+      reorderTasks(nextIds);
+    }
+  }
+
+  if (tasks.length === 0) return null;
+
+  return (
+    <div
+      className="mt-2"
+      onPointerDown={(event) => event.stopPropagation()}
+    >
+      <DndContext
+        id={dndContextId}
+        sensors={sensors}
+        collisionDetection={groupedStatusCollisionDetection}
+        onDragStart={() => setDropHint(null)}
+        onDragMove={(event) => setDropHint(dropHintFromEvent(event))}
+        onDragOver={(event) => setDropHint(dropHintFromEvent(event))}
+        onDragCancel={() => setDropHint(null)}
+        onDragEnd={handleDragEnd}
+      >
+        <div className="space-y-3">
+          {groups.map((group) => {
+            const groupColor = colorFor(group.status.id);
+            const groupIds = group.items.map((task) => task.id);
+            return (
+              <div key={group.status.id}>
+                <OverviewStatusHeader
+                  statusId={group.status.id}
+                  label={labelFor(group.status.id) || group.status.label}
+                  count={group.items.length}
+                  color={groupColor}
+                />
+                <SortableContext
+                  items={groupIds}
+                  strategy={frozenSortingStrategy}
+                >
+                  <ul className="space-y-1">
+                    {group.items.map((task) => {
+                      const done = isClosedTaskStatus(task.status, statuses);
+                      const checklistBlocked =
+                        !done &&
+                        taskHasIncompleteChecklists(task.checklists);
+                      const canToggle =
+                        access.canEditTasks ||
+                        (access.canComment &&
+                          userIsAssignee(task.assigneeIds, currentUser));
+                      return (
+                        <OverviewSubtaskRow
+                          key={task.id}
+                          listId={listId}
+                          task={task}
+                          canDrag={access.canEditTasks}
+                          canToggle={canToggle}
+                          checklistBlocked={checklistBlocked}
+                          onOpen={() => onOpenSubtask(task)}
+                          onComplete={() =>
+                            updateTaskStatus(
+                              task.id,
+                              (done
+                                ? openStatusId
+                                : closedStatusId) as WorkTaskStatus,
+                            )
+                          }
+                        />
+                      );
+                    })}
+                  </ul>
+                </SortableContext>
+              </div>
+            );
+          })}
+        </div>
+        {dropHint ? <TaskDropLine hint={dropHint} /> : null}
+      </DndContext>
+    </div>
+  );
+}
+
 function OverviewItem({
   listId,
   task,
@@ -346,30 +705,29 @@ function OverviewItem({
   onOpenSubtask: (task: WorkTask) => void;
 }) {
   const { t } = useTranslations();
-  const { lists, tasks: allTasks, childTasks, subtasks, updateTaskStatus } =
-    useLists();
-  const { currentUser, roles } = useTeam();
-  const { isAdmin } = useIsAdmin();
+  const { tasks: allTasks, childTasks, subtasks } = useLists();
   const [localArchiveOpen, setLocalArchiveOpen] = useState(false);
   const archiveOpen = nested ? Boolean(archiveOpenProp) : localArchiveOpen;
-  const list = lists.find((item) => item.id === listId) ?? null;
-  const access = listAccessCapabilities(
-    list ? resolveListAccessLevel(list, currentUser, roles, isAdmin) : null,
-  );
-  const { colorFor, statuses } = useTaskStatuses();
+  const { statuses } = useTaskStatuses(listId);
   const folder = isWorkFolder(task);
   const nestedAll = folder
     ? childTasks(task.id).filter((item) => !isTaskDeleted(item))
     : [];
-  const nestedItems = nestedAll.filter((item) =>
-    isListedInWindow(item, statuses, archiveOpen),
-  );
+  const nestedItems = nestedAll
+    .filter((item) => isListedInWindow(item, statuses, archiveOpen))
+    .slice()
+    .sort((left, right) =>
+      compareTasksByStatusPriority(left, right, statuses),
+    );
   const children = folder
     ? getDescendantSubtasks(allTasks, task.id)
     : subtasks(task.id);
-  const visibleChildren = children.filter((item) =>
-    isListedInWindow(item, statuses, archiveOpen),
-  );
+  const visibleChildren = children
+    .filter((item) => isListedInWindow(item, statuses, archiveOpen))
+    .slice()
+    .sort((left, right) =>
+      compareTasksByStatusPriority(left, right, statuses),
+    );
   const progress = taskProgress(task, children);
   const closed = isClosedTaskStatus(task.status, statuses);
 
@@ -445,51 +803,11 @@ function OverviewItem({
           </p>
         ) : null
       ) : visibleChildren.length > 0 ? (
-        <ul className="mt-2 space-y-1">
-          {visibleChildren.map((child) => {
-            const done = isClosedTaskStatus(child.status, statuses);
-            const statusColor = colorFor(child.status);
-            return (
-              <li key={child.id} className="flex items-center gap-2">
-                <button
-                  type="button"
-                  aria-pressed={done}
-                  aria-label={child.title}
-                  disabled={
-                    !(
-                      access.canEditTasks ||
-                      (access.canComment &&
-                        userIsAssignee(child.assigneeIds, currentUser))
-                    )
-                  }
-                  onClick={() =>
-                    updateTaskStatus(child.id, done ? "todo" : "done")
-                  }
-                  className={`inline-flex size-4 shrink-0 items-center justify-center rounded-full border ${
-                    statusColor ? "" : statusDotClassName(child.status)
-                  } ${done ? "text-white" : "text-transparent"} disabled:cursor-not-allowed disabled:opacity-60`}
-                  style={
-                    statusColor
-                      ? { backgroundColor: statusColor, borderColor: statusColor }
-                      : undefined
-                  }
-                >
-                  <i className="fas fa-check text-[8px]" aria-hidden="true" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => onOpenSubtask(child)}
-                  className={`truncate text-left text-[13px] ${
-                    statusColor ? "" : statusTextClassName(child.status)
-                  } ${done ? "line-through" : "hover:opacity-80"}`}
-                  style={statusColor ? { color: statusColor } : undefined}
-                >
-                  {child.title}
-                </button>
-              </li>
-            );
-          })}
-        </ul>
+        <OverviewSubtaskList
+          listId={listId}
+          tasks={visibleChildren}
+          onOpenSubtask={onOpenSubtask}
+        />
       ) : null}
     </div>
   );
@@ -505,6 +823,12 @@ function OverviewWindow({
   onOpenSubtask: (task: WorkTask) => void;
 }) {
   const { t } = useTranslations();
+  const { statuses } = useTaskStatuses(listId);
+  const orderedTasks = tasks
+    .slice()
+    .sort((left, right) =>
+      compareTasksByStatusPriority(left, right, statuses),
+    );
 
   if (tasks.length === 0) {
     return (
@@ -516,7 +840,7 @@ function OverviewWindow({
 
   return (
     <ul className="grid gap-3 [grid-template-columns:repeat(auto-fit,minmax(min(100%,16rem),1fr))]">
-      {tasks.map((task) => (
+      {orderedTasks.map((task) => (
         <li key={task.id} className="min-w-0 rounded-xl bg-zinc-50 px-3 py-2.5">
           <OverviewItem
             listId={listId}
@@ -532,15 +856,18 @@ function OverviewWindow({
 export function ListWindowsBoard({
   listId,
   tasks,
+  parentId = null,
 }: {
   listId: string;
   tasks: WorkTask[];
+  parentId?: string | null;
 }) {
   const { t } = useTranslations();
   const { lists } = useLists();
   const { currentUser, roles } = useTeam();
   const { isAdmin } = useIsAdmin();
   const list = lists.find((item) => item.id === listId) ?? null;
+  const windowOrderKey = parentId ?? listId;
   const canUploadFiles = list
     ? listAccessCapabilities(
         resolveListAccessLevel(list, currentUser, roles, isAdmin),
@@ -549,16 +876,18 @@ export function ListWindowsBoard({
   const [order, setOrder] = useState<ListWindowId[]>(DEFAULT_LIST_WINDOW_ORDER);
   const [tasksArchiveOpen, setTasksArchiveOpen] = useState(false);
   const [openedSubtaskId, setOpenedSubtaskId] = useState<string | null>(null);
-  const allFiles = useListFiles();
-  const files = allFiles.filter((file) => file.listId === listId);
+  const allFilesHook = useListFiles();
+  const allFiles = allFilesHook.files;
+  const filesReady = allFilesHook.isReady;
+  const files = childListFiles(allFiles, listId, parentId);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
   );
 
   useEffect(() => {
-    setOrder(readListWindowOrder(listId));
-  }, [listId]);
+    setOrder(readListWindowOrder(windowOrderKey));
+  }, [windowOrderKey]);
 
   async function handleUpload(event: ChangeEvent<HTMLInputElement>) {
     if (!canUploadFiles) return;
@@ -566,10 +895,10 @@ export function ListWindowsBoard({
     event.target.value = "";
     let nextOrder = nextItemSortOrder([
       ...tasks,
-      ...childListFiles(allFiles, listId, null),
+      ...childListFiles(allFiles, listId, parentId),
     ]);
     for (const file of selected) {
-      await addStoredListFile(listId, file, null, nextOrder);
+      await addStoredListFile(listId, file, parentId, nextOrder);
       nextOrder += 1;
     }
   }
@@ -583,7 +912,7 @@ export function ListWindowsBoard({
       const newIndex = current.indexOf(over.id as ListWindowId);
       if (oldIndex < 0 || newIndex < 0) return current;
       const next = arrayMove(current, oldIndex, newIndex);
-      writeListWindowOrder(listId, next);
+      writeListWindowOrder(windowOrderKey, next);
       return next;
     });
   }
@@ -606,6 +935,7 @@ export function ListWindowsBoard({
           listId={listId}
           tasks={tasks}
           archiveOpen={tasksArchiveOpen}
+          contextId={`list-tasks-${windowOrderKey}`}
         />
       </WindowCard>
     ),
@@ -637,7 +967,7 @@ export function ListWindowsBoard({
           ) : undefined
         }
       >
-        <FilesWindow listId={listId} files={files} />
+        <FilesWindow listId={listId} files={files} loading={!filesReady} />
       </WindowCard>
     ),
     overview: (
