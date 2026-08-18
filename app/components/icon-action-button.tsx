@@ -7,6 +7,7 @@ type IconActionButtonProps = {
   icon: string;
   onClick: () => void;
   variant?: "edit" | "delete";
+  disabled?: boolean;
 };
 
 const variantClassName = {
@@ -19,14 +20,16 @@ export function IconActionButton({
   icon,
   onClick,
   variant = "edit",
+  disabled = false,
 }: IconActionButtonProps) {
   return (
     <Tooltip label={label}>
       <button
         type="button"
         onClick={onClick}
+        disabled={disabled}
         aria-label={label}
-        className={`inline-flex h-8 w-8 items-center justify-center rounded-lg transition ${variantClassName[variant]}`}
+        className={`inline-flex h-8 w-8 items-center justify-center rounded-lg transition disabled:cursor-not-allowed disabled:opacity-40 ${variantClassName[variant]}`}
       >
         <i className={`${icon} text-sm`} aria-hidden="true" />
       </button>

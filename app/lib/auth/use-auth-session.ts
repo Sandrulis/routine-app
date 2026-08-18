@@ -17,20 +17,23 @@ export function useAuthSession() {
     }
 
     const supabase = createClient();
+    let cancelled = false;
 
     void supabase.auth.getUser().then(({ data }) => {
+      if (cancelled) return;
       setUser(data.user ?? null);
       setIsReady(true);
     });
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "INITIAL_SESSION") return;
       setUser(session?.user ?? null);
-      setIsReady(true);
     });
 
     return () => {
+      cancelled = true;
       subscription.unsubscribe();
     };
   }, []);

@@ -10,25 +10,28 @@ import {
   type ReactNode,
 } from "react";
 import type { User } from "@supabase/supabase-js";
+import { importLocalWorkIfNeeded, readStoredCurrentTeamId } from "@/app/lib/db/import-local-work";
+import {
+  deleteTeamRow,
+  fetchUserTeams,
+  insertMember,
+  insertTeam,
+  touchMemberOnline,
+  updateTeamRow,
+} from "@/app/lib/db/work-data";
+import { clearLegacyDemoStorage } from "@/app/lib/clear-legacy-demo-storage";
 import { mapUserDisplay } from "@/app/lib/auth/map-user-display";
 import { useAuthSession } from "@/app/lib/auth/use-auth-session";
 import {
-  CURRENT_USER_ID,
-  DEFAULT_TEAM_ID,
   TEAM_CHANGE_EVENT,
-  createDefaultMembers,
-  createDefaultTeams,
   createMemberId,
   createOwnerMember,
   createTeamId,
   currentTeamIdStorageKey,
+  emptyTeamMember,
   getCurrentUser,
   initialsFromName,
-  membersStorageKey,
-  normalizeStoredMembersByTeam,
-  normalizeStoredTeams,
   OWNER_TEAM_ROLE,
-  teamsStorageKey,
   toneForIndex,
   type MembersByTeam,
   type TeamMember,
@@ -74,20 +77,6 @@ function ownerFromAuth(user: User): TeamMember {
   });
 }
 
-function withOwnerOnTeams(
-  teams: WorkTeam[],
-  membersByTeam: MembersByTeam,
-  owner: TeamMember,
-): MembersByTeam {
-  const next = { ...membersByTeam };
-  for (const team of teams) {
-    if (!next[team.id] || next[team.id].length === 0) {
-      next[team.id] = [{ ...owner }];
-    }
-  }
-  return next;
-}
-
 export function TeamProvider({ children }: { children: ReactNode }) {
   const { user: authUser, isReady: authReady } = useAuthSession();
   const [membersByTeam, setMembersByTeam] = useState<MembersByTeam>({});
@@ -99,77 +88,58 @@ export function TeamProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!authReady) return;
 
+    clearLegacyDemoStorage();
+
     const userId = authUser?.id ?? null;
     setIsReady(false);
-    const nextTeamsKey = teamsStorageKey(userId);
-    const nextTeamIdKey = currentTeamIdStorageKey(userId);
-    const nextMembersKey = membersStorageKey(userId);
 
-    try {
-      const storedTeamsValue = window.localStorage.getItem(nextTeamsKey);
-      const storedTeams = storedTeamsValue
-        ? normalizeStoredTeams(JSON.parse(storedTeamsValue))
-        : null;
-      const nextTeams = storedTeams ?? (userId ? [] : createDefaultTeams());
-      setTeams(nextTeams);
-
-      const storedTeamId = window.localStorage.getItem(nextTeamIdKey);
-      setCurrentTeamId(
-        storedTeamId && nextTeams.some((team) => team.id === storedTeamId)
-          ? storedTeamId
-          : (nextTeams[0]?.id ?? ""),
-      );
-
-      const storedMembersValue = window.localStorage.getItem(nextMembersKey);
-      const storedMembers = storedMembersValue
-        ? normalizeStoredMembersByTeam(JSON.parse(storedMembersValue))
-        : null;
-
-      if (userId && authUser) {
-        setMembersByTeam(
-          withOwnerOnTeams(
-            nextTeams,
-            storedMembers ?? {},
-            ownerFromAuth(authUser),
-          ),
-        );
-      } else {
-        setMembersByTeam(
-          storedMembers ?? { [DEFAULT_TEAM_ID]: createDefaultMembers() },
-        );
-      }
-    } catch {
-      setTeams(userId ? [] : createDefaultTeams());
-      setCurrentTeamId(userId ? "" : DEFAULT_TEAM_ID);
-      setMembersByTeam(
-        userId && authUser
-          ? {}
-          : { [DEFAULT_TEAM_ID]: createDefaultMembers() },
-      );
-    } finally {
+    if (!userId || !authUser) {
+      setTeams([]);
+      setCurrentTeamId("");
+      setMembersByTeam({});
       setLoadedScope(userId);
       setIsReady(true);
+      return;
     }
+
+    const owner = ownerFromAuth(authUser);
+    let cancelled = false;
+
+    void (async () => {
+      try {
+        await importLocalWorkIfNeeded(userId, owner);
+        const { teams: nextTeams, membersByTeam: nextMembers } = await fetchUserTeams();
+        if (cancelled) return;
+        setTeams(nextTeams);
+        setMembersByTeam(nextMembers);
+        setCurrentTeamId(readStoredCurrentTeamId(userId, nextTeams.map((team) => team.id)));
+      } catch (error) {
+        console.error("Failed to load teams", error);
+        if (!cancelled) {
+          setTeams([]);
+          setCurrentTeamId("");
+          setMembersByTeam({});
+        }
+      } finally {
+        if (!cancelled) {
+          setLoadedScope(userId);
+          setIsReady(true);
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
   }, [authReady, authUser]);
 
   useEffect(() => {
     if (!isReady) return;
     const userId = authUser?.id ?? null;
     if (loadedScope !== userId) return;
-    window.localStorage.setItem(
-      membersStorageKey(userId),
-      JSON.stringify(membersByTeam),
-    );
-    window.dispatchEvent(new Event(TEAM_CHANGE_EVENT));
-  }, [authUser?.id, isReady, loadedScope, membersByTeam]);
-
-  useEffect(() => {
-    if (!isReady) return;
-    const userId = authUser?.id ?? null;
-    if (loadedScope !== userId) return;
-    window.localStorage.setItem(teamsStorageKey(userId), JSON.stringify(teams));
     window.localStorage.setItem(currentTeamIdStorageKey(userId), currentTeamId);
-  }, [authUser?.id, currentTeamId, isReady, loadedScope, teams]);
+    window.dispatchEvent(new Event(TEAM_CHANGE_EVENT));
+  }, [authUser?.id, currentTeamId, isReady, loadedScope]);
 
   const inviteMember = useCallback(
     (input: InviteMemberInput) => {
@@ -192,6 +162,9 @@ export function TeamProvider({ children }: { children: ReactNode }) {
           [currentTeamId]: [...list, member],
         };
       });
+      void insertMember(currentTeamId, member).catch((error) => {
+        console.error("Failed to invite member", error);
+      });
       return member;
     },
     [currentTeamId],
@@ -199,7 +172,8 @@ export function TeamProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!isReady || !currentTeamId) return;
-    const userId = authUser?.id ?? CURRENT_USER_ID;
+    const userId = authUser?.id;
+    if (!userId) return;
 
     function touchCurrentUser() {
       const seenAt = new Date().toISOString();
@@ -207,6 +181,9 @@ export function TeamProvider({ children }: { children: ReactNode }) {
         const list = current[currentTeamId] ?? [];
         const user = getCurrentUser(list, userId);
         if (!list.some((member) => member.id === user.id)) return current;
+        void touchMemberOnline(user.id, seenAt).catch((error) => {
+          console.error("Failed to update last online", error);
+        });
         return {
           ...current,
           [currentTeamId]: list.map((member) =>
@@ -232,8 +209,10 @@ export function TeamProvider({ children }: { children: ReactNode }) {
 
     const display = mapUserDisplay(authUser);
     const overlayId = authUser.id;
+    const isSelf = (member: TeamMember) =>
+      member.id === overlayId || member.userId === overlayId;
     const next = list.map((member) =>
-      member.id === overlayId
+      isSelf(member)
         ? {
             ...member,
             name: display.name || member.name,
@@ -241,11 +220,12 @@ export function TeamProvider({ children }: { children: ReactNode }) {
             initials: initialsFromName(display.name || member.name),
             avatarUrl: display.avatarUrl ?? member.avatarUrl,
             role: member.role || OWNER_TEAM_ROLE,
+            userId: overlayId,
           }
         : member,
     );
 
-    const selfIndex = next.findIndex((member) => member.id === overlayId);
+    const selfIndex = next.findIndex(isSelf);
     if (selfIndex > 0) {
       const [self] = next.splice(selfIndex, 1);
       next.unshift(self);
@@ -256,10 +236,13 @@ export function TeamProvider({ children }: { children: ReactNode }) {
   const currentUser = useMemo(() => {
     if (authUser) {
       const display = mapUserDisplay(authUser);
-      const fromTeam = members.find((member) => member.id === authUser.id);
+      const fromTeam = members.find(
+        (member) => member.id === authUser.id || member.userId === authUser.id,
+      );
       const name = display.name || fromTeam?.name || "";
       return {
-        id: authUser.id,
+        id: fromTeam?.id ?? authUser.id,
+        userId: authUser.id,
         name,
         email: display.email || fromTeam?.email || "",
         initials: initialsFromName(name),
@@ -270,7 +253,7 @@ export function TeamProvider({ children }: { children: ReactNode }) {
       };
     }
 
-    const base = getCurrentUser(members);
+    const base = emptyTeamMember();
     return currentTeam ? base : { ...base, role: "" };
   }, [authUser, currentTeam, members]);
 
@@ -289,25 +272,41 @@ export function TeamProvider({ children }: { children: ReactNode }) {
       const owner = authUser
         ? ownerFromAuth(authUser)
         : {
-            ...getCurrentUser(members),
+            ...emptyTeamMember(),
             role: OWNER_TEAM_ROLE,
           };
+      const ownerWithOnline = { ...owner, lastOnlineAt: new Date().toISOString() };
 
-      setTeams((current) => [...current, team]);
-      setCurrentTeamId(team.id);
-      setMembersByTeam((current) => ({
-        ...current,
-        [team.id]: [{ ...owner, lastOnlineAt: new Date().toISOString() }],
-      }));
+      if (authUser) {
+        void insertTeam(team, ownerWithOnline, authUser.id)
+          .then(() => {
+            setTeams((current) => [...current, team]);
+            setCurrentTeamId(team.id);
+            setMembersByTeam((current) => ({
+              ...current,
+              [team.id]: [ownerWithOnline],
+            }));
+          })
+          .catch((error) => {
+            console.error("Failed to create team", error);
+          });
+      } else {
+        setTeams((current) => [...current, team]);
+        setCurrentTeamId(team.id);
+        setMembersByTeam((current) => ({
+          ...current,
+          [team.id]: [ownerWithOnline],
+        }));
+      }
       return team;
     },
-    [authUser, members],
+    [authUser],
   );
 
   const updateTeam = useCallback((teamId: string, input: AddTeamInput) => {
     const trimmed = input.name.trim();
-    setTeams((current) =>
-      current.map((team) =>
+    setTeams((current) => {
+      const next = current.map((team) =>
         team.id === teamId
           ? {
               ...team,
@@ -318,8 +317,15 @@ export function TeamProvider({ children }: { children: ReactNode }) {
               logoUrl: input.logoUrl ?? null,
             }
           : team,
-      ),
-    );
+      );
+      const updated = next.find((team) => team.id === teamId);
+      if (updated) {
+        void updateTeamRow(updated).catch((error) => {
+          console.error("Failed to update team", error);
+        });
+      }
+      return next;
+    });
   }, []);
 
   const deleteTeam = useCallback((teamId: string) => {
@@ -339,6 +345,9 @@ export function TeamProvider({ children }: { children: ReactNode }) {
         const next = { ...current };
         delete next[teamId];
         return next;
+      });
+      void deleteTeamRow(teamId).catch((error) => {
+        console.error("Failed to delete team", error);
       });
     }
     return removed;

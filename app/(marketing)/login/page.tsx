@@ -1,10 +1,14 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { LoginForm } from "@/app/components/login-form";
+import { getServerTranslations } from "@/app/lib/i18n/server";
 
-export const metadata: Metadata = {
-  title: "Ienākt — Routine",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await getServerTranslations();
+  return {
+    title: `${t("auth.login.title", "Ienākt")} — ${t("app.name", "Routine")}`,
+  };
+}
 
 export default function LoginPage() {
   return (

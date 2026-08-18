@@ -141,14 +141,18 @@ export function LandingAppPreview() {
                   toneClassName="bg-sky-100 text-sky-800"
                   online
                 />
-                <span className="truncate text-[10px] text-zinc-600">Anna</span>
+                <span className="truncate text-[10px] text-zinc-600">
+                  {t("landing.preview.member_anna", "Anna")}
+                </span>
               </div>
               <div className="flex items-center gap-1.5">
                 <MiniAvatar
                   initials="JB"
                   toneClassName="bg-emerald-100 text-emerald-800"
                 />
-                <span className="truncate text-[10px] text-zinc-600">Jānis</span>
+                <span className="truncate text-[10px] text-zinc-600">
+                  {t("landing.preview.member_janis", "Jānis")}
+                </span>
               </div>
             </div>
           </aside>

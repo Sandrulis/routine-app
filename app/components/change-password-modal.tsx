@@ -44,7 +44,7 @@ export function ChangePasswordModal({
     <AppModal
       open={open}
       onOpenChange={onOpenChange}
-      title={t("user_menu.password.title", "Mainīt paroli")}
+      title={t("user_menu.password", "Mainīt paroli")}
       description={t(
         "user_menu.password.description",
         "Ievadi pašreizējo paroli un jauno paroli.",

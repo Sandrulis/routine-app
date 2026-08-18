@@ -52,7 +52,7 @@ export function ListsOverviewPage() {
             className="inline-flex min-h-10 items-center justify-center gap-2 rounded-2xl bg-blue-700 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-800"
           >
             <i className="fas fa-plus text-xs" aria-hidden="true" />
-            {t("lists.add.button", "Pievienot")}
+            {t("actions.add", "Pievienot")}
           </button>
         ) : null
       }

@@ -34,16 +34,19 @@ import { useFeedbackToast } from "@/app/components/feedback-toast-provider";
 import { SectionPage } from "@/app/components/section-page";
 import { useTranslations } from "@/app/components/translations-provider";
 import { UserAvatar } from "@/app/components/user-avatar";
+import { useAuthSession } from "@/app/lib/auth/use-auth-session";
 import { formatDisplayDateDdMmYy } from "@/app/lib/format-display-date";
+import {
+  appendNotifications,
+  notificationsForNewAssignees,
+} from "@/app/lib/notifications";
+import { fetchTeamTodos, replaceTeamTodos } from "@/app/lib/db/work-data";
 import { useTeam } from "@/app/lib/team-store";
 import {
   DELETE_ZONE_ID,
-  TODO_STORAGE_KEY,
-  createDefaultItems,
   createTodoId,
   getTeamMember,
   isTodoStatus,
-  normalizeStoredItems,
   type TodoItem,
   type TodoStatus,
 } from "@/app/lib/team-todo";
@@ -416,7 +419,7 @@ function TodoTaskModal({
             htmlFor="todo-edit-description"
             className="text-sm font-semibold text-zinc-700"
           >
-            {t("todo.fields.description", "Apraksts")}
+            {t("common.description", "Apraksts")}
           </label>
           <textarea
             id="todo-edit-description"
@@ -481,7 +484,7 @@ function TodoTaskModal({
             className="inline-flex min-h-10 items-center justify-center rounded-2xl bg-blue-700 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-800 disabled:bg-zinc-200 disabled:text-zinc-400"
           >
             {mode === "create"
-              ? t("todo.add.button", "Pievienot")
+              ? t("actions.add", "Pievienot")
               : t("actions.save", "Saglabāt")}
           </button>
         </div>
@@ -493,15 +496,18 @@ function TodoTaskModal({
 export function TeamTodoBoard() {
   const dndContextId = useId();
   const { t } = useTranslations();
-  const { members } = useTeam();
+  const { members, currentUser, currentTeam, isReady: teamReady } = useTeam();
+  const { user: authUser, isReady: authReady } = useAuthSession();
   const { showFeedback } = useFeedbackToast();
-  const loadedFromStorage = useRef(false);
+  const userId = authUser?.id ?? null;
+  const teamId = currentTeam?.id ?? null;
   const [items, setItems] = useState<TodoItem[]>([]);
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
   const [activeTaskId, setActiveTaskId] = useState<string | null>(null);
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
   const [taskModalMode, setTaskModalMode] = useState<TodoTaskModalMode | null>(null);
   const [isHydrated, setIsHydrated] = useState(false);
+  const skipNextTodoPersist = useRef(true);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -513,26 +519,49 @@ export function TeamTodoBoard() {
   );
 
   useEffect(() => {
-    if (loadedFromStorage.current) return;
-    loadedFromStorage.current = true;
+    if (!authReady || !teamReady) return;
+    skipNextTodoPersist.current = true;
+    setIsHydrated(false);
 
-    try {
-      const storedValue = window.localStorage.getItem(TODO_STORAGE_KEY);
-      const storedItems = storedValue
-        ? normalizeStoredItems(JSON.parse(storedValue))
-        : null;
-      setItems(storedItems ?? createDefaultItems(t));
-    } catch {
-      setItems(createDefaultItems(t));
-    } finally {
+    if (!teamId || (userId && !teamId)) {
+      setItems([]);
       setIsHydrated(true);
+      return;
     }
-  }, [t]);
+
+    let cancelled = false;
+    void fetchTeamTodos(teamId)
+      .then((next) => {
+        if (cancelled) return;
+        setItems(next);
+      })
+      .catch((error) => {
+        console.error("Failed to load todos", error);
+        if (cancelled) return;
+        setItems([]);
+      })
+      .finally(() => {
+        if (cancelled) return;
+        skipNextTodoPersist.current = true;
+        setIsHydrated(true);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [authReady, teamId, teamReady, userId]);
 
   useEffect(() => {
     if (!isHydrated) return;
-    window.localStorage.setItem(TODO_STORAGE_KEY, JSON.stringify(items));
-  }, [isHydrated, items]);
+    if (!teamId || (userId && !teamId)) return;
+    if (skipNextTodoPersist.current) {
+      skipNextTodoPersist.current = false;
+      return;
+    }
+    void replaceTeamTodos(teamId, items).catch((error) => {
+      console.error("Failed to save todos", error);
+    });
+  }, [isHydrated, items, teamId, userId]);
 
   const visibleItems = useMemo(
     () =>
@@ -551,6 +580,25 @@ export function TeamTodoBoard() {
     [editingTaskId, items],
   );
 
+  function notifyNewAssignee(
+    title: string,
+    previousId: string | null,
+    nextId: string | null,
+  ) {
+    const addedIds = nextId && nextId !== previousId ? [nextId] : [];
+    appendNotifications(
+      notificationsForNewAssignees({
+        actorId: currentUser.id,
+        addedIds,
+        memberIds: members.map((member) => member.id),
+        taskTitle: title,
+        href: "/dashboard",
+      }),
+      authUser?.id ?? null,
+      currentTeam?.id ?? null,
+    );
+  }
+
   function handleCreateTask(draft: Omit<TodoItem, "id" | "status">) {
     setItems((current) => [
       ...current,
@@ -560,12 +608,19 @@ export function TeamTodoBoard() {
         ...draft,
       },
     ]);
+    notifyNewAssignee(draft.title, null, draft.assigneeId);
     showFeedback({ type: "success", text: t("todo.created", "Uzdevums pievienots.") });
   }
 
   function handleSaveTask(updatedItem: TodoItem) {
+    const previous = items.find((item) => item.id === updatedItem.id) ?? null;
     setItems((current) =>
       current.map((item) => (item.id === updatedItem.id ? updatedItem : item)),
+    );
+    notifyNewAssignee(
+      updatedItem.title,
+      previous?.assigneeId ?? null,
+      updatedItem.assigneeId,
     );
     showFeedback({ type: "success", text: t("todo.updated", "Uzdevums saglabāts.") });
   }
@@ -686,7 +741,7 @@ export function TeamTodoBoard() {
             className="inline-flex min-h-10 items-center justify-center gap-2 rounded-2xl bg-blue-700 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-800"
           >
             <i className="fas fa-plus text-xs" aria-hidden="true" />
-            {t("todo.add.button", "Pievienot")}
+            {t("actions.add", "Pievienot")}
           </button>
         }
       >

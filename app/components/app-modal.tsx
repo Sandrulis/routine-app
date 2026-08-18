@@ -26,6 +26,7 @@ const defaultPanelMaxWidthClassName = "max-w-md";
 let openModalCount = 0;
 
 export const appModalWidePanelMaxWidthClassName = "max-w-[33.6rem]";
+export const appModalExtraWidePanelMaxWidthClassName = "max-w-[40.04rem]";
 export const appModalSplitPanelMaxWidthClassName = "max-w-5xl";
 
 function isBackdropDismissTarget(target: Node, panel: HTMLElement | null): boolean {

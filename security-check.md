@@ -4,7 +4,7 @@
 **Atzīme pēc labojumiem:** **6.5 / 10**  
 **Pēdējā pilnā pārbaude:** 2026-08-17 (**v0.1.0**)
 
-Aplikācija šobrīd ir frontend bez īstas autentifikācijas un datubāzes. Atzīme atspoguļo esošās UI drošības kontroles un CI, nevis production-ready backend.
+Aplikācija izmanto Google OAuth un Postgres ar komandas RLS. E-pasta login/signup un `(app)` maršrutu servera aizsardzība vēl nav. Pēdējā pilnā atzīme ir v0.1.0; v0.1.2 aizvēra H2 (dati ārā no `localStorage`).
 
 ---
 
@@ -19,8 +19,8 @@ Aplikācija šobrīd ir frontend bez īstas autentifikācijas un datubāzes. Atz
 | Secret scan | ✅ GitHub Actions gitleaks + `.gitleaks.toml` (i18n key allowlist) |
 | Security smoke | ✅ typecheck, lint, production build, headers, eval, secrets |
 | Sīkdatņu piekrišana | ✅ `CookieConsentProvider`; nepieciešamās vs preferences / analytics / marketing |
-| Auth / RLS | ⚠️ Frontend demo: login/signup novirza uz `/dashboard` bez backend; `(app)` maršruti nav aizsargāti |
-| Dati | ⚠️ `localStorage` (saraksti, faili, komanda) — nav servera izolācijas |
+| Auth / RLS | ⚠️ Google OAuth ir īsts; e-pasta login/signup joprojām frontend; `(app)` maršruti nav servera middleware aizsardzībā |
+| Dati | ✅ Komandas darba dati Postgres + RLS (`005_work_data.sql`); localStorage tikai UI preferencei |
 
 ### Labojumi šajā ciklā
 
@@ -31,17 +31,17 @@ Aplikācija šobrīd ir frontend bez īstas autentifikācijas un datubāzes. Atz
 | L1 | 🟡 LOW | Lint error `list-summary.tsx` (React Compiler memo) bloķētu smoke | ✅ LABOTS |
 | L2 | 🟡 LOW | HSTS nebija iestatīts HTTPS vidē | ✅ LABOTS |
 
-### Atlikušās piezīmes / ieteikumi (nebloķējoši, kamēr nav backend)
+### Atlikušās piezīmes / ieteikumi
 
 | # | Severity | Apraksts |
 |---|----------|----------|
-| H1 | 🔴 HIGH | Īsta autentifikācija, session un aizsargāti `(app)` maršruti |
-| H2 | 🔴 HIGH | Dati ārā no `localStorage` — DB + RLS / company scope |
+| H1 | 🔴 HIGH | E-pasta autentifikācija un aizsargāti `(app)` maršruti (Google sesija jau ir) |
+| H2 | ✅ | Komandas darba dati Postgres + RLS (`005`, v0.1.2) |
 | M3 | 🟠 MED | Server actions / API: `requireAuth` uz katru eksportu (smoke jau gatavs, kad parādīsies `actions.ts`) |
 | L3 | ℹ️ DEPLOY | Production: `NEXT_PUBLIC_SITE_URL` ar `https://`, lai ieslēgtos HSTS |
 | L4 | ℹ️ AUTH | Rate limit login/signup, kad būs backend |
 
-**Atzīme:** **6.5 / 10** — galvenes, CI un atkarību pin ir vietā; atzīmi turēs zemu, kamēr nav īstas auth un datu izolācijas.
+**Atzīme:** **6.5 / 10** (pēdējā pilnā pārbaude v0.1.0). v0.1.2: darba dati Postgres + RLS (H2). Atzīmi necelt, kamēr e-pasta auth un `(app)` maršruti nav aizsargāti.
 
 ---
 

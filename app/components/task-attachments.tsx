@@ -210,7 +210,7 @@ export function TaskAttachments({
       <CreateItemMenu
         open={menu !== null}
         anchor={menu?.anchor ?? null}
-        title={t("nav.item_menu", "Darbības")}
+        title={t("common.actions", "Darbības")}
         items={[
           {
             id: "view",

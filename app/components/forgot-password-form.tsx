@@ -46,7 +46,7 @@ export function ForgotPasswordForm() {
 
       <label className="block">
         <span className="text-sm font-semibold text-zinc-700">
-          {t("auth.fields.email", "E-pasts")}
+          {t("common.email", "E-pasts")}
         </span>
         <input
           required

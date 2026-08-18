@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { LanguageSwitcher } from "@/app/components/language-switcher";
 import { useTranslations } from "@/app/components/translations-provider";
 
 const AUTH_PATHS = new Set(["/login", "/signup", "/forgot-password"]);
@@ -25,25 +26,29 @@ export function SiteHeader() {
         </Link>
 
         {isAuthPage ? (
-          <Link
-            href="/"
-            className="text-sm font-medium text-zinc-500 transition hover:text-zinc-900"
-          >
-            {t("site.back_home", "Uz sākumu")}
-          </Link>
+          <div className="flex items-center gap-3">
+            <LanguageSwitcher />
+            <Link
+              href="/"
+              className="text-sm font-medium text-zinc-500 transition hover:text-zinc-900"
+            >
+              {t("site.back_home", "Uz sākumu")}
+            </Link>
+          </div>
         ) : (
           <div className="flex items-center gap-2">
+            <LanguageSwitcher />
             <Link
               href="/login"
               className="rounded-lg px-3 py-2 text-sm font-medium text-zinc-700 transition hover:bg-zinc-100"
             >
-              {t("auth.login.submit", "Ienākt")}
+              {t("auth.login.title", "Ienākt")}
             </Link>
             <Link
               href="/signup"
               className="rounded-lg bg-zinc-900 px-3 py-2 text-sm font-semibold text-white transition hover:bg-zinc-700"
             >
-              {t("auth.signup.submit", "Reģistrēties")}
+              {t("auth.signup.title", "Reģistrēties")}
             </Link>
           </div>
         )}

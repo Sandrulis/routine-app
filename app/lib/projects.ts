@@ -17,29 +17,6 @@ export function createProjectId(): string {
   return `project-${Date.now()}`;
 }
 
-export function createDefaultProjects(): Project[] {
-  return [
-    {
-      id: "project-website",
-      name: "Mājas lapa",
-      description: "Publiskās vietnes saturs un palaišana.",
-      status: "active",
-    },
-    {
-      id: "project-onboarding",
-      name: "Klienta onboarding",
-      description: "Jauno klientu pieņemšanas soļi.",
-      status: "active",
-    },
-    {
-      id: "project-docs",
-      name: "Iekšējā dokumentācija",
-      description: "Komandas darba kārtības apraksts.",
-      status: "active",
-    },
-  ];
-}
-
 export function normalizeStoredProjects(value: unknown): Project[] | null {
   if (!Array.isArray(value)) return null;
 

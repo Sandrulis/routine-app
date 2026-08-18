@@ -75,7 +75,7 @@ export function SignupForm() {
 
       <label className="block">
         <span className="text-sm font-semibold text-zinc-700">
-          {t("auth.fields.name", "Vārds")}
+          {t("common.name", "Vārds")}
         </span>
         <input
           required
@@ -90,7 +90,7 @@ export function SignupForm() {
 
       <label className="block">
         <span className="text-sm font-semibold text-zinc-700">
-          {t("auth.fields.email", "E-pasts")}
+          {t("common.email", "E-pasts")}
         </span>
         <input
           required
@@ -162,7 +162,7 @@ export function SignupForm() {
         disabled={pending}
         className={authPrimaryButtonClassName}
       >
-        {t("auth.signup.submit", "Reģistrēties")}
+        {t("auth.signup.title", "Reģistrēties")}
       </button>
 
       <AuthDivider />
@@ -190,7 +190,7 @@ export function SignupForm() {
           href="/login"
           className="font-semibold text-zinc-900 underline decoration-zinc-300 underline-offset-2"
         >
-          {t("auth.login.submit", "Ienākt")}
+          {t("auth.login.title", "Ienākt")}
         </Link>
       </p>
     </form>

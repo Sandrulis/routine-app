@@ -171,7 +171,7 @@ function TaskSummarySection({
                     onClick={() => onAddSubtask(task)}
                     className="ml-auto text-[12px] font-medium text-emerald-600 hover:text-emerald-700"
                   >
-                    + {t("tasks.add.button", "Pievienot")}
+                    + {t("actions.add", "Pievienot")}
                   </button>
                 </div>
                 <SubtaskTable

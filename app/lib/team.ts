@@ -1,3 +1,4 @@
+import { isLegacyDemoMemberId } from "@/app/lib/clear-legacy-demo-storage";
 import { MAX_STORED_FILE_BYTES } from "@/app/lib/list-files";
 import { DEFAULT_LIST_COLOR } from "@/app/lib/lists";
 
@@ -10,9 +11,9 @@ export type TeamMember = {
   toneClassName: string;
   lastOnlineAt: string | null;
   avatarUrl?: string | null;
+  userId?: string | null;
 };
 
-export const CURRENT_USER_ID = "anna";
 export const TEAM_STORAGE_KEY = "routine-app-team-members";
 export const TEAM_CHANGE_EVENT = "routine-app-team-change";
 export const OWNER_TEAM_ROLE = "owner";
@@ -60,57 +61,18 @@ export function toneForIndex(index: number): string {
   return MEMBER_TONES[index % MEMBER_TONES.length];
 }
 
-function isoMinutesAgo(minutes: number): string {
-  return new Date(Date.now() - minutes * 60_000).toISOString();
-}
-
-export function demoLastOnlineAt(id: string, index: number): string | null {
-  if (id === CURRENT_USER_ID) return new Date().toISOString();
-  if (index === 1) return isoMinutesAgo(4);
-  if (index === 2) return isoMinutesAgo(125);
-  if (index === 3) return isoMinutesAgo(60 * 26);
-  return isoMinutesAgo(18);
-}
-
-export function createDefaultMembers(): TeamMember[] {
-  return [
-    {
-      id: "anna",
-      name: "Anna Kalniņa",
-      initials: "AK",
-      role: "Projektu vadītāja",
-      email: "anna@routine.app",
-      toneClassName: toneForIndex(0),
-      lastOnlineAt: demoLastOnlineAt("anna", 0),
-    },
-    {
-      id: "janis",
-      name: "Jānis Bērziņš",
-      initials: "JB",
-      role: "Izstrādātājs",
-      email: "janis@routine.app",
-      toneClassName: toneForIndex(1),
-      lastOnlineAt: demoLastOnlineAt("janis", 1),
-    },
-    {
-      id: "marta",
-      name: "Marta Liepa",
-      initials: "ML",
-      role: "Dizainere",
-      email: "marta@routine.app",
-      toneClassName: toneForIndex(2),
-      lastOnlineAt: demoLastOnlineAt("marta", 2),
-    },
-    {
-      id: "kristaps",
-      name: "Kristaps Ozols",
-      initials: "KO",
-      role: "Klienta atbalsts",
-      email: "kristaps@routine.app",
-      toneClassName: toneForIndex(3),
-      lastOnlineAt: demoLastOnlineAt("kristaps", 3),
-    },
-  ];
+export function emptyTeamMember(): TeamMember {
+  return {
+    id: "",
+    name: "",
+    initials: "",
+    role: "",
+    email: "",
+    toneClassName: toneForIndex(0),
+    lastOnlineAt: null,
+    avatarUrl: null,
+    userId: null,
+  };
 }
 
 export type WorkTeam = {
@@ -152,6 +114,7 @@ export function createOwnerMember(input: {
     toneClassName: toneForIndex(0),
     lastOnlineAt: new Date().toISOString(),
     avatarUrl: input.avatarUrl ?? null,
+    userId: input.id,
   };
 }
 
@@ -168,18 +131,6 @@ export function createTeamId(): string {
   return `team-${Date.now()}`;
 }
 
-export function createDefaultTeams(): WorkTeam[] {
-  return [
-    {
-      id: DEFAULT_TEAM_ID,
-      name: "Routine",
-      initials: initialsFromName("Routine"),
-      icon: null,
-      color: DEFAULT_LIST_COLOR,
-      logoUrl: null,
-    },
-  ];
-}
 
 function isTeamLogoUrl(value: unknown): value is string {
   return typeof value === "string" && value.startsWith("data:image/");
@@ -238,25 +189,22 @@ export function normalizeStoredTeams(value: unknown): WorkTeam[] | null {
   return teams.length > 0 ? teams : null;
 }
 
-export const TEAM_MEMBERS = createDefaultMembers();
-
 export function getTeamMember(
   members: TeamMember[],
   id: string | null,
 ): TeamMember | null {
   if (!id) return null;
-  return members.find((member) => member.id === id) ?? null;
+  return (
+    members.find((member) => member.id === id || member.userId === id) ?? null
+  );
 }
 
 export function getCurrentUser(
   members: TeamMember[],
   userId?: string | null,
 ): TeamMember {
-  return (
-    getTeamMember(members, userId ?? CURRENT_USER_ID) ??
-    members[0] ??
-    TEAM_MEMBERS[0]
-  );
+  if (!userId) return emptyTeamMember();
+  return getTeamMember(members, userId) ?? emptyTeamMember();
 }
 
 export function normalizeStoredMembers(value: unknown): TeamMember[] | null {
@@ -274,6 +222,7 @@ export function normalizeStoredMembers(value: unknown): TeamMember[] | null {
       }
 
       const id = String(item.id);
+      if (isLegacyDemoMemberId(id)) return null;
       const name = String(item.name).trim();
       const role =
         "role" in item && typeof item.role === "string" ? item.role.trim() : "";
@@ -291,7 +240,7 @@ export function normalizeStoredMembers(value: unknown): TeamMember[] | null {
       const lastOnlineAt =
         "lastOnlineAt" in item && typeof item.lastOnlineAt === "string"
           ? item.lastOnlineAt
-          : demoLastOnlineAt(id, index);
+          : null;
 
       const avatarUrl =
         "avatarUrl" in item &&

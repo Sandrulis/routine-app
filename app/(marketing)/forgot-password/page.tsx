@@ -1,9 +1,13 @@
 import type { Metadata } from "next";
 import { ForgotPasswordForm } from "@/app/components/forgot-password-form";
+import { getServerTranslations } from "@/app/lib/i18n/server";
 
-export const metadata: Metadata = {
-  title: "Aizmirsi paroli — Routine",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await getServerTranslations();
+  return {
+    title: `${t("auth.forgot.title", "Aizmirsi paroli")} — ${t("app.name", "Routine")}`,
+  };
+}
 
 export default function ForgotPasswordPage() {
   return (

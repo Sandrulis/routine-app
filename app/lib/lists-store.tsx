@@ -6,14 +6,11 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
 import {
-  LISTS_STORAGE_KEY,
-  TASKS_STORAGE_KEY,
-  createDefaultLists,
-  createDefaultTasks,
   createListId,
   createTaskId,
   getChildTasks,
@@ -25,9 +22,6 @@ import {
   type WorkTaskKind,
   listColorById,
   randomListColorId,
-  normalizeStoredLists,
-  normalizeStoredTasks,
-  scopedStorageKey,
   type WorkList,
   type WorkListKind,
   type WorkTask,
@@ -36,17 +30,14 @@ import {
 import { useAuthSession } from "@/app/lib/auth/use-auth-session";
 import { useTeam } from "@/app/lib/team-store";
 import {
-  TASK_ACTIVITY_STORAGE_KEY,
-  TASK_FILES_STORAGE_KEY,
+  appendNotifications,
+  notificationsForNewAssignees,
+} from "@/app/lib/notifications";
+import {
   createActivity,
-  createDefaultActivities,
-  createDefaultTaskFiles,
   createTaskFileId,
-  ensureDefaultTaskFileContents,
-  mergeDefaultTaskFiles,
-  normalizeStoredActivities,
-  normalizeStoredTaskFiles,
-  removeTaskFileContent,
+  hydrateTaskFileContents,
+  cacheTaskFileContent,
   sameIds,
   storeTaskFileContent,
   type TaskActivity,
@@ -56,10 +47,25 @@ import {
   deleteStoredListFilesForList,
   deleteStoredListFilesForParents,
   childListFiles,
+  hydrateListFiles,
   mimeFromName,
   nextItemSortOrder,
   readAllListFiles,
 } from "@/app/lib/list-files";
+import {
+  deleteListRow,
+  deleteTaskFileRow,
+  deleteTaskRow,
+  fetchTeamWorkspace,
+  insertActivity,
+  insertList,
+  insertTask,
+  insertTaskFile,
+  updateListRow,
+  updateTaskFileName,
+  updateTaskRow,
+  updateTaskSortOrders,
+} from "@/app/lib/db/work-data";
 
 type ListsContextValue = {
   isReady: boolean;
@@ -111,7 +117,7 @@ const ListsContext = createContext<ListsContextValue | null>(null);
 
 export function ListsProvider({ children }: { children: ReactNode }) {
   const { user: authUser, isReady: authReady } = useAuthSession();
-  const { isReady: teamReady, currentTeam } = useTeam();
+  const { isReady: teamReady, currentTeam, currentUser, members } = useTeam();
   const userId = authUser?.id ?? null;
   const teamId = currentTeam?.id ?? null;
   const scopeKey = `${userId ?? "anon"}:${teamId ?? ""}`;
@@ -120,21 +126,22 @@ export function ListsProvider({ children }: { children: ReactNode }) {
   const [tasks, setTasks] = useState<WorkTask[]>([]);
   const [activities, setActivities] = useState<TaskActivity[]>([]);
   const [files, setFiles] = useState<TaskFile[]>([]);
-  const [loadedScope, setLoadedScope] = useState<string | null>(null);
   const [isReady, setIsReady] = useState(false);
+  const assignmentNotifyRef = useRef({
+    actorId: "",
+    memberIds: [] as string[],
+    userId,
+    teamId,
+  });
+  assignmentNotifyRef.current = {
+    actorId: currentUser.id,
+    memberIds: members.map((member) => member.id),
+    userId,
+    teamId,
+  };
 
   useEffect(() => {
     if (!canLoad) return;
-
-    const listsKey = scopedStorageKey(LISTS_STORAGE_KEY, userId, teamId);
-    const tasksKey = scopedStorageKey(TASKS_STORAGE_KEY, userId, teamId);
-    const activitiesKey = scopedStorageKey(
-      TASK_ACTIVITY_STORAGE_KEY,
-      userId,
-      teamId,
-    );
-    const filesKey = scopedStorageKey(TASK_FILES_STORAGE_KEY, userId, teamId);
-    const useDefaults = !userId;
     setIsReady(false);
 
     if (userId && !teamId) {
@@ -142,85 +149,53 @@ export function ListsProvider({ children }: { children: ReactNode }) {
       setTasks([]);
       setActivities([]);
       setFiles([]);
-      setLoadedScope(scopeKey);
+      hydrateListFiles(null, [], {});
+      hydrateTaskFileContents({});
       setIsReady(true);
       return;
     }
 
-    try {
-      const storedLists = window.localStorage.getItem(listsKey);
-      const storedTasks = window.localStorage.getItem(tasksKey);
-      const storedActivities = window.localStorage.getItem(activitiesKey);
-      const storedFiles = window.localStorage.getItem(filesKey);
-      setLists(
-        storedLists
-          ? (normalizeStoredLists(JSON.parse(storedLists)) ??
-            (useDefaults ? createDefaultLists() : []))
-          : useDefaults
-            ? createDefaultLists()
-            : [],
-      );
-      setTasks(
-        storedTasks
-          ? (normalizeStoredTasks(JSON.parse(storedTasks)) ??
-            (useDefaults ? createDefaultTasks() : []))
-          : useDefaults
-            ? createDefaultTasks()
-            : [],
-      );
-      setActivities(
-        storedActivities
-          ? (normalizeStoredActivities(JSON.parse(storedActivities)) ??
-            (useDefaults ? createDefaultActivities() : []))
-          : useDefaults
-            ? createDefaultActivities()
-            : [],
-      );
-      setFiles(
-        useDefaults
-          ? mergeDefaultTaskFiles(
-              storedFiles
-                ? (normalizeStoredTaskFiles(JSON.parse(storedFiles)) ??
-                  createDefaultTaskFiles())
-                : createDefaultTaskFiles(),
-            )
-          : storedFiles
-            ? (normalizeStoredTaskFiles(JSON.parse(storedFiles)) ?? [])
-            : [],
-      );
-    } catch {
-      setLists(useDefaults ? createDefaultLists() : []);
-      setTasks(useDefaults ? createDefaultTasks() : []);
-      setActivities(useDefaults ? createDefaultActivities() : []);
-      setFiles(useDefaults ? createDefaultTaskFiles() : []);
-    } finally {
-      if (useDefaults) ensureDefaultTaskFileContents();
-      setLoadedScope(scopeKey);
+    if (!teamId) {
+      setLists([]);
+      setTasks([]);
+      setActivities([]);
+      setFiles([]);
+      hydrateListFiles(null, [], {});
+      hydrateTaskFileContents({});
       setIsReady(true);
+      return;
     }
-  }, [canLoad, scopeKey, teamId, userId]);
 
-  useEffect(() => {
-    if (!isReady) return;
-    if (loadedScope !== scopeKey) return;
-    if (userId && !teamId) return;
-    window.localStorage.setItem(
-      scopedStorageKey(LISTS_STORAGE_KEY, userId, teamId),
-      JSON.stringify(lists),
-    );
-    window.localStorage.setItem(
-      scopedStorageKey(TASKS_STORAGE_KEY, userId, teamId),
-      JSON.stringify(tasks),
-    );
-    window.localStorage.setItem(
-      scopedStorageKey(TASK_ACTIVITY_STORAGE_KEY, userId, teamId),
-      JSON.stringify(activities),
-    );
-    window.localStorage.setItem(
-      scopedStorageKey(TASK_FILES_STORAGE_KEY, userId, teamId),
-      JSON.stringify(files),
-    );
-  }, [activities, files, isReady, lists, loadedScope, scopeKey, tasks, teamId, userId]);
+    let cancelled = false;
+    void fetchTeamWorkspace(teamId)
+      .then((workspace) => {
+        if (cancelled) return;
+        setLists(workspace.lists);
+        setTasks(workspace.tasks);
+        setActivities(workspace.activities);
+        setFiles(workspace.taskFiles);
+        hydrateListFiles(teamId, workspace.listFiles, workspace.listFileContents);
+        hydrateTaskFileContents(workspace.taskFileContents);
+      })
+      .catch((error) => {
+        console.error("Failed to load lists", error);
+        if (cancelled) return;
+        setLists([]);
+        setTasks([]);
+        setActivities([]);
+        setFiles([]);
+        hydrateListFiles(teamId, [], {});
+        hydrateTaskFileContents({});
+      })
+      .finally(() => {
+        if (cancelled) return;
+        setIsReady(true);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [canLoad, scopeKey, teamId, userId]);
 
   const addList = useCallback(
     (input: {
@@ -243,9 +218,14 @@ export function ListsProvider({ children }: { children: ReactNode }) {
       };
 
       setLists((current) => [...current, list]);
+      if (teamId) {
+        void insertList(teamId, list).catch((error) => {
+          console.error("Failed to save list", error);
+        });
+      }
       return list;
     },
-    [],
+    [teamId],
   );
 
   const updateList = useCallback(
@@ -276,6 +256,15 @@ export function ListsProvider({ children }: { children: ReactNode }) {
           };
         }),
       );
+      void updateListRow(listId, {
+        ...patch,
+        name: patch.name !== undefined ? patch.name.trim() : undefined,
+        description:
+          patch.description !== undefined ? patch.description.trim() : undefined,
+        icon: patch.icon !== undefined ? patch.icon?.trim() || null : undefined,
+      }).catch((error) => {
+        console.error("Failed to update list", error);
+      });
     },
     [],
   );
@@ -292,13 +281,16 @@ export function ListsProvider({ children }: { children: ReactNode }) {
       setFiles((items) => {
         const next = items.filter((item) => !removedIds.has(item.taskId));
         for (const file of items) {
-          if (removedIds.has(file.taskId)) removeTaskFileContent(file.id);
+          if (removedIds.has(file.taskId)) cacheTaskFileContent(file.id, null);
         }
         return next;
       });
       return current.filter((task) => task.listId !== listId);
     });
     deleteStoredListFilesForList(listId);
+    void deleteListRow(listId).catch((error) => {
+      console.error("Failed to delete list", error);
+    });
   }, []);
 
   const addTask = useCallback(
@@ -341,10 +333,20 @@ export function ListsProvider({ children }: { children: ReactNode }) {
         }
         return [...current, task];
       });
-      setActivities((current) => [
-        ...current,
-        createActivity({ taskId: task.id, kind: "created" }),
-      ]);
+      const createdActivity = createActivity({
+        actorId: assignmentNotifyRef.current.actorId,
+        taskId: task.id,
+        kind: "created",
+      });
+      setActivities((current) => [...current, createdActivity]);
+      const activeTeamId = assignmentNotifyRef.current.teamId;
+      if (activeTeamId) {
+        void insertTask(activeTeamId, task)
+          .then(() => insertActivity(activeTeamId, createdActivity))
+          .catch((error) => {
+            console.error("Failed to save task", error);
+          });
+      }
       return task;
     },
     [],
@@ -367,6 +369,7 @@ export function ListsProvider({ children }: { children: ReactNode }) {
           if (patch.status && patch.status !== existing.status) {
             nextEvents.push(
               createActivity({
+                actorId: assignmentNotifyRef.current.actorId,
                 taskId,
                 kind: "status",
                 fromStatus: existing.status,
@@ -380,11 +383,32 @@ export function ListsProvider({ children }: { children: ReactNode }) {
           ) {
             nextEvents.push(
               createActivity({
+                actorId: assignmentNotifyRef.current.actorId,
                 taskId,
                 kind: "assignees",
                 assigneeIds: patch.assigneeIds,
               }),
             );
+            const addedIds = patch.assigneeIds.filter(
+              (id) => !existing.assigneeIds.includes(id),
+            );
+            const parentId =
+              existing.kind === "subtask" && existing.parentId
+                ? existing.parentId
+                : existing.id;
+            const notify = assignmentNotifyRef.current;
+            const extra = notificationsForNewAssignees({
+              actorId: notify.actorId,
+              addedIds,
+              memberIds: notify.memberIds,
+              taskTitle: patch.title ?? existing.title,
+              href: `/lists/${existing.listId}/tasks/${parentId}`,
+            });
+            if (extra.length > 0) {
+              queueMicrotask(() =>
+                appendNotifications(extra, notify.userId, notify.teamId),
+              );
+            }
           }
           if (
             patch.startDate !== undefined &&
@@ -392,6 +416,7 @@ export function ListsProvider({ children }: { children: ReactNode }) {
           ) {
             nextEvents.push(
               createActivity({
+                actorId: assignmentNotifyRef.current.actorId,
                 taskId,
                 kind: "start_date",
                 dateValue: patch.startDate,
@@ -401,6 +426,7 @@ export function ListsProvider({ children }: { children: ReactNode }) {
           if (patch.dueDate !== undefined && patch.dueDate !== existing.dueDate) {
             nextEvents.push(
               createActivity({
+                actorId: assignmentNotifyRef.current.actorId,
                 taskId,
                 kind: "due_date",
                 dateValue: patch.dueDate,
@@ -412,12 +438,23 @@ export function ListsProvider({ children }: { children: ReactNode }) {
               ...currentActivities,
               ...nextEvents,
             ]);
+            const activeTeamId = assignmentNotifyRef.current.teamId;
+            if (activeTeamId) {
+              for (const event of nextEvents) {
+                void insertActivity(activeTeamId, event).catch((error) => {
+                  console.error("Failed to save activity", error);
+                });
+              }
+            }
           }
         }
 
         return current.map((task) =>
           task.id === taskId ? { ...task, ...patch } : task,
         );
+      });
+      void updateTaskRow(taskId, patch).catch((error) => {
+        console.error("Failed to update task", error);
       });
     },
     [],
@@ -426,10 +463,19 @@ export function ListsProvider({ children }: { children: ReactNode }) {
   const addTaskComment = useCallback((taskId: string, text: string) => {
     const trimmed = text.trim();
     if (!trimmed) return;
-    setActivities((current) => [
-      ...current,
-      createActivity({ taskId, kind: "comment", text: trimmed }),
-    ]);
+    const activity = createActivity({
+      actorId: assignmentNotifyRef.current.actorId,
+      taskId,
+      kind: "comment",
+      text: trimmed,
+    });
+    setActivities((current) => [...current, activity]);
+    const activeTeamId = assignmentNotifyRef.current.teamId;
+    if (activeTeamId) {
+      void insertActivity(activeTeamId, activity).catch((error) => {
+        console.error("Failed to save comment", error);
+      });
+    }
   }, []);
 
   const addTaskFile = useCallback(async (taskId: string, file: File) => {
@@ -443,18 +489,33 @@ export function ListsProvider({ children }: { children: ReactNode }) {
       hasContent: false,
       createdAt: new Date().toISOString(),
     };
-    record.hasContent = await storeTaskFileContent(record.id, file);
+    const content = await storeTaskFileContent(record.id, file);
+    record.hasContent = Boolean(content);
     setFiles((current) => [...current, record]);
-    setActivities((current) => [
-      ...current,
-      createActivity({ taskId, kind: "file", fileName: record.name }),
-    ]);
+    const activity = createActivity({
+      actorId: assignmentNotifyRef.current.actorId,
+      taskId,
+      kind: "file",
+      fileName: record.name,
+    });
+    setActivities((current) => [...current, activity]);
+    const activeTeamId = assignmentNotifyRef.current.teamId;
+    if (activeTeamId) {
+      void insertTaskFile(activeTeamId, record, content)
+        .then(() => insertActivity(activeTeamId, activity))
+        .catch((error) => {
+          console.error("Failed to save task file", error);
+        });
+    }
     return record;
   }, []);
 
   const removeTaskFile = useCallback((fileId: string) => {
     setFiles((current) => current.filter((file) => file.id !== fileId));
-    removeTaskFileContent(fileId);
+    cacheTaskFileContent(fileId, null);
+    void deleteTaskFileRow(fileId).catch((error) => {
+      console.error("Failed to delete task file", error);
+    });
   }, []);
 
   const renameTaskFile = useCallback((fileId: string, name: string) => {
@@ -467,6 +528,9 @@ export function ListsProvider({ children }: { children: ReactNode }) {
           : file,
       ),
     );
+    void updateTaskFileName(fileId, trimmed, mimeFromName(trimmed)).catch((error) => {
+      console.error("Failed to rename task file", error);
+    });
   }, []);
 
   const deleteTask = useCallback((taskId: string) => {
@@ -479,17 +543,23 @@ export function ListsProvider({ children }: { children: ReactNode }) {
       setFiles((items) => {
         const next = items.filter((item) => !removedIds.includes(item.taskId));
         for (const file of items) {
-          if (removedIds.includes(file.taskId)) removeTaskFileContent(file.id);
+          if (removedIds.includes(file.taskId)) cacheTaskFileContent(file.id, null);
         }
         return next;
       });
       return current.filter((task) => !removedIds.includes(task.id));
     });
     deleteStoredListFilesForParents(removedIds);
+    void deleteTaskRow(taskId).catch((error) => {
+      console.error("Failed to delete task", error);
+    });
   }, []);
 
   const reorderTasks = useCallback((orderedIds: string[]) => {
     setTasks((current) => applySortOrder(current, orderedIds));
+    void updateTaskSortOrders(orderedIds).catch((error) => {
+      console.error("Failed to reorder tasks", error);
+    });
   }, []);
 
   const updateTaskStatus = useCallback(

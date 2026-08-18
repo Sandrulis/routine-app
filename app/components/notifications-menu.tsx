@@ -14,10 +14,19 @@ import { useTeam } from "@/app/lib/team-store";
 function notificationText(
   item: AppNotification,
   actorName: string,
+  recipientName: string,
+  currentUserId: string,
   t: (key: string, fallback: string, params?: Record<string, string>) => string,
 ) {
-  const params = { name: actorName, task: item.taskTitle };
+  const params = { name: actorName, task: item.taskTitle, assignee: recipientName };
   if (item.kind === "assigned") {
+    if (item.recipientId && item.recipientId !== currentUserId && recipientName) {
+      return t(
+        "notifications.item.assigned_other",
+        "{name} piešķīra {assignee} “{task}”",
+        params,
+      );
+    }
     return t(
       "notifications.item.assigned",
       "{name} piešķīra tev “{task}”",
@@ -63,7 +72,7 @@ export function NotificationsMenu() {
   const router = useRouter();
   const menuRef = useRef<HTMLDivElement | null>(null);
   const { t } = useTranslations();
-  const { members } = useTeam();
+  const { members, currentUser } = useTeam();
   const { items, unreadCount, markRead, markAllRead } = useNotifications();
   const [open, setOpen] = useState(false);
   const [now, setNow] = useState(() => Date.now());
@@ -148,6 +157,7 @@ export function NotificationsMenu() {
             <div className="max-h-[min(24rem,calc(100vh-6rem))] overflow-y-auto">
               {items.map((item) => {
                 const actor = getTeamMember(members, item.actorId);
+                const recipient = getTeamMember(members, item.recipientId);
                 const unread = item.readAt === null;
                 return (
                   <button
@@ -178,7 +188,13 @@ export function NotificationsMenu() {
                             : "text-zinc-600"
                         }`}
                       >
-                        {notificationText(item, actor?.name ?? "", t)}
+                        {notificationText(
+                          item,
+                          actor?.name ?? "",
+                          recipient?.name ?? "",
+                          currentUser.id,
+                          t,
+                        )}
                       </span>
                       <span className="mt-0.5 block text-[11px] tabular-nums text-zinc-400">
                         {notificationTime(item.createdAt, now, t)}

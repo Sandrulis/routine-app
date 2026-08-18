@@ -1,50 +1,70 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useAuthSession } from "@/app/lib/auth/use-auth-session";
+import {
+  fetchAppNotifications,
+  markNotificationsRead,
+} from "@/app/lib/db/work-data";
 import {
   NOTIFICATIONS_CHANGE_EVENT,
-  persistNotifications,
-  readStoredNotifications,
   unreadNotificationCount,
   type AppNotification,
 } from "@/app/lib/notifications";
+import { useTeam } from "@/app/lib/team-store";
 
 export function useNotifications() {
+  const { user: authUser, isReady: authReady } = useAuthSession();
+  const { isReady: teamReady, currentTeam } = useTeam();
+  const userId = authUser?.id ?? null;
+  const teamId = currentTeam?.id ?? null;
   const [items, setItems] = useState<AppNotification[]>([]);
 
   const refresh = useCallback(() => {
-    setItems(readStoredNotifications());
-  }, []);
+    if (!authReady || !teamReady) return;
+    if (!teamId || (userId && !teamId)) {
+      setItems([]);
+      return;
+    }
+    void fetchAppNotifications(teamId)
+      .then(setItems)
+      .catch((error) => {
+        console.error("Failed to load notifications", error);
+        setItems([]);
+      });
+  }, [authReady, teamId, teamReady, userId]);
 
   useEffect(() => {
     refresh();
     window.addEventListener(NOTIFICATIONS_CHANGE_EVENT, refresh);
-    window.addEventListener("storage", refresh);
     return () => {
       window.removeEventListener(NOTIFICATIONS_CHANGE_EVENT, refresh);
-      window.removeEventListener("storage", refresh);
     };
   }, [refresh]);
 
   const unreadCount = useMemo(() => unreadNotificationCount(items), [items]);
 
   function markRead(id: string) {
+    const readAt = new Date().toISOString();
     const next = items.map((item) =>
-      item.id === id && item.readAt === null
-        ? { ...item, readAt: new Date().toISOString() }
-        : item,
+      item.id === id && item.readAt === null ? { ...item, readAt } : item,
     );
-    persistNotifications(next);
     setItems(next);
+    void markNotificationsRead([id], readAt).catch((error) => {
+      console.error("Failed to mark notification read", error);
+    });
   }
 
   function markAllRead() {
     const now = new Date().toISOString();
+    const ids = items.filter((item) => item.readAt === null).map((item) => item.id);
     const next = items.map((item) =>
       item.readAt === null ? { ...item, readAt: now } : item,
     );
-    persistNotifications(next);
     setItems(next);
+    void markNotificationsRead(ids, now).catch((error) => {
+      console.error("Failed to mark notifications read", error);
+    });
   }
 
   return { items, unreadCount, markRead, markAllRead };

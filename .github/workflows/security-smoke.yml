@@ -44,7 +44,7 @@ jobs:
           fi
           MISSING=0
           for file in $ACTIONS; do
-            if ! grep -qE "requireAuth|requireAction|assertSystemAdminAccess|getCurrentUser" "$file"; then
+            if ! grep -qE "requireAuth|requireAction|requireAdmin|assertSystemAdminAccess|getCurrentUser" "$file"; then
               echo "FAIL: Missing auth guard in $file"
               MISSING=$((MISSING + 1))
             fi

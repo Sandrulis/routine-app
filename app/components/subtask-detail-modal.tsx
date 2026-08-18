@@ -533,7 +533,7 @@ export function SubtaskDetailModal({
                 htmlFor="subtask-description"
                 className="text-[12px] font-medium text-zinc-400"
               >
-                {t("tasks.fields.description", "Apraksts")}
+                {t("common.description", "Apraksts")}
               </label>
               <textarea
                 id="subtask-description"
@@ -741,7 +741,7 @@ export function SubtaskDetailModal({
       description={t("files.edit.description", "Maini faila nosaukumu.")}
       nameLabel={t("lists.fields.name", "Nosaukums")}
       namePlaceholder={t("files.fields.name_placeholder", "Faila nosaukums")}
-      descriptionLabel={t("lists.fields.description", "Apraksts")}
+      descriptionLabel={t("common.description", "Apraksts")}
       descriptionPlaceholder={t(
         "lists.fields.description_placeholder",
         "Īss apraksts",

@@ -16,6 +16,24 @@ export const MAX_STORED_FILE_BYTES = 1_500_000;
 
 const LIST_FILE_CONTENT_PREFIX = "routine-app-list-file-content:";
 
+let listFilesTeamId: string | null = null;
+let listFilesCache: ListFile[] = [];
+const listFileContentCache = new Map<string, string>();
+
+export function hydrateListFiles(
+  teamId: string | null,
+  files: ListFile[],
+  contents: Record<string, string> = {},
+) {
+  listFilesTeamId = teamId;
+  listFilesCache = files;
+  listFileContentCache.clear();
+  for (const [id, content] of Object.entries(contents)) {
+    listFileContentCache.set(id, content);
+  }
+  notifyFilesChanged();
+}
+
 export function createFileId(): string {
   if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
     return `file-${crypto.randomUUID()}`;
@@ -57,45 +75,6 @@ export function mimeFromName(name: string): string {
     xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
   };
   return types[extension] ?? "application/octet-stream";
-}
-
-export function createDefaultListFiles(): ListFile[] {
-  return [
-    {
-      id: "file-plan",
-      listId: "list-projects",
-      parentId: null,
-      name: "Plāns.pdf",
-      mimeType: "application/pdf",
-      size: 0,
-      hasContent: false,
-      createdAt: "2026-01-12T00:00:00.000Z",
-      sortOrder: 1000,
-    },
-    {
-      id: "file-layout",
-      listId: "list-projects",
-      parentId: null,
-      name: "Makets.fig",
-      mimeType: "application/octet-stream",
-      size: 0,
-      hasContent: false,
-      createdAt: "2026-01-18T00:00:00.000Z",
-      sortOrder: 1001,
-    },
-    {
-      id: "file-offer",
-      listId: "list-clients",
-      parentId: null,
-      name: "Piedāvājums.docx",
-      mimeType:
-        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-      size: 0,
-      hasContent: false,
-      createdAt: "2026-02-03T00:00:00.000Z",
-      sortOrder: 1002,
-    },
-  ];
 }
 
 export function fileIconClassName(name: string): string {
@@ -191,11 +170,12 @@ export function decodeDataUrlText(dataUrl: string): string | null {
 }
 
 function notifyFilesChanged() {
+  if (typeof window === "undefined") return;
   window.dispatchEvent(new Event(LIST_FILES_CHANGED_EVENT));
 }
 
 function writeAllListFiles(files: ListFile[]) {
-  window.localStorage.setItem(LIST_FILES_STORAGE_KEY, JSON.stringify(files));
+  listFilesCache = files;
   notifyFilesChanged();
 }
 
@@ -261,16 +241,13 @@ export function normalizeStoredFiles(value: unknown): ListFile[] | null {
 }
 
 export function readAllListFiles(): ListFile[] {
-  try {
-    const stored = window.localStorage.getItem(LIST_FILES_STORAGE_KEY);
-    if (!stored) return createDefaultListFiles();
-    return normalizeStoredFiles(JSON.parse(stored)) ?? createDefaultListFiles();
-  } catch {
-    return createDefaultListFiles();
-  }
+  return listFilesCache;
 }
 
 export function readListFileContent(fileId: string): string | null {
+  if (listFileContentCache.has(fileId)) {
+    return listFileContentCache.get(fileId) ?? null;
+  }
   try {
     return window.localStorage.getItem(fileContentKey(fileId));
   } catch {
@@ -279,11 +256,7 @@ export function readListFileContent(fileId: string): string | null {
 }
 
 function removeListFileContent(fileId: string) {
-  try {
-    window.localStorage.removeItem(fileContentKey(fileId));
-  } catch {
-    // ignore
-  }
+  listFileContentCache.delete(fileId);
 }
 
 function readFileAsDataUrl(file: File): Promise<string> {
@@ -295,15 +268,15 @@ function readFileAsDataUrl(file: File): Promise<string> {
   });
 }
 
-async function storeFileContent(fileId: string, file: File): Promise<boolean> {
-  if (file.size <= 0 || file.size > MAX_STORED_FILE_BYTES) return false;
+async function storeFileContent(fileId: string, file: File): Promise<string | null> {
+  if (file.size <= 0 || file.size > MAX_STORED_FILE_BYTES) return null;
   try {
     const dataUrl = await readFileAsDataUrl(file);
-    window.localStorage.setItem(fileContentKey(fileId), dataUrl);
-    return true;
+    listFileContentCache.set(fileId, dataUrl);
+    return dataUrl;
   } catch {
-    removeListFileContent(fileId);
-    return false;
+    listFileContentCache.delete(fileId);
+    return null;
   }
 }
 
@@ -330,14 +303,17 @@ export async function addStoredListFile(
       ),
   };
 
-  record.hasContent = await storeFileContent(record.id, file);
+  const content = await storeFileContent(record.id, file);
+  record.hasContent = Boolean(content);
 
-  try {
-    writeAllListFiles([...all, record]);
-  } catch {
-    removeListFileContent(record.id);
-    record.hasContent = false;
-    writeAllListFiles([...all, record]);
+  writeAllListFiles([...all, record]);
+  if (listFilesTeamId) {
+    const teamId = listFilesTeamId;
+    void import("@/app/lib/db/work-data")
+      .then(({ insertListFile }) => insertListFile(teamId, record, content))
+      .catch((error) => {
+        console.error("Failed to save list file", error);
+      });
   }
 
   return record;
@@ -356,6 +332,15 @@ export function renameStoredListFile(fileId: string, name: string): ListFile | n
   });
   if (!updated) return null;
   writeAllListFiles(next);
+  if (listFilesTeamId) {
+    void import("@/app/lib/db/work-data")
+      .then(({ updateListFileName }) =>
+        updateListFileName(fileId, trimmed, mimeFromName(trimmed)),
+      )
+      .catch((error) => {
+        console.error("Failed to rename list file", error);
+      });
+  }
   return updated;
 }
 
@@ -363,6 +348,13 @@ export function deleteStoredListFile(fileId: string) {
   const all = readAllListFiles();
   writeAllListFiles(all.filter((file) => file.id !== fileId));
   removeListFileContent(fileId);
+  if (listFilesTeamId) {
+    void import("@/app/lib/db/work-data")
+      .then(({ deleteListFileRow }) => deleteListFileRow(fileId))
+      .catch((error) => {
+        console.error("Failed to delete list file", error);
+      });
+  }
 }
 
 export function deleteStoredListFilesForList(listId: string) {
@@ -372,6 +364,13 @@ export function deleteStoredListFilesForList(listId: string) {
   writeAllListFiles(all.filter((file) => file.listId !== listId));
   for (const file of removed) {
     removeListFileContent(file.id);
+  }
+  if (listFilesTeamId) {
+    void import("@/app/lib/db/work-data")
+      .then(({ deleteListFilesForList }) => deleteListFilesForList(listId))
+      .catch((error) => {
+        console.error("Failed to delete list files", error);
+      });
   }
 }
 
@@ -387,5 +386,14 @@ export function deleteStoredListFilesForParents(parentIds: Iterable<string>) {
   writeAllListFiles(all.filter((file) => !removedIds.has(file.id)));
   for (const file of removed) {
     removeListFileContent(file.id);
+  }
+  if (listFilesTeamId) {
+    void import("@/app/lib/db/work-data")
+      .then(({ deleteListFilesForParents }) =>
+        deleteListFilesForParents([...ids]),
+      )
+      .catch((error) => {
+        console.error("Failed to delete nested list files", error);
+      });
   }
 }

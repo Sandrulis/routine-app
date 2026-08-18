@@ -23,9 +23,11 @@ const TranslationsContext = createContext<TranslationsContextValue | null>(null)
 
 export function TranslationsProvider({
   languageCode = DEFAULT_LANGUAGE,
+  overlay = {},
   children,
 }: {
   languageCode?: LanguageCode;
+  overlay?: Record<string, string>;
   children: ReactNode;
 }) {
   const value = useMemo<TranslationsContextValue>(() => {
@@ -34,10 +36,11 @@ export function TranslationsProvider({
     return {
       languageCode,
       t(key, fallback, params) {
-        return interpolate(table[key] ?? fallback, params);
+        const fromOverlay = overlay[key]?.trim();
+        return interpolate(fromOverlay || table[key] || fallback, params);
       },
     };
-  }, [languageCode]);
+  }, [languageCode, overlay]);
 
   return (
     <TranslationsContext.Provider value={value}>

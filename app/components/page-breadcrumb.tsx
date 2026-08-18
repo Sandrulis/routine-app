@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useMemo, type ReactNode } from "react";
+import { AdminPanelButton } from "@/app/components/admin-panel-button";
 import { ListBadge } from "@/app/components/list-badge";
 import { NotificationsMenu } from "@/app/components/notifications-menu";
 import { useTranslations } from "@/app/components/translations-provider";
@@ -180,6 +181,36 @@ export function PageBreadcrumb() {
       return items;
     }
 
+    if (parts[0] === "admin") {
+      const section = parts[1];
+      const sectionLabel =
+        section === "users"
+          ? t("admin.nav.users", "Lietotāji")
+          : section === "teams"
+            ? t("admin.nav.teams", "Komandas")
+            : section === "languages"
+              ? t("admin.nav.languages", "Valodas")
+              : section === "translations"
+                ? t("admin.nav.translations", "Tulkojumi")
+                : section === "settings"
+                  ? t("nav.settings", "Uzstādījumi")
+                  : null;
+      const items: Crumb[] = [
+        {
+          href: sectionLabel ? "/admin" : null,
+          label: t("admin.panel.title", "Administrācijas panelis"),
+          icon: <CrumbIcon className="fas fa-users-cog" />,
+        },
+      ];
+      if (sectionLabel) {
+        items.push({
+          href: `/admin/${section}`,
+          label: sectionLabel,
+        });
+      }
+      return items;
+    }
+
     return [
       {
         href: pathname,
@@ -230,7 +261,10 @@ export function PageBreadcrumb() {
             })}
           </ol>
         </nav>
-        <NotificationsMenu />
+        <div className="flex shrink-0 items-center gap-0.5">
+          <AdminPanelButton />
+          <NotificationsMenu />
+        </div>
       </div>
     </header>
   );

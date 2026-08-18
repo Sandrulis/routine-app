@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { ChangePasswordModal } from "@/app/components/change-password-modal";
+import { LanguageSwitcher } from "@/app/components/language-switcher";
 import { useFeedbackToast } from "@/app/components/feedback-toast-provider";
 import { useTranslations } from "@/app/components/translations-provider";
 import { OverflowTooltip } from "@/app/components/tooltip";
@@ -83,6 +84,9 @@ export function UserMenu({ user }: { user: TeamMember }) {
           <p className="px-3 pb-1.5 text-[11px] font-medium tracking-wide text-zinc-400 uppercase">
             {t("user_menu.heading", "Konts")}
           </p>
+          <div className="px-3 pb-2">
+            <LanguageSwitcher />
+          </div>
           <button
             type="button"
             role="menuitem"

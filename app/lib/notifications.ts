@@ -1,9 +1,12 @@
+import { isLegacyDemoMemberId } from "@/app/lib/clear-legacy-demo-storage";
+
 export type NotificationKind = "assigned" | "comment" | "due" | "file";
 
 export type AppNotification = {
   id: string;
   kind: NotificationKind;
   actorId: string | null;
+  recipientId: string | null;
   taskTitle: string;
   href: string | null;
   createdAt: string;
@@ -20,49 +23,38 @@ const NOTIFICATION_KINDS: NotificationKind[] = [
   "file",
 ];
 
-function isoMinutesAgo(minutes: number): string {
-  return new Date(Date.now() - minutes * 60_000).toISOString();
+export function createNotificationId(): string {
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
+    return `notif-${crypto.randomUUID()}`;
+  }
+  return `notif-${Date.now()}`;
 }
 
-export function createDefaultNotifications(): AppNotification[] {
-  return [
-    {
-      id: "notif-assigned",
-      kind: "assigned",
-      actorId: "janis",
-      taskTitle: "Pārbaudīt palaišanas soļus",
-      href: "/lists/list-projects/tasks/task-website",
-      createdAt: isoMinutesAgo(18),
+export function notificationsForNewAssignees(input: {
+  actorId: string;
+  addedIds: string[];
+  memberIds: Iterable<string>;
+  taskTitle: string;
+  href: string;
+}): AppNotification[] {
+  const title = input.taskTitle.trim();
+  if (!title) return [];
+
+  const members = new Set(input.memberIds);
+  const now = new Date().toISOString();
+
+  return input.addedIds
+    .filter((id) => id && id !== input.actorId && members.has(id))
+    .map((recipientId) => ({
+      id: createNotificationId(),
+      kind: "assigned" as const,
+      actorId: input.actorId,
+      recipientId,
+      taskTitle: title,
+      href: input.href,
+      createdAt: now,
       readAt: null,
-    },
-    {
-      id: "notif-comment",
-      kind: "comment",
-      actorId: "marta",
-      taskTitle: "Sagatavot foto materiālu",
-      href: "/lists/list-projects/tasks/task-website",
-      createdAt: isoMinutesAgo(125),
-      readAt: null,
-    },
-    {
-      id: "notif-due",
-      kind: "due",
-      actorId: null,
-      taskTitle: "Iekšējā dokumentācija",
-      href: "/lists/list-projects/tasks/task-docs",
-      createdAt: isoMinutesAgo(60 * 26),
-      readAt: null,
-    },
-    {
-      id: "notif-file",
-      kind: "file",
-      actorId: "kristaps",
-      taskTitle: "Mājas lapa",
-      href: "/lists/list-projects/tasks/task-website",
-      createdAt: isoMinutesAgo(60 * 26 * 3),
-      readAt: isoMinutesAgo(60 * 20),
-    },
-  ];
+    }));
 }
 
 function isNotificationKind(value: unknown): value is NotificationKind {
@@ -100,6 +92,15 @@ export function normalizeStoredNotifications(
         "actorId" in item && typeof item.actorId === "string" && item.actorId
           ? item.actorId
           : null;
+      const recipientId =
+        "recipientId" in item &&
+        typeof item.recipientId === "string" &&
+        item.recipientId
+          ? item.recipientId
+          : null;
+      if (isLegacyDemoMemberId(actorId) || isLegacyDemoMemberId(recipientId)) {
+        return null;
+      }
       const href =
         "href" in item && typeof item.href === "string" && item.href
           ? item.href
@@ -109,7 +110,16 @@ export function normalizeStoredNotifications(
           ? item.readAt
           : null;
 
-      return { id, kind, actorId, taskTitle, href, createdAt, readAt };
+      return {
+        id,
+        kind,
+        actorId,
+        recipientId,
+        taskTitle,
+        href,
+        createdAt,
+        readAt,
+      };
     })
     .filter((item): item is AppNotification => item !== null);
 
@@ -120,24 +130,23 @@ export function unreadNotificationCount(items: AppNotification[]): number {
   return items.filter((item) => item.readAt === null).length;
 }
 
-export function persistNotifications(items: AppNotification[]) {
-  window.localStorage.setItem(NOTIFICATIONS_STORAGE_KEY, JSON.stringify(items));
-  window.dispatchEvent(new Event(NOTIFICATIONS_CHANGE_EVENT));
+export async function readStoredNotifications(
+  userId: string | null = null,
+  teamId: string | null = null,
+): Promise<AppNotification[]> {
+  if (!teamId || (userId && !teamId)) return [];
+  const { fetchAppNotifications } = await import("@/app/lib/db/work-data");
+  return fetchAppNotifications(teamId);
 }
 
-export function readStoredNotifications(): AppNotification[] {
-  try {
-    const storedValue = window.localStorage.getItem(NOTIFICATIONS_STORAGE_KEY);
-    if (!storedValue) {
-      const seed = createDefaultNotifications();
-      persistNotifications(seed);
-      return seed;
-    }
-    return (
-      normalizeStoredNotifications(JSON.parse(storedValue)) ??
-      createDefaultNotifications()
-    );
-  } catch {
-    return createDefaultNotifications();
-  }
+export async function appendNotifications(
+  extra: AppNotification[],
+  userId: string | null,
+  teamId: string | null,
+) {
+  if (extra.length === 0) return;
+  if (!teamId || (userId && !teamId)) return;
+  const { insertNotifications } = await import("@/app/lib/db/work-data");
+  await insertNotifications(teamId, extra);
+  window.dispatchEvent(new Event(NOTIFICATIONS_CHANGE_EVENT));
 }

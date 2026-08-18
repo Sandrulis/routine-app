@@ -1,12 +1,10 @@
-import { todayIsoDate } from "@/app/lib/format-display-date";
+import { isLegacyDemoMemberId } from "@/app/lib/clear-legacy-demo-storage";
 import {
-  TEAM_MEMBERS,
   getTeamMember as getTeamMemberFromList,
   type TeamMember,
 } from "@/app/lib/team";
 
 export type { TeamMember };
-export { TEAM_MEMBERS };
 
 export type TodoStatus = "todo" | "in_progress" | "done";
 
@@ -28,62 +26,9 @@ export function isTodoStatus(value: string): value is TodoStatus {
 
 export function getTeamMember(
   id: string | null,
-  members: TeamMember[] = TEAM_MEMBERS,
+  members: TeamMember[],
 ): TeamMember | null {
   return getTeamMemberFromList(members, id);
-}
-
-export function createDefaultItems(
-  t: (key: string, fallback: string) => string,
-): TodoItem[] {
-  const today = todayIsoDate();
-
-  return [
-    {
-      id: "task-standup",
-      title: t("todo.defaults.standup", "Rīta standup piezīmes"),
-      description: t(
-        "todo.defaults.standup_description",
-        "Sagatavot īsu kopsavilkumu par vakardienas darbiem.",
-      ),
-      status: "todo",
-      assigneeId: "anna",
-      dueDate: today,
-    },
-    {
-      id: "task-client-call",
-      title: t("todo.defaults.client_call", "Zvanīt klientam par termiņiem"),
-      description: t(
-        "todo.defaults.client_call_description",
-        "Saskaņot nākamās nedēļas piegādes datumu.",
-      ),
-      status: "todo",
-      assigneeId: "kristaps",
-      dueDate: today,
-    },
-    {
-      id: "task-review",
-      title: t("todo.defaults.review", "Pārskatīt nedēļas uzdevumus"),
-      description: t(
-        "todo.defaults.review_description",
-        "Aizvērt pabeigtos darbus un pārdalīt atlikušos.",
-      ),
-      status: "in_progress",
-      assigneeId: "janis",
-      dueDate: today,
-    },
-    {
-      id: "task-docs",
-      title: t("todo.defaults.docs", "Atjaunināt iekšējo dokumentāciju"),
-      description: t(
-        "todo.defaults.docs_description",
-        "Pierakstīt, kā komanda pievieno un piešķir uzdevumus.",
-      ),
-      status: "done",
-      assigneeId: "marta",
-      dueDate: null,
-    },
-  ];
 }
 
 export function normalizeStoredItems(value: unknown): TodoItem[] | null {
@@ -108,16 +53,25 @@ export function normalizeStoredItems(value: unknown): TodoItem[] | null {
           ? item.description
           : "";
       const status = String(item.status);
-      const assigneeId =
+      const rawAssigneeId =
         "assigneeId" in item && typeof item.assigneeId === "string"
           ? item.assigneeId
           : null;
+      const assigneeId = isLegacyDemoMemberId(rawAssigneeId) ? null : rawAssigneeId;
       const dueDate =
         "dueDate" in item && typeof item.dueDate === "string" && item.dueDate
           ? item.dueDate
           : null;
 
       if (!id || !title || !isTodoStatus(status)) return null;
+      if (
+        id === "task-standup" ||
+        id === "task-client-call" ||
+        id === "task-review" ||
+        id === "task-docs"
+      ) {
+        return null;
+      }
 
       return { id, title, description, status, assigneeId, dueDate };
     })

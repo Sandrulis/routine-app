@@ -33,6 +33,29 @@ export function statusClassName(status: WorkTaskStatus) {
   return "bg-zinc-400 text-white";
 }
 
+export function statusDotClassName(status: WorkTaskStatus) {
+  if (status === "done") return "bg-emerald-500 border-emerald-500";
+  if (status === "in_progress") return "bg-orange-500 border-orange-500";
+  return "bg-zinc-400 border-zinc-400";
+}
+
+export function statusTextClassName(status: WorkTaskStatus) {
+  if (status === "done") return "text-emerald-500";
+  if (status === "in_progress") return "text-orange-500";
+  return "text-zinc-400";
+}
+
+export function StatusTreeDot({ status }: { status: WorkTaskStatus }) {
+  return (
+    <span
+      className="pointer-events-none inline-flex w-4 shrink-0 items-center justify-center"
+      aria-hidden="true"
+    >
+      <span className={`size-2.5 rounded-full border ${statusDotClassName(status)}`} />
+    </span>
+  );
+}
+
 export function nextWorkTaskStatus(
   status: WorkTaskStatus,
 ): WorkTaskStatus | null {

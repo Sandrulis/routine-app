@@ -56,7 +56,7 @@ export function LoginForm() {
 
       <label className="block">
         <span className="text-sm font-semibold text-zinc-700">
-          {t("auth.fields.email", "E-pasts")}
+          {t("common.email", "E-pasts")}
         </span>
         <input
           required
@@ -97,7 +97,7 @@ export function LoginForm() {
         disabled={pending}
         className={authPrimaryButtonClassName}
       >
-        {t("auth.login.submit", "Ienākt")}
+        {t("auth.login.title", "Ienākt")}
       </button>
 
       <AuthDivider />
@@ -109,7 +109,7 @@ export function LoginForm() {
           href="/signup"
           className="font-semibold text-zinc-900 underline decoration-zinc-300 underline-offset-2"
         >
-          {t("auth.signup.submit", "Reģistrēties")}
+          {t("auth.signup.title", "Reģistrēties")}
         </Link>
       </p>
     </form>

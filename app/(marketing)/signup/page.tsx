@@ -1,9 +1,13 @@
 import type { Metadata } from "next";
 import { SignupForm } from "@/app/components/signup-form";
+import { getServerTranslations } from "@/app/lib/i18n/server";
 
-export const metadata: Metadata = {
-  title: "Reģistrēties — Routine",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await getServerTranslations();
+  return {
+    title: `${t("auth.signup.title", "Reģistrēties")} — ${t("app.name", "Routine")}`,
+  };
+}
 
 export default function SignupPage() {
   return (

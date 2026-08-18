@@ -208,7 +208,7 @@ export function TeamSwitcher() {
       <CreateItemMenu
         open={itemMenu !== null}
         anchor={itemMenu?.anchor ?? null}
-        title={t("nav.item_menu", "Darbības")}
+        title={t("common.actions", "Darbības")}
         items={[
           {
             id: "edit",

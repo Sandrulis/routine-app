@@ -12,3 +12,14 @@ export function getSupabasePublicEnv() {
 export function isSupabaseConfigured() {
   return getSupabasePublicEnv() !== null;
 }
+
+export function isSupabaseAdminConfigured() {
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim() ?? "";
+  if (!isSupabaseConfigured() || !serviceKey) {
+    return false;
+  }
+  if (/your_|placeholder|changeme|example/i.test(serviceKey)) {
+    return false;
+  }
+  return serviceKey.startsWith("eyJ") && serviceKey.length > 100;
+}

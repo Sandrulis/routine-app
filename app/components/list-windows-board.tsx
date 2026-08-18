@@ -22,6 +22,7 @@ import {
   SortableTaskGroup,
   SortableTaskItem,
 } from "@/app/components/sortable-task-group";
+import { statusDotClassName, statusTextClassName } from "@/app/components/status-control";
 import { OptionalTooltip } from "@/app/components/tooltip";
 import { useTranslations } from "@/app/components/translations-provider";
 import {
@@ -274,20 +275,16 @@ function OverviewWindow({
                         onClick={() =>
                           updateTaskStatus(child.id, done ? "todo" : "done")
                         }
-                        className={`inline-flex size-4 shrink-0 items-center justify-center rounded border ${
-                          done
-                            ? "border-emerald-500 bg-emerald-500 text-white"
-                            : "border-zinc-300 bg-white text-transparent"
+                        className={`inline-flex size-4 shrink-0 items-center justify-center rounded-full border ${statusDotClassName(child.status)} ${
+                          done ? "text-white" : "text-transparent"
                         }`}
                       >
                         <i className="fas fa-check text-[8px]" aria-hidden="true" />
                       </button>
                       <Link
                         href={`/lists/${listId}/tasks/${child.id}`}
-                        className={`truncate text-[13px] ${
-                          done
-                            ? "text-zinc-400 line-through"
-                            : "text-zinc-600 hover:text-zinc-900"
+                        className={`truncate text-[13px] ${statusTextClassName(child.status)} ${
+                          done ? "line-through" : "hover:opacity-80"
                         }`}
                       >
                         {child.title}

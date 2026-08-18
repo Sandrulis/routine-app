@@ -4,6 +4,14 @@
 
 - (none)
 
+## v0.1.2
+
+**Komandas dati Postgres, admin panelis un statusa krāsas**
+
+- Saraksti, uzdevumi, faili un paziņojumi Postgres ar RLS; `/admin` `is_admin` lietotājiem; UI lv / en / ru
+- Apakšuzdevumu aplīši kokā un Saraksta logā ņem statusa krāsu; Saraksta logā arī teksts
+- Admin lietotāju pēdējā tiešsaiste no `team_members.last_online_at` (zaļš punkts / min / h / d)
+
 ## v0.1.1
 
 **Google pieslēgšanās, obligāta komanda un saraksta skats**

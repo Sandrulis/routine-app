@@ -131,7 +131,7 @@ export function TaskDetailPage({
           <i className="fas fa-plus text-xs" aria-hidden="true" />
           {isFolder
             ? t("create.menu.title", "Izveidot")
-            : t("subtasks.add.button", "Pievienot")}
+            : t("actions.add", "Pievienot")}
         </button>
       }
     >

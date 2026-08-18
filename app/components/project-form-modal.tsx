@@ -95,7 +95,7 @@ export function ProjectFormModal({
             disabled={!trimmedName}
             className="inline-flex min-h-10 items-center justify-center rounded-2xl bg-blue-700 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-800 disabled:bg-zinc-200 disabled:text-zinc-400"
           >
-            {t("projects.add.button", "Pievienot")}
+            {t("actions.add", "Pievienot")}
           </button>
         </div>
       </form>

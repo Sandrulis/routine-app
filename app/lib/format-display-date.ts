@@ -28,6 +28,15 @@ export function formatDisplayDateDdMmYy(value: string): string {
   return formatDateParts(date, 2);
 }
 
+/** Datums un laiks UI: dd.mm.yy hh:mm */
+export function formatDisplayDateTimeDdMmYy(value: string): string {
+  const date = parseDisplayDate(value);
+  if (!date) return "";
+  const hours = String(date.getHours()).padStart(2, "0");
+  const minutes = String(date.getMinutes()).padStart(2, "0");
+  return `${formatDateParts(date, 2)} ${hours}:${minutes}`;
+}
+
 /** Šodienas datums glabāšanai (YYYY-MM-DD). */
 export function todayIsoDate(): string {
   const now = new Date();

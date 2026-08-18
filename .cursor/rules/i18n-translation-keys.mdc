@@ -1,0 +1,64 @@
+---
+description: I18n translation key reuse, lv/en/ru catalog, no duplicate action keys
+alwaysApply: true
+---
+
+# Tulkojumu atslēgas — lv, en, ru
+
+UI tekstiem izmanto `t(key, fallback, params)`. Fallback kodā ir drošības teksts latviešu valodā, nevis pilns tulkojumu katalogs.
+
+Sistēmas valodas: **`lv`**, **`en`**, **`ru`**. Katalogs dzīvo **`app/lib/i18n/messages.ts`** (lv, en) un **`app/lib/i18n/messages-ru.ts`** (ru). `site_translations` ir tikai **overlay** (admin labojumi) - **neiesevo** visus key datubāzē.
+
+## Jauni vai mainīti UI teksti
+
+Kad pievieno vai maina lietotājam redzamu tekstu:
+
+- kodā izmanto `t(key, fallback, params)`;
+- tajā pašā izmaiņā pievieno vai atjaunina atslēgu **visās trijās** valodās (`messages.ts` lv+en un `messages-ru.ts`);
+- nedrīkst atstāt hardcoded UI tekstu bez `t(...)`.
+
+## Nedublēt vienādas vērtības
+
+Ja teksts ir vispārīga darbība vai bieži atkārtojas, tam jābūt **vienai kopīgai atslēgai**. Pirms jaunas atslēgas pārbaudi esošās `messages.ts`.
+
+```tsx
+// ✅
+t("actions.add", "Pievienot")
+t("actions.edit", "Labot")
+t("actions.delete", "Dzēst")
+t("actions.save", "Saglabāt")
+t("actions.cancel", "Atcelt")
+t("common.actions", "Darbības")
+t("common.name", "Vārds")
+t("common.email", "E-pasts")
+t("common.description", "Apraksts")
+t("roles.admin", "Administrators")
+t("nav.settings", "Uzstādījumi")
+
+// ❌
+t("lists.add.button", "Pievienot")
+t("admin.edit_button_text", "Labot")
+t("modal.delete_button", "Dzēst")
+```
+
+## Kad drīkst būt sadaļas atslēga
+
+Tikai tad, ja nozīme vai konteksts atšķiras (cits EN/RU teksts vai specifisks iemesls):
+
+- `site_languages.delete.default_disabled` — kāpēc noklusējuma valodu nevar dzēst
+- `lists.fields.name` („Nosaukums”) vs `common.name` („Vārds”)
+- `nav.home` vs `tasks.fields.start_date` (abi LV „Sākums”, bet EN Home vs Start)
+
+## Nosaukumu principi
+
+- Kopīgas darbības: `actions.save`, `actions.edit`, `actions.delete`, `actions.add`
+- Kopīgas kolonnas/virsraksti: `common.actions`, `common.name`, `common.email`, `common.description`
+- Kopīgi statusi/lomas: `status.active`, `roles.admin`
+- Kļūdas no servera: atgriez **atslēgu** (`errors.user_not_found`) un UI rādi ar `translateActionError(t, error)`
+- Sadaļas teksts tikai unikālam saturam
+
+## DB overlay
+
+`site_translations` nemigro visus UI tekstus. Migrācija valodām (`site_languages`) un sloganiem ir OK. Jaunam UI tekstam **nav** jātaisa SQL seed ar simtiem rindu.
+
+Ja labo `supabase/migrations/*.sql`: nākamais numurs, idempotents SQL, pēc tam `npm run db:migrate`.

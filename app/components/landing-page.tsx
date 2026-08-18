@@ -93,7 +93,7 @@ export function LandingPage() {
                 href="/login"
                 className="inline-flex min-h-11 items-center rounded-2xl border border-zinc-200 bg-white/80 px-5 text-sm font-semibold text-zinc-800 transition hover:bg-white"
               >
-                {t("auth.login.submit", "Ienākt")}
+                {t("auth.login.title", "Ienākt")}
               </Link>
             </div>
 
@@ -212,7 +212,7 @@ export function LandingPage() {
               href="/login"
               className="inline-flex min-h-11 items-center rounded-2xl border border-zinc-600 px-5 text-sm font-semibold text-white transition hover:bg-zinc-800"
             >
-              {t("auth.login.submit", "Ienākt")}
+              {t("auth.login.title", "Ienākt")}
             </Link>
           </div>
         </div>

@@ -56,7 +56,7 @@ export function TeamInviteModal({
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label htmlFor="team-invite-name" className="text-sm font-semibold text-zinc-700">
-            {t("team.fields.name", "Vārds")}
+            {t("common.name", "Vārds")}
           </label>
           <input
             id="team-invite-name"
@@ -69,7 +69,7 @@ export function TeamInviteModal({
         </div>
         <div>
           <label htmlFor="team-invite-email" className="text-sm font-semibold text-zinc-700">
-            {t("team.fields.email", "E-pasts")}
+            {t("common.email", "E-pasts")}
           </label>
           <input
             id="team-invite-email"

@@ -21,7 +21,7 @@ export default function TeamPage() {
 
   return (
     <SectionPage
-      title={t("team.page.title", "Komanda")}
+      title={t("nav.team", "Komanda")}
       subtitle={t(
         "team.page.subtitle",
         "Visi komandas biedri. Uzaicini jaunu biedru ar pluszīmi.",

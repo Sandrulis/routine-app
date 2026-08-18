@@ -1,0 +1,19 @@
+---
+description: Lietotnē nedrīkst rādīt dummy / demo seed datus
+alwaysApply: true
+---
+
+# Nav dummy datu
+
+Lietotne ir sistēma ar reāliem lietotājiem. **Nedrīkst** rādīt, seedot vai izmantot kā fallback izdomātus biedrus, sarakstus, uzdevumus, paziņojumus vai komandas (Anna Kalniņa, Kristaps, Marta, demo todo u.tml.).
+
+## Obligāti
+
+- Tukšs stāvoklis = `[]` / `emptyTeamMember()`, nevis `TEAM_MEMBERS[0]` vai `createDefault*()` ar paraugiem.
+- `currentUser` nāk tikai no autentificētās sesijas; gaida `getUser()`, nevis `INITIAL_SESSION`.
+- `localStorage` bez ieraksta = tukšs, nevis demo seed.
+- Veco frontend demo atslēgas dzēš `clearLegacyDemoStorage()`.
+
+## Izņēmums
+
+Mārketinga landing **ilustrācija** (`landing-app-preview.tsx`) drīkst rādīt fiktīvu UI. Tas nav app stāvoklis un nedrīkst nonākt `localStorage` vai komandas store.

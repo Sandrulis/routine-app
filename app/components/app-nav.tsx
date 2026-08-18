@@ -36,7 +36,9 @@ import {
   workItemIcon,
   type WorkList,
   type WorkTask,
+  type WorkTaskStatus,
 } from "@/app/lib/lists";
+import { StatusTreeDot } from "@/app/components/status-control";
 import { useLists } from "@/app/lib/lists-store";
 import {
   childListFiles,
@@ -152,6 +154,7 @@ function NavTreeSection({
   moreOpen = false,
   swapOnHover = false,
   leaf = false,
+  status,
   dragHandle,
   children,
 }: {
@@ -162,6 +165,7 @@ function NavTreeSection({
   listAppearance?: { icon: string | null; color: string };
   swapOnHover?: boolean;
   leaf?: boolean;
+  status?: WorkTaskStatus;
   label: string;
   description?: string;
   addLabel?: string;
@@ -244,6 +248,8 @@ function NavTreeSection({
                 </span>
               </button>
             </Tooltip>
+          ) : status ? (
+            <StatusTreeDot status={status} />
           ) : iconToneClassName && icon ? (
             <span
               className={`pointer-events-none inline-flex size-5 shrink-0 items-center justify-center rounded-[2.5px] text-[10px] ${iconToneClassName}`}
@@ -563,7 +569,8 @@ export function AppNav() {
               {(handle) => (
                 <NavTreeSection
                   href={href}
-                  icon={workItemIcon(task)}
+                  icon={isWorkSubtask(task) ? undefined : workItemIcon(task)}
+                  status={isWorkSubtask(task) ? task.status : undefined}
                   swapOnHover={!isWorkSubtask(task)}
                   leaf={isWorkSubtask(task)}
                   label={task.title}
@@ -805,7 +812,7 @@ export function AppNav() {
       <CreateItemMenu
         open={itemMenu !== null}
         anchor={itemMenu?.anchor ?? null}
-        title={t("nav.item_menu", "Darbības")}
+        title={t("common.actions", "Darbības")}
         items={
           itemMenu?.kind === "file"
             ? [

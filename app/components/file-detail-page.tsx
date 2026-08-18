@@ -131,7 +131,7 @@ export function FileDetailPage({
           "files.fields.name_placeholder",
           "Faila nosaukums",
         )}
-        descriptionLabel={t("lists.fields.description", "Apraksts")}
+        descriptionLabel={t("common.description", "Apraksts")}
         descriptionPlaceholder={t(
           "lists.fields.description_placeholder",
           "Īss apraksts",

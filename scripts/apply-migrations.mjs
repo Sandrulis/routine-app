@@ -27,12 +27,14 @@ function getProjectRef(url) {
 }
 
 function getConnectionCandidates(env) {
-  if (env.DATABASE_URL) return [env.DATABASE_URL];
-
   const url = env.NEXT_PUBLIC_SUPABASE_URL;
   const password = env.SUPABASE_DB_PASSWORD;
+  const ssl = { rejectUnauthorized: false };
 
   if (!url || !password) {
+    if (env.DATABASE_URL) {
+      return [{ connectionString: env.DATABASE_URL, ssl, label: "DATABASE_URL" }];
+    }
     console.error(
       "Missing DATABASE_URL or SUPABASE_DB_PASSWORD in .env.local\n" +
         "Supabase Dashboard → Project Settings → Database → Database password",
@@ -41,16 +43,46 @@ function getConnectionCandidates(env) {
   }
 
   const projectRef = getProjectRef(url);
-  const encodedPassword = encodeURIComponent(password);
   const region = env.SUPABASE_DB_REGION || "eu-west-1";
-  const poolerHost = `aws-0-${region}.pooler.supabase.com`;
   const poolerUser = `postgres.${projectRef}`;
+  const candidates = [];
 
-  return [
-    `postgresql://${poolerUser}:${encodedPassword}@${poolerHost}:5432/postgres`,
-    `postgresql://${poolerUser}:${encodedPassword}@${poolerHost}:6543/postgres`,
-    `postgresql://postgres:${encodedPassword}@db.${projectRef}.supabase.co:5432/postgres`,
-  ];
+  if (env.DATABASE_URL) {
+    candidates.push({
+      connectionString: env.DATABASE_URL,
+      ssl,
+      label: "DATABASE_URL",
+    });
+  }
+
+  for (const aws of ["aws-0", "aws-1"]) {
+    const host = `${aws}-${region}.pooler.supabase.com`;
+    for (const port of [5432, 6543]) {
+      candidates.push({
+        user: poolerUser,
+        password,
+        host,
+        port,
+        database: "postgres",
+        ssl,
+        connectionTimeoutMillis: 15000,
+        label: `${host}:${port}`,
+      });
+    }
+  }
+
+  candidates.push({
+    user: "postgres",
+    password,
+    host: `db.${projectRef}.supabase.co`,
+    port: 5432,
+    database: "postgres",
+    ssl,
+    connectionTimeoutMillis: 15000,
+    label: `db.${projectRef}.supabase.co:5432`,
+  });
+
+  return candidates;
 }
 
 async function ensureMigrationTable(client) {
@@ -114,17 +146,14 @@ const candidates = getConnectionCandidates(env);
 let client;
 let connectedVia = "";
 
-for (const connectionString of candidates) {
-  const attempt = new Client({
-    connectionString,
-    ssl: { rejectUnauthorized: false },
-    connectionTimeoutMillis: 15000,
-  });
+for (const config of candidates) {
+  const { label, ...clientConfig } = config;
+  const attempt = new Client(clientConfig);
 
   try {
     await attempt.connect();
     client = attempt;
-    connectedVia = connectionString.replace(/:([^:@/]+)@/, ":***@");
+    connectedVia = label;
     break;
   } catch (error) {
     console.log(`Connect skip: ${error.message}`);

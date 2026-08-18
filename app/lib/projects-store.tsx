@@ -13,7 +13,6 @@ import {
 import {
   PROJECTS_CHANGE_EVENT,
   PROJECTS_STORAGE_KEY,
-  createDefaultProjects,
   createProjectId,
   normalizeStoredProjects,
   type Project,
@@ -46,9 +45,9 @@ export function ProjectsProvider({ children }: { children: ReactNode }) {
       const storedProjects = storedValue
         ? normalizeStoredProjects(JSON.parse(storedValue))
         : null;
-      setProjects(storedProjects ?? createDefaultProjects());
+      setProjects(storedProjects ?? []);
     } catch {
-      setProjects(createDefaultProjects());
+      setProjects([]);
     } finally {
       setIsReady(true);
     }

@@ -1,3 +1,5 @@
+import { isLegacyDemoMemberId } from "@/app/lib/clear-legacy-demo-storage";
+
 export type WorkListKind = "list" | "folder";
 
 export type WorkList = {
@@ -273,157 +275,11 @@ export function listInitials(name: string): string {
   return (words[0]?.[0] ?? "S").toUpperCase();
 }
 
-export function createDefaultLists(): WorkList[] {
-  return [
-    {
-      id: "list-projects",
-      name: "Projekti",
-      description: "Aktīvie darba projekti.",
-      icon: "fas fa-folder",
-      color: "sky",
-      kind: "list",
-    },
-    {
-      id: "list-clients",
-      name: "Klienti",
-      description: "Klientu darbi un saziņa.",
-      icon: "fas fa-briefcase",
-      color: "amber",
-      kind: "list",
-    },
-  ];
-}
-
-export function createDefaultTasks(): WorkTask[] {
-  return withSiblingSortOrder([
-    {
-      id: "task-website",
-      listId: "list-projects",
-      parentId: null,
-      kind: "task",
-      title: "Mājas lapa",
-      description: "Publiskās vietnes saturs un palaišana.",
-      status: "in_progress",
-      assigneeIds: ["anna"],
-      startDate: "2026-08-01",
-      dueDate: "2026-08-30",
-    },
-    {
-      id: "task-website-copy",
-      listId: "list-projects",
-      parentId: "task-website",
-      kind: "subtask",
-      title: "Sagatavot sākuma lapas tekstu",
-      description: "",
-      status: "done",
-      assigneeIds: ["marta"],
-      startDate: "2026-08-01",
-      dueDate: "2026-08-10",
-    },
-    {
-      id: "task-website-launch",
-      listId: "list-projects",
-      parentId: "task-website",
-      kind: "subtask",
-      title: "Pārbaudīt palaišanas soļus",
-      description: "",
-      status: "todo",
-      assigneeIds: ["janis"],
-      startDate: "2026-08-12",
-      dueDate: "2026-08-20",
-    },
-    {
-      id: "task-website-photos",
-      listId: "list-projects",
-      parentId: "task-website",
-      kind: "subtask",
-      title: "Sagatavot foto materiālu",
-      description: "",
-      status: "in_progress",
-      assigneeIds: ["marta", "anna"],
-      startDate: "2026-08-08",
-      dueDate: "2026-08-18",
-    },
-    {
-      id: "task-website-public",
-      listId: "list-projects",
-      parentId: "task-website",
-      kind: "task",
-      title: "Publiskais saturs",
-      description: "Teksti un materiāli publiskajai vietnei.",
-      status: "in_progress",
-      assigneeIds: ["marta"],
-      startDate: "2026-08-01",
-      dueDate: "2026-08-22",
-    },
-    {
-      id: "task-docs",
-      listId: "list-projects",
-      parentId: null,
-      kind: "task",
-      title: "Iekšējā dokumentācija",
-      description: "Komandas darba kārtības apraksts.",
-      status: "todo",
-      assigneeIds: ["janis"],
-      startDate: null,
-      dueDate: "2026-09-01",
-    },
-    {
-      id: "task-ozols",
-      listId: "list-clients",
-      parentId: null,
-      kind: "task",
-      title: "SIA Ozols",
-      description: "Jaunā klienta onboarding.",
-      status: "in_progress",
-      assigneeIds: ["kristaps"],
-      startDate: "2026-08-04",
-      dueDate: "2026-08-25",
-    },
-    {
-      id: "task-ozols-offer",
-      listId: "list-clients",
-      parentId: "task-ozols",
-      kind: "subtask",
-      title: "Nosūtīt piedāvājumu",
-      description: "",
-      status: "todo",
-      assigneeIds: ["kristaps", "anna"],
-      startDate: "2026-08-05",
-      dueDate: "2026-08-18",
-    },
-    {
-      id: "task-liepa",
-      listId: "list-clients",
-      parentId: null,
-      kind: "task",
-      title: "SIA Liepa",
-      description: "Ikdienas saziņa un termiņi.",
-      status: "todo",
-      assigneeIds: [],
-      startDate: null,
-      dueDate: null,
-    },
-  ]);
-}
-
 function siblingGroupKey(
   task: Pick<WorkTask, "listId" | "parentId" | "kind">,
 ) {
   const group = task.kind === "subtask" ? "subtask" : "item";
   return `${task.listId}:${task.parentId ?? ""}:${group}`;
-}
-
-function withSiblingSortOrder(
-  tasks: Array<Omit<WorkTask, "sortOrder">>,
-): WorkTask[] {
-  const counts = new Map<string, number>();
-  return tasks.map((task) => {
-    const key = siblingGroupKey(task);
-    const sortOrder = counts.get(key) ?? 0;
-    counts.set(key, sortOrder + 1);
-    return { ...task, sortOrder };
-  });
 }
 
 function compareBySortOrder(a: WorkTask, b: WorkTask) {
@@ -499,10 +355,11 @@ function readAssigneeIds(item: object): string[] {
   if ("assigneeIds" in item && Array.isArray(item.assigneeIds)) {
     return item.assigneeIds
       .filter((id): id is string => typeof id === "string" && id.trim() !== "")
-      .map((id) => id.trim());
+      .map((id) => id.trim())
+      .filter((id) => !isLegacyDemoMemberId(id));
   }
   if ("assigneeId" in item && typeof item.assigneeId === "string" && item.assigneeId) {
-    return [item.assigneeId];
+    return isLegacyDemoMemberId(item.assigneeId) ? [] : [item.assigneeId];
   }
   return [];
 }
