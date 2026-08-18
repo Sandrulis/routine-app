@@ -1,4 +1,10 @@
 import { isLegacyDemoMemberId } from "@/app/lib/clear-legacy-demo-storage";
+import {
+  DEFAULT_LIST_ACCESS_LEVEL,
+  parseAccessMap,
+  parseListAccessLevel,
+  type ListAccessLevel,
+} from "@/app/lib/list-access";
 
 export type WorkListKind = "list" | "folder";
 
@@ -9,6 +15,13 @@ export type WorkList = {
   icon: string | null;
   color: string;
   kind: WorkListKind;
+  isPrivate: boolean;
+  createdBy: string | null;
+  defaultAccessLevel: ListAccessLevel;
+  viewerUserIds: string[];
+  viewerRoleIds: string[];
+  viewerUserAccess: Record<string, ListAccessLevel>;
+  viewerRoleAccess: Record<string, ListAccessLevel>;
 };
 
 export type WorkTaskStatus = "todo" | "in_progress" | "done";
@@ -22,6 +35,8 @@ export type WorkTask = {
   title: string;
   description: string;
   status: WorkTaskStatus;
+  statusChangedAt: string | null;
+  deletedAt: string | null;
   assigneeIds: string[];
   startDate: string | null;
   dueDate: string | null;
@@ -335,7 +350,53 @@ export function normalizeStoredLists(value: unknown): WorkList[] | null {
       if (!id || !name) return null;
       const kind =
         "kind" in item && item.kind === "folder" ? "folder" : "list";
-      return { id, name, description, icon, color, kind };
+      const isPrivate =
+        "isPrivate" in item && item.isPrivate === true;
+      const createdBy =
+        "createdBy" in item && typeof item.createdBy === "string"
+          ? item.createdBy
+          : null;
+      const viewerUserIds =
+        "viewerUserIds" in item && Array.isArray(item.viewerUserIds)
+          ? (item.viewerUserIds as unknown[]).filter(
+              (id): id is string => typeof id === "string",
+            )
+          : [];
+      const viewerRoleIds =
+        "viewerRoleIds" in item && Array.isArray(item.viewerRoleIds)
+          ? (item.viewerRoleIds as unknown[]).filter(
+              (id): id is string => typeof id === "string",
+            )
+          : [];
+      const viewerUserAccess = parseAccessMap(
+        "viewerUserAccess" in item ? item.viewerUserAccess : undefined,
+      );
+      const viewerRoleAccess = parseAccessMap(
+        "viewerRoleAccess" in item ? item.viewerRoleAccess : undefined,
+      );
+      for (const id of viewerUserIds) {
+        if (!viewerUserAccess[id]) viewerUserAccess[id] = DEFAULT_LIST_ACCESS_LEVEL;
+      }
+      for (const id of viewerRoleIds) {
+        if (!viewerRoleAccess[id]) viewerRoleAccess[id] = DEFAULT_LIST_ACCESS_LEVEL;
+      }
+      return {
+        id,
+        name,
+        description,
+        icon,
+        color,
+        kind,
+        isPrivate,
+        createdBy,
+        defaultAccessLevel: parseListAccessLevel(
+          "defaultAccessLevel" in item ? item.defaultAccessLevel : undefined,
+        ),
+        viewerUserIds: Object.keys(viewerUserAccess),
+        viewerRoleIds: Object.keys(viewerRoleAccess),
+        viewerUserAccess,
+        viewerRoleAccess,
+      };
     })
     .filter((item): item is WorkList => item !== null);
 
@@ -414,6 +475,16 @@ export function normalizeStoredTasks(value: unknown): WorkTask[] | null {
         Number.isFinite(item.sortOrder)
           ? item.sortOrder
           : index;
+      const statusChangedAt =
+        "statusChangedAt" in item &&
+        (typeof item.statusChangedAt === "string" || item.statusChangedAt === null)
+          ? item.statusChangedAt
+          : null;
+      const deletedAt =
+        "deletedAt" in item &&
+        (typeof item.deletedAt === "string" || item.deletedAt === null)
+          ? item.deletedAt
+          : null;
 
       if (!id || !listId || !title) return null;
       return {
@@ -424,6 +495,8 @@ export function normalizeStoredTasks(value: unknown): WorkTask[] | null {
         title,
         description,
         status,
+        statusChangedAt,
+        deletedAt,
         assigneeIds,
         startDate,
         dueDate,
@@ -505,6 +578,33 @@ export function getSubtasks(tasks: WorkTask[], parentId: string): WorkTask[] {
     .sort(compareBySortOrder);
 }
 
+export function isTaskDeleted(task: Pick<WorkTask, "deletedAt">): boolean {
+  return Boolean(task.deletedAt);
+}
+
+export function isClosedTaskStatus(
+  status: string,
+  catalog?: { id: string; groupKey: string }[],
+): boolean {
+  const row = catalog?.find((item) => item.id === status);
+  if (row) return row.groupKey === "closed";
+  return status === "done";
+}
+
+export function isTaskActiveInLists(
+  task: WorkTask,
+  catalog?: { id: string; groupKey: string }[],
+): boolean {
+  return !isTaskDeleted(task) && !isClosedTaskStatus(task.status, catalog);
+}
+
+export function isTaskInArchive(
+  task: WorkTask,
+  catalog?: { id: string; groupKey: string }[],
+): boolean {
+  return isTaskDeleted(task) || isClosedTaskStatus(task.status, catalog);
+}
+
 export function nextSortOrder(
   tasks: WorkTask[],
   input: Pick<WorkTask, "listId" | "parentId" | "kind">,
@@ -548,15 +648,16 @@ export function getTaskAncestors(
 }
 
 export function taskProgress(task: WorkTask, children: WorkTask[]) {
-  if (children.length === 0) {
-    const percent = task.status === "done" ? 100 : 0;
+  const visible = children.filter((child) => !isTaskDeleted(child));
+  if (visible.length === 0) {
+    const percent = isClosedTaskStatus(task.status) ? 100 : 0;
     return { done: percent === 100 ? 1 : 0, total: 0, percent };
   }
 
-  const done = children.filter((child) => child.status === "done").length;
+  const done = visible.filter((child) => isClosedTaskStatus(child.status)).length;
   return {
     done,
-    total: children.length,
-    percent: Math.round((done / children.length) * 100),
+    total: visible.length,
+    percent: Math.round((done / visible.length) * 100),
   };
 }

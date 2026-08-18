@@ -7,6 +7,7 @@ import {
   deleteAdminTeamAction,
   updateAdminTeamAction,
 } from "@/app/(app)/admin/actions";
+import { AdminTeamMembersModal } from "@/app/components/admin-team-members-modal";
 import { ConfirmModal } from "@/app/components/confirm-modal";
 import { useFeedbackToast } from "@/app/components/feedback-toast-provider";
 import { IconActionButton } from "@/app/components/icon-action-button";
@@ -14,7 +15,7 @@ import { ListBadge } from "@/app/components/list-badge";
 import { NameFormModal } from "@/app/components/name-form-modal";
 import { useTranslations } from "@/app/components/translations-provider";
 import { translateActionError } from "@/app/lib/i18n/action-errors";
-import type { AdminTeamSummary } from "@/app/lib/site-admin/types";
+import type { AdminTeamMembersTarget, AdminTeamSummary } from "@/app/lib/site-admin/types";
 
 export function AdminTeamsManager({ teams }: { teams: AdminTeamSummary[] }) {
   const router = useRouter();
@@ -23,6 +24,7 @@ export function AdminTeamsManager({ teams }: { teams: AdminTeamSummary[] }) {
   const [modalOpen, setModalOpen] = useState(false);
   const [editingTeam, setEditingTeam] = useState<AdminTeamSummary | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<AdminTeamSummary | null>(null);
+  const [membersTeam, setMembersTeam] = useState<AdminTeamMembersTarget | null>(null);
   const [isPending, startTransition] = useTransition();
 
   function openCreate() {
@@ -35,6 +37,16 @@ export function AdminTeamsManager({ teams }: { teams: AdminTeamSummary[] }) {
     clearFeedback();
     setEditingTeam(team);
     setModalOpen(true);
+  }
+
+  function openMembers(team: AdminTeamSummary) {
+    setMembersTeam({
+      id: team.id,
+      name: team.name,
+      icon: team.icon,
+      color: team.color,
+      logoUrl: team.logoUrl,
+    });
   }
 
   function handleSave(input: {
@@ -107,7 +119,11 @@ export function AdminTeamsManager({ teams }: { teams: AdminTeamSummary[] }) {
             </thead>
             <tbody className="divide-y divide-zinc-100">
               {teams.map((team) => (
-                <tr key={team.id}>
+                <tr
+                  key={team.id}
+                  className="cursor-pointer transition hover:bg-zinc-50"
+                  onClick={() => openMembers(team)}
+                >
                   <td className="px-5 py-4">
                     <div className="flex items-center gap-3">
                       <ListBadge
@@ -120,7 +136,7 @@ export function AdminTeamsManager({ teams }: { teams: AdminTeamSummary[] }) {
                     </div>
                   </td>
                   <td className="px-5 py-4 text-zinc-600">{team.memberCount}</td>
-                  <td className="px-5 py-4">
+                  <td className="px-5 py-4" onClick={(event) => event.stopPropagation()}>
                     <div className="flex justify-end gap-1">
                       <IconActionButton
                         label={t("actions.edit", "Labot")}
@@ -148,6 +164,14 @@ export function AdminTeamsManager({ teams }: { teams: AdminTeamSummary[] }) {
           </table>
         </div>
       </div>
+
+      <AdminTeamMembersModal
+        open={membersTeam !== null}
+        onOpenChange={(open) => {
+          if (!open) setMembersTeam(null);
+        }}
+        team={membersTeam}
+      />
 
       <NameFormModal
         open={modalOpen}

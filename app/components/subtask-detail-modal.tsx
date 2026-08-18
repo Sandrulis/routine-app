@@ -21,6 +21,12 @@ import { formatDisplayDateDdMmYy } from "@/app/lib/format-display-date";
 import { mimeFromName } from "@/app/lib/list-files";
 import { useLists } from "@/app/lib/lists-store";
 import { useTeam } from "@/app/lib/team-store";
+import { useIsAdmin } from "@/app/lib/users/use-is-admin";
+import {
+  listAccessCapabilities,
+  resolveListAccessLevel,
+  userIsAssignee,
+} from "@/app/lib/list-access";
 import {
   createTaskFileId,
   readTaskFileContent,
@@ -28,7 +34,7 @@ import {
   taskFilePreviewUrl,
   type TaskActivity,
 } from "@/app/lib/task-activity";
-import type { WorkTask, WorkTaskStatus } from "@/app/lib/lists";
+import { isTaskDeleted, type WorkTask, type WorkTaskStatus } from "@/app/lib/lists";
 
 type SubtaskDraft = {
   title: string;
@@ -105,12 +111,14 @@ export function SubtaskDetailModal({
     addTask,
     updateTask,
     addTaskFile,
+    addTaskComment,
     renameTaskFile,
     removeTaskFile,
     taskActivities,
     taskFiles,
   } = useLists();
-  const { members } = useTeam();
+  const { members, currentUser, roles } = useTeam();
+  const { isAdmin } = useIsAdmin();
   const [draft, setDraft] = useState<SubtaskDraft>(emptyDraft);
   const [createdTaskId, setCreatedTaskId] = useState<string | null>(null);
   const [forceCreate, setForceCreate] = useState(false);
@@ -138,6 +146,7 @@ export function SubtaskDetailModal({
     content: string | null;
     revokeOnClose: boolean;
   } | null>(null);
+  const [commentText, setCommentText] = useState("");
 
   const isCreate = forceCreate || (Boolean(createFor) && !taskId && !createdTaskId);
   const activeTaskId = forceCreate ? null : (taskId ?? createdTaskId);
@@ -148,6 +157,13 @@ export function SubtaskDetailModal({
   const list = parentListId
     ? (lists.find((item) => item.id === parentListId) ?? null)
     : null;
+  const access = listAccessCapabilities(
+    list ? resolveListAccessLevel(list, currentUser, roles, isAdmin) : null,
+    {
+      isAssignee: userIsAssignee(draft.assigneeIds, currentUser),
+    },
+  );
+  const deleted = Boolean(task && isTaskDeleted(task));
   const activities = task ? taskActivities(task.id) : [];
   const files = task ? taskFiles(task.id) : [];
   const createdAt =
@@ -242,6 +258,7 @@ export function SubtaskDetailModal({
   }
 
   async function handleAddAttachments(selected: File[]) {
+    if (isCreate ? !access.canCreateTasks : !access.canEditTasks) return;
     if (task) {
       let storedWithoutPreview = false;
       for (const file of selected) {
@@ -367,10 +384,15 @@ export function SubtaskDetailModal({
 
   const trimmedTitle = draft.title.trim();
   const dirty = !draftsEqual(draft, snapshotRef.current);
-  const canSave = Boolean(trimmedTitle) && dirty;
+  const canSave =
+    Boolean(trimmedTitle) &&
+    dirty &&
+    !deleted &&
+    (isCreate ? access.canCreateTasks : access.canEditTasks || access.canChangeStatus);
   const showAddNew =
     Boolean(trimmedTitle) &&
     !canSave &&
+    access.canCreateTasks &&
     Boolean(
       createFor || (task?.listId && task.parentId) || createParentRef.current,
     );
@@ -515,6 +537,7 @@ export function SubtaskDetailModal({
                 ref={titleInputRef}
                 id="subtask-title"
                 value={draft.title}
+                readOnly={!access.canEditTasks && !isCreate}
                 onChange={(event) => {
                   const title = event.target.value;
                   setDraft((current) => ({ ...current, title }));
@@ -538,6 +561,7 @@ export function SubtaskDetailModal({
               <textarea
                 id="subtask-description"
                 value={draft.description}
+                readOnly={!access.canEditTasks && !isCreate}
                 onChange={(event) => {
                   const description = event.target.value;
                   setDraft((current) => ({ ...current, description }));
@@ -558,7 +582,12 @@ export function SubtaskDetailModal({
                 </p>
                 <div className="mt-1.5 flex items-center gap-2 text-sm font-medium text-zinc-900">
                   {list ? (
-                    <ListBadge name={list.name} icon={list.icon} color={list.color} />
+                    <ListBadge
+                      name={list.name}
+                      icon={list.icon}
+                      color={list.color}
+                      isPrivate={list.isPrivate}
+                    />
                   ) : null}
                   <span className="truncate">
                     {list?.name ?? t("lists.detail.missing", "Saraksts nav atrasts")}
@@ -573,6 +602,15 @@ export function SubtaskDetailModal({
                 <div className="mt-1.5">
                   <StatusControl
                     status={draft.status}
+                    statusChangedAt={
+                      deleted
+                        ? task?.deletedAt
+                        : task && draft.status === task.status
+                          ? task.statusChangedAt
+                          : null
+                    }
+                    deleted={deleted}
+                    disabled={!access.canChangeStatus || deleted}
                     onChange={(status) =>
                       setDraft((current) => ({ ...current, status }))
                     }
@@ -588,6 +626,7 @@ export function SubtaskDetailModal({
                   <DateCell
                     value={draft.startDate}
                     emptyLabel={t("tasks.fields.start_date", "Sākums")}
+                    disabled={!access.canEditTasks}
                     onChange={(startDate) => {
                       setDraft((current) => ({ ...current, startDate }));
                     }}
@@ -603,6 +642,7 @@ export function SubtaskDetailModal({
                   <DateCell
                     value={draft.dueDate}
                     emptyLabel={t("todo.fields.due_date", "Termiņš")}
+                    disabled={!access.canEditTasks}
                     onChange={(dueDate) => {
                       setDraft((current) => ({ ...current, dueDate }));
                     }}
@@ -617,6 +657,7 @@ export function SubtaskDetailModal({
                 <div className="mt-1.5">
                   <AssigneeCell
                     assigneeIds={draft.assigneeIds}
+                    disabled={!access.canEditTasks}
                     onChange={(assigneeIds) =>
                       setDraft((current) => ({ ...current, assigneeIds }))
                     }
@@ -640,6 +681,7 @@ export function SubtaskDetailModal({
                   previewUrl: item.previewUrl,
                 })),
               ]}
+              disabled={isCreate ? !access.canCreateTasks : !access.canEditTasks}
               onAdd={(selected) => {
                 void handleAddAttachments(selected);
               }}
@@ -686,6 +728,35 @@ export function SubtaskDetailModal({
                 })}
               </ol>
             )}
+            {!isCreate && task && access.canComment ? (
+              <div className="mt-3 space-y-2">
+                <label htmlFor="subtask-comment" className="sr-only">
+                  {t("subtasks.comment.placeholder", "Raksti komentāru")}
+                </label>
+                <textarea
+                  id="subtask-comment"
+                  value={commentText}
+                  onChange={(event) => setCommentText(event.target.value)}
+                  rows={2}
+                  className="w-full resize-y rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 outline-none transition placeholder:text-zinc-400 focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+                  placeholder={t(
+                    "subtasks.comment.placeholder",
+                    "Raksti komentāru",
+                  )}
+                />
+                <button
+                  type="button"
+                  disabled={!commentText.trim()}
+                  onClick={() => {
+                    addTaskComment(task.id, commentText);
+                    setCommentText("");
+                  }}
+                  className="inline-flex min-h-8 items-center rounded-xl bg-zinc-900 px-3 text-[13px] font-semibold text-white transition hover:bg-zinc-800 disabled:bg-zinc-200 disabled:text-zinc-400"
+                >
+                  {t("subtasks.comment.submit", "Pievienot komentāru")}
+                </button>
+              </div>
+            ) : null}
           </aside>
         </div>
 

@@ -6,11 +6,14 @@ import {
   useMemo,
   useRef,
   useState,
+  type ReactNode,
 } from "react";
 import { createPortal } from "react-dom";
 import { Tooltip } from "@/app/components/tooltip";
 import { useTranslations } from "@/app/components/translations-provider";
+import { formatDisplayDateTimeDdMmYy } from "@/app/lib/format-display-date";
 import type { WorkTaskStatus } from "@/app/lib/lists";
+import { useTaskStatuses } from "@/app/lib/task-statuses";
 
 export const WORK_TASK_STATUSES: WorkTaskStatus[] = [
   "todo",
@@ -45,13 +48,18 @@ export function statusTextClassName(status: WorkTaskStatus) {
   return "text-zinc-400";
 }
 
-export function StatusTreeDot({ status }: { status: WorkTaskStatus }) {
+export function StatusTreeDot({ status }: { status: string }) {
+  const { colorFor } = useTaskStatuses();
+  const color = colorFor(status) ?? "#a1a1aa";
   return (
     <span
       className="pointer-events-none inline-flex w-4 shrink-0 items-center justify-center"
       aria-hidden="true"
     >
-      <span className={`size-2.5 rounded-full border ${statusDotClassName(status)}`} />
+      <span
+        className="size-2.5 rounded-full border"
+        style={{ backgroundColor: color, borderColor: color }}
+      />
     </span>
   );
 }
@@ -66,43 +74,107 @@ export function nextWorkTaskStatus(
 
 export function useStatusLabels(): Record<WorkTaskStatus, string> {
   const { t } = useTranslations();
-  return {
+  const { labelFor, statuses } = useTaskStatuses();
+  const fallback: Record<WorkTaskStatus, string> = {
     todo: t("todo.columns.todo", "Darāms"),
     in_progress: t("todo.columns.in_progress", "Procesā"),
     done: t("todo.columns.done", "Gatavs"),
   };
+
+  const labels = { ...fallback };
+  for (const row of statuses) {
+    if (row.id === "todo" || row.id === "in_progress" || row.id === "done") {
+      labels[row.id] = labelFor(row.id);
+    }
+  }
+  return labels;
 }
 
-function StatusIcon({ status }: { status: WorkTaskStatus }) {
-  if (status === "done") {
+function statusGroupKey(
+  status: string,
+  statuses: { id: string; groupKey: string }[],
+) {
+  const groupKey = statuses.find((row) => row.id === status)?.groupKey;
+  if (groupKey) return groupKey;
+  if (status === "done") return "closed";
+  if (status === "in_progress") return "active";
+  return "not_started";
+}
+
+export function StatusGlyph({
+  color,
+  groupKey,
+  className = "",
+}: {
+  color: string;
+  groupKey: string;
+  className?: string;
+}) {
+  const fill = color.trim() || "#a1a1aa";
+
+  if (groupKey === "closed") {
     return (
-      <span className="inline-flex size-3.5 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-white">
-        <i className="fas fa-check text-[8px]" aria-hidden="true" />
+      <span
+        className={`inline-flex size-3.5 shrink-0 items-center justify-center rounded-full text-white ${className}`}
+        style={{ backgroundColor: fill }}
+        aria-hidden="true"
+      >
+        <i className="fas fa-check text-[8px]" />
       </span>
     );
   }
 
-  if (status === "in_progress") {
+  if (groupKey === "active") {
     return (
-      <span className="relative inline-flex size-3.5 shrink-0 items-center justify-center rounded-full border-2 border-orange-400">
-        <span className="size-1.5 rounded-full bg-orange-400" />
+      <span
+        className={`relative inline-flex size-3.5 shrink-0 items-center justify-center rounded-full border-2 ${className}`}
+        style={{ borderColor: fill }}
+        aria-hidden="true"
+      >
+        <span className="size-1.5 rounded-full" style={{ backgroundColor: fill }} />
       </span>
     );
   }
 
   return (
-    <span className="inline-flex size-3.5 shrink-0 rounded-full border-2 border-dashed border-zinc-400" />
+    <span
+      className={`inline-flex size-3.5 shrink-0 rounded-full border-2 border-dashed ${className}`}
+      style={{ borderColor: fill }}
+      aria-hidden="true"
+    />
+  );
+}
+
+function StatusIcon({ status }: { status: string }) {
+  const { colorFor, statuses } = useTaskStatuses();
+  return (
+    <StatusGlyph
+      color={colorFor(status) ?? "#a1a1aa"}
+      groupKey={statusGroupKey(status, statuses)}
+    />
   );
 }
 
 export function StatusControl({
   status,
   onChange,
+  statusChangedAt,
+  disabled = false,
+  deleted = false,
+  onRestore,
+  trailing,
 }: {
   status: WorkTaskStatus;
   onChange: (next: WorkTaskStatus) => void;
+  statusChangedAt?: string | null;
+  disabled?: boolean;
+  deleted?: boolean;
+  onRestore?: () => void;
+  trailing?: ReactNode;
 }) {
   const { t } = useTranslations();
+  const { labelFor, colorFor, nextStatusId, groupedStatuses, statuses } =
+    useTaskStatuses();
   const labels = useStatusLabels();
   const rootRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
@@ -113,18 +185,33 @@ export function StatusControl({
   const [position, setPosition] = useState<{ top: number; left: number } | null>(
     null,
   );
-  const nextStatus = nextWorkTaskStatus(status);
-  const isDone = status === "done";
+  const nextStatus = nextStatusId(status) as WorkTaskStatus | null;
+  const currentStatus = statuses.find((row) => row.id === status);
+  const closedStatus =
+    [...statuses].reverse().find((row) => row.groupKey === "closed")?.id ?? "done";
+  const isDone = currentStatus?.groupKey === "closed" || status === "done";
+  const statusColor = deleted ? "#71717a" : colorFor(status);
+  const changedAtLabel = statusChangedAt
+    ? formatDisplayDateTimeDdMmYy(statusChangedAt)
+    : "";
+  const statusLabel = deleted
+    ? t("status.deleted", "Dzēsts")
+    : labelFor(status) || labels[status];
+  const controlsDisabled = disabled || deleted;
 
   const groups = useMemo(() => {
     const needle = query.trim().toLowerCase();
-    return STATUS_GROUPS.map((group) => ({
-      ...group,
-      statuses: group.statuses.filter((item) =>
-        needle ? labels[item].toLowerCase().includes(needle) : true,
-      ),
-    })).filter((group) => group.statuses.length > 0);
-  }, [labels, query]);
+    return groupedStatuses
+      .map((group) => ({
+        id: group.id,
+        statuses: group.statuses
+          .filter((row) =>
+            needle ? labelFor(row.id).toLowerCase().includes(needle) : true,
+          )
+          .map((row) => row.id as WorkTaskStatus),
+      }))
+      .filter((group) => group.statuses.length > 0);
+  }, [groupedStatuses, labelFor, query]);
 
   useEffect(() => {
     setMounted(true);
@@ -187,26 +274,43 @@ export function StatusControl({
   };
 
   return (
-    <div ref={rootRef} className="relative inline-flex items-center gap-1">
+    <div className="inline-flex flex-col items-start gap-0.5">
+      <div ref={rootRef} className="relative inline-flex items-center gap-1">
       <div
-        className={`inline-flex h-8 overflow-hidden rounded-md ${statusClassName(status)}`}
+        className={`inline-flex h-8 overflow-hidden rounded-md text-white ${
+          statusColor ? "" : statusClassName(status)
+        }`}
+        style={statusColor ? { backgroundColor: statusColor } : undefined}
       >
         <button
           type="button"
-          onClick={() => setOpen((current) => !current)}
-          aria-haspopup="listbox"
-          aria-expanded={open}
-          aria-label={t("subtasks.table.status", "Statuss")}
-          className="px-2.5 text-[11px] font-semibold tracking-wide uppercase"
+          disabled={deleted ? !onRestore : controlsDisabled}
+          onClick={() => {
+            if (deleted) {
+              onRestore?.();
+              return;
+            }
+            if (controlsDisabled) return;
+            setOpen((current) => !current);
+          }}
+          aria-haspopup={deleted ? undefined : "listbox"}
+          aria-expanded={deleted ? undefined : open}
+          aria-label={
+            deleted
+              ? t("subtasks.restore", "Atjaunot")
+              : t("subtasks.table.status", "Statuss")
+          }
+          className="px-2.5 text-[11px] font-semibold tracking-wide uppercase disabled:cursor-not-allowed"
         >
-          {labels[status]}
+          {statusLabel}
         </button>
         <Tooltip label={t("status.next", "Nākamais statuss")} className="h-full">
           <button
             type="button"
-            disabled={!nextStatus}
+            disabled={controlsDisabled || !nextStatus || deleted}
             onClick={() => {
-              if (nextStatus) onChange(nextStatus);
+              if (controlsDisabled || !nextStatus || deleted) return;
+              onChange(nextStatus);
             }}
             aria-label={t("status.next", "Nākamais statuss")}
             className="inline-flex h-full w-7 items-center justify-center border-l border-white/30 disabled:cursor-not-allowed disabled:opacity-40"
@@ -219,8 +323,8 @@ export function StatusControl({
       <Tooltip label={t("status.complete", "Pabeigt")}>
         <button
           type="button"
-          disabled={isDone}
-          onClick={() => onChange("done")}
+          disabled={controlsDisabled || isDone}
+          onClick={() => onChange(closedStatus as WorkTaskStatus)}
           aria-label={t("status.complete", "Pabeigt")}
           aria-pressed={isDone}
           className={`inline-flex size-8 items-center justify-center rounded-md transition ${
@@ -232,8 +336,9 @@ export function StatusControl({
           <i className="fas fa-check text-[12px]" aria-hidden="true" />
         </button>
       </Tooltip>
+      {trailing}
 
-      {open && mounted
+      {open && mounted && !deleted
         ? createPortal(
             <div
               ref={panelRef}
@@ -297,7 +402,7 @@ export function StatusControl({
                           >
                             <StatusIcon status={item} />
                             <span className="min-w-0 flex-1 truncate">
-                              {labels[item]}
+                              {labelFor(item) || labels[item]}
                             </span>
                             {selected ? (
                               <i
@@ -316,6 +421,15 @@ export function StatusControl({
             document.body,
           )
         : null}
+      </div>
+      {changedAtLabel ? (
+        <p
+          className="text-[11px] leading-tight text-zinc-400"
+          title={t("subtasks.status.changed_at", "Statuss mainīts")}
+        >
+          {changedAtLabel}
+        </p>
+      ) : null}
     </div>
   );
 }

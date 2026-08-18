@@ -51,6 +51,7 @@ type AppModalProps = {
   dirty?: boolean;
   panelMaxWidthClassName?: string;
   overlayZClassName?: string;
+  overlayZIndex?: number;
   headerMeta?: ReactNode;
 };
 
@@ -64,6 +65,7 @@ export function AppModal({
   dirty = false,
   panelMaxWidthClassName = defaultPanelMaxWidthClassName,
   overlayZClassName = defaultOverlayZClassName,
+  overlayZIndex,
   headerMeta,
 }: AppModalProps) {
   const titleId = useId();
@@ -73,6 +75,7 @@ export function AppModal({
   const [confirmExitOpen, setConfirmExitOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const modalDepthRef = useRef(0);
+  const resolvedOverlayZIndex = overlayZIndex ?? 50;
   const { t } = useTranslations();
 
   useEffect(() => {
@@ -191,7 +194,8 @@ export function AppModal({
   return createPortal(
     <>
       <div
-        className={`${overlayBaseClassName} ${overlayZClassName}`}
+        className={`${overlayBaseClassName} ${overlayZIndex == null ? overlayZClassName : ""}`}
+        style={overlayZIndex == null ? undefined : { zIndex: overlayZIndex }}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
@@ -236,7 +240,8 @@ export function AppModal({
 
       {confirmExitOpen ? (
         <div
-          className="fixed inset-0 z-[60] flex items-center justify-center p-4"
+          className="fixed inset-0 flex items-center justify-center p-4"
+          style={{ zIndex: resolvedOverlayZIndex + 10 }}
           role="alertdialog"
           aria-modal="true"
           aria-labelledby="confirm-exit-title"

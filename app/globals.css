@@ -39,6 +39,20 @@ button:not(:disabled),
   cursor: pointer;
 }
 
+@keyframes subtask-archive-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+.subtask-row-exit {
+  animation: subtask-archive-out 0.28s ease forwards;
+  pointer-events: none;
+}
+
 button:disabled,
 [type="button"]:disabled,
 [type="submit"]:disabled,
@@ -102,7 +116,8 @@ button:disabled,
   .landing-preview-frame,
   .landing-preview-float,
   .landing-preview-card-lift,
-  .landing-online-dot {
+  .landing-online-dot,
+  .subtask-row-exit {
     animation: none;
   }
 }

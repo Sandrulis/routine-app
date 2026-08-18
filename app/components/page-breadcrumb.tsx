@@ -59,7 +59,12 @@ export function PageBreadcrumb() {
           href: `/lists/${parts[1]}`,
           label: list?.name ?? t("lists.detail.missing", "Saraksts nav atrasts"),
           icon: list ? (
-            <ListBadge name={list.name} icon={list.icon} color={list.color} />
+            <ListBadge
+              name={list.name}
+              icon={list.icon}
+              color={list.color}
+              isPrivate={list.isPrivate}
+            />
           ) : (
             <CrumbIcon className="fas fa-folder" />
           ),
@@ -184,18 +189,16 @@ export function PageBreadcrumb() {
 
     if (parts[0] === "admin") {
       const section = parts[1];
-      const sectionLabel =
-        section === "users"
-          ? t("admin.nav.users", "Lietotāji")
-          : section === "teams"
-            ? t("admin.nav.teams", "Komandas")
-            : section === "languages"
-              ? t("admin.nav.languages", "Valodas")
-              : section === "translations"
-                ? t("admin.nav.translations", "Tulkojumi")
-                : section === "settings"
-                  ? t("nav.settings", "Uzstādījumi")
-                  : null;
+      const sectionLabels: Record<string, string> = {
+        users: t("admin.nav.users", "Lietotāji"),
+        teams: t("admin.nav.teams", "Komandas"),
+        roles: t("admin.nav.roles", "Lomas"),
+        statuses: t("admin.nav.statuses", "Statusi"),
+        languages: t("admin.nav.languages", "Valodas"),
+        translations: t("admin.nav.translations", "Tulkojumi"),
+        settings: t("nav.settings", "Uzstādījumi"),
+      };
+      const sectionLabel = section ? (sectionLabels[section] ?? null) : null;
       const items: Crumb[] = [
         {
           href: sectionLabel ? "/admin" : null,

@@ -37,10 +37,10 @@ export function TeamSwitcher() {
   const menuRef = useRef<HTMLDivElement | null>(null);
   const { t } = useTranslations();
   const { showFeedback } = useFeedbackToast();
-  const { isReady, teams, currentTeam, currentUser, addTeam, updateTeam, deleteTeam, selectTeam } =
+  const { isReady, teams, currentTeam, currentUser, addTeam, updateTeam, deleteTeam, selectTeam, roles } =
     useTeam();
   const needsTeam = isReady && teams.length === 0;
-  const rank = teamRankLabel(currentUser.role, t);
+  const rank = teamRankLabel(currentUser.role, t, roles);
   const teamRank = rank ?? t("teams.rank.owner", "Īpašnieks");
   const [open, setOpen] = useState(false);
   const [formTeam, setFormTeam] = useState<WorkTeam | "new" | null>(null);

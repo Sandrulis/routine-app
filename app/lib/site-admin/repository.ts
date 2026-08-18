@@ -8,11 +8,18 @@ import {
   createOwnerMember,
   createTeamId,
   initialsFromName,
+  MEMBER_TEAM_ROLE,
+  OWNER_TEAM_ROLE,
 } from "@/app/lib/team";
 import { DEFAULT_LIST_COLOR, randomListColorId } from "@/app/lib/lists";
+import {
+  createFullTeamPermissions,
+  normalizeTeamPermissionSet,
+} from "@/app/lib/team-permissions";
 import type {
   ActionResult,
   AdminTeamInput,
+  AdminTeamMemberSummary,
   AdminTeamSummary,
   AdminUserInput,
   AdminUserSummary,
@@ -22,7 +29,11 @@ import type {
   SiteSettingsSummary,
   SiteTranslationInput,
   SiteTranslationSummary,
+  TaskStatusInput,
+  TaskStatusSummary,
   TranslationDictionary,
+  SystemDefaultRoleInput,
+  SystemDefaultRoleSummary,
 } from "@/app/lib/site-admin/types";
 
 const LANGUAGE_CODE_RE = /^[a-z]{2}(-[A-Z]{2})?$/;
@@ -43,6 +54,16 @@ type TeamMemberListRow = {
   user_id: string | null;
   team_id: string;
   role: string;
+  last_online_at: string | null;
+};
+
+type TeamMemberDetailRow = {
+  id: string;
+  user_id: string | null;
+  email: string;
+  name: string;
+  role: string;
+  avatar_url: string | null;
   last_online_at: string | null;
 };
 
@@ -378,6 +399,36 @@ export const listAdminTeams = cache(async function listAdminTeams(): Promise<Adm
     logoUrl: row.logo_url,
     memberCount: counts.get(row.id) ?? 0,
     createdAt: row.created_at,
+  }));
+});
+
+export const listAdminTeamMembers = cache(async function listAdminTeamMembers(
+  teamId: string,
+): Promise<AdminTeamMemberSummary[]> {
+  if (!isSupabaseConfigured() || !teamId.trim()) {
+    return [];
+  }
+
+  const supabase = await getSessionClient();
+  const { data, error } = await supabase
+    .from("team_members")
+    .select("id, user_id, email, name, role, avatar_url, last_online_at")
+    .eq("team_id", teamId)
+    .order("name", { ascending: true });
+
+  if (error) {
+    console.error("listAdminTeamMembers failed:", error.message);
+    return [];
+  }
+
+  return ((data ?? []) as TeamMemberDetailRow[]).map((row) => ({
+    id: row.id,
+    userId: row.user_id,
+    name: row.name,
+    email: row.email,
+    role: row.role,
+    avatarUrl: row.avatar_url,
+    lastOnlineAt: row.last_online_at,
   }));
 });
 
@@ -923,6 +974,474 @@ export async function saveSiteSettings(input: SiteSettingsInput): Promise<Action
 
   if (error) {
     return { ok: false, error: "errors.settings_save_failed" };
+  }
+
+  return { ok: true };
+}
+
+// ---------------------------------------------------------------------------
+// Task Statuses
+// ---------------------------------------------------------------------------
+
+type TaskStatusRow = {
+  id: string;
+  label: string;
+  labels: Record<string, string> | null;
+  color: string;
+  sort_order: number;
+  group_key: string;
+};
+
+function parseStatusLabels(value: unknown): Record<string, string> {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return {};
+  }
+
+  const labels: Record<string, string> = {};
+  for (const [code, text] of Object.entries(value as Record<string, unknown>)) {
+    if (typeof text === "string" && text.trim()) {
+      labels[code] = text.trim();
+    }
+  }
+  return labels;
+}
+
+function normalizeStatusLabels(input: Record<string, string>): Record<string, string> {
+  const labels: Record<string, string> = {};
+  for (const [code, text] of Object.entries(input)) {
+    const trimmed = text.trim();
+    if (trimmed) labels[code] = trimmed;
+  }
+  return labels;
+}
+
+function primaryStatusLabel(
+  labels: Record<string, string>,
+  fallbackLabel = "",
+): string {
+  return labels.lv?.trim() || Object.values(labels)[0]?.trim() || fallbackLabel.trim();
+}
+
+function mapTaskStatusRow(row: TaskStatusRow): TaskStatusSummary {
+  const labels = parseStatusLabels(row.labels);
+  const legacyLabel = row.label?.trim() ?? "";
+  if (!labels.lv && legacyLabel) {
+    labels.lv = legacyLabel;
+  }
+
+  return {
+    id: row.id,
+    labels,
+    label: primaryStatusLabel(labels, legacyLabel),
+    color: row.color,
+    sortOrder: row.sort_order,
+    groupKey: row.group_key,
+  };
+}
+
+export const listTaskStatuses = cache(async function listTaskStatuses(): Promise<TaskStatusSummary[]> {
+  if (!isSupabaseConfigured()) {
+    return [];
+  }
+
+  const supabase = await getSessionClient();
+  const { data, error } = await supabase
+    .from("task_statuses")
+    .select("id, label, labels, color, sort_order, group_key")
+    .order("sort_order", { ascending: true });
+
+  if (error) {
+    console.error("listTaskStatuses failed:", error.message);
+    return [];
+  }
+
+  return ((data ?? []) as TaskStatusRow[]).map(mapTaskStatusRow);
+});
+
+const STATUS_ID_RE = /^[a-z][a-z0-9_]*$/;
+const VALID_GROUPS = ["not_started", "active", "closed"];
+
+function slugifyStatusId(value: string): string {
+  const translit: Record<string, string> = {
+    ā: "a",
+    č: "c",
+    ē: "e",
+    ģ: "g",
+    ī: "i",
+    ķ: "k",
+    ļ: "l",
+    ņ: "n",
+    š: "s",
+    ū: "u",
+    ž: "z",
+  };
+  let slug = value
+    .trim()
+    .toLowerCase()
+    .replace(/[āčēģīķļņšūž]/g, (ch) => translit[ch] ?? ch)
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "")
+    .replace(/_+/g, "_");
+  if (!slug) return "";
+  if (!/^[a-z]/.test(slug)) slug = `s_${slug}`;
+  return slug.slice(0, 48);
+}
+
+export async function createTaskStatus(input: TaskStatusInput): Promise<ActionResult> {
+  const labels = normalizeStatusLabels(input.labels);
+  const label = primaryStatusLabel(labels);
+  const id = slugifyStatusId(input.id) || slugifyStatusId(label);
+  const color = input.color.trim() || "#71717a";
+  const groupKey = input.groupKey.trim();
+
+  if (!id || !STATUS_ID_RE.test(id)) {
+    return { ok: false, error: "errors.status_id_invalid" };
+  }
+  if (!label) {
+    return { ok: false, error: "errors.name_required" };
+  }
+  if (!VALID_GROUPS.includes(groupKey)) {
+    return { ok: false, error: "errors.status_group_invalid" };
+  }
+  if (!isSupabaseConfigured()) {
+    return dbNotConfigured();
+  }
+
+  const supabase = await getSessionClient();
+
+  const { data: existing } = await supabase
+    .from("task_statuses")
+    .select("id, sort_order")
+    .order("sort_order", { ascending: false });
+  const usedIds = new Set(((existing ?? []) as { id: string }[]).map((row) => row.id));
+  let uniqueId = id;
+  let suffix = 2;
+  while (usedIds.has(uniqueId)) {
+    uniqueId = `${id}_${suffix}`.slice(0, 48);
+    suffix += 1;
+  }
+  const nextOrder =
+    ((existing?.[0] as { sort_order: number } | undefined)?.sort_order ?? -1) + 1;
+
+  const { error } = await supabase.from("task_statuses").insert({
+    id: uniqueId,
+    label,
+    labels,
+    color,
+    sort_order: nextOrder,
+    group_key: groupKey,
+  });
+
+  if (error) {
+    console.error("createTaskStatus failed:", error.message, error.code);
+    if (error.code === "23505") {
+      return { ok: false, error: "errors.status_exists" };
+    }
+    return { ok: false, error: "errors.status_create_failed" };
+  }
+
+  return { ok: true };
+}
+
+export async function updateTaskStatus(
+  statusId: string,
+  input: Omit<TaskStatusInput, "id">,
+): Promise<ActionResult> {
+  const labels = normalizeStatusLabels(input.labels);
+  const label = primaryStatusLabel(labels);
+  const color = input.color.trim() || "#71717a";
+  const groupKey = input.groupKey.trim();
+
+  if (!label) {
+    return { ok: false, error: "errors.name_required" };
+  }
+  if (!VALID_GROUPS.includes(groupKey)) {
+    return { ok: false, error: "errors.status_group_invalid" };
+  }
+  if (!isSupabaseConfigured()) {
+    return dbNotConfigured();
+  }
+
+  const supabase = await getSessionClient();
+  const { error } = await supabase
+    .from("task_statuses")
+    .update({ label, labels, color, group_key: groupKey })
+    .eq("id", statusId);
+
+  if (error) {
+    return { ok: false, error: "errors.status_update_failed" };
+  }
+
+  return { ok: true };
+}
+
+export async function deleteTaskStatus(statusId: string): Promise<ActionResult> {
+  if (!statusId.trim()) {
+    return { ok: false, error: "errors.status_id_invalid" };
+  }
+  if (!isSupabaseConfigured()) {
+    return dbNotConfigured();
+  }
+
+  const supabase = await getSessionClient();
+  const { error } = await supabase
+    .from("task_statuses")
+    .delete()
+    .eq("id", statusId);
+
+  if (error) {
+    return { ok: false, error: "errors.status_delete_failed" };
+  }
+
+  return { ok: true };
+}
+
+export async function reorderTaskStatuses(orderedIds: string[]): Promise<ActionResult> {
+  if (!isSupabaseConfigured()) {
+    return dbNotConfigured();
+  }
+
+  const supabase = await getSessionClient();
+
+  for (let i = 0; i < orderedIds.length; i++) {
+    const { error } = await supabase
+      .from("task_statuses")
+      .update({ sort_order: i })
+      .eq("id", orderedIds[i]);
+    if (error) {
+      return { ok: false, error: "errors.status_reorder_failed" };
+    }
+  }
+
+  return { ok: true };
+}
+
+type DefaultRoleRow = {
+  id: string;
+  slug: string;
+  name: string;
+  labels: Record<string, string> | null;
+  sort_order: number;
+  is_system: boolean;
+  permissions: unknown;
+};
+
+function slugifyDefaultRole(value: string): string {
+  const translit: Record<string, string> = {
+    ā: "a",
+    č: "c",
+    ē: "e",
+    ģ: "g",
+    ī: "i",
+    ķ: "k",
+    ļ: "l",
+    ņ: "n",
+    š: "s",
+    ū: "u",
+    ž: "z",
+  };
+  let slug = value
+    .trim()
+    .toLowerCase()
+    .replace(/[āčēģīķļņšūž]/g, (ch) => translit[ch] ?? ch)
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "")
+    .replace(/_+/g, "_");
+  if (!slug) return "";
+  if (!/^[a-z]/.test(slug)) slug = `r_${slug}`;
+  return slug.slice(0, 48);
+}
+
+function mapDefaultRoleRow(row: DefaultRoleRow): SystemDefaultRoleSummary {
+  const labels = parseStatusLabels(row.labels);
+  const fallback = row.name?.trim() ?? "";
+  if (!labels.lv && fallback) labels.lv = fallback;
+  return {
+    id: row.id,
+    slug: row.slug,
+    labels,
+    label: primaryStatusLabel(labels, fallback),
+    sortOrder: row.sort_order,
+    isSystem: row.is_system === true,
+    permissions: normalizeTeamPermissionSet(row.permissions),
+  };
+}
+
+export const listSystemDefaultRoles = cache(async function listSystemDefaultRoles(): Promise<
+  SystemDefaultRoleSummary[]
+> {
+  if (!isSupabaseConfigured()) {
+    return [];
+  }
+
+  const supabase = await getSessionClient();
+  const { data, error } = await supabase
+    .from("system_default_roles")
+    .select("id, slug, name, labels, sort_order, is_system, permissions")
+    .order("sort_order", { ascending: true });
+
+  if (error) {
+    console.error("listSystemDefaultRoles failed:", error.message);
+    return [];
+  }
+
+  return ((data ?? []) as DefaultRoleRow[]).map(mapDefaultRoleRow);
+});
+
+export async function createSystemDefaultRole(
+  input: SystemDefaultRoleInput,
+): Promise<ActionResult> {
+  const labels = normalizeStatusLabels(input.labels);
+  const name = primaryStatusLabel(labels);
+  let slug = slugifyDefaultRole(name);
+  const permissions = normalizeTeamPermissionSet(input.permissions);
+
+  if (!name || !slug) {
+    return { ok: false, error: "errors.name_required" };
+  }
+  if (slug === OWNER_TEAM_ROLE || slug === MEMBER_TEAM_ROLE) {
+    slug = `${slug}_custom`;
+  }
+  if (!isSupabaseConfigured()) {
+    return dbNotConfigured();
+  }
+
+  const supabase = await getSessionClient();
+  const { data: existing } = await supabase
+    .from("system_default_roles")
+    .select("id, slug, sort_order")
+    .order("sort_order", { ascending: false });
+  const used = new Set(
+    ((existing ?? []) as { id: string; slug: string }[]).flatMap((row) => [
+      row.id,
+      row.slug,
+    ]),
+  );
+  let unique = slug;
+  let suffix = 2;
+  while (used.has(unique)) {
+    unique = `${slug}_${suffix}`.slice(0, 48);
+    suffix += 1;
+  }
+  const nextOrder =
+    ((existing?.[0] as { sort_order: number } | undefined)?.sort_order ?? -1) + 1;
+
+  const { error } = await supabase.from("system_default_roles").insert({
+    id: unique,
+    slug: unique,
+    name,
+    labels,
+    sort_order: nextOrder,
+    is_system: false,
+    permissions,
+  });
+
+  if (error) {
+    console.error("createSystemDefaultRole failed:", error.message, error.code);
+    if (error.code === "23505") {
+      return { ok: false, error: "errors.role_exists" };
+    }
+    return { ok: false, error: "errors.role_create_failed" };
+  }
+
+  return { ok: true };
+}
+
+export async function updateSystemDefaultRole(
+  roleId: string,
+  input: SystemDefaultRoleInput,
+): Promise<ActionResult> {
+  const labels = normalizeStatusLabels(input.labels);
+  const name = primaryStatusLabel(labels);
+  if (!name) {
+    return { ok: false, error: "errors.name_required" };
+  }
+  if (!isSupabaseConfigured()) {
+    return dbNotConfigured();
+  }
+
+  const supabase = await getSessionClient();
+  const { data: current, error: currentError } = await supabase
+    .from("system_default_roles")
+    .select("id, slug")
+    .eq("id", roleId)
+    .maybeSingle();
+  if (currentError || !current) {
+    return { ok: false, error: "errors.role_update_failed" };
+  }
+
+  const slug = (current as { slug: string }).slug;
+  const permissions =
+    slug === OWNER_TEAM_ROLE
+      ? createFullTeamPermissions(true)
+      : normalizeTeamPermissionSet(input.permissions);
+
+  const { error } = await supabase
+    .from("system_default_roles")
+    .update({ name, labels, permissions })
+    .eq("id", roleId);
+
+  if (error) {
+    return { ok: false, error: "errors.role_update_failed" };
+  }
+
+  return { ok: true };
+}
+
+export async function deleteSystemDefaultRole(roleId: string): Promise<ActionResult> {
+  if (!roleId.trim()) {
+    return { ok: false, error: "errors.role_delete_failed" };
+  }
+  if (!isSupabaseConfigured()) {
+    return dbNotConfigured();
+  }
+
+  const supabase = await getSessionClient();
+  const { data: current } = await supabase
+    .from("system_default_roles")
+    .select("slug, is_system")
+    .eq("id", roleId)
+    .maybeSingle();
+  const row = current as { slug?: string; is_system?: boolean } | null;
+  if (!row) {
+    return { ok: false, error: "errors.role_delete_failed" };
+  }
+  if (
+    row.is_system === true ||
+    row.slug === OWNER_TEAM_ROLE ||
+    row.slug === MEMBER_TEAM_ROLE
+  ) {
+    return { ok: false, error: "errors.role_system_delete" };
+  }
+
+  const { error } = await supabase.from("system_default_roles").delete().eq("id", roleId);
+  if (error) {
+    return { ok: false, error: "errors.role_delete_failed" };
+  }
+
+  return { ok: true };
+}
+
+export async function reorderSystemDefaultRoles(
+  orderedIds: string[],
+): Promise<ActionResult> {
+  if (!isSupabaseConfigured()) {
+    return dbNotConfigured();
+  }
+
+  const supabase = await getSessionClient();
+  for (let i = 0; i < orderedIds.length; i++) {
+    const { error } = await supabase
+      .from("system_default_roles")
+      .update({ sort_order: i })
+      .eq("id", orderedIds[i]);
+    if (error) {
+      return { ok: false, error: "errors.role_reorder_failed" };
+    }
   }
 
   return { ok: true };

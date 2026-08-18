@@ -9,7 +9,7 @@ import { teamRankLabel } from "@/app/lib/team";
 
 export function TeamMemberPage({ memberId }: { memberId: string }) {
   const { t } = useTranslations();
-  const { members, isReady } = useTeam();
+  const { members, isReady, roles } = useTeam();
   const member = members.find((item) => item.id === memberId) ?? null;
 
   if (!isReady) {
@@ -45,7 +45,7 @@ export function TeamMemberPage({ memberId }: { memberId: string }) {
   return (
     <SectionPage
       title={member.name}
-      subtitle={teamRankLabel(member.role, t) || member.email}
+      subtitle={teamRankLabel(member.role, t, roles) || member.email}
     >
       <div className="flex items-start gap-4 rounded-3xl border border-zinc-200 bg-white px-5 py-6">
         <UserAvatar member={member} />

@@ -1,3 +1,5 @@
+import type { TeamPermissionSet } from "@/app/lib/team-permissions";
+
 export type AdminUserTeamSummary = {
   id: string;
   name: string;
@@ -32,6 +34,24 @@ export type AdminTeamSummary = {
   logoUrl: string | null;
   memberCount: number;
   createdAt: string;
+};
+
+export type AdminTeamMemberSummary = {
+  id: string;
+  userId: string | null;
+  name: string;
+  email: string;
+  role: string;
+  avatarUrl: string | null;
+  lastOnlineAt: string | null;
+};
+
+export type AdminTeamMembersTarget = {
+  id: string;
+  name: string;
+  icon?: string | null;
+  color?: string;
+  logoUrl?: string | null;
 };
 
 export type AdminTeamInput = {
@@ -79,6 +99,37 @@ export type SiteSettingsSummary = {
 export type SiteSettingsInput = {
   systemName: string;
   sloganValues: Record<string, string>;
+};
+
+export type TaskStatusSummary = {
+  id: string;
+  labels: Record<string, string>;
+  label: string;
+  color: string;
+  sortOrder: number;
+  groupKey: string;
+};
+
+export type TaskStatusInput = {
+  id: string;
+  labels: Record<string, string>;
+  color: string;
+  groupKey: string;
+};
+
+export type SystemDefaultRoleSummary = {
+  id: string;
+  slug: string;
+  labels: Record<string, string>;
+  label: string;
+  sortOrder: number;
+  isSystem: boolean;
+  permissions: TeamPermissionSet;
+};
+
+export type SystemDefaultRoleInput = {
+  labels: Record<string, string>;
+  permissions: TeamPermissionSet;
 };
 
 export type ActionResult = { ok: true } | { ok: false; error: string };

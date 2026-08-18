@@ -18,6 +18,18 @@ const ITEMS = [
     fallback: "Komandas",
   },
   {
+    href: "/admin/roles",
+    icon: "fas fa-user-tag",
+    labelKey: "admin.nav.roles",
+    fallback: "Lomas",
+  },
+  {
+    href: "/admin/statuses",
+    icon: "fas fa-circle-half-stroke",
+    labelKey: "admin.nav.statuses",
+    fallback: "Statusi",
+  },
+  {
     href: "/admin/languages",
     icon: "fas fa-language",
     labelKey: "admin.nav.languages",

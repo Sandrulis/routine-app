@@ -2,7 +2,7 @@
 
 Komandas darba rīks ar publisku landing lapu un sānjoslas lietotni. Gaišs Next.js frontend.
 
-**Current version:** `0.1.3`
+**Current version:** `0.1.5`
 
 ## Palaist
 
@@ -21,10 +21,11 @@ Atver [http://localhost:3120](http://localhost:3120).
 - **Sānjosla** — Sākums ved uz `/dashboard` (komandas todo board); apgrieztiem nosaukumiem overflow tooltip
 - **Trīs skati** — Saraksts (kopsavilkums), projekts (Uzdevumi | Faili augšā, Saraksts zem tiem), uzdevums (apakšuzdevumu tabula)
 - Sānjoslas koks rāda sarakstus, uzdevumus un apakšuzdevumus; apakšuzdevumu aplītis un Saraksta loga teksts ir statusa krāsā
-- **Komanda** — pieslēgtam lietotājam bez komandas bloķējošs izveides modālis; rangs Īpašnieks; biedri un saraksti kopīgi Postgres
-- **Admin** — `/admin` `is_admin` lietotājiem (lietotāji, komandas, valodas, tulkojumi); UI lv / en / ru
+- **Komanda** — pieslēgtam lietotājam bez komandas bloķējošs izveides modālis; lomas ar sānjoslas un darbību pieejām; biedri un saraksti kopīgi Postgres
+- **Sarakstu pieejas** — sākumā noklusējuma līmenis visiem; pēc izvēles pielāgo katrai lomai (pilna labošana, labot, komentēt, tikai skatīt); privātam sarakstam arī biedriem
+- **Admin** — `/admin` `is_admin` lietotājiem (lietotāji, komandas, lomas, statusi, valodas, tulkojumi); UI lv / en / ru
 - Ceļa joslā aiz paziņojumiem valodas kods, ja ir vairākas aktīvas valodas; bez izvēles rāda sistēmas noklusējumu
-- Apakšuzdevuma modālis: apraksts, datumi, atbildīgie, statuss, pielikumi; Saglabāt neatver citu lapu
+- Apakšuzdevuma tabula: arhīvs pie Pievienot, fade-out, dzēšana/atjaunošana, pārvietošana pie cita uzdevuma; Saglabāt paliek modālī
 - Satura joslā **paziņojumi** (zvaniņš labajā malā)
 - Darba dati Postgres (`teams`, `work_lists`, `work_tasks`, …); Google sesija un `public.users` caur Supabase
 

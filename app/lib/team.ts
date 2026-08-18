@@ -1,12 +1,18 @@
 import { isLegacyDemoMemberId } from "@/app/lib/clear-legacy-demo-storage";
 import { MAX_STORED_FILE_BYTES } from "@/app/lib/list-files";
 import { DEFAULT_LIST_COLOR } from "@/app/lib/lists";
+import {
+  createFullTeamPermissions,
+  createMemberTeamPermissions,
+  type TeamPermissionSet,
+} from "@/app/lib/team-permissions";
 
 export type TeamMember = {
   id: string;
   name: string;
   initials: string;
   role: string;
+  roleId: string | null;
   email: string;
   toneClassName: string;
   lastOnlineAt: string | null;
@@ -14,20 +20,68 @@ export type TeamMember = {
   userId?: string | null;
 };
 
+export type TeamRole = {
+  id: string;
+  teamId: string;
+  slug: string;
+  name: string;
+  sortOrder: number;
+  isSystem: boolean;
+  permissions: TeamPermissionSet;
+};
+
+export type RolesByTeam = Record<string, TeamRole[]>;
+
 export const TEAM_STORAGE_KEY = "routine-app-team-members";
 export const TEAM_CHANGE_EVENT = "routine-app-team-change";
 export const OWNER_TEAM_ROLE = "owner";
+export const MEMBER_TEAM_ROLE = "member";
+
+export function currentTeamRole(
+  currentUser: Pick<TeamMember, "role" | "roleId">,
+  roles: TeamRole[],
+): TeamRole | null {
+  return (
+    roles.find((role) => role.id === currentUser.roleId) ??
+    roles.find((role) => role.slug === currentUser.role) ??
+    null
+  );
+}
+
+export function canManageTeamSettings(
+  currentUser: Pick<TeamMember, "role" | "roleId">,
+  roles: TeamRole[],
+  isAdmin: boolean,
+  action: "team.roles.manage" | "team.permissions.manage" = "team.roles.manage",
+): boolean {
+  if (isAdmin) return true;
+  if (currentUser.role === OWNER_TEAM_ROLE) return true;
+  const role = currentTeamRole(currentUser, roles);
+  if (role?.slug === OWNER_TEAM_ROLE) return true;
+  return role?.permissions.actions[action] === true;
+}
 
 export function teamRankLabel(
   role: string,
   t: (key: string, fallback: string) => string,
+  roles?: TeamRole[],
 ): string | null {
   const trimmed = role.trim();
   if (!trimmed) return null;
   if (trimmed === OWNER_TEAM_ROLE) {
     return t("teams.rank.owner", "Īpašnieks");
   }
-  return trimmed;
+  if (trimmed === MEMBER_TEAM_ROLE) {
+    return t("team.roles.member", "Biedrs");
+  }
+  const fromCatalog = roles?.find(
+    (item) => item.slug === trimmed || item.id === trimmed,
+  );
+  return fromCatalog?.name.trim() || trimmed;
+}
+
+export function defaultTeamRoleId(teamId: string, slug: "owner" | "member"): string {
+  return `role-${teamId}-${slug}`;
 }
 
 const MEMBER_TONES = [
@@ -67,12 +121,54 @@ export function emptyTeamMember(): TeamMember {
     name: "",
     initials: "",
     role: "",
+    roleId: null,
     email: "",
     toneClassName: toneForIndex(0),
     lastOnlineAt: null,
     avatarUrl: null,
     userId: null,
   };
+}
+
+export function createRoleId(): string {
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
+    return `role-${crypto.randomUUID()}`;
+  }
+  return `role-${Date.now()}`;
+}
+
+export function slugFromRoleName(name: string): string {
+  const slug = name
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_|_$/g, "");
+  return slug || `role_${Date.now()}`;
+}
+
+export function defaultTeamRoles(teamId: string): TeamRole[] {
+  return [
+    {
+      id: defaultTeamRoleId(teamId, "owner"),
+      teamId,
+      slug: OWNER_TEAM_ROLE,
+      name: "Īpašnieks",
+      sortOrder: 0,
+      isSystem: true,
+      permissions: createFullTeamPermissions(true),
+    },
+    {
+      id: defaultTeamRoleId(teamId, "member"),
+      teamId,
+      slug: MEMBER_TEAM_ROLE,
+      name: "Biedrs",
+      sortOrder: 1,
+      isSystem: true,
+      permissions: createMemberTeamPermissions(),
+    },
+  ];
 }
 
 export type WorkTeam = {
@@ -110,6 +206,7 @@ export function createOwnerMember(input: {
     name,
     initials: initialsFromName(name),
     role: OWNER_TEAM_ROLE,
+    roleId: null,
     email: input.email.trim(),
     toneClassName: toneForIndex(0),
     lastOnlineAt: new Date().toISOString(),
@@ -226,6 +323,10 @@ export function normalizeStoredMembers(value: unknown): TeamMember[] | null {
       const name = String(item.name).trim();
       const role =
         "role" in item && typeof item.role === "string" ? item.role.trim() : "";
+      const roleId =
+        "roleId" in item && typeof item.roleId === "string" && item.roleId
+          ? item.roleId
+          : null;
       const email =
         "email" in item && typeof item.email === "string" ? item.email.trim() : "";
       const initials =
@@ -256,6 +357,7 @@ export function normalizeStoredMembers(value: unknown): TeamMember[] | null {
         name,
         initials,
         role,
+        roleId,
         email,
         toneClassName,
         lastOnlineAt,

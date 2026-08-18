@@ -2,14 +2,20 @@
 
 import { useState } from "react";
 import { statusClassName, useStatusLabels, WORK_TASK_STATUSES } from "@/app/components/status-control";
+import { useTaskStatuses } from "@/app/lib/task-statuses";
 import { SubtaskTable } from "@/app/components/subtask-table";
 import { UserAvatar } from "@/app/components/user-avatar";
 import { OptionalTooltip } from "@/app/components/tooltip";
 import { useTranslations } from "@/app/components/translations-provider";
 import { formatDisplayDateDdMmYy } from "@/app/lib/format-display-date";
-import { getTaskAncestors, workItemIcon, type WorkTask } from "@/app/lib/lists";
+import { getTaskAncestors, isTaskActiveInLists, workItemIcon, type WorkTask } from "@/app/lib/lists";
 import { useLists } from "@/app/lib/lists-store";
 import { useTeam } from "@/app/lib/team-store";
+import { useIsAdmin } from "@/app/lib/users/use-is-admin";
+import {
+  listAccessCapabilities,
+  resolveListAccessLevel,
+} from "@/app/lib/list-access";
 
 const STATUS_ORDER = WORK_TASK_STATUSES;
 
@@ -44,11 +50,23 @@ function TaskSummarySection({
   onAddSubtask: (task: WorkTask) => void;
 }) {
   const { t } = useTranslations();
-  const { members } = useTeam();
-  const { tasks, childTasks, subtasks } = useLists();
+  const { members, currentUser, roles } = useTeam();
+  const { isAdmin } = useIsAdmin();
+  const { lists, tasks, childTasks, subtasks } = useLists();
+  const list = lists.find((item) => item.id === listId) ?? null;
+  const canCreateTasks = list
+    ? listAccessCapabilities(
+        resolveListAccessLevel(list, currentUser, roles, isAdmin),
+      ).canCreateTasks
+    : false;
   const [expanded, setExpanded] = useState(defaultExpanded);
+  const statusLabel = useStatusLabels();
+  const { colorFor, labelFor, statuses } = useTaskStatuses();
   const children = subtasks(task.id);
   const nested = childTasks(task.id);
+  const visibleChildren = children.filter((item) =>
+    isTaskActiveInLists(item, statuses),
+  );
   const range = dateRange(task, [...nested, ...children]);
   const assignees = members.filter((member) =>
     [task, ...nested, ...children].some((item) =>
@@ -58,10 +76,8 @@ function TaskSummarySection({
   const ancestors = getTaskAncestors(tasks, task);
   const grouped = STATUS_ORDER.map((status) => ({
     status,
-    items: children.filter((item) => item.status === status),
+    items: visibleChildren.filter((item) => item.status === status),
   })).filter((group) => group.items.length > 0);
-
-  const statusLabel = useStatusLabels();
 
   const crumb = [t("nav.lists", "Saraksts"), listName, ...ancestors.map((item) => item.title)]
     .filter(Boolean)
@@ -141,38 +157,47 @@ function TaskSummarySection({
             </ul>
           ) : null}
 
-          {children.length === 0 ? (
+          {visibleChildren.length === 0 ? (
             <div className="px-1 py-2">
               <p className="text-sm text-zinc-400">
                 {t("subtasks.empty", "Šim uzdevumam vēl nav apakšuzdevumu.")}
               </p>
-              <button
-                type="button"
-                onClick={() => onAddSubtask(task)}
-                className="mt-2 text-[13px] font-medium text-zinc-400 hover:text-zinc-700"
-              >
-                + {t("lists.overview.add_task", "Pievienot uzdevumu")}
-              </button>
+              {canCreateTasks ? (
+                <button
+                  type="button"
+                  onClick={() => onAddSubtask(task)}
+                  className="mt-2 text-[13px] font-medium text-zinc-400 hover:text-zinc-700"
+                >
+                  + {t("lists.overview.add_task", "Pievienot uzdevumu")}
+                </button>
+              ) : null}
             </div>
           ) : (
-            grouped.map((group) => (
+            grouped.map((group) => {
+              const groupColor = colorFor(group.status);
+              return (
               <div key={group.status}>
                 <div className="mb-2 flex items-center gap-2">
                   <span
-                    className={`inline-flex min-h-6 items-center rounded-md px-2 text-[11px] font-semibold tracking-wide uppercase ${statusClassName(group.status)}`}
+                    className={`inline-flex min-h-6 items-center rounded-md px-2 text-[11px] font-semibold tracking-wide uppercase ${
+                      groupColor ? "text-white" : statusClassName(group.status)
+                    }`}
+                    style={groupColor ? { backgroundColor: groupColor } : undefined}
                   >
-                    {statusLabel[group.status]}
+                    {labelFor(group.status) || statusLabel[group.status]}
                   </span>
                   <span className="text-[12px] text-zinc-400">
                     {group.items.length}
                   </span>
-                  <button
-                    type="button"
-                    onClick={() => onAddSubtask(task)}
-                    className="ml-auto text-[12px] font-medium text-emerald-600 hover:text-emerald-700"
-                  >
-                    + {t("actions.add", "Pievienot")}
-                  </button>
+                  {canCreateTasks ? (
+                    <button
+                      type="button"
+                      onClick={() => onAddSubtask(task)}
+                      className="ml-auto text-[12px] font-medium text-emerald-600 hover:text-emerald-700"
+                    >
+                      + {t("actions.add", "Pievienot")}
+                    </button>
+                  ) : null}
                 </div>
                 <SubtaskTable
                   embedded
@@ -180,15 +205,18 @@ function TaskSummarySection({
                   tasks={group.items}
                   onOpenTask={onOpenTask}
                 />
-                <button
-                  type="button"
-                  onClick={() => onAddSubtask(task)}
-                  className="mt-1 px-1 text-[13px] text-zinc-400 hover:text-zinc-700"
-                >
-                  + {t("lists.overview.add_task", "Pievienot uzdevumu")}
-                </button>
+                {canCreateTasks ? (
+                  <button
+                    type="button"
+                    onClick={() => onAddSubtask(task)}
+                    className="mt-1 px-1 text-[13px] text-zinc-400 hover:text-zinc-700"
+                  >
+                    + {t("lists.overview.add_task", "Pievienot uzdevumu")}
+                  </button>
+                ) : null}
               </div>
-            ))
+              );
+            })
           )}
         </div>
       ) : null}

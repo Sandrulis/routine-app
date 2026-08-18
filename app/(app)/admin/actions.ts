@@ -11,7 +11,18 @@ import {
   deleteAdminUser,
   deleteSiteLanguage,
   deleteSiteTranslation,
+  createTaskStatus,
+  deleteTaskStatus,
+  listAdminTeamMembers,
+  listTaskStatuses,
+  reorderTaskStatuses,
   saveSiteSettings,
+  updateTaskStatus,
+  createSystemDefaultRole,
+  deleteSystemDefaultRole,
+  listSystemDefaultRoles,
+  reorderSystemDefaultRoles,
+  updateSystemDefaultRole,
   setDefaultSiteLanguage,
   updateAdminTeam,
   updateAdminUser,
@@ -21,10 +32,14 @@ import {
 } from "@/app/lib/site-admin/repository";
 import type {
   AdminTeamInput,
+  AdminTeamMemberSummary,
   AdminUserInput,
+  TaskStatusInput,
+  TaskStatusSummary,
   SiteLanguageInput,
   SiteSettingsInput,
   SiteTranslationInput,
+  SystemDefaultRoleInput,
 } from "@/app/lib/site-admin/types";
 import { requireAdmin } from "@/app/lib/users/require-admin";
 
@@ -79,6 +94,13 @@ export async function deleteAdminTeamAction(teamId: string) {
   const result = await deleteAdminTeam(teamId);
   if (result.ok) refreshAdmin();
   return result;
+}
+
+export async function listAdminTeamMembersAction(
+  teamId: string,
+): Promise<AdminTeamMemberSummary[]> {
+  await requireAdmin();
+  return listAdminTeamMembers(teamId);
 }
 
 export async function createSiteLanguageAction(input: SiteLanguageInput) {
@@ -143,6 +165,79 @@ export async function deleteSiteTranslationAction(key: string) {
 export async function saveSiteSettingsAction(input: SiteSettingsInput) {
   await requireAdmin();
   const result = await saveSiteSettings(input);
+  if (result.ok) refreshAdmin();
+  return result;
+}
+
+// Task statuses
+export async function listTaskStatusesAction(): Promise<TaskStatusSummary[]> {
+  await requireAdmin();
+  return listTaskStatuses();
+}
+
+export async function createTaskStatusAction(input: TaskStatusInput) {
+  await requireAdmin();
+  const result = await createTaskStatus(input);
+  if (result.ok) refreshAdmin();
+  return result;
+}
+
+export async function updateTaskStatusAction(
+  statusId: string,
+  input: Omit<TaskStatusInput, "id">,
+) {
+  await requireAdmin();
+  const result = await updateTaskStatus(statusId, input);
+  if (result.ok) refreshAdmin();
+  return result;
+}
+
+export async function deleteTaskStatusAction(statusId: string) {
+  await requireAdmin();
+  const result = await deleteTaskStatus(statusId);
+  if (result.ok) refreshAdmin();
+  return result;
+}
+
+export async function reorderTaskStatusesAction(orderedIds: string[]) {
+  await requireAdmin();
+  const result = await reorderTaskStatuses(orderedIds);
+  if (result.ok) refreshAdmin();
+  return result;
+}
+
+export async function listSystemDefaultRolesAction() {
+  await requireAdmin();
+  return listSystemDefaultRoles();
+}
+
+export async function createSystemDefaultRoleAction(input: SystemDefaultRoleInput) {
+  await requireAdmin();
+  const result = await createSystemDefaultRole(input);
+  if (result.ok) refreshAdmin();
+  return result;
+}
+
+export async function updateSystemDefaultRoleAction(
+  roleId: string,
+  input: SystemDefaultRoleInput,
+) {
+  await requireAdmin();
+  const result = await updateSystemDefaultRole(roleId, input);
+  if (result.ok) refreshAdmin();
+  return result;
+}
+
+export async function deleteSystemDefaultRoleAction(roleId: string) {
+  await requireAdmin();
+  const result = await deleteSystemDefaultRole(roleId);
+  if (result.ok) refreshAdmin();
+  return result;
+}
+
+export async function reorderSystemDefaultRolesAction(orderedIds: string[]) {
+  await requireAdmin();
+  const result = await reorderSystemDefaultRoles(orderedIds);
   if (result.ok) refreshAdmin();
   return result;
 }

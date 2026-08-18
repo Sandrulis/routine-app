@@ -16,7 +16,7 @@ export default function TeamPage() {
   const { t } = useTranslations();
   const router = useRouter();
   const { showFeedback } = useFeedbackToast();
-  const { members, currentTeam, inviteMember, isReady } = useTeam();
+  const { members, currentTeam, inviteMember, isReady, roles } = useTeam();
   const [inviteOpen, setInviteOpen] = useState(false);
 
   return (
@@ -57,7 +57,7 @@ export default function TeamPage() {
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-semibold text-zinc-900">{member.name}</p>
                 <p className="mt-0.5 text-sm text-zinc-500">
-                  {[teamRankLabel(member.role, t), member.email]
+                  {[teamRankLabel(member.role, t, roles), member.email]
                     .filter(Boolean)
                     .join(" - ")}
                 </p>

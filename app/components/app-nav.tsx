@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState, type MouseEvent, type ReactNode } from "react";
 import { DragHandle } from "@/app/components/drag-handle";
+import { ListFormModal } from "@/app/components/list-form-modal";
 import { NameFormModal } from "@/app/components/name-form-modal";
 import { ParentCreateFlow, type ParentCreateContext } from "@/app/components/parent-create-flow";
 import { ConfirmModal } from "@/app/components/confirm-modal";
@@ -19,6 +20,7 @@ import {
 } from "@/app/components/sortable-task-group";
 import { SubtaskDetailModal } from "@/app/components/subtask-detail-modal";
 import { TeamInviteModal } from "@/app/components/team-invite-modal";
+import { TeamRolesModal } from "@/app/components/team-roles-modal";
 import { OverflowTooltip, Tooltip } from "@/app/components/tooltip";
 import { useFeedbackToast } from "@/app/components/feedback-toast-provider";
 import { useTranslations } from "@/app/components/translations-provider";
@@ -31,6 +33,7 @@ import {
   getTaskAncestors,
   isWorkFolder,
   isWorkSubtask,
+  isTaskActiveInLists,
   listColorById,
   listInitials,
   workItemIcon,
@@ -51,6 +54,12 @@ import {
 } from "@/app/lib/list-files";
 import { useListFiles } from "@/app/lib/use-list-files";
 import { useTeam } from "@/app/lib/team-store";
+import { useIsAdmin } from "@/app/lib/users/use-is-admin";
+import { useTaskStatuses } from "@/app/lib/task-statuses";
+import {
+  listAccessCapabilities,
+  resolveListAccessLevel,
+} from "@/app/lib/list-access";
 
 const NAV_TREE_STORAGE_KEY = "routine-app-nav-trees";
 
@@ -69,23 +78,55 @@ function TreeName({
   href,
   label,
   description,
+  isPrivate = false,
   onToggle,
 }: {
   href?: string;
   label: string;
   description?: string;
+  isPrivate?: boolean;
   onToggle?: () => void;
 }) {
   const name = href ? (
-    <Link href={href} className="block w-full truncate">
-      {label}
+    <Link href={href} className="flex w-full items-center gap-1.5 truncate">
+      <span className="truncate">{label}</span>
+      {isPrivate ? (
+        <span
+          className="inline-flex h-4.5 min-w-4.5 shrink-0 items-center justify-center rounded-md bg-amber-400 px-1 text-[10px] text-zinc-900"
+          title="Privāts saraksts"
+        >
+          <i className="fas fa-user-lock" aria-hidden="true" />
+        </span>
+      ) : null}
     </Link>
   ) : onToggle ? (
-    <button type="button" onClick={onToggle} className="block w-full truncate text-left">
-      {label}
+    <button
+      type="button"
+      onClick={onToggle}
+      className="flex w-full items-center gap-1.5 truncate text-left"
+    >
+      <span className="truncate">{label}</span>
+      {isPrivate ? (
+        <span
+          className="inline-flex h-4.5 min-w-4.5 shrink-0 items-center justify-center rounded-md bg-amber-400 px-1 text-[10px] text-zinc-900"
+          title="Privāts saraksts"
+        >
+          <i className="fas fa-user-lock" aria-hidden="true" />
+        </span>
+      ) : null}
     </button>
   ) : (
-    <span className="block w-full truncate">{label}</span>
+    <span className="flex w-full items-center gap-1.5 truncate">
+      <span className="truncate">{label}</span>
+      {isPrivate ? (
+        <span
+          className="inline-flex h-4.5 min-w-4.5 shrink-0 items-center justify-center rounded-md bg-amber-400 px-1 text-[10px] text-zinc-900"
+          title="Privāts saraksts"
+        >
+          <i className="fas fa-user-lock" aria-hidden="true" />
+        </span>
+      ) : null}
+    </span>
   );
 
   return (
@@ -155,6 +196,7 @@ function NavTreeSection({
   swapOnHover = false,
   leaf = false,
   status,
+  isPrivate = false,
   dragHandle,
   children,
 }: {
@@ -166,6 +208,7 @@ function NavTreeSection({
   swapOnHover?: boolean;
   leaf?: boolean;
   status?: WorkTaskStatus;
+  isPrivate?: boolean;
   label: string;
   description?: string;
   addLabel?: string;
@@ -268,6 +311,7 @@ function NavTreeSection({
             href={rowLink ? undefined : href}
             label={label}
             description={description}
+            isPrivate={isPrivate}
             onToggle={rowLink ? undefined : onToggle}
           />
 
@@ -357,7 +401,9 @@ export function AppNav() {
   const files = useListFiles().filter((file) =>
     lists.some((list) => list.id === file.listId),
   );
-  const { members, currentUser, currentTeam, inviteMember } = useTeam();
+  const { members, roles, currentUser, currentTeam, inviteMember } = useTeam();
+  const { isAdmin } = useIsAdmin();
+  const { statuses } = useTaskStatuses();
   const [inviteOpen, setInviteOpen] = useState(false);
   const [createListOpen, setCreateListOpen] = useState(false);
   const [parentCreate, setParentCreate] = useState<ParentCreateContext | null>(
@@ -373,6 +419,10 @@ export function AppNav() {
     id: string;
     anchor: CreateMenuAnchor;
   } | null>(null);
+  const [teamMenuAnchor, setTeamMenuAnchor] = useState<CreateMenuAnchor | null>(
+    null,
+  );
+  const [rolesModalOpen, setRolesModalOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<
     | { kind: "list"; list: WorkList }
     | { kind: "task"; task: WorkTask }
@@ -429,6 +479,17 @@ export function AppNav() {
     return fallback;
   }
 
+  function accessForList(list: WorkList | null | undefined) {
+    if (!list) return listAccessCapabilities(null);
+    return listAccessCapabilities(
+      resolveListAccessLevel(list, currentUser, roles, isAdmin),
+    );
+  }
+
+  function accessForListId(listId: string) {
+    return accessForList(lists.find((item) => item.id === listId));
+  }
+
   function toggleTree(id: string, fallback: boolean) {
     setTrees((current) => {
       const currentlyOpen =
@@ -468,6 +529,24 @@ export function AppNav() {
   const activeFileId =
     pathname.split("/")[3] === "files" ? pathname.split("/")[4] ?? null : null;
 
+  const itemMenuList =
+    itemMenu?.kind === "list"
+      ? (lists.find((item) => item.id === itemMenu.id) ?? null)
+      : itemMenu?.kind === "task"
+        ? (lists.find(
+            (item) =>
+              item.id ===
+              (tasks.find((task) => task.id === itemMenu.id)?.listId ?? ""),
+          ) ?? null)
+        : itemMenu?.kind === "file"
+          ? (lists.find(
+              (item) =>
+                item.id ===
+                (files.find((file) => file.id === itemMenu.id)?.listId ?? ""),
+            ) ?? null)
+          : null;
+  const itemMenuAccess = accessForList(itemMenuList);
+
   function reorderTreeItems(orderedIds: string[]) {
     reorderTasks(orderedIds);
     reorderStoredListFiles(orderedIds);
@@ -489,12 +568,15 @@ export function AppNav() {
             onToggle={() => undefined}
             dragHandle={canReorder ? handle : null}
             moreOpen={itemMenu?.kind === "file" && itemMenu.id === file.id}
-            onMore={(event) =>
-              setItemMenu({
-                kind: "file",
-                id: file.id,
-                anchor: createMenuAnchorFromEvent(event),
-              })
+            onMore={
+              accessForListId(listId).canEditTasks
+                ? (event) =>
+                    setItemMenu({
+                      kind: "file",
+                      id: file.id,
+                      anchor: createMenuAnchorFromEvent(event),
+                    })
+                : undefined
             }
           />
         )}
@@ -503,15 +585,20 @@ export function AppNav() {
   }
 
   function renderTaskTree(listId: string, parentId: string | null): ReactNode {
+    const listAccess = accessForListId(listId);
     const parent = parentId
       ? (tasks.find((item) => item.id === parentId) ?? null)
       : null;
     const showFiles = !parentId || Boolean(parent && isWorkFolder(parent));
-    const items = parentId
+    const rawItems = parentId
       ? parent && isWorkFolder(parent)
         ? childTasks(parentId)
         : subtasks(parentId)
       : listTasks(listId);
+    const items =
+      parentId && !(parent && isWorkFolder(parent))
+        ? rawItems.filter((task) => isTaskActiveInLists(task, statuses))
+        : rawItems;
     const nestedFiles = showFiles ? childListFiles(files, listId, parentId) : [];
     const mixed = showFiles
       ? [
@@ -547,7 +634,7 @@ export function AppNav() {
       );
     }
 
-    const canReorder = mixed.length > 1;
+    const canReorder = mixed.length > 1 && listAccess.canEditTasks;
     const mixedIds = mixed.map((item) => item.id);
 
     return (
@@ -594,15 +681,18 @@ export function AppNav() {
                   onToggle={() => toggleTree(task.id, false)}
                   dragHandle={canReorder ? handle : null}
                   moreOpen={itemMenu?.kind === "task" && itemMenu.id === task.id}
-                  onMore={(event) =>
-                    setItemMenu({
-                      kind: "task",
-                      id: task.id,
-                      anchor: createMenuAnchorFromEvent(event),
-                    })
+                  onMore={
+                    listAccess.canEditTasks
+                      ? (event) =>
+                          setItemMenu({
+                            kind: "task",
+                            id: task.id,
+                            anchor: createMenuAnchorFromEvent(event),
+                          })
+                      : undefined
                   }
                   onAdd={
-                    isWorkSubtask(task)
+                    isWorkSubtask(task) || !listAccess.canCreateTasks
                       ? undefined
                       : (event) => {
                           if (folder) {
@@ -654,7 +744,9 @@ export function AppNav() {
             onAdd={currentTeam ? () => setCreateListOpen(true) : undefined}
           >
             {lists.length > 0 ? (
-              lists.map((list) => (
+              lists.map((list) => {
+                const listAccess = accessForList(list);
+                return (
                 <NavTreeSection
                   key={list.id}
                   href={`/lists/${list.id}`}
@@ -666,6 +758,7 @@ export function AppNav() {
                       : { icon: list.icon, color: list.color }
                   }
                   label={list.name}
+                  isPrivate={list.isPrivate}
                   description={list.description}
                   addLabel={t("create.menu.title", "Izveidot")}
                   addAriaLabel={t("create.menu.title", "Izveidot")}
@@ -673,25 +766,32 @@ export function AppNav() {
                   isParentActive={pathname === `/lists/${list.id}`}
                   onToggle={() => toggleTree(list.id, true)}
                   moreOpen={itemMenu?.kind === "list" && itemMenu.id === list.id}
-                  onMore={(event) =>
-                    setItemMenu({
-                      kind: "list",
-                      id: list.id,
-                      anchor: createMenuAnchorFromEvent(event),
-                    })
+                  onMore={
+                    listAccess.canEditList || listAccess.canDeleteList
+                      ? (event) =>
+                          setItemMenu({
+                            kind: "list",
+                            id: list.id,
+                            anchor: createMenuAnchorFromEvent(event),
+                          })
+                      : undefined
                   }
-                  onAdd={(event) =>
-                    setParentCreate({
-                      listId: list.id,
-                      parentId: null,
-                      variant: list.kind === "folder" ? "folder" : "list",
-                      anchor: createMenuAnchorFromEvent(event),
-                    })
+                  onAdd={
+                    listAccess.canCreateTasks
+                      ? (event) =>
+                          setParentCreate({
+                            listId: list.id,
+                            parentId: null,
+                            variant: list.kind === "folder" ? "folder" : "list",
+                            anchor: createMenuAnchorFromEvent(event),
+                          })
+                      : undefined
                   }
                 >
                   {renderTaskTree(list.id, null)}
                 </NavTreeSection>
-              ))
+                );
+              })
             ) : (
               <p className="px-2 py-1.5 text-[12px] text-zinc-400">
                 {currentTeam
@@ -712,6 +812,12 @@ export function AppNav() {
             isParentActive={isTeam}
             onToggle={() => toggleTree("team", true)}
             onAdd={currentTeam ? () => setInviteOpen(true) : undefined}
+            moreOpen={teamMenuAnchor !== null}
+            onMore={
+              currentTeam
+                ? (event) => setTeamMenuAnchor(createMenuAnchorFromEvent(event))
+                : undefined
+            }
           >
             {currentTeam && members.length > 0 ? (
               members.map((member) => {
@@ -776,7 +882,7 @@ export function AppNav() {
         }}
       />
 
-      <NameFormModal
+      <ListFormModal
         open={createListOpen}
         onOpenChange={setCreateListOpen}
         title={t("lists.add.title", "Jauns saraksts")}
@@ -784,21 +890,15 @@ export function AppNav() {
           "lists.add.description",
           "Saraksts grupē projektus vai klientus, katram ar saviem uzdevumiem un iestatījumiem.",
         )}
-        nameLabel={t("lists.fields.name", "Nosaukums")}
         namePlaceholder={t(
           "lists.fields.name_placeholder",
           "Piemēram, Projekti, Klienti",
-        )}
-        descriptionLabel={t(
-          "lists.fields.description_optional",
-          "Apraksts (neobligāti)",
         )}
         descriptionPlaceholder={t(
           "lists.fields.description_placeholder",
           "Īss apraksts",
         )}
         submitLabel={t("actions.add", "Pievienot")}
-        showAppearance
         onCreate={(input) => {
           const list = addList({ ...input, kind: "list" });
           showFeedback({
@@ -808,6 +908,30 @@ export function AppNav() {
           router.push(`/lists/${list.id}`);
         }}
       />
+
+      <CreateItemMenu
+        open={teamMenuAnchor !== null}
+        anchor={teamMenuAnchor}
+        title={t("common.actions", "Darbības")}
+        items={[
+          {
+            id: "roles",
+            icon: "fas fa-user-tag",
+            title: t("team.roles.title", "Komandas lomas"),
+            description: t(
+              "team.roles.menu_description",
+              "Sadali biedrus pa lomām",
+            ),
+          },
+        ]}
+        onClose={() => setTeamMenuAnchor(null)}
+        onSelect={(id) => {
+          setTeamMenuAnchor(null);
+          if (id === "roles") setRolesModalOpen(true);
+        }}
+      />
+
+      <TeamRolesModal open={rolesModalOpen} onOpenChange={setRolesModalOpen} />
 
       <CreateItemMenu
         open={itemMenu !== null}
@@ -821,33 +945,62 @@ export function AppNav() {
                   icon: "fas fa-eye",
                   title: t("actions.view", "Apskatīt"),
                 },
-                {
-                  id: "edit",
-                  icon: "fas fa-pen",
-                  title: t("actions.rename", "Pārsaukt"),
-                },
-                {
-                  id: "delete",
-                  icon: "fas fa-trash",
-                  title: t("actions.delete", "Dzēst"),
-                  danger: true,
-                  dividerBefore: true,
-                },
+                ...(itemMenuAccess.canEditTasks
+                  ? [
+                      {
+                        id: "edit",
+                        icon: "fas fa-pen",
+                        title: t("actions.rename", "Pārsaukt"),
+                      },
+                      {
+                        id: "delete",
+                        icon: "fas fa-trash",
+                        title: t("actions.delete", "Dzēst"),
+                        danger: true,
+                        dividerBefore: true,
+                      },
+                    ]
+                  : []),
               ]
-            : [
-                {
-                  id: "edit",
-                  icon: "fas fa-pen",
-                  title: t("actions.edit", "Labot"),
-                },
-                {
-                  id: "delete",
-                  icon: "fas fa-trash",
-                  title: t("actions.delete", "Dzēst"),
-                  danger: true,
-                  dividerBefore: true,
-                },
-              ]
+            : itemMenu?.kind === "list"
+              ? [
+                  ...(itemMenuAccess.canEditList
+                    ? [
+                        {
+                          id: "edit",
+                          icon: "fas fa-pen",
+                          title: t("actions.edit", "Labot"),
+                        },
+                      ]
+                    : []),
+                  ...(itemMenuAccess.canDeleteList
+                    ? [
+                        {
+                          id: "delete",
+                          icon: "fas fa-trash",
+                          title: t("actions.delete", "Dzēst"),
+                          danger: true,
+                          dividerBefore: itemMenuAccess.canEditList,
+                        },
+                      ]
+                    : []),
+                ]
+              : itemMenuAccess.canEditTasks
+                ? [
+                    {
+                      id: "edit",
+                      icon: "fas fa-pen",
+                      title: t("actions.edit", "Labot"),
+                    },
+                    {
+                      id: "delete",
+                      icon: "fas fa-trash",
+                      title: t("actions.delete", "Dzēst"),
+                      danger: true,
+                      dividerBefore: true,
+                    },
+                  ]
+                : []
         }
         onClose={() => setItemMenu(null)}
         onSelect={(id) => {
@@ -889,24 +1042,56 @@ export function AppNav() {
         }}
       />
 
-      <NameFormModal
-        open={editTarget !== null}
-        onOpenChange={(open) => {
-          if (!open) setEditTarget(null);
-        }}
-        title={
-          editTarget?.kind === "list"
-            ? t("lists.edit.title", "Labot sarakstu")
-            : editTarget?.kind === "file"
+      {editTarget?.kind === "list" ? (
+        <ListFormModal
+          open={true}
+          onOpenChange={(open) => {
+            if (!open) setEditTarget(null);
+          }}
+          title={t("lists.edit.title", "Labot sarakstu")}
+          description={t(
+            "lists.edit.description",
+            "Maini saraksta nosaukumu, ikonu, aprakstu un privātumu.",
+          )}
+          namePlaceholder={t("lists.fields.name_placeholder", "Piemēram, Projekti, Klienti")}
+          descriptionPlaceholder={t("lists.fields.description_placeholder", "Īss apraksts")}
+          submitLabel={t("actions.save", "Saglabāt")}
+          initialValue={{
+            name: editTarget.list.name,
+            description: editTarget.list.description,
+            icon: editTarget.list.icon,
+            color: editTarget.list.color,
+            isPrivate: editTarget.list.isPrivate,
+            defaultAccessLevel: editTarget.list.defaultAccessLevel,
+            viewerUserIds: editTarget.list.viewerUserIds,
+            viewerRoleIds: editTarget.list.viewerRoleIds,
+            viewerUserAccess: editTarget.list.viewerUserAccess,
+            viewerRoleAccess: editTarget.list.viewerRoleAccess,
+          }}
+          onCreate={(input) => {
+            updateList(editTarget.list.id, input);
+            showFeedback({
+              type: "success",
+              text: t("lists.updated", "Saraksts saglabāts."),
+            });
+            setEditTarget(null);
+          }}
+        />
+      ) : (
+        <NameFormModal
+          open={editTarget !== null}
+          onOpenChange={(open) => {
+            if (!open) setEditTarget(null);
+          }}
+          title={
+            editTarget?.kind === "file"
               ? t("files.edit.title", "Pārsaukt failu")
               : editTarget?.kind === "task" && isWorkFolder(editTarget.task)
                 ? t("folders.edit.title", "Labot mapi")
                 : t("tasks.edit.list_title", "Labot uzdevumu sarakstu")
-        }
-        description={
-          editTarget?.kind === "list"
-            ? t("lists.edit.description", "Maini saraksta nosaukumu, ikonu vai aprakstu.")
-            : editTarget?.kind === "file"
+          }
+          description={
+            editTarget?.kind === "file"
               ? t("files.edit.description", "Maini faila nosaukumu.")
               : editTarget?.kind === "task" && isWorkFolder(editTarget.task)
                 ? t("folders.edit.description", "Maini mapes nosaukumu vai aprakstu.")
@@ -914,30 +1099,23 @@ export function AppNav() {
                     "tasks.edit.list_description",
                     "Maini uzdevumu saraksta nosaukumu vai aprakstu.",
                   )
-        }
-        nameLabel={t("lists.fields.name", "Nosaukums")}
-        namePlaceholder={
-          editTarget?.kind === "file"
-            ? t("files.fields.name_placeholder", "Faila nosaukums")
-            : t("lists.fields.name_placeholder", "Piemēram, Projekti, Klienti")
-        }
-        descriptionLabel={t("lists.fields.description_optional", "Apraksts (neobligāti)")}
-        descriptionPlaceholder={t(
-          "lists.fields.description_placeholder",
-          "Īss apraksts",
-        )}
-        submitLabel={t("actions.save", "Saglabāt")}
-        showAppearance={editTarget?.kind === "list"}
-        showDescription={editTarget?.kind !== "file"}
-        initialValue={
-          editTarget?.kind === "list"
-            ? {
-                name: editTarget.list.name,
-                description: editTarget.list.description,
-                icon: editTarget.list.icon,
-                color: editTarget.list.color,
-              }
-            : editTarget?.kind === "file"
+          }
+          nameLabel={t("lists.fields.name", "Nosaukums")}
+          namePlaceholder={
+            editTarget?.kind === "file"
+              ? t("files.fields.name_placeholder", "Faila nosaukums")
+              : t("lists.fields.name_placeholder", "Piemēram, Projekti, Klienti")
+          }
+          descriptionLabel={t("lists.fields.description_optional", "Apraksts (neobligāti)")}
+          descriptionPlaceholder={t(
+            "lists.fields.description_placeholder",
+            "Īss apraksts",
+          )}
+          submitLabel={t("actions.save", "Saglabāt")}
+          showAppearance={false}
+          showDescription={editTarget?.kind !== "file"}
+          initialValue={
+            editTarget?.kind === "file"
               ? {
                   name: editTarget.file.name,
                   description: "",
@@ -948,36 +1126,31 @@ export function AppNav() {
                     description: editTarget.task.description,
                   }
                 : null
-        }
-        onCreate={(input) => {
-          if (!editTarget) return;
-          if (editTarget.kind === "list") {
-            updateList(editTarget.list.id, input);
-            showFeedback({
-              type: "success",
-              text: t("lists.updated", "Saraksts saglabāts."),
-            });
-          } else if (editTarget.kind === "file") {
-            renameStoredListFile(editTarget.file.id, input.name);
-            showFeedback({
-              type: "success",
-              text: t("files.updated", "Fails pārsaukts."),
-            });
-          } else {
-            updateTask(editTarget.task.id, {
-              title: input.name,
-              description: input.description,
-            });
-            showFeedback({
-              type: "success",
-              text: isWorkFolder(editTarget.task)
-                ? t("folders.updated", "Mape saglabāta.")
-                : t("tasks.list_updated", "Uzdevumu saraksts saglabāts."),
-            });
           }
-          setEditTarget(null);
-        }}
-      />
+          onCreate={(input) => {
+            if (!editTarget) return;
+            if (editTarget.kind === "file") {
+              renameStoredListFile(editTarget.file.id, input.name);
+              showFeedback({
+                type: "success",
+                text: t("files.updated", "Fails pārsaukts."),
+              });
+            } else {
+              updateTask(editTarget.task.id, {
+                title: input.name,
+                description: input.description,
+              });
+              showFeedback({
+                type: "success",
+                text: isWorkFolder(editTarget.task)
+                  ? t("folders.updated", "Mape saglabāta.")
+                  : t("tasks.list_updated", "Uzdevumu saraksts saglabāts."),
+              });
+            }
+            setEditTarget(null);
+          }}
+        />
+      )}
 
       <ConfirmModal
         open={deleteTarget !== null}

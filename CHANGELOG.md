@@ -4,6 +4,22 @@
 
 - (none)
 
+## v0.1.5
+
+**Apakšuzdevumu arhīvs, pieeju slēdzis un pārvietošana**
+
+- Saraksta forma: sākumā tikai noklusējuma pieeja; slēdzis **Pielāgot katrai lomai** rāda lomu līmeņus un paslēpj globālo izvēli
+- Apakšuzdevumu arhīvs pie Pievienot: aktīvie paliek redzami kopā ar pabeigtajiem un paslēptajiem; pabeigšana fade-out vietā; dzēsto atjauno ar klikšķi
+- Pārvietot ikona atver uzdevumu pogu modāli; miskaste uzreiz aiz Check; `work_tasks.deleted_at`
+
+## v0.1.4
+
+**Komandas lomas, sarakstu pieejas un statusu katalogs**
+
+- Sarakstam noklusējuma pieeja un līmenis katrai lomai: pilna labošana, labot, komentēt, tikai skatīt; privātam arī biedriem un „nav pieejas”
+- Komandas lomas ar sānjoslas un darbību pieejām; sistēmas noklusējuma lomas `/admin/roles`; lomas pieejas no saraksta ikonas
+- Uzdevumu statusu katalogs `/admin/statuses`; privāti saraksti ar lomu un biedru redzamību
+
 ## v0.1.3
 
 **Valodas pārslēdzējs, sistēmas noklusējums un admin sesijas pieeja**

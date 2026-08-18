@@ -6,6 +6,8 @@ import {
   appModalWidePanelMaxWidthClassName,
 } from "@/app/components/app-modal";
 import { useTranslations } from "@/app/components/translations-provider";
+import { MEMBER_TEAM_ROLE, teamRankLabel } from "@/app/lib/team";
+import { useTeam } from "@/app/lib/team-store";
 
 export function TeamInviteModal({
   open,
@@ -17,27 +19,29 @@ export function TeamInviteModal({
   onInvite: (input: { name: string; email: string; role: string }) => void;
 }) {
   const { t } = useTranslations();
+  const { roles } = useTeam();
+  const defaultRoleId =
+    roles.find((item) => item.slug === MEMBER_TEAM_ROLE)?.id ?? roles[0]?.id ?? "";
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-  const [role, setRole] = useState("");
+  const [role, setRole] = useState(defaultRoleId);
 
   useEffect(() => {
     if (!open) return;
     setName("");
     setEmail("");
-    setRole("");
-  }, [open]);
+    setRole(defaultRoleId);
+  }, [defaultRoleId, open]);
 
   const trimmedName = name.trim();
   const trimmedEmail = email.trim();
-  const trimmedRole = role.trim();
-  const dirty = Boolean(trimmedName || trimmedEmail || trimmedRole);
+  const dirty = Boolean(trimmedName || trimmedEmail);
   const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail);
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!trimmedName || !emailValid) return;
-    onInvite({ name: trimmedName, email: trimmedEmail, role: trimmedRole });
+    onInvite({ name: trimmedName, email: trimmedEmail, role: role.trim() });
     onOpenChange(false);
   }
 
@@ -85,13 +89,18 @@ export function TeamInviteModal({
           <label htmlFor="team-invite-role" className="text-sm font-semibold text-zinc-700">
             {t("team.fields.role", "Loma")}
           </label>
-          <input
+          <select
             id="team-invite-role"
             value={role}
             onChange={(event) => setRole(event.target.value)}
-            className="mt-2 min-h-11 w-full rounded-2xl border border-zinc-200 bg-zinc-50 px-4 text-sm text-zinc-900 outline-none transition placeholder:text-zinc-400 focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-100"
-            placeholder={t("team.fields.role_placeholder", "Piemēram, izstrādātājs")}
-          />
+            className="mt-2 min-h-11 w-full cursor-pointer rounded-2xl border border-zinc-200 bg-zinc-50 px-4 text-sm text-zinc-900 outline-none transition focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-100"
+          >
+            {roles.map((item) => (
+              <option key={item.id} value={item.id}>
+                {teamRankLabel(item.slug, t, roles) ?? item.name}
+              </option>
+            ))}
+          </select>
         </div>
         <div className="flex justify-end gap-2 pt-2">
           <button

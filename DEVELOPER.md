@@ -32,7 +32,7 @@ Uzvedība:
 - Saraksta rindā rāda ikonu vai iniciāļus ar krāsu; hover laikā ikonas vietā ir sakļaušanas bultiņa.
 - Uzdevuma rindā `fas fa-list-check`; hover laikā ikonas vietā chevron.
 - Apakšuzdevuma rindā krāsains aplītis; hover neaizstāj ar chevron.
-- Saraksta `+` atver izveides formu. Mapes `+` — mape, uzdevumu saraksts vai faila augšupielāde. Uzdevuma `+` atver apakšuzdevuma modāli.
+- Saraksta `+` atver izveides formu, ja loma ļauj veidot sarakstus un saraksta pieeja ir **pilna labošana**. Mapes `+` — mape, uzdevumu saraksts vai faila augšupielāde. Uzdevuma `+` atver apakšuzdevuma modāli (tikai `full_edit`).
 - Faila rinda atver `/lists/[listId]/files/[fileId]`.
 
 Vecie `/projects` ceļi novirza uz `/lists`.
@@ -70,10 +70,10 @@ Legal teksti: `app/lib/legal/documents.ts`. UI: `LegalDocumentView` ar **Saturs*
 | Sākums | `/dashboard` | `TeamTodoBoard` — kolonnas Darāms, Procesā, Gatavs |
 | Saraksts | `/lists` | `ListsOverviewPage` — kartītes ar uzdevumiem un apakšuzdevumiem, grupēti pēc statusa |
 | Projekts (saraksts) | `/lists/[listId]` | `ListWindowsBoard` — augšā 2 kolonnas Uzdevumi | Faili; zem tām Saraksts pilnā platumā; kārtība cookie `routine-app-list-window-order` |
-| Uzdevums | `/lists/[listId]/tasks/[taskId]` | `SubtaskTable` — nosaukums, atbildīgais, sākums, termiņš, statuss |
+| Uzdevums | `/lists/[listId]/tasks/[taskId]` | `SubtaskTable` — nosaukums, atbildīgais, sākums, termiņš, statuss; arhīvs, pārvietošana, mīkstā dzēšana |
 | Fails | `/lists/[listId]/files/[fileId]` | `FileDetailPage` — priekšskatījums, lejupielāde, pārsaukšana, dzēšana |
 | Apakšuzdevums | tas pats uzdevuma ceļš + modālis | `SubtaskDetailModal` — lauki kreisajā, vēsture labajā |
-| Administrācija | `/admin` | horizontāla apakšizvēlne: lietotāji, komandas, valodas, tulkojumi, uzstādījumi; tikai `is_admin` |
+| Administrācija | `/admin` | horizontāla apakšizvēlne: lietotāji, komandas, lomas, statusi, valodas, tulkojumi, uzstādījumi; tikai `is_admin` |
 
 Ceļa josla: `app/components/page-breadcrumb.tsx`. Labajā malā `AdminPanelButton` (`fas fa-users-cog`, tikai `is_admin`), `NotificationsMenu` (zvaniņš) un valodas kods, ja aktīvas valodas > 1.
 
@@ -85,6 +85,8 @@ Ceļa josla: `app/components/page-breadcrumb.tsx`. Labajā malā `AdminPanelButt
 |---|---|
 | `/admin/users` | Visi `public.users`: pievienot, labot, dzēst; `is_admin` slēdzis; pēdējā tiešsaiste; UI valodas kods |
 | `/admin/teams` | Visas `teams`: pievienot, labot, dzēst (kaskāde uz darba datiem) |
+| `/admin/roles` | Sistēmas noklusējuma lomas un pieejas (`system_default_roles`); jaunām komandām |
+| `/admin/statuses` | Uzdevumu statusu katalogs (`task_statuses`): nosaukums katrā valodā, krāsa, grupa, kārtojums |
 | `/admin/languages` | `site_languages`: pievienot, labot nosaukumu, aktīva/noklusējuma, dzēst |
 | `/admin/translations` | `site_translations` + `messages.ts` atslēgas: meklēšana, pievienot, labot, dzēst (koda atslēgas dzēst nevar) |
 | `/admin/settings` | `site_settings`: sistēmas nosaukums un slogans katrā valodā |
@@ -93,7 +95,7 @@ Ceļa josla: `app/components/page-breadcrumb.tsx`. Labajā malā `AdminPanelButt
 - Klienta pārbaude: `useIsAdmin()` caur RPC `current_user_is_admin()` (ikona)
 - Lietotāju saraksts caur ielogotā admin sesiju (RLS `008_admin_list_access.sql`); jauna lietotāja izveide ar service role
 - Valodas, tulkojumi, uzstādījumi caur to pašu sesiju (RLS `010_site_admin_session_access.sql`); `site_*` SELECT arī `anon`
-- Migrācijas: `003` admin RPC, `006` valodas/tulkojumi/uzstādījumi, `007` RU, `008` admin list access, `009` `users` aktivitātes lauki, `010` site admin session RLS, `011` `users.language_code`
+- Migrācijas: `003` admin RPC, `006` valodas/tulkojumi/uzstādījumi, `007` RU, `008` admin list access, `009` `users` aktivitātes lauki, `010` site admin session RLS, `011` `users.language_code`, `012`/`016`/`018` statusi, `017`/`020`/`021` lomas, `013`/`014`/`019` privāti saraksti, `022`/`023` sarakstu pieeju līmeņi, `024` `work_tasks.deleted_at`
 
 ## Paziņojumi
 
@@ -112,16 +114,16 @@ Ceļa josla: `app/components/page-breadcrumb.tsx`. Labajā malā `AdminPanelButt
 | Lauks | Uzvedība |
 |---|---|
 | Nosaukums | Trekns, lielāks teksts, bez rāmja un fona |
-| Apraksts | Piezīmes; atsevišķa komentāra zona nav |
-| Sākums / Termiņš | `DateCell` — klikšķis atver pārlūka datuma izvēli (`showPicker`) |
-| Statuss | `StatusControl` — krāsaina poga (STATUSS + `fa-angle-right` nākamajam; pelēks `fa-check` uz Gatavs); klikšķis uz nosaukuma atver picker (meklēšana, grupas Nav sākts / Aktīvs / Slēgts) |
+| Apraksts | Piezīmes |
+| Sākums / Termiņš | `DateCell` — klikšķis atver pārlūka datuma izvēli (`showPicker`); `disabled`, ja nav `canEditTasks` |
+| Statuss | `StatusControl` — krāsaina poga (STATUSS + `fa-angle-right` nākamajam; pelēks `fa-check` uz Gatavs); klikšķis uz nosaukuma atver picker (meklēšana, grupas Nav sākts / Aktīvs / Slēgts). `comment` līmenī statusu drīkst mainīt izpildītājs |
 | Projekts, atbildīgie | Saraksta badge, `AssigneeCell` |
-| Pielikumi | `TaskAttachments` — drag-and-drop vai **pārlūko**; kartītes ar priekšskatījumu |
+| Pielikumi | `TaskAttachments` — drag-and-drop vai **pārlūko**; kartītes ar priekšskatījumu; `disabled` bez `edit` / `full_edit` |
 | Faila `...` | `CreateItemMenu`: Apskatīt, Pārsaukt, Dzēst. Klikšķis uz kartītes arī atver apskati. Izvēlne ar `data-app-modal-ignore-backdrop`, lai neaizvērtu apakšuzdevuma modāli |
 | Dzēst failu | Tikai `ConfirmModal` (`files.delete.*`) |
 | Pārsaukt failu | `NameFormModal` (`files.edit.*`) |
 | Apskatīt failu | `FilePreview` ligzdotā `AppModal` |
-| Vēsture | Labā kolonna, `taskActivities` |
+| Vēsture | Labā kolonna, `taskActivities`; no `comment` līmeņa — komentāra lauks (`addTaskComment`) |
 
 Failu metadati: `TaskFile` (`id`, `taskId`, `name`, `mimeType`, `size`, `hasContent`, `createdAt`). Saturs Postgres `task_files.content` (data URL, līdz `MAX_STORED_FILE_BYTES`, 1.5 MB).
 
@@ -132,14 +134,28 @@ Hierarhija: **Saraksts → mape / uzdevumu saraksts / fails → apakšuzdevumi t
 - Tipi: `app/lib/lists.ts` (`WorkTaskKind`: `folder` \| `task` \| `subtask`)
 - Stāvoklis: `app/lib/lists-store.tsx` — ielāde no `work_lists` / `work_tasks`; pieslēgtam lietotājam bez komandas tukšs koks (nav dummy datu)
 - Saraksta faili kokā: `app/lib/list-files.ts`
-- Jauna saraksta formā var izvēlēties ikonu un fona krāsu; bez ikonas rāda iniciāļus. `NameFormModal` ar `showAppearance`; komandai `showLogo` + `showIcons={false}` (tikai krāsas + logotips)
+- Jauns/labot sarakstu: `ListFormModal` — izskats, privāts slēdzis, **noklusējuma pieeja**; slēdzis **Pielāgot katrai lomai** parāda lomu līmeņus un paslēpj globālo izvēli (privātam arī biedriem un „nav pieejas”)
+- Apakšuzdevumu tabula (`SubtaskTable`): pie Pievienot arhīva poga rāda aktīvos **un** arhivētos; pabeigšana fade-out vietā; miskaste aiz Check (`deleted_at`, nav statusa katalogā); klikšķis uz dzēstā atjauno; **Pārvietot** (`fa-exchange-alt`) atver `MoveSubtaskModal` ar saraksta uzdevumu pogām (`moveSubtask` maina `parent_id`)
 - Projekta **Saraksts** logs: uzdevumu kartītes `repeat(auto-fit, minmax(min(100%, 16rem), 1fr))` — cik ietilpst, tik kolonnas (2–4). Apakšuzdevuma aplītis un nosaukums ir statusa krāsā (`statusDotClassName` / `statusTextClassName`)
+
+## Sarakstu pieejas
+
+`app/lib/list-access.ts` — līmeņi `full_edit` | `edit` | `comment` | `view`. Noklusējums jaunam un esošam sarakstam: **`full_edit`**. Īpašnieks, `is_admin` un izveidotājs vienmēr `full_edit`.
+
+| Līmenis | UI | RLS (`work_list_has_access`) |
+|---|---|---|
+| `full_edit` | Veidot uzdevumus, labot iestatījumus, dzēst sarakstu | task INSERT, list DELETE, list_files INSERT |
+| `edit` | Labot uzdevumus un saraksta iestatījumus | list UPDATE, task DELETE, faili/assignees |
+| `comment` | Komentēt; izpildītājs var mainīt statusu | task UPDATE, `task_activities` `kind=comment` |
+| `view` | Tikai lasīšana | SELECT caur `can_view_work_list` |
+
+Prioritāte: biedra rinda (`work_list_viewers.access_level`) → lomas rinda (`work_list_viewer_roles`) → `work_lists.default_access_level`. Privātam sarakstam bez rindas pieeja ir `null` (neredz). Publiskam sarakstam lomu rindas ir līmeņa override. UI: `resolveListAccessLevel` + `listAccessCapabilities`. Bez lomu slēdža lomu rindas nesaglabā (visi manto noklusējumu).
 
 ## Statusa kontrole
 
 `app/components/status-control.tsx` — vienots `WorkTaskStatus` redaktors tabulā un apakšuzdevuma modālī.
 
-- Krāsas: `todo` `bg-zinc-400`, `in_progress` `bg-orange-500`, `done` `bg-emerald-500` (balts teksts)
+- Krāsas un nosaukumi no `task_statuses` (`useTaskStatuses`); fallback `todo` pelēks, `in_progress` oranžs, `done` zaļš
 - Koka / Saraksta loga aplītis: `statusDotClassName` (fons + apmale tās pašas); teksts: `statusTextClassName`
 - Picker portal `z-80`, `data-app-modal-ignore-backdrop`; ESC aizver tikai picker
 - Nākamais statuss: todo → in_progress → done
@@ -151,7 +167,8 @@ Hierarhija: **Saraksts → mape / uzdevumu saraksts / fails → apakšuzdevumi t
 - Pieslēgtam lietotājam komandas un biedri nāk no Postgres (`teams`, `team_members`); `currentUser` nāk tikai no sesijas (`getUser()`), dummy biedri (Anna u.c.) netiek rādīti
 - UI gaida auth sesiju pirms komandas/sarakstu ielādes; `INITIAL_SESSION` ar `user=null` netiek izmantots kā gatava sesija
 - Jauna komanda: izveidotājs kļūst **Īpašnieks** (`OWNER_TEAM_ROLE` / `teams.rank.owner`); rangs zem vārda, komandas nosaukuma un modālī tikai ja ir komanda
-- UI: `app/components/team-switcher.tsx`; jauna/labot komanda caur `NameFormModal` (`blocking`, ja `needsTeam`)
+- Lomas: `team_roles` (komandai) + `system_default_roles` (admin `/admin/roles`, seed jaunām komandām). Pieejas `TeamPermissionSet` (`nav` + `actions`) — `app/lib/team-permissions.ts`. Īpašniekam un `is_admin` visas pieejas. UI: `TeamRolesModal` no sānjoslas; katrai lomai saraksta ikona atver `TeamRoleAccessModal` (`TeamPermissionFields` ar sadaļas master slēdzi)
+- UI: `app/components/team-switcher.tsx`; jauna/labot komanda caur `NameFormModal` (`blocking`, ja `needsTeam`; `showLogo` + `showIcons={false}`)
 - Attēlojums: `app/components/member-last-online.tsx`, loģika `app/lib/last-online.ts`
 
 | Intervāls | Attēlojums |
@@ -177,7 +194,9 @@ app/
     layout.tsx                    # AppProviders + sānjosla
     dashboard/page.tsx            # Komandas todo board
     lists/                        # Kopsavilkums, 3 logi, uzdevums, fails
-    team/ settings/ admin/ projects/
+    team/ settings/ projects/
+    admin/                        # users, teams, roles, statuses, languages, …
+
   globals.css                     # Zinc light theme; `--radius-*` uz pusi
   components/
     site-header.tsx               # Publiskā galvene
@@ -195,12 +214,19 @@ app/
     team-switcher.tsx             # Komandas pārslēdzējs, CRUD
     app-shell.tsx                 # Layout ar sānjoslu
     lists-overview-page.tsx       # Saraksta kopsavilkums
+    list-form-modal.tsx           # Jauns/labot sarakstu + pieejas
     list-summary.tsx              # Uzdevumu kartītes ar statusu grupām
     list-windows-board.tsx        # Uzdevumi | Faili + Saraksts, DnD
     task-detail-page.tsx          # Apakšuzdevumu tabula
-    subtask-table.tsx             # Tabula un DateCell
+    subtask-table.tsx             # Tabula, DateCell, arhīvs, fade-out
+    move-subtask-modal.tsx        # Apakšuzdevuma pārvietošana pie cita uzdevuma
     subtask-detail-modal.tsx      # Apakšuzdevuma modālis
     status-control.tsx            # Statusa poga un picker
+    team-roles-modal.tsx          # Komandas lomu saraksts
+    team-role-access-modal.tsx    # Pieejas pašai lomai
+    team-permission-fields.tsx    # Nav + actions slēdži
+    admin-roles-manager.tsx       # Sistēmas noklusējuma lomas
+    admin-statuses-manager.tsx    # Uzdevumu statusu katalogs
     task-attachments.tsx          # Pielikumu drop zona, kartītes, ... izvēlne
     file-preview.tsx              # Faila priekšskatījums
     create-item-menu.tsx          # Darbību izvēlne
@@ -226,13 +252,16 @@ app/
     consent/cookie-consent.ts     # Piekrišanas modelis
     legal/documents.ts            # Privacy / terms / cookies teksti
     lists.ts                      # Sarakstu/uzdevumu tipi, krāsas
+    list-access.ts                # Saraksta pieeju līmeņi un resolve
     lists-store.tsx               # Saraksti un uzdevumi no Postgres
     list-windows.ts               # Logu kārtība (preferences cookie)
     list-files.ts                 # Saraksta faili kokā; persist DB
     task-activity.ts              # Vēsture un apakšuzdevumu pielikumi
-    team.ts                       # Biedru un WorkTeam tipi
-    team-store.tsx                # Komandas un biedri no Postgres
+    team.ts                       # Biedru, lomu un WorkTeam tipi
+    team-store.tsx                # Komandas, biedri un lomas no Postgres
+    team-permissions.ts           # Nav + actions pieeju modelis
     last-online.ts                # min / h / d / m
+    task-statuses.tsx             # Statusu katalogs klientā
     notifications.ts              # Paziņojumu tipi
     use-notifications.ts          # Paziņojumi no Postgres
     team-todo.ts                  # Todo tipi
@@ -253,7 +282,7 @@ app/
 app/auth/callback/route.ts        # OAuth code → session
 proxy.ts                          # Supabase session refresh
 scripts/                          # audit-check.mjs, apply-migrations.mjs, test-supabase.mjs
-supabase/migrations/              # 001–011 shēma, admin, valodas (lv/en/ru), work data
+supabase/migrations/              # 001–024: shēma, admin, valodas, work data, lomas, statusi, sarakstu pieejas, deleted_at
 .github/workflows/                # secret-scan.yml, security-audit.yml, security-smoke.yml
 .gitleaks.toml                    # default rules + i18n translation key allowlist
 .cursor/rules/                    # README bump, commits
@@ -300,7 +329,7 @@ npm run db:test      # Postgres pieslēgums + public tabulu saraksts
 npm run db:migrate   # pending faili no supabase/migrations/
 ```
 
-Lietotne lasa sarakstus, uzdevumus, komandas, todo, paziņojumus un failus no Postgres (migrācija `005_work_data.sql`). RLS: `is_team_member(team_id)` / `is_team_owner(team_id)`; anon piekļuve liegta. Komandas biedri ar `team_members.user_id = auth.uid()` redz tos pašus datus. `public.users` paliek konta profils + `is_admin`; komandas loma (`owner` u.c.) ir `team_members.role`. Migrācijas `001`–`004`: `is_admin`, pirmais reģistrētais ir admin, `current_user_is_admin()`, noņemts liekais `users.role` / `manager_id` un vecās neizmantotās project/task tabulas. `db:test` apstiprina API projektu, bet Postgres pieprasa pareizu datubāzes paroli (ne `anon` atslēgu).
+Lietotne lasa sarakstus, uzdevumus, komandas, todo, paziņojumus un failus no Postgres (migrācija `005_work_data.sql` un tālākās). RLS: `is_team_member(team_id)` / `is_team_owner(team_id)`; saraksta darbībām papildus `work_list_has_access(list_id, min_level)` (`022`). Anon piekļuve liegta. Komandas biedri ar `team_members.user_id = auth.uid()` redz tos pašus datus, ja saraksts nav privāts vai viņiem ir viewer/lomas rinda. `public.users` paliek konta profils + `is_admin`; komandas loma ir `team_members.role` / `role_id` → `team_roles`. Migrācijas `001`–`004`: `is_admin`, pirmais reģistrētais ir admin, `current_user_is_admin()`, noņemts liekais `users.role` / `manager_id` un vecās neizmantotās project/task tabulas. `db:test` apstiprina API projektu, bet Postgres pieprasa pareizu datubāzes paroli (ne `anon` atslēgu).
 
 ## Google OAuth
 
@@ -320,16 +349,21 @@ Aplikācijas callback: `/auth/callback` (`app/auth/callback/route.ts`). `redirec
 
 Darba dati dzīvo **Postgres**, ne pārlūkā un ne sīkdatnēs. Komandas biedri redz kopīgos sarakstus, mapes, uzdevumus un apakšuzdevumus. CRUD: `app/lib/db/work-data.ts`; ielāde `fetchTeamWorkspace`. Vecie `localStorage` dati (ja tādi bija pirms `005`) vienreiz tiek importēti ar `importLocalWorkIfNeeded` (karogs `routine-app-db-import-v1:{userId}`).
 
-`public.users` ir konta profils + `is_admin` + `language_code`. Komandas biedra loma (`owner` / brīvs teksts) ir `team_members.role`. Uzaicināts biedrs sākumā ir bez `user_id`; pēc reģistrācijas ar to pašu e-pastu trigger `users_link_team_members` piesaista kontu, un tad viņš redz komandas datus. Ja uzaicinātais izveido savu komandu, viņš neredz uzaicinātāja sarakstus.
+`public.users` ir konta profils + `is_admin` + `language_code`. Komandas biedra loma ir `team_members.role` / `role_id` (katalogs `team_roles`). Uzaicināts biedrs sākumā ir bez `user_id`; pēc reģistrācijas ar to pašu e-pastu trigger `users_link_team_members` piesaista kontu, un tad viņš redz komandas datus. Ja uzaicinātais izveido savu komandu, viņš neredz uzaicinātāja sarakstus.
 
-RLS (`005_work_data.sql`): `authenticated` drīkst SELECT/INSERT/UPDATE/DELETE tikai savas komandas rindās (`is_team_member`); komandas dzēšana / biedru uzaicināšana - `is_team_owner`. `anon` policy ir deny.
+RLS (`005_work_data.sql`): `authenticated` drīkst SELECT/INSERT/UPDATE/DELETE tikai savas komandas rindās (`is_team_member`); komandas dzēšana / biedru uzaicināšana - `is_team_owner`. Saraksta satura rakstīšanu sašaurina `work_list_has_access` (`022`). `anon` policy ir deny.
 
 | Tabula | Saturs |
 |---|---|
 | `teams` | Komandas (`team-…`) |
-| `team_members` | Biedri; īpašnieka `id` = auth UUID |
-| `work_lists` | Saraksti un mapes (`kind`: `list` / `folder`) |
-| `work_tasks` | Mapes, uzdevumi, apakšuzdevumi (`kind` + `parent_id`) |
+| `team_members` | Biedri; īpašnieka `id` = auth UUID; `role` / `role_id` |
+| `team_roles` | Komandas lomas un `permissions` JSON |
+| `system_default_roles` | Admin noklusējuma lomas jaunām komandām |
+| `task_statuses` | Uzdevumu statusu katalogs (nosaukumi, krāsa, grupa) |
+| `work_lists` | Saraksti (`kind`, `is_private`, `default_access_level`, `created_by`) |
+| `work_list_viewers` | Privāta saraksta biedri + `access_level` |
+| `work_list_viewer_roles` | Saraksta lomu pieeja + `access_level` |
+| `work_tasks` | Mapes, uzdevumi, apakšuzdevumi (`kind` + `parent_id` + `deleted_at`) |
 | `task_assignees` | Uzdevuma atbildīgie (`member_id`) |
 | `task_activities` | Vēsture (izveide, statuss, komentāri, faili) |
 | `task_files` | Apakšuzdevumu pielikumi + saturs |

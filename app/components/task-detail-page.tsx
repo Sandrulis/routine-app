@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { createMenuAnchorFromEvent } from "@/app/components/create-item-menu";
 import { DragHandle } from "@/app/components/drag-handle";
+import { IconActionButton } from "@/app/components/icon-action-button";
 import { ParentCreateFlow, type ParentCreateContext } from "@/app/components/parent-create-flow";
 import { SectionPage } from "@/app/components/section-page";
 import {
@@ -18,6 +19,12 @@ import { useFeedbackToast } from "@/app/components/feedback-toast-provider";
 import { useTranslations } from "@/app/components/translations-provider";
 import { isWorkFolder, isWorkSubtask, workItemIcon } from "@/app/lib/lists";
 import { useLists } from "@/app/lib/lists-store";
+import { useTeam } from "@/app/lib/team-store";
+import { useIsAdmin } from "@/app/lib/users/use-is-admin";
+import {
+  listAccessCapabilities,
+  resolveListAccessLevel,
+} from "@/app/lib/list-access";
 import {
   childListFiles,
   fileIconClassName,
@@ -37,12 +44,20 @@ export function TaskDetailPage({
   const router = useRouter();
   const { showFeedback } = useFeedbackToast();
   const { lists, tasks, childTasks, subtasks, isReady, reorderTasks } = useLists();
+  const { currentUser, roles } = useTeam();
+  const { isAdmin } = useIsAdmin();
   const files = useListFiles();
   const [parentCreate, setParentCreate] = useState<ParentCreateContext | null>(
     null,
   );
   const [createSubtaskOpen, setCreateSubtaskOpen] = useState(false);
+  const [archiveOpen, setArchiveOpen] = useState(false);
   const list = lists.find((item) => item.id === listId) ?? null;
+  const listAccess = list
+    ? listAccessCapabilities(
+        resolveListAccessLevel(list, currentUser, roles, isAdmin),
+      )
+    : listAccessCapabilities(null);
   const opened = tasks.find((item) => item.id === taskId) ?? null;
   const isSubtask = opened ? isWorkSubtask(opened) : false;
   const isFolder = opened ? isWorkFolder(opened) : false;
@@ -112,27 +127,45 @@ export function TaskDetailPage({
         t("tasks.detail.empty_description", "Šim uzdevumam vēl nav apraksta.")
       }
       actions={
-        <button
-          type="button"
-          onClick={(event) => {
-            if (isFolder) {
-              setParentCreate({
-                listId: list.id,
-                parentId: parent.id,
-                variant: "folder",
-                anchor: createMenuAnchorFromEvent(event),
-              });
-              return;
-            }
-            setCreateSubtaskOpen(true);
-          }}
-          className="inline-flex min-h-10 items-center justify-center gap-2 rounded-2xl bg-blue-700 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-800"
-        >
-          <i className="fas fa-plus text-xs" aria-hidden="true" />
-          {isFolder
-            ? t("create.menu.title", "Izveidot")
-            : t("actions.add", "Pievienot")}
-        </button>
+        isFolder ? (
+          listAccess.canCreateTasks ? (
+            <button
+              type="button"
+              onClick={(event) => {
+                setParentCreate({
+                  listId: list.id,
+                  parentId: parent.id,
+                  variant: "folder",
+                  anchor: createMenuAnchorFromEvent(event),
+                });
+              }}
+              className="inline-flex min-h-10 items-center justify-center gap-2 rounded-2xl bg-blue-700 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-800"
+            >
+              <i className="fas fa-plus text-xs" aria-hidden="true" />
+              {t("create.menu.title", "Izveidot")}
+            </button>
+          ) : undefined
+        ) : (
+          <div className="flex items-center gap-2">
+            {listAccess.canCreateTasks ? (
+              <button
+                type="button"
+                onClick={() => setCreateSubtaskOpen(true)}
+                className="inline-flex min-h-10 items-center justify-center gap-2 rounded-2xl bg-blue-700 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-800"
+              >
+                <i className="fas fa-plus text-xs" aria-hidden="true" />
+                {t("actions.add", "Pievienot")}
+              </button>
+            ) : null}
+            <IconActionButton
+              label={t("subtasks.archive", "Arhīvs")}
+              icon="fas fa-archive"
+              variant="muted"
+              pressed={archiveOpen}
+              onClick={() => setArchiveOpen((current) => !current)}
+            />
+          </div>
+        )
       }
     >
       {isFolder ? (
@@ -147,7 +180,8 @@ export function TaskDetailPage({
           >
             <ul className="overflow-hidden rounded-2xl border border-zinc-200 bg-white">
               {folderEntries.map((entry) => {
-                const canReorder = folderEntries.length > 1;
+                const canReorder =
+                  folderEntries.length > 1 && listAccess.canEditTasks;
                 if (entry.kind === "file") {
                   return (
                     <SortableTaskItem
@@ -242,6 +276,7 @@ export function TaskDetailPage({
         <SubtaskTable
           listId={list.id}
           tasks={children}
+          view={archiveOpen ? "with-archive" : "active"}
           onOpenTask={(task) => {
             router.push(`/lists/${list.id}/tasks/${task.id}`);
           }}

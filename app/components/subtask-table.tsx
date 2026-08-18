@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import {
   DndContext,
   PointerSensor,
@@ -17,6 +17,8 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { DragHandle } from "@/app/components/drag-handle";
+import { IconActionButton } from "@/app/components/icon-action-button";
+import { MoveSubtaskModal } from "@/app/components/move-subtask-modal";
 import { StatusControl } from "@/app/components/status-control";
 import { UserAvatar } from "@/app/components/user-avatar";
 import { useTranslations } from "@/app/components/translations-provider";
@@ -26,22 +28,93 @@ import {
 } from "@/app/lib/format-display-date";
 import { useLists } from "@/app/lib/lists-store";
 import { useTeam } from "@/app/lib/team-store";
-import type { WorkTask } from "@/app/lib/lists";
+import { useIsAdmin } from "@/app/lib/users/use-is-admin";
+import {
+  listAccessCapabilities,
+  resolveListAccessLevel,
+  userIsAssignee,
+} from "@/app/lib/list-access";
+import {
+  isTaskActiveInLists,
+  isTaskDeleted,
+  type WorkTask,
+} from "@/app/lib/lists";
+import { useTaskStatuses } from "@/app/lib/task-statuses";
 
 export { statusClassName } from "@/app/components/status-control";
+
+const EXIT_MS = 280;
+
+function useDisplayedTasks(
+  visible: WorkTask[],
+  view: "active" | "with-archive",
+) {
+  const visibleKey = visible.map((task) => task.id).join("\0");
+  const [exiting, setExiting] = useState<{ task: WorkTask; index: number }[]>(
+    [],
+  );
+  const prevVisibleRef = useRef(visible);
+  const visibleRef = useRef(visible);
+  const viewRef = useRef(view);
+  visibleRef.current = visible;
+
+  useLayoutEffect(() => {
+    const currentVisible = visibleRef.current;
+    const prevVisible = prevVisibleRef.current;
+    prevVisibleRef.current = currentVisible;
+
+    if (viewRef.current !== view) {
+      viewRef.current = view;
+      setExiting([]);
+      return;
+    }
+
+    const nextIds = new Set(currentVisible.map((task) => task.id));
+    const left = prevVisible
+      .map((task, index) => ({ task, index }))
+      .filter(({ task }) => !nextIds.has(task.id));
+    if (left.length === 0) return;
+
+    setExiting((current) => {
+      const seen = new Set(current.map((row) => row.task.id));
+      return [...current, ...left.filter((row) => !seen.has(row.task.id))];
+    });
+
+    const leftIds = left.map((row) => row.task.id);
+    const timer = window.setTimeout(() => {
+      setExiting((current) =>
+        current.filter((row) => !leftIds.includes(row.task.id)),
+      );
+    }, EXIT_MS);
+    return () => window.clearTimeout(timer);
+  }, [visibleKey, view]);
+
+  const rows = visible.map((task) => ({ task, exiting: false }));
+  for (const row of [...exiting].sort((left, right) => left.index - right.index)) {
+    if (visible.some((task) => task.id === row.task.id)) continue;
+    rows.splice(Math.min(row.index, rows.length), 0, {
+      task: row.task,
+      exiting: true,
+    });
+  }
+  return rows;
+}
 
 export function DateCell({
   value,
   emptyLabel,
   onChange,
+  disabled = false,
 }: {
   value: string | null;
   emptyLabel: string;
   onChange: (next: string | null) => void;
+  disabled?: boolean;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
 
   function openPicker() {
+    if (disabled) return;
     const input = inputRef.current;
     if (!input) return;
     try {
@@ -80,12 +153,16 @@ export function DateCell({
         aria-label={emptyLabel}
         data-app-modal-ignore-backdrop=""
         onMouseDown={(event) => event.stopPropagation()}
+        disabled={disabled}
         onClick={(event) => {
           event.stopPropagation();
+          if (disabled) return;
           openPicker();
         }}
         onChange={(event) => onChange(event.target.value || null)}
-        className="absolute inset-0 z-10 w-full min-w-[7.5rem] cursor-pointer opacity-[0.01]"
+        className={`absolute inset-0 z-10 w-full min-w-[7.5rem] opacity-[0.01] ${
+          disabled ? "cursor-not-allowed" : "cursor-pointer"
+        }`}
       />
     </div>
   );
@@ -95,10 +172,12 @@ export function AssigneeCell({
   task,
   assigneeIds,
   onChange,
+  disabled = false,
 }: {
   task?: WorkTask;
   assigneeIds?: string[];
   onChange?: (next: string[]) => void;
+  disabled?: boolean;
 }) {
   const { t } = useTranslations();
   const { members } = useTeam();
@@ -138,8 +217,12 @@ export function AssigneeCell({
         type="button"
         aria-expanded={open}
         aria-label={t("todo.fields.assignee", "Atbildīgais")}
-        onClick={() => setOpen((current) => !current)}
-        className="inline-flex min-h-8 items-center"
+        disabled={disabled}
+        onClick={() => {
+          if (disabled) return;
+          setOpen((current) => !current);
+        }}
+        className={`inline-flex min-h-8 items-center ${disabled ? "cursor-not-allowed" : ""}`}
       >
         {assigned.length > 0 ? (
           <span className="flex items-center -space-x-1.5">
@@ -181,31 +264,54 @@ export function AssigneeCell({
 }
 
 export function SubtaskTable({
+  listId,
   tasks,
   onOpenTask,
   embedded = false,
+  view = "active",
 }: {
   listId: string;
   tasks: WorkTask[];
   onOpenTask: (task: WorkTask) => void;
   embedded?: boolean;
+  view?: "active" | "with-archive";
 }) {
   const { t } = useTranslations();
-  const { updateTask, reorderTasks } = useLists();
+  const { lists, updateTask, hideTask, restoreTask, reorderTasks } = useLists();
+  const [movingTask, setMovingTask] = useState<WorkTask | null>(null);
+  const { currentUser, roles } = useTeam();
+  const { isAdmin } = useIsAdmin();
+  const { statuses } = useTaskStatuses();
+  const list = lists.find((item) => item.id === listId) ?? null;
+  const access = listAccessCapabilities(
+    list ? resolveListAccessLevel(list, currentUser, roles, isAdmin) : null,
+    { isAssignee: false },
+  );
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
   );
+  const matching =
+    view === "with-archive"
+      ? tasks
+      : tasks.filter((task) => isTaskActiveInLists(task, statuses));
+  const displayedRows = useDisplayedTasks(matching, view);
+  const displayed = displayedRows.map((row) => row.task);
+  const exitingIds = new Set(
+    displayedRows.filter((row) => row.exiting).map((row) => row.task.id),
+  );
 
   function handleDragEnd(event: DragEndEvent) {
+    if (!access.canEditTasks) return;
     const { active, over } = event;
     if (!over || active.id === over.id) return;
-    const oldIndex = tasks.findIndex((task) => task.id === active.id);
-    const newIndex = tasks.findIndex((task) => task.id === over.id);
+    const ordered = displayed.filter((task) => !exitingIds.has(task.id));
+    const oldIndex = ordered.findIndex((task) => task.id === active.id);
+    const newIndex = ordered.findIndex((task) => task.id === over.id);
     if (oldIndex < 0 || newIndex < 0) return;
-    reorderTasks(arrayMove(tasks.map((task) => task.id), oldIndex, newIndex));
+    reorderTasks(arrayMove(ordered.map((task) => task.id), oldIndex, newIndex));
   }
 
-  if (tasks.length === 0) {
+  if (displayed.length === 0) {
     return (
       <div
         className={
@@ -220,6 +326,7 @@ export function SubtaskTable({
   }
 
   return (
+    <>
     <div
       className={
         embedded
@@ -254,17 +361,43 @@ export function SubtaskTable({
             </tr>
           </thead>
           <SortableContext
-            items={tasks.map((task) => task.id)}
+            items={displayed.map((task) => task.id)}
             strategy={verticalListSortingStrategy}
           >
             <tbody>
-              {tasks.map((task) => (
+              {displayed.map((task) => (
                 <SortableSubtaskRow
                   key={task.id}
                   task={task}
+                  exiting={exitingIds.has(task.id)}
                   onOpenTask={onOpenTask}
                   onUpdate={updateTask}
+                  onHide={
+                    access.canEditTasks && !isTaskDeleted(task)
+                      ? () => hideTask(task.id)
+                      : undefined
+                  }
+                  onMove={
+                    access.canEditTasks && !isTaskDeleted(task)
+                      ? () => setMovingTask(task)
+                      : undefined
+                  }
+                  onRestore={
+                    access.canEditTasks && isTaskDeleted(task)
+                      ? () => restoreTask(task.id)
+                      : undefined
+                  }
+                  hideLabel={t("subtasks.hide", "Tikai pazūd")}
+                  moveLabel={t("actions.move", "Pārvietot")}
+                  restoreLabel={t("subtasks.restore", "Atjaunot")}
                   dragLabel={t("subtasks.drag", "Mainīt secību")}
+                  canEdit={access.canEditTasks && !isTaskDeleted(task)}
+                  canChangeStatus={
+                    !isTaskDeleted(task) &&
+                    (access.canEditTasks ||
+                      (access.canComment &&
+                        userIsAssignee(task.assigneeIds, currentUser)))
+                  }
                 />
               ))}
             </tbody>
@@ -272,6 +405,14 @@ export function SubtaskTable({
         </table>
       </DndContext>
     </div>
+    <MoveSubtaskModal
+      open={Boolean(movingTask)}
+      task={movingTask}
+      onOpenChange={(open) => {
+        if (!open) setMovingTask(null);
+      }}
+    />
+    </>
   );
 }
 
@@ -279,7 +420,16 @@ function SortableSubtaskRow({
   task,
   onOpenTask,
   onUpdate,
+  onHide,
+  onMove,
+  onRestore,
+  hideLabel,
+  moveLabel,
+  restoreLabel,
   dragLabel,
+  canEdit,
+  canChangeStatus,
+  exiting,
 }: {
   task: WorkTask;
   onOpenTask: (task: WorkTask) => void;
@@ -287,9 +437,19 @@ function SortableSubtaskRow({
     taskId: string,
     patch: Partial<Pick<WorkTask, "status" | "startDate" | "dueDate">>,
   ) => void;
+  onHide?: () => void;
+  onMove?: () => void;
+  onRestore?: () => void;
+  hideLabel: string;
+  moveLabel: string;
+  restoreLabel: string;
   dragLabel: string;
+  canEdit: boolean;
+  canChangeStatus: boolean;
+  exiting: boolean;
 }) {
   const { t } = useTranslations();
+  const deleted = isTaskDeleted(task);
   const {
     attributes,
     listeners,
@@ -297,7 +457,7 @@ function SortableSubtaskRow({
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: task.id });
+  } = useSortable({ id: task.id, disabled: !canEdit || exiting });
 
   return (
     <tr
@@ -308,31 +468,43 @@ function SortableSubtaskRow({
       }}
       className={`border-b border-zinc-100 last:border-b-0 hover:bg-zinc-50/80 ${
         isDragging ? "relative z-10 bg-white shadow-sm" : ""
-      }`}
+      } ${exiting ? "subtask-row-exit" : ""}`}
     >
       <td className="px-2 py-2.5">
-        <DragHandle
-          label={dragLabel}
-          attributes={attributes}
-          listeners={listeners}
-        />
+        {canEdit ? (
+          <DragHandle
+            label={dragLabel}
+            attributes={attributes}
+            listeners={listeners}
+          />
+        ) : null}
       </td>
       <td className="px-2 py-2.5">
         <button
           type="button"
-          onClick={() => onOpenTask(task)}
-          className="text-left font-medium text-zinc-900 hover:text-blue-700"
+          onClick={() => {
+            if (deleted && onRestore) {
+              onRestore();
+              return;
+            }
+            onOpenTask(task);
+          }}
+          aria-label={deleted ? restoreLabel : undefined}
+          className={`text-left font-medium hover:text-blue-700 ${
+            deleted ? "text-zinc-400 line-through" : "text-zinc-900"
+          }`}
         >
           {task.title}
         </button>
       </td>
       <td className="px-3 py-2.5">
-        <AssigneeCell task={task} />
+        <AssigneeCell task={task} disabled={!canEdit || deleted} />
       </td>
       <td className="px-3 py-2.5">
         <DateCell
           value={task.startDate}
           emptyLabel={t("tasks.fields.start_date", "Sākums")}
+          disabled={!canEdit || deleted}
           onChange={(startDate) => onUpdate(task.id, { startDate })}
         />
       </td>
@@ -340,13 +512,40 @@ function SortableSubtaskRow({
         <DateCell
           value={task.dueDate}
           emptyLabel={t("todo.fields.due_date", "Termiņš")}
+          disabled={!canEdit || deleted}
           onChange={(dueDate) => onUpdate(task.id, { dueDate })}
         />
       </td>
       <td className="px-3 py-2.5">
         <StatusControl
           status={task.status}
+          statusChangedAt={deleted ? task.deletedAt : task.statusChangedAt}
+          deleted={deleted}
+          disabled={!canChangeStatus}
+          onRestore={onRestore}
           onChange={(status) => onUpdate(task.id, { status })}
+          trailing={
+            onMove || onHide ? (
+              <>
+                {onMove ? (
+                  <IconActionButton
+                    label={moveLabel}
+                    icon="fas fa-exchange-alt"
+                    variant="muted"
+                    onClick={onMove}
+                  />
+                ) : null}
+                {onHide ? (
+                  <IconActionButton
+                    label={hideLabel}
+                    icon="fas fa-trash"
+                    variant="delete"
+                    onClick={onHide}
+                  />
+                ) : null}
+              </>
+            ) : null
+          }
         />
       </td>
     </tr>

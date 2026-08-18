@@ -7,8 +7,8 @@ export function SectionPage({
   actions,
   children,
 }: {
-  title: string;
-  subtitle: string;
+  title: ReactNode;
+  subtitle: ReactNode;
   actions?: ReactNode;
   children: ReactNode;
 }) {

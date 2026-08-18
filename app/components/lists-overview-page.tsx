@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { ListSummary } from "@/app/components/list-summary";
-import { NameFormModal } from "@/app/components/name-form-modal";
+import { ListFormModal } from "@/app/components/list-form-modal";
 import { SectionPage } from "@/app/components/section-page";
 import { SubtaskDetailModal } from "@/app/components/subtask-detail-modal";
 import { useFeedbackToast } from "@/app/components/feedback-toast-provider";
@@ -88,7 +88,7 @@ export function ListsOverviewPage() {
         </div>
       )}
 
-      <NameFormModal
+      <ListFormModal
         open={createListOpen}
         onOpenChange={setCreateListOpen}
         title={t("lists.add.title", "Jauns saraksts")}
@@ -96,21 +96,15 @@ export function ListsOverviewPage() {
           "lists.add.description",
           "Saraksts grupē projektus vai klientus, katram ar saviem uzdevumiem un iestatījumiem.",
         )}
-        nameLabel={t("lists.fields.icon_and_name", "Ikona un nosaukums")}
         namePlaceholder={t(
           "lists.fields.name_placeholder",
           "Piemēram, Projekti, Klienti",
-        )}
-        descriptionLabel={t(
-          "lists.fields.description_optional",
-          "Apraksts (neobligāti)",
         )}
         descriptionPlaceholder={t(
           "lists.fields.description_placeholder",
           "Īss saraksta apraksts",
         )}
         submitLabel={t("actions.add", "Pievienot")}
-        showAppearance
         onCreate={(input) => {
           const list = addList(input);
           showFeedback({

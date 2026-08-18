@@ -17,8 +17,8 @@ export function UserMenu({ user }: { user: TeamMember }) {
   const router = useRouter();
   const menuRef = useRef<HTMLDivElement | null>(null);
   const { t } = useTranslations();
-  const { teams } = useTeam();
-  const rank = teams.length === 0 ? null : teamRankLabel(user.role, t);
+  const { teams, roles } = useTeam();
+  const rank = teams.length === 0 ? null : teamRankLabel(user.role, t, roles);
   const { showFeedback } = useFeedbackToast();
   const [open, setOpen] = useState(false);
   const [passwordOpen, setPasswordOpen] = useState(false);

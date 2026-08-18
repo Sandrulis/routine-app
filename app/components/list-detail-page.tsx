@@ -8,15 +8,28 @@ import { ParentCreateFlow, type ParentCreateContext } from "@/app/components/par
 import { SectionPage } from "@/app/components/section-page";
 import { useTranslations } from "@/app/components/translations-provider";
 import { useLists } from "@/app/lib/lists-store";
+import { useTeam } from "@/app/lib/team-store";
+import { useIsAdmin } from "@/app/lib/users/use-is-admin";
+import {
+  listAccessCapabilities,
+  resolveListAccessLevel,
+} from "@/app/lib/list-access";
 
 export function ListDetailPage({ listId }: { listId: string }) {
   const { t } = useTranslations();
   const { lists, listTasks, isReady } = useLists();
+  const { currentUser, roles } = useTeam();
+  const { isAdmin } = useIsAdmin();
   const [parentCreate, setParentCreate] = useState<ParentCreateContext | null>(
     null,
   );
   const list = lists.find((item) => item.id === listId) ?? null;
   const tasks = listTasks(listId);
+  const listAccess = list
+    ? listAccessCapabilities(
+        resolveListAccessLevel(list, currentUser, roles, isAdmin),
+      )
+    : listAccessCapabilities(null);
 
   if (!isReady) {
     return (
@@ -50,12 +63,25 @@ export function ListDetailPage({ listId }: { listId: string }) {
 
   return (
     <SectionPage
-      title={list.name}
+      title={
+        <span className="inline-flex items-center gap-2">
+          <span>{list.name}</span>
+          {list.isPrivate ? (
+            <span
+              className="inline-flex h-5 min-w-5 items-center justify-center rounded-md bg-amber-400 px-1.5 text-[11px] text-zinc-900"
+              title={t("lists.private.label", "Privāts saraksts")}
+            >
+              <i className="fas fa-user-lock" aria-hidden="true" />
+            </span>
+          ) : null}
+        </span>
+      }
       subtitle={
         list.description ||
         t("lists.detail.empty_description", "Šim sarakstam vēl nav apraksta.")
       }
       actions={
+        listAccess.canCreateTasks ? (
         <button
           type="button"
           onClick={(event) =>
@@ -71,6 +97,7 @@ export function ListDetailPage({ listId }: { listId: string }) {
           <i className="fas fa-plus text-xs" aria-hidden="true" />
           {t("create.menu.title", "Izveidot")}
         </button>
+        ) : undefined
       }
     >
       <ListWindowsBoard listId={list.id} tasks={tasks} />

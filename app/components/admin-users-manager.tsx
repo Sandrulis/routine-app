@@ -8,6 +8,7 @@ import {
   updateAdminUserAction,
 } from "@/app/(app)/admin/actions";
 import { AppModal } from "@/app/components/app-modal";
+import { AdminTeamMembersModal } from "@/app/components/admin-team-members-modal";
 import { ConfirmModal } from "@/app/components/confirm-modal";
 import { useFeedbackToast } from "@/app/components/feedback-toast-provider";
 import { IconActionButton } from "@/app/components/icon-action-button";
@@ -20,7 +21,7 @@ import { MemberLastOnline } from "@/app/components/member-last-online";
 import { UserAvatar } from "@/app/components/user-avatar";
 import { useTeam } from "@/app/lib/team-store";
 import { initialsFromName, teamRankLabel } from "@/app/lib/team";
-import type { AdminUserSummary } from "@/app/lib/site-admin/types";
+import type { AdminTeamMembersTarget, AdminUserSummary } from "@/app/lib/site-admin/types";
 
 type UserDraft = {
   name: string;
@@ -51,6 +52,7 @@ export function AdminUsersManager({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draft, setDraft] = useState(emptyDraft);
   const [deleteTarget, setDeleteTarget] = useState<AdminUserSummary | null>(null);
+  const [membersTeam, setMembersTeam] = useState<AdminTeamMembersTarget | null>(null);
   const [isPending, startTransition] = useTransition();
 
   const initialDraft = editingId
@@ -180,6 +182,7 @@ export function AdminUsersManager({
                             name: user.name,
                             initials: initialsFromName(user.name),
                             role: "",
+                            roleId: null,
                             email: user.email,
                             toneClassName: "bg-zinc-100 text-zinc-700",
                             lastOnlineAt,
@@ -232,7 +235,18 @@ export function AdminUsersManager({
                           {user.teams.map((team) => {
                             const roleLabel = teamRankLabel(team.role, t);
                             return (
-                              <div key={`${team.id}-${team.role}`} className="flex items-center gap-2.5">
+                              <button
+                                key={`${team.id}-${team.role}`}
+                                type="button"
+                                onClick={() =>
+                                  setMembersTeam({
+                                    id: team.id,
+                                    name: team.name,
+                                    logoUrl: team.logoUrl,
+                                  })
+                                }
+                                className="-mx-2 flex w-full items-center gap-2.5 rounded-lg px-2 py-1 text-left transition hover:bg-zinc-50"
+                              >
                                 {team.logoUrl ? (
                                   <img
                                     src={team.logoUrl}
@@ -250,7 +264,7 @@ export function AdminUsersManager({
                                     </p>
                                   ) : null}
                                 </div>
-                              </div>
+                              </button>
                             );
                           })}
                         </div>
@@ -301,6 +315,14 @@ export function AdminUsersManager({
           </table>
         </div>
       </div>
+
+      <AdminTeamMembersModal
+        open={membersTeam !== null}
+        onOpenChange={(open) => {
+          if (!open) setMembersTeam(null);
+        }}
+        team={membersTeam}
+      />
 
       <AppModal
         open={modalOpen}

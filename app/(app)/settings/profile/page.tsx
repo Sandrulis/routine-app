@@ -9,8 +9,8 @@ import { teamRankLabel } from "@/app/lib/team";
 
 export default function ProfileSettingsPage() {
   const { t } = useTranslations();
-  const { currentUser, teams } = useTeam();
-  const rank = teams.length === 0 ? null : teamRankLabel(currentUser.role, t);
+  const { currentUser, teams, roles } = useTeam();
+  const rank = teams.length === 0 ? null : teamRankLabel(currentUser.role, t, roles);
 
   return (
     <SectionPage

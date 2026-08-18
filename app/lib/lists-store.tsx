@@ -27,6 +27,11 @@ import {
   type WorkTask,
   type WorkTaskStatus,
 } from "@/app/lib/lists";
+import {
+  DEFAULT_LIST_ACCESS_LEVEL,
+  accessIds,
+  type ListAccessLevel,
+} from "@/app/lib/list-access";
 import { useAuthSession } from "@/app/lib/auth/use-auth-session";
 import { useTeam } from "@/app/lib/team-store";
 import {
@@ -77,10 +82,30 @@ type ListsContextValue = {
     icon?: string | null;
     color?: string;
     kind?: WorkListKind;
+    isPrivate?: boolean;
+    defaultAccessLevel?: ListAccessLevel;
+    viewerUserIds?: string[];
+    viewerRoleIds?: string[];
+    viewerUserAccess?: Record<string, ListAccessLevel>;
+    viewerRoleAccess?: Record<string, ListAccessLevel>;
   }) => WorkList;
   updateList: (
     listId: string,
-    patch: Partial<Pick<WorkList, "name" | "description" | "icon" | "color">>,
+    patch: Partial<
+      Pick<
+        WorkList,
+        | "name"
+        | "description"
+        | "icon"
+        | "color"
+        | "isPrivate"
+        | "defaultAccessLevel"
+        | "viewerUserIds"
+        | "viewerRoleIds"
+        | "viewerUserAccess"
+        | "viewerRoleAccess"
+      >
+    >,
   ) => void;
   deleteList: (listId: string) => void;
   addTask: (input: {
@@ -96,10 +121,13 @@ type ListsContextValue = {
     patch: Partial<
       Pick<
         WorkTask,
-        "title" | "description" | "status" | "assigneeIds" | "startDate" | "dueDate"
+        "title" | "description" | "status" | "assigneeIds" | "startDate" | "dueDate" | "deletedAt"
       >
     >,
   ) => void;
+  hideTask: (taskId: string) => void;
+  restoreTask: (taskId: string) => void;
+  moveSubtask: (taskId: string, parentId: string) => void;
   deleteTask: (taskId: string) => void;
   addTaskComment: (taskId: string, text: string) => void;
   addTaskFile: (taskId: string, file: File) => Promise<TaskFile>;
@@ -127,6 +155,8 @@ export function ListsProvider({ children }: { children: ReactNode }) {
   const [activities, setActivities] = useState<TaskActivity[]>([]);
   const [files, setFiles] = useState<TaskFile[]>([]);
   const [isReady, setIsReady] = useState(false);
+  const listsRef = useRef(lists);
+  listsRef.current = lists;
   const assignmentNotifyRef = useRef({
     actorId: "",
     memberIds: [] as string[],
@@ -204,8 +234,21 @@ export function ListsProvider({ children }: { children: ReactNode }) {
       icon?: string | null;
       color?: string;
       kind?: WorkListKind;
+      isPrivate?: boolean;
+      defaultAccessLevel?: ListAccessLevel;
+      viewerUserIds?: string[];
+      viewerRoleIds?: string[];
+      viewerUserAccess?: Record<string, ListAccessLevel>;
+      viewerRoleAccess?: Record<string, ListAccessLevel>;
     }) => {
       const kind = input.kind ?? "list";
+      const isPrivate = input.isPrivate === true;
+      const defaultAccessLevel =
+        input.defaultAccessLevel ?? DEFAULT_LIST_ACCESS_LEVEL;
+      const viewerUserAccess = input.viewerUserAccess ?? {};
+      const viewerRoleAccess = input.viewerRoleAccess ?? {};
+      const viewerUserIds = accessIds(viewerUserAccess);
+      const viewerRoleIds = accessIds(viewerRoleAccess);
       const list: WorkList = {
         id: createListId(),
         name: input.name.trim(),
@@ -215,23 +258,50 @@ export function ListsProvider({ children }: { children: ReactNode }) {
           (kind === "folder" ? "far fa-folder" : null),
         color: listColorById(input.color ?? randomListColorId()).id,
         kind,
+        isPrivate,
+        createdBy: userId,
+        defaultAccessLevel,
+        viewerUserIds,
+        viewerRoleIds,
+        viewerUserAccess,
+        viewerRoleAccess,
       };
 
       setLists((current) => [...current, list]);
       if (teamId) {
-        void insertList(teamId, list).catch((error) => {
+        void insertList(teamId, list, {
+          createdBy: userId,
+          viewerUserIds,
+          viewerRoleIds,
+          viewerUserAccess,
+          viewerRoleAccess,
+        }).catch((error) => {
           console.error("Failed to save list", error);
         });
       }
       return list;
     },
-    [teamId],
+    [teamId, userId],
   );
 
   const updateList = useCallback(
     (
       listId: string,
-      patch: Partial<Pick<WorkList, "name" | "description" | "icon" | "color">>,
+      patch: Partial<
+        Pick<
+          WorkList,
+          | "name"
+          | "description"
+          | "icon"
+          | "color"
+          | "isPrivate"
+          | "defaultAccessLevel"
+          | "viewerUserIds"
+          | "viewerRoleIds"
+          | "viewerUserAccess"
+          | "viewerRoleAccess"
+        >
+      >,
     ) => {
       setLists((current) =>
         current.map((list) => {
@@ -240,6 +310,16 @@ export function ListsProvider({ children }: { children: ReactNode }) {
             patch.color !== undefined
               ? listColorById(patch.color).id
               : list.color;
+          const isPrivate =
+            patch.isPrivate !== undefined ? patch.isPrivate : list.isPrivate;
+          const viewerUserAccess =
+            patch.viewerUserAccess !== undefined
+              ? patch.viewerUserAccess
+              : list.viewerUserAccess;
+          const viewerRoleAccess =
+            patch.viewerRoleAccess !== undefined
+              ? patch.viewerRoleAccess
+              : list.viewerRoleAccess;
           return {
             ...list,
             ...patch,
@@ -253,20 +333,33 @@ export function ListsProvider({ children }: { children: ReactNode }) {
                 ? patch.icon?.trim() || null
                 : list.icon,
             color: nextColor,
+            isPrivate,
+            defaultAccessLevel:
+              patch.defaultAccessLevel ?? list.defaultAccessLevel,
+            viewerUserAccess,
+            viewerRoleAccess,
+            viewerUserIds: accessIds(viewerUserAccess),
+            viewerRoleIds: accessIds(viewerRoleAccess),
           };
         }),
       );
+      const current = listsRef.current.find((item) => item.id === listId);
       void updateListRow(listId, {
         ...patch,
         name: patch.name !== undefined ? patch.name.trim() : undefined,
         description:
           patch.description !== undefined ? patch.description.trim() : undefined,
         icon: patch.icon !== undefined ? patch.icon?.trim() || null : undefined,
+        isPrivate: patch.isPrivate,
+        defaultAccessLevel: patch.defaultAccessLevel,
+        createdBy: current?.createdBy ?? userId,
+        viewerUserAccess: patch.viewerUserAccess,
+        viewerRoleAccess: patch.viewerRoleAccess,
       }).catch((error) => {
         console.error("Failed to update list", error);
       });
     },
-    [],
+    [userId],
   );
 
   const deleteList = useCallback((listId: string) => {
@@ -309,6 +402,8 @@ export function ListsProvider({ children }: { children: ReactNode }) {
         title: input.title.trim(),
         description: input.description.trim(),
         status: "todo",
+        statusChangedAt: null,
+        deletedAt: null,
         assigneeIds: [],
         startDate: null,
         dueDate: null,
@@ -358,103 +453,125 @@ export function ListsProvider({ children }: { children: ReactNode }) {
       patch: Partial<
         Pick<
           WorkTask,
-          "title" | "description" | "status" | "assigneeIds" | "startDate" | "dueDate"
+          "title" | "description" | "status" | "assigneeIds" | "startDate" | "dueDate" | "deletedAt"
         >
       >,
     ) => {
       setTasks((current) => {
         const existing = current.find((task) => task.id === taskId);
-        if (existing) {
-          const nextEvents: TaskActivity[] = [];
-          if (patch.status && patch.status !== existing.status) {
-            nextEvents.push(
-              createActivity({
-                actorId: assignmentNotifyRef.current.actorId,
-                taskId,
-                kind: "status",
-                fromStatus: existing.status,
-                toStatus: patch.status,
-              }),
+        if (!existing) {
+          return current.map((task) =>
+            task.id === taskId ? { ...task, ...patch } : task,
+          );
+        }
+
+        const nextEvents: TaskActivity[] = [];
+        let statusChangedAt = existing.statusChangedAt;
+        if (patch.status && patch.status !== existing.status) {
+          statusChangedAt = new Date().toISOString();
+          nextEvents.push(
+            createActivity({
+              actorId: assignmentNotifyRef.current.actorId,
+              taskId,
+              kind: "status",
+              fromStatus: existing.status,
+              toStatus: patch.status,
+            }),
+          );
+        }
+        if (
+          patch.assigneeIds &&
+          !sameIds(existing.assigneeIds, patch.assigneeIds)
+        ) {
+          nextEvents.push(
+            createActivity({
+              actorId: assignmentNotifyRef.current.actorId,
+              taskId,
+              kind: "assignees",
+              assigneeIds: patch.assigneeIds,
+            }),
+          );
+          const addedIds = patch.assigneeIds.filter(
+            (id) => !existing.assigneeIds.includes(id),
+          );
+          const parentId =
+            existing.kind === "subtask" && existing.parentId
+              ? existing.parentId
+              : existing.id;
+          const notify = assignmentNotifyRef.current;
+          const extra = notificationsForNewAssignees({
+            actorId: notify.actorId,
+            addedIds,
+            memberIds: notify.memberIds,
+            taskTitle: patch.title ?? existing.title,
+            href: `/lists/${existing.listId}/tasks/${parentId}`,
+          });
+          if (extra.length > 0) {
+            queueMicrotask(() =>
+              appendNotifications(extra, notify.userId, notify.teamId),
             );
           }
-          if (
-            patch.assigneeIds &&
-            !sameIds(existing.assigneeIds, patch.assigneeIds)
-          ) {
-            nextEvents.push(
-              createActivity({
-                actorId: assignmentNotifyRef.current.actorId,
-                taskId,
-                kind: "assignees",
-                assigneeIds: patch.assigneeIds,
-              }),
-            );
-            const addedIds = patch.assigneeIds.filter(
-              (id) => !existing.assigneeIds.includes(id),
-            );
-            const parentId =
-              existing.kind === "subtask" && existing.parentId
-                ? existing.parentId
-                : existing.id;
-            const notify = assignmentNotifyRef.current;
-            const extra = notificationsForNewAssignees({
-              actorId: notify.actorId,
-              addedIds,
-              memberIds: notify.memberIds,
-              taskTitle: patch.title ?? existing.title,
-              href: `/lists/${existing.listId}/tasks/${parentId}`,
-            });
-            if (extra.length > 0) {
-              queueMicrotask(() =>
-                appendNotifications(extra, notify.userId, notify.teamId),
-              );
-            }
-          }
-          if (
-            patch.startDate !== undefined &&
-            patch.startDate !== existing.startDate
-          ) {
-            nextEvents.push(
-              createActivity({
-                actorId: assignmentNotifyRef.current.actorId,
-                taskId,
-                kind: "start_date",
-                dateValue: patch.startDate,
-              }),
-            );
-          }
-          if (patch.dueDate !== undefined && patch.dueDate !== existing.dueDate) {
-            nextEvents.push(
-              createActivity({
-                actorId: assignmentNotifyRef.current.actorId,
-                taskId,
-                kind: "due_date",
-                dateValue: patch.dueDate,
-              }),
-            );
-          }
-          if (nextEvents.length > 0) {
-            setActivities((currentActivities) => [
-              ...currentActivities,
-              ...nextEvents,
-            ]);
-            const activeTeamId = assignmentNotifyRef.current.teamId;
-            if (activeTeamId) {
-              for (const event of nextEvents) {
-                void insertActivity(activeTeamId, event).catch((error) => {
-                  console.error("Failed to save activity", error);
-                });
-              }
+        }
+        if (
+          patch.startDate !== undefined &&
+          patch.startDate !== existing.startDate
+        ) {
+          nextEvents.push(
+            createActivity({
+              actorId: assignmentNotifyRef.current.actorId,
+              taskId,
+              kind: "start_date",
+              dateValue: patch.startDate,
+            }),
+          );
+        }
+        if (patch.dueDate !== undefined && patch.dueDate !== existing.dueDate) {
+          nextEvents.push(
+            createActivity({
+              actorId: assignmentNotifyRef.current.actorId,
+              taskId,
+              kind: "due_date",
+              dateValue: patch.dueDate,
+            }),
+          );
+        }
+        if (nextEvents.length > 0) {
+          setActivities((currentActivities) => [
+            ...currentActivities,
+            ...nextEvents,
+          ]);
+          const activeTeamId = assignmentNotifyRef.current.teamId;
+          if (activeTeamId) {
+            for (const event of nextEvents) {
+              void insertActivity(activeTeamId, event).catch((error) => {
+                console.error("Failed to save activity", error);
+              });
             }
           }
         }
 
+        const dbPatch = {
+          ...patch,
+          ...(patch.status && patch.status !== existing.status
+            ? { statusChangedAt }
+            : {}),
+        };
+
+        void updateTaskRow(taskId, dbPatch).catch((error) => {
+          console.error("Failed to update task", error);
+        });
+
         return current.map((task) =>
-          task.id === taskId ? { ...task, ...patch } : task,
+          task.id === taskId
+            ? {
+                ...task,
+                ...patch,
+                ...(patch.status && patch.status !== existing.status
+                  ? { statusChangedAt }
+                  : {}),
+              }
+            : task,
         );
-      });
-      void updateTaskRow(taskId, patch).catch((error) => {
-        console.error("Failed to update task", error);
       });
     },
     [],
@@ -533,6 +650,40 @@ export function ListsProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
+  const hideTask = useCallback(
+    (taskId: string) => {
+      updateTask(taskId, { deletedAt: new Date().toISOString() });
+    },
+    [updateTask],
+  );
+
+  const restoreTask = useCallback(
+    (taskId: string) => {
+      updateTask(taskId, { deletedAt: null });
+    },
+    [updateTask],
+  );
+
+  const moveSubtask = useCallback((taskId: string, parentId: string) => {
+    setTasks((current) => {
+      const existing = current.find((task) => task.id === taskId);
+      if (!existing || existing.kind !== "subtask" || existing.parentId === parentId) {
+        return current;
+      }
+      const sortOrder = nextSortOrder(current, {
+        listId: existing.listId,
+        parentId,
+        kind: "subtask",
+      });
+      void updateTaskRow(taskId, { parentId, sortOrder }).catch((error) => {
+        console.error("Failed to move subtask", error);
+      });
+      return current.map((task) =>
+        task.id === taskId ? { ...task, parentId, sortOrder } : task,
+      );
+    });
+  }, []);
+
   const deleteTask = useCallback((taskId: string) => {
     let removedIds: string[] = [];
     setTasks((current) => {
@@ -579,6 +730,9 @@ export function ListsProvider({ children }: { children: ReactNode }) {
       deleteList,
       addTask,
       updateTask,
+      hideTask,
+      restoreTask,
+      moveSubtask,
       deleteTask,
       updateTaskStatus,
       addTaskComment,
@@ -608,6 +762,9 @@ export function ListsProvider({ children }: { children: ReactNode }) {
       renameTaskFile,
       removeTaskFile,
       deleteTask,
+      hideTask,
+      restoreTask,
+      moveSubtask,
       files,
       isReady,
       lists,

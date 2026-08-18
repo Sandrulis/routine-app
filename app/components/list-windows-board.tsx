@@ -23,6 +23,7 @@ import {
   SortableTaskItem,
 } from "@/app/components/sortable-task-group";
 import { statusDotClassName, statusTextClassName } from "@/app/components/status-control";
+import { useTaskStatuses } from "@/app/lib/task-statuses";
 import { OptionalTooltip } from "@/app/components/tooltip";
 import { useTranslations } from "@/app/components/translations-provider";
 import {
@@ -39,9 +40,16 @@ import {
   writeListWindowOrder,
   type ListWindowId,
 } from "@/app/lib/list-windows";
-import { taskProgress, type WorkTask } from "@/app/lib/lists";
+import { isTaskActiveInLists, taskProgress, type WorkTask } from "@/app/lib/lists";
 import { useLists } from "@/app/lib/lists-store";
 import { useListFiles } from "@/app/lib/use-list-files";
+import { useTeam } from "@/app/lib/team-store";
+import { useIsAdmin } from "@/app/lib/users/use-is-admin";
+import {
+  listAccessCapabilities,
+  resolveListAccessLevel,
+  userIsAssignee,
+} from "@/app/lib/list-access";
 
 function WindowCard({
   id,
@@ -105,6 +113,7 @@ function TasksWindow({
 }) {
   const { t } = useTranslations();
   const { subtasks } = useLists();
+  const { statuses } = useTaskStatuses();
 
   if (tasks.length === 0) {
     return (
@@ -121,7 +130,9 @@ function TasksWindow({
     >
       <ul className="space-y-1.5">
         {tasks.map((task) => {
-          const childCount = subtasks(task.id).length;
+          const childCount = subtasks(task.id).filter((item) =>
+            isTaskActiveInLists(item, statuses),
+          ).length;
           const canReorder = tasks.length > 1;
           return (
             <SortableTaskItem key={task.id} id={task.id} as="li" disabled={!canReorder}>
@@ -221,7 +232,14 @@ function OverviewWindow({
   tasks: WorkTask[];
 }) {
   const { t } = useTranslations();
-  const { subtasks, updateTaskStatus } = useLists();
+  const { lists, subtasks, updateTaskStatus } = useLists();
+  const { currentUser, roles } = useTeam();
+  const { isAdmin } = useIsAdmin();
+  const list = lists.find((item) => item.id === listId) ?? null;
+  const access = listAccessCapabilities(
+    list ? resolveListAccessLevel(list, currentUser, roles, isAdmin) : null,
+  );
+  const { colorFor, statuses } = useTaskStatuses();
 
   if (tasks.length === 0) {
     return (
@@ -235,6 +253,9 @@ function OverviewWindow({
     <ul className="grid gap-3 [grid-template-columns:repeat(auto-fit,minmax(min(100%,16rem),1fr))]">
       {tasks.map((task) => {
         const children = subtasks(task.id);
+        const visibleChildren = children.filter((item) =>
+          isTaskActiveInLists(item, statuses),
+        );
         const progress = taskProgress(task, children);
         return (
           <li key={task.id} className="min-w-0 rounded-xl bg-zinc-50 px-3 py-2.5">
@@ -262,30 +283,44 @@ function OverviewWindow({
                 />
               </div>
             </Link>
-            {children.length > 0 ? (
+            {visibleChildren.length > 0 ? (
               <ul className="mt-2 space-y-1">
-                {children.map((child) => {
+                {visibleChildren.map((child) => {
                   const done = child.status === "done";
+                  const statusColor = colorFor(child.status);
                   return (
                     <li key={child.id} className="flex items-center gap-2">
                       <button
                         type="button"
                         aria-pressed={done}
                         aria-label={child.title}
+                        disabled={
+                          !(
+                            access.canEditTasks ||
+                            (access.canComment &&
+                              userIsAssignee(child.assigneeIds, currentUser))
+                          )
+                        }
                         onClick={() =>
                           updateTaskStatus(child.id, done ? "todo" : "done")
                         }
-                        className={`inline-flex size-4 shrink-0 items-center justify-center rounded-full border ${statusDotClassName(child.status)} ${
-                          done ? "text-white" : "text-transparent"
-                        }`}
+                        className={`inline-flex size-4 shrink-0 items-center justify-center rounded-full border ${
+                          statusColor ? "" : statusDotClassName(child.status)
+                        } ${done ? "text-white" : "text-transparent"} disabled:cursor-not-allowed disabled:opacity-60`}
+                        style={
+                          statusColor
+                            ? { backgroundColor: statusColor, borderColor: statusColor }
+                            : undefined
+                        }
                       >
                         <i className="fas fa-check text-[8px]" aria-hidden="true" />
                       </button>
                       <Link
                         href={`/lists/${listId}/tasks/${child.id}`}
-                        className={`truncate text-[13px] ${statusTextClassName(child.status)} ${
-                          done ? "line-through" : "hover:opacity-80"
-                        }`}
+                        className={`truncate text-[13px] ${
+                          statusColor ? "" : statusTextClassName(child.status)
+                        } ${done ? "line-through" : "hover:opacity-80"}`}
+                        style={statusColor ? { color: statusColor } : undefined}
                       >
                         {child.title}
                       </Link>
@@ -309,6 +344,15 @@ export function ListWindowsBoard({
   tasks: WorkTask[];
 }) {
   const { t } = useTranslations();
+  const { lists } = useLists();
+  const { currentUser, roles } = useTeam();
+  const { isAdmin } = useIsAdmin();
+  const list = lists.find((item) => item.id === listId) ?? null;
+  const canUploadFiles = list
+    ? listAccessCapabilities(
+        resolveListAccessLevel(list, currentUser, roles, isAdmin),
+      ).canCreateTasks
+    : false;
   const [order, setOrder] = useState<ListWindowId[]>(DEFAULT_LIST_WINDOW_ORDER);
   const allFiles = useListFiles();
   const files = allFiles.filter((file) => file.listId === listId);
@@ -322,6 +366,7 @@ export function ListWindowsBoard({
   }, [listId]);
 
   async function handleUpload(event: ChangeEvent<HTMLInputElement>) {
+    if (!canUploadFiles) return;
     const selected = Array.from(event.target.files ?? []);
     event.target.value = "";
     let nextOrder = nextItemSortOrder([
@@ -366,6 +411,7 @@ export function ListWindowsBoard({
         title={t("lists.windows.files", "Faili")}
         icon="fas fa-paperclip"
         action={
+          canUploadFiles ? (
           <>
             <input
               ref={fileInputRef}
@@ -383,6 +429,7 @@ export function ListWindowsBoard({
               <i className="fas fa-plus text-[11px]" aria-hidden="true" />
             </button>
           </>
+          ) : undefined
         }
       >
         <FilesWindow listId={listId} files={files} />
