@@ -394,6 +394,7 @@ export function ListsProvider({ children }: { children: ReactNode }) {
       title: string;
       description: string;
     }) => {
+      const createdAt = new Date().toISOString();
       const task: WorkTask = {
         id: createTaskId(),
         listId: input.listId,
@@ -402,7 +403,7 @@ export function ListsProvider({ children }: { children: ReactNode }) {
         title: input.title.trim(),
         description: input.description.trim(),
         status: "todo",
-        statusChangedAt: null,
+        statusChangedAt: createdAt,
         deletedAt: null,
         assigneeIds: [],
         startDate: null,
@@ -432,6 +433,7 @@ export function ListsProvider({ children }: { children: ReactNode }) {
         actorId: assignmentNotifyRef.current.actorId,
         taskId: task.id,
         kind: "created",
+        at: createdAt,
       });
       setActivities((current) => [...current, createdActivity]);
       const activeTeamId = assignmentNotifyRef.current.teamId;

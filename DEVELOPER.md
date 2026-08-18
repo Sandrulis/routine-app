@@ -68,11 +68,11 @@ Legal teksti: `app/lib/legal/documents.ts`. UI: `LegalDocumentView` ar **Saturs*
 | Klikšķis | Lapa | UI |
 |---|---|---|
 | Sākums | `/dashboard` | `TeamTodoBoard` — kolonnas Darāms, Procesā, Gatavs |
-| Saraksts | `/lists` | `ListsOverviewPage` — kartītes ar uzdevumiem un apakšuzdevumiem, grupēti pēc statusa |
-| Projekts (saraksts) | `/lists/[listId]` | `ListWindowsBoard` — augšā 2 kolonnas Uzdevumi | Faili; zem tām Saraksts pilnā platumā; kārtība cookie `routine-app-list-window-order` |
-| Uzdevums | `/lists/[listId]/tasks/[taskId]` | `SubtaskTable` — nosaukums, atbildīgais, sākums, termiņš, statuss; arhīvs, pārvietošana, mīkstā dzēšana |
+| Saraksts | `/lists` | `ListsOverviewPage` — kartītes ar uzdevumiem un apakšuzdevumiem; klikšķis atver `SubtaskDetailModal` uz vietas |
+| Projekts (saraksts) | `/lists/[listId]` | `ListWindowsBoard` — Uzdevumi | Faili; zem tām Saraksts ar mapēm, nested uzdevumiem un arhīvu; kārtība cookie `routine-app-list-window-order` |
+| Uzdevums | `/lists/[listId]/tasks/[taskId]` | `SubtaskTable` — nosaukums, atbildīgais, sākums, termiņš, statuss; arhīvs, pārvietošana, mīkstā dzēšana; hover rāda darbības |
 | Fails | `/lists/[listId]/files/[fileId]` | `FileDetailPage` — priekšskatījums, lejupielāde, pārsaukšana, dzēšana |
-| Apakšuzdevums | tas pats uzdevuma ceļš + modālis | `SubtaskDetailModal` — lauki kreisajā, vēsture labajā |
+| Apakšuzdevums | uzdevuma ceļš vai saraksta skats + modālis | `SubtaskDetailModal` — lauki kreisajā, vēsture labajā |
 | Administrācija | `/admin` | horizontāla apakšizvēlne: lietotāji, komandas, lomas, statusi, valodas, tulkojumi, uzstādījumi; tikai `is_admin` |
 
 Ceļa josla: `app/components/page-breadcrumb.tsx`. Labajā malā `AdminPanelButton` (`fas fa-users-cog`, tikai `is_admin`), `NotificationsMenu` (zvaniņš) un valodas kods, ja aktīvas valodas > 1.
@@ -109,21 +109,21 @@ Ceļa josla: `app/components/page-breadcrumb.tsx`. Labajā malā `AdminPanelButt
 
 ## Apakšuzdevuma modālis
 
-`app/components/subtask-detail-modal.tsx` + `AppModal` (`dirty`, saglabāšana tikai pēc izmaiņām). Saglabāt **neaizver** modāli un nepāriet uz citu lapu; aizver X / ESC / Atcelt. Pēc jauna apakšuzdevuma izveides paliek edit mode. Poga **Pievienot jaunu** (tikai plus + tooltip `actions.add_new`) rādās, kad ir nosaukums un Saglabāt nav aktīvs; klikšķis atver tukšu formu tajā pašā modālī. `headerMeta` rāda `izveidots {date}` no aktivitātes `kind === "created"` (`formatDisplayDateDdMmYy`); jaunam nesaglabātam apakšuzdevumam datums nav.
+`app/components/subtask-detail-modal.tsx` + `AppModal` (`dirty` no nosaukuma, apraksta, datumiem, atbildīgajiem — **statuss dirty neskaita**). Statusa maiņa esošam apakšuzdevumam `updateTask` uzreiz. Saglabāt **neaizver** modāli un nepāriet uz citu lapu; aizver X / ESC / Atcelt. Pēc jauna apakšuzdevuma izveides paliek edit mode. Poga **Pievienot jaunu** (tikai plus + tooltip `actions.add_new`) rādās, kad ir nosaukums un Saglabāt nav aktīvs; klikšķis atver tukšu formu tajā pašā modālī. `headerMeta` rāda `izveidots {date}` no aktivitātes `kind === "created"` (`formatDisplayDateDdMmYy`); jaunam nesaglabātam apakšuzdevumam datums nav. Atverams arī no saraksta loga un `/lists` kopsavilkuma, bez navigācijas.
 
 | Lauks | Uzvedība |
 |---|---|
 | Nosaukums | Trekns, lielāks teksts, bez rāmja un fona |
 | Apraksts | Piezīmes |
-| Sākums / Termiņš | `DateCell` — klikšķis atver pārlūka datuma izvēli (`showPicker`); `disabled`, ja nav `canEditTasks` |
-| Statuss | `StatusControl` — krāsaina poga (STATUSS + `fa-angle-right` nākamajam; pelēks `fa-check` uz Gatavs); klikšķis uz nosaukuma atver picker (meklēšana, grupas Nav sākts / Aktīvs / Slēgts). `comment` līmenī statusu drīkst mainīt izpildītājs |
+| Sākums / Termiņš | `DateCell` — klikšķis atver pārlūka datuma izvēli (`showPicker`); zem datuma atlikušās vai kavētās dienas (`calendarDaysFromToday`); `disabled`, ja nav `canEditTasks` |
+| Statuss | `StatusControl` — krāsaina poga; nākamais (`fa-angle-right`) un Check. Tabulā bez hover tikai nosaukums, hover rāda `>` / Check / pārvietot / dzēst (bez animācijas). Klikšķis uz nosaukuma atver picker. `comment` līmenī statusu drīkst mainīt izpildītājs |
 | Projekts, atbildīgie | Saraksta badge, `AssigneeCell` |
 | Pielikumi | `TaskAttachments` — drag-and-drop vai **pārlūko**; kartītes ar priekšskatījumu; `disabled` bez `edit` / `full_edit` |
 | Faila `...` | `CreateItemMenu`: Apskatīt, Pārsaukt, Dzēst. Klikšķis uz kartītes arī atver apskati. Izvēlne ar `data-app-modal-ignore-backdrop`, lai neaizvērtu apakšuzdevuma modāli |
 | Dzēst failu | Tikai `ConfirmModal` (`files.delete.*`) |
 | Pārsaukt failu | `NameFormModal` (`files.edit.*`) |
 | Apskatīt failu | `FilePreview` ligzdotā `AppModal` |
-| Vēsture | Labā kolonna, `taskActivities`; no `comment` līmeņa — komentāra lauks (`addTaskComment`) |
+| Vēsture | Labā kolonna, `taskActivities`; statusu nosaukumi no kataloga (`labelFor`); laiks `RelativeTime` (kā pēdējā tiešsaiste); no `comment` līmeņa — komentāra lauks (`addTaskComment`) |
 
 Failu metadati: `TaskFile` (`id`, `taskId`, `name`, `mimeType`, `size`, `hasContent`, `createdAt`). Saturs Postgres `task_files.content` (data URL, līdz `MAX_STORED_FILE_BYTES`, 1.5 MB).
 
@@ -135,8 +135,8 @@ Hierarhija: **Saraksts → mape / uzdevumu saraksts / fails → apakšuzdevumi t
 - Stāvoklis: `app/lib/lists-store.tsx` — ielāde no `work_lists` / `work_tasks`; pieslēgtam lietotājam bez komandas tukšs koks (nav dummy datu)
 - Saraksta faili kokā: `app/lib/list-files.ts`
 - Jauns/labot sarakstu: `ListFormModal` — izskats, privāts slēdzis, **noklusējuma pieeja**; slēdzis **Pielāgot katrai lomai** parāda lomu līmeņus un paslēpj globālo izvēli (privātam arī biedriem un „nav pieejas”)
-- Apakšuzdevumu tabula (`SubtaskTable`): pie Pievienot arhīva poga rāda aktīvos **un** arhivētos; pabeigšana fade-out vietā; miskaste aiz Check (`deleted_at`, nav statusa katalogā); klikšķis uz dzēstā atjauno; **Pārvietot** (`fa-exchange-alt`) atver `MoveSubtaskModal` ar saraksta uzdevumu pogām (`moveSubtask` maina `parent_id`)
-- Projekta **Saraksts** logs: uzdevumu kartītes `repeat(auto-fit, minmax(min(100%, 16rem), 1fr))` — cik ietilpst, tik kolonnas (2–4). Apakšuzdevuma aplītis un nosaukums ir statusa krāsā (`statusDotClassName` / `statusTextClassName`)
+- Apakšuzdevumu tabula (`SubtaskTable`): pie Pievienot arhīva poga rāda aktīvos **un** arhivētos; pabeigšana fade-out vietā; miskaste aiz Check (`deleted_at`, nav statusa katalogā); klikšķis uz dzēstā atjauno; **Pārvietot** (`fa-exchange-alt`) atver `MoveSubtaskModal`; zem statusa `RelativeTime`; jaunam uzdevumam `statusChangedAt` = izveides laiks
+- Projekta **Saraksts** logs: uzdevumu kartītes `repeat(auto-fit, minmax(min(100%, 16rem), 1fr))`. Mape rāda nested uzdevumus un to apakšuzdevumus (`getDescendantSubtasks`); arhīva poga kartītē parāda pabeigtos, progresa josla paliek. Klikšķis uz apakšuzdevuma atver `SubtaskDetailModal` uz vietas. Apakšuzdevuma aplītis un nosaukums ir statusa krāsā
 
 ## Sarakstu pieejas
 
@@ -159,6 +159,8 @@ Prioritāte: biedra rinda (`work_list_viewers.access_level`) → lomas rinda (`w
 - Koka / Saraksta loga aplītis: `statusDotClassName` (fons + apmale tās pašas); teksts: `statusTextClassName`
 - Picker portal `z-80`, `data-app-modal-ignore-backdrop`; ESC aizver tikai picker
 - Nākamais statuss: todo → in_progress → done
+- Tabulā `revealActionsOnHover`: bez hover tikai statusa nosaukums; hover (vai atvērts picker / pārvietošana) rāda `>` un trailing pogas, vieta rezervēta, bez animācijas
+- Zem pogas `RelativeTime` (`app/components/relative-time.tsx`, `getLastOnlineDisplay`); tooltipā precīzais `dd.mm.yy hh:mm`
 
 ## Komanda un pēdējā tiešsaiste
 
@@ -222,6 +224,7 @@ app/
     move-subtask-modal.tsx        # Apakšuzdevuma pārvietošana pie cita uzdevuma
     subtask-detail-modal.tsx      # Apakšuzdevuma modālis
     status-control.tsx            # Statusa poga un picker
+    relative-time.tsx             # Relatīvais laiks (min / h / d / m)
     team-roles-modal.tsx          # Komandas lomu saraksts
     team-role-access-modal.tsx    # Pieejas pašai lomai
     team-permission-fields.tsx    # Nav + actions slēdži

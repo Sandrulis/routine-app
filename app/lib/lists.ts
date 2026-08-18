@@ -578,6 +578,30 @@ export function getSubtasks(tasks: WorkTask[], parentId: string): WorkTask[] {
     .sort(compareBySortOrder);
 }
 
+export function getDescendantWorkItems(
+  tasks: WorkTask[],
+  parentId: string,
+): WorkTask[] {
+  const result: WorkTask[] = [];
+  for (const child of getChildTasks(tasks, parentId)) {
+    result.push(child);
+    result.push(...getDescendantWorkItems(tasks, child.id));
+  }
+  return result;
+}
+
+export function getDescendantSubtasks(
+  tasks: WorkTask[],
+  parentId: string,
+): WorkTask[] {
+  const result: WorkTask[] = [];
+  for (const child of getChildTasks(tasks, parentId)) {
+    result.push(...getSubtasks(tasks, child.id));
+    result.push(...getDescendantSubtasks(tasks, child.id));
+  }
+  return result;
+}
+
 export function isTaskDeleted(task: Pick<WorkTask, "deletedAt">): boolean {
   return Boolean(task.deletedAt);
 }

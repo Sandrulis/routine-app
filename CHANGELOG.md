@@ -4,6 +4,14 @@
 
 - (none)
 
+## v0.1.6
+
+**Mapes sarakstā, apakšuzdevuma modālis uz vietas un relatīvie laiki**
+
+- Saraksta logs rāda mapes ar iekšējiem uzdevumiem un apakšuzdevumiem; arhīva poga parāda pabeigtos, progresa josla paliek
+- Klikšķis uz apakšuzdevuma sarakstā atver modāli; statuss saglabājas uzreiz, Saglabāt tikai pārējiem laukiem
+- Vēsturē kataloga statusu nosaukumi; laiki kā pēdējā tiešsaiste; zem statusa un datumiem atlikušās vai kavētās dienas; hover rāda `>` / pārvietot / dzēst
+
 ## v0.1.5
 
 **Apakšuzdevumu arhīvs, pieeju slēdzis un pārvietošana**

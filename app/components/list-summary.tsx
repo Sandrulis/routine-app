@@ -8,7 +8,7 @@ import { UserAvatar } from "@/app/components/user-avatar";
 import { OptionalTooltip } from "@/app/components/tooltip";
 import { useTranslations } from "@/app/components/translations-provider";
 import { formatDisplayDateDdMmYy } from "@/app/lib/format-display-date";
-import { getTaskAncestors, isTaskActiveInLists, workItemIcon, type WorkTask } from "@/app/lib/lists";
+import { getTaskAncestors, isTaskActiveInLists, isTaskDeleted, isWorkFolder, workItemIcon, type WorkTask } from "@/app/lib/lists";
 import { useLists } from "@/app/lib/lists-store";
 import { useTeam } from "@/app/lib/team-store";
 import { useIsAdmin } from "@/app/lib/users/use-is-admin";
@@ -39,6 +39,7 @@ function TaskSummarySection({
   listName,
   task,
   defaultExpanded,
+  nested = false,
   onOpenTask,
   onAddSubtask,
 }: {
@@ -46,6 +47,7 @@ function TaskSummarySection({
   listName: string;
   task: WorkTask;
   defaultExpanded: boolean;
+  nested?: boolean;
   onOpenTask: (task: WorkTask) => void;
   onAddSubtask: (task: WorkTask) => void;
 }) {
@@ -62,14 +64,19 @@ function TaskSummarySection({
   const [expanded, setExpanded] = useState(defaultExpanded);
   const statusLabel = useStatusLabels();
   const { colorFor, labelFor, statuses } = useTaskStatuses();
+  const folder = isWorkFolder(task);
   const children = subtasks(task.id);
-  const nested = childTasks(task.id);
+  const nestedItems = childTasks(task.id).filter((item) =>
+    isWorkFolder(item)
+      ? !isTaskDeleted(item)
+      : isTaskActiveInLists(item, statuses),
+  );
   const visibleChildren = children.filter((item) =>
     isTaskActiveInLists(item, statuses),
   );
-  const range = dateRange(task, [...nested, ...children]);
+  const range = dateRange(task, [...nestedItems, ...children]);
   const assignees = members.filter((member) =>
-    [task, ...nested, ...children].some((item) =>
+    [task, ...nestedItems, ...children].some((item) =>
       item.assigneeIds.includes(member.id),
     ),
   );
@@ -84,8 +91,16 @@ function TaskSummarySection({
     .join(" / ");
 
   return (
-    <section className="overflow-hidden rounded-xl border border-zinc-200 bg-white">
-      <p className="px-3 pt-2 text-[11px] text-zinc-400">{crumb}</p>
+    <section
+      className={
+        nested
+          ? "overflow-hidden rounded-lg border border-zinc-100 bg-zinc-50"
+          : "overflow-hidden rounded-xl border border-zinc-200 bg-white"
+      }
+    >
+      {nested ? null : (
+        <p className="px-3 pt-2 text-[11px] text-zinc-400">{crumb}</p>
+      )}
       <header className="flex items-center gap-2 px-3 py-2">
         <button
           type="button"
@@ -105,6 +120,10 @@ function TaskSummarySection({
             aria-hidden="true"
           />
         </button>
+        <i
+          className={`${workItemIcon(task)} shrink-0 text-[12px] text-zinc-400`}
+          aria-hidden="true"
+        />
         <OptionalTooltip label={task.description} className="min-w-0 flex-1">
           <button
             type="button"
@@ -135,29 +154,31 @@ function TaskSummarySection({
 
       {expanded ? (
         <div className="space-y-4 border-t border-zinc-100 px-3 py-3">
-          {nested.length > 0 ? (
-            <ul className="space-y-1">
-              {nested.map((child) => (
-                <li key={child.id}>
-                  <button
-                    type="button"
-                    onClick={() => onOpenTask(child)}
-                    className="flex w-full items-center gap-2 rounded-lg px-1.5 py-1.5 text-left text-sm text-zinc-700 hover:bg-zinc-50"
-                  >
-                    <i
-                      className={`${workItemIcon(child)} w-4 text-center text-[12px] text-zinc-400`}
-                      aria-hidden="true"
-                    />
-                    <OptionalTooltip label={child.description} className="min-w-0 flex-1">
-                      <span className="truncate font-medium">{child.title}</span>
-                    </OptionalTooltip>
-                  </button>
-                </li>
+          {nestedItems.length > 0 ? (
+            <div className="space-y-3">
+              {nestedItems.map((child) => (
+                <TaskSummarySection
+                  key={child.id}
+                  listId={listId}
+                  listName={listName}
+                  task={child}
+                  defaultExpanded
+                  nested
+                  onOpenTask={onOpenTask}
+                  onAddSubtask={onAddSubtask}
+                />
               ))}
-            </ul>
+            </div>
           ) : null}
 
-          {visibleChildren.length === 0 ? (
+          {folder ? (
+            nestedItems.length === 0 ? (
+              <p className="px-1 py-2 text-sm text-zinc-400">
+                {t("folders.empty", "Šajā mapē vēl nav uzdevumu.")}
+              </p>
+            ) : null
+          ) : visibleChildren.length === 0 ? (
+            nestedItems.length === 0 ? (
             <div className="px-1 py-2">
               <p className="text-sm text-zinc-400">
                 {t("subtasks.empty", "Šim uzdevumam vēl nav apakšuzdevumu.")}
@@ -172,6 +193,7 @@ function TaskSummarySection({
                 </button>
               ) : null}
             </div>
+            ) : null
           ) : (
             grouped.map((group) => {
               const groupColor = colorFor(group.status);

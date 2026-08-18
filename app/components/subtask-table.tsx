@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type MouseEvent } from "react";
 import {
   DndContext,
   PointerSensor,
@@ -17,14 +17,18 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { DragHandle } from "@/app/components/drag-handle";
+import {
+  createMenuAnchorFromEvent,
+  type CreateMenuAnchor,
+} from "@/app/components/create-item-menu";
 import { IconActionButton } from "@/app/components/icon-action-button";
 import { MoveSubtaskModal } from "@/app/components/move-subtask-modal";
 import { StatusControl } from "@/app/components/status-control";
 import { UserAvatar } from "@/app/components/user-avatar";
 import { useTranslations } from "@/app/components/translations-provider";
 import {
+  calendarDaysFromToday,
   formatDisplayDateDdMmYy,
-  todayIsoDate,
 } from "@/app/lib/format-display-date";
 import { useLists } from "@/app/lib/lists-store";
 import { useTeam } from "@/app/lib/team-store";
@@ -111,7 +115,18 @@ export function DateCell({
   onChange: (next: string | null) => void;
   disabled?: boolean;
 }) {
+  const { t } = useTranslations();
   const inputRef = useRef<HTMLInputElement>(null);
+  const days = value ? calendarDaysFromToday(value) : null;
+  const overdue = days != null && days < 0;
+  const relative =
+    days == null
+      ? null
+      : days === 0
+        ? t("dates.today", "Šodien")
+        : overdue
+          ? t("dates.days_overdue", "{count} d kavē", { count: Math.abs(days) })
+          : t("dates.days_left", "{count} d atlikušas", { count: days });
 
   function openPicker() {
     if (disabled) return;
@@ -129,16 +144,27 @@ export function DateCell({
   }
 
   return (
-    <div className="relative inline-flex min-h-8 min-w-[7.5rem] items-center">
+    <div className="relative inline-flex min-h-8 min-w-[7.5rem] flex-col items-start justify-center">
       <span className="pointer-events-none">
         {value ? (
-          <span
-            className={`text-[13px] ${
-              value < todayIsoDate() ? "text-red-600" : "text-zinc-700"
-            }`}
-          >
-            {formatDisplayDateDdMmYy(value)}
-          </span>
+          <>
+            <span
+              className={`block text-[13px] leading-none ${
+                overdue ? "text-red-600" : "text-zinc-700"
+              }`}
+            >
+              {formatDisplayDateDdMmYy(value)}
+            </span>
+            {relative ? (
+              <span
+                className={`mt-0.5 block text-[11px] leading-none tabular-nums ${
+                  overdue ? "text-red-500" : "text-zinc-400"
+                }`}
+              >
+                {relative}
+              </span>
+            ) : null}
+          </>
         ) : (
           <span className="inline-flex items-center gap-1 text-zinc-300">
             <i className="far fa-calendar-plus text-[12px]" aria-hidden="true" />
@@ -190,7 +216,7 @@ export function AssigneeCell({
   useEffect(() => {
     if (!open) return;
 
-    function handlePointer(event: MouseEvent) {
+    function handlePointer(event: globalThis.MouseEvent) {
       if (!rootRef.current?.contains(event.target as Node)) {
         setOpen(false);
       }
@@ -279,6 +305,7 @@ export function SubtaskTable({
   const { t } = useTranslations();
   const { lists, updateTask, hideTask, restoreTask, reorderTasks } = useLists();
   const [movingTask, setMovingTask] = useState<WorkTask | null>(null);
+  const [moveAnchor, setMoveAnchor] = useState<CreateMenuAnchor | null>(null);
   const { currentUser, roles } = useTeam();
   const { isAdmin } = useIsAdmin();
   const { statuses } = useTaskStatuses();
@@ -379,9 +406,18 @@ export function SubtaskTable({
                   }
                   onMove={
                     access.canEditTasks && !isTaskDeleted(task)
-                      ? () => setMovingTask(task)
+                      ? (event) => {
+                          if (movingTask?.id === task.id) {
+                            setMovingTask(null);
+                            setMoveAnchor(null);
+                            return;
+                          }
+                          setMovingTask(task);
+                          setMoveAnchor(createMenuAnchorFromEvent(event));
+                        }
                       : undefined
                   }
+                  moveOpen={movingTask?.id === task.id}
                   onRestore={
                     access.canEditTasks && isTaskDeleted(task)
                       ? () => restoreTask(task.id)
@@ -408,8 +444,12 @@ export function SubtaskTable({
     <MoveSubtaskModal
       open={Boolean(movingTask)}
       task={movingTask}
+      anchor={moveAnchor}
       onOpenChange={(open) => {
-        if (!open) setMovingTask(null);
+        if (!open) {
+          setMovingTask(null);
+          setMoveAnchor(null);
+        }
       }}
     />
     </>
@@ -430,6 +470,7 @@ function SortableSubtaskRow({
   canEdit,
   canChangeStatus,
   exiting,
+  moveOpen = false,
 }: {
   task: WorkTask;
   onOpenTask: (task: WorkTask) => void;
@@ -438,7 +479,7 @@ function SortableSubtaskRow({
     patch: Partial<Pick<WorkTask, "status" | "startDate" | "dueDate">>,
   ) => void;
   onHide?: () => void;
-  onMove?: () => void;
+  onMove?: (event: MouseEvent<HTMLButtonElement>) => void;
   onRestore?: () => void;
   hideLabel: string;
   moveLabel: string;
@@ -447,8 +488,10 @@ function SortableSubtaskRow({
   canEdit: boolean;
   canChangeStatus: boolean;
   exiting: boolean;
+  moveOpen?: boolean;
 }) {
   const { t } = useTranslations();
+  const { taskActivities } = useLists();
   const deleted = isTaskDeleted(task);
   const {
     attributes,
@@ -466,7 +509,7 @@ function SortableSubtaskRow({
         transform: CSS.Transform.toString(transform),
         transition,
       }}
-      className={`border-b border-zinc-100 last:border-b-0 hover:bg-zinc-50/80 ${
+      className={`group/row border-b border-zinc-100 last:border-b-0 hover:bg-zinc-50/80 ${
         isDragging ? "relative z-10 bg-white shadow-sm" : ""
       } ${exiting ? "subtask-row-exit" : ""}`}
     >
@@ -519,11 +562,19 @@ function SortableSubtaskRow({
       <td className="px-3 py-2.5">
         <StatusControl
           status={task.status}
-          statusChangedAt={deleted ? task.deletedAt : task.statusChangedAt}
+          statusChangedAt={
+            deleted
+              ? task.deletedAt
+              : task.statusChangedAt ??
+                taskActivities(task.id).find((item) => item.kind === "created")?.at ??
+                null
+          }
           deleted={deleted}
           disabled={!canChangeStatus}
           onRestore={onRestore}
           onChange={(status) => onUpdate(task.id, { status })}
+          revealActionsOnHover
+          actionsForced={moveOpen}
           trailing={
             onMove || onHide ? (
               <>
@@ -532,6 +583,7 @@ function SortableSubtaskRow({
                     label={moveLabel}
                     icon="fas fa-exchange-alt"
                     variant="muted"
+                    pressed={moveOpen}
                     onClick={onMove}
                   />
                 ) : null}

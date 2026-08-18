@@ -690,6 +690,9 @@ export const ru: Record<string, string> = {
   "todo.fields.assignee": "Ответственный",
   "todo.fields.unassigned": "Не назначено",
   "todo.fields.due_date": "Срок",
+  "dates.today": "Сегодня",
+  "dates.days_left": "{count} д осталось",
+  "dates.days_overdue": "{count} д просрочено",
   "todo.drag_task": "Переместить задачу: {name}",
   "todo.delete_zone.title":
     "Перетащите задачу сюда, чтобы удалить её",

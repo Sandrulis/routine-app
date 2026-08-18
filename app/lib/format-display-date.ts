@@ -45,3 +45,14 @@ export function todayIsoDate(): string {
   const day = String(now.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
 }
+
+/** Kalendārās dienas no šodienas līdz datumam (nākotne +, pagātne -). */
+export function calendarDaysFromToday(value: string): number | null {
+  const date = parseDisplayDate(value);
+  if (!date) return null;
+  const today = parseDisplayDate(`${todayIsoDate()}T12:00:00`);
+  if (!today) return null;
+  const target = Date.UTC(date.getFullYear(), date.getMonth(), date.getDate());
+  const current = Date.UTC(today.getFullYear(), today.getMonth(), today.getDate());
+  return Math.round((target - current) / 86_400_000);
+}

@@ -1,11 +1,12 @@
 "use client";
 
+import type { MouseEvent } from "react";
 import { Tooltip } from "@/app/components/tooltip";
 
 type IconActionButtonProps = {
   label: string;
   icon: string;
-  onClick: () => void;
+  onClick: (event: MouseEvent<HTMLButtonElement>) => void;
   variant?: "edit" | "delete" | "muted";
   disabled?: boolean;
   pressed?: boolean;

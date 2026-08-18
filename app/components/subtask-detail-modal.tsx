@@ -13,6 +13,7 @@ import { NameFormModal } from "@/app/components/name-form-modal";
 import { StatusControl, useStatusLabels } from "@/app/components/status-control";
 import { AssigneeCell, DateCell } from "@/app/components/subtask-table";
 import { TaskAttachments } from "@/app/components/task-attachments";
+import { RelativeTime } from "@/app/components/relative-time";
 import { Tooltip } from "@/app/components/tooltip";
 import { UserAvatar } from "@/app/components/user-avatar";
 import { useFeedbackToast } from "@/app/components/feedback-toast-provider";
@@ -35,6 +36,7 @@ import {
   type TaskActivity,
 } from "@/app/lib/task-activity";
 import { isTaskDeleted, type WorkTask, type WorkTaskStatus } from "@/app/lib/lists";
+import { useTaskStatuses } from "@/app/lib/task-statuses";
 
 type SubtaskDraft = {
   title: string;
@@ -79,15 +81,10 @@ function draftsEqual(left: SubtaskDraft, right: SubtaskDraft) {
   return (
     a.title === b.title &&
     a.description === b.description &&
-    a.status === b.status &&
     a.startDate === b.startDate &&
     a.dueDate === b.dueDate &&
     sameIds(a.assigneeIds, b.assigneeIds)
   );
-}
-
-function activityTime(value: string) {
-  return formatDisplayDateDdMmYy(value);
 }
 
 export function SubtaskDetailModal({
@@ -216,6 +213,14 @@ export function SubtaskDetailModal({
   }, [open]);
 
   const statusLabel = useStatusLabels();
+  const { labelFor } = useTaskStatuses();
+
+  function historyStatusName(statusId: string | undefined) {
+    if (!statusId) return "—";
+    const catalogLabel = labelFor(statusId);
+    if (catalogLabel && catalogLabel !== statusId) return catalogLabel;
+    return statusLabel[statusId as WorkTaskStatus] || catalogLabel || "—";
+  }
 
   function activityText(item: TaskActivity) {
     if (item.kind === "created") {
@@ -223,8 +228,8 @@ export function SubtaskDetailModal({
     }
     if (item.kind === "status") {
       return t("subtasks.history.status", "Statuss: {from} → {to}", {
-        from: item.fromStatus ? statusLabel[item.fromStatus] : "—",
-        to: item.toStatus ? statusLabel[item.toStatus] : "—",
+        from: historyStatusName(item.fromStatus),
+        to: historyStatusName(item.toStatus),
       });
     }
     if (item.kind === "assignees") {
@@ -606,14 +611,18 @@ export function SubtaskDetailModal({
                       deleted
                         ? task?.deletedAt
                         : task && draft.status === task.status
-                          ? task.statusChangedAt
+                          ? task.statusChangedAt ?? createdAt
                           : null
                     }
                     deleted={deleted}
                     disabled={!access.canChangeStatus || deleted}
-                    onChange={(status) =>
-                      setDraft((current) => ({ ...current, status }))
-                    }
+                    onChange={(status) => {
+                      setDraft((current) => ({ ...current, status }));
+                      if (!isCreate && task && !deleted && access.canChangeStatus) {
+                        updateTask(task.id, { status });
+                        snapshotRef.current = { ...snapshotRef.current, status };
+                      }
+                    }}
                   />
                 </div>
               </div>
@@ -719,8 +728,8 @@ export function SubtaskDetailModal({
                         <p className="mt-0.5 whitespace-pre-wrap text-[13px] text-zinc-600">
                           {activityText(item)}
                         </p>
-                        <p className="mt-0.5 text-[11px] text-zinc-400">
-                          {activityTime(item.at)}
+                        <p className="mt-0.5">
+                          <RelativeTime at={item.at} />
                         </p>
                       </div>
                     </li>

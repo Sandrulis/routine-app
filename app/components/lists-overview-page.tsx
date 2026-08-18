@@ -8,7 +8,7 @@ import { SectionPage } from "@/app/components/section-page";
 import { SubtaskDetailModal } from "@/app/components/subtask-detail-modal";
 import { useFeedbackToast } from "@/app/components/feedback-toast-provider";
 import { useTranslations } from "@/app/components/translations-provider";
-import { getTaskTree, type WorkTask } from "@/app/lib/lists";
+import { getListTasks, isWorkSubtask, type WorkTask } from "@/app/lib/lists";
 import { useLists } from "@/app/lib/lists-store";
 import { useTeam } from "@/app/lib/team-store";
 
@@ -20,6 +20,7 @@ export function ListsOverviewPage() {
   const { currentTeam } = useTeam();
   const [createListOpen, setCreateListOpen] = useState(false);
   const [addTarget, setAddTarget] = useState<WorkTask | null>(null);
+  const [openedSubtaskId, setOpenedSubtaskId] = useState<string | null>(null);
 
   if (!isReady) {
     return (
@@ -35,7 +36,7 @@ export function ListsOverviewPage() {
     );
   }
 
-  const hasTasks = lists.some((list) => getTaskTree(tasks, list.id).length > 0);
+  const hasTasks = lists.some((list) => getListTasks(tasks, list.id).length > 0);
 
   return (
     <SectionPage
@@ -66,15 +67,19 @@ export function ListsOverviewPage() {
       ) : hasTasks ? (
         <div className="space-y-3">
           {lists.map((list) => {
-            const tree = getTaskTree(tasks, list.id);
-            if (tree.length === 0) return null;
+            const roots = getListTasks(tasks, list.id);
+            if (roots.length === 0) return null;
             return (
               <ListSummary
                 key={list.id}
                 listId={list.id}
                 listName={list.name}
-                tasks={tree}
+                tasks={roots}
                 onOpenTask={(task) => {
+                  if (isWorkSubtask(task)) {
+                    setOpenedSubtaskId(task.id);
+                    return;
+                  }
                   router.push(`/lists/${task.listId}/tasks/${task.id}`);
                 }}
                 onAddSubtask={setAddTarget}
@@ -116,15 +121,18 @@ export function ListsOverviewPage() {
       />
 
       <SubtaskDetailModal
-        taskId={null}
+        taskId={openedSubtaskId}
         createFor={
           addTarget
             ? { listId: addTarget.listId, parentId: addTarget.id }
             : null
         }
-        open={addTarget !== null}
+        open={openedSubtaskId !== null || addTarget !== null}
         onOpenChange={(open) => {
-          if (!open) setAddTarget(null);
+          if (!open) {
+            setOpenedSubtaskId(null);
+            setAddTarget(null);
+          }
         }}
       />
     </SectionPage>

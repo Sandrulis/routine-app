@@ -10,8 +10,8 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import { Tooltip } from "@/app/components/tooltip";
+import { RelativeTime } from "@/app/components/relative-time";
 import { useTranslations } from "@/app/components/translations-provider";
-import { formatDisplayDateTimeDdMmYy } from "@/app/lib/format-display-date";
 import type { WorkTaskStatus } from "@/app/lib/lists";
 import { useTaskStatuses } from "@/app/lib/task-statuses";
 
@@ -75,19 +75,15 @@ export function nextWorkTaskStatus(
 export function useStatusLabels(): Record<WorkTaskStatus, string> {
   const { t } = useTranslations();
   const { labelFor, statuses } = useTaskStatuses();
-  const fallback: Record<WorkTaskStatus, string> = {
+  const labels: Record<string, string> = {
     todo: t("todo.columns.todo", "Darāms"),
     in_progress: t("todo.columns.in_progress", "Procesā"),
     done: t("todo.columns.done", "Gatavs"),
   };
-
-  const labels = { ...fallback };
   for (const row of statuses) {
-    if (row.id === "todo" || row.id === "in_progress" || row.id === "done") {
-      labels[row.id] = labelFor(row.id);
-    }
+    labels[row.id] = labelFor(row.id);
   }
-  return labels;
+  return labels as Record<WorkTaskStatus, string>;
 }
 
 function statusGroupKey(
@@ -163,6 +159,8 @@ export function StatusControl({
   deleted = false,
   onRestore,
   trailing,
+  revealActionsOnHover = false,
+  actionsForced = false,
 }: {
   status: WorkTaskStatus;
   onChange: (next: WorkTaskStatus) => void;
@@ -171,6 +169,8 @@ export function StatusControl({
   deleted?: boolean;
   onRestore?: () => void;
   trailing?: ReactNode;
+  revealActionsOnHover?: boolean;
+  actionsForced?: boolean;
 }) {
   const { t } = useTranslations();
   const { labelFor, colorFor, nextStatusId, groupedStatuses, statuses } =
@@ -191,9 +191,6 @@ export function StatusControl({
     [...statuses].reverse().find((row) => row.groupKey === "closed")?.id ?? "done";
   const isDone = currentStatus?.groupKey === "closed" || status === "done";
   const statusColor = deleted ? "#71717a" : colorFor(status);
-  const changedAtLabel = statusChangedAt
-    ? formatDisplayDateTimeDdMmYy(statusChangedAt)
-    : "";
   const statusLabel = deleted
     ? t("status.deleted", "Dzēsts")
     : labelFor(status) || labels[status];
@@ -273,14 +270,25 @@ export function StatusControl({
     closed: t("status.group.closed", "Slēgts"),
   };
 
+  const extrasVisible = !revealActionsOnHover || open || actionsForced;
+  const hoverRevealClassName = extrasVisible
+    ? ""
+    : "pointer-events-none opacity-0 group-hover/row:pointer-events-auto group-hover/row:opacity-100 group-focus-within/row:pointer-events-auto group-focus-within/row:opacity-100";
+  const splitOnHover = revealActionsOnHover;
+  const pillStyle = statusColor ? { backgroundColor: statusColor } : undefined;
+  const pillColorClass = statusColor ? "text-white" : statusClassName(status);
+  const extraActionsClassName = `inline-flex items-center gap-1 ${hoverRevealClassName}`.trim();
+
   return (
     <div className="inline-flex flex-col items-start gap-0.5">
       <div ref={rootRef} className="relative inline-flex items-center gap-1">
       <div
-        className={`inline-flex h-8 overflow-hidden rounded-md text-white ${
-          statusColor ? "" : statusClassName(status)
-        }`}
-        style={statusColor ? { backgroundColor: statusColor } : undefined}
+        className={
+          splitOnHover
+            ? "inline-flex h-8"
+            : `inline-flex h-8 overflow-hidden rounded-md ${pillColorClass}`
+        }
+        style={splitOnHover ? undefined : pillStyle}
       >
         <button
           type="button"
@@ -300,7 +308,16 @@ export function StatusControl({
               ? t("subtasks.restore", "Atjaunot")
               : t("subtasks.table.status", "Statuss")
           }
-          className="px-2.5 text-[11px] font-semibold tracking-wide uppercase disabled:cursor-not-allowed"
+          className={`px-2.5 text-[11px] font-semibold tracking-wide uppercase disabled:cursor-not-allowed ${
+            splitOnHover
+              ? `${pillColorClass} ${
+                  extrasVisible
+                    ? "rounded-l-md"
+                    : "rounded-md group-hover/row:rounded-r-none group-focus-within/row:rounded-r-none"
+                }`
+              : ""
+          }`}
+          style={splitOnHover ? pillStyle : undefined}
         >
           {statusLabel}
         </button>
@@ -313,13 +330,17 @@ export function StatusControl({
               onChange(nextStatus);
             }}
             aria-label={t("status.next", "Nākamais statuss")}
-            className="inline-flex h-full w-7 items-center justify-center border-l border-white/30 disabled:cursor-not-allowed disabled:opacity-40"
+            className={`inline-flex h-full w-7 items-center justify-center border-l border-white/30 disabled:cursor-not-allowed disabled:opacity-40 ${
+              splitOnHover ? `rounded-r-md ${pillColorClass}` : ""
+            } ${hoverRevealClassName}`.trim()}
+            style={splitOnHover ? pillStyle : undefined}
           >
             <i className="fas fa-angle-right text-[12px]" aria-hidden="true" />
           </button>
         </Tooltip>
       </div>
 
+      <span className={extraActionsClassName}>
       <Tooltip label={t("status.complete", "Pabeigt")}>
         <button
           type="button"
@@ -337,6 +358,7 @@ export function StatusControl({
         </button>
       </Tooltip>
       {trailing}
+      </span>
 
       {open && mounted && !deleted
         ? createPortal(
@@ -422,13 +444,11 @@ export function StatusControl({
           )
         : null}
       </div>
-      {changedAtLabel ? (
-        <p
-          className="text-[11px] leading-tight text-zinc-400"
-          title={t("subtasks.status.changed_at", "Statuss mainīts")}
-        >
-          {changedAtLabel}
-        </p>
+      {statusChangedAt ? (
+        <RelativeTime
+          at={statusChangedAt}
+          className="text-[11px] leading-tight tabular-nums text-zinc-400"
+        />
       ) : null}
     </div>
   );
