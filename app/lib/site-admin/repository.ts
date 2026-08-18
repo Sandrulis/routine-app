@@ -36,6 +36,7 @@ type UserRow = {
   avatar: string;
   is_admin: boolean;
   created_at: string | null;
+  language_code: string | null;
 };
 
 type TeamMemberListRow = {
@@ -91,6 +92,10 @@ async function getSessionClient() {
   return createUserServerClient();
 }
 
+function requireConfiguredDb(): ActionResult | null {
+  return isSupabaseConfigured() ? null : dbNotConfigured();
+}
+
 function normalizeLanguageCode(code: string): string {
   return code.trim();
 }
@@ -139,7 +144,7 @@ export const listAdminUsers = cache(async function listAdminUsers(): Promise<Adm
   const supabase = await getSessionClient();
   const { data, error } = await supabase
     .from("users")
-    .select("id, name, email, avatar, is_admin, created_at")
+    .select("id, name, email, avatar, is_admin, created_at, language_code")
     .order("name", { ascending: true });
 
   if (error) {
@@ -189,6 +194,7 @@ export const listAdminUsers = cache(async function listAdminUsers(): Promise<Adm
       isAdmin: row.is_admin === true,
       registeredAt: row.created_at,
       lastSeenAt: lastOnlineByUser.get(row.id) ?? null,
+      languageCode: row.language_code,
       teams: teamsByUser.get(row.id) ?? [],
     };
   });
@@ -476,16 +482,18 @@ export async function deleteAdminTeam(teamId: string): Promise<ActionResult> {
   return { ok: true };
 }
 
+const FALLBACK_LANGUAGES: SiteLanguageSummary[] = [
+  { code: "lv", name: "Latviešu", isActive: true, isDefault: true, sortOrder: 10 },
+  { code: "en", name: "English", isActive: true, isDefault: false, sortOrder: 20 },
+  { code: "ru", name: "Русский", isActive: true, isDefault: false, sortOrder: 30 },
+];
+
 export const listSiteLanguages = cache(async function listSiteLanguages(): Promise<SiteLanguageSummary[]> {
-  if (!isSupabaseAdminConfigured()) {
-    return [
-      { code: "lv", name: "Latviešu", isActive: true, isDefault: true, sortOrder: 10 },
-      { code: "en", name: "English", isActive: true, isDefault: false, sortOrder: 20 },
-      { code: "ru", name: "Русский", isActive: true, isDefault: false, sortOrder: 30 },
-    ];
+  if (!isSupabaseConfigured()) {
+    return FALLBACK_LANGUAGES;
   }
 
-  const supabase = createAdminClient();
+  const supabase = await getSessionClient();
   const { data, error } = await supabase
     .from("site_languages")
     .select("code, name, is_active, is_default, sort_order")
@@ -509,11 +517,10 @@ export async function createSiteLanguage(input: SiteLanguageInput): Promise<Acti
   if (!name) {
     return { ok: false, error: "errors.language_name_required" };
   }
-  if (!isSupabaseAdminConfigured()) {
-    return dbNotConfigured();
-  }
+  const missing = requireConfiguredDb();
+  if (missing) return missing;
 
-  const supabase = createAdminClient();
+  const supabase = await getSessionClient();
   const { data: existing } = await supabase
     .from("site_languages")
     .select("code")
@@ -552,11 +559,10 @@ export async function updateSiteLanguageName(code: string, name: string): Promis
   if (!trimmedName) {
     return { ok: false, error: "errors.language_name_required" };
   }
-  if (!isSupabaseAdminConfigured()) {
-    return dbNotConfigured();
-  }
+  const missing = requireConfiguredDb();
+  if (missing) return missing;
 
-  const supabase = createAdminClient();
+  const supabase = await getSessionClient();
   const { error } = await supabase
     .from("site_languages")
     .update({ name: trimmedName })
@@ -574,11 +580,10 @@ export async function updateSiteLanguageActiveStatus(
   isActive: boolean,
 ): Promise<ActionResult> {
   const normalizedCode = normalizeLanguageCode(code);
-  if (!isSupabaseAdminConfigured()) {
-    return dbNotConfigured();
-  }
+  const missing = requireConfiguredDb();
+  if (missing) return missing;
 
-  const supabase = createAdminClient();
+  const supabase = await getSessionClient();
   const { data: language } = await supabase
     .from("site_languages")
     .select("code, is_default")
@@ -606,11 +611,10 @@ export async function updateSiteLanguageActiveStatus(
 
 export async function setDefaultSiteLanguage(code: string): Promise<ActionResult> {
   const normalizedCode = normalizeLanguageCode(code);
-  if (!isSupabaseAdminConfigured()) {
-    return dbNotConfigured();
-  }
+  const missing = requireConfiguredDb();
+  if (missing) return missing;
 
-  const supabase = createAdminClient();
+  const supabase = await getSessionClient();
   const { data: language } = await supabase
     .from("site_languages")
     .select("code")
@@ -635,7 +639,7 @@ export async function setDefaultSiteLanguage(code: string): Promise<ActionResult
 }
 
 async function migrateTranslationLanguageCode(
-  supabase: ReturnType<typeof createAdminClient>,
+  supabase: Awaited<ReturnType<typeof getSessionClient>>,
   fromCode: string,
 ) {
   const { data } = await supabase
@@ -657,11 +661,10 @@ async function migrateTranslationLanguageCode(
 
 export async function deleteSiteLanguage(code: string): Promise<ActionResult> {
   const normalizedCode = normalizeLanguageCode(code);
-  if (!isSupabaseAdminConfigured()) {
-    return dbNotConfigured();
-  }
+  const missing = requireConfiguredDb();
+  if (missing) return missing;
 
-  const supabase = createAdminClient();
+  const supabase = await getSessionClient();
   const { data: language } = await supabase
     .from("site_languages")
     .select("code, is_default")
@@ -698,8 +701,8 @@ export const listSiteTranslations = cache(async function listSiteTranslations():
   const languageCodes = languages.map((language) => language.code);
   const dbRows = new Map<string, TranslationRow>();
 
-  if (isSupabaseAdminConfigured()) {
-    const supabase = createAdminClient();
+  if (isSupabaseConfigured()) {
+    const supabase = await getSessionClient();
     const { data } = await supabase
       .from("site_translations")
       .select("translation_key, namespace, description, values")
@@ -736,11 +739,10 @@ export async function createSiteTranslation(input: SiteTranslationInput): Promis
   if (!TRANSLATION_KEY_RE.test(key)) {
     return { ok: false, error: "errors.translation_key_invalid" };
   }
-  if (!isSupabaseAdminConfigured()) {
-    return dbNotConfigured();
-  }
+  const missing = requireConfiguredDb();
+  if (missing) return missing;
 
-  const supabase = createAdminClient();
+  const supabase = await getSessionClient();
   const { error } = await supabase.from("site_translations").insert({
     translation_key: key,
     namespace: input.namespace.trim() || namespaceFromKey(key),
@@ -771,11 +773,10 @@ export async function updateSiteTranslation(
   if (!TRANSLATION_KEY_RE.test(nextKey)) {
     return { ok: false, error: "errors.translation_key_invalid" };
   }
-  if (!isSupabaseAdminConfigured()) {
-    return dbNotConfigured();
-  }
+  const missing = requireConfiguredDb();
+  if (missing) return missing;
 
-  const supabase = createAdminClient();
+  const supabase = await getSessionClient();
   if (oldKey !== nextKey) {
     const { data: existing } = await supabase
       .from("site_translations")
@@ -816,11 +817,10 @@ export async function deleteSiteTranslation(key: string): Promise<ActionResult> 
   if (!normalizedKey) {
     return { ok: false, error: "errors.translation_missing" };
   }
-  if (!isSupabaseAdminConfigured()) {
-    return dbNotConfigured();
-  }
+  const missing = requireConfiguredDb();
+  if (missing) return missing;
 
-  const supabase = createAdminClient();
+  const supabase = await getSessionClient();
   const { error } = await supabase
     .from("site_translations")
     .delete()
@@ -836,13 +836,13 @@ export async function deleteSiteTranslation(key: string): Promise<ActionResult> 
 export async function getSiteTranslationDictionary(
   languageCode: string,
 ): Promise<TranslationDictionary> {
-  if (!isSupabaseAdminConfigured()) {
+  if (!isSupabaseConfigured()) {
     return {};
   }
 
   const languages = await listSiteLanguages();
   const defaultCode = languages.find((language) => language.isDefault)?.code ?? "lv";
-  const supabase = createAdminClient();
+  const supabase = await getSessionClient();
   const { data } = await supabase
     .from("site_translations")
     .select("translation_key, values");
@@ -868,11 +868,11 @@ export const getSiteSettings = cache(async function getSiteSettings(): Promise<S
     updatedAt: null,
   };
 
-  if (!isSupabaseAdminConfigured()) {
+  if (!isSupabaseConfigured()) {
     return fallback;
   }
 
-  const supabase = createAdminClient();
+  const supabase = await getSessionClient();
   const { data, error } = await supabase
     .from("site_settings")
     .select("system_name, slogan, slogan_values, updated_at")
@@ -905,16 +905,15 @@ export async function saveSiteSettings(input: SiteSettingsInput): Promise<Action
   if (!Object.values(input.sloganValues).some((value) => value.trim())) {
     return { ok: false, error: "errors.slogan_required" };
   }
-  if (!isSupabaseAdminConfigured()) {
-    return dbNotConfigured();
-  }
+  const missing = requireConfiguredDb();
+  if (missing) return missing;
 
   const slogan =
     input.sloganValues.lv?.trim() ||
     Object.values(input.sloganValues).find((value) => value.trim())?.trim() ||
     "";
 
-  const supabase = createAdminClient();
+  const supabase = await getSessionClient();
   const { error } = await supabase.from("site_settings").upsert({
     id: 1,
     system_name: systemName,

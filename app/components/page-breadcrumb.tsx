@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useMemo, type ReactNode } from "react";
 import { AdminPanelButton } from "@/app/components/admin-panel-button";
+import { LanguageSwitcher } from "@/app/components/language-switcher";
 import { ListBadge } from "@/app/components/list-badge";
 import { NotificationsMenu } from "@/app/components/notifications-menu";
 import { useTranslations } from "@/app/components/translations-provider";
@@ -264,6 +265,7 @@ export function PageBreadcrumb() {
         <div className="flex shrink-0 items-center gap-0.5">
           <AdminPanelButton />
           <NotificationsMenu />
+          <LanguageSwitcher variant="menu" />
         </div>
       </div>
     </header>

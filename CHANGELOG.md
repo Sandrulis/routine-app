@@ -4,6 +4,14 @@
 
 - (none)
 
+## v0.1.3
+
+**Valodas pārslēdzējs, sistēmas noklusējums un admin sesijas pieeja**
+
+- Ceļa joslā aiz paziņojumiem valodas kods, ja aktīvas valodas > 1; ielogotam `users.language_code`, viesim cookie, citādi sistēmas noklusējums
+- Admin valodas, tulkojumi un uzstādījumi caur ielogotā sesiju (bez service role)
+- Security smoke atpazīst `getCurrentUser` valodas servera darbībā, kas paliek pieejama arī viesiem
+
 ## v0.1.2
 
 **Komandas dati Postgres, admin panelis un statusa krāsas**

@@ -62,6 +62,7 @@ export function AdminUsersManager({
         isAdmin: false,
         registeredAt: null,
         lastSeenAt: null,
+        languageCode: null,
         teams: [],
       })
     : emptyDraft();
@@ -207,6 +208,11 @@ export function AdminUsersManager({
                             <span className="truncate">{user.name}</span>
                           </p>
                           <p className="truncate text-sm text-zinc-500">{user.email}</p>
+                          {user.languageCode ? (
+                            <p className="mt-0.5 font-mono text-[11px] uppercase tracking-wide text-zinc-400">
+                              {user.languageCode}
+                            </p>
+                          ) : null}
                         </div>
                       </div>
                     </td>

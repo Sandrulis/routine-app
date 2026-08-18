@@ -13,6 +13,7 @@ export type AdminUserSummary = {
   isAdmin: boolean;
   registeredAt: string | null;
   lastSeenAt: string | null;
+  languageCode: string | null;
   teams: AdminUserTeamSummary[];
 };
 

@@ -1,13 +1,25 @@
 import { cache } from "react";
 import { cookies } from "next/headers";
-import { getSiteTranslationDictionary } from "@/app/lib/site-admin/repository";
+import {
+  getSiteTranslationDictionary,
+  listSiteLanguages,
+} from "@/app/lib/site-admin/repository";
 import {
   DEFAULT_LANGUAGE,
   interpolate,
   messages,
   type LanguageCode,
 } from "@/app/lib/i18n/messages";
-import { LANGUAGE_COOKIE, resolveLanguageCode } from "@/app/lib/i18n/language";
+import {
+  hasExplicitLanguageChoice,
+  isLanguageCode,
+  LANGUAGE_CHOSEN_COOKIE,
+  LANGUAGE_COOKIE,
+  resolveLanguageCode,
+  type UiLanguageOption,
+} from "@/app/lib/i18n/language";
+import { createClient } from "@/app/lib/supabase/server";
+import { isSupabaseConfigured } from "@/app/lib/supabase/env";
 
 type TranslateFn = (
   key: string,
@@ -21,9 +33,65 @@ export type ServerTranslations = {
   t: TranslateFn;
 };
 
+function activeUiLanguages(
+  languages: Awaited<ReturnType<typeof listSiteLanguages>>,
+): UiLanguageOption[] {
+  return languages.flatMap((language) =>
+    language.isActive && isLanguageCode(language.code)
+      ? [{ code: language.code, name: language.name }]
+      : [],
+  );
+}
+
+export const getActiveUiLanguages = cache(async function getActiveUiLanguages(): Promise<
+  UiLanguageOption[]
+> {
+  return activeUiLanguages(await listSiteLanguages());
+});
+
 export async function getRequestLanguageCode(): Promise<LanguageCode> {
+  const languages = await listSiteLanguages();
+  const active = activeUiLanguages(languages);
+  const activeCodes = new Set(active.map((language) => language.code));
+  const systemDefault = resolveLanguageCode(
+    languages.find((language) => language.isDefault && language.isActive)?.code ??
+      active[0]?.code,
+  );
+
+  function pick(value: string | null | undefined): LanguageCode | null {
+    if (!value || !isLanguageCode(value) || !activeCodes.has(value)) {
+      return null;
+    }
+    return value;
+  }
+
   const cookieStore = await cookies();
-  return resolveLanguageCode(cookieStore.get(LANGUAGE_COOKIE)?.value);
+  const explicitCookie = hasExplicitLanguageChoice(
+    cookieStore.get(LANGUAGE_CHOSEN_COOKIE)?.value,
+  )
+    ? pick(cookieStore.get(LANGUAGE_COOKIE)?.value)
+    : null;
+
+  if (isSupabaseConfigured()) {
+    try {
+      const supabase = await createClient();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (user) {
+        const { data } = await supabase
+          .from("users")
+          .select("language_code")
+          .eq("id", user.id)
+          .maybeSingle();
+        return pick(data?.language_code) ?? explicitCookie ?? systemDefault;
+      }
+    } catch (error) {
+      console.error("getRequestLanguageCode profile failed:", error);
+    }
+  }
+
+  return explicitCookie ?? systemDefault;
 }
 
 export const getServerTranslations = cache(async function getServerTranslations(): Promise<ServerTranslations> {

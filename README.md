@@ -2,7 +2,7 @@
 
 Komandas darba rīks ar publisku landing lapu un sānjoslas lietotni. Gaišs Next.js frontend.
 
-**Current version:** `0.1.2`
+**Current version:** `0.1.3`
 
 ## Palaist
 
@@ -23,6 +23,7 @@ Atver [http://localhost:3120](http://localhost:3120).
 - Sānjoslas koks rāda sarakstus, uzdevumus un apakšuzdevumus; apakšuzdevumu aplītis un Saraksta loga teksts ir statusa krāsā
 - **Komanda** — pieslēgtam lietotājam bez komandas bloķējošs izveides modālis; rangs Īpašnieks; biedri un saraksti kopīgi Postgres
 - **Admin** — `/admin` `is_admin` lietotājiem (lietotāji, komandas, valodas, tulkojumi); UI lv / en / ru
+- Ceļa joslā aiz paziņojumiem valodas kods, ja ir vairākas aktīvas valodas; bez izvēles rāda sistēmas noklusējumu
 - Apakšuzdevuma modālis: apraksts, datumi, atbildīgie, statuss, pielikumi; Saglabāt neatver citu lapu
 - Satura joslā **paziņojumi** (zvaniņš labajā malā)
 - Darba dati Postgres (`teams`, `work_lists`, `work_tasks`, …); Google sesija un `public.users` caur Supabase

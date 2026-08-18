@@ -7,6 +7,7 @@ import {
   messages,
   type LanguageCode,
 } from "@/app/lib/i18n/messages";
+import type { UiLanguageOption } from "@/app/lib/i18n/language";
 
 type TranslateFn = (
   key: string,
@@ -16,6 +17,7 @@ type TranslateFn = (
 
 type TranslationsContextValue = {
   languageCode: LanguageCode;
+  languages: UiLanguageOption[];
   t: TranslateFn;
 };
 
@@ -24,10 +26,12 @@ const TranslationsContext = createContext<TranslationsContextValue | null>(null)
 export function TranslationsProvider({
   languageCode = DEFAULT_LANGUAGE,
   overlay = {},
+  languages = [],
   children,
 }: {
   languageCode?: LanguageCode;
   overlay?: Record<string, string>;
+  languages?: UiLanguageOption[];
   children: ReactNode;
 }) {
   const value = useMemo<TranslationsContextValue>(() => {
@@ -35,12 +39,13 @@ export function TranslationsProvider({
 
     return {
       languageCode,
+      languages,
       t(key, fallback, params) {
         const fromOverlay = overlay[key]?.trim();
         return interpolate(fromOverlay || table[key] || fallback, params);
       },
     };
-  }, [languageCode, overlay]);
+  }, [languageCode, languages, overlay]);
 
   return (
     <TranslationsContext.Provider value={value}>

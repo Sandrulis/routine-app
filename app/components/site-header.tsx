@@ -27,7 +27,7 @@ export function SiteHeader() {
 
         {isAuthPage ? (
           <div className="flex items-center gap-3">
-            <LanguageSwitcher />
+            <LanguageSwitcher variant="menu" />
             <Link
               href="/"
               className="text-sm font-medium text-zinc-500 transition hover:text-zinc-900"
@@ -37,7 +37,7 @@ export function SiteHeader() {
           </div>
         ) : (
           <div className="flex items-center gap-2">
-            <LanguageSwitcher />
+            <LanguageSwitcher variant="menu" />
             <Link
               href="/login"
               className="rounded-lg px-3 py-2 text-sm font-medium text-zinc-700 transition hover:bg-zinc-100"

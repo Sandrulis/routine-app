@@ -7,6 +7,7 @@
 - `@dnd-kit` drag-and-drop
 - Ports: **3120**
 - i18n: `t(key, fallback, params)` no `app/lib/i18n/messages.ts` (lv + en) un `messages-ru.ts`; `site_translations` ir overlay
+- Ja aktīvas valodas > 1, ceļa joslā aiz paziņojumiem rādās valodas kods (`LanguageSwitcher` `variant="menu"`). UI valoda: `users.language_code` (apzināta izvēle), citādi viesu cookie ar `routine-app-language-chosen`, citādi sistēmas noklusējuma valoda.
 - Datumi UI: `formatDisplayDateDdMmYy()` → `dd.mm.yy`
 
 ## Sānjosla
@@ -74,7 +75,7 @@ Legal teksti: `app/lib/legal/documents.ts`. UI: `LegalDocumentView` ar **Saturs*
 | Apakšuzdevums | tas pats uzdevuma ceļš + modālis | `SubtaskDetailModal` — lauki kreisajā, vēsture labajā |
 | Administrācija | `/admin` | horizontāla apakšizvēlne: lietotāji, komandas, valodas, tulkojumi, uzstādījumi; tikai `is_admin` |
 
-Ceļa josla: `app/components/page-breadcrumb.tsx`. Labajā malā `AdminPanelButton` (`fas fa-users-cog`, tikai `is_admin`) un `NotificationsMenu` (zvaniņš).
+Ceļa josla: `app/components/page-breadcrumb.tsx`. Labajā malā `AdminPanelButton` (`fas fa-users-cog`, tikai `is_admin`), `NotificationsMenu` (zvaniņš) un valodas kods, ja aktīvas valodas > 1.
 
 ## Administrācijas panelis
 
@@ -82,7 +83,7 @@ Ceļa josla: `app/components/page-breadcrumb.tsx`. Labajā malā `AdminPanelButt
 
 | Ceļš | Saturs |
 |---|---|
-| `/admin/users` | Visi `public.users`: pievienot, labot, dzēst; `is_admin` slēdzis; pēdējā tiešsaiste kā komandas biedriem (`MemberLastOnline` + `last_online_at`) |
+| `/admin/users` | Visi `public.users`: pievienot, labot, dzēst; `is_admin` slēdzis; pēdējā tiešsaiste; UI valodas kods |
 | `/admin/teams` | Visas `teams`: pievienot, labot, dzēst (kaskāde uz darba datiem) |
 | `/admin/languages` | `site_languages`: pievienot, labot nosaukumu, aktīva/noklusējuma, dzēst |
 | `/admin/translations` | `site_translations` + `messages.ts` atslēgas: meklēšana, pievienot, labot, dzēst (koda atslēgas dzēst nevar) |
@@ -91,8 +92,8 @@ Ceļa josla: `app/components/page-breadcrumb.tsx`. Labajā malā `AdminPanelButt
 - Servera vārti: `requireAdmin()` layoutā un `admin/actions.ts`
 - Klienta pārbaude: `useIsAdmin()` caur RPC `current_user_is_admin()` (ikona)
 - Lietotāju saraksts caur ielogotā admin sesiju (RLS `008_admin_list_access.sql`); jauna lietotāja izveide ar service role
-- `site_*` tabulām RLS deny `anon`/`authenticated`
-- Migrācijas: `003` admin RPC, `006` valodas/tulkojumi/uzstādījumi, `007` RU, `008` admin list access, `009` `users` aktivitātes lauki
+- Valodas, tulkojumi, uzstādījumi caur to pašu sesiju (RLS `010_site_admin_session_access.sql`); `site_*` SELECT arī `anon`
+- Migrācijas: `003` admin RPC, `006` valodas/tulkojumi/uzstādījumi, `007` RU, `008` admin list access, `009` `users` aktivitātes lauki, `010` site admin session RLS, `011` `users.language_code`
 
 ## Paziņojumi
 
@@ -207,7 +208,7 @@ app/
     name-form-modal.tsx           # Nosaukums, izskats, logotips
     list-appearance-picker.tsx    # Ikona / krāsa (showIcons)
     file-detail-page.tsx          # Saraksta faila skats
-    page-breadcrumb.tsx           # Ceļa josla + admin ikona + zvaniņš
+    page-breadcrumb.tsx           # Ceļa josla + admin ikona + zvaniņš + valoda
     admin-panel-button.tsx        # Administrācijas panelis (is_admin)
     admin-panel-shell.tsx         # /admin čaula + virsraksts
     admin-submenu.tsx             # Horizontālā apakšizvēlne
@@ -244,7 +245,7 @@ app/
     i18n/                          # language, server overlay no site_translations
     site-admin/                   # Admin CRUD repository, tipi
     supabase/                     # env, browser/server/admin klienti, session refresh
-    auth/                         # Google OAuth, sesija, display mapping
+    auth/                         # Google OAuth, sesija, display mapping, getCurrentUser
     users/ensure-profile.ts       # public.users rinda pēc OAuth
     users/require-admin.ts        # /admin servera pārbaude
     users/use-is-admin.tsx        # is_admin RPC + profils klientā
@@ -252,7 +253,7 @@ app/
 app/auth/callback/route.ts        # OAuth code → session
 proxy.ts                          # Supabase session refresh
 scripts/                          # audit-check.mjs, apply-migrations.mjs, test-supabase.mjs
-supabase/migrations/              # 001–009 shēma, admin, valodas (lv/en/ru), work data
+supabase/migrations/              # 001–011 shēma, admin, valodas (lv/en/ru), work data
 .github/workflows/                # secret-scan.yml, security-audit.yml, security-smoke.yml
 .gitleaks.toml                    # default rules + i18n translation key allowlist
 .cursor/rules/                    # README bump, commits
@@ -267,7 +268,7 @@ Trīs GitHub Actions darbplūsmas palaižas pie katra push un pull request:
 |----------|------|-------------|
 | **Secret scan** | `.github/workflows/secret-scan.yml` | gitleaks — API keys, tokens, paroles git vēsturē |
 | **Security audit** | `.github/workflows/security-audit.yml` | `npm run audit:check` — HIGH un CRITICAL atkarības |
-| **Security smoke** | `.github/workflows/security-smoke.yml` | TypeScript, lint, production build, `requireAuth` uz `actions.ts` (kad būs), nav `eval()`, drošības galvenes |
+| **Security smoke** | `.github/workflows/security-smoke.yml` | TypeScript, lint, production build, `requireAdmin` / `getCurrentUser` uz `actions.ts`, nav `eval()`, drošības galvenes |
 
 > `GITLEAKS_LICENSE` repo secret ir vajadzīgs tikai **organization** kontiem. Šis repo pieder individuālam kontam, tāpēc scan strādā arī privātam repo bez licences.
 
@@ -319,7 +320,7 @@ Aplikācijas callback: `/auth/callback` (`app/auth/callback/route.ts`). `redirec
 
 Darba dati dzīvo **Postgres**, ne pārlūkā un ne sīkdatnēs. Komandas biedri redz kopīgos sarakstus, mapes, uzdevumus un apakšuzdevumus. CRUD: `app/lib/db/work-data.ts`; ielāde `fetchTeamWorkspace`. Vecie `localStorage` dati (ja tādi bija pirms `005`) vienreiz tiek importēti ar `importLocalWorkIfNeeded` (karogs `routine-app-db-import-v1:{userId}`).
 
-`public.users` ir konta profils + `is_admin`. Komandas biedra loma (`owner` / brīvs teksts) ir `team_members.role`. Uzaicināts biedrs sākumā ir bez `user_id`; pēc reģistrācijas ar to pašu e-pastu trigger `users_link_team_members` piesaista kontu, un tad viņš redz komandas datus. Ja uzaicinātais izveido savu komandu, viņš neredz uzaicinātāja sarakstus.
+`public.users` ir konta profils + `is_admin` + `language_code`. Komandas biedra loma (`owner` / brīvs teksts) ir `team_members.role`. Uzaicināts biedrs sākumā ir bez `user_id`; pēc reģistrācijas ar to pašu e-pastu trigger `users_link_team_members` piesaista kontu, un tad viņš redz komandas datus. Ja uzaicinātais izveido savu komandu, viņš neredz uzaicinātāja sarakstus.
 
 RLS (`005_work_data.sql`): `authenticated` drīkst SELECT/INSERT/UPDATE/DELETE tikai savas komandas rindās (`is_team_member`); komandas dzēšana / biedru uzaicināšana - `is_team_owner`. `anon` policy ir deny.
 
@@ -343,7 +344,7 @@ localStorage paliek tikai UI preferencei:
 | `routine-app-current-team-id` | Aktīvā komanda (`:userId`) |
 | `routine-app-nav-trees` | Sānjoslas sakļaušanas stāvoklis |
 
-Cookie `routine-app-cookie-consent` saglabā sīkdatņu piekrišanu. Cookie `routine-app-list-window-order` saglabā 3 logu kārtību katrā sarakstā, ja atļautas preferenču sīkdatnes.
+Cookie `routine-app-cookie-consent` saglabā sīkdatņu piekrišanu. Cookie `routine-app-list-window-order` saglabā 3 logu kārtību katrā sarakstā, ja atļautas preferenču sīkdatnes. Cookie `routine-app-language` + `routine-app-language-chosen` saglabā viesu apzināto UI valodu; bez `chosen` rāda sistēmas noklusējumu, pēc ielogošanās izvēle nonāk `users.language_code`.
 
 ## Versioning & commits
 

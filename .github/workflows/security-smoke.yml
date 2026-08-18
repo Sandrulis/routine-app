@@ -36,7 +36,7 @@ jobs:
 
       - name: Security - auth guard on all server actions
         run: |
-          echo "Checking that server action files have requireAuth, requireAction, or getCurrentUser..."
+          echo "Checking that server action files have requireAuth, requireAction, requireAdmin, or getCurrentUser..."
           ACTIONS=$(find app -name "actions.ts" 2>/dev/null || true)
           if [ -z "$ACTIONS" ]; then
             echo "OK: No server action files yet (frontend-only)"
