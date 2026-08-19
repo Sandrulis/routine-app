@@ -378,7 +378,7 @@ export async function inviteTeamMemberAction(input: {
     return { ok: false, error: "errors.team_invite_failed" };
   }
 
-  let targetUserId = await resolveInviteTargetUserId(
+  const targetUserId = await resolveInviteTargetUserId(
     supabase,
     email,
     existingUser?.id ?? null,
@@ -578,7 +578,7 @@ export async function resendTeamInvitationAction(
     return { ok: false, error: "errors.team_invite_not_found" };
   }
 
-  let targetUserId = await resolveInviteTargetUserId(
+  const targetUserId = await resolveInviteTargetUserId(
     supabase,
     invitation.email,
     invitation.invited_user_id,

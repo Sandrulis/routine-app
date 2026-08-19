@@ -12,7 +12,6 @@ import { useTranslations } from "@/app/components/translations-provider";
 import { translateActionError } from "@/app/lib/i18n/action-errors";
 import {
   defaultNotificationPreferences,
-  NOTIFICATION_PREFERENCE_KINDS,
   preferenceFallbackForKind,
   preferenceHintForKind,
   preferenceKeyForKind,
@@ -149,6 +148,7 @@ export function NotificationSettingsModal({
 
   const pendingSaveRef = useRef<NotificationPreferences | null>(null);
   const isSavingRef = useRef(false);
+  const flushRef = useRef<() => void>(() => undefined);
 
   useEffect(() => {
     if (!open) {
@@ -230,9 +230,11 @@ export function NotificationSettingsModal({
     }
 
     if (pendingSaveRef.current) {
-      void flush();
+      flushRef.current();
     }
   }, [onSave, showFeedback, t]);
+
+  flushRef.current = flush;
 
   const toggleKind = useCallback(
     (kind: NotificationPreferenceKind) => {
