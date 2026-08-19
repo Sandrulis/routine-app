@@ -193,6 +193,7 @@ export function SubtaskBulkBar({
     : null;
   const { groupedStatuses, labelFor, colorFor, groupKeyFor } =
     useTaskStatuses(sharedListId);
+  const taskIdsKey = tasks.map((task) => task.id).join("\0");
 
   useEffect(() => {
     setMounted(true);
@@ -200,7 +201,7 @@ export function SubtaskBulkBar({
 
   useEffect(() => {
     setMenu(null);
-  }, [tasks.map((task) => task.id).join("\0")]);
+  }, [taskIdsKey]);
 
   const accessById = useMemo(() => {
     const next: Record<string, { canEdit: boolean; canChangeStatus: boolean }> =

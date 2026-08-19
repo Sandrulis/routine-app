@@ -480,7 +480,10 @@ export function SubtaskTable({
   const selectableTasks = displayed.filter(
     (task) => !exitingIds.has(task.id) && !isTaskDeleted(task),
   );
-  const selectableIds = selectableTasks.map((task) => task.id);
+  const selectableIds = useMemo(
+    () => selectableTasks.map((task) => task.id),
+    [selectableTasks],
+  );
   const selectedIdSet = new Set(selectedIds);
   const selectedTasks = selectableTasks.filter((task) =>
     selectedIdSet.has(task.id),
@@ -496,7 +499,7 @@ export function SubtaskTable({
       const next = current.filter((id) => visible.has(id));
       return next.length === current.length ? current : next;
     });
-  }, [selectableIds.join("\0")]);
+  }, [selectableIds]);
 
   useEffect(() => {
     if (selectedIds.length === 0) return;

@@ -40,7 +40,6 @@ import {
   normalizeStoredTeams,
   teamsStorageKey,
   type TeamMember,
-  type WorkTeam,
 } from "@/app/lib/team";
 import {
   TODO_STORAGE_KEY,

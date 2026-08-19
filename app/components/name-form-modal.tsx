@@ -98,7 +98,7 @@ export function NameFormModal({
     setAppearanceOpen(false);
     setLogoDragging(false);
     logoDragCountRef.current = 0;
-  }, [open]);
+  }, [initialValue, open]);
 
   const snapshot = snapshotRef.current;
   const trimmedName = name.trim();

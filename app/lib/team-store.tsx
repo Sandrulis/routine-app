@@ -196,7 +196,7 @@ export function TeamProvider({ children }: { children: ReactNode }) {
       });
     }
     window.dispatchEvent(new Event(TEAM_CHANGE_EVENT));
-  }, [authUser?.id]);
+  }, [authUser]);
 
   const inviteMember = useCallback(
     async (input: InviteMemberInput) => {

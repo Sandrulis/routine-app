@@ -21,15 +21,6 @@ export const WORK_TASK_STATUSES: WorkTaskStatus[] = [
   "done",
 ];
 
-const STATUS_GROUPS: {
-  id: "not_started" | "active" | "closed";
-  statuses: WorkTaskStatus[];
-}[] = [
-  { id: "not_started", statuses: ["todo"] },
-  { id: "active", statuses: ["in_progress"] },
-  { id: "closed", statuses: ["done"] },
-];
-
 const DELETED_STATUS_COLOR = "#ef4444";
 
 export function statusClassName(status: WorkTaskStatus, muted = false) {

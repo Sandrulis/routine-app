@@ -10,7 +10,7 @@ import {
   parseListAccessLevel,
   type ListAccessLevel,
 } from "@/app/lib/list-access";
-import { initialsFromName, memberInitials, type MembersByTeam, type RolesByTeam, type TeamMember, type TeamRole, type WorkTeam } from "@/app/lib/team";
+import { memberInitials, type MembersByTeam, type RolesByTeam, type TeamMember, type TeamRole, type WorkTeam } from "@/app/lib/team";
 import { normalizeTeamPermissionSet } from "@/app/lib/team-permissions";
 import type { TaskActivity, TaskFile } from "@/app/lib/task-activity";
 import { isTodoStatus, type TodoItem } from "@/app/lib/team-todo";

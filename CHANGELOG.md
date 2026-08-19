@@ -4,6 +4,12 @@
 
 - (none)
 
+## v0.1.16
+
+**Lint tīrīšana**
+
+- ESLint bez erroriem un warningiem: hook dependencies, neizmantoti importi, `team-store` memoization, attēlu lint izņēmumi dinamiskiem avotiem
+
 ## v0.1.15
 
 **Komandas uzaicinājumi, pamešana un dashboard bez komandas**

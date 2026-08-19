@@ -32,7 +32,7 @@ export function DatePickerPopover({
   open,
   onOpenChange,
 }: DatePickerPopoverProps) {
-  const { preferences, formatDate } = useDisplayPreferences();
+  const { preferences } = useDisplayPreferences();
   const { t } = useTranslations();
   const panelRef = useRef<HTMLDivElement>(null);
   const startSunday = preferences.weekStartDay === "sunday";

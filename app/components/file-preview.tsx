@@ -1,5 +1,7 @@
 "use client";
 
+/* eslint-disable @next/next/no-img-element */
+
 import { useTranslations } from "@/app/components/translations-provider";
 import { FileIcon } from "@/app/components/file-icon";
 import {

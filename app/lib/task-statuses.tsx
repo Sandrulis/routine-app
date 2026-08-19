@@ -143,14 +143,14 @@ export function useTaskStatuses(listId?: string | null) {
   const system = useSystemTaskStatuses();
   const lists = useListsOptional();
   const { languageCode } = useTranslations();
-  const listStatuses = lists?.listStatuses ?? [];
+  const listStatuses = lists?.listStatuses;
   const list = listId
     ? lists?.lists.find((item) => item.id === listId)
     : undefined;
 
   return useMemo(() => {
     const merged = applyStatusGroupOverrides(
-      mergeStatusCatalog(system.statuses, listStatuses, listId),
+      mergeStatusCatalog(system.statuses, listStatuses ?? [], listId),
       list?.statusGroupOverrides ?? {},
     );
     const laidOut = applyListStatusLayout(merged, list?.statusOrder ?? []);
@@ -160,7 +160,6 @@ export function useTaskStatuses(listId?: string | null) {
   }, [
     languageCode,
     list,
-    list?.statusOrder,
     listId,
     listStatuses,
     system.statuses,

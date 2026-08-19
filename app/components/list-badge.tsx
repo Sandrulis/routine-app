@@ -1,3 +1,5 @@
+/* eslint-disable @next/next/no-img-element */
+
 import { listColorById, listInitials } from "@/app/lib/lists";
 
 export function ListBadge({

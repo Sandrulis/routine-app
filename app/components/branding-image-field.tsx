@@ -1,5 +1,7 @@
 "use client";
 
+/* eslint-disable @next/next/no-img-element */
+
 import { useRef, useState, type DragEvent } from "react";
 import { useFeedbackToast } from "@/app/components/feedback-toast-provider";
 import { useTranslations } from "@/app/components/translations-provider";

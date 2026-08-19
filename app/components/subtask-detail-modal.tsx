@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useRef, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type FormEvent } from "react";
 import {
   AppModal,
   appModalSplitPanelMaxWidthClassName,
@@ -188,7 +188,7 @@ export function SubtaskDetailModal({
       if (sameIds(current.assigneeIds, task.assigneeIds)) return current;
       return { ...current, assigneeIds: [...task.assigneeIds] };
     });
-  }, [task?.assigneeIds]);
+  }, [task]);
 
   const deleted = Boolean(task && isTaskDeleted(task));
   const activities = task ? taskActivities(task.id) : [];
@@ -208,7 +208,7 @@ export function SubtaskDetailModal({
     "Vispirms izpildi visus kontrolsaraksta punktus.",
   );
 
-  function flushChecklistPersist() {
+  const flushChecklistPersist = useCallback(() => {
     if (persistChecklistsTimerRef.current) {
       window.clearTimeout(persistChecklistsTimerRef.current);
       persistChecklistsTimerRef.current = null;
@@ -219,7 +219,7 @@ export function SubtaskDetailModal({
     updateTask(pending.taskId, {
       checklists: normalizeTaskChecklists(pending.checklists),
     });
-  }
+  }, [updateTask]);
 
   function commitChecklists(next: TaskChecklist[]) {
     setDraft((current) => ({ ...current, checklists: next }));
@@ -257,7 +257,7 @@ export function SubtaskDetailModal({
     const next = task ? draftFromTask(task) : emptyDraft;
     snapshotRef.current = next;
     setDraft(next);
-  }, [open, task?.id]);
+  }, [open, task]);
 
   useEffect(() => {
     if (open) return;
@@ -278,7 +278,7 @@ export function SubtaskDetailModal({
       }
       return [];
     });
-  }, [open]);
+  }, [flushChecklistPersist, open]);
 
   const statusLabel = useStatusLabels();
   const { labelFor, groupKeyFor } = useTaskStatuses(parentListId);
