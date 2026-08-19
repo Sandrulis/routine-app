@@ -1,6 +1,7 @@
 "use client";
 
 import { Fragment, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type MouseEvent } from "react";
+import { createPortal } from "react-dom";
 import {
   DndContext,
   PointerSensor,
@@ -36,7 +37,11 @@ import { UserAvatar } from "@/app/components/user-avatar";
 import { useDisplayPreferences } from "@/app/components/display-preferences-provider";
 import { useTranslations } from "@/app/components/translations-provider";
 import { assignedMembersOf, assignedRolesOf } from "@/app/lib/assignees";
-import { calendarDaysFromToday } from "@/app/lib/format-display-date";
+import {
+  taskDateRelativeHint,
+  type TaskDateFieldKind,
+} from "@/app/lib/task-date-display";
+import { isListStatusGroup, type ListStatusGroup } from "@/app/lib/list-statuses";
 import { useLists } from "@/app/lib/lists-store";
 import { teamRankLabel } from "@/app/lib/team";
 import { useTeam } from "@/app/lib/team-store";
@@ -146,25 +151,29 @@ export function DateCell({
   emptyLabel,
   onChange,
   disabled = false,
+  fieldKind,
+  statusGroup = "active",
 }: {
   value: string | null;
   emptyLabel: string;
   onChange: (next: string | null) => void;
   disabled?: boolean;
+  fieldKind: TaskDateFieldKind;
+  statusGroup?: ListStatusGroup;
 }) {
   const { t } = useTranslations();
   const { formatDate } = useDisplayPreferences();
   const inputRef = useRef<HTMLInputElement>(null);
-  const days = value ? calendarDaysFromToday(value) : null;
-  const overdue = days != null && days < 0;
+  const hint = taskDateRelativeHint(value, fieldKind, statusGroup);
   const relative =
-    days == null
+    hint == null
       ? null
-      : days === 0
+      : hint.days === 0
         ? t("dates.today", "Šodien")
-        : overdue
-          ? t("dates.days_overdue", "{count} d kavē", { count: Math.abs(days) })
-          : t("dates.days_left", "{count} d atlikušas", { count: days });
+        : hint.overdue
+          ? t("dates.days_overdue", "{count} d kavē", { count: Math.abs(hint.days) })
+          : t("dates.days_left", "{count} d atlikušas", { count: hint.days });
+  const emphasizeOverdue = hint?.overdue === true;
 
   function openPicker() {
     if (disabled) return;
@@ -188,7 +197,7 @@ export function DateCell({
           <>
             <span
               className={`block text-[13px] leading-none ${
-                overdue ? "text-red-600" : "text-zinc-700"
+                emphasizeOverdue ? "text-red-600" : "text-zinc-700"
               }`}
             >
               {formatDate(value)}
@@ -196,7 +205,7 @@ export function DateCell({
             {relative ? (
               <span
                 className={`mt-0.5 block text-[11px] leading-none tabular-nums ${
-                  overdue ? "text-red-500" : "text-zinc-400"
+                  emphasizeOverdue ? "text-red-500" : "text-zinc-400"
                 }`}
               >
                 {relative}
@@ -247,23 +256,59 @@ export function AssigneeCell({
   const { members, roles } = useTeam();
   const { updateTask } = useLists();
   const [open, setOpen] = useState(false);
-  const rootRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const [position, setPosition] = useState<{ top: number; left: number } | null>(
+    null,
+  );
   const ids = assigneeIds ?? task?.assigneeIds ?? [];
   const assignedMembers = assignedMembersOf(ids, members);
   const assignedRoles = assignedRolesOf(ids, roles);
   const hasAssignees = assignedMembers.length > 0 || assignedRoles.length > 0;
 
+  useLayoutEffect(() => {
+    if (!open || !triggerRef.current || !panelRef.current) {
+      setPosition(null);
+      return;
+    }
+
+    const trigger = triggerRef.current.getBoundingClientRect();
+    const panel = panelRef.current.getBoundingClientRect();
+    const left = Math.min(
+      Math.max(12, trigger.left),
+      window.innerWidth - 12 - panel.width,
+    );
+    const below = trigger.bottom + 6;
+    const top =
+      below + panel.height > window.innerHeight - 12
+        ? Math.max(12, trigger.top - 6 - panel.height)
+        : below;
+    setPosition({ top, left });
+  }, [open, members.length, roles.length]);
+
   useEffect(() => {
     if (!open) return;
 
     function handlePointer(event: globalThis.MouseEvent) {
-      if (!rootRef.current?.contains(event.target as Node)) {
-        setOpen(false);
-      }
+      const target = event.target as Node;
+      if (triggerRef.current?.contains(target)) return;
+      if (panelRef.current?.contains(target)) return;
+      setOpen(false);
+    }
+
+    function handleKey(event: KeyboardEvent) {
+      if (event.key !== "Escape") return;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      setOpen(false);
     }
 
     document.addEventListener("mousedown", handlePointer);
-    return () => document.removeEventListener("mousedown", handlePointer);
+    window.addEventListener("keydown", handleKey, true);
+    return () => {
+      document.removeEventListener("mousedown", handlePointer);
+      window.removeEventListener("keydown", handleKey, true);
+    };
   }, [open]);
 
   function toggleAssignee(assigneeId: string) {
@@ -278,9 +323,11 @@ export function AssigneeCell({
   }
 
   return (
-    <div ref={rootRef} className="relative">
+    <div className="relative">
       <button
+        ref={triggerRef}
         type="button"
+        aria-haspopup="listbox"
         aria-expanded={open}
         aria-label={t("todo.fields.assignee", "Atbildīgais")}
         disabled={disabled}
@@ -298,58 +345,79 @@ export function AssigneeCell({
           </span>
         )}
       </button>
-      {open ? (
-        <div className="absolute top-full left-0 z-20 mt-1 w-56 rounded-xl border border-zinc-200 bg-white p-1 shadow-lg">
-          {members.map((member) => {
-            const selected = ids.includes(member.id);
-            return (
-              <button
-                key={member.id}
-                type="button"
-                onClick={() => toggleAssignee(member.id)}
-                className={`flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-[13px] ${
-                  selected ? "bg-zinc-100 text-zinc-900" : "text-zinc-600 hover:bg-zinc-50"
-                }`}
-              >
-                <UserAvatar member={member} size="xs" />
-                <span className="min-w-0 flex-1 truncate">{member.name}</span>
-                {selected ? (
-                  <i className="fas fa-check text-[10px] text-emerald-600" aria-hidden="true" />
-                ) : null}
-              </button>
-            );
-          })}
-          {roles.length > 0 ? (
-            <>
-              <p className="px-2 pt-1.5 pb-0.5 text-[11px] font-medium text-zinc-400">
-                {t("team.roles.list", "Lomas")}
-              </p>
-              {roles.map((role) => {
-                const selected = ids.includes(role.id);
-                const label = teamRankLabel(role.slug, t, roles) ?? role.name;
+      {open
+        ? createPortal(
+            <div
+              ref={panelRef}
+              data-app-modal-ignore-backdrop=""
+              role="listbox"
+              aria-label={t("todo.fields.assignee", "Atbildīgais")}
+              onMouseDown={(event) => event.stopPropagation()}
+              style={{
+                position: "fixed",
+                top: position?.top ?? 0,
+                left: position?.left ?? 0,
+                zIndex: 80,
+                opacity: position ? 1 : 0,
+              }}
+              className="max-h-[min(22rem,calc(100vh-1.5rem))] w-56 overflow-y-auto rounded-xl border border-zinc-200 bg-white p-1 shadow-[0_12px_40px_rgba(15,23,42,0.16)] [scrollbar-width:thin]"
+            >
+              {members.map((member) => {
+                const selected = ids.includes(member.id);
                 return (
                   <button
-                    key={role.id}
+                    key={member.id}
                     type="button"
-                    onClick={() => toggleAssignee(role.id)}
+                    role="option"
+                    aria-selected={selected}
+                    onClick={() => toggleAssignee(member.id)}
                     className={`flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-[13px] ${
                       selected ? "bg-zinc-100 text-zinc-900" : "text-zinc-600 hover:bg-zinc-50"
                     }`}
                   >
-                    <span className="inline-flex size-5 shrink-0 items-center justify-center rounded-full bg-zinc-100 text-zinc-500">
-                      <i className="fas fa-user-group text-[9px]" aria-hidden="true" />
-                    </span>
-                    <span className="min-w-0 flex-1 truncate">{label}</span>
+                    <UserAvatar member={member} size="xs" />
+                    <span className="min-w-0 flex-1 truncate">{member.name}</span>
                     {selected ? (
                       <i className="fas fa-check text-[10px] text-emerald-600" aria-hidden="true" />
                     ) : null}
                   </button>
                 );
               })}
-            </>
-          ) : null}
-        </div>
-      ) : null}
+              {roles.length > 0 ? (
+                <>
+                  <p className="px-2 pt-1.5 pb-0.5 text-[11px] font-medium text-zinc-400">
+                    {t("team.roles.list", "Lomas")}
+                  </p>
+                  {roles.map((role) => {
+                    const selected = ids.includes(role.id);
+                    const label = teamRankLabel(role.slug, t, roles) ?? role.name;
+                    return (
+                      <button
+                        key={role.id}
+                        type="button"
+                        role="option"
+                        aria-selected={selected}
+                        onClick={() => toggleAssignee(role.id)}
+                        className={`flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-[13px] ${
+                          selected ? "bg-zinc-100 text-zinc-900" : "text-zinc-600 hover:bg-zinc-50"
+                        }`}
+                      >
+                        <span className="inline-flex size-5 shrink-0 items-center justify-center rounded-full bg-zinc-100 text-zinc-500">
+                          <i className="fas fa-user-group text-[9px]" aria-hidden="true" />
+                        </span>
+                        <span className="min-w-0 flex-1 truncate">{label}</span>
+                        {selected ? (
+                          <i className="fas fa-check text-[10px] text-emerald-600" aria-hidden="true" />
+                        ) : null}
+                      </button>
+                    );
+                  })}
+                </>
+              ) : null}
+            </div>,
+            document.body,
+          )
+        : null}
     </div>
   );
 }
@@ -641,8 +709,8 @@ export function SubtaskTable({
     <div
       className={
         embedded
-          ? `w-full overflow-x-auto ${someSelectableSelected ? "pb-16" : ""}`
-          : `w-full overflow-x-auto rounded-2xl border border-zinc-200 bg-white ${
+          ? `w-full overflow-x-auto overflow-y-clip ${someSelectableSelected ? "pb-16" : ""}`
+          : `w-full overflow-x-auto overflow-y-clip rounded-2xl border border-zinc-200 bg-white ${
               someSelectableSelected ? "pb-16" : ""
             }`
       }
@@ -854,9 +922,13 @@ function SortableSubtaskRow({
 }) {
   const { t } = useTranslations();
   const { taskActivities } = useLists();
-  const { colorFor, statuses } = useTaskStatuses(listId);
+  const { colorFor, statuses, groupKeyFor } = useTaskStatuses(listId);
   const deleted = isTaskDeleted(task);
   const closed = isClosedTaskStatus(task.status, statuses);
+  const statusGroupRaw = groupKeyFor(task.status);
+  const statusGroup: ListStatusGroup = isListStatusGroup(statusGroupRaw)
+    ? statusGroupRaw
+    : "active";
   const rowTint = deleted
     ? fadeHexColor("#ef4444", 0.88)
     : closed
@@ -949,6 +1021,8 @@ function SortableSubtaskRow({
           value={task.startDate}
           emptyLabel={t("tasks.fields.start_date", "Sākums")}
           disabled={!canEdit || deleted}
+          fieldKind="start"
+          statusGroup={statusGroup}
           onChange={(startDate) => onUpdate(task.id, { startDate })}
         />
       </td>
@@ -957,6 +1031,8 @@ function SortableSubtaskRow({
           value={task.dueDate}
           emptyLabel={t("todo.fields.due_date", "Termiņš")}
           disabled={!canEdit || deleted}
+          fieldKind="due"
+          statusGroup={statusGroup}
           onChange={(dueDate) => onUpdate(task.id, { dueDate })}
         />
       </td>

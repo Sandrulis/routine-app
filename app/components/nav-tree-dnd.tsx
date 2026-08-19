@@ -113,8 +113,9 @@ function dropIntent(
   const y = pointerY ?? overRect.top + overRect.height / 2;
   const top = overRect.top;
   const bottom = overRect.top + overRect.height;
+  if (overKind === "group-end") return "before";
   if (overKind === "folder") {
-    const edge = Math.min(7, Math.max(4, overRect.height * 0.18));
+    const edge = Math.max(10, Math.round(overRect.height * 0.35));
     if (y <= top + edge) return "before";
     if (y >= bottom - edge) return "after";
     return "inside";
@@ -321,6 +322,27 @@ export function NavTreeSortableItem({
   const style: CSSProperties = isDragging ? { opacity: 0.4 } : {};
 
   return children({ attributes, listeners, isDragging, setNodeRef, style });
+}
+
+export function NavTreeEndDrop({
+  id,
+  disabled = false,
+}: {
+  id: string;
+  disabled?: boolean;
+}) {
+  const { setNodeRef } = useDroppable({
+    id,
+    disabled,
+    data: { kind: "group-end" },
+  });
+  return (
+    <div
+      ref={setNodeRef}
+      className="h-4"
+      aria-hidden="true"
+    />
+  );
 }
 
 export function NavTreeRootDrop({

@@ -2,7 +2,7 @@
 
 Komandas darba rīks ar publisku landing lapu un sānjoslas lietotni. Gaišs Next.js frontend.
 
-**Current version:** `0.1.12`
+**Current version:** `0.1.14`
 
 ## Palaist
 
@@ -15,20 +15,20 @@ Atver [http://localhost:3120](http://localhost:3120).
 
 ## Kas iekšā
 
-- **Landing** — `/` ar dashboard vizuāli, pārdošanas blokiem, Ienākt / Reģistrēties (ielogotam: Atvērt lietotni) un sīkdatņu popup
+- **Landing** — `/` ar dashboard vizuāli, pārdošanas blokiem, Ienākt / Reģistrēties un sīkdatņu popup; ielogotam uzreiz `/dashboard`
 - **Auth** — `/login`, `/signup`, `/forgot-password`; e-pasts pagaidām frontend, **Turpināt ar Google** caur Supabase; **Atcerēties mani** (noklusējums) tur sesiju 30 dienas; ielogotam `/` ved uz dashboard
 - **Legal** — `/privacy`, `/terms`, `/cookies` ar fiksētu satura sānjoslu; kājene arī lietotnē
-- **Sānjosla** — Sākums ved uz `/dashboard` (Mani uzdevumi un darbs pa sarakstiem); sadalītie uzdevumi un apakšuzdevumi pēc statusa pretēji picker (aktīvākie vispirms, TO DO beigās); kokā var ievilkt mapē vai iznest ārā; apgrieztiem nosaukumiem overflow tooltip
-- **Trīs skati** — Saraksts (kopsavilkums), projekts (Uzdevumi | Faili augšā, Saraksts zem tiem ar mapēm un arhīvu), uzdevums (apakšuzdevumu tabula)
+- **Sānjosla** — Sākums ved uz `/dashboard` (Mani uzdevumi, ja ir piesaistīti, tad darbs pa sarakstiem); sadalītie uzdevumi un apakšuzdevumi pēc statusa pretēji picker (aktīvākie vispirms, TO DO beigās); kokā var ievilkt mapē, iznest ārā vai nomest zem pēdējās mapes; uzdevuma/mapes `...` → **Arhivēt**; apgrieztiem nosaukumiem overflow tooltip
+- **Trīs skati** — Saraksts (kopsavilkums + arhīva poga labajā malā), projekts (Uzdevumi | Faili augšā, Saraksts zem tiem ar mapēm un arhīvu), uzdevums (apakšuzdevumu tabula)
 - Sānjoslas koks rāda sarakstus, uzdevumus un apakšuzdevumus; apakšuzdevumu aplītis un Saraksta loga teksts ir statusa krāsā
-- Saraksta `...` → **Statusi** — sistēmas statusi visiem sarakstiem un komandas statusi tikai šim sarakstam
-- **Komanda** — pieslēgtam lietotājam bez komandas bloķējošs izveides modālis; lomas ar sānjoslas un darbību pieejām; biedri un saraksti kopīgi Postgres
+- Saraksta `...` → **Statusi** — sistēmas statusi visiem sarakstiem un komandas statusi tikai šim sarakstam; **Automatizācijas** — piem. jaunai mapei automātiski pielietot šablonu
+- **Komanda** — pieslēgtam lietotājam bez komandas bloķējošs izveides modālis; lomas ar sānjoslas un darbību pieejām; biedri un saraksti kopīgi Postgres; `...` → **Šabloni** (`/templates`) ar mapēm, uzdevumiem un apakšuzdevumiem (DnD); mapes `+` ievieto šablonu kā apakšstruktūru
 - **Sarakstu pieejas** — sākumā noklusējuma līmenis visiem; pēc izvēles pielāgo katrai lomai (pilna labošana, labot, komentēt, tikai skatīt); privātam sarakstam arī biedriem
-- **Admin** — `/admin` `is_admin` lietotājiem (lietotāji, komandas, lomas, statusi, failu tipi, valodas, tulkojumi, uzstādījumi); sistēmas datumu/laika noklusējums `/admin/settings`
+- **Admin** — `/admin` `is_admin` lietotājiem (lietotāji, komandas, lomas, statusi, failu tipi, valodas, tulkojumi, uzstādījumi); `/admin/settings`: nosaukums, slogans, logotips/favicon vai iniciāļu avatārs, datumu/laika noklusējums; pārlūka cilne `Sākums | Routine` (no `generateMetadata`, nevis klienta pārrakstīšanas)
 - **Personīgie uzstādījumi** — `/settings/profile`: nedēļas sākums, datuma formāts/atdalītājs, 12/24 h; lietotāja vērtība pārspēj sistēmas; tukšs lauks = sistēmas noklusējums
 - **Faili** — kokā un apakšuzdevumos tikai atļautie paplašinājumi (sākumā pdf, dwg, Word, Excel); ikona un krāsa no `/admin/file-types`; sānjoslā failu vietas summa
 - Ceļa joslā aiz paziņojumiem valodas kods, ja ir vairākas aktīvas valodas; bez izvēles rāda sistēmas noklusējumu
-- Apakšuzdevuma tabula: viena tabula ar statusu grupām un zilu drop līniju; arhīvs pie Pievienot (aktīva poga sarkanīga); pabeigtajiem un dzēstajiem viegls rindas fons; fade-out, dzēšana/atjaunošana, pārvietošana; sarakstā klikšķis atver modāli; statuss saglabājas uzreiz; Saglabāt paliek modālī pārējiem laukiem
+- Apakšuzdevuma tabula: viena tabula ar statusu grupām un zilu drop līniju; arhīvs pie Pievienot (aktīva poga sarkanīga); pabeigtajiem un dzēstajiem viegls rindas fons; fade-out, dzēšana/atjaunošana, pārvietošana; sarakstā klikšķis atver modāli; statuss saglabājas uzreiz; sākuma/termiņa datumi rāda atlikušās vai kavētās dienas pēc statusa grupas (Nav sākts / Aktīvs / Slēgts)
 - **Check List** apakšuzdevuma modalī pirms pielikumiem; slēgto statusu tikai pie 100%; zem statusa pogas zaļa progresa josla
 - Satura joslā **paziņojumi** (zvaniņš labajā malā)
 - Kamēr dati ielādējas, rādās **Ielādē…** ar spinneri (lapas, sānjosla, paziņojumi), ne tukšs saturs

@@ -11,6 +11,7 @@ import { getTaskAncestors, isTaskActiveInLists, isTaskDeleted, isWorkFolder, wor
 import { useLists } from "@/app/lib/lists-store";
 import { useTaskStatuses } from "@/app/lib/task-statuses";
 import { useTeam } from "@/app/lib/team-store";
+import { WorkItemArchiveButton } from "@/app/components/work-item-archive-button";
 
 function dateRange(
   task: WorkTask,
@@ -37,6 +38,7 @@ function TaskSummarySection({
   task,
   defaultExpanded,
   nested = false,
+  archivedView = false,
   onOpenTask,
 }: {
   listId: string;
@@ -44,6 +46,7 @@ function TaskSummarySection({
   task: WorkTask;
   defaultExpanded: boolean;
   nested?: boolean;
+  archivedView?: boolean;
   onOpenTask: (task: WorkTask) => void;
 }) {
   const { t } = useTranslations();
@@ -55,17 +58,21 @@ function TaskSummarySection({
   const folder = isWorkFolder(task);
   const children = subtasks(task.id);
   const nestedItems = childTasks(task.id)
-    .filter((item) =>
-      isWorkFolder(item)
-        ? !isTaskDeleted(item)
-        : isTaskActiveInLists(item, statuses),
-    )
+    .filter((item) => {
+      if (isTaskDeleted(item)) return false;
+      if (archivedView || isWorkFolder(item)) return true;
+      return isTaskActiveInLists(item, statuses);
+    })
     .slice()
     .sort((left, right) =>
       compareTasksByStatusPriority(left, right, statuses),
     );
   const visibleChildren = children
-    .filter((item) => isTaskActiveInLists(item, statuses))
+    .filter((item) =>
+      archivedView
+        ? !isTaskDeleted(item)
+        : isTaskActiveInLists(item, statuses),
+    )
     .slice()
     .sort((left, right) =>
       compareTasksByStatusPriority(left, right, statuses),
@@ -86,8 +93,8 @@ function TaskSummarySection({
     <section
       className={
         nested
-          ? "overflow-hidden rounded-lg border border-zinc-100 bg-zinc-50"
-          : "overflow-hidden rounded-xl border border-zinc-200 bg-white"
+          ? "rounded-lg border border-zinc-100 bg-zinc-50"
+          : "rounded-xl border border-zinc-200 bg-white"
       }
     >
       {nested ? null : (
@@ -125,6 +132,7 @@ function TaskSummarySection({
             {task.title}
           </button>
         </OptionalTooltip>
+        <WorkItemArchiveButton task={task} />
         {assignees.length > 0 ? (
           <span className="flex items-center -space-x-1.5">
             {assignees.map((member) => (
@@ -156,6 +164,7 @@ function TaskSummarySection({
                   task={child}
                   defaultExpanded
                   nested
+                  archivedView={archivedView}
                   onOpenTask={onOpenTask}
                 />
               ))}
@@ -191,11 +200,13 @@ export function ListSummary({
   listId,
   listName,
   tasks,
+  archivedView = false,
   onOpenTask,
 }: {
   listId: string;
   listName: string;
   tasks: WorkTask[];
+  archivedView?: boolean;
   onOpenTask: (task: WorkTask) => void;
 }) {
   const { t } = useTranslations();
@@ -209,7 +220,9 @@ export function ListSummary({
   if (tasks.length === 0) {
     return (
       <div className="rounded-xl border border-dashed border-zinc-200 bg-white px-6 py-12 text-center text-sm text-zinc-500">
-        {t("tasks.empty", "Šajā sarakstā vēl nav uzdevumu.")}
+        {archivedView
+          ? t("lists.archive.empty", "Arhīvā nav uzdevumu.")
+          : t("tasks.empty", "Šajā sarakstā vēl nav uzdevumu.")}
       </div>
     );
   }
@@ -223,6 +236,7 @@ export function ListSummary({
           listName={listName}
           task={task}
           defaultExpanded={index === 0}
+          archivedView={archivedView}
           onOpenTask={onOpenTask}
         />
       ))}

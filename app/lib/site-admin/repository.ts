@@ -24,6 +24,11 @@ import {
   normalizeTeamPermissionSet,
 } from "@/app/lib/team-permissions";
 import {
+  DEFAULT_SITE_LOGO_COLOR,
+  normalizeBrandImageUrl,
+  normalizeSiteLogoColor,
+} from "@/app/lib/site-admin/branding";
+import {
   DEFAULT_SITE_DISPLAY_PREFERENCES,
   normalizeDateFormat,
   normalizeDateSeparator,
@@ -123,6 +128,9 @@ type SettingsRow = {
   date_format: string | null;
   date_separator: string | null;
   time_format: string | null;
+  logo_url: string | null;
+  favicon_url: string | null;
+  logo_color: string | null;
   updated_at: string | null;
 };
 
@@ -947,6 +955,9 @@ export const getSiteSettings = cache(async function getSiteSettings(): Promise<S
       ru: messages.ru["app.subtitle"] || "",
     },
     displayPreferences: DEFAULT_SITE_DISPLAY_PREFERENCES,
+    logoUrl: null,
+    faviconUrl: null,
+    logoColor: DEFAULT_SITE_LOGO_COLOR,
     updatedAt: null,
   };
 
@@ -958,7 +969,7 @@ export const getSiteSettings = cache(async function getSiteSettings(): Promise<S
   const { data, error } = await supabase
     .from("site_settings")
     .select(
-      "system_name, slogan, slogan_values, week_start_day, date_format, date_separator, time_format, updated_at",
+      "system_name, slogan, slogan_values, week_start_day, date_format, date_separator, time_format, logo_url, favicon_url, logo_color, updated_at",
     )
     .eq("id", 1)
     .maybeSingle();
@@ -978,6 +989,9 @@ export const getSiteSettings = cache(async function getSiteSettings(): Promise<S
       ...stored,
     },
     displayPreferences: readDisplayPreferences(row),
+    logoUrl: normalizeBrandImageUrl(row.logo_url),
+    faviconUrl: normalizeBrandImageUrl(row.favicon_url),
+    logoColor: normalizeSiteLogoColor(row.logo_color),
     updatedAt: row.updated_at,
   };
 });
@@ -1009,6 +1023,9 @@ export async function saveSiteSettings(input: SiteSettingsInput): Promise<Action
     date_format: displayPreferences.dateFormat,
     date_separator: displayPreferences.dateSeparator,
     time_format: displayPreferences.timeFormat,
+    logo_url: normalizeBrandImageUrl(input.logoUrl),
+    favicon_url: normalizeBrandImageUrl(input.faviconUrl),
+    logo_color: normalizeSiteLogoColor(input.logoColor),
   });
 
   if (error) {

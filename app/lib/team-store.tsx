@@ -37,7 +37,6 @@ import {
   defaultTeamRoleId,
   defaultTeamRoles,
   emptyTeamMember,
-  getCurrentUser,
   initialsFromName,
   MEMBER_TEAM_ROLE,
   OWNER_TEAM_ROLE,
@@ -206,25 +205,39 @@ export function TeamProvider({ children }: { children: ReactNode }) {
   );
 
   useEffect(() => {
-    if (!isReady || !currentTeamId) return;
-    const userId = authUser?.id;
-    if (!userId) return;
+    if (!isReady || !currentTeamId || !authUser?.id) return;
+    const teamId = currentTeamId;
+    const userId = authUser.id;
 
     function touchCurrentUser() {
       const seenAt = new Date().toISOString();
+      let shouldPersist = false;
+
       setMembersByTeam((current) => {
-        const list = current[currentTeamId] ?? [];
-        const user = getCurrentUser(list, userId);
-        if (!list.some((member) => member.id === user.id)) return current;
-        void touchMemberOnline(user.id, seenAt).catch((error) => {
-          console.error("Failed to update last online", error);
-        });
+        const list = current[teamId] ?? [];
+        const self = list.find(
+          (member) => member.userId === userId || member.id === userId,
+        );
+        if (!self?.userId && self?.id !== userId) return current;
+        shouldPersist = true;
         return {
           ...current,
-          [currentTeamId]: list.map((member) =>
-            member.id === user.id ? { ...member, lastOnlineAt: seenAt } : member,
+          [teamId]: list.map((member) =>
+            member.id === self.id ? { ...member, lastOnlineAt: seenAt } : member,
           ),
         };
+      });
+
+      if (!shouldPersist) return;
+
+      void touchMemberOnline(teamId, userId, seenAt).catch((error) => {
+        const message =
+          error instanceof Error
+            ? error.message
+            : typeof error === "object" && error !== null && "message" in error
+              ? String((error as { message: unknown }).message)
+              : String(error);
+        console.error("Failed to update last online", message);
       });
     }
 

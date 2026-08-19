@@ -6,7 +6,7 @@ import { getTermsContent } from "@/app/lib/legal/documents";
 export async function generateMetadata(): Promise<Metadata> {
   const { t } = await getServerTranslations();
   return {
-    title: `${t("legal.terms.title", "Lietošanas noteikumi")} — ${t("app.name", "Routine")}`,
+    title: t("legal.terms.title", "Lietošanas noteikumi"),
   };
 }
 

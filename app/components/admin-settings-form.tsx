@@ -1,9 +1,12 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useMemo, useRef, useState, useTransition } from "react";
 import { saveSiteSettingsAction } from "@/app/(app)/admin/actions";
+import { BrandingImageField } from "@/app/components/branding-image-field";
 import { useDisplayPreferences } from "@/app/components/display-preferences-provider";
 import { useFeedbackToast } from "@/app/components/feedback-toast-provider";
+import { ListAppearancePicker } from "@/app/components/list-appearance-picker";
+import { ListBadge } from "@/app/components/list-badge";
 import { UnsavedChangesConfirmModal } from "@/app/components/unsaved-changes-confirm-modal";
 import { useUnsavedChangesGuard } from "@/app/components/unsaved-changes-guard";
 import { useTranslations } from "@/app/components/translations-provider";
@@ -58,6 +61,9 @@ function toInput(
     systemName: settings.systemName,
     sloganValues: mergeSloganValues(languages, settings.sloganValues),
     displayPreferences: settings.displayPreferences,
+    logoUrl: settings.logoUrl,
+    faviconUrl: settings.faviconUrl,
+    logoColor: settings.logoColor,
   };
 }
 
@@ -74,6 +80,8 @@ export function AdminSettingsForm({
     () => languages.find((language) => language.isDefault)?.code ?? languages[0]?.code ?? "lv",
   );
   const [isPending, startTransition] = useTransition();
+  const badgeRef = useRef<HTMLButtonElement>(null);
+  const [appearanceOpen, setAppearanceOpen] = useState(false);
   const { showFeedback, clearFeedback } = useFeedbackToast();
   const { t, languageCode } = useTranslations();
   const { formatDateTime } = useDisplayPreferences();
@@ -84,7 +92,10 @@ export function AdminSettingsForm({
   const hasChanges =
     settings.systemName !== savedInput.systemName ||
     JSON.stringify(settings.sloganValues) !== JSON.stringify(savedInput.sloganValues) ||
-    !siteDisplayPreferencesEqual(settings.displayPreferences, savedInput.displayPreferences);
+    !siteDisplayPreferencesEqual(settings.displayPreferences, savedInput.displayPreferences) ||
+    settings.logoUrl !== savedInput.logoUrl ||
+    settings.faviconUrl !== savedInput.faviconUrl ||
+    settings.logoColor !== savedInput.logoColor;
   const { confirmOpen, stayOnPage, confirmLeave } = useUnsavedChangesGuard({
     isDirty: hasChanges,
   });
@@ -111,6 +122,9 @@ export function AdminSettingsForm({
         systemName: settings.systemName,
         sloganValues: settings.sloganValues,
         displayPreferences: settings.displayPreferences,
+        logoUrl: settings.logoUrl,
+        faviconUrl: settings.faviconUrl,
+        logoColor: settings.logoColor,
         updatedAt: new Date().toISOString(),
       });
       showFeedback({
@@ -133,14 +147,51 @@ export function AdminSettingsForm({
                 <label htmlFor="systemName" className={labelClassName}>
                   {t("site_settings.form.system_name", "Sistēmas nosaukums")}
                 </label>
-                <input
-                  id="systemName"
-                  value={settings.systemName}
-                  onChange={(event) =>
-                    setSettings((current) => ({ ...current, systemName: event.target.value }))
+                <div className="mt-2 flex items-start gap-2">
+                  <button
+                    ref={badgeRef}
+                    type="button"
+                    aria-label={t("lists.fields.color", "Krāsa")}
+                    aria-expanded={appearanceOpen}
+                    onClick={() => setAppearanceOpen((current) => !current)}
+                    className="shrink-0 rounded-xl ring-offset-2 transition hover:opacity-90 focus-visible:ring-2 focus-visible:ring-blue-400"
+                  >
+                    <ListBadge
+                      name={settings.systemName.trim() || t("app.name", "Routine")}
+                      icon={null}
+                      color={settings.logoColor}
+                      logoUrl={settings.logoUrl}
+                      size="lg"
+                    />
+                  </button>
+                  <input
+                    id="systemName"
+                    value={settings.systemName}
+                    onChange={(event) =>
+                      setSettings((current) => ({ ...current, systemName: event.target.value }))
+                    }
+                    className="min-h-11 w-full flex-1 rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 outline-none transition focus:border-zinc-400 focus:ring-4 focus:ring-zinc-100"
+                    placeholder={t("app.name", "Routine")}
+                  />
+                </div>
+                <p className={hintClassName}>
+                  {t(
+                    "site_settings.form.logo_color_hint",
+                    "Ja logotips nav augšupielādēts, avatārs rāda sistēmas iniciāļus ar izvēlēto fonu.",
+                  )}
+                </p>
+                <ListAppearancePicker
+                  open={appearanceOpen}
+                  triggerRef={badgeRef}
+                  name={settings.systemName.trim() || t("app.name", "Routine")}
+                  icon={null}
+                  color={settings.logoColor}
+                  showIcons={false}
+                  onIconChange={() => undefined}
+                  onColorChange={(logoColor) =>
+                    setSettings((current) => ({ ...current, logoColor }))
                   }
-                  className={fieldClassName}
-                  placeholder={t("app.name", "Routine")}
+                  onClose={() => setAppearanceOpen(false)}
                 />
               </div>
 
@@ -207,6 +258,33 @@ export function AdminSettingsForm({
                   }
                   rows={3}
                   className={`${fieldClassName} resize-y`}
+                />
+              </div>
+
+              <div className="grid items-start gap-5 sm:grid-cols-2">
+                <BrandingImageField
+                  id="systemLogo"
+                  label={t("site_settings.form.logo", "Logotips")}
+                  hint={t(
+                    "site_settings.form.logo_hint",
+                    "PNG, SVG, JPG vai WEBP līdz 1.5 MB. Rādās galvenē.",
+                  )}
+                  value={settings.logoUrl}
+                  onChange={(logoUrl) =>
+                    setSettings((current) => ({ ...current, logoUrl }))
+                  }
+                />
+                <BrandingImageField
+                  id="systemFavicon"
+                  label={t("site_settings.form.favicon", "Favicon")}
+                  hint={t(
+                    "site_settings.form.favicon_hint",
+                    "ICO, PNG vai SVG līdz 1.5 MB. Ja nav favicon, pārlūka cilnē lieto logotipu vai iniciāļu avatāru.",
+                  )}
+                  value={settings.faviconUrl}
+                  onChange={(faviconUrl) =>
+                    setSettings((current) => ({ ...current, faviconUrl }))
+                  }
                 />
               </div>
             </div>
@@ -368,11 +446,20 @@ export function AdminSettingsForm({
           <p className="text-[11px] font-semibold uppercase tracking-wider text-zinc-400">
             {t("site_settings.preview.title", "Priekšskatījums")}
           </p>
-          <div className="mt-3 min-w-0">
-            <h2 className="truncate text-lg font-semibold text-zinc-900">
-              {settings.systemName || "—"}
-            </h2>
-            <p className="mt-1 text-sm text-zinc-500">{previewSlogan}</p>
+          <div className="mt-3 flex min-w-0 items-center gap-3">
+            <ListBadge
+              name={settings.systemName.trim() || t("app.name", "Routine")}
+              icon={null}
+              color={settings.logoColor}
+              logoUrl={settings.logoUrl || settings.faviconUrl}
+              size="md"
+            />
+            <div className="min-w-0">
+              <h2 className="truncate text-lg font-semibold text-zinc-900">
+                {settings.systemName || "—"}
+              </h2>
+              <p className="mt-1 text-sm text-zinc-500">{previewSlogan}</p>
+            </div>
           </div>
           <div className="mt-5 space-y-2 rounded-xl bg-zinc-50 p-3 text-xs text-zinc-600">
             <p>
@@ -397,7 +484,7 @@ export function AdminSettingsForm({
           <div className="mt-4 rounded-xl bg-zinc-50 p-3 text-xs text-zinc-500">
             {t(
               "site_settings.preview.description",
-              "Šīs vērtības tiek izmantotas pārlūka virsrakstā un lapas apraksta metadatos.",
+              "Šīs vērtības tiek izmantotas pārlūka virsrakstā, cilnes ikonā un lapas apraksta metadatos.",
             )}
           </div>
           {savedSettings.updatedAt ? (

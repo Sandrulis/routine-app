@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { AppShell } from "@/app/components/app-shell";
 import { FileTypesProvider } from "@/app/lib/file-types-context";
 import { ListsProvider } from "@/app/lib/lists-store";
+import { TemplatesProvider } from "@/app/lib/templates-store";
 import { TaskStatusesProvider } from "@/app/lib/task-statuses";
 import { TeamProvider } from "@/app/lib/team-store";
 import { AdminProvider } from "@/app/lib/users/use-is-admin";
@@ -26,9 +27,11 @@ export function AppProviders({
       <AdminProvider>
         <TaskStatusesProvider statuses={taskStatuses}>
           <FileTypesProvider extensions={fileTypeExtensions}>
-            <ListsProvider>
-              <AppShell>{children}</AppShell>
-            </ListsProvider>
+            <TemplatesProvider>
+              <ListsProvider>
+                <AppShell>{children}</AppShell>
+              </ListsProvider>
+            </TemplatesProvider>
           </FileTypesProvider>
         </TaskStatusesProvider>
       </AdminProvider>

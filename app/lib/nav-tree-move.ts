@@ -2,6 +2,7 @@ import type { ListFile } from "@/app/lib/list-files";
 import {
   collectTaskSubtreeIds,
   isWorkFolder,
+  isWorkItemArchived,
   isWorkSubtask,
   type WorkTask,
 } from "@/app/lib/lists";
@@ -22,6 +23,26 @@ export function isNavListRootDroppableId(id: string, listId: string): boolean {
   return id === navListRootDroppableId(listId);
 }
 
+export function navGroupEndDroppableId(
+  listId: string,
+  parentId: string | null,
+): string {
+  return `nav-end:${listId}:${parentId ?? "root"}`;
+}
+
+export function parseNavGroupEndDroppableId(
+  id: string,
+): { listId: string; parentId: string | null } | null {
+  if (!id.startsWith("nav-end:")) return null;
+  const rest = id.slice("nav-end:".length);
+  const sep = rest.indexOf(":");
+  if (sep < 0) return null;
+  const listId = rest.slice(0, sep);
+  const parentRaw = rest.slice(sep + 1);
+  if (!listId) return null;
+  return { listId, parentId: parentRaw === "root" ? null : parentRaw };
+}
+
 export function mixedTreeSiblings(
   listId: string,
   parentId: string | null,
@@ -34,13 +55,15 @@ export function mixedTreeSiblings(
           (task) =>
             task.listId === listId &&
             task.parentId === parentId &&
-            task.kind !== "subtask",
+            task.kind !== "subtask" &&
+            !isWorkItemArchived(task),
         )
       : tasks.filter(
           (task) =>
             task.listId === listId &&
             task.parentId === null &&
-            task.kind !== "subtask",
+            task.kind !== "subtask" &&
+            !isWorkItemArchived(task),
         )
   ).map((task) => ({ id: task.id, sortOrder: task.sortOrder }));
   const siblingFiles = files
@@ -170,6 +193,24 @@ export function resolveNavTreePlacement(args: {
     );
     return {
       nextParentId: null,
+      orderedIds: insertAmong(siblingIds, activeId, null, "end"),
+      nestIntoId: null,
+    };
+  }
+
+  const groupEnd = parseNavGroupEndDroppableId(overId);
+  if (groupEnd && groupEnd.listId === listId) {
+    if (!canUseParent(activeId, active.kind, groupEnd.parentId, tasks)) {
+      return null;
+    }
+    const siblingIds = mixedTreeSiblings(
+      listId,
+      groupEnd.parentId,
+      tasks,
+      files,
+    ).map((item) => item.id);
+    return {
+      nextParentId: groupEnd.parentId,
       orderedIds: insertAmong(siblingIds, activeId, null, "end"),
       nestIntoId: null,
     };

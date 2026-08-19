@@ -7,7 +7,7 @@ import { getCookiePolicyContent } from "@/app/lib/legal/documents";
 export async function generateMetadata(): Promise<Metadata> {
   const { t } = await getServerTranslations();
   return {
-    title: `${t("legal.cookies.title", "Sīkdatņu politika")} — ${t("app.name", "Routine")}`,
+    title: t("legal.cookies.title", "Sīkdatņu politika"),
   };
 }
 

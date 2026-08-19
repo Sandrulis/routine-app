@@ -46,6 +46,7 @@ import {
   type TaskChecklist,
 } from "@/app/lib/task-checklists";
 import { useTaskStatuses } from "@/app/lib/task-statuses";
+import { isListStatusGroup } from "@/app/lib/list-statuses";
 
 type SubtaskDraft = {
   title: string;
@@ -274,7 +275,7 @@ export function SubtaskDetailModal({
   }, [open]);
 
   const statusLabel = useStatusLabels();
-  const { labelFor } = useTaskStatuses(parentListId);
+  const { labelFor, groupKeyFor } = useTaskStatuses(parentListId);
 
   function historyStatusName(statusId: string | undefined) {
     if (!statusId) return "—";
@@ -451,6 +452,8 @@ export function SubtaskDetailModal({
   }
 
   const trimmedTitle = draft.title.trim();
+  const statusGroupRaw = groupKeyFor(draft.status);
+  const statusGroup = isListStatusGroup(statusGroupRaw) ? statusGroupRaw : "active";
   const dirty = !draftsEqual(draft, snapshotRef.current);
   const canSave =
     Boolean(trimmedTitle) &&
@@ -717,6 +720,8 @@ export function SubtaskDetailModal({
                     value={draft.startDate}
                     emptyLabel={t("tasks.fields.start_date", "Sākums")}
                     disabled={!access.canEditTasks}
+                    fieldKind="start"
+                    statusGroup={statusGroup}
                     onChange={(startDate) => {
                       setDraft((current) => ({ ...current, startDate }));
                     }}
@@ -733,6 +738,8 @@ export function SubtaskDetailModal({
                     value={draft.dueDate}
                     emptyLabel={t("todo.fields.due_date", "Termiņš")}
                     disabled={!access.canEditTasks}
+                    fieldKind="due"
+                    statusGroup={statusGroup}
                     onChange={(dueDate) => {
                       setDraft((current) => ({ ...current, dueDate }));
                     }}

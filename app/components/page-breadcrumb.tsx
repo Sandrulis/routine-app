@@ -14,6 +14,7 @@ import { getTaskAncestors, isWorkFolder, isWorkSubtask } from "@/app/lib/lists";
 import { useLists } from "@/app/lib/lists-store";
 import { useListFiles } from "@/app/lib/use-list-files";
 import { useTeam } from "@/app/lib/team-store";
+import { useTemplates } from "@/app/lib/templates-store";
 
 type Crumb = {
   href: string | null;
@@ -31,6 +32,7 @@ export function PageBreadcrumb() {
   const { lists, tasks, isReady: listsReady } = useLists();
   const { files, isReady: filesReady } = useListFiles();
   const { members, isReady: teamReady } = useTeam();
+  const { templates, isReady: templatesReady } = useTemplates();
   const loadingLabel = t("common.loading", "Ielādē…");
 
   const crumbs = useMemo<Crumb[]>(() => {
@@ -181,6 +183,24 @@ export function PageBreadcrumb() {
       return items;
     }
 
+    if (parts[0] === "templates") {
+      items.push({
+        href: parts[1] ? "/templates" : null,
+        label: t("nav.templates", "Šabloni"),
+        icon: <CrumbIcon className="fas fa-copy" />,
+      });
+      if (parts[1]) {
+        const template = templates.find((item) => item.id === parts[1]);
+        items.push({
+          href: `/templates/${parts[1]}`,
+          label: templatesReady
+            ? (template?.name ?? t("templates.detail.missing", "Šablons nav atrasts"))
+            : loadingLabel,
+        });
+      }
+      return items;
+    }
+
     if (parts[0] === "settings") {
       items.push({
         href: "/settings",
@@ -204,6 +224,7 @@ export function PageBreadcrumb() {
         teams: t("admin.nav.teams", "Komandas"),
         roles: t("admin.nav.roles", "Lomas"),
         statuses: t("admin.nav.statuses", "Statusi"),
+        "file-types": t("admin.nav.file_types", "Failu tipi"),
         languages: t("admin.nav.languages", "Valodas"),
         translations: t("admin.nav.translations", "Tulkojumi"),
         settings: t("nav.settings", "Uzstādījumi"),
@@ -232,7 +253,7 @@ export function PageBreadcrumb() {
         icon: <CrumbIcon className="fas fa-house" />,
       },
     ];
-  }, [files, filesReady, lists, listsReady, loadingLabel, members, pathname, t, tasks, teamReady]);
+  }, [files, filesReady, lists, listsReady, loadingLabel, members, pathname, t, tasks, teamReady, templates, templatesReady]);
 
   return (
     <header className="sticky top-0 z-20 border-b border-zinc-200 bg-white/95 py-2.5 pr-4 pl-[var(--app-content-inset-left)] backdrop-blur-sm md:pr-6">

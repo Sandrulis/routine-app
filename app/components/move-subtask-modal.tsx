@@ -8,6 +8,7 @@ import {
   getTaskAncestors,
   getTaskTree,
   isTaskDeleted,
+  isWorkItemArchived,
   workItemIcon,
   type WorkTask,
 } from "@/app/lib/lists";
@@ -36,7 +37,8 @@ export function MoveSubtaskModal({
         (item) =>
           item.kind === "task" &&
           item.id !== task.parentId &&
-          !isTaskDeleted(item),
+          !isTaskDeleted(item) &&
+          !isWorkItemArchived(item),
       )
     : [];
 

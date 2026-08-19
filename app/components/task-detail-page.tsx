@@ -12,7 +12,7 @@ import { ParentCreateFlow, type ParentCreateContext } from "@/app/components/par
 import { SectionPage } from "@/app/components/section-page";
 import { SubtaskDetailModal } from "@/app/components/subtask-detail-modal";
 import { useTranslations } from "@/app/components/translations-provider";
-import { isWorkFolder, isWorkSubtask } from "@/app/lib/lists";
+import { isWorkFolder, isWorkItemArchived, isWorkSubtask } from "@/app/lib/lists";
 import { useLists } from "@/app/lib/lists-store";
 import { useTeam } from "@/app/lib/team-store";
 import { useIsAdmin } from "@/app/lib/users/use-is-admin";
@@ -20,6 +20,7 @@ import {
   listAccessCapabilities,
   resolveListAccessLevel,
 } from "@/app/lib/list-access";
+import { WorkItemArchiveButton } from "@/app/components/work-item-archive-button";
 
 export function TaskDetailPage({
   listId,
@@ -47,6 +48,7 @@ export function TaskDetailPage({
   const opened = tasks.find((item) => item.id === taskId) ?? null;
   const isSubtask = opened ? isWorkSubtask(opened) : false;
   const isFolder = opened ? isWorkFolder(opened) : false;
+  const archived = opened ? isWorkItemArchived(opened) : false;
   const parent = isSubtask && opened?.parentId
     ? (tasks.find((item) => item.id === opened.parentId) ?? null)
     : opened;
@@ -85,14 +87,19 @@ export function TaskDetailPage({
 
   return (
     <SectionPage
-      title={parent.title}
+      title={
+        <span className="inline-flex items-center gap-2">
+          <span>{parent.title}</span>
+          {!isSubtask ? <WorkItemArchiveButton task={parent} /> : null}
+        </span>
+      }
       subtitle={
         parent.description ||
         t("tasks.detail.empty_description", "Šim uzdevumam vēl nav apraksta.")
       }
       actions={
         isFolder ? (
-          listAccess.canCreateTasks ? (
+          listAccess.canCreateTasks && !archived ? (
             <button
               type="button"
               onClick={(event) => {
@@ -111,7 +118,7 @@ export function TaskDetailPage({
           ) : undefined
         ) : (
           <div className="flex items-center gap-2">
-            {listAccess.canCreateTasks ? (
+            {listAccess.canCreateTasks && !archived ? (
               <button
                 type="button"
                 onClick={() => setCreateSubtaskOpen(true)}

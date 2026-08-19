@@ -2,6 +2,7 @@
 
 import { useEffect, useLayoutEffect, useRef, useState, type MouseEvent } from "react";
 import { createPortal } from "react-dom";
+import { FileTypesInfoIcon } from "@/app/components/file-types-info-icon";
 
 export type CreateItemOption = {
   id: string;
@@ -11,6 +12,7 @@ export type CreateItemOption = {
   description?: string;
   dividerBefore?: boolean;
   danger?: boolean;
+  showFileTypesInfo?: boolean;
 };
 
 export type CreateMenuAnchor = {
@@ -109,45 +111,52 @@ export function CreateItemMenu({
             {item.dividerBefore ? (
               <div className="my-0.5 border-t border-zinc-100" />
             ) : null}
-            <button
-              type="button"
-              role="menuitem"
-              onClick={() => onSelect(item.id)}
-              className={`flex w-full items-start gap-2 rounded-lg px-2 py-1.5 text-left transition ${
-                item.danger
-                  ? "text-red-600 hover:bg-red-50"
-                  : "hover:bg-zinc-100"
+            <div
+              className={`flex w-full items-start gap-1 rounded-lg px-2 py-1.5 transition ${
+                item.danger ? "hover:bg-red-50" : "hover:bg-zinc-100"
               }`}
             >
-              {item.iconWrapClassName ? (
-                <span
-                  className={`mt-0.5 inline-flex size-5 shrink-0 items-center justify-center rounded ${item.iconWrapClassName}`}
-                >
-                  <i className={`${item.icon} text-[10px]`} aria-hidden="true" />
-                </span>
-              ) : (
-                <i
-                  className={`${item.icon} mt-0.5 w-4 text-center text-[12px] ${
-                    item.danger ? "text-red-600" : "text-zinc-700"
-                  }`}
-                  aria-hidden="true"
-                />
-              )}
-              <span className="min-w-0">
-                <span
-                  className={`block text-[11px] font-semibold ${
-                    item.danger ? "text-red-600" : "text-zinc-900"
-                  }`}
-                >
-                  {item.title}
-                </span>
-                {item.description ? (
-                  <span className="mt-0.5 block text-[10px] leading-snug text-zinc-500">
-                    {item.description}
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => onSelect(item.id)}
+                className={`flex min-w-0 flex-1 items-start gap-2 text-left ${
+                  item.danger ? "text-red-600" : ""
+                }`}
+              >
+                {item.iconWrapClassName ? (
+                  <span
+                    className={`mt-0.5 inline-flex size-5 shrink-0 items-center justify-center rounded ${item.iconWrapClassName}`}
+                  >
+                    <i className={`${item.icon} text-[10px]`} aria-hidden="true" />
                   </span>
-                ) : null}
-              </span>
-            </button>
+                ) : (
+                  <i
+                    className={`${item.icon} mt-0.5 w-4 shrink-0 text-center text-[12px] ${
+                      item.danger ? "text-red-600" : "text-zinc-700"
+                    }`}
+                    aria-hidden="true"
+                  />
+                )}
+                <span className="min-w-0">
+                  <span
+                    className={`block text-[11px] font-semibold ${
+                      item.danger ? "text-red-600" : "text-zinc-900"
+                    }`}
+                  >
+                    {item.title}
+                  </span>
+                  {item.description ? (
+                    <span className="mt-0.5 block text-[10px] leading-snug text-zinc-500">
+                      {item.description}
+                    </span>
+                  ) : null}
+                </span>
+              </button>
+              {item.showFileTypesInfo ? (
+                <FileTypesInfoIcon className="mt-0.5 shrink-0" />
+              ) : null}
+            </div>
           </div>
         ))}
       </div>

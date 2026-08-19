@@ -235,6 +235,7 @@ export const ru: Record<string, string> = {
   "nav.home": "Главная",
   "nav.lists": "Списки",
   "nav.team": "Команда",
+  "nav.templates": "Шаблоны",
   "nav.settings": "Настройки",
   "nav.storage.used": "Место файлов",
   "nav.storage.hint": "Файлы, загруженные в дереве и подзадачах",
@@ -368,9 +369,19 @@ export const ru: Record<string, string> = {
   "site_translations.delete.bundled_disabled":
     "Встроенный перевод из кода нельзя удалить",
   "site_settings.form.system_name": "Название системы",
+  "site_settings.form.logo_color_hint":
+    "Если логотип не загружен, аватар показывает инициалы системы на выбранном фоне.",
   "site_settings.form.slogan": "Слоган",
   "site_settings.form.slogan_hint":
     "Укажите слоган для каждого языка системы.",
+  "site_settings.form.logo": "Логотип",
+  "site_settings.form.logo_hint":
+    "PNG, SVG, JPG или WEBP до 1.5 МБ. Показывается в шапке.",
+  "site_settings.form.favicon": "Favicon",
+  "site_settings.form.favicon_hint":
+    "ICO, PNG или SVG до 1.5 МБ. Если favicon нет, во вкладке браузера используется логотип или аватар с инициалами.",
+  "site_settings.form.image.drop": "Перетащите изображение сюда или",
+  "site_settings.form.image.remove": "Удалить изображение",
   "site_settings.form.display.title": "Даты и время",
   "site_settings.form.display.description":
     "Формат по умолчанию во всей системе: даты, время и начало недели в календаре.",
@@ -403,7 +414,7 @@ export const ru: Record<string, string> = {
   "site_settings.preview.time": "Время:",
   "site_settings.preview.datetime": "Дата и время:",
   "site_settings.preview.description":
-    "Эти значения используются в заголовке браузера и метаданных описания страницы.",
+    "Эти значения используются в заголовке браузера, иконке вкладки и метаданных описания страницы.",
   "site_settings.preview.last_saved": "Последние сохранённые изменения:",
   "nav.expand": "Развернуть",
   "nav.collapse": "Свернуть",
@@ -499,9 +510,33 @@ export const ru: Record<string, string> = {
   "lists.statuses.reset_default": "Вернуть название по умолчанию",
   "lists.statuses.reset_done": "Системное название восстановлено.",
   "lists.statuses.group.empty": "В этой группе пока нет статусов.",
+  "lists.automations.title": "Автоматизации",
+  "lists.automations.menu_description": "Автоматические действия в списке",
+  "lists.automations.description":
+    "Настройте автоматические действия для списка „{name}”.",
+  "lists.automations.description_generic":
+    "Настройте автоматические действия для этого списка.",
+  "lists.automations.folder_created.title": "Создание папки",
+  "lists.automations.folder_created.description":
+    "При создании новой папки внутри неё автоматически создаются папки, задачи и подзадачи из выбранного шаблона.",
+  "lists.automations.folder_created.apply_template": "Применить шаблон",
+  "lists.automations.template_label": "Шаблон",
+  "lists.automations.template_placeholder": "Выберите шаблон",
+  "lists.automations.template_required": "Выберите шаблон.",
+  "lists.automations.already_exists": "Эта автоматизация уже добавлена.",
+  "lists.automations.saved": "Автоматизация сохранена.",
+  "lists.automations.deleted": "Автоматизация удалена.",
+  "lists.automations.add": "Добавить автоматизацию",
+  "lists.automations.enabled": "Активна",
+  "lists.automations.no_templates":
+    "Сначала создайте шаблон команды, чтобы привязать его к автоматизации.",
+  "lists.automations.delete.title": "Удалить автоматизацию?",
+  "lists.automations.delete.description":
+    "Автоматизация при создании папки больше не будет выполняться.",
   "dashboard.subtitle": "Ваши задачи и работа по спискам.",
   "dashboard.my_tasks": "Мои задачи",
   "dashboard.my_tasks.empty": "Вам пока не назначены задачи.",
+  "dashboard.other_tasks": "Остальные задачи",
   "lists.add.title": "Новый список",
   "lists.add.description":
     "Список объединяет проекты или клиентов, у каждого — свои задачи и настройки.",
@@ -610,6 +645,40 @@ export const ru: Record<string, string> = {
   "create.task_list.title": "Список задач",
   "create.task_list.description":
     "Работа со статусом, сроком и подзадачами",
+  "templates.menu_description":
+    "Подготовьте списки задач, чтобы потом добавить их в папку",
+  "templates.page.subtitle":
+    "Заранее заданные списки задач и подзадач, которые команда потом может добавить в папку.",
+  "templates.empty": "Шаблонов пока нет.",
+  "templates.add.title": "Новый шаблон",
+  "templates.add.description":
+    "Укажите название. Затем добавьте списки задач и их подзадачи.",
+  "templates.fields.name_placeholder": "Например, Новый объект",
+  "templates.fields.description_placeholder": "Краткое описание шаблона",
+  "templates.created": "Шаблон добавлен.",
+  "templates.saved": "Шаблон сохранён.",
+  "templates.deleted": "Шаблон удалён.",
+  "templates.delete.title": "Удалить шаблон?",
+  "templates.delete.description":
+    "Шаблон “{name}” будет удалён. Существующие задачи останутся.",
+  "templates.detail.loading": "Загрузка шаблона",
+  "templates.detail.missing": "Шаблон не найден",
+  "templates.detail.subtitle":
+    "Задайте списки задач и их подзадачи. Затем шаблон можно добавить в папку.",
+  "templates.items.title": "Списки задач",
+  "templates.items.help":
+    "Каждый список при добавлении в папку становится задачей с подзадачами.",
+  "templates.items.add_subtask": "Подзадача",
+  "templates.items.add_folder": "Папка",
+  "templates.fields.folder_placeholder": "Название папки",
+  "templates.items.empty": "Списков задач пока нет.",
+  "templates.items.count": "{count} списков задач",
+  "templates.apply.title": "Добавить шаблон",
+  "templates.apply.description": "Вставить подготовленные списки задач в эту папку",
+  "templates.apply.pick_title": "Выберите шаблон",
+  "templates.apply.empty": "Сначала создайте шаблон в меню команды.",
+  "templates.apply.no_items": "В этом шаблоне нет списков задач.",
+  "templates.apply.success": "Шаблон добавлен в папку.",
   "create.need_list": "Сначала добавьте список.",
   "folders.add.title": "Новая папка",
   "folders.add.description":
@@ -624,6 +693,8 @@ export const ru: Record<string, string> = {
   "folders.edit.title": "Изменить папку",
   "folders.edit.description": "Измените название или описание папки.",
   "folders.deleted": "Папка удалена.",
+  "folders.archived": "Папка архивирована.",
+  "folders.unarchived": "Папка убрана из архива.",
   "folders.delete.title": "Удалить папку?",
   "folders.delete.description":
     "Папка «{name}» и её содержимое будет удалено.",
@@ -634,6 +705,8 @@ export const ru: Record<string, string> = {
   "lists.detail.missing": "Список не найден",
   "lists.detail.missing_description": "Этот список больше недоступен.",
   "lists.detail.empty_description": "У этого списка пока нет описания.",
+  "lists.archive.subtitle": "Архивированные задачи и папки.",
+  "lists.archive.empty": "В архиве нет задач.",
   "lists.windows.tasks": "Задачи",
   "lists.windows.files": "Файлы",
   "lists.windows.overview": "Список",
@@ -650,6 +723,7 @@ export const ru: Record<string, string> = {
     "Файл добавлен, но содержимое не удалось сохранить для предпросмотра.",
   "files.upload.rejected":
     "Недопустимый тип файла. Разрешены: {types}",
+  "files.upload.allowed_types": "Разрешённые типы файлов: {types}",
   "files.detail.loading": "Загрузка файла",
   "files.detail.missing": "Файл не найден",
   "files.detail.missing_description": "Этот файл больше недоступен.",
@@ -689,6 +763,8 @@ export const ru: Record<string, string> = {
   "tasks.fields.start_date": "Начало",
   "tasks.empty": "В этом списке пока нет задач.",
   "tasks.created": "Задача добавлена.",
+  "tasks.archived": "Задача архивирована.",
+  "tasks.unarchived": "Задача убрана из архива.",
   "tasks.subtask_count": "{count} подзадач",
   "tasks.detail.loading": "Загрузка задачи",
   "tasks.detail.missing": "Задача не найдена",
@@ -878,6 +954,8 @@ export const ru: Record<string, string> = {
   "actions.rename": "Переименовать",
   "actions.view": "Просмотр",
   "actions.delete": "Удалить",
+  "actions.archive": "Архивировать",
+  "actions.unarchive": "Убрать из архива",
   "actions.deleting": "Удаление…",
   "actions.move": "Переместить",
   "actions.cancel": "Отмена",

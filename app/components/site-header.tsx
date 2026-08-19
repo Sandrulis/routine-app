@@ -3,16 +3,27 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { LanguageSwitcher } from "@/app/components/language-switcher";
+import { ListBadge } from "@/app/components/list-badge";
 import { useTranslations } from "@/app/components/translations-provider";
 import { useAuthSession } from "@/app/lib/auth/use-auth-session";
+import { DEFAULT_SITE_LOGO_COLOR } from "@/app/lib/site-admin/branding";
 
 const AUTH_PATHS = new Set(["/login", "/signup", "/forgot-password"]);
 
-export function SiteHeader() {
+export function SiteHeader({
+  logoUrl = null,
+  logoColor = DEFAULT_SITE_LOGO_COLOR,
+  systemName = null,
+}: {
+  logoUrl?: string | null;
+  logoColor?: string | null;
+  systemName?: string | null;
+}) {
   const pathname = usePathname();
   const { t } = useTranslations();
   const { user, isReady } = useAuthSession();
   const isAuthPage = AUTH_PATHS.has(pathname);
+  const brandName = systemName?.trim() || t("app.name", "Routine");
 
   return (
     <header className="sticky top-0 z-30 border-b border-zinc-200 bg-white/95 backdrop-blur-sm">
@@ -21,10 +32,14 @@ export function SiteHeader() {
           href="/"
           className="inline-flex items-center gap-2 text-sm font-semibold text-zinc-900"
         >
-          <span className="inline-flex size-7 items-center justify-center rounded-lg bg-zinc-900 text-white">
-            <i className="fas fa-layer-group text-[11px]" aria-hidden="true" />
-          </span>
-          {t("app.name", "Routine")}
+          <ListBadge
+            name={brandName}
+            icon={null}
+            color={logoColor || DEFAULT_SITE_LOGO_COLOR}
+            logoUrl={logoUrl}
+            size="md"
+          />
+          {brandName}
         </Link>
 
         {isAuthPage ? (

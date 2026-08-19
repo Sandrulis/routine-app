@@ -6,6 +6,7 @@ import { useEffect, useMemo, useState, type CSSProperties, type MouseEvent, type
 import { DragHandle } from "@/app/components/drag-handle";
 import { ListFormModal } from "@/app/components/list-form-modal";
 import { ListStatusesModal } from "@/app/components/list-statuses-modal";
+import { ListAutomationsModal } from "@/app/components/list-automations-modal";
 import { LoadingState } from "@/app/components/loading-state";
 import { NameFormModal } from "@/app/components/name-form-modal";
 import { ParentCreateFlow, type ParentCreateContext } from "@/app/components/parent-create-flow";
@@ -17,6 +18,7 @@ import {
 } from "@/app/components/create-item-menu";
 import {
   NavTreeDnd,
+  NavTreeEndDrop,
   NavTreeRootDrop,
   NavTreeSortableGroup,
   NavTreeSortableItem,
@@ -29,6 +31,7 @@ import { TeamRolesModal } from "@/app/components/team-roles-modal";
 import { OverflowTooltip, Tooltip } from "@/app/components/tooltip";
 import { useFeedbackToast } from "@/app/components/feedback-toast-provider";
 import { useTranslations } from "@/app/components/translations-provider";
+import { workItemArchiveFeedback } from "@/app/components/work-item-archive-button";
 import { MemberLastOnline } from "@/app/components/member-last-online";
 import { UserAvatar } from "@/app/components/user-avatar";
 import { TeamSwitcher } from "@/app/components/team-switcher";
@@ -66,6 +69,7 @@ import { useIsAdmin } from "@/app/lib/users/use-is-admin";
 import { useTaskStatuses } from "@/app/lib/task-statuses";
 import {
   navListRootDroppableId,
+  navGroupEndDroppableId,
   resolveNavTreePlacement,
   type NavTreeDropIntent,
   type NavTreeItemData,
@@ -438,7 +442,7 @@ export function AppNav() {
   const router = useRouter();
   const { t } = useTranslations();
   const { showFeedback } = useFeedbackToast();
-  const { lists, tasks, listTasks, childTasks, subtasks, addList, updateList, deleteList, updateTask, deleteTask, reorderTasks, moveWorkItem, allTaskFiles, isReady: listsReady } = useLists();
+  const { lists, tasks, listTasks, childTasks, subtasks, addList, updateList, deleteList, updateTask, deleteTask, setWorkItemArchived, reorderTasks, moveWorkItem, allTaskFiles, isReady: listsReady } = useLists();
   const { files: storedFiles } = useListFiles();
   const files = storedFiles.filter((file) =>
     lists.some((list) => list.id === file.listId),
@@ -467,6 +471,7 @@ export function AppNav() {
   );
   const [rolesModalOpen, setRolesModalOpen] = useState(false);
   const [statusesList, setStatusesList] = useState<WorkList | null>(null);
+  const [automationsList, setAutomationsList] = useState<WorkList | null>(null);
   const [editTarget, setEditTarget] = useState<
     | { kind: "list"; list: WorkList }
     | { kind: "task"; task: WorkTask }
@@ -556,8 +561,7 @@ export function AppNav() {
   }
 
   const isHome = pathname === "/dashboard";
-  const isSettings = pathname === "/settings" || pathname.startsWith("/settings/");
-  const isTeam = pathname === "/team";
+  const isTeam = pathname === "/team" || pathname.startsWith("/templates");
   const storageUsedLabel = useMemo(
     () => formatFileSize(sumFileBytes(storedFiles) + sumFileBytes(allTaskFiles)),
     [allTaskFiles, storedFiles],
@@ -594,6 +598,10 @@ export function AppNav() {
             ) ?? null)
           : null;
   const itemMenuAccess = accessForList(itemMenuList);
+  const itemMenuTask =
+    itemMenu?.kind === "task"
+      ? (tasks.find((item) => item.id === itemMenu.id) ?? null)
+      : null;
 
   function placeNavItem(
     listId: string,
@@ -815,6 +823,12 @@ export function AppNav() {
             </NavTreeSortableItem>
           );
         })}
+        {canReorder && showFiles ? (
+          <NavTreeEndDrop
+            id={navGroupEndDroppableId(listId, parentId)}
+            disabled={!canReorder}
+          />
+        ) : null}
       </NavTreeSortableGroup>
     );
   }
@@ -998,12 +1012,6 @@ export function AppNav() {
               </div>
             </Tooltip>
           ) : null}
-          <Link href="/settings" className={rowClassName(isSettings)}>
-            <span className="inline-flex size-5 shrink-0 items-center justify-center text-zinc-500">
-              <i className="fas fa-gear text-[12px]" aria-hidden="true" />
-            </span>
-            <span>{t("nav.settings", "Uzstādījumi")}</span>
-          </Link>
           <UserMenu user={currentUser} />
         </div>
       </aside>
@@ -1074,11 +1082,21 @@ export function AppNav() {
               "Sadali biedrus pa lomām",
             ),
           },
+          {
+            id: "templates",
+            icon: "fas fa-copy",
+            title: t("nav.templates", "Šabloni"),
+            description: t(
+              "templates.menu_description",
+              "Sagatavo uzdevumu sarakstus, ko pēc tam pievieno mapē",
+            ),
+          },
         ]}
         onClose={() => setTeamMenuAnchor(null)}
         onSelect={(id) => {
           setTeamMenuAnchor(null);
           if (id === "roles") setRolesModalOpen(true);
+          if (id === "templates") router.push("/templates");
         }}
       />
 
@@ -1089,6 +1107,14 @@ export function AppNav() {
         open={statusesList !== null}
         onOpenChange={(open) => {
           if (!open) setStatusesList(null);
+        }}
+      />
+
+      <ListAutomationsModal
+        list={automationsList}
+        open={automationsList !== null}
+        onOpenChange={(open) => {
+          if (!open) setAutomationsList(null);
         }}
       />
 
@@ -1139,6 +1165,15 @@ export function AppNav() {
                             "Sistēmas un saraksta statusi",
                           ),
                         },
+                        {
+                          id: "automations",
+                          icon: "fas fa-bolt",
+                          title: t("lists.automations.title", "Automatizācijas"),
+                          description: t(
+                            "lists.automations.menu_description",
+                            "Automātiskās darbības sarakstā",
+                          ),
+                        },
                       ]
                     : []),
                   ...(itemMenuAccess.canDeleteList
@@ -1160,6 +1195,15 @@ export function AppNav() {
                       icon: "fas fa-pen",
                       title: t("actions.edit", "Labot"),
                     },
+                    ...(itemMenuTask && !isWorkSubtask(itemMenuTask)
+                      ? [
+                          {
+                            id: "archive",
+                            icon: "fas fa-folder-open",
+                            title: t("actions.archive", "Arhivēt"),
+                          },
+                        ]
+                      : []),
                     {
                       id: "delete",
                       icon: "fas fa-trash",
@@ -1206,10 +1250,21 @@ export function AppNav() {
             if (list) setStatusesList(list);
             return;
           }
+          if (id === "automations") {
+            if (list) setAutomationsList(list);
+            return;
+          }
           if (id === "delete") {
             if (list) setDeleteTarget({ kind: "list", list });
             if (task) setDeleteTarget({ kind: "task", task });
             if (file) setDeleteTarget({ kind: "file", file });
+          }
+          if (id === "archive" && task && !isWorkSubtask(task)) {
+            setWorkItemArchived(task.id, true);
+            showFeedback({
+              type: "success",
+              text: workItemArchiveFeedback(t, task, true),
+            });
           }
         }}
       />

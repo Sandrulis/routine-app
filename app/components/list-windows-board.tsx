@@ -69,7 +69,6 @@ import {
   getDescendantSubtasks,
   getDescendantWorkItems,
   isClosedTaskStatus,
-  isTaskActiveInLists,
   isTaskDeleted,
   isWorkFolder,
   taskProgress,
@@ -95,7 +94,7 @@ function isListedInWindow(
   if (isTaskDeleted(item)) return false;
   if (isWorkFolder(item)) return true;
   if (archiveOpen) return true;
-  return isTaskActiveInLists(item, statuses);
+  return !isClosedTaskStatus(item.status, statuses);
 }
 
 function ArchiveToggle({

@@ -14,6 +14,8 @@ import {
   type ListFile,
 } from "@/app/lib/list-files";
 import { useLists } from "@/app/lib/lists-store";
+import { activeFolderCreatedTemplateAutomations } from "@/app/lib/list-automations";
+import { useTemplates } from "@/app/lib/templates-store";
 import { useListFiles } from "@/app/lib/use-list-files";
 import { useFileTypes } from "@/app/lib/file-types-context";
 
@@ -38,10 +40,13 @@ export function ParentCreateFlow({
   const { t } = useTranslations();
   const router = useRouter();
   const { showFeedback } = useFeedbackToast();
-  const { addTask, listTasks, childTasks } = useLists();
+  const { addTask, applyTemplate, listTasks, childTasks, listAutomations } = useLists();
+  const { templates, templateItems, isReady: templatesReady } = useTemplates();
   const { files } = useListFiles();
   const { accept, filterAllowedFiles, extensionsLabel } = useFileTypes();
-  const [step, setStep] = useState<"choice" | "folder" | "task">("choice");
+  const [step, setStep] = useState<"choice" | "folder" | "task" | "template">(
+    "choice",
+  );
   const fileInputRef = useRef<HTMLInputElement>(null);
   const contextRef = useRef(context);
   contextRef.current = context;
@@ -57,6 +62,24 @@ export function ParentCreateFlow({
 
     if (id === "file") {
       fileInputRef.current?.click();
+      return;
+    }
+
+    if (id === "template") {
+      if (!templatesReady) return;
+      if (templates.length === 0) {
+        showFeedback({
+          type: "info",
+          text: t(
+            "templates.apply.empty",
+            "Vispirms izveido šablonu komandas izvēlnē.",
+          ),
+        });
+        onClose();
+        router.push("/templates");
+        return;
+      }
+      setStep("template");
       return;
     }
 
@@ -162,6 +185,15 @@ export function ParentCreateFlow({
             ),
           },
           {
+            id: "template",
+            icon: "fas fa-copy",
+            title: t("templates.apply.title", "Pievienot šablonu"),
+            description: t(
+              "templates.apply.description",
+              "Ievieto sagatavotus uzdevumu sarakstus šajā mapē",
+            ),
+          },
+          {
             id: "file",
             icon: "fas fa-upload",
             title: t("create.file.upload_title", "Augšupielādēt failu"),
@@ -169,10 +201,54 @@ export function ParentCreateFlow({
               "create.file.upload_description",
               "Pievieno dokumentu šim sarakstam",
             ),
+            showFileTypesInfo: true,
           },
         ]}
         onSelect={handleSelect}
         onClose={onClose}
+      />
+
+      <CreateItemMenu
+        open={context !== null && step === "template"}
+        anchor={context?.anchor ?? null}
+        title={t("templates.apply.pick_title", "Izvēlies šablonu")}
+        items={templates.map((template) => ({
+          id: template.id,
+          icon: "fas fa-copy",
+          title: template.name,
+          description:
+            template.description.trim() ||
+            t("templates.items.count", "{count} uzdevumu saraksti", {
+              count: templateItems(template.id).filter((item) => item.parentId === null)
+                .length,
+            }),
+        }))}
+        onSelect={(templateId) => {
+          if (!context) return;
+          const items = templateItems(templateId);
+          const created = applyTemplate({
+            listId: context.listId,
+            parentId: context.parentId,
+            items,
+          });
+          if (created.length === 0) {
+            showFeedback({
+              type: "info",
+              text: t(
+                "templates.apply.no_items",
+                "Šajā šablonā nav uzdevumu sarakstu.",
+              ),
+            });
+            return;
+          }
+          showFeedback({
+            type: "success",
+            text: t("templates.apply.success", "Šablons pievienots mapē."),
+          });
+          onCreated?.(created[0]?.id ?? "");
+          onClose();
+        }}
+        onClose={() => setStep("choice")}
       />
 
       <NameFormModal
@@ -229,6 +305,20 @@ export function ParentCreateFlow({
             title: input.name,
             description: input.description,
           });
+          if (step === "folder") {
+            for (const rule of activeFolderCreatedTemplateAutomations(
+              listAutomations,
+              context.listId,
+            )) {
+              const items = templateItems(rule.templateId ?? "");
+              if (items.length === 0) continue;
+              applyTemplate({
+                listId: context.listId,
+                parentId: task.id,
+                items,
+              });
+            }
+          }
           showFeedback({
             type: "success",
             text:

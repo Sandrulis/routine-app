@@ -4,6 +4,34 @@
 
 - (none)
 
+## v0.1.14
+
+**Komandas šabloni, automatizācijas un veidnes redaktors**
+
+- Komandas `...` → **Šabloni**: nosaukti šabloni ar mapēm, uzdevumu sarakstiem un apakšuzdevumiem; mapes `+` ievieto šablonu kā apakšstruktūru (mapes → apakšmapes)
+- Saraksta `...` → **Automatizācijas**: konfigurējami noteikumi; pirmais — jaunai mapei automātiski pielietot izvēlētu šablonu (mapes, uzdevumi, apakšuzdevumi mapes iekšienē)
+- Šablona redaktors: secīga ievade bez uzdevumu/apakšuzdevumu + pogām, automātiskas tukšās rindas (arī pēc saglabāšanas), fokuss paliek laukā pēc pirmā burta; mapei sava **+ Mape** / apakšmapes poga
+- Drag-and-drop šablonā: uzdevumu un mapju secība, ielikšana mapē un iznešana; apakšuzdevumus var pārnest uz citu uzdevumu
+- Apakšuzdevuma pielikumos atļautie failu tipi kā teksts zem drop zonas; sānjoslas faila augšupielādē info ikona
+- Apakšuzdevuma sākuma/termiņa datumi: relatīvais hints (`Šodien`, atlicis, kavē) atkarībā no statusa grupas — sākums `not_started` / `active`, termiņš `not_started` / `active` / `closed`
+- Mapes automatizācija + šablons: uzdevumu DB saglabāšana rindā pēc vecāka (novērš `parent_id` FK kļūdu); `formatSupabaseError` lasāmākiem konsoles logiem
+- Tiešsaistes `last_online_at` atjauninājums pēc `team_id` + `user_id` (bez tukšās konsoles kļūdas)
+
+## v0.1.13
+
+**Uzdevumu un mapju arhīvs**
+
+- Saraksta uzdevumu vai mapi (ar visiem apakšuzdevumiem) var arhivēt no koka `...` vai ar atvērtās mapes ikonu aiz nosaukuma; arhīvā aizvērtā mape izņem no arhīva
+- Saraksta lapā labajā malā arhīva poga atver to pašu kopsavilkuma skatu tikai ar arhivētajām lietām
+- Sānjoslas kokā uzdevumu var nomest pašā apakšā arī tad, ja pēdējā ir mape (biezā līnija zem mapes)
+
+**Sistēmas logotips, Sākums un ielogota landing**
+
+- Admin `/admin/settings`: logotips un favicon; bez faila avatārs no sistēmas iniciāļiem ar izvēlētu fonu (kā komandām) un liela burta favicon `<head>`
+- Pārlūka cilnes nosaukums: `lapas nosaukums | sistēmas nosaukums` (sistēmas vārds no admin uzstādījumiem); katrai lietotnes un mārketinga lapai `generateMetadata`, dinamiskajām maršrutiem nosaukums no DB
+- Sākumā Mani uzdevumi un atdalītājs rādās tikai tad, ja ir piesaistīti uzdevumi; atbildīgo izvēlne nav nogriezta; saglabāšana vairs nedod `task_assignees` dublikāta kļūdu
+- Ielogotam `/` uzreiz ved uz `/dashboard` (proxy un landing lapa)
+
 ## v0.1.12
 
 **Atcerēties mani, failu tipi un datumu attēlojums**

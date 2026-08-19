@@ -6,7 +6,7 @@ import { getPrivacyPolicyContent } from "@/app/lib/legal/documents";
 export async function generateMetadata(): Promise<Metadata> {
   const { t } = await getServerTranslations();
   return {
-    title: `${t("legal.privacy.title", "Privātuma politika")} — ${t("app.name", "Routine")}`,
+    title: t("legal.privacy.title", "Privātuma politika"),
   };
 }
 

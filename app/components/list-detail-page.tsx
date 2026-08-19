@@ -6,6 +6,7 @@ import { useState } from "react";
 import { ListSummary } from "@/app/components/list-summary";
 import { LoadingState } from "@/app/components/loading-state";
 import { createMenuAnchorFromEvent } from "@/app/components/create-item-menu";
+import { IconActionButton } from "@/app/components/icon-action-button";
 import { ParentCreateFlow, type ParentCreateContext } from "@/app/components/parent-create-flow";
 import { SectionPage } from "@/app/components/section-page";
 import { SubtaskDetailModal } from "@/app/components/subtask-detail-modal";
@@ -22,15 +23,16 @@ import {
 export function ListDetailPage({ listId }: { listId: string }) {
   const { t } = useTranslations();
   const router = useRouter();
-  const { lists, listTasks, isReady } = useLists();
+  const { lists, listTasks, archivedListTasks, isReady } = useLists();
   const { currentUser, roles } = useTeam();
   const { isAdmin } = useIsAdmin();
   const [parentCreate, setParentCreate] = useState<ParentCreateContext | null>(
     null,
   );
   const [openedSubtaskId, setOpenedSubtaskId] = useState<string | null>(null);
+  const [archiveOpen, setArchiveOpen] = useState(false);
   const list = lists.find((item) => item.id === listId) ?? null;
-  const tasks = listTasks(listId);
+  const tasks = archiveOpen ? archivedListTasks(listId) : listTasks(listId);
   const listAccess = list
     ? listAccessCapabilities(
         resolveListAccessLevel(list, currentUser, roles, isAdmin),
@@ -83,33 +85,45 @@ export function ListDetailPage({ listId }: { listId: string }) {
         </span>
       }
       subtitle={
-        list.description ||
-        t("lists.detail.empty_description", "Šim sarakstam vēl nav apraksta.")
+        archiveOpen
+          ? t("lists.archive.subtitle", "Arhivētie uzdevumi un mapes.")
+          : list.description ||
+            t("lists.detail.empty_description", "Šim sarakstam vēl nav apraksta.")
       }
       actions={
-        listAccess.canCreateTasks ? (
-        <button
-          type="button"
-          onClick={(event) =>
-            setParentCreate({
-              listId: list.id,
-              parentId: null,
-              variant: list.kind === "folder" ? "folder" : "list",
-              anchor: createMenuAnchorFromEvent(event),
-            })
-          }
-          className="inline-flex min-h-10 items-center justify-center gap-2 rounded-2xl bg-blue-700 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-800"
-        >
-          <i className="fas fa-plus text-xs" aria-hidden="true" />
-          {t("create.menu.title", "Izveidot")}
-        </button>
-        ) : undefined
+        <div className="flex items-center gap-2">
+          {listAccess.canCreateTasks && !archiveOpen ? (
+            <button
+              type="button"
+              onClick={(event) =>
+                setParentCreate({
+                  listId: list.id,
+                  parentId: null,
+                  variant: list.kind === "folder" ? "folder" : "list",
+                  anchor: createMenuAnchorFromEvent(event),
+                })
+              }
+              className="inline-flex min-h-10 items-center justify-center gap-2 rounded-2xl bg-blue-700 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-800"
+            >
+              <i className="fas fa-plus text-xs" aria-hidden="true" />
+              {t("create.menu.title", "Izveidot")}
+            </button>
+          ) : null}
+          <IconActionButton
+            label={t("subtasks.archive", "Arhīvs")}
+            icon="fas fa-archive"
+            variant="muted"
+            pressed={archiveOpen}
+            onClick={() => setArchiveOpen((current) => !current)}
+          />
+        </div>
       }
     >
       <ListSummary
         listId={list.id}
         listName={list.name}
         tasks={tasks}
+        archivedView={archiveOpen}
         onOpenTask={(task) => {
           if (isWorkSubtask(task)) {
             setOpenedSubtaskId(task.id);

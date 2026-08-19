@@ -95,6 +95,9 @@ export type SiteSettingsSummary = {
   systemName: string;
   sloganValues: Record<string, string>;
   displayPreferences: SiteDisplayPreferences;
+  logoUrl: string | null;
+  faviconUrl: string | null;
+  logoColor: string;
   updatedAt: string | null;
 };
 
@@ -102,6 +105,9 @@ export type SiteSettingsInput = {
   systemName: string;
   sloganValues: Record<string, string>;
   displayPreferences: SiteDisplayPreferences;
+  logoUrl: string | null;
+  faviconUrl: string | null;
+  logoColor: string;
 };
 
 export type TaskStatusSummary = {

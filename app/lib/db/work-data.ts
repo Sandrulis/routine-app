@@ -2,6 +2,8 @@ import { createClient } from "@/app/lib/supabase/client";
 import type { AppNotification } from "@/app/lib/notifications";
 import type { ListFile } from "@/app/lib/list-files";
 import type { WorkList, WorkTask } from "@/app/lib/lists";
+import type { WorkTemplate, WorkTemplateItem } from "@/app/lib/templates";
+import { sortTemplateItemsForInsert } from "@/app/lib/templates";
 import { parseTaskChecklists } from "@/app/lib/task-checklists";
 import {
   DEFAULT_LIST_ACCESS_LEVEL,
@@ -22,6 +24,10 @@ import {
   primaryStatusLabel,
   type ListStatus,
 } from "@/app/lib/list-statuses";
+import {
+  mapListAutomationRow,
+  type ListAutomation,
+} from "@/app/lib/list-automations";
 
 function db() {
   return createClient();
@@ -31,34 +37,55 @@ function dateOrNull(value: string | null | undefined): string | null {
   return value && /^\d{4}-\d{2}-\d{2}/.test(value) ? value.slice(0, 10) : null;
 }
 
+const assigneeReplaceByTask = new Map<string, Promise<void>>();
+
 async function replaceTaskAssignees(taskId: string, assigneeIds: string[]) {
+  const previous = assigneeReplaceByTask.get(taskId) ?? Promise.resolve();
+  const next = previous.catch(() => undefined).then(() =>
+    replaceTaskAssigneesNow(taskId, assigneeIds),
+  );
+  assigneeReplaceByTask.set(taskId, next);
+  try {
+    await next;
+  } finally {
+    if (assigneeReplaceByTask.get(taskId) === next) {
+      assigneeReplaceByTask.delete(taskId);
+    }
+  }
+}
+
+async function replaceTaskAssigneesNow(taskId: string, assigneeIds: string[]) {
   const supabase = db();
+  const uniqueIds = [...new Set(assigneeIds.filter((id) => id.trim()))];
   const [{ error: delMembers }, { error: delRoles }] = await Promise.all([
     supabase.from("task_assignees").delete().eq("task_id", taskId),
     supabase.from("task_assignee_roles").delete().eq("task_id", taskId),
   ]);
   if (delMembers) throw new Error(formatSupabaseError(delMembers));
   if (delRoles) throw new Error(formatSupabaseError(delRoles));
-  if (assigneeIds.length === 0) return;
+  if (uniqueIds.length === 0) return;
 
   const [membersRes, rolesRes] = await Promise.all([
-    supabase.from("team_members").select("id").in("id", assigneeIds),
-    supabase.from("team_roles").select("id").in("id", assigneeIds),
+    supabase.from("team_members").select("id").in("id", uniqueIds),
+    supabase.from("team_roles").select("id").in("id", uniqueIds),
   ]);
   if (membersRes.error) throw new Error(formatSupabaseError(membersRes.error));
   if (rolesRes.error) throw new Error(formatSupabaseError(rolesRes.error));
 
   const memberIds = new Set((membersRes.data ?? []).map((row) => row.id));
   const roleIds = new Set((rolesRes.data ?? []).map((row) => row.id));
-  const memberRows = assigneeIds
+  const memberRows = uniqueIds
     .filter((id) => memberIds.has(id))
     .map((memberId) => ({ task_id: taskId, member_id: memberId }));
-  const roleRows = assigneeIds
+  const roleRows = uniqueIds
     .filter((id) => roleIds.has(id) && !memberIds.has(id))
     .map((roleId) => ({ task_id: taskId, role_id: roleId }));
 
   if (memberRows.length > 0) {
-    const { error } = await supabase.from("task_assignees").insert(memberRows);
+    const { error } = await supabase.from("task_assignees").upsert(memberRows, {
+      onConflict: "task_id,member_id",
+      ignoreDuplicates: true,
+    });
     if (error) throw new Error(formatSupabaseError(error));
   }
   if (roleRows.length > 0) {
@@ -310,12 +337,17 @@ export async function insertMember(teamId: string, member: TeamMember) {
   if (error) throw error;
 }
 
-export async function touchMemberOnline(memberId: string, at: string) {
+export async function touchMemberOnline(
+  teamId: string,
+  userId: string,
+  at: string,
+): Promise<void> {
   const { error } = await db()
     .from("team_members")
     .update({ last_online_at: at })
-    .eq("id", memberId);
-  if (error) throw error;
+    .eq("team_id", teamId)
+    .eq("user_id", userId);
+  if (error) throw new Error(formatSupabaseError(error));
 }
 
 export type TeamWorkspace = {
@@ -327,6 +359,7 @@ export type TeamWorkspace = {
   listFiles: ListFile[];
   listFileContents: Record<string, string>;
   listStatuses: ListStatus[];
+  listAutomations: ListAutomation[];
   teamStatusLabels: Record<string, string>;
   notifications: AppNotification[];
   todos: TodoItem[];
@@ -343,6 +376,7 @@ export async function fetchTeamWorkspace(teamId: string): Promise<TeamWorkspace>
     notificationsRes,
     todosRes,
     listStatusesRes,
+    listAutomationsRes,
     teamStatusLabelsRes,
   ] = await Promise.all([
     supabase
@@ -353,7 +387,7 @@ export async function fetchTeamWorkspace(teamId: string): Promise<TeamWorkspace>
     supabase
       .from("work_tasks")
       .select(
-        "id, list_id, parent_id, kind, title, description, status, status_changed_at, deleted_at, start_date, due_date, sort_order, checklists",
+        "id, list_id, parent_id, kind, title, description, status, status_changed_at, deleted_at, archived_at, start_date, due_date, sort_order, checklists",
       )
       .eq("team_id", teamId)
       .order("sort_order", { ascending: true }),
@@ -389,6 +423,13 @@ export async function fetchTeamWorkspace(teamId: string): Promise<TeamWorkspace>
       .eq("team_id", teamId)
       .order("sort_order", { ascending: true }),
     supabase
+      .from("work_list_automations")
+      .select(
+        "id, list_id, trigger_kind, action_kind, template_id, enabled, sort_order",
+      )
+      .eq("team_id", teamId)
+      .order("sort_order", { ascending: true }),
+    supabase
       .from("team_status_labels")
       .select("status_id, label")
       .eq("team_id", teamId),
@@ -403,6 +444,7 @@ export async function fetchTeamWorkspace(teamId: string): Promise<TeamWorkspace>
     notificationsRes.error,
     todosRes.error,
     listStatusesRes.error,
+    listAutomationsRes.error,
     teamStatusLabelsRes.error,
   ].filter(Boolean);
   if (errors[0]) throw errors[0];
@@ -543,6 +585,7 @@ export async function fetchTeamWorkspace(teamId: string): Promise<TeamWorkspace>
       status: row.status,
       statusChangedAt: row.status_changed_at ?? null,
       deletedAt: row.deleted_at ?? null,
+      archivedAt: row.archived_at ?? null,
       assigneeIds: assigneesByTask.get(row.id) ?? [],
       startDate: row.start_date,
       dueDate: row.due_date,
@@ -567,6 +610,7 @@ export async function fetchTeamWorkspace(teamId: string): Promise<TeamWorkspace>
     listFiles,
     listFileContents,
     listStatuses: (listStatusesRes.data ?? []).map(mapListStatusRow),
+    listAutomations: (listAutomationsRes.data ?? []).map(mapListAutomationRow),
     teamStatusLabels: parseTeamStatusLabels(teamStatusLabelsRes.data),
     notifications: (notificationsRes.data ?? []).map((row) => ({
       id: row.id,
@@ -749,12 +793,13 @@ export async function insertTask(teamId: string, task: WorkTask) {
     status: task.status,
     status_changed_at: task.statusChangedAt,
     deleted_at: task.deletedAt,
+    archived_at: task.archivedAt,
     start_date: dateOrNull(task.startDate),
     due_date: dateOrNull(task.dueDate),
     sort_order: task.sortOrder,
     checklists: task.checklists ?? [],
   });
-  if (error) throw error;
+  if (error) throw new Error(formatSupabaseError(error));
   await replaceTaskAssignees(task.id, task.assigneeIds);
 }
 
@@ -768,6 +813,7 @@ export async function updateTaskRow(
       | "status"
       | "statusChangedAt"
       | "deletedAt"
+      | "archivedAt"
       | "assigneeIds"
       | "startDate"
       | "dueDate"
@@ -788,6 +834,9 @@ export async function updateTaskRow(
   if (patch.deletedAt !== undefined) {
     row.deleted_at = patch.deletedAt;
   }
+  if (patch.archivedAt !== undefined) {
+    row.archived_at = patch.archivedAt;
+  }
   if (patch.startDate !== undefined) row.start_date = dateOrNull(patch.startDate);
   if (patch.dueDate !== undefined) row.due_date = dateOrNull(patch.dueDate);
   if (patch.parentId !== undefined) row.parent_id = patch.parentId;
@@ -800,6 +849,18 @@ export async function updateTaskRow(
   if (patch.assigneeIds) {
     await replaceTaskAssignees(taskId, patch.assigneeIds);
   }
+}
+
+export async function updateTasksArchivedAt(
+  taskIds: string[],
+  archivedAt: string | null,
+) {
+  if (taskIds.length === 0) return;
+  const { error } = await db()
+    .from("work_tasks")
+    .update({ archived_at: archivedAt })
+    .in("id", taskIds);
+  if (error) throw new Error(formatSupabaseError(error));
 }
 
 export async function deleteTaskRow(taskId: string) {
@@ -1094,6 +1155,46 @@ export async function deleteListStatusRow(statusId: string) {
   if (error) throw error;
 }
 
+export async function insertListAutomation(teamId: string, automation: ListAutomation) {
+  const supabase = db();
+  const { error } = await supabase.from("work_list_automations").insert({
+    id: automation.id,
+    list_id: automation.listId,
+    team_id: teamId,
+    trigger_kind: automation.triggerKind,
+    action_kind: automation.actionKind,
+    template_id: automation.templateId,
+    enabled: automation.enabled,
+    sort_order: automation.sortOrder,
+  });
+  if (error) throw error;
+}
+
+export async function updateListAutomationRow(
+  automationId: string,
+  patch: Partial<Pick<ListAutomation, "templateId" | "enabled" | "sortOrder">>,
+) {
+  const supabase = db();
+  const next: Record<string, unknown> = {};
+  if (patch.templateId !== undefined) next.template_id = patch.templateId;
+  if (patch.enabled !== undefined) next.enabled = patch.enabled;
+  if (patch.sortOrder !== undefined) next.sort_order = patch.sortOrder;
+  if (Object.keys(next).length === 0) return;
+  const { error } = await supabase
+    .from("work_list_automations")
+    .update(next)
+    .eq("id", automationId);
+  if (error) throw error;
+}
+
+export async function deleteListAutomationRow(automationId: string) {
+  const { error } = await db()
+    .from("work_list_automations")
+    .delete()
+    .eq("id", automationId);
+  if (error) throw error;
+}
+
 export async function updateListStatusSortOrders(orderedIds: string[]) {
   const supabase = db();
   for (let index = 0; index < orderedIds.length; index += 1) {
@@ -1134,5 +1235,139 @@ export async function deleteTeamStatusLabel(teamId: string, statusId: string) {
     .eq("team_id", teamId)
     .eq("status_id", statusId);
   if (error) throw error;
+}
+
+function templateFromRow(row: {
+  id: string;
+  team_id: string;
+  name: string;
+  description: string;
+  sort_order: number;
+  created_at: string;
+}): WorkTemplate {
+  return {
+    id: row.id,
+    teamId: row.team_id,
+    name: row.name,
+    description: row.description,
+    sortOrder: row.sort_order,
+    createdAt: row.created_at,
+  };
+}
+
+function templateItemFromRow(row: {
+  id: string;
+  template_id: string;
+  parent_id: string | null;
+  kind: string;
+  title: string;
+  description: string;
+  sort_order: number;
+}): WorkTemplateItem {
+  return {
+    id: row.id,
+    templateId: row.template_id,
+    parentId: row.parent_id,
+    kind:
+      row.kind === "subtask"
+        ? "subtask"
+        : row.kind === "folder"
+          ? "folder"
+          : "task",
+    title: row.title,
+    description: row.description,
+    sortOrder: row.sort_order,
+  };
+}
+
+function templateItemToRow(item: WorkTemplateItem) {
+  return {
+    id: item.id,
+    template_id: item.templateId,
+    parent_id: item.parentId,
+    kind: item.kind,
+    title: item.title,
+    description: item.description,
+    sort_order: item.sortOrder,
+  };
+}
+
+export async function fetchTeamTemplates(teamId: string): Promise<{
+  templates: WorkTemplate[];
+  items: WorkTemplateItem[];
+}> {
+  const supabase = db();
+  const { data: templateRows, error: templatesError } = await supabase
+    .from("work_templates")
+    .select("id, team_id, name, description, sort_order, created_at")
+    .eq("team_id", teamId)
+    .order("sort_order", { ascending: true })
+    .order("created_at", { ascending: true });
+  if (templatesError) throw new Error(formatSupabaseError(templatesError));
+
+  const templates = (templateRows ?? []).map(templateFromRow);
+  const templateIds = templates.map((item) => item.id);
+  if (templateIds.length === 0) return { templates, items: [] };
+
+  const { data: itemRows, error: itemsError } = await supabase
+    .from("work_template_items")
+    .select("id, template_id, parent_id, kind, title, description, sort_order")
+    .in("template_id", templateIds)
+    .order("sort_order", { ascending: true });
+  if (itemsError) throw new Error(formatSupabaseError(itemsError));
+
+  return {
+    templates,
+    items: (itemRows ?? []).map(templateItemFromRow),
+  };
+}
+
+export async function insertTemplate(template: WorkTemplate) {
+  const { error } = await db().from("work_templates").insert({
+    id: template.id,
+    team_id: template.teamId,
+    name: template.name,
+    description: template.description,
+    sort_order: template.sortOrder,
+    created_at: template.createdAt,
+  });
+  if (error) throw new Error(formatSupabaseError(error));
+}
+
+export async function updateTemplateRow(
+  templateId: string,
+  patch: Partial<Pick<WorkTemplate, "name" | "description" | "sortOrder">>,
+) {
+  const row: Record<string, unknown> = {};
+  if (patch.name !== undefined) row.name = patch.name;
+  if (patch.description !== undefined) row.description = patch.description;
+  if (patch.sortOrder !== undefined) row.sort_order = patch.sortOrder;
+  if (Object.keys(row).length === 0) return;
+  const { error } = await db().from("work_templates").update(row).eq("id", templateId);
+  if (error) throw new Error(formatSupabaseError(error));
+}
+
+export async function deleteTemplateRow(templateId: string) {
+  const { error } = await db().from("work_templates").delete().eq("id", templateId);
+  if (error) throw new Error(formatSupabaseError(error));
+}
+
+export async function replaceTemplateItems(
+  templateId: string,
+  items: WorkTemplateItem[],
+) {
+  const supabase = db();
+  const { error: deleteError } = await supabase
+    .from("work_template_items")
+    .delete()
+    .eq("template_id", templateId);
+  if (deleteError) throw new Error(formatSupabaseError(deleteError));
+  if (items.length === 0) return;
+
+  const sorted = sortTemplateItemsForInsert(items);
+  const { error } = await supabase
+    .from("work_template_items")
+    .insert(sorted.map(templateItemToRow));
+  if (error) throw new Error(formatSupabaseError(error));
 }
 

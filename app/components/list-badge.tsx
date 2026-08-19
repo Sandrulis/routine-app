@@ -17,11 +17,12 @@ export function ListBadge({
 }) {
   const tone = listColorById(color);
   const initials = listInitials(name);
+  const compactInitials = initials.length > 1;
   const sizeClassName =
     size === "lg"
-      ? "size-11 rounded-xl text-sm"
+      ? `size-11 rounded-xl leading-none ${compactInitials ? "text-[16px]" : "text-[22px]"}`
       : size === "md"
-        ? "size-8 rounded-lg text-xs"
+        ? `size-8 rounded-lg leading-none ${compactInitials ? "text-[13px]" : "text-[18px]"}`
         : "size-5 rounded-[2.5px] text-[9px]";
 
   return (

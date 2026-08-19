@@ -19,6 +19,9 @@ import {
   nextSortOrder,
   applySortOrder,
   collectTaskSubtreeIds,
+  getArchivedListRoots,
+  getTaskAncestors,
+  isWorkSubtask,
   type WorkTaskKind,
   listColorById,
   randomListColorId,
@@ -28,6 +31,11 @@ import {
   type WorkTask,
   type WorkTaskStatus,
 } from "@/app/lib/lists";
+import {
+  templateSubtasks,
+  templateTreeChildren,
+  type WorkTemplateItem,
+} from "@/app/lib/templates";
 import {
   DEFAULT_LIST_ACCESS_LEVEL,
   accessIds,
@@ -79,7 +87,11 @@ import {
   formatSupabaseError,
   updateTaskRow,
   updateTaskSortOrders,
+  updateTasksArchivedAt,
   upsertTeamStatusLabel,
+  insertListAutomation,
+  updateListAutomationRow,
+  deleteListAutomationRow,
 } from "@/app/lib/db/work-data";
 import {
   createListStatusId,
@@ -87,6 +99,12 @@ import {
   normalizeStatusColor,
   type ListStatus,
 } from "@/app/lib/list-statuses";
+import {
+  createListAutomationId,
+  type AutomationActionKind,
+  type AutomationTriggerKind,
+  type ListAutomation,
+} from "@/app/lib/list-automations";
 import {
   normalizeTaskChecklists,
   taskHasIncompleteChecklists,
@@ -138,6 +156,11 @@ type ListsContextValue = {
     title: string;
     description: string;
   }) => WorkTask;
+  applyTemplate: (input: {
+    listId: string;
+    parentId?: string | null;
+    items: WorkTemplateItem[];
+  }) => WorkTask[];
   updateTaskStatus: (taskId: string, status: WorkTaskStatus) => void;
   updateTask: (
     taskId: string,
@@ -157,6 +180,7 @@ type ListsContextValue = {
     orderedIds: string[],
   ) => void;
   deleteTask: (taskId: string) => void;
+  setWorkItemArchived: (taskId: string, archived: boolean) => void;
   addTaskComment: (taskId: string, text: string) => void;
   addTaskFile: (taskId: string, file: File) => Promise<TaskFile | null>;
   renameTaskFile: (fileId: string, name: string) => void;
@@ -165,6 +189,7 @@ type ListsContextValue = {
   taskFiles: (taskId: string) => TaskFile[];
   allTaskFiles: TaskFile[];
   listTasks: (listId: string) => WorkTask[];
+  archivedListTasks: (listId: string) => WorkTask[];
   childTasks: (parentId: string) => WorkTask[];
   subtasks: (parentId: string) => WorkTask[];
   reorderTasks: (orderedIds: string[]) => void;
@@ -188,6 +213,21 @@ type ListsContextValue = {
   teamStatusLabels: Record<string, string>;
   renameSystemStatus: (statusId: string, label: string) => void;
   resetSystemStatusLabel: (statusId: string) => void;
+  listAutomations: ListAutomation[];
+  addListAutomation: (
+    listId: string,
+    input: {
+      triggerKind: AutomationTriggerKind;
+      actionKind: AutomationActionKind;
+      templateId: string;
+      enabled?: boolean;
+    },
+  ) => ListAutomation | null;
+  updateListAutomation: (
+    automationId: string,
+    patch: Partial<Pick<ListAutomation, "templateId" | "enabled">>,
+  ) => void;
+  deleteListAutomation: (automationId: string) => void;
 };
 
 const ListsContext = createContext<ListsContextValue | null>(null);
@@ -204,6 +244,7 @@ export function ListsProvider({ children }: { children: ReactNode }) {
   const [activities, setActivities] = useState<TaskActivity[]>([]);
   const [files, setFiles] = useState<TaskFile[]>([]);
   const [listStatuses, setListStatuses] = useState<ListStatus[]>([]);
+  const [listAutomations, setListAutomations] = useState<ListAutomation[]>([]);
   const [teamStatusLabels, setTeamStatusLabels] = useState<Record<string, string>>(
     {},
   );
@@ -221,6 +262,7 @@ export function ListsProvider({ children }: { children: ReactNode }) {
     userId,
     teamId,
   });
+  const pendingTaskInsertsRef = useRef<Map<string, Promise<void>>>(new Map());
   assignmentNotifyRef.current = {
     actorId: currentUser.id,
     memberIds: members.map((member) => member.id),
@@ -239,6 +281,7 @@ export function ListsProvider({ children }: { children: ReactNode }) {
       setActivities([]);
       setFiles([]);
       setListStatuses([]);
+      setListAutomations([]);
       setTeamStatusLabels({});
       hydrateListFiles(null, [], {});
       hydrateTaskFileContents({});
@@ -252,6 +295,7 @@ export function ListsProvider({ children }: { children: ReactNode }) {
       setActivities([]);
       setFiles([]);
       setListStatuses([]);
+      setListAutomations([]);
       setTeamStatusLabels({});
       hydrateListFiles(null, [], {});
       hydrateTaskFileContents({});
@@ -260,6 +304,7 @@ export function ListsProvider({ children }: { children: ReactNode }) {
     }
 
     let cancelled = false;
+    pendingTaskInsertsRef.current.clear();
     void fetchTeamWorkspace(teamId)
       .then((workspace) => {
         if (cancelled) return;
@@ -268,6 +313,7 @@ export function ListsProvider({ children }: { children: ReactNode }) {
         setActivities(workspace.activities);
         setFiles(workspace.taskFiles);
         setListStatuses(workspace.listStatuses);
+        setListAutomations(workspace.listAutomations);
         setTeamStatusLabels(workspace.teamStatusLabels);
         hydrateListFiles(teamId, workspace.listFiles, workspace.listFileContents);
         hydrateTaskFileContents(workspace.taskFileContents);
@@ -479,6 +525,7 @@ export function ListsProvider({ children }: { children: ReactNode }) {
         status: "todo",
         statusChangedAt: createdAt,
         deletedAt: null,
+        archivedAt: null,
         assigneeIds: [],
         startDate: null,
         dueDate: null,
@@ -486,6 +533,10 @@ export function ListsProvider({ children }: { children: ReactNode }) {
         checklists: [],
       };
       setTasks((current) => {
+        if (task.parentId) {
+          const parent = current.find((item) => item.id === task.parentId);
+          if (parent?.archivedAt) task.archivedAt = parent.archivedAt;
+        }
         if (task.kind === "subtask") {
           task.sortOrder = nextSortOrder(current, task);
         } else {
@@ -513,15 +564,79 @@ export function ListsProvider({ children }: { children: ReactNode }) {
       setActivities((current) => [...current, createdActivity]);
       const activeTeamId = assignmentNotifyRef.current.teamId;
       if (activeTeamId) {
-        void insertTask(activeTeamId, task)
+        const parentId = task.parentId;
+        const parentWait =
+          parentId != null
+            ? (pendingTaskInsertsRef.current.get(parentId) ?? Promise.resolve())
+            : Promise.resolve();
+        const persist = parentWait
+          .then(() => insertTask(activeTeamId, task))
           .then(() => insertActivity(activeTeamId, createdActivity))
           .catch((error) => {
-            console.error("Failed to save task", error);
+            console.error("Failed to save task", formatSupabaseError(error));
           });
+        pendingTaskInsertsRef.current.set(task.id, persist);
+        void persist.finally(() => {
+          if (pendingTaskInsertsRef.current.get(task.id) === persist) {
+            pendingTaskInsertsRef.current.delete(task.id);
+          }
+        });
       }
       return task;
     },
     [],
+  );
+
+  const applyTemplate = useCallback(
+    (input: {
+      listId: string;
+      parentId?: string | null;
+      items: WorkTemplateItem[];
+    }) => {
+      const templateId = input.items[0]?.templateId ?? "";
+      const created: WorkTask[] = [];
+
+      function applyBranch(templateParentId: string | null, workParentId: string | null) {
+        const siblings = templateTreeChildren(
+          input.items,
+          templateParentId,
+          templateId,
+        );
+        for (const item of siblings) {
+          const title = item.title.trim();
+          if (!title) continue;
+          const workItem = addTask({
+            listId: input.listId,
+            parentId: workParentId,
+            kind: item.kind,
+            title,
+            description: item.description,
+          });
+          if (item.kind !== "subtask") {
+            created.push(workItem);
+          }
+          if (item.kind === "folder") {
+            applyBranch(item.id, workItem.id);
+          } else if (item.kind === "task") {
+            for (const child of templateSubtasks(input.items, item.id)) {
+              const childTitle = child.title.trim();
+              if (!childTitle) continue;
+              addTask({
+                listId: input.listId,
+                parentId: workItem.id,
+                kind: "subtask",
+                title: childTitle,
+                description: child.description,
+              });
+            }
+          }
+        }
+      }
+
+      applyBranch(null, input.parentId ?? null);
+      return created;
+    },
+    [addTask],
   );
 
   const updateTask = useCallback(
@@ -838,6 +953,32 @@ export function ListsProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
+  const setWorkItemArchived = useCallback(
+    (taskId: string, archived: boolean) => {
+      const archivedAt = archived ? new Date().toISOString() : null;
+      let ids: string[] = [];
+      setTasks((current) => {
+        const existing = current.find((task) => task.id === taskId);
+        if (!existing || isWorkSubtask(existing)) return current;
+        const idSet = new Set(collectTaskSubtreeIds(current, taskId));
+        if (!archived) {
+          for (const ancestor of getTaskAncestors(current, existing)) {
+            idSet.add(ancestor.id);
+          }
+        }
+        ids = [...idSet];
+        return current.map((task) =>
+          idSet.has(task.id) ? { ...task, archivedAt } : task,
+        );
+      });
+      if (ids.length === 0) return;
+      void updateTasksArchivedAt(ids, archivedAt).catch((error) => {
+        console.error("Failed to update task archive", error);
+      });
+    },
+    [],
+  );
+
   const reorderTasks = useCallback((orderedIds: string[]) => {
     setTasks((current) => applySortOrder(current, orderedIds));
     void updateTaskSortOrders(orderedIds).catch((error) => {
@@ -913,6 +1054,84 @@ export function ListsProvider({ children }: { children: ReactNode }) {
     setListStatuses((current) => current.filter((status) => status.id !== statusId));
     void deleteListStatusRow(statusId).catch((error) => {
       console.error("Failed to delete list status", error);
+    });
+  }, []);
+
+  const addListAutomation = useCallback(
+    (
+      listId: string,
+      input: {
+        triggerKind: AutomationTriggerKind;
+        actionKind: AutomationActionKind;
+        templateId: string;
+        enabled?: boolean;
+      },
+    ) => {
+      const templateId = input.templateId.trim();
+      if (!templateId) return null;
+      const exists = listAutomations.some(
+        (automation) =>
+          automation.listId === listId &&
+          automation.triggerKind === input.triggerKind &&
+          automation.actionKind === input.actionKind,
+      );
+      if (exists) return null;
+      const sortOrder =
+        listAutomations
+          .filter((automation) => automation.listId === listId)
+          .reduce((max, automation) => Math.max(max, automation.sortOrder), -1) + 1;
+      const automation: ListAutomation = {
+        id: createListAutomationId(),
+        listId,
+        triggerKind: input.triggerKind,
+        actionKind: input.actionKind,
+        templateId,
+        enabled: input.enabled !== false,
+        sortOrder,
+      };
+      setListAutomations((current) => [...current, automation]);
+      if (teamId) {
+        void insertListAutomation(teamId, automation).catch((error) => {
+          console.error("Failed to save list automation", error);
+        });
+      }
+      return automation;
+    },
+    [listAutomations, teamId],
+  );
+
+  const updateListAutomation = useCallback(
+    (
+      automationId: string,
+      patch: Partial<Pick<ListAutomation, "templateId" | "enabled">>,
+    ) => {
+      setListAutomations((current) =>
+        current.map((automation) => {
+          if (automation.id !== automationId) return automation;
+          return {
+            ...automation,
+            templateId:
+              patch.templateId !== undefined
+                ? (patch.templateId?.trim() || null)
+                : automation.templateId,
+            enabled:
+              patch.enabled !== undefined ? patch.enabled : automation.enabled,
+          };
+        }),
+      );
+      void updateListAutomationRow(automationId, patch).catch((error) => {
+        console.error("Failed to update list automation", error);
+      });
+    },
+    [],
+  );
+
+  const deleteListAutomation = useCallback((automationId: string) => {
+    setListAutomations((current) =>
+      current.filter((automation) => automation.id !== automationId),
+    );
+    void deleteListAutomationRow(automationId).catch((error) => {
+      console.error("Failed to delete list automation", error);
     });
   }, []);
 
@@ -1056,16 +1275,19 @@ export function ListsProvider({ children }: { children: ReactNode }) {
       lists,
       tasks,
       listStatuses,
+      listAutomations,
       addList,
       updateList,
       deleteList,
       addTask,
+      applyTemplate,
       updateTask,
       hideTask,
       restoreTask,
       moveSubtask,
       moveWorkItem,
       deleteTask,
+      setWorkItemArchived,
       updateTaskStatus,
       addTaskComment,
       addTaskFile,
@@ -1076,6 +1298,9 @@ export function ListsProvider({ children }: { children: ReactNode }) {
       updateListStatus,
       deleteListStatus,
       reorderListStatuses,
+      addListAutomation,
+      updateListAutomation,
+      deleteListAutomation,
       reassignTasksOffStatus,
       teamStatusLabels,
       renameSystemStatus,
@@ -1089,6 +1314,7 @@ export function ListsProvider({ children }: { children: ReactNode }) {
         files.filter((file) => file.taskId === taskId),
       allTaskFiles: files,
       listTasks: (listId: string) => getListTasks(tasks, listId),
+      archivedListTasks: (listId: string) => getArchivedListRoots(tasks, listId),
       childTasks: (parentId: string) => getChildTasks(tasks, parentId),
       subtasks: (parentId: string) => getSubtasks(tasks, parentId),
     }),
@@ -1098,11 +1324,13 @@ export function ListsProvider({ children }: { children: ReactNode }) {
       updateList,
       deleteList,
       addTask,
+      applyTemplate,
       addTaskComment,
       addTaskFile,
       renameTaskFile,
       removeTaskFile,
       deleteTask,
+      setWorkItemArchived,
       hideTask,
       restoreTask,
       moveSubtask,
@@ -1111,11 +1339,15 @@ export function ListsProvider({ children }: { children: ReactNode }) {
       isReady,
       lists,
       listStatuses,
+      listAutomations,
       reorderTasks,
       addListStatus,
       updateListStatus,
       deleteListStatus,
       reorderListStatuses,
+      addListAutomation,
+      updateListAutomation,
+      deleteListAutomation,
       reassignTasksOffStatus,
       teamStatusLabels,
       renameSystemStatus,

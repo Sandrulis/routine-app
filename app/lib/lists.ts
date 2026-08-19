@@ -61,6 +61,7 @@ export type WorkTask = {
   status: WorkTaskStatus;
   statusChangedAt: string | null;
   deletedAt: string | null;
+  archivedAt: string | null;
   assigneeIds: string[];
   startDate: string | null;
   dueDate: string | null;
@@ -530,6 +531,11 @@ export function normalizeStoredTasks(value: unknown): WorkTask[] | null {
         (typeof item.deletedAt === "string" || item.deletedAt === null)
           ? item.deletedAt
           : null;
+      const archivedAt =
+        "archivedAt" in item &&
+        (typeof item.archivedAt === "string" || item.archivedAt === null)
+          ? item.archivedAt
+          : null;
       const checklists = parseTaskChecklists(
         "checklists" in item ? item.checklists : [],
       );
@@ -545,6 +551,7 @@ export function normalizeStoredTasks(value: unknown): WorkTask[] | null {
         status,
         statusChangedAt,
         deletedAt,
+        archivedAt,
         assigneeIds,
         startDate,
         dueDate,
@@ -571,18 +578,55 @@ export function workItemIcon(task: WorkTask): string {
   return "fas fa-list-check";
 }
 
+export function isWorkItemArchived(task: Pick<WorkTask, "archivedAt">): boolean {
+  return Boolean(task.archivedAt);
+}
+
+function parentIsArchived(tasks: WorkTask[], parentId: string | null): boolean {
+  if (!parentId) return false;
+  const parent = tasks.find((task) => task.id === parentId);
+  return Boolean(parent && isWorkItemArchived(parent));
+}
+
 export function getListTasks(tasks: WorkTask[], listId: string): WorkTask[] {
   return tasks
     .filter(
       (task) =>
-        task.listId === listId && task.parentId === null && task.kind !== "subtask",
+        task.listId === listId &&
+        task.parentId === null &&
+        task.kind !== "subtask" &&
+        !isWorkItemArchived(task),
     )
     .sort(compareBySortOrder);
 }
 
-export function getChildTasks(tasks: WorkTask[], parentId: string): WorkTask[] {
+export function getArchivedListRoots(
+  tasks: WorkTask[],
+  listId: string,
+): WorkTask[] {
   return tasks
-    .filter((task) => task.parentId === parentId && task.kind !== "subtask")
+    .filter((task) => {
+      if (
+        task.listId !== listId ||
+        task.kind === "subtask" ||
+        !isWorkItemArchived(task)
+      ) {
+        return false;
+      }
+      return !parentIsArchived(tasks, task.parentId);
+    })
+    .sort(compareBySortOrder);
+}
+
+export function getChildTasks(tasks: WorkTask[], parentId: string): WorkTask[] {
+  const archived = parentIsArchived(tasks, parentId);
+  return tasks
+    .filter(
+      (task) =>
+        task.parentId === parentId &&
+        task.kind !== "subtask" &&
+        isWorkItemArchived(task) === archived,
+    )
     .sort(compareBySortOrder);
 }
 
@@ -622,8 +666,14 @@ export function getTaskTree(tasks: WorkTask[], listId: string): WorkTask[] {
 }
 
 export function getSubtasks(tasks: WorkTask[], parentId: string): WorkTask[] {
+  const archived = parentIsArchived(tasks, parentId);
   return tasks
-    .filter((task) => task.parentId === parentId && task.kind === "subtask")
+    .filter(
+      (task) =>
+        task.parentId === parentId &&
+        task.kind === "subtask" &&
+        isWorkItemArchived(task) === archived,
+    )
     .sort(compareBySortOrder);
 }
 
@@ -668,7 +718,11 @@ export function isTaskActiveInLists(
   task: WorkTask,
   catalog?: { id: string; groupKey: string }[],
 ): boolean {
-  return !isTaskDeleted(task) && !isClosedTaskStatus(task.status, catalog);
+  return (
+    !isTaskDeleted(task) &&
+    !isWorkItemArchived(task) &&
+    !isClosedTaskStatus(task.status, catalog)
+  );
 }
 
 export function isTaskInArchive(

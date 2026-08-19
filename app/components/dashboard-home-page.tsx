@@ -49,7 +49,7 @@ function MyTasksSection({
   );
 
   return (
-    <section className="overflow-hidden rounded-xl border border-zinc-200 bg-white">
+    <section className="rounded-xl border border-zinc-200 bg-white">
       <header className="flex items-center gap-2 px-3 py-2">
         <button
           type="button"
@@ -160,10 +160,26 @@ export function DashboardHomePage() {
         </div>
       ) : (
         <div className="space-y-6">
-          <MyTasksSection
-            tasks={myTasks}
-            onOpenTask={openTask}
-          />
+          {myTasks.length > 0 ? (
+            <MyTasksSection
+              tasks={myTasks}
+              onOpenTask={openTask}
+            />
+          ) : null}
+
+          {myTasks.length > 0 && listsWithTasks.length > 0 ? (
+            <div
+              role="separator"
+              aria-label={t("dashboard.other_tasks", "Pārējie uzdevumi")}
+              className="flex items-center gap-3 pt-2"
+            >
+              <span className="h-px flex-1 bg-zinc-200" />
+              <span className="shrink-0 text-[11px] font-semibold uppercase tracking-wider text-zinc-400">
+                {t("dashboard.other_tasks", "Pārējie uzdevumi")}
+              </span>
+              <span className="h-px flex-1 bg-zinc-200" />
+            </div>
+          ) : null}
 
           {listsWithTasks.map((list) => {
             const roots = getListTasks(tasks, list.id);
