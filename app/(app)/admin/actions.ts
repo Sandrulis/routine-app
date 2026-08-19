@@ -3,6 +3,23 @@
 import { revalidatePath } from "next/cache";
 import { mapUserDisplay } from "@/app/lib/auth/map-user-display";
 import {
+  createFrontendModule,
+  deleteFrontendModule,
+  updateFrontendModuleEnabled,
+} from "@/app/lib/frontend-modules/repository";
+import type { FrontendModuleInput } from "@/app/lib/frontend-modules/types";
+import {
+  createPaymentPlan,
+  deletePaymentPlan,
+  saveEarlyBirdSettings,
+  saveTrialSettings,
+  setPaymentPlansEnabled,
+  updatePaymentPlan,
+  type EarlyBirdSettings,
+  type PaymentPlanInput,
+  type TrialSettings,
+} from "@/app/lib/payment-plans/repository";
+import {
   createAdminTeam,
   createAdminUser,
   createSiteLanguage,
@@ -266,6 +283,75 @@ export async function updateFileTypeExtensionAction(
 export async function deleteFileTypeExtensionAction(extension: string) {
   await requireAdmin();
   const result = await deleteFileTypeExtension(extension);
+  if (result.ok) refreshAdmin();
+  return result;
+}
+
+export async function createFrontendModuleAction(input: FrontendModuleInput) {
+  await requireAdmin();
+  const result = await createFrontendModule(input);
+  if (result.ok) refreshAdmin();
+  return result;
+}
+
+export async function updateFrontendModuleEnabledAction(
+  moduleKey: string,
+  isEnabled: boolean,
+) {
+  await requireAdmin();
+  const result = await updateFrontendModuleEnabled(moduleKey, isEnabled);
+  if (result.ok) refreshAdmin();
+  return result;
+}
+
+export async function deleteFrontendModuleAction(moduleKey: string) {
+  await requireAdmin();
+  const result = await deleteFrontendModule(moduleKey);
+  if (result.ok) refreshAdmin();
+  return result;
+}
+
+export async function setPaymentPlansEnabledAction(enabled: boolean) {
+  await requireAdmin();
+  const result = await setPaymentPlansEnabled(enabled);
+  if (result.ok) refreshAdmin();
+  return result;
+}
+
+export async function saveTrialSettingsAction(input: TrialSettings) {
+  await requireAdmin();
+  const result = await saveTrialSettings(input);
+  if (result.ok) refreshAdmin();
+  return result;
+}
+
+export async function saveEarlyBirdSettingsAction(input: EarlyBirdSettings) {
+  await requireAdmin();
+  const result = await saveEarlyBirdSettings(input);
+  if (result.ok) refreshAdmin();
+  return result;
+}
+
+export async function createPaymentPlanAction(input: PaymentPlanInput) {
+  await requireAdmin();
+  const result = await createPaymentPlan(input);
+  if (result.ok) refreshAdmin();
+  return result;
+}
+
+export async function updatePaymentPlanAction(
+  planId: string,
+  input: PaymentPlanInput,
+) {
+  await requireAdmin();
+  const result = await updatePaymentPlan(planId, input);
+  if (result.ok) refreshAdmin();
+  return result;
+}
+
+export async function deletePaymentPlanAction(planId: string) {
+  await requireAdmin();
+  const result = await deletePaymentPlan(planId);
   if (result.ok) refreshAdmin();
   return result;
 }

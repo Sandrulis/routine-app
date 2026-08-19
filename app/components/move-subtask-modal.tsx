@@ -3,13 +3,12 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import type { CreateMenuAnchor } from "@/app/components/create-item-menu";
+import { MoveSubtaskDestinationButton } from "@/app/components/move-subtask-destination-button";
 import { useTranslations } from "@/app/components/translations-provider";
 import {
-  getTaskAncestors,
   getTaskTree,
   isTaskDeleted,
   isWorkItemArchived,
-  workItemIcon,
   type WorkTask,
 } from "@/app/lib/lists";
 import { useLists } from "@/app/lib/lists-store";
@@ -26,7 +25,7 @@ export function MoveSubtaskModal({
   onOpenChange: (open: boolean) => void;
 }) {
   const { t } = useTranslations();
-  const { tasks, moveSubtask } = useLists();
+  const { lists, tasks, moveSubtask } = useLists();
   const menuRef = useRef<HTMLDivElement>(null);
   const [position, setPosition] = useState<{ top: number; left: number } | null>(
     null,
@@ -89,7 +88,7 @@ export function MoveSubtaskModal({
     onOpenChange(false);
   }
 
-  if (!open || !anchor) return null;
+  if (!open || !anchor || !task) return null;
 
   return createPortal(
     <div
@@ -102,11 +101,11 @@ export function MoveSubtaskModal({
       style={{
         position: "fixed",
         top: position?.top ?? anchor.bottom + 6,
-        left: position?.left ?? Math.max(12, anchor.right - 224),
+        left: position?.left ?? Math.max(12, anchor.right - 288),
         zIndex: 80,
         opacity: position ? 1 : 0,
       }}
-      className="w-56 overflow-hidden rounded-xl border border-zinc-100 bg-white p-1.5 shadow-xl"
+      className="w-72 overflow-hidden rounded-xl border border-zinc-100 bg-white p-1.5 shadow-xl"
     >
       <p className="px-2 py-1 text-[10px] font-medium text-zinc-400">
         {t("actions.move", "Pārvietot")}
@@ -117,25 +116,16 @@ export function MoveSubtaskModal({
         </p>
       ) : (
         <div className="max-h-64 overflow-y-auto">
-          {destinations.map((item) => {
-            const depth = getTaskAncestors(tasks, item).length;
-            return (
-              <button
-                key={item.id}
-                type="button"
-                role="menuitem"
-                onClick={() => handleMove(item.id)}
-                style={{ paddingLeft: `${0.5 + depth * 0.75}rem` }}
-                className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-[13px] text-zinc-700 transition hover:bg-zinc-100"
-              >
-                <i
-                  className={`${workItemIcon(item)} w-4 text-center text-[12px] text-zinc-400`}
-                  aria-hidden="true"
-                />
-                <span className="min-w-0 flex-1 truncate">{item.title}</span>
-              </button>
-            );
-          })}
+          {destinations.map((item) => (
+            <MoveSubtaskDestinationButton
+              key={item.id}
+              item={item}
+              tasks={tasks}
+              lists={lists}
+              originListId={task.listId}
+              onSelect={handleMove}
+            />
+          ))}
         </div>
       )}
     </div>,

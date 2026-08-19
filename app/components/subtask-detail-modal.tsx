@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useLayoutEffect, useRef, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import {
   AppModal,
   appModalSplitPanelMaxWidthClassName,
@@ -21,6 +21,8 @@ import { useFeedbackToast } from "@/app/components/feedback-toast-provider";
 import { useDisplayPreferences } from "@/app/components/display-preferences-provider";
 import { useTranslations } from "@/app/components/translations-provider";
 import { mimeFromName } from "@/app/lib/list-files";
+import { FRONTEND_MODULE_KEYS } from "@/app/lib/frontend-modules/keys";
+import { useFrontendModules } from "@/app/lib/frontend-modules/context";
 import { useLists } from "@/app/lib/lists-store";
 import { useTeam } from "@/app/lib/team-store";
 import { useIsAdmin } from "@/app/lib/users/use-is-admin";
@@ -37,7 +39,8 @@ import {
 } from "@/app/lib/task-activity";
 import { assigneeDisplayNames } from "@/app/lib/assignees";
 import { formatTaskActivityText } from "@/app/lib/format-task-activity-text";
-import { isTaskDeleted, type WorkTask, type WorkTaskStatus } from "@/app/lib/lists";
+import { TaskLocationPath } from "@/app/components/task-location-path";
+import { isTaskDeleted, getParentTaskLocationSegments, getSubtaskLocationSegments, type WorkTask, type WorkTaskStatus } from "@/app/lib/lists";
 import {
   checklistsEqual,
   checklistProgress,
@@ -67,6 +70,62 @@ const emptyDraft: SubtaskDraft = {
   assigneeIds: [],
   checklists: [],
 };
+
+function ScrollableHistoryList({ children }: { children: ReactNode }) {
+  const ref = useRef<HTMLOListElement>(null);
+  const [canScrollUp, setCanScrollUp] = useState(false);
+  const [canScrollDown, setCanScrollDown] = useState(false);
+
+  const syncOverflow = useCallback(() => {
+    const el = ref.current;
+    if (!el) return;
+    const max = el.scrollHeight - el.clientHeight;
+    setCanScrollUp(el.scrollTop > 2);
+    setCanScrollDown(max > 2 && el.scrollTop < max - 2);
+  }, []);
+
+  useLayoutEffect(() => {
+    syncOverflow();
+    const el = ref.current;
+    if (!el) return;
+    const resize = new ResizeObserver(syncOverflow);
+    resize.observe(el);
+    const mutation = new MutationObserver(syncOverflow);
+    mutation.observe(el, { childList: true, subtree: true });
+    return () => {
+      resize.disconnect();
+      mutation.disconnect();
+    };
+  }, [syncOverflow, children]);
+
+  return (
+    <div className="relative mt-3 min-h-0 flex-1">
+      <ol
+        ref={ref}
+        onScroll={syncOverflow}
+        className="absolute inset-0 space-y-3 overflow-y-scroll overscroll-contain pr-0.5 [scrollbar-color:rgb(161_161_170)_transparent] [scrollbar-width:thin] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-zinc-400"
+      >
+        {children}
+      </ol>
+      {canScrollUp ? (
+        <div
+          className="pointer-events-none absolute inset-x-0 top-0 flex h-[42px] items-start justify-center bg-gradient-to-b from-zinc-50 via-zinc-50/90 to-transparent pt-0.5"
+          aria-hidden="true"
+        >
+          <i className="fas fa-chevron-up text-[10px] text-zinc-400" />
+        </div>
+      ) : null}
+      {canScrollDown ? (
+        <div
+          className="pointer-events-none absolute inset-x-0 bottom-0 flex h-[42px] items-end justify-center bg-gradient-to-t from-zinc-50 via-zinc-50/90 to-transparent pb-0.5"
+          aria-hidden="true"
+        >
+          <i className="fas fa-chevron-down text-[10px] text-zinc-400" />
+        </div>
+      ) : null}
+    </div>
+  );
+}
 
 function draftFromTask(task: WorkTask): SubtaskDraft {
   return {
@@ -127,7 +186,6 @@ export function SubtaskDetailModal({
     addTask,
     updateTask,
     addTaskFile,
-    addTaskComment,
     renameTaskFile,
     removeTaskFile,
     taskActivities,
@@ -135,6 +193,9 @@ export function SubtaskDetailModal({
   } = useLists();
   const { members, currentUser, roles } = useTeam();
   const { isAdmin } = useIsAdmin();
+  const { isEnabled: isModuleEnabled } = useFrontendModules();
+  const fileUploadsEnabled = isModuleEnabled(FRONTEND_MODULE_KEYS.fileUpload);
+  const checklistsEnabled = isModuleEnabled(FRONTEND_MODULE_KEYS.checklist);
   const [draft, setDraft] = useState<SubtaskDraft>(emptyDraft);
   const [createdTaskId, setCreatedTaskId] = useState<string | null>(null);
   const [forceCreate, setForceCreate] = useState(false);
@@ -167,7 +228,6 @@ export function SubtaskDetailModal({
     content: string | null;
     revokeOnClose: boolean;
   } | null>(null);
-  const [commentText, setCommentText] = useState("");
 
   const isCreate = forceCreate || (Boolean(createFor) && !taskId && !createdTaskId);
   const activeTaskId = forceCreate ? null : (taskId ?? createdTaskId);
@@ -201,12 +261,28 @@ export function SubtaskDetailModal({
       null,
     );
   const createdOn = createdAt ? formatDate(createdAt) : "";
-  const checklistBlocked = taskHasIncompleteChecklists(draft.checklists);
-  const checklistsProgress = checklistProgress(draft.checklists);
+  const checklistBlocked =
+    checklistsEnabled && taskHasIncompleteChecklists(draft.checklists);
+  const checklistsProgress = checklistsEnabled
+    ? checklistProgress(draft.checklists)
+    : { done: 0, total: 0, percent: 0 };
   const checklistBlockedLabel = t(
     "subtasks.checklist.incomplete",
     "Vispirms izpildi visus kontrolsaraksta punktus.",
   );
+  const listName = list?.name ?? null;
+  const locationSegments = task
+    ? getSubtaskLocationSegments(tasks, task, listName)
+    : createFor?.parentId && parentListId
+      ? getParentTaskLocationSegments(
+          tasks,
+          createFor.parentId,
+          parentListId,
+          listName,
+        )
+      : listName && parentListId
+        ? [{ type: "list" as const, listId: parentListId, label: listName }]
+        : [];
 
   const flushChecklistPersist = useCallback(() => {
     if (persistChecklistsTimerRef.current) {
@@ -281,7 +357,7 @@ export function SubtaskDetailModal({
   }, [flushChecklistPersist, open]);
 
   const statusLabel = useStatusLabels();
-  const { labelFor, groupKeyFor } = useTaskStatuses(parentListId);
+  const { labelFor, groupKeyFor } = useTaskStatuses(parentListId, task?.parentId ?? createFor?.parentId ?? null);
 
   function historyStatusName(statusId: string | undefined) {
     if (!statusId) return "—";
@@ -306,6 +382,7 @@ export function SubtaskDetailModal({
   }
 
   async function handleAddAttachments(selected: File[]) {
+    if (!fileUploadsEnabled) return;
     if (isCreate ? !access.canCreateTasks : !access.canEditTasks) return;
     if (task) {
       let storedWithoutPreview = false;
@@ -489,7 +566,7 @@ export function SubtaskDetailModal({
         assigneeIds: next.assigneeIds,
         checklists: next.checklists,
       });
-      for (const item of pendingFiles) {
+      for (const item of fileUploadsEnabled ? pendingFiles : []) {
         const upload =
           item.name === item.file.name
             ? item.file
@@ -572,6 +649,15 @@ export function SubtaskDetailModal({
           </time>
         ) : null
       }
+      headerSubtitle={
+        locationSegments.length > 0 ? (
+          <TaskLocationPath
+            segments={locationSegments}
+            align="left"
+            onNavigate={() => onOpenChange(false)}
+          />
+        ) : null
+      }
     >
       <form
         onSubmit={(event) => {
@@ -581,7 +667,7 @@ export function SubtaskDetailModal({
         onDrop={(event) => event.preventDefault()}
         className="space-y-4"
       >
-        <div className="grid gap-6 md:grid-cols-[minmax(0,1fr)_18rem]">
+        <div className="relative grid gap-6 md:grid-cols-[minmax(0,1fr)_18rem]">
           <div className="space-y-4">
             <div>
               <label htmlFor="subtask-title" className="sr-only">
@@ -656,6 +742,7 @@ export function SubtaskDetailModal({
                 <div className="mt-1.5">
                   <StatusControl
                     listId={parentListId}
+                    parentTaskId={task?.parentId ?? createFor?.parentId ?? null}
                     status={draft.status}
                     statusChangedAt={
                       deleted
@@ -743,7 +830,9 @@ export function SubtaskDetailModal({
             </div>
 
             <TaskChecklists
+              key={task?.id ?? "create"}
               checklists={draft.checklists}
+              forceCollapsed={!checklistsEnabled}
               disabled={
                 deleted ||
                 (isCreate ? !access.canCreateTasks : !access.canEditTasks && !access.canChangeStatus)
@@ -754,7 +843,9 @@ export function SubtaskDetailModal({
               onChange={commitChecklists}
             />
 
+            {fileUploadsEnabled ? (
             <TaskAttachments
+              key={task?.id ?? "create"}
               files={[
                 ...files.map((file) => ({
                   id: file.id,
@@ -777,18 +868,19 @@ export function SubtaskDetailModal({
               onRename={requestRenameAttachment}
               onRemove={requestRemoveAttachment}
             />
+            ) : null}
           </div>
 
-          <aside className="rounded-2xl border border-zinc-100 bg-zinc-50 p-3">
-            <h3 className="px-1 text-[12px] font-semibold tracking-wide text-zinc-400 uppercase">
+          <aside className="flex min-h-0 flex-col overflow-hidden rounded-2xl border border-zinc-100 bg-zinc-50 p-3 md:absolute md:inset-y-0 md:right-0 md:w-[18rem]">
+            <h3 className="shrink-0 px-1 text-[12px] font-semibold tracking-wide text-zinc-400 uppercase">
               {t("subtasks.modal.history", "Vēsture")}
             </h3>
             {activities.length === 0 ? (
-              <p className="mt-3 px-1 text-sm text-zinc-400">
+              <p className="mt-3 min-h-0 flex-1 px-1 text-sm text-zinc-400">
                 {t("subtasks.history.empty", "Vēl nav vēstures ierakstu.")}
               </p>
             ) : (
-              <ol className="mt-3 space-y-3">
+              <ScrollableHistoryList>
                 {activities.map((item) => {
                   const actor = members.find((member) => member.id === item.actorId);
                   return (
@@ -814,37 +906,8 @@ export function SubtaskDetailModal({
                     </li>
                   );
                 })}
-              </ol>
+              </ScrollableHistoryList>
             )}
-            {!isCreate && task && access.canComment ? (
-              <div className="mt-3 space-y-2">
-                <label htmlFor="subtask-comment" className="sr-only">
-                  {t("subtasks.comment.placeholder", "Raksti komentāru")}
-                </label>
-                <textarea
-                  id="subtask-comment"
-                  value={commentText}
-                  onChange={(event) => setCommentText(event.target.value)}
-                  rows={2}
-                  className="w-full resize-y rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 outline-none transition placeholder:text-zinc-400 focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
-                  placeholder={t(
-                    "subtasks.comment.placeholder",
-                    "Raksti komentāru",
-                  )}
-                />
-                <button
-                  type="button"
-                  disabled={!commentText.trim()}
-                  onClick={() => {
-                    addTaskComment(task.id, commentText);
-                    setCommentText("");
-                  }}
-                  className="inline-flex min-h-8 items-center rounded-xl bg-zinc-900 px-3 text-[13px] font-semibold text-white transition hover:bg-zinc-800 disabled:bg-zinc-200 disabled:text-zinc-400"
-                >
-                  {t("subtasks.comment.submit", "Pievienot komentāru")}
-                </button>
-              </div>
-            ) : null}
           </aside>
         </div>
 

@@ -2,7 +2,7 @@
 
 /* eslint-disable @next/next/no-img-element */
 
-import { useRef, useState, type DragEvent } from "react";
+import { useEffect, useRef, useState, type DragEvent } from "react";
 import {
   CreateItemMenu,
   createMenuAnchorFromEvent,
@@ -56,12 +56,16 @@ export function TaskAttachments({
   const fileAccept = accept ?? defaultAccept;
   const inputRef = useRef<HTMLInputElement>(null);
   const dragCountRef = useRef(0);
-  const [expanded, setExpanded] = useState(true);
+  const [expanded, setExpanded] = useState(files.length > 0);
   const [dragging, setDragging] = useState(false);
   const [menu, setMenu] = useState<{
     fileId: string;
     anchor: CreateMenuAnchor;
   } | null>(null);
+
+  useEffect(() => {
+    setExpanded(files.length > 0);
+  }, [files.length]);
 
   function addFromList(list: FileList | File[] | null) {
     if (disabled) return;

@@ -59,7 +59,10 @@ function resolveStatusLabel(
   status: TaskStatusSummary,
   languageCode: string,
 ): string {
-  if ("listId" in status) {
+  if ("listId" in status && !("parentTaskId" in status)) {
+    return status.label.trim() || status.id;
+  }
+  if ("parentTaskId" in status) {
     return status.label.trim() || status.id;
   }
   return (
@@ -139,29 +142,62 @@ export function useSystemTaskStatuses() {
   );
 }
 
-export function useTaskStatuses(listId?: string | null) {
+export function useTaskStatuses(
+  listId?: string | null,
+  parentTaskId?: string | null,
+) {
   const system = useSystemTaskStatuses();
   const lists = useListsOptional();
   const { languageCode } = useTranslations();
   const listStatuses = lists?.listStatuses;
+  const workTaskStatuses = lists?.workTaskStatuses;
   const list = listId
     ? lists?.lists.find((item) => item.id === listId)
+    : undefined;
+  const parentTask = parentTaskId
+    ? lists?.tasks.find((item) => item.id === parentTaskId)
     : undefined;
 
   return useMemo(() => {
     const merged = applyStatusGroupOverrides(
-      mergeStatusCatalog(system.statuses, listStatuses ?? [], listId),
-      list?.statusGroupOverrides ?? {},
+      mergeStatusCatalog(
+        system.statuses,
+        listStatuses ?? [],
+        listId,
+        workTaskStatuses ?? [],
+        parentTaskId,
+      ),
+      {
+        ...(list?.statusGroupOverrides ?? {}),
+        ...(parentTask?.statusGroupOverrides ?? {}),
+      },
     );
-    const laidOut = applyListStatusLayout(merged, list?.statusOrder ?? []);
+    const layoutOrder =
+      parentTaskId && parentTask?.statusOrder?.length
+        ? parentTask.statusOrder
+        : (list?.statusOrder ?? []);
+    const laidOut = applyListStatusLayout(merged, layoutOrder);
+    const hiddenIds = new Set(
+      parentTaskId && parentTask
+        ? parentTask.hiddenStatusIds
+        : listId && list
+          ? list.hiddenStatusIds
+          : [],
+    );
+    const withoutHidden = laidOut.filter((status) => !hiddenIds.has(status.id));
     const visible =
-      listId && list ? enforceSingletonGroups(laidOut).catalog : laidOut;
-    return catalogValue(visible, languageCode);
+      (listId && list) || (parentTaskId && parentTask)
+        ? enforceSingletonGroups(withoutHidden).catalog
+        : withoutHidden;
+    return catalogValue(laidOut, languageCode, visible);
   }, [
     languageCode,
     list,
     listId,
     listStatuses,
+    parentTask,
+    parentTaskId,
     system.statuses,
+    workTaskStatuses,
   ]);
 }

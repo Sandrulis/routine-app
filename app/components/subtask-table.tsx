@@ -22,6 +22,7 @@ import { createMenuAnchorFromEvent, type CreateMenuAnchor } from "@/app/componen
 import { IconActionButton } from "@/app/components/icon-action-button";
 import { MoveSubtaskModal } from "@/app/components/move-subtask-modal";
 import { SubtaskBulkBar, SubtaskSelectCheckbox } from "@/app/components/subtask-bulk-bar";
+import { TaskLocationPath } from "@/app/components/task-location-path";
 import { StatusControl, statusClassName } from "@/app/components/status-control";
 import {
   dropHintFromEvent,
@@ -43,6 +44,8 @@ import {
   type TaskDateFieldKind,
 } from "@/app/lib/task-date-display";
 import { isListStatusGroup, type ListStatusGroup } from "@/app/lib/list-statuses";
+import { FRONTEND_MODULE_KEYS } from "@/app/lib/frontend-modules/keys";
+import { useFrontendModules } from "@/app/lib/frontend-modules/context";
 import { useLists } from "@/app/lib/lists-store";
 import { teamRankLabel } from "@/app/lib/team";
 import { useTeam } from "@/app/lib/team-store";
@@ -58,9 +61,11 @@ import {
 } from "@/app/lib/list-statuses";
 import {
   fadeHexColor,
+  getSubtaskLocationSegments,
   isClosedTaskStatus,
   isTaskActiveInLists,
   isTaskDeleted,
+  type TaskLocationSegment,
   type WorkTask,
 } from "@/app/lib/lists";
 import {
@@ -234,6 +239,27 @@ export function DateCell({
   );
 }
 
+function assigneePanelPosition(
+  trigger: HTMLElement,
+  panel: HTMLElement,
+): { top: number; left: number } | null {
+  const triggerRect = trigger.getBoundingClientRect();
+  if (triggerRect.width === 0 && triggerRect.height === 0) {
+    return null;
+  }
+  const panelRect = panel.getBoundingClientRect();
+  const left = Math.min(
+    Math.max(12, triggerRect.left),
+    window.innerWidth - 12 - panelRect.width,
+  );
+  const below = triggerRect.bottom + 6;
+  const top =
+    below + panelRect.height > window.innerHeight - 12
+      ? Math.max(12, triggerRect.top - 6 - panelRect.height)
+      : below;
+  return { top, left };
+}
+
 export function AssigneeCell({
   task,
   assigneeIds,
@@ -258,6 +284,7 @@ export function AssigneeCell({
   const assignedMembers = assignedMembersOf(ids, members);
   const assignedRoles = assignedRolesOf(ids, roles);
   const hasAssignees = assignedMembers.length > 0 || assignedRoles.length > 0;
+  const assigneeKey = ids.join("\0");
 
   useLayoutEffect(() => {
     if (!open || !triggerRef.current || !panelRef.current) {
@@ -265,19 +292,35 @@ export function AssigneeCell({
       return;
     }
 
-    const trigger = triggerRef.current.getBoundingClientRect();
-    const panel = panelRef.current.getBoundingClientRect();
-    const left = Math.min(
-      Math.max(12, trigger.left),
-      window.innerWidth - 12 - panel.width,
-    );
-    const below = trigger.bottom + 6;
-    const top =
-      below + panel.height > window.innerHeight - 12
-        ? Math.max(12, trigger.top - 6 - panel.height)
-        : below;
-    setPosition({ top, left });
-  }, [open, members.length, roles.length]);
+    function reposition() {
+      if (!open || !triggerRef.current || !panelRef.current) return;
+      const next = assigneePanelPosition(triggerRef.current, panelRef.current);
+      if (!next) {
+        setOpen(false);
+        setPosition(null);
+        return;
+      }
+      setPosition(next);
+    }
+
+    reposition();
+
+    window.addEventListener("scroll", reposition, true);
+    window.addEventListener("resize", reposition);
+
+    const resizeObserver =
+      typeof ResizeObserver !== "undefined"
+        ? new ResizeObserver(reposition)
+        : null;
+    resizeObserver?.observe(document.documentElement);
+    resizeObserver?.observe(triggerRef.current);
+
+    return () => {
+      window.removeEventListener("scroll", reposition, true);
+      window.removeEventListener("resize", reposition);
+      resizeObserver?.disconnect();
+    };
+  }, [open, assigneeKey, members.length, roles.length]);
 
   useEffect(() => {
     if (!open) return;
@@ -434,7 +477,7 @@ export function SubtaskTable({
 }) {
   const { t } = useTranslations();
   const dndContextId = useId();
-  const { lists, listStatuses, updateTask, hideTask, restoreTask, reorderTasks } =
+  const { lists, listStatuses, workTaskStatuses, tasks: allTasks, updateTask, hideTask, restoreTask, reorderTasks } =
     useLists();
   const [movingTask, setMovingTask] = useState<WorkTask | null>(null);
   const [moveAnchor, setMoveAnchor] = useState<CreateMenuAnchor | null>(null);
@@ -443,7 +486,14 @@ export function SubtaskTable({
   const lastSelectedIdRef = useRef<string | null>(null);
   const { currentUser, roles } = useTeam();
   const { isAdmin } = useIsAdmin();
-  const { statuses, colorFor, labelFor } = useTaskStatuses(listId);
+  const parentTaskId = useMemo(() => {
+    const first = tasks[0];
+    if (!first?.parentId) return null;
+    return tasks.every((task) => task.parentId === first.parentId)
+      ? first.parentId
+      : null;
+  }, [tasks]);
+  const { statuses, colorFor, labelFor } = useTaskStatuses(listId, parentTaskId);
   const { statuses: systemStatuses } = useSystemTaskStatuses();
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
@@ -580,6 +630,8 @@ export function SubtaskTable({
       systemStatuses,
       listStatuses,
       activeTask.listId,
+      workTaskStatuses,
+      activeTask.parentId,
     );
     const resolvedStatus = resolveStatusIdForTask(
       targetStatusId,
@@ -651,18 +703,19 @@ export function SubtaskTable({
   function renderRow(task: WorkTask) {
     const access = accessFor(task);
     const deleted = isTaskDeleted(task);
+    const listName = lists.find((item) => item.id === task.listId)?.name ?? null;
+    const locationSegments = getSubtaskLocationSegments(allTasks, task, listName, {
+      includeListName: showListName,
+    });
     return (
       <SortableSubtaskRow
         key={task.id}
         listId={task.listId}
+        parentTaskId={parentTaskId}
         task={task}
         exiting={exitingIds.has(task.id)}
         reorderable={reorderable}
-        listName={
-          showListName
-            ? (lists.find((item) => item.id === task.listId)?.name ?? null)
-            : null
-        }
+        locationSegments={locationSegments}
         onOpenTask={onOpenTask}
         onUpdate={updateTask}
         onHide={
@@ -869,6 +922,7 @@ function StatusGroupHeaderRow({
 
 function SortableSubtaskRow({
   listId,
+  parentTaskId = null,
   task,
   onOpenTask,
   onUpdate,
@@ -888,9 +942,10 @@ function SortableSubtaskRow({
   exiting,
   moveOpen = false,
   reorderable = true,
-  listName = null,
+  locationSegments = [],
 }: {
   listId: string;
+  parentTaskId?: string | null;
   task: WorkTask;
   onOpenTask: (task: WorkTask) => void;
   onUpdate: (
@@ -913,11 +968,13 @@ function SortableSubtaskRow({
   exiting: boolean;
   moveOpen?: boolean;
   reorderable?: boolean;
-  listName?: string | null;
+  locationSegments?: TaskLocationSegment[];
 }) {
   const { t } = useTranslations();
   const { taskActivities } = useLists();
-  const { colorFor, statuses, groupKeyFor } = useTaskStatuses(listId);
+  const { isEnabled: isModuleEnabled } = useFrontendModules();
+  const checklistsEnabled = isModuleEnabled(FRONTEND_MODULE_KEYS.checklist);
+  const { colorFor, statuses, groupKeyFor } = useTaskStatuses(listId, parentTaskId);
   const deleted = isTaskDeleted(task);
   const closed = isClosedTaskStatus(task.status, statuses);
   const statusGroupRaw = groupKeyFor(task.status);
@@ -931,7 +988,9 @@ function SortableSubtaskRow({
       : null;
   const canDrag =
     !exiting && ((reorderable && canEdit) || canChangeStatus);
-  const checklistsProgress = checklistProgress(task.checklists ?? []);
+  const checklistsProgress = checklistsEnabled
+    ? checklistProgress(task.checklists ?? [])
+    : { done: 0, total: 0, percent: 0 };
   const {
     attributes,
     listeners,
@@ -1004,8 +1063,12 @@ function SortableSubtaskRow({
         >
           {task.title}
         </button>
-        {listName ? (
-          <p className="mt-0.5 truncate text-[11px] text-zinc-400">{listName}</p>
+        {locationSegments.length > 0 ? (
+          <TaskLocationPath
+            segments={locationSegments}
+            align="left"
+            className="mt-0.5"
+          />
         ) : null}
       </td>
       <td className="px-3 py-1.5">
@@ -1034,6 +1097,7 @@ function SortableSubtaskRow({
       <td className="whitespace-nowrap px-3 py-1.5">
         <StatusControl
           listId={listId}
+          parentTaskId={parentTaskId}
           status={task.status}
           statusChangedAt={
             deleted
@@ -1044,7 +1108,9 @@ function SortableSubtaskRow({
           }
           deleted={deleted}
           disabled={!canChangeStatus}
-          completeBlocked={taskHasIncompleteChecklists(task.checklists)}
+          completeBlocked={
+            checklistsEnabled && taskHasIncompleteChecklists(task.checklists)
+          }
           completeBlockedLabel={t(
             "subtasks.checklist.incomplete",
             "Vispirms izpildi visus kontrolsaraksta punktus.",

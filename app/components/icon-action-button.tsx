@@ -7,7 +7,7 @@ type IconActionButtonProps = {
   label: string;
   icon: string;
   onClick: (event: MouseEvent<HTMLButtonElement>) => void;
-  variant?: "edit" | "delete" | "muted";
+  variant?: "edit" | "delete" | "muted" | "status";
   disabled?: boolean;
   pressed?: boolean;
 };
@@ -16,12 +16,14 @@ const variantClassName = {
   edit: "text-zinc-400 hover:bg-sky-50 hover:text-sky-600",
   delete: "text-zinc-400 hover:bg-red-50 hover:text-red-600",
   muted: "text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700",
+  status: "text-violet-500 hover:bg-violet-50 hover:text-violet-700",
 };
 
 const pressedClassName = {
   edit: "bg-sky-50 text-sky-700",
   delete: "bg-red-100 text-red-600",
   muted: "bg-zinc-100 text-zinc-800",
+  status: "bg-violet-100 text-violet-700 ring-1 ring-violet-200",
 };
 
 export function IconActionButton({

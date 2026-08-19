@@ -22,8 +22,8 @@
 | Saraksts | `/lists` visu uzdevumu kopsavilkums; chevron izver koku |
 | Saraksts (bērns) | `/lists/[listId]` projekta logi: Uzdevumi | Faili augšā, Saraksts pilnā platumā |
 | Uzdevums | `/lists/[listId]/tasks/[taskId]` apakšuzdevumu tabula; ikona `fas fa-list-check` |
-| Komanda | `/team` biedri ar pēdējo tiešsaistes zīmi; pending ar resend / kopēt linku / noņemt; pats biedrs var **Pamest komandu**; `...` → lomas un šabloni |
-| Failu vieta | koka + apakšuzdevumu failu `size` summa (`formatFileSize`); tooltip ar hint |
+| Komanda | `/team` biedri ar pēdējo tiešsaistes zīmi; pending ar resend / kopēt linku / noņemt; pats biedrs var **Pamest komandu**; `...` → lomas un šabloni (šabloni, ja `module_templates`) |
+| Failu vieta | koka + apakšuzdevumu failu `size` summa (`formatFileSize`); tooltip ar hint; rādās tikai ja `module_file_upload`
 | Lietotājs | avatars, **Personīgā informācija** (modālis: vārds, uzvārds), **Personīgie uzstādījumi** (`/settings/profile`), parole, iziet (ved uz `/`) |
 
 Koks: **Saraksts → mape (`kind: "folder"`) vai uzdevumu saraksts (`kind: "task"`) vai fails → apakšuzdevumi (`kind: "subtask"`)**. Apakšuzdevuma rinda rāda `StatusTreeDot` (fons un apmale = statusa krāsa: `todo` pelēks, `in_progress` oranžs, `done` zaļš).
@@ -35,11 +35,11 @@ Uzvedība:
 - Uzdevuma rindā `fas fa-list-check`; hover laikā ikonas vietā chevron.
 - Apakšuzdevuma rindā krāsains aplītis; hover neaizstāj ar chevron.
 - Saraksta `+` atver izveides formu, ja loma ļauj veidot sarakstus un saraksta pieeja ir **pilna labošana**. Mapes `+` — mape, uzdevumu saraksts, **Pievienot šablonu** vai faila augšupielāde. Uzdevuma `+` atver apakšuzdevuma modāli (tikai `full_edit`).
-- Komandas `...`: **Komandas lomas**, **Šabloni** (`/templates`).
-- Saraksta `...` ar `canEditList`: **Labot**, **Statusi** (`ListStatusesModal`), **Automatizācijas** (`ListAutomationsModal`), **Dzēst**.
+- Komandas `...`: **Komandas lomas**, **Šabloni** (`/templates`) — šabloni tikai ja `module_templates` ir ieslēgts.
+- Saraksta `...` ar `canEditList`: **Labot**, **Statusi** (`ListStatusesModal`), **Automatizācijas** (`ListAutomationsModal`, tikai ja `module_automations`), **Dzēst**.
 - Uzdevuma/mapes `...` ar `canEditTasks`: **Labot**, **Arhivēt** (`fas fa-folder-open`), **Dzēst**. Arhivēšana (`setWorkItemArchived`) uzliek `archived_at` visam apakškokam; arhivētie pazūd no koka un aktīvā saraksta.
 - Faila rinda atver `/lists/[listId]/files/[fileId]`; ikona un krāsa no `file_type_extensions` (`FileIcon` / `useFileTypes`).
-- Augšupielāde kokā un apakšuzdevumos: tikai katalogā esoši paplašinājumi (`isAllowedFileName`); `input accept` + toast `files.upload.rejected`.
+- Augšupielāde kokā un apakšuzdevumos: tikai ja `module_file_upload`; tikai katalogā esoši paplašinājumi (`isAllowedFileName`); `input accept` + toast `files.upload.rejected`. Izslēgtam modulim faili kokā un apakšuzdevumā slēpti; mapes **Faili** logs un faila URL redirect.
 - Vilkšana (`NavTreeDnd`, `app/components/nav-tree-dnd.tsx`): mapes, uzdevumus un failus var ievilkt mapē (mapes rinda iezīmējas), iznest ārā (uz saraksta nosaukumu vai kaimiņu) vai nomest **pēc pēdējā brāļa**, arī ja tas ir mape (`NavTreeEndDrop` + mapes rinda: augšējā/apakšējā trešdaļa = before/after, vidus = inside). Drop līnija ir `fixed` portal virs overlay (`z-1100`); overlay paliek blakus kursoram. Loģika: `app/lib/nav-tree-move.ts`. Apakšuzdevumi paliek zem sava uzdevuma. Mapi nevar ielikt sevī.
 
 Vecie `/projects` ceļi novirza uz `/lists`.
@@ -81,9 +81,9 @@ Legal teksti: `app/lib/legal/documents.ts`. UI: `LegalDocumentView` ar **Saturs*
 | Uzdevums | `/lists/[listId]/tasks/[taskId]` | Mape: `ListWindowsBoard`. Uzdevums: `GroupedSubtaskTables` / `SubtaskTable` — viena tabula ar statusu galvenēm, apakšuzdevumu arhīvs, pārvietošana, mīkstā dzēšana; aiz nosaukuma arhivēšanas ikona |
 | Fails | `/lists/[listId]/files/[fileId]` | `FileDetailPage` — priekšskatījums, lejupielāde, pārsaukšana, dzēšana |
 | Apakšuzdevums | uzdevuma ceļš vai saraksta skats + modālis | `SubtaskDetailModal` — lauki kreisajā, Check List pirms pielikumiem, vēsture labajā |
-| Šabloni | `/templates`, `/templates/[templateId]` | `TemplatesPage` / `TemplateDetailPage` + `TemplateTreeEditor` — mapes, uzdevumi, apakšuzdevumi, DnD; mapes `+` → Pievienot šablonu |
+| Šabloni | `/templates`, `/templates/[templateId]` | `TemplatesPage` / `TemplateDetailPage` + `TemplateTreeEditor` — mapes, uzdevumi, apakšuzdevumi, DnD; mapes `+` → Pievienot šablonu; `requireFrontendModule(module_templates)`
 | Personīgie uzstādījumi | `/settings/profile` | lasāms profila kopsavilkums + datumu/laika preferences (nedēļas sākums, formāts, atdalītājs, 12/24 h); vārdu/uzvārdu labo lietotāja izvēlnē |
-| Administrācija | `/admin` | horizontāla apakšizvēlne: lietotāji, komandas, lomas, statusi, failu tipi, valodas, tulkojumi, uzstādījumi; tikai `is_admin` |
+| Administrācija | `/admin` | kategoriju izvēlne ar hover dropdown (Cilvēki, Katalogs, Sistēma); tikai `is_admin` |
 
 Ceļa josla: `app/components/page-breadcrumb.tsx`. Labajā malā `AdminPanelButton` (`fas fa-users-cog`, tikai `is_admin`), `NotificationsMenu` (zvaniņš) un valodas kods, ja aktīvas valodas > 1.
 
@@ -91,7 +91,7 @@ Ielāde: `LoadingState` (`app/components/loading-state.tsx`, `fas fa-circle-notc
 
 ## Administrācijas panelis
 
-`/admin` — satura joslā ar **horizontālu apakšizvēlni**. Ikona pie paziņojumiem rādās tikai ielogotam lietotājam ar `public.users.is_admin = true`. `/admin` novirza uz `/admin/users`.
+`/admin` — satura joslā ar **kategoriju izvēlni** (`admin-submenu.tsx`): Cilvēki, Katalogs, Sistēma; hover (vai pieskāriens) atver dropdown ar sadaļām. Aktīvā kategorija ir izcelta, aktuālā lapa dropdownā ar ķeksīti. Ikona pie paziņojumiem rādās tikai ielogotam lietotājam ar `public.users.is_admin = true`. `/admin` novirza uz `/admin/users`.
 
 | Ceļš | Saturs |
 |---|---|
@@ -102,13 +102,43 @@ Ielāde: `LoadingState` (`app/components/loading-state.tsx`, `fas fa-circle-notc
 | `/admin/file-types` | Atļautie failu paplašinājumi (`file_type_extensions`): paplašinājums, MIME, Font Awesome ikona, krāsa; CRUD |
 | `/admin/languages` | `site_languages`: pievienot, labot nosaukumu, aktīva/noklusējuma, dzēst |
 | `/admin/translations` | `site_translations` + `messages.ts` atslēgas: meklēšana, pievienot, labot, dzēst (koda atslēgas dzēst nevar) |
+| `/admin/modules` | `site_frontend_modules`: atslēga, ieslēgts/izslēgts, dzēšana (`AdminFrontendModulesForm`) |
+| `/admin/payment-plans` | `site_payment_plans` katalogs: ieslēgums, izmēģinājums, Early Bird limīts, cenas, frontend moduļi plānā (`AdminPaymentPlansForm`) |
 | `/admin/settings` | `site_settings`: sistēmas nosaukums, slogans, logotips/favicon (data URL) vai iniciāļu avatārs ar `logo_color`, nedēļas sākums, datuma formāts/atdalītājs, 12/24 h; hinti zem laukiem |
 
 - Servera vārti: `requireAdmin()` layoutā un `admin/actions.ts`
 - Klienta pārbaude: `useIsAdmin()` caur RPC `current_user_is_admin()` (ikona)
 - Lietotāju saraksts caur ielogotā admin sesiju (RLS `008_admin_list_access.sql`); jauna lietotāja izveide ar service role
 - Valodas, tulkojumi, uzstādījumi caur to pašu sesiju (RLS `010_site_admin_session_access.sql`); `site_*` SELECT arī `anon`
-- Migrācijas: `003` admin RPC, `006` valodas/tulkojumi/uzstādījumi, `007` RU, `008` admin list access, `009` `users` aktivitātes lauki, `010` site admin session RLS, `011` `users.language_code`, `012`/`016`/`018` statusi, `017`/`020`/`021` lomas, `013`/`014`/`019` privāti saraksti, `022`/`023` sarakstu pieeju līmeņi, `024` `work_tasks.deleted_at`, `025` kataloga statusa check, `027`/`028`/`030` saraksta statusi, `029` `work_tasks.checklists`, `031` `team_status_labels`, `032` failu `size` backfill, `033`/`035` display preferences, `034` `file_type_extensions`, `036`/`037` sistēmas logotips/favicon un `logo_color`, `038` `work_tasks.archived_at`, `039` `work_templates` / `work_template_items`, `040` šablona `kind: folder` un ligzdots koks, `041` `work_list_automations` (trigger + action uz sarakstu), `044`–`049` komandas uzaicinājumi (tabula, RPC accept/reject, paziņojumi, self-leave, explicit accept, reject fix), `050` `set_current_user_name` (lietotājs maina savu vārdu), `051_team_permissions_extended` (komandu lomu pieejas UI + efektīvais list access), `051_task_activities_extended` un `052_task_activities_reordered` (apakšuzdevumu vēsture), `053` `user_notification_preferences`, `054` paplašināti `app_notifications.kind`
+- Migrācijas: `003` admin RPC, `006` valodas/tulkojumi/uzstādījumi, `007` RU, `008` admin list access, `009` `users` aktivitātes lauki, `010` site admin session RLS, `011` `users.language_code`, `012`/`016`/`018` statusi, `017`/`020`/`021` lomas, `013`/`014`/`019` privāti saraksti, `022`/`023` sarakstu pieeju līmeņi, `024` `work_tasks.deleted_at`, `025` kataloga statusa check, `027`/`028`/`030` saraksta statusi, `029` `work_tasks.checklists`, `031` `team_status_labels`, `032` failu `size` backfill, `033`/`035` display preferences, `034` `file_type_extensions`, `036`/`037` sistēmas logotips/favicon un `logo_color`, `038` `work_tasks.archived_at`, `039` `work_templates` / `work_template_items`, `040` šablona `kind: folder` un ligzdots koks, `041` `work_list_automations` (trigger + action uz sarakstu), `044`–`049` komandas uzaicinājumi (tabula, RPC accept/reject, paziņojumi, self-leave, explicit accept, reject fix), `050` `set_current_user_name` (lietotājs maina savu vārdu), `051_team_permissions_extended` (komandu lomu pieejas UI + efektīvais list access), `051_task_activities_extended` un `052_task_activities_reordered` (apakšuzdevumu vēsture), `053` `user_notification_preferences`, `054` paplašināti `app_notifications.kind`, `055` `work_task_statuses` + uzdevuma statusu layout lauki, `056` šablona assignee/checklist, `057` šablona custom statusi, `058` `site_frontend_modules` (`module_templates`, `module_automations`), `059` `module_private_list` + RPC `publish_all_private_work_lists`, `060` `module_file_upload`, `061` `module_checklist`, `062` `site_payment_plans` + `site_payment_plan_modules` + `teams` plāna kolonnas, `063` `touch_current_member_online`
+
+## Frontend moduļi
+
+Globāli feature flagi tabulā `public.site_frontend_modules` (`module_key` + `is_enabled` + `sort_order`). Admin UI: `/admin/modules` (`admin-frontend-modules-form.tsx`), tikai `is_admin`. App layout ielādē ieslēgtās atslēgas un iedod `FrontendModulesProvider` (`app/lib/frontend-modules/context.tsx`). Klients: `useFrontendModules().isEnabled(key)`. Serveris: `isFrontendModuleEnabled` / `requireFrontendModule` (izslēgtam šablonu maršrutam redirect uz `/dashboard`).
+
+| Atslēga | Ieslēgts | Izslēgts |
+|---|---|---|
+| `module_private_list` | `ListFormModal` rāda **Privāts saraksts** slēdzi un biedru/lomu izvēli | Slēdzis pazūd; visi `work_lists.is_private` kļūst `false` (RPC `publish_all_private_work_lists`); UI tos rāda kā publiskus |
+| `module_file_upload` | Augšupielāde kokā, apakšuzdevumos, mapes **Faili** logs, sānjoslas **Failu vieta** | Nav upload; esošie faili kokā un apakšuzdevumā slēpti; Failu logs izņemts no window order; Failu vieta pazūd; faila URL redirect |
+| `module_checklist` | Check List lietojams; slēgto statusu bloķē nepabeigti punkti | Sadaļa vienmēr sakļauta (`forceCollapsed`); slēgto statusu **nebloķē** |
+| `module_automations` | Saraksta `...` → **Automatizācijas**; `lists-store` izpilda statusa/čeklistes/apakšuzdevumu noteikumus | Izvēlnes opcijas nav; esošie noteikumi **neizpildās** |
+| `module_templates` | Komandas `...` → **Šabloni**; `/templates` pieejams; mapes `+` var pielietot šablonu | Šablonus nevar atvērt/veidot; pat ja automatizācijas ir ieslēgtas, **Mapes izveide → šablons** (`folder_created`) nerādās `ListAutomationsModal` un neizpildās `parent-create-flow` |
+
+Lib: `app/lib/frontend-modules/` (`keys.ts`, `repository.ts`, `context.tsx`, `access.ts`). Zināmo atslēgu etiķetes UI atkārtoti izmanto `lists.private.label`, `team.access.actions.files_upload`, `subtasks.checklist.title`, `nav.templates`, `lists.automations.title`.
+
+## Maksas plāni
+
+Admin apakšizvēlne (`admin-submenu.tsx`, `is_admin`) → `/admin/payment-plans` (`admin-payment-plans-form.tsx`). CRUD un iestatījumi: `admin/actions.ts` + `app/lib/payment-plans/` (`helpers.ts`, `repository.ts`). Cenas UI: `formatPlanEuro` (atstarpe kā tūkstošu atdalītājs).
+
+| Iestatījums | Kur | Uzvedība |
+|---|---|---|
+| Ieslēgt maksas plānus | `site_settings.payment_plans_enabled` | Toggle; **vēl neierobežo** frontend moduļus lietotnē |
+| Izmēģinājums | `trial_plan_id` + `trial_days` (1–365) | Plāns jaunām komandām; piešķiršana reģistrācijā vēl nav pieslēgta |
+| Early Bird | `early_bird_limit` | 0 = izslēgts; piešķirto skaits = `teams.payment_plan_is_early_bird` |
+| Katalogs | `site_payment_plans` | `name_values` / `description_values` visās sistēmas valodās; opcionālas mēneša / ceturkšņa / gada cenas (tukšs = 0); Early Bird cenas |
+| Moduļi plānā | `site_payment_plan_modules` | Atzīmē tikai globāli ieslēgtos `site_frontend_modules` |
+
+Komandai kolonnas `payment_plan_id` / `payment_plan_until` / `payment_plan_paid` / `payment_plan_is_trial` / `payment_plan_is_early_bird` (`062`). Piešķiršanas UI `/admin/teams` vēl nav. Tabulas SELECT `anon`/`authenticated`; raksta tikai admin (`current_user_is_admin`).
 
 ## Paziņojumi
 
@@ -117,7 +147,7 @@ Ielāde: `LoadingState` (`app/components/loading-state.tsx`, `fas fa-circle-notc
 - Nerakstīto skaits uz zvana; **Atzīmēt visus kā lasītus**
 - Klikšķis uz ieraksta atzīmē kā lasītu un atver `href` (uzdevums)
 - **`fetchVisibleNotifications`** — personīgie in-app paziņojumi: `recipient_id === selfMemberId`; uzaicinājumi pēc `target_user_id`; noraidījumi uzaicinātājam
-- **Iesaistītie** saņem brīdinājumus par uzdevumu/apakšuzdevumu notikumiem: uzdevuma un (apakšuzdevumam) vecāka piesaistītie; lomas izvērstas uz biedriem (`task-notifications.ts` → `appendNotifications`)
+- **Iesaistītie** saņem brīdinājumus par uzdevumu/apakšuzdevumu notikumiem: uzdevuma un (apakšuzdevumam) vecāka piesaistītie; lomas izvērstas uz biedriem (`task-notifications.ts` → `appendNotifications`). Jauns uzdevums/apakšuzdevums ar assignee (šablons, automatizācija) sūta `assigned` caur `notificationsForInitialAssignees` (`addTask` var uzreiz saņemt `assigneeIds` / `checklists`)
 - **`kind`:** `assigned`, `unassigned`, `comment`, `file`, `status_changed`, `task_updated`, `due` (tips gatavs; automātiska ģenerēšana vēl nav), `team_invite`, `team_invite_rejected`
 - Triggeri: `lists-store` (`updateTask`, `addTask`, komentārs, fails, pārvietošana), dashboard todo (`team-todo-board`), komandas uzaicinājums (`team/actions.ts`); **aktors pats netiek informēts**
 - **`appendNotifications`** pirms insert filtrē pēc `user_notification_preferences` (trūkstoša rinda = ieslēgts)
@@ -131,7 +161,7 @@ Ielāde: `LoadingState` (`app/components/loading-state.tsx`, `fas fa-circle-notc
 
 ## Apakšuzdevuma modālis
 
-`app/components/subtask-detail-modal.tsx` + `AppModal` (`dirty` no nosaukuma, apraksta, datumiem, atbildīgajiem — **statuss un čeklisti dirty neskaita**). Statusa maiņa esošam apakšuzdevumam `updateTask` uzreiz. Čeklisti esošam uzdevumam persistējas uzreiz (tekstam debounce). Saglabāt **neaizver** modāli un nepāriet uz citu lapu; aizver X / ESC / Atcelt. Pēc jauna apakšuzdevuma izveides paliek edit mode. Poga **Pievienot jaunu** (tikai plus + tooltip `actions.add_new`) rādās, kad ir nosaukums un Saglabāt nav aktīvs; klikšķis atver tukšu formu tajā pašā modālī. `headerMeta` rāda `izveidots {date}` no aktivitātes `kind === "created"` (`useDisplayPreferences().formatDate`); jaunam nesaglabātam apakšuzdevumam datums nav. Atverams arī no saraksta loga un `/lists` kopsavilkuma, bez navigācijas.
+`app/components/subtask-detail-modal.tsx` + `AppModal` (`dirty` no nosaukuma, apraksta, datumiem, atbildīgajiem — **statuss un čeklisti dirty neskaita**). Statusa maiņa esošam apakšuzdevumam `updateTask` uzreiz. Čeklisti esošam uzdevumam persistējas uzreiz (tekstam debounce). Saglabāt **neaizver** modāli un nepāriet uz citu lapu; aizver X / ESC / Atcelt. Pēc jauna apakšuzdevuma izveides paliek edit mode. Poga **Pievienot jaunu** (tikai plus + tooltip `actions.add_new`) rādās, kad ir nosaukums un Saglabāt nav aktīvs; klikšķis atver tukšu formu tajā pašā modālī. `headerMeta` rāda `izveidots {date}` no aktivitātes `kind === "created"` (`useDisplayPreferences().formatDate`); jaunam nesaglabātam apakšuzdevumam datums nav. `headerSubtitle` rāda `TaskLocationPath` (`getSubtaskLocationSegments` / `getParentTaskLocationSegments`) — saraksts un mapes līdz vecākam uzdevumam. Atverams arī no saraksta loga un `/lists` kopsavilkuma, bez navigācijas. Divkolonnu izkārtojums: kreisā kolonna nosaka augstumu; vēsture labajā ir `absolute` pret kreiso un ritinās iekšēji (`ScrollableHistoryList` — fade + chevron, kad ir overflow).
 
 | Lauks | Uzvedība |
 |---|---|
@@ -140,13 +170,13 @@ Ielāde: `LoadingState` (`app/components/loading-state.tsx`, `fas fa-circle-notc
 | Sākums / Termiņš | `DateCell` — klikšķis atver pārlūka datuma izvēli (`showPicker`); zem datuma relatīvais hints caur `taskDateRelativeHint` (`app/lib/task-date-display.ts`) pēc statusa grupas: **sākums** — `not_started` rāda atlicis/kavē līdz startam, `active` tikai kavējumu; **termiņš** — `not_started`/`active` atlicis vai kavē, `closed` tikai kavējumu; `disabled`, ja nav `canEditTasks` |
 | Statuss | `StatusControl` — krāsaina poga; nākamais (`fa-angle-right`) un Check. Tabulā bez hover tikai nosaukums, hover rāda `>` / Check / pārvietot / dzēst (bez animācijas). Klikšķis uz nosaukuma atver picker. `comment` līmenī statusu drīkst mainīt izpildītājs. Ja ir čeklista punkti, zem pogas zaļa progresa josla; slēgto grupu un Check tikai pie 100% |
 | Projekts, atbildīgie | Saraksta badge, `AssigneeCell` (izvēlne `createPortal` uz `document.body`, lai netiktu nogriezta tabulā) |
-| Check List | `TaskChecklists` — pirms pielikumiem; vairāki saraksti ar nosaukumu; nākamais tukšais punkts parādās pēc teksta; atzīmēšana ar ķeksīti. Struktūru labo `canEditTasks`; punktus atzīmē arī `canChangeStatus` |
-| Pielikumi | `TaskAttachments` — drag-and-drop vai **pārlūko**; zem zonas `files.upload.allowed_types`; `accept` no kataloga; kartītes ar ikonu/krāsu; `disabled` bez `edit` / `full_edit` |
+| Check List | `TaskChecklists` — pirms pielikumiem; vairāki saraksti ar nosaukumu; nākamais tukšais punkts parādās pēc teksta; atzīmēšana ar ķeksīti. Tukšs sākumā sakļauts (izvēršams); ar vismaz vienu sarakstu atvērts. `forceCollapsed` ja `module_checklist` izslēgts. Struktūru labo `canEditTasks`; punktus atzīmē arī `canChangeStatus` |
+| Pielikumi | `TaskAttachments` — tikai ja `module_file_upload`; drag-and-drop vai **pārlūko**; zem zonas `files.upload.allowed_types`; `accept` no kataloga; kartītes ar ikonu/krāsu; `disabled` bez `edit` / `full_edit`. Tukšs sākumā sakļauts (izvēršams); ar failiem atvērts |
 | Faila `...` | `CreateItemMenu`: Apskatīt, Pārsaukt, Dzēst. Klikšķis uz kartītes arī atver apskati. Izvēlne ar `data-app-modal-ignore-backdrop`, lai neaizvērtu apakšuzdevuma modāli |
 | Dzēst failu | Tikai `ConfirmModal` (`files.delete.*`) |
 | Pārsaukt failu | `NameFormModal` (`files.edit.*`) |
 | Apskatīt failu | `FilePreview` ligzdotā `AppModal` |
-| Vēsture | Labā kolonna, `taskActivities`; katrs ieraksts caur `formatTaskActivityText` (`app/lib/format-task-activity-text.ts`). Logošana centralizēta: `updateTask` → `buildTaskUpdateActivityEvents` (`app/lib/build-task-activity-events.ts`); atsevišķi `moveSubtask`, failu dzēšana/pārsaukšana, `reorderTasks`. Fiksē statusu, datumu (no → uz), piesaistīto pievienošanu/noņemšanu, nosaukumu, aprakstu, kontrolsaraksta punktus, pārvietošanu pie cita uzdevuma, paslēpšanu/atjaunošanu, failus un kārtību. Statusu nosaukumi no kataloga (`labelFor`); laiks `RelativeTime`; no `comment` līmeņa — komentāra lauks (`addTaskComment`) |
+| Vēsture | Labā kolonna, `taskActivities`; katrs ieraksts caur `formatTaskActivityText` (`app/lib/format-task-activity-text.ts`). Logošana centralizēta: `updateTask` → `buildTaskUpdateActivityEvents` (`app/lib/build-task-activity-events.ts`); atsevišķi `moveSubtask`, failu dzēšana/pārsaukšana, `reorderTasks`. Fiksē statusu, datumu (no → uz), piesaistīto pievienošanu/noņemšanu, nosaukumu, aprakstu, kontrolsaraksta punktus, pārvietošanu pie cita uzdevuma, paslēpšanu/atjaunošanu, failus un kārtību. Statusu nosaukumi no kataloga (`labelFor`); laiks `RelativeTime`. **Nav** komentāra ievades (`addTaskComment` UI nav); vecie `kind=comment` ieraksti vēsturē paliek |
 
 Failu metadati: `TaskFile` (`id`, `taskId`, `name`, `mimeType`, `size`, `hasContent`, `createdAt`). Saturs Postgres `task_files.content` (data URL, līdz `MAX_STORED_FILE_BYTES`, 1.5 MB). Atļautie paplašinājumi: `file_type_extensions` (sākumā pdf, dwg, doc, docx, xls, xlsx); `app/lib/file-types.ts` + `FileTypesProvider`. Ikona/krāsa: `FileIcon`.
 
@@ -155,13 +185,13 @@ Failu metadati: `TaskFile` (`id`, `taskId`, `name`, `mimeType`, `size`, `hasCont
 Hierarhija: **Saraksts → mape / uzdevumu saraksts / fails → apakšuzdevumi tikai zem uzdevumu saraksta**.
 
 - Tipi: `app/lib/lists.ts` (`WorkTaskKind`: `folder` \| `task` \| `subtask`)
-- Stāvoklis: `app/lib/lists-store.tsx` — ielāde no `work_lists` / `work_tasks`; pieslēgtam lietotājam bez komandas tukšs koks (nav dummy datu). `addTask` optimistiski atjauno UI; DB inserti rindā pēc `parent_id` (`pendingTaskInsertsRef`), lai ligzdoti uzdevumi (šablons, automatizācija) neizjauktos ar FK. Apakšuzdevumu izmaiņas ieraksta `task_activities` caur `buildTaskUpdateActivityEvents` (`updateTask`) un atsevišķās funkcijās (`moveSubtask`, failu operācijas, `reorderTasks`)
-- Šabloni (`work_templates` / `work_template_items`): `kind` `folder` | `task` | `subtask` (`040`); redaktors `TemplateTreeEditor` + `template-tree-move.ts` (DnD kā sānjoslā). `applyTemplate` rekursīvi izveido mapes, uzdevumus un apakšuzdevumus. Tukšās rindas tikai UI (`prepareTemplateEditorItems`); DB `sanitizeTemplateItems`. Tiešsaistes touch: `touchMemberOnline(teamId, userId, at)`
-- Automatizācijas (`work_list_automations`, `041`): saraksta līmeņa noteikumi ar `trigger_kind` + `action_kind`. Pirmais pāris: `folder_created` → `apply_template` (`template_id`). UI: `ListAutomationsModal` no saraksta `...`. Izpilde: `parent-create-flow.tsx` pēc tiešas mapes izveides (`addTask` ar `kind: folder`) izsauc `applyTemplate` mapes iekšienē — **netrigerējas** manuālā šablona pielietošanā vai rekursīvā mapju veidošanā no šablona. CRUD: `lists-store` `addListAutomation` / `updateListAutomation` / `deleteListAutomation`; helperi `app/lib/list-automations.ts`. DB insert secība: skat. `pendingTaskInsertsRef` pie `addTask`
+- Stāvoklis: `app/lib/lists-store.tsx` — ielāde no `work_lists` / `work_tasks`; pieslēgtam lietotājam bez komandas tukšs koks (nav dummy datu). `addTask` optimistiski atjauno UI; DB inserti rindā pēc `parent_id` (`pendingTaskInsertsRef`), lai ligzdoti uzdevumi (šablons, automatizācija) un `work_task_statuses` insert neizjauktos ar FK/RLS. Apakšuzdevumu izmaiņas ieraksta `task_activities` caur `buildTaskUpdateActivityEvents` (`updateTask`) un atsevišķās funkcijās (`moveSubtask`, failu operācijas, `reorderTasks`)
+- Šabloni (`work_templates` / `work_template_items`): `kind` `folder` | `task` | `subtask` (`040`); redaktors `TemplateTreeEditor` + `template-tree-move.ts` (DnD kā sānjoslā). Uzdevumam assignee, checklist un custom apakšuzdevumu statusi (`056`–`057`); statusu modālis `TemplateTaskStatusesModal`; violeta atzīme uzdevumiem ar custom statusiem. `TemplateDetailPage` automātiski saglabā (debounce 600 ms, flush on unmount). `applyTemplate` rekursīvi izveido mapes, uzdevumus un apakšuzdevumus ar assignee/checklist uzreiz `addTask`, custom statusus `work_task_statuses` pēc vecāka insert. Tukšās rindas tikai UI (`prepareTemplateEditorItems`); DB `sanitizeTemplateItems`. Tiešsaistes touch: `touchMemberOnline(teamId, userId, at)`
+- Automatizācijas (`work_list_automations`, `041`): saraksta līmeņa noteikumi ar `trigger_kind` + `action_kind`. UI: `ListAutomationsModal` no saraksta `...` (tikai `module_automations`). Izpilde `lists-store` `updateTask` (statuss, čeklistes, visi apakšuzdevumi) palaižas tikai ja automatizāciju modulis ir ieslēgts. Pāris `folder_created` → `apply_template`: rādās un izpildās (`parent-create-flow.tsx` pēc tiešas mapes izveides) tikai ja **abi** `module_automations` un `module_templates` ir ieslēgti — **netrigerējas** manuālā šablona pielietošanā vai rekursīvā mapju veidošanā no šablona. CRUD: `lists-store` `addListAutomation` / `updateListAutomation` / `deleteListAutomation`; helperi `app/lib/list-automations.ts`. DB insert secība: skat. `pendingTaskInsertsRef` pie `addTask`
 - Arhīvs (`archived_at`, atšķirīgs no apakšuzdevumu `deleted_at`): `setWorkItemArchived` arhivē uzdevumu vai mapi ar visiem pēcnācējiem; noņemšana no arhīva atjauno arī senčus, lai vienums atkal būtu kokā. Aktīvais koks un `getListTasks` slēpj arhivētos; `archivedListTasks` rāda arhīva saknes. UI: `WorkItemArchiveButton` (`fa-folder-open` aktīvam, `fa-folder` arhivētam); saraksta lapā `fas fa-archive` pārslēdz kopsavilkumu
 - Saraksta faili kokā: `app/lib/list-files.ts` — augšupielāde tikai `file_type_extensions` katalogā
-- Jauns/labot sarakstu: `ListFormModal` — izskats, privāts slēdzis, **noklusējuma pieeja**; slēdzis **Pielāgot katrai lomai** parāda lomu līmeņus un paslēpj globālo izvēli (privātam arī biedriem un „nav pieejas”)
-- Apakšuzdevumu tabula (`SubtaskTable` + `GroupedSubtaskTables`): viena tabula ar `groupByStatus` galvenēm iekšā; pie Pievienot arhīva poga (`IconActionButton` `variant="delete"`, aktīva paliek sarkanīga) rāda aktīvos **un** arhivētos; pabeigšana fade-out vietā; miskaste aiz Check (`deleted_at`, nav statusa katalogā); klikšķis uz dzēstā atjauno; **Pārvietot** (`fa-exchange-alt`) atver `MoveSubtaskModal`; slēgtajiem/dzēstajiem **rindai** viegls fons (`fadeHexColor` 0.88; dzēstajiem `#ef4444`); statusa pogai atsevišķi blāvs fons; zem statusa `RelativeTime` un, ja ir čeklista punkti, zaļa progresa josla; jaunam uzdevumam `statusChangedAt` = izveides laiks; `reorderable={false}` (Sākums) slēpj kārtību, bet statusu joprojām var vilkt
+- Jauns/labot sarakstu: `ListFormModal` — izskats, **noklusējuma pieeja**; slēdzis **Pielāgot katrai lomai** parāda lomu līmeņus un paslēpj globālo izvēli; **Privāts saraksts** slēdzis (un biedru izvēle) tikai ja `module_private_list` ir ieslēgts
+- Apakšuzdevumu tabula (`SubtaskTable` + `GroupedSubtaskTables`): viena tabula ar `groupByStatus` galvenēm iekšā; pie Pievienot arhīva poga (`IconActionButton` `variant="delete"`, aktīva paliek sarkanīga) rāda aktīvos **un** arhivētos; pabeigšana fade-out vietā; miskaste aiz Check (`deleted_at`, nav statusa katalogā); klikšķis uz dzēstā atjauno; zem nosaukuma `TaskLocationPath` (`getSubtaskLocationSegments`; saraksta nosaukums tikai, ja tabulā ir vairāki `listId`); **Pārvietot** (`fa-exchange-alt`) atver `MoveSubtaskModal` — mērķiem mapē vai citā sarakstā PATH zem nosaukuma (`MoveSubtaskDestinationButton`, bez saitēm); tas pats masveida joslā; slēgtajiem/dzēstajiem **rindai** viegls fons (`fadeHexColor` 0.88; dzēstajiem `#ef4444`); statusa pogai atsevišķi blāvs fons; zem statusa `RelativeTime` un, ja ir čeklista punkti, zaļa progresa josla; jaunam uzdevumam `statusChangedAt` = izveides laiks; `reorderable={false}` (Sākums) slēpj kārtību, bet statusu joprojām var vilkt
 - Vilkšana: `app/components/task-drop-line.tsx` (`TaskDropLine`, `dropHintFromEvent`, `frozenSortingStrategy`, `groupedStatusCollisionDetection`). Vilkšanas laikā saraksts neslīd; drop ir bieza zila līnija. Starp statusu grupām vilkšana **tikai maina statusu**, nesamaina vietām ar cita grupas pēdējo uzdevumu
 - Kopsavilkums (`ListSummary` Sākumā un `/lists`): sadalītie uzdevumi un apakšuzdevumi pēc `statusesByPriorityDesc` / `compareTasksByStatusPriority` (`app/lib/list-statuses.ts`) - pretēji picker (slēgts → aktīvs → nav sākts). Slēgtie paliek ārpus aktīvā saraksta
 - Projekta **Saraksts** logs: uzdevumu kartītes `repeat(auto-fit, minmax(min(100%, 16rem), 1fr))` tādā pašā statusa secībā. Mape rāda nested uzdevumus un to apakšuzdevumus (`OverviewSubtaskList`); grupēšana pēc statusa; aplītis hover rāda check + tooltip `status.complete_ask` (pabeidz / atver atpakaļ); arhīva poga kartītē parāda pabeigtos, progresa josla paliek. Klikšķis uz apakšuzdevuma atver `SubtaskDetailModal` uz vietas. Apakšuzdevuma aplītis un nosaukums ir statusa krāsā. Logs **Uzdevumi** paliek vilktā `sortOrder` secībā
@@ -194,7 +224,7 @@ Prioritāte: biedra rinda (`work_list_viewers.access_level`) → lomas rinda (`w
 - `work_tasks.status` ir brīvs teksts pēc `025_work_tasks_catalog_status.sql` (noņemts check tikai uz todo / in_progress / done)
 - Tabulā `revealActionsOnHover`: bez hover tikai statusa nosaukums; hover (vai atvērts picker / pārvietošana) rāda `>` un trailing pogas, vieta rezervēta, bez animācijas
 - Zem pogas `RelativeTime` (`app/components/relative-time.tsx`, `getLastOnlineDisplay`); tooltipā precīzais `dd.mm.yy hh:mm`
-- Ja apakšuzdevumam ir čeklista punkti (`work_tasks.checklists`), zem statusa pogas zaļa progresa josla (`checklistProgress`). Slēgtās grupas statusus un Pabeigt bloķē, kamēr `taskHasIncompleteChecklists`; **aktīvās** (un nav sākts) grupas statusus var mainīt arī ar nepabeigtiem punktiem. `updateTask` noraida slēgto statusu, ja punkti nav izpildīti
+- Ja apakšuzdevumam ir čeklista punkti (`work_tasks.checklists`) **un** `module_checklist` ir ieslēgts, zem statusa pogas zaļa progresa josla (`checklistProgress`). Slēgtās grupas statusus un Pabeigt bloķē, kamēr `taskHasIncompleteChecklists`; **aktīvās** (un nav sākts) grupas statusus var mainīt arī ar nepabeigtiem punktiem. `updateTask` noraida slēgto statusu, ja punkti nav izpildīti. Check List moduli izslēdzot bloķēšana **nav**.
 
 Saraksta statusi: `ListStatusesModal` (`app/components/list-statuses-modal.tsx`) no saraksta `...`. Sistēmas statusi ir lasāmi; komanda var pārsaukt sistēmas statusu šai komandai (`team_status_labels`). Komanda pievieno / labo / dzēš / kārto tikai šī saraksta ierakstus (`list_statuses`, ID `lsts-…`). Dzēšot savu statusu, uzdevumi ar to atgriežas uz `todo`. Nav sākts un slēgts paliek singleton grupas. Rakstīšana: `work_list_has_access(list_id, 'edit')`. CRUD: `lists-store` `addListStatus` / `updateListStatus` / `deleteListStatus` / `reorderListStatuses` / `renameSystemStatus`.
 
@@ -235,7 +265,7 @@ Saraksta statusi: `ListStatusesModal` (`app/components/list-statuses-modal.tsx`)
 | ≥ 24 h | `{n} d` |
 | ≥ 30 dienas | `{n} m` |
 
-Aktīvais lietotājs atjauno `lastOnlineAt` ik pēc 20 s (`touchMemberOnline(teamId, userId, at)`), kamēr lapa ir atvērta un biedrs ir saistīts ar `user_id`. Admin lietotāju tabulā tas pats avots (`team_members.last_online_at`, ne `last_sign_in_at`); aktuālajam adminam rāda dzīvo `useTeam()` vērtību.
+Aktīvais lietotājs atjauno `lastOnlineAt` ik pēc 20 s (`touchMemberOnline` → RPC `touch_current_member_online`, `063`), kamēr lapa ir atvērta un biedrs ir saistīts ar `user_id`. Admin lietotāju tabulā tas pats avots (`team_members.last_online_at`, ne `last_sign_in_at`); aktuālajam adminam rāda dzīvo `useTeam()` vērtību.
 
 ## Project structure
 
@@ -248,11 +278,11 @@ app/
     invite/[token]/               # Komandas uzaicinājuma landing (accept/reject)
     privacy/ terms/ cookies/
   (app)/
-    layout.tsx                    # AppProviders + sānjosla
+    layout.tsx                    # AppProviders + sānjosla; enabled frontend module keys
     dashboard/page.tsx            # Sākums: Mani uzdevumi + saraksti
     lists/                        # Kopsavilkums, 3 logi, uzdevums, fails
     team/ settings/ projects/ templates/
-    admin/                        # users, teams, roles, statuses, file-types, languages, …
+    admin/                        # users, teams, roles, statuses, file-types, languages, translations, modules, payment-plans, settings
 
   globals.css                     # Zinc light theme; `--radius-*` uz pusi
   components/
@@ -277,7 +307,7 @@ app/
     nav-tree-dnd.tsx              # Koka DnD: mapē / ārā / zem pēdējā, drop līnija
     work-item-archive-button.tsx  # Arhivēt / noņemt no arhīva (mapes ikona)
     list-statuses-modal.tsx       # Saraksta Statusi (sistēma + komandas)
-    list-automations-modal.tsx    # Saraksta automatizācijas (mapes izveide → šablons)
+    list-automations-modal.tsx    # Saraksta automatizācijas (mapes izveide → šablons, ja `module_templates`)
     team-switcher.tsx             # Komandas pārslēdzējs, CRUD
     team-invite-modal.tsx         # Uzaicināt biedru (e-pasts, loma)
     team-member-page.tsx          # Biedra profils; pending: resend/link/remove; leave
@@ -286,20 +316,23 @@ app/
     dashboard-home-page.tsx       # Sākums: Mani uzdevumi (ja ir) + saraksti
     lists-overview-page.tsx       # Saraksta kopsavilkums
     list-detail-page.tsx          # Saraksta kopsavilkums + arhīva skats
-    list-form-modal.tsx           # Jauns/labot sarakstu + pieejas
+    list-form-modal.tsx           # Jauns/labot sarakstu + pieejas; privāts slēdzis pēc `module_private_list`
     list-summary.tsx              # Uzdevumu kartītes ar statusu grupām + arhīva ikona
-    list-windows-board.tsx        # Uzdevumi | Faili + Saraksts, DnD, mapes čeks
+    list-windows-board.tsx        # Uzdevumi | Faili (ja `module_file_upload`) + Saraksts, DnD, mapes čeks
     templates-page.tsx            # Komandas šablonu saraksts
-    template-detail-page.tsx      # Šablona nosaukums + apraksts + Saglabāt
-    template-tree-editor.tsx      # Šablona koks: mapes/uzdevumi/apakšuzdevumi, DnD, tukšās rindas
-    parent-create-flow.tsx        # Mapes/saraksta +: mape, uzdevums, šablons, fails
+    template-detail-page.tsx      # Šablona nosaukums + apraksts + koks; auto-save
+    template-tree-editor.tsx      # Šablona koks: mapes/uzdevumi/apakšuzdevumi, assignee, checklist, statusi, DnD
+    template-task-statuses-modal.tsx # Šablona uzdevuma custom apakšuzdevumu statusi
+    parent-create-flow.tsx        # Mapes/saraksta +: mape, uzdevums, šablons (ja `module_templates`), fails
     task-detail-page.tsx          # Apakšuzdevumu tabula
     grouped-subtask-tables.tsx    # Viena tabula ar statusu grupām
-    subtask-table.tsx             # Tabula, DateCell, AssigneeCell portal, arhīvs, rindas fons
+    subtask-table.tsx             # Tabula, DateCell, AssigneeCell portal, arhīvs, rindas fons, PATH
+    task-location-path.tsx        # Saraksta/mapes ceļš zem nosaukuma (saites vai teksts)
     task-drop-line.tsx            # Zila drop līnija, frozen sort, grupu collision
     move-subtask-modal.tsx        # Apakšuzdevuma pārvietošana pie cita uzdevuma
-    subtask-detail-modal.tsx      # Apakšuzdevuma modālis
-    task-checklists.tsx           # Check List pirms pielikumiem
+    move-subtask-destination-button.tsx # Pārvietošanas mērķis ar PATH zem nosaukuma
+    subtask-detail-modal.tsx      # Apakšuzdevuma modālis; vēsture ritināma pret kreiso kolonnu
+    task-checklists.tsx           # Check List pirms pielikumiem; tukšs sakļauts; forceCollapsed
     status-control.tsx            # Statusa poga, picker, čeklista josla
     relative-time.tsx             # Relatīvais laiks (min / h / d / m)
     loading-state.tsx             # Ielādes spinneris lapās, kokā un modāļos
@@ -309,7 +342,7 @@ app/
     admin-roles-manager.tsx       # Sistēmas noklusējuma lomas
     admin-statuses-manager.tsx    # Uzdevumu statusu katalogs
     admin-file-types-manager.tsx  # Failu paplašinājumu CRUD
-    task-attachments.tsx          # Pielikumu drop zona, kartītes, ... izvēlne
+    task-attachments.tsx          # Pielikumu drop zona, kartītes, ... izvēlne; tukšs sakļauts
     file-icon.tsx                 # Faila ikona + krāsa no kataloga
     file-preview.tsx              # Faila priekšskatījums
     create-item-menu.tsx          # Darbību izvēlne
@@ -320,12 +353,14 @@ app/
     page-breadcrumb.tsx           # Ceļa josla + admin ikona + zvaniņš + valoda
     admin-panel-button.tsx        # Administrācijas panelis (is_admin)
     admin-panel-shell.tsx         # /admin čaula + virsraksts
-    admin-submenu.tsx             # Horizontālā apakšizvēlne
+    admin-submenu.tsx             # Cilvēki / Katalogs / Sistēma hover dropdown
     admin-users-manager.tsx       # Lietotāju CRUD
     admin-teams-manager.tsx       # Komandu CRUD
     admin-languages-form.tsx      # Valodu CRUD
     admin-translations-manager.tsx # Tulkojumu CRUD
     admin-settings-form.tsx       # Sistēmas uzstādījumi + logo/favicon
+    admin-frontend-modules-form.tsx # Frontend moduļu atslēgas + slēdži
+    admin-payment-plans-form.tsx  # Maksas plānu katalogs, cenas, izmēģinājums, Early Bird
     branding-image-field.tsx      # Logo/favicon drop zona
     language-switcher.tsx         # Valodas pārslēdzējs (lv / en / ru)
     notifications-menu.tsx        # Paziņojumu panelis
@@ -338,14 +373,16 @@ app/
     document-title-server.ts      # DB nosaukumi dinamiskajam generateMetadata
     page-metadata.ts              # translatedPageMetadata / resolvedPageMetadata helperi
     legal/documents.ts            # Privacy / terms / cookies teksti
-    lists.ts                      # Sarakstu/uzdevumu tipi, krāsas
+    lists.ts                      # Sarakstu/uzdevumu tipi, krāsas, location PATH helperi
     task-checklists.ts            # Čeklistu tipi, progress, incomplete helper
     list-statuses.ts              # Saraksta statusu tipi un kataloga merge
     list-automations.ts           # Automatizāciju tipi, mapRow, activeFolderCreatedTemplateAutomations
+    frontend-modules/             # keys, repository, context, requireFrontendModule
+    payment-plans/                # helpers + repository (katalogs, cenas, trial, Early Bird)
     task-date-display.ts          # Sākuma/termiņa relatīvais hints pēc statusa grupas (DateCell)
     nav-tree-move.ts              # Koka drop: mape / ārā / secība / grupas beigas
     list-access.ts                # Saraksta pieeju līmeņi un resolve
-    lists-store.tsx               # Saraksti un uzdevumi no Postgres; applyTemplate; listAutomations CRUD; insert rinda
+    lists-store.tsx               # Saraksti un uzdevumi no Postgres; applyTemplate; listAutomations CRUD; insert rinda; moduļu gating
     templates.ts                  # Šablonu tipi, sanitize / prepare editor, koka helperi
     template-tree-move.ts         # Šablona DnD placement (mape / secība / apakšuzdevums)
     templates-store.tsx           # Komandas šabloni no Postgres
@@ -390,7 +427,7 @@ app/
 app/auth/callback/route.ts        # OAuth code → session; Set-Cookie uz redirect
 proxy.ts                          # Sesijas refresh + ielogota novirzīšana no / un /login
 scripts/                          # audit-check.mjs, apply-migrations.mjs, test-supabase.mjs
-supabase/migrations/              # 001–050: shēma, admin, work data, uzaicinājumi, …
+supabase/migrations/              # 001–059: shēma, admin, work data, uzaicinājumi, frontend moduļi, …
 .github/workflows/                # secret-scan.yml, security-audit.yml, security-smoke.yml
 .gitleaks.toml                    # default rules + i18n translation key allowlist
 .cursor/rules/                    # README bump, commits
@@ -463,22 +500,25 @@ RLS (`005_work_data.sql`): `authenticated` drīkst SELECT/INSERT/UPDATE/DELETE t
 
 | Tabula | Saturs |
 |---|---|
-| `teams` | Komandas (`team-…`) |
+| `teams` | Komandas (`team-…`); `payment_plan_id` / `until` / `paid` / `is_trial` / `is_early_bird` (`062`) |
 | `team_members` | Biedri; apstiprinātam `user_id = auth.uid()`; pending uzaicinājumam `user_id` null |
 | `team_invitations` | Uzaicinājumi (`pending` / `accepted` / `rejected`), `token`, `invited_user_id` |
 | `team_roles` | Komandas lomas un `permissions` JSON |
 | `system_default_roles` | Admin noklusējuma lomas jaunām komandām |
 | `task_statuses` | Uzdevumu statusu katalogs (nosaukumi, krāsa, grupa) |
 | `file_type_extensions` | Atļautie failu tipi (paplašinājums, MIME, ikona, krāsa); SELECT authenticated, raksta `is_admin` |
-| `site_settings` | Sistēmas nosaukums, slogans, `logo_url` / `favicon_url` (data URL), `logo_color`, datumu/laika noklusējums (`week_start_day`, `date_format`, `date_separator`, `time_format`) |
+| `site_settings` | Sistēmas nosaukums, slogans, `logo_url` / `favicon_url` (data URL), `logo_color`, datumu/laika noklusējums (`week_start_day`, `date_format`, `date_separator`, `time_format`); `payment_plans_enabled`, `trial_plan_id`, `trial_days`, `early_bird_limit` (`062`) |
+| `site_payment_plans` | Maksas plānu katalogs (nosaukumi visās valodās, cenas, Early Bird cenas) |
+| `site_payment_plan_modules` | Frontend moduļi katrā plānā |
 | `list_statuses` | Komandas statusi vienam sarakstam (`lsts-…`) |
 | `team_status_labels` | Komandas overlay sistēmas statusu nosaukumiem |
 | `work_lists` | Saraksti (`kind`, `is_private`, `default_access_level`, `created_by`) |
 | `work_list_viewers` | Privāta saraksta biedri + `access_level` |
 | `work_list_viewer_roles` | Saraksta lomu pieeja + `access_level` |
-| `work_tasks` | Mapes, uzdevumi, apakšuzdevumi (`kind` + `parent_id` + `deleted_at` + `archived_at`; `status` = kataloga ID; `checklists` JSONB) |
+| `work_tasks` | Mapes, uzdevumi, apakšuzdevumi (`kind` + `parent_id` + `deleted_at` + `archived_at`; `status` = kataloga ID; `checklists` JSONB; `hidden_status_ids`, `status_order`, `status_group_overrides` — uzdevuma līmeņa apakšuzdevumu statusu layout, `055`) |
+| `work_task_statuses` | Custom apakšuzdevumu statusi zem konkrēta uzdevuma (`wtst-…`, `055`) |
 | `work_templates` | Komandas šabloni (`tmpl-…`) |
-| `work_template_items` | Šablona koks: mape / uzdevums / apakšuzdevums (`tpli-…`, `040`) |
+| `work_template_items` | Šablona koks: mape / uzdevums / apakšuzdevums (`tpli-…`, `040`); `assignee_ids`, `checklists`, `task_statuses`, statusu layout (`056`–`057`) |
 | `work_list_automations` | Saraksta automatizācijas (`lauto-…`): trigger (`folder_created`), action (`apply_template`), `template_id`, `enabled` (`041`) |
 | `task_assignees` | Uzdevuma atbildīgie (`member_id`); `replaceTaskAssignees` serializē pēc `task_id`, `upsert` ignorē dublikātus |
 | `task_activities` | Apakšuzdevumu vēsture (`kind`: izveide, statuss, assignee_added/removed, datumi, title, description, checklist, moved, hidden, restored, faili, reordered, comment); diff lauki `from_date_value`, `from_parent_id`, `previous_text`, `metadata` jsonb (`051`–`052`) |

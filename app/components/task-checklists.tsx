@@ -186,38 +186,68 @@ export function TaskChecklists({
   onChange,
   disabled = false,
   structureLocked = false,
+  defaultExpanded = false,
+  forceCollapsed = false,
 }: {
   checklists: TaskChecklist[];
   onChange: (checklists: TaskChecklist[]) => void;
   disabled?: boolean;
   structureLocked?: boolean;
+  defaultExpanded?: boolean;
+  forceCollapsed?: boolean;
 }) {
   const { t } = useTranslations();
-  const [expanded, setExpanded] = useState(true);
+  const hasChecklists = checklists.length > 0;
+  const [expanded, setExpanded] = useState(
+    !forceCollapsed && (hasChecklists || defaultExpanded),
+  );
   const progress = checklistProgress(checklists);
   const lockStructure = disabled || structureLocked;
+  const isExpanded = !forceCollapsed && expanded;
+
+  useEffect(() => {
+    if (forceCollapsed) {
+      setExpanded(false);
+      return;
+    }
+    setExpanded(checklists.length > 0);
+  }, [checklists.length, forceCollapsed]);
+
+  const chevron = (
+    <i
+      className={`fas fa-chevron-down text-[10px] text-zinc-400 transition ${
+        isExpanded ? "" : "-rotate-90"
+      }`}
+      aria-hidden="true"
+    />
+  );
+  const title = (
+    <span>
+      {t("subtasks.checklist.title", "Check List")}
+      {!forceCollapsed && progress.total > 0 ? ` ${progress.done}/${progress.total}` : ""}
+    </span>
+  );
 
   return (
     <section>
-      <button
-        type="button"
-        onClick={() => setExpanded((current) => !current)}
-        className="inline-flex items-center gap-2 text-sm font-medium text-zinc-700"
-        aria-expanded={expanded}
-      >
-        <i
-          className={`fas fa-chevron-down text-[10px] text-zinc-400 transition ${
-            expanded ? "" : "-rotate-90"
-          }`}
-          aria-hidden="true"
-        />
-        <span>
-          {t("subtasks.checklist.title", "Check List")}
-          {progress.total > 0 ? ` ${progress.done}/${progress.total}` : ""}
-        </span>
-      </button>
+      {forceCollapsed ? (
+        <div className="inline-flex items-center gap-2 text-sm font-medium text-zinc-700">
+          {chevron}
+          {title}
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setExpanded((current) => !current)}
+          className="inline-flex items-center gap-2 text-sm font-medium text-zinc-700"
+          aria-expanded={isExpanded}
+        >
+          {chevron}
+          {title}
+        </button>
+      )}
 
-      {expanded ? (
+      {isExpanded ? (
         <div className="mt-3 space-y-3">
           {checklists.map((list) => (
             <ChecklistCard

@@ -1,4 +1,22 @@
+import {
+  normalizeTemplateChecklists,
+  type TaskChecklist,
+} from "@/app/lib/task-checklists";
+import {
+  isListStatusGroup,
+  normalizeStatusColor,
+  type ListStatusGroup,
+} from "@/app/lib/list-statuses";
+
 export type WorkTemplateItemKind = "task" | "subtask" | "folder";
+
+export type TemplateTaskStatusDef = {
+  id: string;
+  label: string;
+  color: string;
+  groupKey: ListStatusGroup;
+  sortOrder: number;
+};
 
 export type WorkTemplate = {
   id: string;
@@ -17,7 +35,99 @@ export type WorkTemplateItem = {
   title: string;
   description: string;
   sortOrder: number;
+  assigneeIds: string[];
+  checklists: TaskChecklist[];
+  taskStatuses: TemplateTaskStatusDef[];
+  hiddenStatusIds: string[];
+  statusOrder: string[];
+  statusGroupOverrides: Record<string, string>;
 };
+
+export function createTemplateTaskStatusId(): string {
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
+    return `tplst-${crypto.randomUUID()}`;
+  }
+  return `tplst-${Date.now()}`;
+}
+
+function parseTemplateTaskStatus(value: unknown): TemplateTaskStatusDef | null {
+  if (typeof value !== "object" || value === null || !("id" in value)) {
+    return null;
+  }
+  const id = String((value as { id: unknown }).id).trim();
+  if (!id) return null;
+  const label =
+    "label" in value && typeof value.label === "string" ? value.label.trim() : "";
+  if (!label) return null;
+  const color =
+    "color" in value && typeof value.color === "string"
+      ? normalizeStatusColor(value.color)
+      : "#71717a";
+  const groupKeyRaw =
+    "groupKey" in value && typeof value.groupKey === "string"
+      ? value.groupKey
+      : "group_key" in value && typeof value.group_key === "string"
+        ? value.group_key
+        : "active";
+  const groupKey = isListStatusGroup(groupKeyRaw) ? groupKeyRaw : "active";
+  const sortOrder =
+    "sortOrder" in value && typeof value.sortOrder === "number"
+      ? value.sortOrder
+      : "sort_order" in value && typeof value.sort_order === "number"
+        ? value.sort_order
+        : 0;
+  return { id, label, color, groupKey, sortOrder };
+}
+
+export function parseTemplateTaskStatuses(value: unknown): TemplateTaskStatusDef[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map(parseTemplateTaskStatus)
+    .filter((item): item is TemplateTaskStatusDef => item !== null)
+    .sort((left, right) => left.sortOrder - right.sortOrder || left.id.localeCompare(right.id));
+}
+
+export function normalizeTemplateTaskStatuses(
+  statuses: TemplateTaskStatusDef[],
+): TemplateTaskStatusDef[] {
+  return statuses
+    .map((status, index) => ({
+      id: status.id,
+      label: status.label.trim(),
+      color: normalizeStatusColor(status.color),
+      groupKey: isListStatusGroup(status.groupKey) ? status.groupKey : "active",
+      sortOrder: index,
+    }))
+    .filter((status) => status.label.length > 0);
+}
+
+export function emptyTemplateStatusLayout(): Pick<
+  WorkTemplateItem,
+  "taskStatuses" | "hiddenStatusIds" | "statusOrder" | "statusGroupOverrides"
+> {
+  return {
+    taskStatuses: [],
+    hiddenStatusIds: [],
+    statusOrder: [],
+    statusGroupOverrides: {},
+  };
+}
+
+export function emptyTemplateItem(
+  input: Pick<
+    WorkTemplateItem,
+    "id" | "templateId" | "parentId" | "kind" | "sortOrder"
+  >,
+): WorkTemplateItem {
+  return {
+    ...input,
+    title: "",
+    description: "",
+    assigneeIds: [],
+    checklists: [],
+    ...emptyTemplateStatusLayout(),
+  };
+}
 
 export function createTemplateId(): string {
   if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
@@ -141,6 +251,18 @@ export function sanitizeTemplateItems(
         description: item.description.trim(),
         sortOrder: index,
         kind: item.kind,
+        assigneeIds: [...(item.assigneeIds ?? [])],
+        checklists: normalizeTemplateChecklists(item.checklists ?? []),
+        ...(item.kind === "task"
+          ? {
+              taskStatuses: normalizeTemplateTaskStatuses(item.taskStatuses ?? []),
+              hiddenStatusIds: [...(item.hiddenStatusIds ?? [])],
+              statusOrder: [...(item.statusOrder ?? [])],
+              statusGroupOverrides: {
+                ...(item.statusGroupOverrides ?? {}),
+              },
+            }
+          : emptyTemplateStatusLayout()),
       });
       if (item.kind === "folder") {
         walkTree(item.id);
@@ -156,6 +278,9 @@ export function sanitizeTemplateItems(
               title: child.title.trim(),
               description: child.description.trim(),
               sortOrder: childIndex,
+              assigneeIds: [...(child.assigneeIds ?? [])],
+              checklists: normalizeTemplateChecklists(child.checklists ?? []),
+              ...emptyTemplateStatusLayout(),
             });
           });
       }
@@ -176,15 +301,13 @@ function appendEmptyTask(
   if (last && !last.title.trim()) return items;
   return [
     ...items,
-    {
+    emptyTemplateItem({
       id: createTemplateItemId(),
       templateId,
       parentId,
       kind: "task",
-      title: "",
-      description: "",
       sortOrder: siblings.length,
-    },
+    }),
   ];
 }
 
@@ -198,15 +321,13 @@ function appendEmptySubtask(
   if (last && !last.title.trim()) return items;
   return [
     ...items,
-    {
+    emptyTemplateItem({
       id: createTemplateItemId(),
       templateId,
       parentId: taskId,
       kind: "subtask",
-      title: "",
-      description: "",
       sortOrder: subtasks.length,
-    },
+    }),
   ];
 }
 

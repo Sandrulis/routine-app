@@ -6,6 +6,7 @@ import { useEffect, useMemo, useState, type CSSProperties, type MouseEvent, type
 import { DragHandle } from "@/app/components/drag-handle";
 import { ListFormModal } from "@/app/components/list-form-modal";
 import { ListStatusesModal } from "@/app/components/list-statuses-modal";
+import { TaskStatusesModal } from "@/app/components/task-statuses-modal";
 import { ListAutomationsModal } from "@/app/components/list-automations-modal";
 import { LoadingState } from "@/app/components/loading-state";
 import { NameFormModal } from "@/app/components/name-form-modal";
@@ -52,6 +53,8 @@ import {
 } from "@/app/lib/lists";
 import { StatusTreeDot } from "@/app/components/status-control";
 import { useFileTypes } from "@/app/lib/file-types-context";
+import { FRONTEND_MODULE_KEYS } from "@/app/lib/frontend-modules/keys";
+import { useFrontendModules } from "@/app/lib/frontend-modules/context";
 import { useLists } from "@/app/lib/lists-store";
 import {
   childListFiles,
@@ -457,6 +460,8 @@ export function AppNav() {
   const { members, roles, currentUser, currentTeam, inviteMember, isReady: teamReady } = useTeam();
   const sidebarMembers = useMemo(() => confirmedTeamMembers(members), [members]);
   const { isAdmin } = useIsAdmin();
+  const { isEnabled: isModuleEnabled } = useFrontendModules();
+  const fileUploadsEnabled = isModuleEnabled(FRONTEND_MODULE_KEYS.fileUpload);
   const { statuses } = useTaskStatuses();
   const { getFileIconDisplay } = useFileTypes();
   const [inviteOpen, setInviteOpen] = useState(false);
@@ -479,6 +484,7 @@ export function AppNav() {
   );
   const [rolesModalOpen, setRolesModalOpen] = useState(false);
   const [statusesList, setStatusesList] = useState<WorkList | null>(null);
+  const [statusesTask, setStatusesTask] = useState<WorkTask | null>(null);
   const [automationsList, setAutomationsList] = useState<WorkList | null>(null);
   const [editTarget, setEditTarget] = useState<
     | { kind: "list"; list: WorkList }
@@ -564,24 +570,22 @@ export function AppNav() {
     isAdmin,
     "team.roles.manage",
   );
-  const canSeeTemplates = hasTeamNavPermission(
-    currentUser,
-    roles,
-    isAdmin,
-    "templates",
-  );
+  const canSeeTemplates =
+    hasTeamNavPermission(currentUser, roles, isAdmin, "templates") &&
+    isModuleEnabled(FRONTEND_MODULE_KEYS.templates);
   const canManageListStatuses = hasTeamActionPermission(
     currentUser,
     roles,
     isAdmin,
     "lists.statuses.manage",
   );
-  const canManageListAutomations = hasTeamActionPermission(
-    currentUser,
-    roles,
-    isAdmin,
-    "lists.automations.manage",
-  );
+  const canManageListAutomations =
+    hasTeamActionPermission(
+      currentUser,
+      roles,
+      isAdmin,
+      "lists.automations.manage",
+    ) && isModuleEnabled(FRONTEND_MODULE_KEYS.automations);
   const showTeamMenu = canManageRoles || canSeeTemplates;
 
   function accessForListId(listId: string) {
@@ -757,7 +761,9 @@ export function AppNav() {
     const parent = parentId
       ? (tasks.find((item) => item.id === parentId) ?? null)
       : null;
-    const showFiles = !parentId || Boolean(parent && isWorkFolder(parent));
+    const showFiles =
+      fileUploadsEnabled &&
+      (!parentId || Boolean(parent && isWorkFolder(parent)));
     const rawItems = parentId
       ? parent && isWorkFolder(parent)
         ? childTasks(parentId)
@@ -1093,7 +1099,7 @@ export function AppNav() {
         </nav>
 
         <div className="shrink-0 space-y-0.5 border-t border-zinc-100 px-2 py-2">
-          {currentTeam ? (
+          {currentTeam && fileUploadsEnabled ? (
             <Tooltip
               label={t(
                 "nav.storage.hint",
@@ -1219,6 +1225,13 @@ export function AppNav() {
           if (!open) setStatusesList(null);
         }}
       />
+      <TaskStatusesModal
+        task={statusesTask}
+        open={statusesTask !== null}
+        onOpenChange={(open) => {
+          if (!open) setStatusesTask(null);
+        }}
+      />
 
       <ListAutomationsModal
         list={automationsList}
@@ -1313,6 +1326,21 @@ export function AppNav() {
                       icon: "fas fa-pen",
                       title: t("actions.edit", "Labot"),
                     },
+                    ...(itemMenuTask &&
+                    itemMenuTask.kind === "task" &&
+                    canManageListStatuses
+                      ? [
+                          {
+                            id: "statuses",
+                            icon: "fas fa-circle-dot",
+                            title: t("tasks.statuses.title", "Statusi"),
+                            description: t(
+                              "tasks.statuses.menu_description",
+                              "Uzdevuma apakšuzdevumu statusi",
+                            ),
+                          },
+                        ]
+                      : []),
                     ...(itemMenuTask && !isWorkSubtask(itemMenuTask)
                       ? [
                           {
@@ -1366,6 +1394,7 @@ export function AppNav() {
           }
           if (id === "statuses") {
             if (list) setStatusesList(list);
+            if (task && task.kind === "task") setStatusesTask(task);
             return;
           }
           if (id === "automations") {

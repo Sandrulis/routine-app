@@ -3,6 +3,7 @@ import { memberIdsNotifiedForAssignees } from "@/app/lib/assignees";
 import type { WorkTask } from "@/app/lib/lists";
 import {
   createNotificationId,
+  notificationsForNewAssignees,
   type AppNotification,
   type NotificationKind,
 } from "@/app/lib/notifications";
@@ -219,16 +220,43 @@ export function notificationsForTaskFile(input: {
   });
 }
 
+export function notificationsForInitialAssignees(input: {
+  actorId: string;
+  assigneeIds: string[];
+  memberIds: Iterable<string>;
+  members: TeamMember[];
+  task: WorkTask;
+  tasks: WorkTask[];
+}): AppNotification[] {
+  if (input.assigneeIds.length === 0) return [];
+  const addedIds = memberIdsNotifiedForAssignees(
+    input.assigneeIds,
+    input.members,
+  );
+  const parentId =
+    input.task.kind === "subtask" && input.task.parentId
+      ? input.task.parentId
+      : input.task.id;
+  return notificationsForNewAssignees({
+    actorId: input.actorId,
+    addedIds,
+    memberIds: input.memberIds,
+    taskTitle: input.task.title,
+    href: `/lists/${input.task.listId}/tasks/${parentId}`,
+  });
+}
+
 export function notificationsForNewSubtask(input: {
   actorId: string;
   task: WorkTask;
   tasks: WorkTask[];
   members: TeamMember[];
+  memberIds: Iterable<string>;
 }): AppNotification[] {
   if (input.task.kind !== "subtask" || !input.task.parentId) return [];
   const parent = input.tasks.find((item) => item.id === input.task.parentId);
   if (!parent) return [];
-  return notifyStakeholders({
+  const notifications = notifyStakeholders({
     kind: "task_updated",
     actorId: input.actorId,
     stakeholderIds: resolveTaskStakeholderMemberIds(
@@ -238,6 +266,27 @@ export function notificationsForNewSubtask(input: {
     ),
     taskTitle: input.task.title,
     href: taskNotificationHref(input.task, input.tasks),
+  });
+  notifications.push(
+    ...notificationsForInitialAssignees({
+      actorId: input.actorId,
+      assigneeIds: input.task.assigneeIds,
+      memberIds: input.memberIds,
+      members: input.members,
+      task: input.task,
+      tasks: input.tasks,
+    }),
+  );
+  return dedupeNotifications(notifications);
+}
+
+function dedupeNotifications(items: AppNotification[]): AppNotification[] {
+  const seen = new Set<string>();
+  return items.filter((item) => {
+    const key = `${item.kind}:${item.recipientId ?? ""}:${item.taskTitle}:${item.href ?? ""}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
   });
 }
 

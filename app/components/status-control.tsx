@@ -87,15 +87,22 @@ export function useStatusLabels(): Record<WorkTaskStatus, string> {
   return labels as Record<WorkTaskStatus, string>;
 }
 
-function statusGroupKey(
-  status: string,
-  statuses: { id: string; groupKey: string }[],
-) {
-  const groupKey = statuses.find((row) => row.id === status)?.groupKey;
-  if (groupKey) return groupKey;
-  if (status === "done") return "closed";
-  if (status === "in_progress") return "active";
-  return "not_started";
+function StatusIcon({
+  status,
+  listId,
+  parentTaskId,
+}: {
+  status: string;
+  listId?: string | null;
+  parentTaskId?: string | null;
+}) {
+  const { colorFor, groupKeyFor } = useTaskStatuses(listId, parentTaskId);
+  return (
+    <StatusGlyph
+      color={colorFor(status) ?? "#a1a1aa"}
+      groupKey={groupKeyFor(status)}
+    />
+  );
 }
 
 export function StatusGlyph({
@@ -142,16 +149,6 @@ export function StatusGlyph({
   );
 }
 
-function StatusIcon({ status }: { status: string }) {
-  const { colorFor, statuses } = useTaskStatuses();
-  return (
-    <StatusGlyph
-      color={colorFor(status) ?? "#a1a1aa"}
-      groupKey={statusGroupKey(status, statuses)}
-    />
-  );
-}
-
 export function StatusControl({
   status,
   onChange,
@@ -163,6 +160,7 @@ export function StatusControl({
   revealActionsOnHover = false,
   actionsForced = false,
   listId = null,
+  parentTaskId = null,
   completeBlocked = false,
   completeBlockedLabel,
   checklistProgress = null,
@@ -177,13 +175,14 @@ export function StatusControl({
   revealActionsOnHover?: boolean;
   actionsForced?: boolean;
   listId?: string | null;
+  parentTaskId?: string | null;
   completeBlocked?: boolean;
   completeBlockedLabel?: string;
   checklistProgress?: { done: number; total: number; percent: number } | null;
 }) {
   const { t } = useTranslations();
   const { labelFor, colorFor, nextStatusId, groupedStatuses, statuses, groupKeyFor } =
-    useTaskStatuses(listId);
+    useTaskStatuses(listId, parentTaskId);
   const labels = useStatusLabels();
   const rootRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
@@ -504,7 +503,11 @@ export function StatusControl({
                                 : "text-zinc-700 hover:bg-zinc-50"
                             }`}
                           >
-                            <StatusIcon status={item} />
+                            <StatusIcon
+                              status={item}
+                              listId={listId}
+                              parentTaskId={parentTaskId}
+                            />
                             <span className="min-w-0 flex-1 truncate">
                               {labelFor(item) || labels[item]}
                             </span>

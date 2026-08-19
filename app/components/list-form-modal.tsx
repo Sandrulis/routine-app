@@ -16,6 +16,8 @@ import {
   type ListAccessChoice,
   type ListAccessLevel,
 } from "@/app/lib/list-access";
+import { FRONTEND_MODULE_KEYS } from "@/app/lib/frontend-modules/keys";
+import { useFrontendModules } from "@/app/lib/frontend-modules/context";
 import { DEFAULT_LIST_COLOR, randomListColorId } from "@/app/lib/lists";
 import { useTeam } from "@/app/lib/team-store";
 import { teamRankLabel } from "@/app/lib/team";
@@ -97,6 +99,8 @@ export function ListFormModal({
   const { t } = useTranslations();
   const { user: authUser } = useAuthSession();
   const { members, roles } = useTeam();
+  const { isEnabled: isModuleEnabled } = useFrontendModules();
+  const privateListsEnabled = isModuleEnabled(FRONTEND_MODULE_KEYS.privateList);
   const badgeRef = useRef<HTMLButtonElement>(null);
   const [name, setName] = useState("");
   const [details, setDetails] = useState("");
@@ -132,7 +136,8 @@ export function ListFormModal({
     const nextColor = initialValue?.color ?? randomListColorId();
     const nextDefault =
       initialValue?.defaultAccessLevel ?? DEFAULT_LIST_ACCESS_LEVEL;
-    const nextPrivate = initialValue?.isPrivate ?? false;
+    const nextPrivate =
+      privateListsEnabled && (initialValue?.isPrivate ?? false);
     setName(initialValue?.name ?? "");
     setDetails(initialValue?.description ?? "");
     setIcon(initialValue?.icon ?? null);
@@ -166,7 +171,7 @@ export function ListFormModal({
         ).map((userId) => [userId, initialValue?.viewerUserAccess[userId] ?? "none"]),
       ),
     );
-  }, [initialValue, open, roles]);
+  }, [initialValue, open, privateListsEnabled, roles]);
 
   const trimmedName = name.trim();
   const trimmedDetails = details.trim();
@@ -179,14 +184,15 @@ export function ListFormModal({
     roles,
     initialValue?.viewerRoleAccess ?? {},
     initialValue?.defaultAccessLevel ?? DEFAULT_LIST_ACCESS_LEVEL,
-    initialValue?.isPrivate ?? false,
+    privateListsEnabled && (initialValue?.isPrivate ?? false),
   );
   const dirty = Boolean(
     trimmedName ||
       trimmedDetails ||
       icon !== null ||
       color !== initialColor ||
-      isPrivate !== (initialValue?.isPrivate ?? false) ||
+      (privateListsEnabled &&
+        isPrivate !== (initialValue?.isPrivate ?? false)) ||
       defaultAccessLevel !==
         (initialValue?.defaultAccessLevel ?? DEFAULT_LIST_ACCESS_LEVEL) ||
       customizeRoles !== initialCustomizeRoles ||
@@ -256,7 +262,7 @@ export function ListFormModal({
       description: trimmedDetails,
       icon,
       color,
-      isPrivate,
+      isPrivate: privateListsEnabled && isPrivate,
       defaultAccessLevel,
       viewerUserIds: Object.keys(viewerUserAccess),
       viewerRoleIds: Object.keys(viewerRoleAccess),
@@ -419,6 +425,8 @@ export function ListFormModal({
           </div>
         </div>
 
+        {privateListsEnabled ? (
+          <>
         <div className="flex items-center justify-between gap-3 rounded-xl border border-zinc-200 px-3 py-2.5 text-sm text-zinc-700">
           <div>
             <p className="font-medium text-zinc-900">
@@ -499,6 +507,8 @@ export function ListFormModal({
               </p>
             )}
           </div>
+        ) : null}
+          </>
         ) : null}
 
         <div className="flex justify-end gap-2 border-t border-zinc-100 pt-4">

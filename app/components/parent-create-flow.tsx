@@ -13,6 +13,8 @@ import {
   nextItemSortOrder,
   type ListFile,
 } from "@/app/lib/list-files";
+import { FRONTEND_MODULE_KEYS } from "@/app/lib/frontend-modules/keys";
+import { useFrontendModules } from "@/app/lib/frontend-modules/context";
 import { useLists } from "@/app/lib/lists-store";
 import { activeFolderCreatedTemplateAutomations } from "@/app/lib/list-automations";
 import { useTemplates } from "@/app/lib/templates-store";
@@ -52,15 +54,19 @@ export function ParentCreateFlow({
   const { files } = useListFiles();
   const { currentUser, roles } = useTeam();
   const { isAdmin } = useIsAdmin();
+  const { isEnabled: isModuleEnabled } = useFrontendModules();
+  const fileUploadsEnabled = isModuleEnabled(FRONTEND_MODULE_KEYS.fileUpload);
   const canApplyTemplate =
     hasTeamNavPermission(currentUser, roles, isAdmin, "templates") &&
-    canManageTemplates(currentUser, roles, isAdmin);
-  const canUploadFiles = hasTeamActionPermission(
-    currentUser,
-    roles,
-    isAdmin,
-    "files.upload",
-  );
+    canManageTemplates(currentUser, roles, isAdmin) &&
+    isModuleEnabled(FRONTEND_MODULE_KEYS.templates);
+  const canUploadFiles =
+    hasTeamActionPermission(
+      currentUser,
+      roles,
+      isAdmin,
+      "files.upload",
+    ) && fileUploadsEnabled;
   const { accept, filterAllowedFiles, extensionsLabel } = useFileTypes();
   const [step, setStep] = useState<"choice" | "folder" | "task" | "template">(
     "choice",
@@ -79,6 +85,7 @@ export function ParentCreateFlow({
     if (!context) return;
 
     if (id === "file") {
+      if (!canUploadFiles) return;
       fileInputRef.current?.click();
       return;
     }
@@ -108,7 +115,7 @@ export function ParentCreateFlow({
     const current = contextRef.current;
     const selected = Array.from(event.target.files ?? []);
     event.target.value = "";
-    if (!current || selected.length === 0) return;
+    if (!current || selected.length === 0 || !canUploadFiles) return;
 
     const { allowed, rejected } = filterAllowedFiles(selected);
     if (rejected.length > 0) {
@@ -170,6 +177,7 @@ export function ParentCreateFlow({
         accept={accept}
         className="hidden"
         onChange={handleFiles}
+        disabled={!canUploadFiles}
       />
 
       <CreateItemMenu
@@ -331,7 +339,11 @@ export function ParentCreateFlow({
             title: input.name,
             description: input.description,
           });
-          if (step === "folder") {
+          if (
+            step === "folder" &&
+            isModuleEnabled(FRONTEND_MODULE_KEYS.automations) &&
+            isModuleEnabled(FRONTEND_MODULE_KEYS.templates)
+          ) {
             for (const rule of activeFolderCreatedTemplateAutomations(
               listAutomations,
               context.listId,

@@ -9,11 +9,23 @@ export type ListStatus = TaskStatusSummary & {
   listId: string;
 };
 
+export type WorkTaskStatusDef = TaskStatusSummary & {
+  parentTaskId: string;
+  listId: string;
+};
+
 export function createListStatusId(): string {
   if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
     return `lsts-${crypto.randomUUID()}`;
   }
   return `lsts-${Date.now()}`;
+}
+
+export function createWorkTaskStatusId(): string {
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
+    return `wtst-${crypto.randomUUID()}`;
+  }
+  return `wtst-${Date.now()}`;
 }
 
 export function isListStatusGroup(value: string): value is ListStatusGroup {
@@ -80,26 +92,71 @@ export function mapListStatusRow(row: {
   };
 }
 
+export function mapWorkTaskStatusRow(row: {
+  id: string;
+  parent_task_id: string;
+  list_id: string;
+  label: string;
+  labels: unknown;
+  color: string;
+  sort_order: number;
+  group_key: string;
+}): WorkTaskStatusDef {
+  const labels = parseStatusLabels(row.labels);
+  const legacy = row.label?.trim() ?? "";
+  const groupKey = isListStatusGroup(row.group_key) ? row.group_key : "active";
+  return {
+    id: row.id,
+    parentTaskId: row.parent_task_id,
+    listId: row.list_id,
+    labels,
+    label: legacy || primaryStatusLabel(labels),
+    color: normalizeStatusColor(row.color),
+    sortOrder: row.sort_order,
+    groupKey,
+  };
+}
+
 export function isCustomListStatus(
   status: TaskStatusSummary,
 ): status is ListStatus {
-  return "listId" in status && typeof (status as ListStatus).listId === "string";
+  return "listId" in status && typeof (status as ListStatus).listId === "string" && !("parentTaskId" in status);
+}
+
+export function isCustomWorkTaskStatus(
+  status: TaskStatusSummary,
+): status is WorkTaskStatusDef {
+  return (
+    "parentTaskId" in status &&
+    typeof (status as WorkTaskStatusDef).parentTaskId === "string"
+  );
+}
+
+export function isScopedCustomStatus(
+  status: TaskStatusSummary,
+): status is ListStatus | WorkTaskStatusDef {
+  return isCustomListStatus(status) || isCustomWorkTaskStatus(status);
 }
 
 export function mergeStatusCatalog(
   system: TaskStatusSummary[],
   listStatuses: ListStatus[],
   listId?: string | null,
+  workTaskStatuses: WorkTaskStatusDef[] = [],
+  parentTaskId?: string | null,
 ): TaskStatusSummary[] {
-  const extras =
+  const listExtras =
     listId === undefined
       ? listStatuses
       : listId
         ? listStatuses.filter((status) => status.listId === listId)
         : [];
+  const taskExtras = parentTaskId
+    ? workTaskStatuses.filter((status) => status.parentTaskId === parentTaskId)
+    : [];
   const seen = new Set(system.map((status) => status.id));
   const merged = [...system];
-  for (const status of extras) {
+  for (const status of [...listExtras, ...taskExtras]) {
     if (seen.has(status.id)) continue;
     seen.add(status.id);
     merged.push(status);
@@ -163,7 +220,7 @@ export function defaultSortedStatusCatalog(
     const groupDiff = groupIndex(left.groupKey) - groupIndex(right.groupKey);
     if (groupDiff !== 0) return groupDiff;
     const customDiff =
-      Number(isCustomListStatus(left)) - Number(isCustomListStatus(right));
+      Number(isScopedCustomStatus(left)) - Number(isScopedCustomStatus(right));
     if (customDiff !== 0) return customDiff;
     return left.sortOrder - right.sortOrder || left.id.localeCompare(right.id);
   });

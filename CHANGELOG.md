@@ -4,6 +4,45 @@
 
 - (none)
 
+## v0.1.17
+
+**Admin apakšizvēlne**
+
+- `/admin` josla: trīs kategorijas (Cilvēki, Katalogs, Sistēma); hover vai pieskāriens atver dropdown ar sadaļām
+- Aktīvā kategorija ir izcelta; aktuālā lapa dropdownā ar ķeksīti
+
+**Frontend moduļi**
+
+- Admin `/admin/modules` — globāli feature flagi (`site_frontend_modules`); pieeja tikai no admin apakšizvēlnes
+- `module_private_list`: ieslēgts — sarakstu var padarīt privātu; izslēgts — slēdzis pazūd un visi privātie saraksti kļūst publiski
+- `module_file_upload`: ieslēgts — augšupielāde kokā, apakšuzdevumos un mapes Failu logā; izslēgts — nav upload, esošie faili kokā/modālī slēpti, Failu logs un Failu vieta pazūd
+- `module_checklist`: ieslēgts — Check List lietojams; izslēgts — sadaļa vienmēr sakļauta un nepabeigti punkti nebloķē slēgto statusu
+- `module_automations`: ieslēgts — saraksta `...` rāda Automatizācijas; izslēgts — opcijas nav un noteikumi neizpildās
+- `module_templates`: ieslēgts — komandas `...` rāda Šablonus; izslēgts — šablonus nevar veidot, un Mapes izveide → šablons automatizācijā nerādās pat tad, ja automatizācijas ir ieslēgtas
+- Migrācijas `058`–`061`
+
+**Maksas plāni**
+
+- Admin `/admin/payment-plans` (apakšizvēlne pie `is_admin`) — globāls katalogs: ieslēgums, izmēģinājums jaunām komandām, Early Bird slotu limīts, opcionālas mēneša/ceturkšņa/gada un Early Bird cenas (EUR), frontend moduļi katrā plānā
+- Migrācija `062` (`site_payment_plans`, `site_payment_plan_modules`, `teams` plāna kolonnas); ieslēgums vēl neierobežo lietotnes moduļus un komandai plānu piešķir UI vēl nav
+
+**Tiešsaiste**
+
+- `last_online_at` heartbeat iet caur RPC `touch_current_member_online` (`063`), lai atjauninājums nestrādātu pret `anon` GRANT ierobežojumu
+
+**Apakšuzdevuma modālis**
+
+- Tukšs Check List un Pielikumi sākumā sakļauti (izvēršami); ar saturu atveras
+- Vēsture nesastiepj logu: augstums pēc kreisās kolonnas, iekšējais scroll ar fade un bultiņām
+- Vēsturē vairs nav komentāra lauka — tikai izmaiņu žurnāls
+
+**Šabloni, automatizācija un paziņojumi**
+
+- Šablona redaktors: uzdevumam/apakšuzdevumam assignee un checklist; custom apakšuzdevumu statusi (`TemplateTaskStatusesModal`); violeta atzīme uzdevumiem ar custom statusiem; izmaiņas saglabājas automātiski (bez Saglabāt pogas); migrācijas `056`–`057`
+- Šablona/automatizācijas pielietošana: piesaistītie saņem `assigned` paziņojumu jau uzdevuma izveides brīdī (`notificationsForInitialAssignees`)
+- Labojums: `work_task_statuses` un statusu layout saglabāšana gaida vecāka uzdevuma DB insert (`pendingTaskInsertsRef`)
+- Apakšuzdevuma PATH zem nosaukuma (tabula, modālis) un pārvietošanas izvēlnē, ja mērķis ir citā mapē vai sarakstā (`TaskLocationPath`)
+
 ## v0.1.16
 
 **Lint tīrīšana**

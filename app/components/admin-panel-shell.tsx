@@ -16,7 +16,7 @@ export function AdminPanelShell({ children }: { children: ReactNode }) {
         "Sistēmas iestatījumi. Pieejams tikai administratoriem.",
       )}
     >
-      <div className="space-y-4">
+      <div className="space-y-5">
         <AdminSubmenu />
         {children}
       </div>

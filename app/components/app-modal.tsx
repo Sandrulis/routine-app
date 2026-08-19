@@ -53,6 +53,7 @@ type AppModalProps = {
   overlayZClassName?: string;
   overlayZIndex?: number;
   headerMeta?: ReactNode;
+  headerSubtitle?: ReactNode;
 };
 
 export function AppModal({
@@ -67,6 +68,7 @@ export function AppModal({
   overlayZClassName = defaultOverlayZClassName,
   overlayZIndex,
   headerMeta,
+  headerSubtitle,
 }: AppModalProps) {
   const titleId = useId();
   const descriptionId = useId();
@@ -213,6 +215,9 @@ export function AppModal({
                 <h2 id={titleId} className="text-lg font-semibold text-zinc-900">
                   {title}
                 </h2>
+                {headerSubtitle ? (
+                  <div className="mt-0.5">{headerSubtitle}</div>
+                ) : null}
                 {description ? (
                   <p id={descriptionId} className="mt-1 text-sm text-zinc-500">
                     {description}

@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { FileDetailPage } from "@/app/components/file-detail-page";
 import { fetchListFileName } from "@/app/lib/document-title-server";
+import { requireFrontendModule } from "@/app/lib/frontend-modules/access";
+import { FRONTEND_MODULE_KEYS } from "@/app/lib/frontend-modules/keys";
 import { resolvedPageMetadata } from "@/app/lib/page-metadata";
 
 export async function generateMetadata({
@@ -19,5 +21,6 @@ export default async function ListFilePage({
   params: Promise<{ listId: string; fileId: string }>;
 }) {
   const { listId, fileId } = await params;
+  await requireFrontendModule(FRONTEND_MODULE_KEYS.fileUpload);
   return <FileDetailPage listId={listId} fileId={fileId} />;
 }

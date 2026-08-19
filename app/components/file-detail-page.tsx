@@ -17,6 +17,8 @@ import {
   readListFileContent,
   renameStoredListFile,
 } from "@/app/lib/list-files";
+import { FRONTEND_MODULE_KEYS } from "@/app/lib/frontend-modules/keys";
+import { useFrontendModules } from "@/app/lib/frontend-modules/context";
 import { useLists } from "@/app/lib/lists-store";
 import { useListFiles } from "@/app/lib/use-list-files";
 
@@ -33,11 +35,19 @@ export function FileDetailPage({
   const { showFeedback } = useFeedbackToast();
   const { lists, isReady } = useLists();
   const { files, isReady: filesReady } = useListFiles();
+  const { isEnabled: isModuleEnabled } = useFrontendModules();
+  const fileUploadsEnabled = isModuleEnabled(FRONTEND_MODULE_KEYS.fileUpload);
   const [renameOpen, setRenameOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [content, setContent] = useState<string | null>(null);
   const list = lists.find((item) => item.id === listId) ?? null;
   const file = files.find((item) => item.id === fileId && item.listId === listId) ?? null;
+
+  useEffect(() => {
+    if (!fileUploadsEnabled) {
+      router.replace(listId ? `/lists/${listId}` : "/dashboard");
+    }
+  }, [fileUploadsEnabled, listId, router]);
 
   useEffect(() => {
     if (!file?.hasContent) {
@@ -46,6 +56,17 @@ export function FileDetailPage({
     }
     setContent(readListFileContent(file.id));
   }, [file]);
+
+  if (!fileUploadsEnabled) {
+    return (
+      <SectionPage
+        title={t("files.detail.loading", "Ielādē failu")}
+        subtitle={t("lists.page.subtitle", "Saraksti ar uzdevumiem.")}
+      >
+        <LoadingState />
+      </SectionPage>
+    );
+  }
 
   if (!isReady || !filesReady) {
     return (

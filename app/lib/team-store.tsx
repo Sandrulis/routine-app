@@ -18,6 +18,7 @@ import {
   insertTeam,
   insertTeamRole,
   reorderTeamRoleRows,
+  isUnauthenticatedDbError,
   touchMemberOnline,
   updateMemberRoleRow,
   updateTeamRoleRow,
@@ -96,7 +97,11 @@ function isTransientOnlineTouchError(error: unknown): boolean {
         ? String((error as { message: unknown }).message)
         : String(error);
   const normalized = message.toLowerCase();
-  return normalized.includes("failed to fetch") || normalized.includes("networkerror");
+  return (
+    normalized.includes("failed to fetch") ||
+    normalized.includes("networkerror") ||
+    isUnauthenticatedDbError(error)
+  );
 }
 
 function ownerFromAuth(user: User): TeamMember {

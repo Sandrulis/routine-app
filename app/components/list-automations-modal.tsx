@@ -8,6 +8,8 @@ import { ToggleSwitch } from "@/app/components/toggle-switch";
 import { useFeedbackToast } from "@/app/components/feedback-toast-provider";
 import { useTranslations } from "@/app/components/translations-provider";
 import { listAutomationsForList, type ListAutomation } from "@/app/lib/list-automations";
+import { FRONTEND_MODULE_KEYS } from "@/app/lib/frontend-modules/keys";
+import { useFrontendModules } from "@/app/lib/frontend-modules/context";
 import { useLists } from "@/app/lib/lists-store";
 import { useTeam } from "@/app/lib/team-store";
 import { useTaskStatuses } from "@/app/lib/task-statuses";
@@ -29,6 +31,8 @@ export function ListAutomationsModal({
     useLists();
   const { templates } = useTemplates();
   const { members } = useTeam();
+  const { isEnabled: isModuleEnabled } = useFrontendModules();
+  const templatesEnabled = isModuleEnabled(FRONTEND_MODULE_KEYS.templates);
   const liveList = (list && lists.find((item) => item.id === list.id)) || list;
   const { statuses: statusesForList, labelFor, colorFor } = useTaskStatuses(liveList?.id);
   const automations = useMemo(
@@ -52,7 +56,7 @@ export function ListAutomationsModal({
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
 
   function handleAddFolderRule() {
-    if (!liveList) return;
+    if (!liveList || !templatesEnabled) return;
     addListAutomation(liveList.id, {
       triggerKind: "folder_created",
       actionKind: "apply_template",
@@ -126,7 +130,7 @@ export function ListAutomationsModal({
         }
       >
         <div className="space-y-5">
-          {/* 1. Folder created → apply template */}
+          {templatesEnabled ? (
           <AutomationSection
             icon="fas fa-folder-plus"
             iconColor="text-amber-500"
@@ -150,6 +154,7 @@ export function ListAutomationsModal({
               <AddButton label={t("lists.automations.add_rule", "Pievienot noteikumu")} onClick={handleAddFolderRule} />
             )}
           </AutomationSection>
+          ) : null}
 
           {/* 2. Status changed → assign user */}
           <AutomationSection

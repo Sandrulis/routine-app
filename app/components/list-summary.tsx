@@ -7,7 +7,7 @@ import { OptionalTooltip } from "@/app/components/tooltip";
 import { useDisplayPreferences } from "@/app/components/display-preferences-provider";
 import { useTranslations } from "@/app/components/translations-provider";
 import { compareTasksByStatusPriority } from "@/app/lib/list-statuses";
-import { getTaskAncestors, isTaskActiveInLists, isTaskDeleted, isWorkFolder, workItemIcon, type WorkTask } from "@/app/lib/lists";
+import { formatTaskLocationPath, getTaskAncestors, isTaskActiveInLists, isTaskDeleted, isWorkFolder, workItemIcon, type WorkTask } from "@/app/lib/lists";
 import { useLists } from "@/app/lib/lists-store";
 import { useTaskStatuses } from "@/app/lib/task-statuses";
 import { useTeam } from "@/app/lib/team-store";
@@ -85,7 +85,11 @@ function TaskSummarySection({
   );
   const ancestors = getTaskAncestors(tasks, task);
 
-  const crumb = [t("nav.lists", "Saraksts"), listName, ...ancestors.map((item) => item.title)]
+  const crumb = formatTaskLocationPath(listName, ancestors, {
+    includeListName: true,
+  });
+  // Keep breadcrumb prefix consistent with page navigation.
+  const pathWithNavPrefix = [t("nav.lists", "Saraksts"), crumb]
     .filter(Boolean)
     .join(" / ");
 
@@ -98,7 +102,7 @@ function TaskSummarySection({
       }
     >
       {nested ? null : (
-        <p className="px-3 pt-2 text-[11px] text-zinc-400">{crumb}</p>
+        <p className="px-3 pt-2 text-[11px] text-zinc-400">{pathWithNavPrefix}</p>
       )}
       <header className="flex items-center gap-2 px-3 py-2">
         <button
@@ -123,33 +127,37 @@ function TaskSummarySection({
           className={`${workItemIcon(task)} shrink-0 text-[12px] text-zinc-400`}
           aria-hidden="true"
         />
-        <OptionalTooltip label={task.description} className="min-w-0 flex-1">
-          <button
-            type="button"
-            onClick={() => onOpenTask(task)}
-            className="min-w-0 flex-1 truncate text-left text-sm font-semibold text-zinc-900 hover:text-blue-700"
-          >
-            {task.title}
-          </button>
-        </OptionalTooltip>
-        <WorkItemArchiveButton task={task} />
-        {assignees.length > 0 ? (
-          <span className="flex items-center -space-x-1.5">
-            {assignees.map((member) => (
-              <UserAvatar key={member.id} member={member} size="xs" />
-            ))}
-          </span>
-        ) : (
-          <span className="inline-flex size-6 items-center justify-center text-zinc-300">
-            <i className="far fa-user text-[12px]" aria-hidden="true" />
-          </span>
-        )}
-        {range ? (
-          <span className="hidden items-center gap-1.5 text-[12px] text-zinc-400 sm:inline-flex">
-            <i className="far fa-calendar text-[11px]" aria-hidden="true" />
-            {range}
-          </span>
-        ) : null}
+        <div className="flex min-w-0 flex-1 items-center gap-1">
+          <OptionalTooltip label={task.description} className="min-w-0">
+            <button
+              type="button"
+              onClick={() => onOpenTask(task)}
+              className="block min-w-0 truncate text-left text-sm font-semibold text-zinc-900 hover:text-blue-700"
+            >
+              {task.title}
+            </button>
+          </OptionalTooltip>
+          <WorkItemArchiveButton task={task} />
+        </div>
+        <div className="flex shrink-0 items-center gap-2">
+          {assignees.length > 0 ? (
+            <span className="flex items-center -space-x-1.5">
+              {assignees.map((member) => (
+                <UserAvatar key={member.id} member={member} size="xs" />
+              ))}
+            </span>
+          ) : (
+            <span className="inline-flex size-6 items-center justify-center text-zinc-300">
+              <i className="far fa-user text-[12px]" aria-hidden="true" />
+            </span>
+          )}
+          {range ? (
+            <span className="hidden items-center gap-1.5 text-[12px] text-zinc-400 sm:inline-flex">
+              <i className="far fa-calendar text-[11px]" aria-hidden="true" />
+              {range}
+            </span>
+          ) : null}
+        </div>
       </header>
 
       {expanded ? (

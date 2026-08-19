@@ -68,6 +68,9 @@ export type WorkTask = {
   dueDate: string | null;
   sortOrder: number;
   checklists: TaskChecklist[];
+  hiddenStatusIds: string[];
+  statusOrder: string[];
+  statusGroupOverrides: Record<string, string>;
 };
 
 export type ListColor = {
@@ -558,6 +561,13 @@ export function normalizeStoredTasks(value: unknown): WorkTask[] | null {
         dueDate,
         sortOrder,
         checklists,
+        hiddenStatusIds: parseIdList(
+          "hiddenStatusIds" in item ? item.hiddenStatusIds : [],
+        ),
+        statusOrder: parseIdList("statusOrder" in item ? item.statusOrder : []),
+        statusGroupOverrides: parseStatusGroupMap(
+          "statusGroupOverrides" in item ? item.statusGroupOverrides : {},
+        ),
       };
     })
     .filter((item): item is WorkTask => item !== null);
@@ -773,6 +783,97 @@ export function getTaskAncestors(
   }
 
   return chain;
+}
+
+export type TaskLocationSegment =
+  | { type: "list"; listId: string; label: string }
+  | { type: "folder" | "task"; listId: string; taskId: string; label: string };
+
+function ancestorsToLocationSegments(ancestors: WorkTask[]): TaskLocationSegment[] {
+  return ancestors.map((item) => ({
+    type: item.kind === "folder" ? "folder" : "task",
+    listId: item.listId,
+    taskId: item.id,
+    label: item.title,
+  }));
+}
+
+export function getSubtaskLocationSegments(
+  tasks: WorkTask[],
+  task: WorkTask,
+  listName: string | null | undefined,
+  options?: { includeListName?: boolean },
+): TaskLocationSegment[] {
+  const includeListName = options?.includeListName ?? true;
+  const segments: TaskLocationSegment[] = [];
+  if (includeListName && listName) {
+    segments.push({ type: "list", listId: task.listId, label: listName });
+  }
+  segments.push(...ancestorsToLocationSegments(getTaskAncestors(tasks, task)));
+  return segments;
+}
+
+export function getParentTaskLocationSegments(
+  tasks: WorkTask[],
+  parentId: string,
+  listId: string,
+  listName: string | null | undefined,
+): TaskLocationSegment[] {
+  const segments: TaskLocationSegment[] = [];
+  if (listName) {
+    segments.push({ type: "list", listId, label: listName });
+  }
+  const parent = tasks.find((item) => item.id === parentId);
+  if (!parent) return segments;
+  segments.push(
+    ...ancestorsToLocationSegments([
+      ...getTaskAncestors(tasks, parent),
+      parent,
+    ]),
+  );
+  return segments;
+}
+
+export function formatTaskLocationPath(
+  listName: string | null | undefined,
+  ancestors: WorkTask[],
+  options?: { includeListName?: boolean },
+): string {
+  const includeListName = options?.includeListName ?? true;
+  return [
+    ...(includeListName && listName ? [listName] : []),
+    ...ancestors.map((item) => item.title),
+  ]
+    .filter(Boolean)
+    .join(" / ");
+}
+
+export function getSubtaskLocationPath(
+  tasks: WorkTask[],
+  task: WorkTask,
+  listName: string | null | undefined,
+  options?: { includeListName?: boolean },
+): string {
+  return formatTaskLocationPath(
+    listName,
+    getTaskAncestors(tasks, task),
+    options,
+  );
+}
+
+export function getParentTaskLocationPath(
+  tasks: WorkTask[],
+  parentId: string,
+  listName: string | null | undefined,
+): string {
+  const parent = tasks.find((item) => item.id === parentId);
+  if (!parent) {
+    return listName ?? "";
+  }
+  return formatTaskLocationPath(listName, [
+    ...getTaskAncestors(tasks, parent),
+    parent,
+  ]);
 }
 
 export function taskProgress(task: WorkTask, children: WorkTask[]) {

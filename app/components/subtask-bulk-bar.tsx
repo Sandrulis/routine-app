@@ -19,14 +19,15 @@ import {
   resolveEffectiveListAccess,
   userIsAssignee,
 } from "@/app/lib/list-access";
+import { MoveSubtaskDestinationButton } from "@/app/components/move-subtask-destination-button";
 import {
-  getTaskAncestors,
   getTaskTree,
   isTaskDeleted,
-  workItemIcon,
   type WorkTask,
   type WorkTaskStatus,
 } from "@/app/lib/lists";
+import { FRONTEND_MODULE_KEYS } from "@/app/lib/frontend-modules/keys";
+import { useFrontendModules } from "@/app/lib/frontend-modules/context";
 import { useLists } from "@/app/lib/lists-store";
 import { teamRankLabel } from "@/app/lib/team";
 import { useTeam } from "@/app/lib/team-store";
@@ -180,6 +181,8 @@ export function SubtaskBulkBar({
   const { lists, tasks: allTasks, updateTask, hideTask, moveSubtask } = useLists();
   const { currentUser, members, roles } = useTeam();
   const { isAdmin } = useIsAdmin();
+  const { isEnabled: isModuleEnabled } = useFrontendModules();
+  const checklistsEnabled = isModuleEnabled(FRONTEND_MODULE_KEYS.checklist);
   const [menu, setMenu] = useState<BulkMenu | null>(null);
   const [dateField, setDateField] = useState<"startDate" | "dueDate">("dueDate");
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -249,6 +252,7 @@ export function SubtaskBulkBar({
       if (task.status === statusId) continue;
       if (
         groupKeyFor(statusId) === "closed" &&
+        checklistsEnabled &&
         taskHasIncompleteChecklists(task.checklists)
       ) {
         continue;
@@ -624,7 +628,7 @@ export function SubtaskBulkBar({
         trigger={triggers.current.move ?? null}
         onClose={closeMenu}
         labelledBy="subtask-bulk-move"
-        className="w-56 p-1.5"
+        className="w-72 p-1.5"
       >
         <p
           id="subtask-bulk-move"
@@ -638,24 +642,16 @@ export function SubtaskBulkBar({
           </p>
         ) : (
           <div className="max-h-64 overflow-y-auto">
-            {destinations.map((item) => {
-              const depth = getTaskAncestors(allTasks, item).length;
-              return (
-                <button
-                  key={item.id}
-                  type="button"
-                  onClick={() => applyMove(item.id)}
-                  style={{ paddingLeft: `${0.5 + depth * 0.75}rem` }}
-                  className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-[13px] text-zinc-700 transition hover:bg-zinc-100"
-                >
-                  <i
-                    className={`${workItemIcon(item)} w-4 text-center text-[12px] text-zinc-400`}
-                    aria-hidden="true"
-                  />
-                  <span className="min-w-0 flex-1 truncate">{item.title}</span>
-                </button>
-              );
-            })}
+            {destinations.map((item) => (
+              <MoveSubtaskDestinationButton
+                key={item.id}
+                item={item}
+                tasks={allTasks}
+                lists={lists}
+                originListId={sharedListId ?? item.listId}
+                onSelect={applyMove}
+              />
+            ))}
           </div>
         )}
       </BulkDropup>

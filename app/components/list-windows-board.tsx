@@ -75,6 +75,8 @@ import {
   type WorkTask,
   type WorkTaskStatus,
 } from "@/app/lib/lists";
+import { FRONTEND_MODULE_KEYS } from "@/app/lib/frontend-modules/keys";
+import { useFrontendModules } from "@/app/lib/frontend-modules/context";
 import { useLists } from "@/app/lib/lists-store";
 import { useListFiles } from "@/app/lib/use-list-files";
 import { useTeam } from "@/app/lib/team-store";
@@ -501,6 +503,8 @@ function OverviewSubtaskList({
   const { isAdmin } = useIsAdmin();
   const { statuses, colorFor, labelFor } = useTaskStatuses(listId);
   const { statuses: systemStatuses } = useSystemTaskStatuses();
+  const { isEnabled: isModuleEnabled } = useFrontendModules();
+  const checklistsEnabled = isModuleEnabled(FRONTEND_MODULE_KEYS.checklist);
   const [dropHint, setDropHint] = useState<DropHint | null>(null);
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
@@ -625,6 +629,7 @@ function OverviewSubtaskList({
                     {group.items.map((task) => {
                       const done = isClosedTaskStatus(task.status, statuses);
                       const checklistBlocked =
+                        checklistsEnabled &&
                         !done &&
                         taskHasIncompleteChecklists(task.checklists);
                       const canToggle =
@@ -840,12 +845,17 @@ export function ListWindowsBoard({
   const { lists } = useLists();
   const { currentUser, roles } = useTeam();
   const { isAdmin } = useIsAdmin();
+  const { isEnabled: isModuleEnabled } = useFrontendModules();
+  const fileUploadsEnabled = isModuleEnabled(FRONTEND_MODULE_KEYS.fileUpload);
   const list = lists.find((item) => item.id === listId) ?? null;
   const windowOrderKey = parentId ?? listId;
-  const canUploadFiles = list
-    ? resolveEffectiveListAccess(list, currentUser, roles, isAdmin).canCreateTasks &&
-      hasTeamActionPermission(currentUser, roles, isAdmin, "files.upload")
-    : false;
+  const canUploadFiles = Boolean(
+    fileUploadsEnabled &&
+      list &&
+      resolveEffectiveListAccess(list, currentUser, roles, isAdmin)
+        .canCreateTasks &&
+      hasTeamActionPermission(currentUser, roles, isAdmin, "files.upload"),
+  );
   const [order, setOrder] = useState<ListWindowId[]>(DEFAULT_LIST_WINDOW_ORDER);
   const [tasksArchiveOpen, setTasksArchiveOpen] = useState(false);
   const [openedSubtaskId, setOpenedSubtaskId] = useState<string | null>(null);
@@ -973,6 +983,10 @@ export function ListWindowsBoard({
     ),
   };
 
+  const visibleOrder = fileUploadsEnabled
+    ? order
+    : order.filter((id) => id !== "files");
+
   return (
     <>
     <DndContext
@@ -980,10 +994,16 @@ export function ListWindowsBoard({
       collisionDetection={closestCenter}
       onDragEnd={handleDragEnd}
     >
-      <SortableContext items={order} strategy={rectSortingStrategy}>
+      <SortableContext items={visibleOrder} strategy={rectSortingStrategy}>
         <div className="flex flex-col gap-4">
-          <div className="grid gap-4 md:grid-cols-2">
-            {order
+          <div
+            className={
+              fileUploadsEnabled
+                ? "grid gap-4 md:grid-cols-2"
+                : "grid gap-4"
+            }
+          >
+            {visibleOrder
               .filter((id) => id !== "overview")
               .map((id) => windows[id])}
           </div>

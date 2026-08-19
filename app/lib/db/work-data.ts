@@ -3,8 +3,9 @@ import type { AppNotification } from "@/app/lib/notifications";
 import type { ListFile } from "@/app/lib/list-files";
 import type { WorkList, WorkTask } from "@/app/lib/lists";
 import type { WorkTemplate, WorkTemplateItem } from "@/app/lib/templates";
-import { sortTemplateItemsForInsert } from "@/app/lib/templates";
+import { parseTemplateTaskStatuses } from "@/app/lib/templates";
 import { parseTaskChecklists } from "@/app/lib/task-checklists";
+import { sortTemplateItemsForInsert } from "@/app/lib/templates";
 import {
   DEFAULT_LIST_ACCESS_LEVEL,
   parseListAccessLevel,
@@ -17,12 +18,14 @@ import { isTodoStatus, type TodoItem } from "@/app/lib/team-todo";
 import {
   isListStatusGroup,
   mapListStatusRow,
+  mapWorkTaskStatusRow,
   normalizeStatusColor,
   normalizeStatusLabels,
   parseStatusGroupOverrides,
   parseTeamStatusLabels,
   primaryStatusLabel,
   type ListStatus,
+  type WorkTaskStatusDef,
 } from "@/app/lib/list-statuses";
 import {
   mapListAutomationRow,
@@ -107,6 +110,18 @@ export function formatSupabaseError(error: unknown): string {
     (part): part is string => Boolean(part && String(part).trim()),
   );
   return parts.join(" | ") || String(error);
+}
+
+export function isUnauthenticatedDbError(error: unknown): boolean {
+  const message = formatSupabaseError(error).toLowerCase();
+  return (
+    message.includes("permission denied") ||
+    message.includes("42501") ||
+    message.includes("jwt") ||
+    message.includes("not authenticated") ||
+    message.includes("invalid claim") ||
+    message.includes("pgrst301")
+  );
 }
 
 export function teamToRow(team: WorkTeam, createdBy: string) {
@@ -343,11 +358,16 @@ export async function touchMemberOnline(
   userId: string,
   at: string,
 ): Promise<void> {
-  const { error } = await db()
-    .from("team_members")
-    .update({ last_online_at: at })
-    .eq("team_id", teamId)
-    .eq("user_id", userId);
+  const supabase = db();
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  if (!session || session.user.id !== userId) return;
+
+  const { error } = await supabase.rpc("touch_current_member_online", {
+    p_team_id: teamId,
+    p_seen_at: at,
+  });
   if (error) throw new Error(formatSupabaseError(error));
 }
 
@@ -360,6 +380,7 @@ export type TeamWorkspace = {
   listFiles: ListFile[];
   listFileContents: Record<string, string>;
   listStatuses: ListStatus[];
+  workTaskStatuses: WorkTaskStatusDef[];
   listAutomations: ListAutomation[];
   teamStatusLabels: Record<string, string>;
   notifications: AppNotification[];
@@ -377,6 +398,7 @@ export async function fetchTeamWorkspace(teamId: string): Promise<TeamWorkspace>
     notificationsRes,
     todosRes,
     listStatusesRes,
+    workTaskStatusesRes,
     listAutomationsRes,
     teamStatusLabelsRes,
   ] = await Promise.all([
@@ -388,7 +410,7 @@ export async function fetchTeamWorkspace(teamId: string): Promise<TeamWorkspace>
     supabase
       .from("work_tasks")
       .select(
-        "id, list_id, parent_id, kind, title, description, status, status_changed_at, deleted_at, archived_at, start_date, due_date, sort_order, checklists",
+        "id, list_id, parent_id, kind, title, description, status, status_changed_at, deleted_at, archived_at, start_date, due_date, sort_order, checklists, hidden_status_ids, status_order, status_group_overrides",
       )
       .eq("team_id", teamId)
       .order("sort_order", { ascending: true }),
@@ -424,6 +446,13 @@ export async function fetchTeamWorkspace(teamId: string): Promise<TeamWorkspace>
       .eq("team_id", teamId)
       .order("sort_order", { ascending: true }),
     supabase
+      .from("work_task_statuses")
+      .select(
+        "id, parent_task_id, list_id, label, labels, color, sort_order, group_key",
+      )
+      .eq("team_id", teamId)
+      .order("sort_order", { ascending: true }),
+    supabase
       .from("work_list_automations")
       .select(
         "id, list_id, trigger_kind, action_kind, template_id, config, enabled, sort_order",
@@ -445,6 +474,7 @@ export async function fetchTeamWorkspace(teamId: string): Promise<TeamWorkspace>
     notificationsRes.error,
     todosRes.error,
     listStatusesRes.error,
+    workTaskStatusesRes.error,
     listAutomationsRes.error,
     teamStatusLabelsRes.error,
   ].filter(Boolean);
@@ -593,6 +623,17 @@ export async function fetchTeamWorkspace(teamId: string): Promise<TeamWorkspace>
       dueDate: row.due_date,
       sortOrder: row.sort_order,
       checklists: parseTaskChecklists(row.checklists),
+      hiddenStatusIds: Array.isArray(row.hidden_status_ids)
+        ? row.hidden_status_ids.filter(
+            (id): id is string => typeof id === "string" && id.trim().length > 0,
+          )
+        : [],
+      statusOrder: Array.isArray(row.status_order)
+        ? row.status_order.filter(
+            (id): id is string => typeof id === "string" && id.trim().length > 0,
+          )
+        : [],
+      statusGroupOverrides: parseStatusGroupOverrides(row.status_group_overrides),
     })),
     activities: (activitiesRes.data ?? []).map((row) => ({
       id: row.id,
@@ -621,6 +662,7 @@ export async function fetchTeamWorkspace(teamId: string): Promise<TeamWorkspace>
     listFiles,
     listFileContents,
     listStatuses: (listStatusesRes.data ?? []).map(mapListStatusRow),
+    workTaskStatuses: (workTaskStatusesRes.data ?? []).map(mapWorkTaskStatusRow),
     listAutomations: (listAutomationsRes.data ?? []).map(mapListAutomationRow),
     teamStatusLabels: parseTeamStatusLabels(teamStatusLabelsRes.data),
     notifications: (notificationsRes.data ?? []).map((row) => mapNotificationRow(row)),
@@ -803,6 +845,9 @@ export async function insertTask(teamId: string, task: WorkTask) {
     due_date: dateOrNull(task.dueDate),
     sort_order: task.sortOrder,
     checklists: task.checklists ?? [],
+    hidden_status_ids: task.hiddenStatusIds ?? [],
+    status_order: task.statusOrder ?? [],
+    status_group_overrides: task.statusGroupOverrides ?? {},
   });
   if (error) throw new Error(formatSupabaseError(error));
   await replaceTaskAssignees(task.id, task.assigneeIds);
@@ -825,6 +870,9 @@ export async function updateTaskRow(
       | "parentId"
       | "sortOrder"
       | "checklists"
+      | "hiddenStatusIds"
+      | "statusOrder"
+      | "statusGroupOverrides"
     >
   >,
 ) {
@@ -847,6 +895,13 @@ export async function updateTaskRow(
   if (patch.parentId !== undefined) row.parent_id = patch.parentId;
   if (patch.sortOrder !== undefined) row.sort_order = patch.sortOrder;
   if (patch.checklists !== undefined) row.checklists = patch.checklists;
+  if (patch.hiddenStatusIds !== undefined) {
+    row.hidden_status_ids = patch.hiddenStatusIds;
+  }
+  if (patch.statusOrder !== undefined) row.status_order = patch.statusOrder;
+  if (patch.statusGroupOverrides !== undefined) {
+    row.status_group_overrides = patch.statusGroupOverrides;
+  }
   if (Object.keys(row).length > 0) {
     const { error } = await supabase.from("work_tasks").update(row).eq("id", taskId);
     if (error) throw new Error(formatSupabaseError(error));
@@ -903,7 +958,7 @@ export async function insertActivity(teamId: string, activity: TaskActivity) {
     metadata: activity.metadata ?? null,
     created_at: activity.at,
   });
-  if (error) throw error;
+  if (error) throw new Error(formatSupabaseError(error));
 }
 
 export async function insertTaskFile(
@@ -1308,6 +1363,71 @@ export async function deleteListStatusRow(statusId: string) {
   if (error) throw error;
 }
 
+export async function insertWorkTaskStatus(
+  teamId: string,
+  status: WorkTaskStatusDef,
+) {
+  const supabase = db();
+  const label = status.label.trim();
+  const { error } = await supabase.from("work_task_statuses").insert({
+    id: status.id,
+    parent_task_id: status.parentTaskId,
+    list_id: status.listId,
+    team_id: teamId,
+    label,
+    labels: {},
+    color: normalizeStatusColor(status.color),
+    sort_order: status.sortOrder,
+    group_key: status.groupKey,
+  });
+  if (error) throw error;
+}
+
+export async function updateWorkTaskStatusRow(
+  statusId: string,
+  patch: Partial<
+    Pick<WorkTaskStatusDef, "labels" | "label" | "color" | "groupKey" | "sortOrder">
+  >,
+) {
+  const supabase = db();
+  const next: Record<string, unknown> = {};
+  if (patch.label !== undefined) {
+    next.label = patch.label.trim();
+    next.labels = {};
+  } else if (patch.labels) {
+    const labels = normalizeStatusLabels(patch.labels);
+    next.labels = labels;
+    next.label = primaryStatusLabel(labels, "");
+  }
+  if (patch.color !== undefined) next.color = normalizeStatusColor(patch.color);
+  if (patch.groupKey !== undefined) {
+    next.group_key = isListStatusGroup(patch.groupKey) ? patch.groupKey : "active";
+  }
+  if (patch.sortOrder !== undefined) next.sort_order = patch.sortOrder;
+  if (Object.keys(next).length === 0) return;
+  const { error } = await supabase
+    .from("work_task_statuses")
+    .update(next)
+    .eq("id", statusId);
+  if (error) throw error;
+}
+
+export async function deleteWorkTaskStatusRow(statusId: string) {
+  const { error } = await db().from("work_task_statuses").delete().eq("id", statusId);
+  if (error) throw error;
+}
+
+export async function updateWorkTaskStatusSortOrders(orderedIds: string[]) {
+  const supabase = db();
+  for (let index = 0; index < orderedIds.length; index += 1) {
+    const { error } = await supabase
+      .from("work_task_statuses")
+      .update({ sort_order: index })
+      .eq("id", orderedIds[index]);
+    if (error) throw error;
+  }
+}
+
 export async function insertListAutomation(teamId: string, automation: ListAutomation) {
   const supabase = db();
   const { error } = await supabase.from("work_list_automations").insert({
@@ -1418,6 +1538,12 @@ function templateItemFromRow(row: {
   title: string;
   description: string;
   sort_order: number;
+  assignee_ids?: string[] | null;
+  checklists?: unknown;
+  task_statuses?: unknown;
+  hidden_status_ids?: string[] | null;
+  status_order?: string[] | null;
+  status_group_overrides?: unknown;
 }): WorkTemplateItem {
   return {
     id: row.id,
@@ -1432,6 +1558,26 @@ function templateItemFromRow(row: {
     title: row.title,
     description: row.description,
     sortOrder: row.sort_order,
+    assigneeIds: row.assignee_ids ?? [],
+    checklists: parseTaskChecklists(row.checklists),
+    taskStatuses:
+      row.kind === "task" ? parseTemplateTaskStatuses(row.task_statuses) : [],
+    hiddenStatusIds:
+      row.kind === "task" && Array.isArray(row.hidden_status_ids)
+        ? row.hidden_status_ids.filter(
+            (id): id is string => typeof id === "string" && id.trim().length > 0,
+          )
+        : [],
+    statusOrder:
+      row.kind === "task" && Array.isArray(row.status_order)
+        ? row.status_order.filter(
+            (id): id is string => typeof id === "string" && id.trim().length > 0,
+          )
+        : [],
+    statusGroupOverrides:
+      row.kind === "task"
+        ? parseStatusGroupOverrides(row.status_group_overrides)
+        : {},
   };
 }
 
@@ -1444,6 +1590,13 @@ function templateItemToRow(item: WorkTemplateItem) {
     title: item.title,
     description: item.description,
     sort_order: item.sortOrder,
+    assignee_ids: item.assigneeIds,
+    checklists: item.checklists,
+    task_statuses: item.kind === "task" ? item.taskStatuses : [],
+    hidden_status_ids: item.kind === "task" ? item.hiddenStatusIds : [],
+    status_order: item.kind === "task" ? item.statusOrder : [],
+    status_group_overrides:
+      item.kind === "task" ? item.statusGroupOverrides : {},
   };
 }
 
@@ -1466,7 +1619,9 @@ export async function fetchTeamTemplates(teamId: string): Promise<{
 
   const { data: itemRows, error: itemsError } = await supabase
     .from("work_template_items")
-    .select("id, template_id, parent_id, kind, title, description, sort_order")
+    .select(
+      "id, template_id, parent_id, kind, title, description, sort_order, assignee_ids, checklists, task_statuses, hidden_status_ids, status_order, status_group_overrides",
+    )
     .in("template_id", templateIds)
     .order("sort_order", { ascending: true });
   if (itemsError) throw new Error(formatSupabaseError(itemsError));

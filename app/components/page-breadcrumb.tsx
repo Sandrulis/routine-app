@@ -227,6 +227,8 @@ export function PageBreadcrumb() {
         "file-types": t("admin.nav.file_types", "Failu tipi"),
         languages: t("admin.nav.languages", "Valodas"),
         translations: t("admin.nav.translations", "Tulkojumi"),
+        modules: t("nav.modules", "Moduļi"),
+        "payment-plans": t("admin.nav.payment_plans", "Maksas plāni"),
         settings: t("nav.settings", "Uzstādījumi"),
       };
       const sectionLabel = section ? (sectionLabels[section] ?? null) : null;

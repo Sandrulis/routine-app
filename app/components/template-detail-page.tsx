@@ -1,12 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { LoadingState } from "@/app/components/loading-state";
 import { SectionPage } from "@/app/components/section-page";
 import { TemplateTreeEditor } from "@/app/components/template-tree-editor";
-import { UnsavedChangesConfirmModal } from "@/app/components/unsaved-changes-confirm-modal";
-import { useUnsavedChangesGuard } from "@/app/components/unsaved-changes-guard";
-import { useFeedbackToast } from "@/app/components/feedback-toast-provider";
+import { TemplateTaskStatusesModal } from "@/app/components/template-task-statuses-modal";
 import { useTranslations } from "@/app/components/translations-provider";
 import {
   prepareTemplateEditorItems,
@@ -18,7 +16,10 @@ import { canManageTemplates, hasTeamNavPermission } from "@/app/lib/team";
 import { useTeam } from "@/app/lib/team-store";
 import { useIsAdmin } from "@/app/lib/users/use-is-admin";
 
+const AUTO_SAVE_DELAY_MS = 600;
+
 function draftSnapshot(
+  templateId: string,
   name: string,
   description: string,
   items: WorkTemplateItem[],
@@ -26,20 +27,25 @@ function draftSnapshot(
   return JSON.stringify({
     name: name.trim(),
     description: description.trim(),
-    items: items.map((item) => ({
+    items: sanitizeTemplateItems(templateId, items).map((item) => ({
       id: item.id,
       parentId: item.parentId,
       kind: item.kind,
       title: item.title,
       description: item.description,
       sortOrder: item.sortOrder,
+      assigneeIds: item.assigneeIds,
+      checklists: item.checklists,
+      taskStatuses: item.taskStatuses,
+      hiddenStatusIds: item.hiddenStatusIds,
+      statusOrder: item.statusOrder,
+      statusGroupOverrides: item.statusGroupOverrides,
     })),
   });
 }
 
 export function TemplateDetailPage({ templateId }: { templateId: string }) {
   const { t } = useTranslations();
-  const { showFeedback } = useFeedbackToast();
   const { templates, items: allItems, saveTemplate, isReady } = useTemplates();
   const { currentUser, roles } = useTeam();
   const { isAdmin } = useIsAdmin();
@@ -51,23 +57,57 @@ export function TemplateDetailPage({ templateId }: { templateId: string }) {
   );
   const canManage = canManageTemplates(currentUser, roles, isAdmin);
   const template = templates.find((item) => item.id === templateId) ?? null;
-  const storedItems = useMemo(
-    () => allItems.filter((item) => item.templateId === templateId),
-    [allItems, templateId],
-  );
+  const storedItems = allItems.filter((item) => item.templateId === templateId);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [items, setItems] = useState<WorkTemplateItem[]>([]);
   const [savedSnapshot, setSavedSnapshot] = useState("");
   const [focusItemId, setFocusItemId] = useState<string | null>(null);
+  const [statusesItemId, setStatusesItemId] = useState<string | null>(null);
+  const statusesItem =
+    items.find((item) => item.id === statusesItemId && item.kind === "task") ??
+    null;
+
+  const loadedTemplateIdRef = useRef<string | null>(null);
+  const saveTemplateRef = useRef(saveTemplate);
+  saveTemplateRef.current = saveTemplate;
+  const latestDraftRef = useRef({
+    name: "",
+    description: "",
+    items: [] as WorkTemplateItem[],
+    templateId,
+    savedSnapshot: "",
+  });
+  latestDraftRef.current = { name, description, items, templateId, savedSnapshot };
+
+  const persistDraft = useCallback(
+    (trimmedName: string, desc: string, draftItems: WorkTemplateItem[]) => {
+      const persistedItems = sanitizeTemplateItems(templateId, draftItems);
+      saveTemplate({
+        templateId,
+        name: trimmedName,
+        description: desc,
+        items: draftItems,
+      });
+      setItems(prepareTemplateEditorItems(templateId, persistedItems));
+      setSavedSnapshot(
+        draftSnapshot(templateId, trimmedName, desc, persistedItems),
+      );
+    },
+    [saveTemplate, templateId],
+  );
 
   useEffect(() => {
     if (!template) return;
+    if (loadedTemplateIdRef.current === templateId) return;
+    loadedTemplateIdRef.current = templateId;
     setName(template.name);
     setDescription(template.description);
     const persisted = sanitizeTemplateItems(templateId, storedItems);
     setItems(prepareTemplateEditorItems(templateId, storedItems));
-    setSavedSnapshot(draftSnapshot(template.name, template.description, persisted));
+    setSavedSnapshot(
+      draftSnapshot(templateId, template.name, template.description, persisted),
+    );
   }, [template, storedItems, templateId]);
 
   useEffect(() => {
@@ -88,33 +128,58 @@ export function TemplateDetailPage({ templateId }: { templateId: string }) {
     return () => cancelAnimationFrame(frameId);
   }, [focusItemId, items]);
 
-  const isDirty = useMemo(
-    () =>
-      draftSnapshot(name, description, sanitizeTemplateItems(templateId, items)) !==
-      savedSnapshot,
-    [description, items, name, savedSnapshot, templateId],
-  );
-  const { confirmOpen, stayOnPage, confirmLeave } = useUnsavedChangesGuard({
-    isDirty,
-  });
-
-  function handleSave() {
+  useEffect(() => {
+    if (!canManage || !template) return;
     const trimmedName = name.trim();
     if (!trimmedName) return;
-    const persistedItems = sanitizeTemplateItems(templateId, items);
-    saveTemplate({
+
+    const currentSnapshot = draftSnapshot(
       templateId,
-      name: trimmedName,
+      name,
       description,
-      items,
-    });
-    setItems(prepareTemplateEditorItems(templateId, persistedItems));
-    setSavedSnapshot(draftSnapshot(trimmedName, description, persistedItems));
-    showFeedback({
-      type: "success",
-      text: t("templates.saved", "Šablons saglabāts."),
-    });
-  }
+      sanitizeTemplateItems(templateId, items),
+    );
+    if (currentSnapshot === savedSnapshot) return;
+
+    const timeoutId = window.setTimeout(() => {
+      persistDraft(trimmedName, description, items);
+    }, AUTO_SAVE_DELAY_MS);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [
+    canManage,
+    description,
+    items,
+    name,
+    persistDraft,
+    savedSnapshot,
+    template,
+    templateId,
+  ]);
+
+  useEffect(() => {
+    return () => {
+      const draft = latestDraftRef.current;
+      const trimmedName = draft.name.trim();
+      if (!trimmedName) return;
+
+      const persistedItems = sanitizeTemplateItems(draft.templateId, draft.items);
+      const snap = draftSnapshot(
+        draft.templateId,
+        draft.name,
+        draft.description,
+        persistedItems,
+      );
+      if (snap === draft.savedSnapshot) return;
+
+      saveTemplateRef.current({
+        templateId: draft.templateId,
+        name: trimmedName,
+        description: draft.description,
+        items: draft.items,
+      });
+    };
+  }, []);
 
   if (!isReady) {
     return (
@@ -160,18 +225,6 @@ export function TemplateDetailPage({ templateId }: { templateId: string }) {
         "templates.detail.subtitle",
         "Definē mapes, uzdevumu sarakstus un apakšuzdevumus. Pēc tam šablonu var pievienot mapē.",
       )}
-      actions={
-        canManage ? (
-        <button
-          type="button"
-          onClick={handleSave}
-          disabled={!isDirty || !name.trim()}
-          className="inline-flex min-h-10 items-center justify-center rounded-2xl bg-blue-700 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-800 disabled:cursor-not-allowed disabled:bg-zinc-200 disabled:text-zinc-400"
-        >
-          {t("actions.save", "Saglabāt")}
-        </button>
-        ) : null
-      }
     >
       <fieldset disabled={!canManage} className="space-y-4 disabled:opacity-80">
         <div className="rounded-3xl border border-zinc-200 bg-white px-5 py-5">
@@ -224,14 +277,22 @@ export function TemplateDetailPage({ templateId }: { templateId: string }) {
             items={items}
             onItemsChange={setItems}
             onFocusItemId={setFocusItemId}
+            onOpenStatuses={setStatusesItemId}
           />
         </div>
       </fieldset>
 
-      <UnsavedChangesConfirmModal
-        open={confirmOpen}
-        onStay={stayOnPage}
-        onLeave={confirmLeave}
+      <TemplateTaskStatusesModal
+        item={statusesItem}
+        open={statusesItemId !== null}
+        onOpenChange={(open) => {
+          if (!open) setStatusesItemId(null);
+        }}
+        onItemChange={(next) => {
+          setItems((current) =>
+            current.map((item) => (item.id === next.id ? next : item)),
+          );
+        }}
       />
     </SectionPage>
   );

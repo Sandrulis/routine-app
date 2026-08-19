@@ -84,6 +84,29 @@ export function normalizeTaskChecklists(
   }));
 }
 
+export function normalizeTemplateChecklists(
+  checklists: TaskChecklist[],
+): TaskChecklist[] {
+  return normalizeTaskChecklists(checklists).map((list) => ({
+    ...list,
+    items: list.items.map((item) => ({ ...item, done: false })),
+  }));
+}
+
+export function templateChecklistsForApply(
+  checklists: TaskChecklist[],
+): TaskChecklist[] {
+  return normalizeTemplateChecklists(checklists).map((list) => ({
+    ...list,
+    id: createChecklistId(),
+    items: list.items.map((item) => ({
+      ...item,
+      id: createChecklistItemId(),
+      done: false,
+    })),
+  }));
+}
+
 export function checklistsEqual(
   left: TaskChecklist[],
   right: TaskChecklist[],
