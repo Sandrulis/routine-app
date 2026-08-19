@@ -25,8 +25,7 @@ import { useLists } from "@/app/lib/lists-store";
 import { useTeam } from "@/app/lib/team-store";
 import { useIsAdmin } from "@/app/lib/users/use-is-admin";
 import {
-  listAccessCapabilities,
-  resolveListAccessLevel,
+  resolveEffectiveListAccess,
   userIsAssignee,
 } from "@/app/lib/list-access";
 import {
@@ -37,6 +36,7 @@ import {
   type TaskActivity,
 } from "@/app/lib/task-activity";
 import { assigneeDisplayNames } from "@/app/lib/assignees";
+import { formatTaskActivityText } from "@/app/lib/format-task-activity-text";
 import { isTaskDeleted, type WorkTask, type WorkTaskStatus } from "@/app/lib/lists";
 import {
   checklistsEqual,
@@ -178,12 +178,18 @@ export function SubtaskDetailModal({
   const list = parentListId
     ? (lists.find((item) => item.id === parentListId) ?? null)
     : null;
-  const access = listAccessCapabilities(
-    list ? resolveListAccessLevel(list, currentUser, roles, isAdmin) : null,
-    {
-      isAssignee: userIsAssignee(draft.assigneeIds, currentUser),
-    },
-  );
+  const access = resolveEffectiveListAccess(list, currentUser, roles, isAdmin, {
+    isAssignee: userIsAssignee(draft.assigneeIds, currentUser),
+  });
+  // Sync assigneeIds from store when automation adds a person
+  useEffect(() => {
+    if (!task) return;
+    setDraft((current) => {
+      if (sameIds(current.assigneeIds, task.assigneeIds)) return current;
+      return { ...current, assigneeIds: [...task.assigneeIds] };
+    });
+  }, [task?.assigneeIds]);
+
   const deleted = Boolean(task && isTaskDeleted(task));
   const activities = task ? taskActivities(task.id) : [];
   const files = task ? taskFiles(task.id) : [];
@@ -285,45 +291,18 @@ export function SubtaskDetailModal({
   }
 
   function activityText(item: TaskActivity) {
-    if (item.kind === "created") {
-      return t("subtasks.history.created", "Apakšuzdevums izveidots.");
-    }
-    if (item.kind === "status") {
-      return t("subtasks.history.status", "Statuss: {from} → {to}", {
-        from: historyStatusName(item.fromStatus),
-        to: historyStatusName(item.toStatus),
-      });
-    }
-    if (item.kind === "assignees") {
-      const names = assigneeDisplayNames(
-        item.assigneeIds ?? [],
-        members,
-        roles,
-        t,
-      );
-      return t("subtasks.history.assignees", "Piesaistītie: {names}", {
-        names: names || t("todo.fields.unassigned", "Nepiešķirts"),
-      });
-    }
-    if (item.kind === "start_date") {
-      return t("subtasks.history.start_date", "Sākums: {date}", {
-        date: item.dateValue ? formatDate(item.dateValue) : "—",
-      });
-    }
-    if (item.kind === "due_date") {
-      return t("subtasks.history.due_date", "Termiņš: {date}", {
-        date: item.dateValue ? formatDate(item.dateValue) : "—",
-      });
-    }
-    if (item.kind === "comment") {
-      return item.text ?? "";
-    }
-    if (item.kind === "file") {
-      return t("subtasks.history.file", "Pievienots fails: {name}", {
-        name: item.fileName ?? "",
-      });
-    }
-    return "";
+    return formatTaskActivityText({
+      item,
+      t,
+      assigneeName: (assigneeIds) =>
+        assigneeDisplayNames(assigneeIds ?? [], members, roles, t),
+      formatDate,
+      parentTaskTitle: (parentId) => {
+        if (!parentId) return "—";
+        return tasks.find((entry) => entry.id === parentId)?.title ?? "—";
+      },
+      historyStatusName,
+    });
   }
 
   async function handleAddAttachments(selected: File[]) {

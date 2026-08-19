@@ -15,7 +15,6 @@ import {
   deleteTeamRow,
   deleteTeamRoleRow,
   fetchUserTeams,
-  insertMember,
   insertTeam,
   insertTeamRole,
   reorderTeamRoleRows,
@@ -24,12 +23,12 @@ import {
   updateTeamRoleRow,
   updateTeamRow,
 } from "@/app/lib/db/work-data";
+import { inviteTeamMemberAction } from "@/app/lib/team/actions";
 import { clearLegacyDemoStorage } from "@/app/lib/clear-legacy-demo-storage";
 import { mapUserDisplay } from "@/app/lib/auth/map-user-display";
 import { useAuthSession } from "@/app/lib/auth/use-auth-session";
 import {
   TEAM_CHANGE_EVENT,
-  createMemberId,
   createOwnerMember,
   createRoleId,
   createTeamId,
@@ -55,7 +54,6 @@ import {
 import { randomListColorId } from "@/app/lib/lists";
 
 type InviteMemberInput = {
-  name: string;
   email: string;
   role: string;
 };
@@ -74,7 +72,8 @@ type TeamContextValue = {
   teams: WorkTeam[];
   currentTeam: WorkTeam | null;
   roles: TeamRole[];
-  inviteMember: (input: InviteMemberInput) => TeamMember;
+  inviteMember: (input: InviteMemberInput) => Promise<TeamMember>;
+  refreshTeams: () => Promise<void>;
   addTeam: (input: AddTeamInput) => WorkTeam;
   updateTeam: (teamId: string, input: AddTeamInput) => void;
   deleteTeam: (teamId: string) => boolean;
@@ -88,6 +87,17 @@ type TeamContextValue = {
 };
 
 const TeamContext = createContext<TeamContextValue | null>(null);
+
+function isTransientOnlineTouchError(error: unknown): boolean {
+  const message =
+    error instanceof Error
+      ? error.message
+      : typeof error === "object" && error !== null && "message" in error
+        ? String((error as { message: unknown }).message)
+        : String(error);
+  const normalized = message.toLowerCase();
+  return normalized.includes("failed to fetch") || normalized.includes("networkerror");
+}
 
 function ownerFromAuth(user: User): TeamMember {
   const display = mapUserDisplay(user);
@@ -168,40 +178,62 @@ export function TeamProvider({ children }: { children: ReactNode }) {
     window.dispatchEvent(new Event(TEAM_CHANGE_EVENT));
   }, [authUser?.id, currentTeamId, isReady, loadedScope]);
 
+  const refreshTeams = useCallback(async () => {
+    const { teams: nextTeams, membersByTeam: nextMembers, rolesByTeam: nextRoles } =
+      await fetchUserTeams();
+    setTeams(nextTeams);
+    setMembersByTeam(nextMembers);
+    setRolesByTeam(nextRoles);
+    if (nextTeams.length > 0 && authUser?.id) {
+      setCurrentTeamId((current) => {
+        if (current && nextTeams.some((team) => team.id === current)) {
+          return current;
+        }
+        return readStoredCurrentTeamId(
+          authUser.id,
+          nextTeams.map((team) => team.id),
+        );
+      });
+    }
+    window.dispatchEvent(new Event(TEAM_CHANGE_EVENT));
+  }, [authUser?.id]);
+
   const inviteMember = useCallback(
-    (input: InviteMemberInput) => {
-      const teamRoles = currentTeamId ? (rolesByTeam[currentTeamId] ?? []) : [];
+    async (input: InviteMemberInput) => {
+      if (!currentTeamId) {
+        throw new Error("errors.auth_required");
+      }
+
+      const teamRoles = rolesByTeam[currentTeamId] ?? [];
       const requested = input.role.trim();
       const matched =
         teamRoles.find((role) => role.id === requested || role.slug === requested) ??
         teamRoles.find((role) => role.slug === MEMBER_TEAM_ROLE) ??
         null;
-      const member: TeamMember = {
-        id: createMemberId(),
-        name: input.name.trim(),
-        email: input.email.trim(),
-        role: matched?.slug ?? requested,
-        roleId: matched?.id ?? null,
-        initials: initialsFromName(input.name),
-        toneClassName: toneForIndex(0),
-        lastOnlineAt: null,
-      };
 
-      setMembersByTeam((current) => {
-        if (!currentTeamId) return current;
-        const list = current[currentTeamId] ?? [];
-        member.toneClassName = toneForIndex(list.length);
-        return {
-          ...current,
-          [currentTeamId]: [...list, member],
-        };
+      const result = await inviteTeamMemberAction({
+        teamId: currentTeamId,
+        email: input.email.trim(),
+        roleId: matched?.id ?? requested,
       });
-      void insertMember(currentTeamId, member).catch((error) => {
-        console.error("Failed to invite member", error);
-      });
-      return member;
+
+      if (!result.ok) {
+        throw new Error(result.error);
+      }
+
+      await refreshTeams();
+
+      const refreshedMember = (await fetchUserTeams()).membersByTeam[currentTeamId]?.find(
+        (member) => member.id === result.data.memberId,
+      );
+
+      if (!refreshedMember) {
+        throw new Error("errors.team_invite_failed");
+      }
+
+      return refreshedMember;
     },
-    [currentTeamId, rolesByTeam],
+    [currentTeamId, refreshTeams, rolesByTeam],
   );
 
   useEffect(() => {
@@ -231,6 +263,13 @@ export function TeamProvider({ children }: { children: ReactNode }) {
       if (!shouldPersist) return;
 
       void touchMemberOnline(teamId, userId, seenAt).catch((error) => {
+        if (
+          !navigator.onLine ||
+          document.visibilityState !== "visible" ||
+          isTransientOnlineTouchError(error)
+        ) {
+          return;
+        }
         const message =
           error instanceof Error
             ? error.message
@@ -598,6 +637,7 @@ export function TeamProvider({ children }: { children: ReactNode }) {
       currentTeam,
       roles,
       inviteMember,
+      refreshTeams,
       addTeam,
       updateTeam,
       deleteTeam,
@@ -618,6 +658,7 @@ export function TeamProvider({ children }: { children: ReactNode }) {
       deleteTeam,
       deleteTeamRole,
       inviteMember,
+      refreshTeams,
       isReady,
       members,
       renameTeamRole,

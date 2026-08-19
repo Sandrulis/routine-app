@@ -4,6 +4,8 @@ import { DEFAULT_LIST_COLOR } from "@/app/lib/lists";
 import {
   createFullTeamPermissions,
   createMemberTeamPermissions,
+  type TeamActionPermissionKey,
+  type TeamNavPermissionKey,
   type TeamPermissionSet,
 } from "@/app/lib/team-permissions";
 
@@ -34,6 +36,7 @@ export type RolesByTeam = Record<string, TeamRole[]>;
 
 export const TEAM_STORAGE_KEY = "routine-app-team-members";
 export const TEAM_CHANGE_EVENT = "routine-app-team-change";
+export const REQUEST_CREATE_TEAM_EVENT = "routine-app-request-create-team";
 export const OWNER_TEAM_ROLE = "owner";
 export const MEMBER_TEAM_ROLE = "member";
 
@@ -48,17 +51,144 @@ export function currentTeamRole(
   );
 }
 
+export function isTeamOwnerOrAdmin(
+  currentUser: Pick<TeamMember, "role" | "roleId">,
+  roles: TeamRole[],
+  isAdmin: boolean,
+): boolean {
+  if (isAdmin) return true;
+  if (currentUser.role === OWNER_TEAM_ROLE) return true;
+  const role = currentTeamRole(currentUser, roles);
+  return role?.slug === OWNER_TEAM_ROLE;
+}
+
+export function hasTeamNavPermission(
+  currentUser: Pick<TeamMember, "role" | "roleId">,
+  roles: TeamRole[],
+  isAdmin: boolean,
+  key: TeamNavPermissionKey,
+): boolean {
+  if (isTeamOwnerOrAdmin(currentUser, roles, isAdmin)) return true;
+  const role = currentTeamRole(currentUser, roles);
+  return role?.permissions.nav[key] === true;
+}
+
+export function hasTeamActionPermission(
+  currentUser: Pick<TeamMember, "role" | "roleId">,
+  roles: TeamRole[],
+  isAdmin: boolean,
+  key: TeamActionPermissionKey,
+): boolean {
+  if (isTeamOwnerOrAdmin(currentUser, roles, isAdmin)) return true;
+  const role = currentTeamRole(currentUser, roles);
+  return role?.permissions.actions[key] === true;
+}
+
 export function canManageTeamSettings(
   currentUser: Pick<TeamMember, "role" | "roleId">,
   roles: TeamRole[],
   isAdmin: boolean,
   action: "team.roles.manage" | "team.permissions.manage" = "team.roles.manage",
 ): boolean {
-  if (isAdmin) return true;
-  if (currentUser.role === OWNER_TEAM_ROLE) return true;
-  const role = currentTeamRole(currentUser, roles);
-  if (role?.slug === OWNER_TEAM_ROLE) return true;
-  return role?.permissions.actions[action] === true;
+  return hasTeamActionPermission(currentUser, roles, isAdmin, action);
+}
+
+export function canInviteTeamMembers(
+  currentUser: Pick<TeamMember, "role" | "roleId">,
+  roles: TeamRole[],
+  isAdmin: boolean,
+): boolean {
+  return hasTeamActionPermission(currentUser, roles, isAdmin, "team.invite");
+}
+
+export function canRemoveTeamMembers(
+  currentUser: Pick<TeamMember, "role" | "roleId">,
+  roles: TeamRole[],
+  isAdmin: boolean,
+): boolean {
+  return hasTeamActionPermission(currentUser, roles, isAdmin, "team.members.remove");
+}
+
+export function canEditTeamSettings(
+  currentUser: Pick<TeamMember, "role" | "roleId">,
+  roles: TeamRole[],
+  isAdmin: boolean,
+): boolean {
+  return hasTeamActionPermission(currentUser, roles, isAdmin, "team.settings.edit");
+}
+
+export function canDeleteTeam(
+  currentUser: Pick<TeamMember, "role" | "roleId">,
+  roles: TeamRole[],
+  isAdmin: boolean,
+): boolean {
+  return hasTeamActionPermission(currentUser, roles, isAdmin, "team.delete");
+}
+
+export function canManageTemplates(
+  currentUser: Pick<TeamMember, "role" | "roleId">,
+  roles: TeamRole[],
+  isAdmin: boolean,
+): boolean {
+  return hasTeamActionPermission(currentUser, roles, isAdmin, "templates.manage");
+}
+
+export function isPendingTeamMember(
+  member: Pick<TeamMember, "userId">,
+): boolean {
+  return !member.userId;
+}
+
+export function confirmedTeamMembers(members: TeamMember[]): TeamMember[] {
+  return members.filter((member) => !isPendingTeamMember(member));
+}
+
+export function canRemoveTeamMember(
+  currentUser: Pick<TeamMember, "id" | "role" | "roleId" | "userId">,
+  target: Pick<TeamMember, "id" | "role" | "userId">,
+  roles: TeamRole[],
+  isAdmin: boolean,
+): boolean {
+  if (target.role === OWNER_TEAM_ROLE) return false;
+  if (target.id === currentUser.id) return false;
+  if (target.userId && currentUser.userId && target.userId === currentUser.userId) {
+    return false;
+  }
+  if (isPendingTeamMember(target)) {
+    return (
+      canRemoveTeamMembers(currentUser, roles, isAdmin) ||
+      canInviteTeamMembers(currentUser, roles, isAdmin)
+    );
+  }
+  return canRemoveTeamMembers(currentUser, roles, isAdmin);
+}
+
+export function isSelfTeamMember(
+  currentUser: Pick<TeamMember, "id" | "userId">,
+  member: Pick<TeamMember, "id" | "userId">,
+): boolean {
+  if (member.id === currentUser.id) return true;
+  if (
+    member.userId &&
+    currentUser.userId &&
+    member.userId === currentUser.userId
+  ) {
+    return true;
+  }
+  return false;
+}
+
+export function canLeaveTeam(
+  currentUser: Pick<TeamMember, "id" | "role" | "roleId" | "userId">,
+  member: Pick<TeamMember, "id" | "role" | "roleId" | "userId">,
+  roles: TeamRole[],
+): boolean {
+  if (!isSelfTeamMember(currentUser, member)) return false;
+  if (isPendingTeamMember(member)) return false;
+  if (member.role === OWNER_TEAM_ROLE) return false;
+  const role = currentTeamRole(member, roles);
+  if (role?.slug === OWNER_TEAM_ROLE) return false;
+  return true;
 }
 
 export function teamRankLabel(
@@ -109,6 +239,21 @@ export function initialsFromName(name: string): string {
   if (parts.length === 0) return "?";
   if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
   return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
+}
+
+export function memberDisplayName(member: Pick<TeamMember, "name" | "email">): string {
+  const name = member.name.trim();
+  if (name) return name;
+  return member.email.trim();
+}
+
+export function memberInitials(member: Pick<TeamMember, "name" | "email">): string {
+  const name = member.name.trim();
+  if (name) return initialsFromName(name);
+  const email = member.email.trim();
+  if (!email) return "?";
+  const local = email.split("@")[0] ?? email;
+  return local.slice(0, 2).toUpperCase();
 }
 
 export function toneForIndex(index: number): string {

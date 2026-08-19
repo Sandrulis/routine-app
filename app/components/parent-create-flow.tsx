@@ -18,6 +18,13 @@ import { activeFolderCreatedTemplateAutomations } from "@/app/lib/list-automatio
 import { useTemplates } from "@/app/lib/templates-store";
 import { useListFiles } from "@/app/lib/use-list-files";
 import { useFileTypes } from "@/app/lib/file-types-context";
+import {
+  canManageTemplates,
+  hasTeamActionPermission,
+  hasTeamNavPermission,
+} from "@/app/lib/team";
+import { useTeam } from "@/app/lib/team-store";
+import { useIsAdmin } from "@/app/lib/users/use-is-admin";
 
 export type ParentCreateContext = {
   listId: string;
@@ -43,6 +50,17 @@ export function ParentCreateFlow({
   const { addTask, applyTemplate, listTasks, childTasks, listAutomations } = useLists();
   const { templates, templateItems, isReady: templatesReady } = useTemplates();
   const { files } = useListFiles();
+  const { currentUser, roles } = useTeam();
+  const { isAdmin } = useIsAdmin();
+  const canApplyTemplate =
+    hasTeamNavPermission(currentUser, roles, isAdmin, "templates") &&
+    canManageTemplates(currentUser, roles, isAdmin);
+  const canUploadFiles = hasTeamActionPermission(
+    currentUser,
+    roles,
+    isAdmin,
+    "files.upload",
+  );
   const { accept, filterAllowedFiles, extensionsLabel } = useFileTypes();
   const [step, setStep] = useState<"choice" | "folder" | "task" | "template">(
     "choice",
@@ -184,25 +202,33 @@ export function ParentCreateFlow({
               "Darāmais darbs ar statusu, termiņu un apakšuzdevumiem",
             ),
           },
-          {
-            id: "template",
-            icon: "fas fa-copy",
-            title: t("templates.apply.title", "Pievienot šablonu"),
-            description: t(
-              "templates.apply.description",
-              "Ievieto sagatavotus uzdevumu sarakstus šajā mapē",
-            ),
-          },
-          {
-            id: "file",
-            icon: "fas fa-upload",
-            title: t("create.file.upload_title", "Augšupielādēt failu"),
-            description: t(
-              "create.file.upload_description",
-              "Pievieno dokumentu šim sarakstam",
-            ),
-            showFileTypesInfo: true,
-          },
+          ...(canApplyTemplate
+            ? [
+                {
+                  id: "template",
+                  icon: "fas fa-copy",
+                  title: t("templates.apply.title", "Pievienot šablonu"),
+                  description: t(
+                    "templates.apply.description",
+                    "Ievieto sagatavotus uzdevumu sarakstus šajā mapē",
+                  ),
+                },
+              ]
+            : []),
+          ...(canUploadFiles
+            ? [
+                {
+                  id: "file",
+                  icon: "fas fa-upload",
+                  title: t("create.file.upload_title", "Augšupielādēt failu"),
+                  description: t(
+                    "create.file.upload_description",
+                    "Pievieno dokumentu šim sarakstam",
+                  ),
+                  showFileTypesInfo: true,
+                },
+              ]
+            : []),
         ]}
         onSelect={handleSelect}
         onClose={onClose}

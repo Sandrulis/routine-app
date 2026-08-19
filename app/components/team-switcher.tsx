@@ -14,7 +14,14 @@ import { NameFormModal } from "@/app/components/name-form-modal";
 import { OverflowTooltip } from "@/app/components/tooltip";
 import { useTranslations } from "@/app/components/translations-provider";
 import { useTeam } from "@/app/lib/team-store";
-import { teamRankLabel, type WorkTeam } from "@/app/lib/team";
+import {
+  canDeleteTeam,
+  canEditTeamSettings,
+  REQUEST_CREATE_TEAM_EVENT,
+  teamRankLabel,
+  type WorkTeam,
+} from "@/app/lib/team";
+import { useIsAdmin } from "@/app/lib/users/use-is-admin";
 
 function TeamAvatar({
   team,
@@ -40,6 +47,10 @@ export function TeamSwitcher() {
   const { showFeedback } = useFeedbackToast();
   const { isReady, teams, currentTeam, currentUser, addTeam, updateTeam, deleteTeam, selectTeam, roles } =
     useTeam();
+  const { isAdmin } = useIsAdmin();
+  const canEditCurrentTeam = canEditTeamSettings(currentUser, roles, isAdmin);
+  const canDeleteCurrentTeam = canDeleteTeam(currentUser, roles, isAdmin);
+  const showCurrentTeamActions = canEditCurrentTeam || canDeleteCurrentTeam;
   const needsTeam = isReady && teams.length === 0;
   const rank = teamRankLabel(currentUser.role, t, roles);
   const teamRank = rank ?? t("teams.rank.owner", "Īpašnieks");
@@ -83,7 +94,22 @@ export function TeamSwitcher() {
 
   const editingTeam = formTeam && formTeam !== "new" ? formTeam : null;
   const teamLabel = currentTeam?.name ?? t("teams.add.title", "Jauna komanda");
-  const formOpen = needsTeam || formTeam !== null;
+  const formOpen = formTeam !== null;
+
+  useEffect(() => {
+    function handleRequestCreateTeam() {
+      setFormTeam("new");
+    }
+    window.addEventListener(REQUEST_CREATE_TEAM_EVENT, handleRequestCreateTeam);
+    return () => {
+      window.removeEventListener(REQUEST_CREATE_TEAM_EVENT, handleRequestCreateTeam);
+    };
+  }, []);
+
+  function openCreateTeamForm() {
+    setOpen(false);
+    setFormTeam("new");
+  }
 
   function openTeamActions(event: MouseEvent<HTMLButtonElement>, team: WorkTeam) {
     event.preventDefault();
@@ -102,7 +128,11 @@ export function TeamSwitcher() {
       <button
         type="button"
         onClick={() => {
-          if (!isReady || needsTeam) return;
+          if (!isReady) return;
+          if (needsTeam) {
+            openCreateTeamForm();
+            return;
+          }
           setOpen((current) => !current);
         }}
         aria-haspopup="menu"
@@ -173,6 +203,7 @@ export function TeamSwitcher() {
                   </OverflowTooltip>
                 </button>
                 <span className="flex shrink-0 items-center pr-1">
+                  {isCurrent && showCurrentTeamActions ? (
                   <button
                     type="button"
                     aria-label={t("nav.more", "Vairāk")}
@@ -181,6 +212,7 @@ export function TeamSwitcher() {
                   >
                     <i className="fas fa-ellipsis text-[13px]" aria-hidden="true" />
                   </button>
+                  ) : null}
                   {isCurrent ? (
                     <span className="inline-flex size-7 items-center justify-center text-zinc-500">
                       <i className="fas fa-check text-[11px]" aria-hidden="true" />
@@ -215,18 +247,26 @@ export function TeamSwitcher() {
         anchor={itemMenu?.anchor ?? null}
         title={t("common.actions", "Darbības")}
         items={[
-          {
-            id: "edit",
-            icon: "fas fa-pen",
-            title: t("actions.edit", "Labot"),
-          },
-          {
-            id: "delete",
-            icon: "fas fa-trash",
-            title: t("actions.delete", "Dzēst"),
-            danger: true,
-            dividerBefore: true,
-          },
+          ...(canEditCurrentTeam
+            ? [
+                {
+                  id: "edit",
+                  icon: "fas fa-pen",
+                  title: t("actions.edit", "Labot"),
+                },
+              ]
+            : []),
+          ...(canDeleteCurrentTeam
+            ? [
+                {
+                  id: "delete",
+                  icon: "fas fa-trash",
+                  title: t("actions.delete", "Dzēst"),
+                  danger: true,
+                  dividerBefore: canEditCurrentTeam,
+                },
+              ]
+            : []),
         ]}
         onClose={() => setItemMenu(null)}
         onSelect={(id) => {
@@ -254,9 +294,7 @@ export function TeamSwitcher() {
 
       <NameFormModal
         open={formOpen}
-        blocking={needsTeam}
         onOpenChange={(nextOpen) => {
-          if (!nextOpen && needsTeam) return;
           if (!nextOpen) setFormTeam(null);
         }}
         title={
@@ -273,7 +311,7 @@ export function TeamSwitcher() {
             : needsTeam
               ? t(
                   "teams.required.description",
-                  "Lai sāktu darbu, izveido savu komandu. Modālis aizvērsies pēc pievienošanas.",
+                  "Lai sāktu darbu, izveido savu komandu vai pievienojies uzaicinājumam no paziņojumiem.",
                 )
               : t(
                   "teams.add.description",

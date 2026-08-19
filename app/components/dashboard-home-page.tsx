@@ -21,7 +21,9 @@ import {
 } from "@/app/lib/lists";
 import { useLists } from "@/app/lib/lists-store";
 import { useTaskStatuses } from "@/app/lib/task-statuses";
+import { REQUEST_CREATE_TEAM_EVENT } from "@/app/lib/team";
 import { useTeam } from "@/app/lib/team-store";
+import { useNotifications } from "@/app/lib/use-notifications";
 
 function compareAssignedTasks(a: WorkTask, b: WorkTask) {
   if (a.dueDate && b.dueDate && a.dueDate !== b.dueDate) {
@@ -104,6 +106,7 @@ export function DashboardHomePage() {
   const router = useRouter();
   const { lists, tasks, isReady } = useLists();
   const { currentTeam, currentUser } = useTeam();
+  const { unreadCount } = useNotifications();
   const { statuses } = useTaskStatuses();
   const [openedSubtaskId, setOpenedSubtaskId] = useState<string | null>(null);
 
@@ -155,8 +158,38 @@ export function DashboardHomePage() {
       )}
     >
       {!currentTeam ? (
-        <div className="rounded-xl border border-dashed border-zinc-200 bg-white px-6 py-12 text-center text-sm text-zinc-500">
-          {t("teams.required.empty_members", "Vispirms izveido komandu.")}
+        <div className="rounded-xl border border-dashed border-zinc-200 bg-white px-6 py-10 text-center">
+          <div className="mx-auto flex size-12 items-center justify-center rounded-2xl bg-zinc-100 text-zinc-400">
+            <i className="fas fa-users text-lg" aria-hidden="true" />
+          </div>
+          <h2 className="mt-4 text-base font-semibold text-zinc-900">
+            {t("dashboard.no_team.title", "Nav aktīvas komandas")}
+          </h2>
+          <p className="mx-auto mt-2 max-w-md text-sm text-zinc-500">
+            {t(
+              "dashboard.no_team.description",
+              "Izveido jaunu komandu vai pievienojies uzaicinājumam. Paziņojumus skaties augšējā joslā — vari tur apstiprināt komandas uzaicinājumu.",
+            )}
+          </p>
+          {unreadCount > 0 ? (
+            <p className="mx-auto mt-3 max-w-md text-sm font-medium text-blue-700">
+              {t(
+                "dashboard.no_team.unread_notifications",
+                "Tev ir {count} nelasīti paziņojumi.",
+                { count: unreadCount },
+              )}
+            </p>
+          ) : null}
+          <button
+            type="button"
+            onClick={() => {
+              window.dispatchEvent(new Event(REQUEST_CREATE_TEAM_EVENT));
+            }}
+            className="mt-6 inline-flex min-h-10 items-center justify-center gap-2 rounded-2xl bg-blue-700 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-800"
+          >
+            <i className="fas fa-plus text-xs" aria-hidden="true" />
+            {t("teams.add.title", "Jauna komanda")}
+          </button>
         </div>
       ) : (
         <div className="space-y-6">

@@ -598,6 +598,7 @@ export function TeamTodoBoard() {
       }),
       authUser?.id ?? null,
       currentTeam?.id ?? null,
+      members,
     );
   }
 

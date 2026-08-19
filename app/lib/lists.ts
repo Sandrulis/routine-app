@@ -18,6 +18,7 @@ export type WorkList = {
   description: string;
   icon: string | null;
   color: string;
+  sortOrder: number;
   kind: WorkListKind;
   isPrivate: boolean;
   createdBy: string | null;

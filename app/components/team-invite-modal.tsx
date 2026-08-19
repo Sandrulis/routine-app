@@ -16,33 +16,37 @@ export function TeamInviteModal({
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onInvite: (input: { name: string; email: string; role: string }) => void;
+  onInvite: (input: { email: string; role: string }) => void | Promise<void>;
 }) {
   const { t } = useTranslations();
   const { roles } = useTeam();
   const defaultRoleId =
     roles.find((item) => item.slug === MEMBER_TEAM_ROLE)?.id ?? roles[0]?.id ?? "";
-  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [role, setRole] = useState(defaultRoleId);
+  const [pending, setPending] = useState(false);
 
   useEffect(() => {
     if (!open) return;
-    setName("");
     setEmail("");
     setRole(defaultRoleId);
+    setPending(false);
   }, [defaultRoleId, open]);
 
-  const trimmedName = name.trim();
   const trimmedEmail = email.trim();
-  const dirty = Boolean(trimmedName || trimmedEmail);
+  const dirty = Boolean(trimmedEmail);
   const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail);
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!trimmedName || !emailValid) return;
-    onInvite({ name: trimmedName, email: trimmedEmail, role: role.trim() });
-    onOpenChange(false);
+    if (!emailValid || !role.trim() || pending) return;
+    setPending(true);
+    try {
+      await onInvite({ email: trimmedEmail, role: role.trim() });
+      onOpenChange(false);
+    } finally {
+      setPending(false);
+    }
   }
 
   return (
@@ -52,25 +56,12 @@ export function TeamInviteModal({
       title={t("team.invite.title", "Uzaicināt biedru")}
       description={t(
         "team.invite.description",
-        "Ieraksti vārdu un e-pastu, lai uzaicinātu jaunu komandas biedru.",
+        "Ieraksti e-pastu un izvēlies lomu. Biedrs aizpildīs profilu pie pirmās ielogošanās.",
       )}
       dirty={dirty}
       panelMaxWidthClassName={appModalWidePanelMaxWidthClassName}
     >
       <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label htmlFor="team-invite-name" className="text-sm font-semibold text-zinc-700">
-            {t("common.name", "Vārds")}
-          </label>
-          <input
-            id="team-invite-name"
-            value={name}
-            onChange={(event) => setName(event.target.value)}
-            className="mt-2 min-h-11 w-full rounded-2xl border border-zinc-200 bg-zinc-50 px-4 text-sm text-zinc-900 outline-none transition placeholder:text-zinc-400 focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-100"
-            placeholder={t("team.fields.name_placeholder", "Vārds un uzvārds")}
-            autoFocus
-          />
-        </div>
         <div>
           <label htmlFor="team-invite-email" className="text-sm font-semibold text-zinc-700">
             {t("common.email", "E-pasts")}
@@ -80,9 +71,11 @@ export function TeamInviteModal({
             type="email"
             value={email}
             onChange={(event) => setEmail(event.target.value)}
+            disabled={pending}
             aria-invalid={trimmedEmail.length > 0 && !emailValid}
-            className="mt-2 min-h-11 w-full rounded-2xl border border-zinc-200 bg-zinc-50 px-4 text-sm text-zinc-900 outline-none transition placeholder:text-zinc-400 focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-100"
+            className="mt-2 min-h-11 w-full rounded-2xl border border-zinc-200 bg-zinc-50 px-4 text-sm text-zinc-900 outline-none transition placeholder:text-zinc-400 focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-100 disabled:opacity-60"
             placeholder={t("team.fields.email_placeholder", "vards@uznemums.lv")}
+            autoFocus
           />
         </div>
         <div>
@@ -93,7 +86,8 @@ export function TeamInviteModal({
             id="team-invite-role"
             value={role}
             onChange={(event) => setRole(event.target.value)}
-            className="mt-2 min-h-11 w-full cursor-pointer rounded-2xl border border-zinc-200 bg-zinc-50 px-4 text-sm text-zinc-900 outline-none transition focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-100"
+            disabled={pending}
+            className="mt-2 min-h-11 w-full cursor-pointer rounded-2xl border border-zinc-200 bg-zinc-50 px-4 text-sm text-zinc-900 outline-none transition focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-100 disabled:opacity-60"
           >
             {roles.map((item) => (
               <option key={item.id} value={item.id}>
@@ -106,16 +100,19 @@ export function TeamInviteModal({
           <button
             type="button"
             onClick={() => onOpenChange(false)}
-            className="inline-flex min-h-10 items-center justify-center rounded-2xl bg-zinc-100 px-4 text-sm font-semibold text-zinc-700 transition hover:bg-zinc-200"
+            disabled={pending}
+            className="inline-flex min-h-10 items-center justify-center rounded-2xl bg-zinc-100 px-4 text-sm font-semibold text-zinc-700 transition hover:bg-zinc-200 disabled:opacity-60"
           >
             {t("actions.cancel", "Atcelt")}
           </button>
           <button
             type="submit"
-            disabled={!trimmedName || !emailValid}
+            disabled={!emailValid || !role.trim() || pending}
             className="inline-flex min-h-10 items-center justify-center rounded-2xl bg-blue-700 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-800 disabled:bg-zinc-200 disabled:text-zinc-400"
           >
-            {t("team.invite.button", "Uzaicināt")}
+            {pending
+              ? t("team.invite.sending", "Sūta…")
+              : t("team.invite.button", "Uzaicināt")}
           </button>
         </div>
       </form>

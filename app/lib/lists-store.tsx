@@ -49,11 +49,23 @@ import {
   notificationsForNewAssignees,
 } from "@/app/lib/notifications";
 import {
+  buildTaskUpdateNotifications,
+  notificationsForNewSubtask,
+  notificationsForTaskComment,
+  notificationsForTaskFile,
+  notificationsFromTaskActivities,
+} from "@/app/lib/task-notifications";
+import {
+  buildFileRemovedActivity,
+  buildFileRenamedActivity,
+  buildSubtaskMovedActivity,
+  buildTaskUpdateActivityEvents,
+} from "@/app/lib/build-task-activity-events";
+import {
   createActivity,
   createTaskFileId,
   hydrateTaskFileContents,
   cacheTaskFileContent,
-  sameIds,
   storeTaskFileContent,
   type TaskActivity,
   type TaskFile,
@@ -101,7 +113,11 @@ import {
 } from "@/app/lib/list-statuses";
 import {
   createListAutomationId,
+  activeStatusChangedAssignRules,
+  activeChecklistCompletedRules,
+  activeAllSubtasksCompletedRules,
   type AutomationActionKind,
+  type AutomationConfig,
   type AutomationTriggerKind,
   type ListAutomation,
 } from "@/app/lib/list-automations";
@@ -136,6 +152,7 @@ type ListsContextValue = {
         | "description"
         | "icon"
         | "color"
+        | "sortOrder"
         | "isPrivate"
         | "defaultAccessLevel"
         | "viewerUserIds"
@@ -149,6 +166,7 @@ type ListsContextValue = {
     >,
   ) => void;
   deleteList: (listId: string) => void;
+  reorderLists: (orderedIds: string[]) => void;
   addTask: (input: {
     listId: string;
     parentId?: string | null;
@@ -219,13 +237,14 @@ type ListsContextValue = {
     input: {
       triggerKind: AutomationTriggerKind;
       actionKind: AutomationActionKind;
-      templateId: string;
+      templateId?: string;
+      config?: AutomationConfig;
       enabled?: boolean;
     },
   ) => ListAutomation | null;
   updateListAutomation: (
     automationId: string,
-    patch: Partial<Pick<ListAutomation, "templateId" | "enabled">>,
+    patch: Partial<Pick<ListAutomation, "templateId" | "enabled" | "config">>,
   ) => void;
   deleteListAutomation: (automationId: string) => void;
 };
@@ -253,6 +272,9 @@ export function ListsProvider({ children }: { children: ReactNode }) {
   listsRef.current = lists;
   const listStatusesRef = useRef(listStatuses);
   listStatusesRef.current = listStatuses;
+  const listAutomationsRef = useRef(listAutomations);
+  listAutomationsRef.current = listAutomations;
+  const updateTaskRef = useRef<typeof updateTask>(null!);
   const tasksRef = useRef(tasks);
   tasksRef.current = tasks;
   const assignmentNotifyRef = useRef({
@@ -319,7 +341,7 @@ export function ListsProvider({ children }: { children: ReactNode }) {
         hydrateTaskFileContents(workspace.taskFileContents);
       })
       .catch((error) => {
-        console.error("Failed to load lists", error);
+        console.error("Failed to load lists", formatSupabaseError(error));
         if (cancelled) return;
         setLists([]);
         setTasks([]);
@@ -370,6 +392,7 @@ export function ListsProvider({ children }: { children: ReactNode }) {
           input.icon?.trim() ||
           (kind === "folder" ? "far fa-folder" : null),
         color: listColorById(input.color ?? randomListColorId()).id,
+        sortOrder: listsRef.current.length,
         kind,
         isPrivate,
         createdBy: userId,
@@ -410,6 +433,7 @@ export function ListsProvider({ children }: { children: ReactNode }) {
           | "description"
           | "icon"
           | "color"
+          | "sortOrder"
           | "isPrivate"
           | "defaultAccessLevel"
           | "viewerUserIds"
@@ -452,6 +476,8 @@ export function ListsProvider({ children }: { children: ReactNode }) {
                 ? patch.icon?.trim() || null
                 : list.icon,
             color: nextColor,
+            sortOrder:
+              patch.sortOrder !== undefined ? patch.sortOrder : list.sortOrder,
             isPrivate,
             defaultAccessLevel:
               patch.defaultAccessLevel ?? list.defaultAccessLevel,
@@ -469,6 +495,7 @@ export function ListsProvider({ children }: { children: ReactNode }) {
         description:
           patch.description !== undefined ? patch.description.trim() : undefined,
         icon: patch.icon !== undefined ? patch.icon?.trim() || null : undefined,
+        sortOrder: patch.sortOrder,
         isPrivate: patch.isPrivate,
         defaultAccessLevel: patch.defaultAccessLevel,
         createdBy: current?.createdBy ?? userId,
@@ -504,6 +531,25 @@ export function ListsProvider({ children }: { children: ReactNode }) {
     void deleteListRow(listId).catch((error) => {
       console.error("Failed to delete list", error);
     });
+  }, []);
+
+  const reorderLists = useCallback((orderedIds: string[]) => {
+    setLists((current) => {
+      const byId = new Map(current.map((list) => [list.id, list]));
+      const ordered = orderedIds
+        .map((id, index) => {
+          const list = byId.get(id);
+          return list ? { ...list, sortOrder: index } : null;
+        })
+        .filter((list): list is WorkList => list !== null);
+      if (ordered.length !== current.length) return current;
+      return ordered;
+    });
+    for (const [index, id] of orderedIds.entries()) {
+      void updateListRow(id, { sortOrder: index }).catch((error) => {
+        console.error("Failed to reorder lists", error);
+      });
+    }
   }, []);
 
   const addTask = useCallback(
@@ -579,6 +625,25 @@ export function ListsProvider({ children }: { children: ReactNode }) {
         void persist.finally(() => {
           if (pendingTaskInsertsRef.current.get(task.id) === persist) {
             pendingTaskInsertsRef.current.delete(task.id);
+          }
+        });
+      }
+      if (task.kind === "subtask") {
+        queueMicrotask(() => {
+          const notify = assignmentNotifyRef.current;
+          const items = notificationsForNewSubtask({
+            actorId: notify.actorId,
+            task,
+            tasks: tasksRef.current,
+            members: notify.members,
+          });
+          if (items.length > 0) {
+            void appendNotifications(
+              items,
+              notify.userId,
+              notify.teamId,
+              notify.members,
+            );
           }
         });
       }
@@ -679,32 +744,58 @@ export function ListsProvider({ children }: { children: ReactNode }) {
           patch = { ...patch, checklists: nextChecklists };
         }
 
-        const nextEvents: TaskActivity[] = [];
         let statusChangedAt = existing.statusChangedAt;
         if (patch.status && patch.status !== existing.status) {
           statusChangedAt = new Date().toISOString();
-          nextEvents.push(
-            createActivity({
-              actorId: assignmentNotifyRef.current.actorId,
-              taskId,
-              kind: "status",
-              fromStatus: existing.status,
-              toStatus: patch.status,
-            }),
-          );
         }
+
+        const nextEvents = buildTaskUpdateActivityEvents(
+          taskId,
+          assignmentNotifyRef.current.actorId,
+          existing,
+          patch,
+        );
+        if (nextEvents.length > 0) {
+          setActivities((currentActivities) => [
+            ...currentActivities,
+            ...nextEvents,
+          ]);
+          const activeTeamId = assignmentNotifyRef.current.teamId;
+          if (activeTeamId) {
+            for (const event of nextEvents) {
+              void insertActivity(activeTeamId, event).catch((error) => {
+                console.error("Failed to save activity", error);
+              });
+            }
+          }
+
+          const notify = assignmentNotifyRef.current;
+          const taskNotifications = buildTaskUpdateNotifications({
+            actorId: notify.actorId,
+            existing,
+            patch,
+            tasks: current,
+            members: notify.members,
+            activities: nextEvents,
+          });
+          if (taskNotifications.length > 0) {
+            queueMicrotask(() =>
+              appendNotifications(
+                taskNotifications,
+                notify.userId,
+                notify.teamId,
+                notify.members,
+              ),
+            );
+          }
+        }
+
         if (
           patch.assigneeIds &&
-          !sameIds(existing.assigneeIds, patch.assigneeIds)
+          patch.assigneeIds.some(
+            (id) => !existing.assigneeIds.includes(id),
+          )
         ) {
-          nextEvents.push(
-            createActivity({
-              actorId: assignmentNotifyRef.current.actorId,
-              taskId,
-              kind: "assignees",
-              assigneeIds: patch.assigneeIds,
-            }),
-          );
           const notify = assignmentNotifyRef.current;
           const addedIds = memberIdsNotifiedForAssignees(
             patch.assigneeIds.filter(
@@ -725,45 +816,13 @@ export function ListsProvider({ children }: { children: ReactNode }) {
           });
           if (extra.length > 0) {
             queueMicrotask(() =>
-              appendNotifications(extra, notify.userId, notify.teamId),
+              appendNotifications(
+                extra,
+                notify.userId,
+                notify.teamId,
+                notify.members,
+              ),
             );
-          }
-        }
-        if (
-          patch.startDate !== undefined &&
-          patch.startDate !== existing.startDate
-        ) {
-          nextEvents.push(
-            createActivity({
-              actorId: assignmentNotifyRef.current.actorId,
-              taskId,
-              kind: "start_date",
-              dateValue: patch.startDate,
-            }),
-          );
-        }
-        if (patch.dueDate !== undefined && patch.dueDate !== existing.dueDate) {
-          nextEvents.push(
-            createActivity({
-              actorId: assignmentNotifyRef.current.actorId,
-              taskId,
-              kind: "due_date",
-              dateValue: patch.dueDate,
-            }),
-          );
-        }
-        if (nextEvents.length > 0) {
-          setActivities((currentActivities) => [
-            ...currentActivities,
-            ...nextEvents,
-          ]);
-          const activeTeamId = assignmentNotifyRef.current.teamId;
-          if (activeTeamId) {
-            for (const event of nextEvents) {
-              void insertActivity(activeTeamId, event).catch((error) => {
-                console.error("Failed to save activity", error);
-              });
-            }
           }
         }
 
@@ -777,6 +836,75 @@ export function ListsProvider({ children }: { children: ReactNode }) {
         void updateTaskRow(taskId, dbPatch).catch((error) => {
           console.error("Failed to update task", formatSupabaseError(error));
         });
+
+        // --- Automation triggers ---
+        const automations = listAutomationsRef.current;
+
+        // 1) status_changed → assign_user
+        if (patch.status && patch.status !== existing.status) {
+          const assignRules = activeStatusChangedAssignRules(
+            automations, existing.listId, patch.status,
+          );
+          for (const rule of assignRules) {
+            const uid = rule.config.assigneeId;
+            if (uid && !existing.assigneeIds.includes(uid)) {
+              const merged = [...new Set([...(patch.assigneeIds ?? existing.assigneeIds), uid])];
+              queueMicrotask(() => {
+                updateTaskRef.current(taskId, { assigneeIds: merged });
+              });
+            }
+          }
+        }
+
+        // 2) checklist_completed → set_status
+        if (patch.checklists !== undefined) {
+          const allComplete = !taskHasIncompleteChecklists(nextChecklists) && nextChecklists.length > 0;
+          if (allComplete) {
+            const checkRules = activeChecklistCompletedRules(automations, existing.listId);
+            for (const rule of checkRules) {
+              const targetId = rule.config.targetStatusId;
+              if (targetId && targetId !== (patch.status ?? existing.status)) {
+                queueMicrotask(() => {
+                  updateTaskRef.current(taskId, { status: targetId as WorkTaskStatus });
+                });
+                break;
+              }
+            }
+          }
+        }
+
+        // 3) all_subtasks_completed → set parent status
+        if (patch.status && patch.status !== existing.status && existing.kind === "subtask" && existing.parentId) {
+          const parentId = existing.parentId;
+          const closedStatus = patch.status;
+          const parentTask = current.find((t) => t.id === parentId);
+          if (parentTask) {
+            const parentCatalog = listStatusesRef.current.filter(
+              (s) => s.listId === parentTask.listId,
+            );
+            const isNewStatusClosed = isClosedTaskStatus(closedStatus, parentCatalog);
+            if (isNewStatusClosed) {
+              const siblings = current.filter(
+                (t) => t.parentId === parentId && t.id !== taskId && !t.deletedAt,
+              );
+              const allSiblingsClosed = siblings.every((t) =>
+                isClosedTaskStatus(t.status, parentCatalog),
+              );
+              if (allSiblingsClosed) {
+                const subRules = activeAllSubtasksCompletedRules(automations, parentTask.listId);
+                for (const rule of subRules) {
+                  const targetId = rule.config.targetStatusId;
+                  if (targetId && targetId !== parentTask.status) {
+                    queueMicrotask(() => {
+                      updateTaskRef.current(parentId, { status: targetId as WorkTaskStatus });
+                    });
+                    break;
+                  }
+                }
+              }
+            }
+          }
+        }
 
         return current.map((task) =>
           task.id === taskId
@@ -793,10 +921,12 @@ export function ListsProvider({ children }: { children: ReactNode }) {
     },
     [],
   );
+  updateTaskRef.current = updateTask;
 
   const addTaskComment = useCallback((taskId: string, text: string) => {
     const trimmed = text.trim();
     if (!trimmed) return;
+    const task = tasksRef.current.find((item) => item.id === taskId);
     const activity = createActivity({
       actorId: assignmentNotifyRef.current.actorId,
       taskId,
@@ -809,6 +939,25 @@ export function ListsProvider({ children }: { children: ReactNode }) {
       void insertActivity(activeTeamId, activity).catch((error) => {
         console.error("Failed to save comment", error);
       });
+    }
+    if (task) {
+      const notify = assignmentNotifyRef.current;
+      const items = notificationsForTaskComment({
+        actorId: notify.actorId,
+        task,
+        tasks: tasksRef.current,
+        members: notify.members,
+      });
+      if (items.length > 0) {
+        queueMicrotask(() =>
+          appendNotifications(
+            items,
+            notify.userId,
+            notify.teamId,
+            notify.members,
+          ),
+        );
+      }
     }
   }, []);
 
@@ -844,11 +993,48 @@ export function ListsProvider({ children }: { children: ReactNode }) {
           console.error("Failed to save task file", error);
         });
     }
+    const task = tasksRef.current.find((item) => item.id === taskId);
+    if (task) {
+      const notify = assignmentNotifyRef.current;
+      const items = notificationsForTaskFile({
+        actorId: notify.actorId,
+        task,
+        tasks: tasksRef.current,
+        members: notify.members,
+      });
+      if (items.length > 0) {
+        queueMicrotask(() =>
+          appendNotifications(
+            items,
+            notify.userId,
+            notify.teamId,
+            notify.members,
+          ),
+        );
+      }
+    }
     return record;
   }, []);
 
   const removeTaskFile = useCallback((fileId: string) => {
-    setFiles((current) => current.filter((file) => file.id !== fileId));
+    setFiles((current) => {
+      const file = current.find((item) => item.id === fileId);
+      if (file) {
+        const activity = buildFileRemovedActivity(
+          file.taskId,
+          assignmentNotifyRef.current.actorId,
+          file.name,
+        );
+        setActivities((items) => [...items, activity]);
+        const activeTeamId = assignmentNotifyRef.current.teamId;
+        if (activeTeamId) {
+          void insertActivity(activeTeamId, activity).catch((error) => {
+            console.error("Failed to save file removal activity", error);
+          });
+        }
+      }
+      return current.filter((item) => item.id !== fileId);
+    });
     cacheTaskFileContent(fileId, null);
     void deleteTaskFileRow(fileId).catch((error) => {
       console.error("Failed to delete task file", error);
@@ -858,13 +1044,29 @@ export function ListsProvider({ children }: { children: ReactNode }) {
   const renameTaskFile = useCallback((fileId: string, name: string) => {
     const trimmed = name.trim();
     if (!trimmed) return;
-    setFiles((current) =>
-      current.map((file) =>
-        file.id === fileId
-          ? { ...file, name: trimmed, mimeType: mimeFromName(trimmed) }
-          : file,
-      ),
-    );
+    setFiles((current) => {
+      const file = current.find((item) => item.id === fileId);
+      if (file && file.name !== trimmed) {
+        const activity = buildFileRenamedActivity(
+          file.taskId,
+          assignmentNotifyRef.current.actorId,
+          file.name,
+          trimmed,
+        );
+        setActivities((items) => [...items, activity]);
+        const activeTeamId = assignmentNotifyRef.current.teamId;
+        if (activeTeamId) {
+          void insertActivity(activeTeamId, activity).catch((error) => {
+            console.error("Failed to save file rename activity", error);
+          });
+        }
+      }
+      return current.map((item) =>
+        item.id === fileId
+          ? { ...item, name: trimmed, mimeType: mimeFromName(trimmed) }
+          : item,
+      );
+    });
     void updateTaskFileName(fileId, trimmed, mimeFromName(trimmed)).catch((error) => {
       console.error("Failed to rename task file", error);
     });
@@ -895,6 +1097,37 @@ export function ListsProvider({ children }: { children: ReactNode }) {
         parentId,
         kind: "subtask",
       });
+      const activity = buildSubtaskMovedActivity(
+        taskId,
+        assignmentNotifyRef.current.actorId,
+        existing.parentId,
+        parentId,
+      );
+      setActivities((items) => [...items, activity]);
+      const activeTeamId = assignmentNotifyRef.current.teamId;
+      if (activeTeamId) {
+        void insertActivity(activeTeamId, activity).catch((error) => {
+          console.error("Failed to save move activity", error);
+        });
+      }
+      const notify = assignmentNotifyRef.current;
+      const moveNotifications = notificationsFromTaskActivities({
+        actorId: notify.actorId,
+        task: existing,
+        tasks: current,
+        members: notify.members,
+        activities: [activity],
+      });
+      if (moveNotifications.length > 0) {
+        queueMicrotask(() =>
+          appendNotifications(
+            moveNotifications,
+            notify.userId,
+            notify.teamId,
+            notify.members,
+          ),
+        );
+      }
       void updateTaskRow(taskId, { parentId, sortOrder }).catch((error) => {
         console.error("Failed to move subtask", error);
       });
@@ -980,7 +1213,44 @@ export function ListsProvider({ children }: { children: ReactNode }) {
   );
 
   const reorderTasks = useCallback((orderedIds: string[]) => {
-    setTasks((current) => applySortOrder(current, orderedIds));
+    setTasks((current) => {
+      const orderBefore = new Map(
+        current
+          .filter((task) => orderedIds.includes(task.id))
+          .map((task) => [task.id, task.sortOrder]),
+      );
+      const next = applySortOrder(current, orderedIds);
+      const nextEvents: TaskActivity[] = [];
+      for (const taskId of orderedIds) {
+        const previousOrder = orderBefore.get(taskId);
+        const task = next.find((entry) => entry.id === taskId);
+        if (
+          task &&
+          previousOrder !== undefined &&
+          previousOrder !== task.sortOrder
+        ) {
+          nextEvents.push(
+            createActivity({
+              actorId: assignmentNotifyRef.current.actorId,
+              taskId,
+              kind: "reordered",
+            }),
+          );
+        }
+      }
+      if (nextEvents.length > 0) {
+        setActivities((items) => [...items, ...nextEvents]);
+        const activeTeamId = assignmentNotifyRef.current.teamId;
+        if (activeTeamId) {
+          for (const event of nextEvents) {
+            void insertActivity(activeTeamId, event).catch((error) => {
+              console.error("Failed to save reorder activity", error);
+            });
+          }
+        }
+      }
+      return next;
+    });
     void updateTaskSortOrders(orderedIds).catch((error) => {
       console.error("Failed to reorder tasks", error);
     });
@@ -1063,19 +1333,12 @@ export function ListsProvider({ children }: { children: ReactNode }) {
       input: {
         triggerKind: AutomationTriggerKind;
         actionKind: AutomationActionKind;
-        templateId: string;
+        templateId?: string;
+        config?: AutomationConfig;
         enabled?: boolean;
       },
     ) => {
-      const templateId = input.templateId.trim();
-      if (!templateId) return null;
-      const exists = listAutomations.some(
-        (automation) =>
-          automation.listId === listId &&
-          automation.triggerKind === input.triggerKind &&
-          automation.actionKind === input.actionKind,
-      );
-      if (exists) return null;
+      const templateId = (input.templateId ?? "").trim() || null;
       const sortOrder =
         listAutomations
           .filter((automation) => automation.listId === listId)
@@ -1086,6 +1349,7 @@ export function ListsProvider({ children }: { children: ReactNode }) {
         triggerKind: input.triggerKind,
         actionKind: input.actionKind,
         templateId,
+        config: input.config ?? {},
         enabled: input.enabled !== false,
         sortOrder,
       };
@@ -1103,7 +1367,7 @@ export function ListsProvider({ children }: { children: ReactNode }) {
   const updateListAutomation = useCallback(
     (
       automationId: string,
-      patch: Partial<Pick<ListAutomation, "templateId" | "enabled">>,
+      patch: Partial<Pick<ListAutomation, "templateId" | "enabled" | "config">>,
     ) => {
       setListAutomations((current) =>
         current.map((automation) => {
@@ -1116,6 +1380,8 @@ export function ListsProvider({ children }: { children: ReactNode }) {
                 : automation.templateId,
             enabled:
               patch.enabled !== undefined ? patch.enabled : automation.enabled,
+            config:
+              patch.config !== undefined ? patch.config : automation.config,
           };
         }),
       );
@@ -1279,6 +1545,7 @@ export function ListsProvider({ children }: { children: ReactNode }) {
       addList,
       updateList,
       deleteList,
+      reorderLists,
       addTask,
       applyTemplate,
       updateTask,
@@ -1323,6 +1590,7 @@ export function ListsProvider({ children }: { children: ReactNode }) {
       addList,
       updateList,
       deleteList,
+      reorderLists,
       addTask,
       applyTemplate,
       addTaskComment,

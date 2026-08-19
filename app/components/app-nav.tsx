@@ -30,6 +30,7 @@ import { TeamInviteModal } from "@/app/components/team-invite-modal";
 import { TeamRolesModal } from "@/app/components/team-roles-modal";
 import { OverflowTooltip, Tooltip } from "@/app/components/tooltip";
 import { useFeedbackToast } from "@/app/components/feedback-toast-provider";
+import { translateActionError } from "@/app/lib/i18n/action-errors";
 import { useTranslations } from "@/app/components/translations-provider";
 import { workItemArchiveFeedback } from "@/app/components/work-item-archive-button";
 import { MemberLastOnline } from "@/app/components/member-last-online";
@@ -75,9 +76,16 @@ import {
   type NavTreeItemData,
 } from "@/app/lib/nav-tree-move";
 import {
-  listAccessCapabilities,
-  resolveListAccessLevel,
+  resolveEffectiveListAccess,
 } from "@/app/lib/list-access";
+import {
+  canInviteTeamMembers,
+  canManageTeamSettings,
+  confirmedTeamMembers,
+  hasTeamActionPermission,
+  hasTeamNavPermission,
+  memberDisplayName,
+} from "@/app/lib/team";
 
 const NAV_TREE_STORAGE_KEY = "routine-app-nav-trees";
 
@@ -90,6 +98,22 @@ function readNavTrees(): Record<string, boolean> {
   } catch {
     return {};
   }
+}
+
+function PrivateListBadge({ label }: { label: string }) {
+  return (
+    <Tooltip label={label}>
+      <span
+        className="relative z-10 inline-flex h-4.5 min-w-4.5 shrink-0 items-center justify-center rounded-md bg-amber-400 px-1 text-[10px] text-zinc-900"
+        onClick={(event) => {
+          event.preventDefault();
+          event.stopPropagation();
+        }}
+      >
+        <i className="fas fa-user-lock" aria-hidden="true" />
+      </span>
+    </Tooltip>
+  );
 }
 
 function TreeName({
@@ -105,60 +129,44 @@ function TreeName({
   isPrivate?: boolean;
   onToggle?: () => void;
 }) {
+  const { t } = useTranslations();
+  const privateBadge = isPrivate ? (
+    <PrivateListBadge label={t("lists.private.label", "Privāts saraksts")} />
+  ) : null;
+
   const name = href ? (
-    <Link href={href} className="flex w-full items-center gap-1.5 truncate">
+    <Link href={href} className="block min-w-0 truncate">
       <span className="truncate">{label}</span>
-      {isPrivate ? (
-        <span
-          className="inline-flex h-4.5 min-w-4.5 shrink-0 items-center justify-center rounded-md bg-amber-400 px-1 text-[10px] text-zinc-900"
-          title="Privāts saraksts"
-        >
-          <i className="fas fa-user-lock" aria-hidden="true" />
-        </span>
-      ) : null}
     </Link>
   ) : onToggle ? (
     <button
       type="button"
       onClick={onToggle}
-      className="flex w-full items-center gap-1.5 truncate text-left"
+      className="block min-w-0 truncate text-left"
     >
       <span className="truncate">{label}</span>
-      {isPrivate ? (
-        <span
-          className="inline-flex h-4.5 min-w-4.5 shrink-0 items-center justify-center rounded-md bg-amber-400 px-1 text-[10px] text-zinc-900"
-          title="Privāts saraksts"
-        >
-          <i className="fas fa-user-lock" aria-hidden="true" />
-        </span>
-      ) : null}
     </button>
   ) : (
-    <span className="flex w-full items-center gap-1.5 truncate">
+    <span className="block min-w-0 truncate">
       <span className="truncate">{label}</span>
-      {isPrivate ? (
-        <span
-          className="inline-flex h-4.5 min-w-4.5 shrink-0 items-center justify-center rounded-md bg-amber-400 px-1 text-[10px] text-zinc-900"
-          title="Privāts saraksts"
-        >
-          <i className="fas fa-user-lock" aria-hidden="true" />
-        </span>
-      ) : null}
     </span>
   );
 
   return (
-    <OverflowTooltip
-      label={label}
-      extraLabel={description}
-      className="min-w-0 flex-1"
-    >
-      <span
-        className={`block min-w-0 w-full ${href || onToggle ? "" : "pointer-events-none"}`}
+    <span className="flex min-w-0 flex-1 items-center gap-1.5">
+      <OverflowTooltip
+        label={label}
+        extraLabel={description}
+        className="min-w-0 flex-1"
       >
-        {name}
-      </span>
-    </OverflowTooltip>
+        <span
+          className={`block min-w-0 w-full ${href || onToggle ? "" : "pointer-events-none"}`}
+        >
+          {name}
+        </span>
+      </OverflowTooltip>
+      {privateBadge}
+    </span>
   );
 }
 
@@ -273,8 +281,8 @@ function NavTreeSection({
   const rowLink = Boolean(href && leaf);
 
   return (
-    <div className={dragHandle?.isDragging ? "opacity-70" : undefined}>
-      <div className="group/row">
+    <div className={`overflow-visible${dragHandle?.isDragging ? " opacity-70" : ""}`}>
+      <div className="group/row overflow-visible">
         <div
           ref={setRowRef}
           style={rowStyle}
@@ -286,6 +294,22 @@ function NavTreeSection({
               className="absolute inset-0 z-0 rounded-md"
               aria-label={label}
             />
+          ) : null}
+          {dragHandle ? (
+            <span
+              className={`absolute top-1/2 left-0 z-20 -translate-x-[calc(100%-3px)] -translate-y-1/2 transition ${
+                dragHandle.isDragging
+                  ? "pointer-events-auto opacity-100"
+                  : "pointer-events-none opacity-0 group-hover/row:pointer-events-auto group-hover/row:opacity-100 group-focus-within/row:pointer-events-auto group-focus-within/row:opacity-100"
+              }`}
+              onPointerDown={(event) => event.stopPropagation()}
+            >
+              <DragHandle
+                label={t("nav.drag", "Pārvietot")}
+                attributes={dragHandle.attributes}
+                listeners={dragHandle.listeners}
+              />
+            </span>
           ) : null}
           {listAppearance && listTone ? (
             <Tooltip label={toggleLabel}>
@@ -360,23 +384,6 @@ function NavTreeSection({
             onToggle={rowLink ? undefined : onToggle}
           />
 
-          {dragHandle ? (
-            <span
-              className={`relative z-10 transition ${
-                dragHandle.isDragging
-                  ? "pointer-events-auto opacity-100"
-                  : "pointer-events-none opacity-0 group-hover/row:pointer-events-auto group-hover/row:opacity-100 group-focus-within/row:pointer-events-auto group-focus-within/row:opacity-100"
-              }`}
-              onPointerDown={(event) => event.stopPropagation()}
-            >
-              <DragHandle
-                label={t("nav.drag", "Pārvietot")}
-                attributes={dragHandle.attributes}
-                listeners={dragHandle.listeners}
-              />
-            </span>
-          ) : null}
-
           {leaf ? null : listAppearance || swapOnHover ? null : (
             <Tooltip label={toggleLabel}>
               <button
@@ -442,12 +449,13 @@ export function AppNav() {
   const router = useRouter();
   const { t } = useTranslations();
   const { showFeedback } = useFeedbackToast();
-  const { lists, tasks, listTasks, childTasks, subtasks, addList, updateList, deleteList, updateTask, deleteTask, setWorkItemArchived, reorderTasks, moveWorkItem, allTaskFiles, isReady: listsReady } = useLists();
+  const { lists, tasks, listTasks, childTasks, subtasks, addList, updateList, deleteList, reorderLists, updateTask, deleteTask, setWorkItemArchived, reorderTasks, moveWorkItem, allTaskFiles, isReady: listsReady } = useLists();
   const { files: storedFiles } = useListFiles();
   const files = storedFiles.filter((file) =>
     lists.some((list) => list.id === file.listId),
   );
   const { members, roles, currentUser, currentTeam, inviteMember, isReady: teamReady } = useTeam();
+  const sidebarMembers = useMemo(() => confirmedTeamMembers(members), [members]);
   const { isAdmin } = useIsAdmin();
   const { statuses } = useTaskStatuses();
   const { getFileIconDisplay } = useFileTypes();
@@ -529,11 +537,52 @@ export function AppNav() {
   }
 
   function accessForList(list: WorkList | null | undefined) {
-    if (!list) return listAccessCapabilities(null);
-    return listAccessCapabilities(
-      resolveListAccessLevel(list, currentUser, roles, isAdmin),
-    );
+    if (!list) {
+      return resolveEffectiveListAccess(null, currentUser, roles, isAdmin);
+    }
+    return resolveEffectiveListAccess(list, currentUser, roles, isAdmin);
   }
+
+  const canSeeDashboard = hasTeamNavPermission(
+    currentUser,
+    roles,
+    isAdmin,
+    "dashboard",
+  );
+  const canSeeLists = hasTeamNavPermission(currentUser, roles, isAdmin, "lists");
+  const canSeeTeam = hasTeamNavPermission(currentUser, roles, isAdmin, "team");
+  const canCreateLists = hasTeamActionPermission(
+    currentUser,
+    roles,
+    isAdmin,
+    "lists.create",
+  );
+  const canInviteMembers = canInviteTeamMembers(currentUser, roles, isAdmin);
+  const canManageRoles = canManageTeamSettings(
+    currentUser,
+    roles,
+    isAdmin,
+    "team.roles.manage",
+  );
+  const canSeeTemplates = hasTeamNavPermission(
+    currentUser,
+    roles,
+    isAdmin,
+    "templates",
+  );
+  const canManageListStatuses = hasTeamActionPermission(
+    currentUser,
+    roles,
+    isAdmin,
+    "lists.statuses.manage",
+  );
+  const canManageListAutomations = hasTeamActionPermission(
+    currentUser,
+    roles,
+    isAdmin,
+    "lists.automations.manage",
+  );
+  const showTeamMenu = canManageRoles || canSeeTemplates;
 
   function accessForListId(listId: string) {
     return accessForList(lists.find((item) => item.id === listId));
@@ -632,6 +681,25 @@ export function AppNav() {
       reorderTasks(placement.orderedIds);
     }
     if (placement.nestIntoId) expandTree(placement.nestIntoId);
+  }
+
+  function placeNavList(
+    activeId: string,
+    overId: string,
+    intent: NavTreeDropIntent,
+  ) {
+    if (activeId === overId) return;
+    const ids = lists.map((list) => list.id);
+    const from = ids.indexOf(activeId);
+    const to = ids.indexOf(overId);
+    if (from < 0 || to < 0) return;
+    const next = ids.slice();
+    const [moved] = next.splice(from, 1);
+    let target = to;
+    if (from < to) target -= 1;
+    if (intent === "after") target += 1;
+    next.splice(Math.max(0, Math.min(target, next.length)), 0, moved);
+    reorderLists(next);
   }
 
   function navOverlayLabel(id: string) {
@@ -838,14 +906,17 @@ export function AppNav() {
       <aside className="fixed inset-y-0 left-0 z-40 flex w-[var(--app-sidebar-width-expanded)] flex-col border-r border-zinc-200 bg-white">
         <TeamSwitcher />
 
-        <nav className="min-h-0 flex-1 space-y-0.5 overflow-y-auto px-2 pb-3 [scrollbar-width:thin] [scrollbar-color:rgb(212_212_216)_transparent]">
-          <Link href="/dashboard" className={rowClassName(isHome)}>
-            <span className="inline-flex size-5 shrink-0 items-center justify-center text-zinc-500">
-              <i className="fas fa-house text-[12px]" aria-hidden="true" />
-            </span>
-            <span>{t("nav.home", "Sākums")}</span>
-          </Link>
+        <nav className="min-h-0 flex-1 space-y-0.5 overflow-x-visible overflow-y-auto px-2 pb-3 [scrollbar-width:thin] [scrollbar-color:rgb(212_212_216)_transparent]">
+          {canSeeDashboard ? (
+            <Link href="/dashboard" className={rowClassName(isHome)}>
+              <span className="inline-flex size-5 shrink-0 items-center justify-center text-zinc-500">
+                <i className="fas fa-house text-[12px]" aria-hidden="true" />
+              </span>
+              <span>{t("nav.home", "Sākums")}</span>
+            </Link>
+          ) : null}
 
+          {canSeeLists ? (
           <NavTreeSection
             href="/lists"
             icon="fas fa-list-ul"
@@ -856,31 +927,48 @@ export function AppNav() {
             expanded={isExpanded("lists", true)}
             isParentActive={pathname === "/lists"}
             onToggle={() => toggleTree("lists", true)}
-            onAdd={currentTeam ? () => setCreateListOpen(true) : undefined}
+            onAdd={
+              currentTeam && canCreateLists ? () => setCreateListOpen(true) : undefined
+            }
           >
             {listsReady ? (
               lists.length > 0 ? (
-              lists.map((list) => {
-                const listAccess = accessForList(list);
-                const canDrag = listAccess.canEditTasks;
-                return (
-                <NavTreeDnd
-                  key={list.id}
-                  renderOverlay={(id) => (
-                    <div className="max-w-[11rem] truncate rounded-md border border-zinc-200 bg-white/90 px-2 py-1 text-[13px] font-medium text-zinc-900 shadow-lg">
-                      {navOverlayLabel(id)}
-                    </div>
-                  )}
-                  onPlace={(activeId, overId, intent) =>
-                    placeNavItem(list.id, activeId, overId, intent)
-                  }
-                >
-                  <NavTreeRootDrop
-                    id={navListRootDroppableId(list.id)}
-                    disabled={!canDrag}
-                  >
-                    {({ setNodeRef, isOver }) => (
-                <NavTreeSection
+              <NavTreeDnd
+                renderOverlay={(id) => (
+                  <div className="max-w-[11rem] truncate rounded-md border border-zinc-200 bg-white/90 px-2 py-1 text-[13px] font-medium text-zinc-900 shadow-lg">
+                    {lists.find((list) => list.id === id)?.name ?? navOverlayLabel(id)}
+                  </div>
+                )}
+                onPlace={placeNavList}
+              >
+                <NavTreeSortableGroup itemIds={lists.map((list) => list.id)}>
+                  {lists.map((list) => {
+                    const listAccess = accessForList(list);
+                    const canDrag = listAccess.canEditList;
+                    return (
+                      <NavTreeSortableItem
+                        key={list.id}
+                        id={list.id}
+                        data={{ kind: "task", listId: list.id, parentId: null }}
+                        disabled={!canDrag}
+                      >
+                        {(handle) => (
+                          <NavTreeDnd
+                            renderOverlay={(id) => (
+                              <div className="max-w-[11rem] truncate rounded-md border border-zinc-200 bg-white/90 px-2 py-1 text-[13px] font-medium text-zinc-900 shadow-lg">
+                                {navOverlayLabel(id)}
+                              </div>
+                            )}
+                            onPlace={(activeId, overId, intent) =>
+                              placeNavItem(list.id, activeId, overId, intent)
+                            }
+                          >
+                            <NavTreeRootDrop
+                              id={navListRootDroppableId(list.id)}
+                              disabled={!canDrag}
+                            >
+                              {({ setNodeRef, isOver }) => (
+                                <NavTreeSection
                   href={`/lists/${list.id}`}
                   icon={list.kind === "folder" ? "far fa-folder" : undefined}
                   swapOnHover={list.kind === "folder"}
@@ -897,7 +985,12 @@ export function AppNav() {
                   expanded={isExpanded(list.id, true)}
                   isParentActive={pathname === `/lists/${list.id}`}
                   onToggle={() => toggleTree(list.id, true)}
-                  setRowRef={setNodeRef}
+                  setRowRef={(node) => {
+                    setNodeRef(node);
+                    handle.setNodeRef(node);
+                  }}
+                  rowStyle={handle.style}
+                  dragHandle={canDrag ? handle : null}
                   highlighted={isOver}
                   moreOpen={itemMenu?.kind === "list" && itemMenu.id === list.id}
                   onMore={
@@ -921,14 +1014,18 @@ export function AppNav() {
                           })
                       : undefined
                   }
-                >
-                  {renderTaskTree(list.id, null)}
-                </NavTreeSection>
-                    )}
-                  </NavTreeRootDrop>
-                </NavTreeDnd>
-                );
-              })
+                                >
+                                  {renderTaskTree(list.id, null)}
+                                </NavTreeSection>
+                              )}
+                            </NavTreeRootDrop>
+                          </NavTreeDnd>
+                        )}
+                      </NavTreeSortableItem>
+                    );
+                  })}
+                </NavTreeSortableGroup>
+              </NavTreeDnd>
             ) : (
               <p className="px-2 py-1.5 text-[12px] text-zinc-400">
                 {currentTeam
@@ -940,7 +1037,9 @@ export function AppNav() {
               <LoadingState compact />
             )}
           </NavTreeSection>
+          ) : null}
 
+          {canSeeTeam ? (
           <NavTreeSection
             href="/team"
             icon="fas fa-users"
@@ -951,17 +1050,19 @@ export function AppNav() {
             expanded={isExpanded("team", true)}
             isParentActive={isTeam}
             onToggle={() => toggleTree("team", true)}
-            onAdd={currentTeam ? () => setInviteOpen(true) : undefined}
+            onAdd={
+              currentTeam && canInviteMembers ? () => setInviteOpen(true) : undefined
+            }
             moreOpen={teamMenuAnchor !== null}
             onMore={
-              currentTeam
+              currentTeam && showTeamMenu
                 ? (event) => setTeamMenuAnchor(createMenuAnchorFromEvent(event))
                 : undefined
             }
           >
             {teamReady ? (
-              currentTeam && members.length > 0 ? (
-              members.map((member) => {
+              currentTeam && sidebarMembers.length > 0 ? (
+              sidebarMembers.map((member) => {
                 const href = `/team/${member.id}`;
                 return (
                   <Link
@@ -970,8 +1071,8 @@ export function AppNav() {
                     className={rowClassName(pathname === href)}
                   >
                     <UserAvatar member={member} size="xs" />
-                    <OverflowTooltip label={member.name} className="min-w-0 flex-1">
-                      <span className="block min-w-0 truncate">{member.name}</span>
+                    <OverflowTooltip label={memberDisplayName(member)} className="min-w-0 flex-1">
+                      <span className="block min-w-0 truncate">{memberDisplayName(member)}</span>
                     </OverflowTooltip>
                     <MemberLastOnline lastOnlineAt={member.lastOnlineAt} />
                   </Link>
@@ -988,6 +1089,7 @@ export function AppNav() {
               <LoadingState compact />
             )}
           </NavTreeSection>
+          ) : null}
         </nav>
 
         <div className="shrink-0 space-y-0.5 border-t border-zinc-100 px-2 py-2">
@@ -1073,24 +1175,32 @@ export function AppNav() {
         anchor={teamMenuAnchor}
         title={t("common.actions", "Darbības")}
         items={[
-          {
-            id: "roles",
-            icon: "fas fa-user-tag",
-            title: t("team.roles.title", "Komandas lomas"),
-            description: t(
-              "team.roles.menu_description",
-              "Sadali biedrus pa lomām",
-            ),
-          },
-          {
-            id: "templates",
-            icon: "fas fa-copy",
-            title: t("nav.templates", "Šabloni"),
-            description: t(
-              "templates.menu_description",
-              "Sagatavo uzdevumu sarakstus, ko pēc tam pievieno mapē",
-            ),
-          },
+          ...(canManageRoles
+            ? [
+                {
+                  id: "roles",
+                  icon: "fas fa-user-tag",
+                  title: t("team.roles.title", "Komandas lomas"),
+                  description: t(
+                    "team.roles.menu_description",
+                    "Sadali biedrus pa lomām",
+                  ),
+                },
+              ]
+            : []),
+          ...(canSeeTemplates
+            ? [
+                {
+                  id: "templates",
+                  icon: "fas fa-copy",
+                  title: t("nav.templates", "Šabloni"),
+                  description: t(
+                    "templates.menu_description",
+                    "Sagatavo uzdevumu sarakstus, ko pēc tam pievieno mapē",
+                  ),
+                },
+              ]
+            : []),
         ]}
         onClose={() => setTeamMenuAnchor(null)}
         onSelect={(id) => {
@@ -1156,24 +1266,32 @@ export function AppNav() {
                           icon: "fas fa-pen",
                           title: t("actions.edit", "Labot"),
                         },
-                        {
-                          id: "statuses",
-                          icon: "fas fa-circle-dot",
-                          title: t("lists.statuses.title", "Statusi"),
-                          description: t(
-                            "lists.statuses.menu_description",
-                            "Sistēmas un saraksta statusi",
-                          ),
-                        },
-                        {
-                          id: "automations",
-                          icon: "fas fa-bolt",
-                          title: t("lists.automations.title", "Automatizācijas"),
-                          description: t(
-                            "lists.automations.menu_description",
-                            "Automātiskās darbības sarakstā",
-                          ),
-                        },
+                        ...(canManageListStatuses
+                          ? [
+                              {
+                                id: "statuses",
+                                icon: "fas fa-circle-dot",
+                                title: t("lists.statuses.title", "Statusi"),
+                                description: t(
+                                  "lists.statuses.menu_description",
+                                  "Sistēmas un saraksta statusi",
+                                ),
+                              },
+                            ]
+                          : []),
+                        ...(canManageListAutomations
+                          ? [
+                              {
+                                id: "automations",
+                                icon: "fas fa-bolt",
+                                title: t("lists.automations.title", "Automatizācijas"),
+                                description: t(
+                                  "lists.automations.menu_description",
+                                  "Automātiskās darbības sarakstā",
+                                ),
+                              },
+                            ]
+                          : []),
                       ]
                     : []),
                   ...(itemMenuAccess.canDeleteList
@@ -1484,13 +1602,23 @@ export function AppNav() {
       <TeamInviteModal
         open={inviteOpen}
         onOpenChange={setInviteOpen}
-        onInvite={(input) => {
-          const member = inviteMember(input);
-          showFeedback({
-            type: "success",
-            text: t("team.invited", "Uzaicinājums nosūtīts."),
-          });
-          router.push(`/team/${member.id}`);
+        onInvite={async (input) => {
+          try {
+            const member = await inviteMember(input);
+            showFeedback({
+              type: "success",
+              text: t("team.invited", "Uzaicinājums nosūtīts."),
+            });
+            router.push(`/team/${member.id}`);
+          } catch (error) {
+            showFeedback({
+              type: "error",
+              text: translateActionError(
+                t,
+                error instanceof Error ? error.message : "errors.team_invite_failed",
+              ),
+            });
+          }
         }}
       />
     </>

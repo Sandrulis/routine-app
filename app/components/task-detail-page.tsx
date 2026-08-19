@@ -17,8 +17,7 @@ import { useLists } from "@/app/lib/lists-store";
 import { useTeam } from "@/app/lib/team-store";
 import { useIsAdmin } from "@/app/lib/users/use-is-admin";
 import {
-  listAccessCapabilities,
-  resolveListAccessLevel,
+  resolveEffectiveListAccess,
 } from "@/app/lib/list-access";
 import { WorkItemArchiveButton } from "@/app/components/work-item-archive-button";
 
@@ -41,10 +40,8 @@ export function TaskDetailPage({
   const [archiveOpen, setArchiveOpen] = useState(false);
   const list = lists.find((item) => item.id === listId) ?? null;
   const listAccess = list
-    ? listAccessCapabilities(
-        resolveListAccessLevel(list, currentUser, roles, isAdmin),
-      )
-    : listAccessCapabilities(null);
+    ? resolveEffectiveListAccess(list, currentUser, roles, isAdmin)
+    : resolveEffectiveListAccess(null, currentUser, roles, isAdmin);
   const opened = tasks.find((item) => item.id === taskId) ?? null;
   const isSubtask = opened ? isWorkSubtask(opened) : false;
   const isFolder = opened ? isWorkFolder(opened) : false;

@@ -1,20 +1,14 @@
 "use client";
 
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   AppModal,
   appModalExtraWidePanelMaxWidthClassName,
 } from "@/app/components/app-modal";
 import { TeamPermissionFields } from "@/app/components/team-permission-fields";
-import { useFeedbackToast } from "@/app/components/feedback-toast-provider";
 import { useTranslations } from "@/app/components/translations-provider";
 import { canManageTeamSettings, OWNER_TEAM_ROLE, teamRankLabel } from "@/app/lib/team";
-import {
-  cloneTeamPermissions,
-  createFullTeamPermissions,
-  sameTeamPermissions,
-  type TeamPermissionSet,
-} from "@/app/lib/team-permissions";
+import { createFullTeamPermissions } from "@/app/lib/team-permissions";
 import { useTeam } from "@/app/lib/team-store";
 import { useIsAdmin } from "@/app/lib/users/use-is-admin";
 
@@ -29,15 +23,8 @@ export function TeamRoleAccessModal({
 }) {
   const { t } = useTranslations();
   const { isAdmin } = useIsAdmin();
-  const { showFeedback } = useFeedbackToast();
   const { roles, currentUser, updateRolePermissions } = useTeam();
   const [selectedRoleId, setSelectedRoleId] = useState(roleId ?? roles[0]?.id ?? "");
-  const [draftByRoleId, setDraftByRoleId] = useState<Record<string, TeamPermissionSet>>(
-    () =>
-      Object.fromEntries(
-        roles.map((role) => [role.id, cloneTeamPermissions(role.permissions)]),
-      ),
-  );
   const canManage = canManageTeamSettings(
     currentUser,
     roles,
@@ -46,17 +33,12 @@ export function TeamRoleAccessModal({
   );
   const selectedRole = roles.find((role) => role.id === selectedRoleId) ?? roles[0] ?? null;
   const isOwnerRole = selectedRole?.slug === OWNER_TEAM_ROLE;
-  const draft = selectedRole ? draftByRoleId[selectedRole.id] : null;
-  const saved = selectedRole?.permissions ?? null;
-  const isDirty = Boolean(draft && saved && !sameTeamPermissions(draft, saved));
+  const permissions = isOwnerRole
+    ? createFullTeamPermissions(true)
+    : selectedRole?.permissions ?? null;
 
   useEffect(() => {
     if (!open) return;
-    setDraftByRoleId(
-      Object.fromEntries(
-        roles.map((role) => [role.id, cloneTeamPermissions(role.permissions)]),
-      ),
-    );
     setSelectedRoleId(
       roleId && roles.some((role) => role.id === roleId)
         ? roleId
@@ -72,46 +54,21 @@ export function TeamRoleAccessModal({
     [roles, selectedRole, t],
   );
 
-  function updateNav(key: keyof TeamPermissionSet["nav"], enabled: boolean) {
-    if (!selectedRole || isOwnerRole) return;
-    setDraftByRoleId((current) => ({
-      ...current,
-      [selectedRole.id]: {
-        ...current[selectedRole.id],
-        nav: {
-          ...current[selectedRole.id].nav,
-          [key]: enabled,
-        },
-      },
-    }));
-  }
-
-  function updateAction(key: keyof TeamPermissionSet["actions"], enabled: boolean) {
-    if (!selectedRole || isOwnerRole) return;
-    setDraftByRoleId((current) => ({
-      ...current,
-      [selectedRole.id]: {
-        ...current[selectedRole.id],
-        actions: {
-          ...current[selectedRole.id].actions,
-          [key]: enabled,
-        },
-      },
-    }));
-  }
-
-  function handleSave(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (!canManage || !selectedRole || !draft || isOwnerRole) return;
-    updateRolePermissions(selectedRole.id, draft);
-    showFeedback({
-      type: "success",
-      text: t("team.access.feedback.saved", "Lomas pieejas saglabātas."),
+  function persistNav(key: keyof typeof permissions.nav, enabled: boolean) {
+    if (!selectedRole || isOwnerRole || !permissions) return;
+    updateRolePermissions(selectedRole.id, {
+      ...permissions,
+      nav: { ...permissions.nav, [key]: enabled },
     });
-    onOpenChange(false);
   }
 
-  const displayDraft = isOwnerRole ? createFullTeamPermissions(true) : draft;
+  function persistAction(key: keyof typeof permissions.actions, enabled: boolean) {
+    if (!selectedRole || isOwnerRole || !permissions) return;
+    updateRolePermissions(selectedRole.id, {
+      ...permissions,
+      actions: { ...permissions.actions, [key]: enabled },
+    });
+  }
 
   return (
     <AppModal
@@ -125,16 +82,14 @@ export function TeamRoleAccessModal({
           "Katrai lomai norādi, kuras sadaļas un darbības ir pieejamas.",
         )
       }
-      dirty={isDirty}
       overlayZIndex={80}
       panelMaxWidthClassName={appModalExtraWidePanelMaxWidthClassName}
     >
-      <form onSubmit={handleSave} className="space-y-5">
-
-        {displayDraft && selectedRole ? (
+      <div className="space-y-4">
+        {permissions && selectedRole ? (
           <fieldset
             disabled={!canManage || isOwnerRole}
-            className="space-y-5 disabled:opacity-80"
+            className="space-y-4 disabled:opacity-80"
           >
             {isOwnerRole ? (
               <p className="text-sm text-zinc-500">
@@ -146,10 +101,10 @@ export function TeamRoleAccessModal({
             ) : null}
 
             <TeamPermissionFields
-              value={displayDraft}
+              value={permissions}
               disabled={!canManage || isOwnerRole}
-              onNavChange={updateNav}
-              onActionChange={updateAction}
+              onNavChange={persistNav}
+              onActionChange={persistAction}
             />
           </fieldset>
         ) : (
@@ -166,18 +121,7 @@ export function TeamRoleAccessModal({
             )}
           </p>
         ) : null}
-
-        <div className="flex items-center justify-between gap-3 border-t border-zinc-100 pt-4">
-          <p className="text-[12px] text-zinc-400">{selectedLabel}</p>
-          <button
-            type="submit"
-            disabled={!canManage || !isDirty || isOwnerRole}
-            className="inline-flex items-center gap-2 rounded-lg bg-zinc-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {t("actions.save", "Saglabāt")}
-          </button>
-        </div>
-      </form>
+      </div>
     </AppModal>
   );
 }

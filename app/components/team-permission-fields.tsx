@@ -20,22 +20,22 @@ function PermissionGroupHeader({
   title,
   checked,
   disabled,
-  toggleLabel,
   onToggle,
 }: {
   title: string;
   checked: boolean;
   disabled: boolean;
-  toggleLabel: string;
   onToggle: (checked: boolean) => void;
 }) {
   return (
-    <div className="flex items-center justify-between gap-3">
-      <h3 className="text-sm font-semibold text-zinc-800">{title}</h3>
+    <div className="flex items-center justify-between gap-2 bg-zinc-100 px-3 py-2">
+      <h3 className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
+        {title}
+      </h3>
       <ToggleSwitch
         checked={checked}
         disabled={disabled}
-        label={toggleLabel}
+        label={title}
         onChange={onToggle}
       />
     </div>
@@ -55,88 +55,90 @@ export function TeamPermissionFields({
 }) {
   const { t } = useTranslations();
 
-  function groupToggleLabel(section: string) {
-    return t("team.access.toggle_all", "Visas pieejas: {section}", { section });
-  }
-
   const navTitle = t("team.access.nav", "Sadaļas");
+  const sections = [
+    {
+      key: "nav",
+      title: navTitle,
+      checked: allEnabled(TEAM_NAV_PERMISSION_KEYS.map((key) => value.nav[key])),
+      onToggle: (checked: boolean) => {
+        for (const key of TEAM_NAV_PERMISSION_KEYS) {
+          onNavChange(key, checked);
+        }
+      },
+      items: TEAM_NAV_PERMISSION_KEYS.map((key) => {
+        const label = TEAM_NAV_PERMISSION_LABELS[key];
+        return {
+          key,
+          label: t(label.key, label.fallback),
+          checked: value.nav[key],
+          onChange: (checked: boolean) => onNavChange(key, checked),
+        };
+      }),
+    },
+    ...TEAM_ACTION_PERMISSION_GROUPS.map((group) => {
+      const groupTitle = t(group.titleKey, group.title);
+      return {
+        key: group.titleKey,
+        title: groupTitle,
+        checked: allEnabled(group.keys.map((key) => value.actions[key])),
+        onToggle: (checked: boolean) => {
+          for (const key of group.keys) {
+            onActionChange(key, checked);
+          }
+        },
+        items: group.keys.map((key) => {
+          const label = TEAM_ACTION_PERMISSION_LABELS[key];
+          return {
+            key,
+            label: t(label.key, label.fallback),
+            checked: value.actions[key],
+            onChange: (checked: boolean) => onActionChange(key, checked),
+          };
+        }),
+      };
+    }),
+  ];
+
+  const leftColumnKeys = new Set(["nav", "team.access.groups.templates", "nav.settings"]);
+  const leftSections = sections.filter((section) => leftColumnKeys.has(section.key));
+  const rightSections = sections.filter((section) => !leftColumnKeys.has(section.key));
 
   return (
-    <div className="space-y-5">
-      <section className="space-y-3">
-        <PermissionGroupHeader
-          title={navTitle}
-          checked={allEnabled(TEAM_NAV_PERMISSION_KEYS.map((key) => value.nav[key]))}
-          disabled={disabled}
-          toggleLabel={groupToggleLabel(navTitle)}
-          onToggle={(checked) => {
-            for (const key of TEAM_NAV_PERMISSION_KEYS) {
-              onNavChange(key, checked);
-            }
-          }}
-        />
-        <div className="divide-y divide-zinc-100 overflow-hidden rounded-xl border border-zinc-200">
-          {TEAM_NAV_PERMISSION_KEYS.map((key) => {
-            const label = TEAM_NAV_PERMISSION_LABELS[key];
-            return (
-              <div
-                key={key}
-                className="flex items-center justify-between gap-3 px-4 py-2.5"
-              >
-                <span className="text-sm text-zinc-800">
-                  {t(label.key, label.fallback)}
-                </span>
-                <ToggleSwitch
-                  checked={value.nav[key]}
-                  disabled={disabled}
-                  label={t(label.key, label.fallback)}
-                  onChange={(checked) => onNavChange(key, checked)}
-                />
-              </div>
-            );
-          })}
-        </div>
-      </section>
-
-      {TEAM_ACTION_PERMISSION_GROUPS.map((group) => {
-        const groupTitle = t(group.titleKey, group.title);
-        return (
-          <section key={group.titleKey} className="space-y-3">
-            <PermissionGroupHeader
-              title={groupTitle}
-              checked={allEnabled(group.keys.map((key) => value.actions[key]))}
-              disabled={disabled}
-              toggleLabel={groupToggleLabel(groupTitle)}
-              onToggle={(checked) => {
-                for (const key of group.keys) {
-                  onActionChange(key, checked);
-                }
-              }}
-            />
-            <div className="divide-y divide-zinc-100 overflow-hidden rounded-xl border border-zinc-200">
-              {group.keys.map((key) => {
-                const label = TEAM_ACTION_PERMISSION_LABELS[key];
-                return (
+    <div className="grid gap-3 md:grid-cols-2 md:items-start">
+      {[leftSections, rightSections].map((columnSections, columnIndex) => (
+        <div key={columnIndex} className="space-y-3">
+          {columnSections.map((section) => (
+            <section
+              key={section.key}
+              className="overflow-hidden rounded-lg border border-zinc-200"
+            >
+              <PermissionGroupHeader
+                title={section.title}
+                checked={section.checked}
+                disabled={disabled}
+                onToggle={section.onToggle}
+              />
+              <div className="divide-y divide-zinc-50">
+                {section.items.map((item) => (
                   <div
-                    key={key}
-                    className="flex items-center justify-between gap-3 px-4 py-2.5"
+                    key={item.key}
+                    className="flex items-center justify-between gap-3 px-3 py-2 transition hover:bg-zinc-50"
                   >
-                    <span className="text-sm text-zinc-800">
-                      {t(label.key, label.fallback)}
-                    </span>
+                    <span className="text-sm text-zinc-700">{item.label}</span>
                     <ToggleSwitch
-                      checked={value.actions[key]}
+                      checked={item.checked}
                       disabled={disabled}
-                      label={t(label.key, label.fallback)}
-                      onChange={(checked) => onActionChange(key, checked)}
+                      label={item.label}
+                      onChange={item.onChange}
                     />
                   </div>
-                );
-              })}
-            </div>
-          </section>
-        );
-      })}
+                ))}
+              </div>
+            </section>
+          ))}
+        </div>
+      ))}
     </div>
   );
 }

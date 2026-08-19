@@ -78,10 +78,10 @@ import {
 import { useLists } from "@/app/lib/lists-store";
 import { useListFiles } from "@/app/lib/use-list-files";
 import { useTeam } from "@/app/lib/team-store";
+import { hasTeamActionPermission } from "@/app/lib/team";
 import { useIsAdmin } from "@/app/lib/users/use-is-admin";
 import {
-  listAccessCapabilities,
-  resolveListAccessLevel,
+  resolveEffectiveListAccess,
   userIsAssignee,
 } from "@/app/lib/list-access";
 import { taskHasIncompleteChecklists } from "@/app/lib/task-checklists";
@@ -506,9 +506,7 @@ function OverviewSubtaskList({
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
   );
   const list = lists.find((item) => item.id === listId) ?? null;
-  const access = listAccessCapabilities(
-    list ? resolveListAccessLevel(list, currentUser, roles, isAdmin) : null,
-  );
+  const access = resolveEffectiveListAccess(list, currentUser, roles, isAdmin);
   const groups = statusesByPriorityDesc(statuses)
     .map((status) => ({
       status,
@@ -845,9 +843,8 @@ export function ListWindowsBoard({
   const list = lists.find((item) => item.id === listId) ?? null;
   const windowOrderKey = parentId ?? listId;
   const canUploadFiles = list
-    ? listAccessCapabilities(
-        resolveListAccessLevel(list, currentUser, roles, isAdmin),
-      ).canCreateTasks
+    ? resolveEffectiveListAccess(list, currentUser, roles, isAdmin).canCreateTasks &&
+      hasTeamActionPermission(currentUser, roles, isAdmin, "files.upload")
     : false;
   const [order, setOrder] = useState<ListWindowId[]>(DEFAULT_LIST_WINDOW_ORDER);
   const [tasksArchiveOpen, setTasksArchiveOpen] = useState(false);

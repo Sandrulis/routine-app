@@ -5,8 +5,7 @@ import { useFeedbackToast } from "@/app/components/feedback-toast-provider";
 import { useTranslations } from "@/app/components/translations-provider";
 import { useIsAdmin } from "@/app/lib/users/use-is-admin";
 import {
-  listAccessCapabilities,
-  resolveListAccessLevel,
+  resolveEffectiveListAccess,
 } from "@/app/lib/list-access";
 import {
   isWorkFolder,
@@ -40,9 +39,7 @@ export function WorkItemArchiveButton({ task }: { task: WorkTask }) {
   const { isAdmin } = useIsAdmin();
   const list = lists.find((item) => item.id === task.listId) ?? null;
   const canEdit = list
-    ? listAccessCapabilities(
-        resolveListAccessLevel(list, currentUser, roles, isAdmin),
-      ).canEditTasks
+    ? resolveEffectiveListAccess(list, currentUser, roles, isAdmin).canEditTasks
     : false;
 
   if (!canEdit || isWorkSubtask(task)) return null;

@@ -3,7 +3,9 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAuthSession } from "@/app/lib/auth/use-auth-session";
 import {
-  fetchAppNotifications,
+  deleteNotification,
+  deleteOldNotifications,
+  fetchVisibleNotifications,
   markNotificationsRead,
 } from "@/app/lib/db/work-data";
 import {
@@ -23,13 +25,14 @@ export function useNotifications() {
 
   const refresh = useCallback((options?: { silent?: boolean }) => {
     if (!authReady || !teamReady) return;
-    if (!teamId || (userId && !teamId)) {
+    if (!userId) {
       setItems([]);
       setIsLoading(false);
       return;
     }
     if (!options?.silent) setIsLoading(true);
-    void fetchAppNotifications(teamId)
+    void deleteOldNotifications(30).catch(() => undefined);
+    void fetchVisibleNotifications(teamId, userId)
       .then(setItems)
       .catch((error) => {
         console.error("Failed to load notifications", error);
@@ -41,6 +44,11 @@ export function useNotifications() {
   }, [authReady, teamId, teamReady, userId]);
 
   useEffect(() => {
+    if (!authReady) return;
+    if (!teamReady) {
+      setIsLoading(true);
+      return;
+    }
     refresh();
     function handleChange() {
       refresh({ silent: true });
@@ -49,7 +57,7 @@ export function useNotifications() {
     return () => {
       window.removeEventListener(NOTIFICATIONS_CHANGE_EVENT, handleChange);
     };
-  }, [refresh]);
+  }, [authReady, refresh, teamReady]);
 
   const unreadCount = useMemo(() => unreadNotificationCount(items), [items]);
 
@@ -76,5 +84,12 @@ export function useNotifications() {
     });
   }
 
-  return { items, isLoading, unreadCount, markRead, markAllRead };
+  function dismiss(id: string) {
+    setItems((current) => current.filter((item) => item.id !== id));
+    void deleteNotification(id).catch((error) => {
+      console.error("Failed to delete notification", error);
+    });
+  }
+
+  return { items, isLoading, unreadCount, markRead, markAllRead, dismiss };
 }

@@ -34,6 +34,7 @@ import {
   type DropHint,
 } from "@/app/components/task-drop-line";
 import { UserAvatar } from "@/app/components/user-avatar";
+import { DatePickerPopover } from "@/app/components/date-picker-popover";
 import { useDisplayPreferences } from "@/app/components/display-preferences-provider";
 import { useTranslations } from "@/app/components/translations-provider";
 import { assignedMembersOf, assignedRolesOf } from "@/app/lib/assignees";
@@ -47,8 +48,7 @@ import { teamRankLabel } from "@/app/lib/team";
 import { useTeam } from "@/app/lib/team-store";
 import { useIsAdmin } from "@/app/lib/users/use-is-admin";
 import {
-  listAccessCapabilities,
-  resolveListAccessLevel,
+  resolveEffectiveListAccess,
   userIsAssignee,
 } from "@/app/lib/list-access";
 import {
@@ -163,7 +163,8 @@ export function DateCell({
 }) {
   const { t } = useTranslations();
   const { formatDate } = useDisplayPreferences();
-  const inputRef = useRef<HTMLInputElement>(null);
+  const triggerRef = useRef<HTMLDivElement>(null);
+  const [pickerOpen, setPickerOpen] = useState(false);
   const hint = taskDateRelativeHint(value, fieldKind, statusGroup);
   const relative =
     hint == null
@@ -175,24 +176,26 @@ export function DateCell({
           : t("dates.days_left", "{count} d atlikušas", { count: hint.days });
   const emphasizeOverdue = hint?.overdue === true;
 
-  function openPicker() {
-    if (disabled) return;
-    const input = inputRef.current;
-    if (!input) return;
-    try {
-      if (typeof input.showPicker === "function") {
-        input.showPicker();
-      } else {
-        input.focus();
-      }
-    } catch {
-      input.focus();
-    }
-  }
-
   return (
     <div className="relative inline-flex min-h-8 min-w-[7.5rem] flex-col items-start justify-center">
-      <span className="pointer-events-none">
+      <div
+        ref={triggerRef}
+        role="button"
+        tabIndex={disabled ? -1 : 0}
+        aria-label={emptyLabel}
+        className={`w-full ${disabled ? "cursor-not-allowed" : "cursor-pointer"}`}
+        onMouseDown={(e) => e.stopPropagation()}
+        onClick={(e) => {
+          e.stopPropagation();
+          if (!disabled) setPickerOpen(true);
+        }}
+        onKeyDown={(e) => {
+          if (!disabled && (e.key === "Enter" || e.key === " ")) {
+            e.preventDefault();
+            setPickerOpen(true);
+          }
+        }}
+      >
         {value ? (
           <>
             <span
@@ -218,24 +221,14 @@ export function DateCell({
             <span className="sr-only">{emptyLabel}</span>
           </span>
         )}
-      </span>
-      <input
-        ref={inputRef}
-        type="date"
-        value={value ?? ""}
-        aria-label={emptyLabel}
-        data-app-modal-ignore-backdrop=""
-        onMouseDown={(event) => event.stopPropagation()}
+      </div>
+      <DatePickerPopover
+        value={value}
+        onChange={onChange}
         disabled={disabled}
-        onClick={(event) => {
-          event.stopPropagation();
-          if (disabled) return;
-          openPicker();
-        }}
-        onChange={(event) => onChange(event.target.value || null)}
-        className={`absolute inset-0 z-10 w-full min-w-[7.5rem] opacity-[0.01] ${
-          disabled ? "cursor-not-allowed" : "cursor-pointer"
-        }`}
+        triggerRef={triggerRef}
+        open={pickerOpen}
+        onOpenChange={setPickerOpen}
       />
     </div>
   );
@@ -553,10 +546,9 @@ export function SubtaskTable({
 
   function accessFor(task: WorkTask) {
     const list = lists.find((item) => item.id === task.listId) ?? null;
-    return listAccessCapabilities(
-      list ? resolveListAccessLevel(list, currentUser, roles, isAdmin) : null,
-      { isAssignee: userIsAssignee(task.assigneeIds, currentUser) },
-    );
+    return resolveEffectiveListAccess(list, currentUser, roles, isAdmin, {
+      isAssignee: userIsAssignee(task.assigneeIds, currentUser),
+    });
   }
 
   function handleDragEnd(event: DragEndEvent) {

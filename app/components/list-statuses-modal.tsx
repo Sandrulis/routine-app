@@ -41,6 +41,7 @@ import {
   isSingletonStatusGroup,
   mergeStatusCatalog,
   moveStatusInLayout,
+  normalizeStatusColor,
   statusGroupDroppableId,
   visibleStatusIdsAfter,
   type ListStatusGroup,
@@ -66,6 +67,11 @@ type StatusDraft = {
   label: string;
   color: string;
   groupKey: string;
+};
+
+type EditDraft = {
+  label: string;
+  color: string;
 };
 
 function emptyDraft(groupKey: string = "active"): StatusDraft {
@@ -124,29 +130,38 @@ export function ListStatusesModal({
   const groupOverrides = liveList?.statusGroupOverrides ?? {};
   const [formOpen, setFormOpen] = useState(false);
   const [draft, setDraft] = useState(emptyDraft);
-  const [renameId, setRenameId] = useState<string | null>(null);
-  const [renameDraft, setRenameDraft] = useState("");
+  const [editId, setEditId] = useState<string | null>(null);
+  const [editDraft, setEditDraft] = useState<EditDraft>({ label: "", color: "#71717a" });
   const [deleteTarget, setDeleteTarget] = useState<ListStatus | null>(null);
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
   );
 
-  const renameOriginal = renameId
-    ? (() => {
-        const customStatus = custom.find((status) => status.id === renameId);
-        if (customStatus) return customStatus.label;
-        return labelFor(renameId);
-      })()
-    : "";
-  const renameDirty =
-    renameId !== null && renameDraft.trim() !== renameOriginal.trim();
+  function editOriginalFor(statusId: string): EditDraft {
+    const customStatus = custom.find((status) => status.id === statusId);
+    if (customStatus) {
+      return { label: customStatus.label, color: customStatus.color };
+    }
+    const status = catalog.find((item) => item.id === statusId);
+    return {
+      label: labelFor(statusId),
+      color: status?.color ?? "#71717a",
+    };
+  }
+
+  const editOriginal = editId ? editOriginalFor(editId) : { label: "", color: "#71717a" };
+  const editDirty =
+    editId !== null &&
+    (editDraft.label.trim() !== editOriginal.label.trim() ||
+      normalizeStatusColor(editDraft.color) !==
+        normalizeStatusColor(editOriginal.color));
   const isDirty = JSON.stringify(draft) !== JSON.stringify(emptyDraft());
 
   useEffect(() => {
     if (open) return;
     setFormOpen(false);
-    setRenameId(null);
-    setRenameDraft("");
+    setEditId(null);
+    setEditDraft({ label: "", color: "#71717a" });
     setDeleteTarget(null);
     setDraft(emptyDraft());
   }, [open]);
@@ -190,27 +205,27 @@ export function ListStatusesModal({
   }
 
   function openCreate() {
-    if (renameDirty) return;
-    setRenameId(null);
+    if (editDirty) return;
+    setEditId(null);
     setDraft(emptyDraft());
     setFormOpen(true);
   }
 
-  function startRename(statusId: string, currentLabel: string) {
-    if (renameId === statusId) return;
-    if (renameDirty) return;
-    setRenameId(statusId);
-    setRenameDraft(currentLabel);
+  function startEdit(statusId: string, currentLabel: string, currentColor: string) {
+    if (editId === statusId) return;
+    if (editDirty) return;
+    setEditId(statusId);
+    setEditDraft({ label: currentLabel, color: currentColor });
   }
 
-  function cancelRename() {
-    setRenameId(null);
-    setRenameDraft("");
+  function cancelEdit() {
+    setEditId(null);
+    setEditDraft({ label: "", color: "#71717a" });
   }
 
-  function saveRename() {
-    if (!renameId) return;
-    const label = renameDraft.trim();
+  function saveEdit() {
+    if (!editId) return;
+    const label = editDraft.label.trim();
     if (!label) {
       showFeedback({
         type: "error",
@@ -218,17 +233,24 @@ export function ListStatusesModal({
       });
       return;
     }
-    if (label === renameOriginal.trim()) {
-      cancelRename();
+    const original = editOriginalFor(editId);
+    const labelChanged = label !== original.label.trim();
+    const colorChanged =
+      normalizeStatusColor(editDraft.color) !== normalizeStatusColor(original.color);
+    if (!labelChanged && !colorChanged) {
+      cancelEdit();
       return;
     }
-    const customStatus = custom.find((status) => status.id === renameId);
+    const customStatus = custom.find((status) => status.id === editId);
     if (customStatus) {
-      updateListStatus(renameId, { label });
-    } else {
-      renameSystemStatus(renameId, label);
+      updateListStatus(editId, {
+        ...(labelChanged ? { label } : {}),
+        ...(colorChanged ? { color: editDraft.color } : {}),
+      });
+    } else if (labelChanged) {
+      renameSystemStatus(editId, label);
     }
-    cancelRename();
+    cancelEdit();
   }
 
   function handleSave(event: React.FormEvent<HTMLFormElement>) {
@@ -382,7 +404,7 @@ export function ListStatusesModal({
           "lists.statuses.description",
           "Bīdi statusus arī starp grupām — tad grupa nomainās automātiski. Sistēmas statusu var pārsaukt šīs komandas ietvaros. Katrā grupā jābūt vismaz vienam statusam. Grupās Nav sākts un Slēgts drīkst būt tikai viens statuss.",
         )}
-        dirty={renameDirty}
+        dirty={editDirty}
         panelMaxWidthClassName={appModalExtraWidePanelMaxWidthClassName}
       >
         <div className="space-y-3">
@@ -438,9 +460,10 @@ export function ListStatusesModal({
                               label={displayLabel}
                               system={!customStatus}
                               renamed={renamed}
-                              editing={renameId === status.id}
-                              editValue={renameId === status.id ? renameDraft : displayLabel}
-                              editDirty={renameId === status.id && renameDirty}
+                              editing={editId === status.id}
+                              editValue={editId === status.id ? editDraft.label : displayLabel}
+                              editColor={editId === status.id ? editDraft.color : status.color}
+                              editDirty={editId === status.id && editDirty}
                               canDelete={
                                 Boolean(customStatus) &&
                                 canRemoveStatus(catalog, status.id)
@@ -458,14 +481,21 @@ export function ListStatusesModal({
                                 "lists.statuses.renamed",
                                 "Pārsaukts",
                               )}
-                              onStartEdit={() => startRename(status.id, displayLabel)}
-                              onEditValueChange={setRenameDraft}
-                              onSaveEdit={saveRename}
-                              onCancelEdit={cancelRename}
+                              onStartEdit={() =>
+                                startEdit(status.id, displayLabel, status.color)
+                              }
+                              onEditValueChange={(value) =>
+                                setEditDraft((current) => ({ ...current, label: value }))
+                              }
+                              onEditColorChange={(value) =>
+                                setEditDraft((current) => ({ ...current, color: value }))
+                              }
+                              onSaveEdit={saveEdit}
+                              onCancelEdit={cancelEdit}
                               onReset={
                                 renamed
                                   ? () => {
-                                      if (renameId === status.id) cancelRename();
+                                      if (editId === status.id) cancelEdit();
                                       resetSystemStatusLabel(status.id);
                                       showFeedback({
                                         type: "success",
@@ -643,6 +673,7 @@ function SortableStatusRow({
   renamed,
   editing,
   editValue,
+  editColor,
   editDirty,
   canDelete,
   dragLabel,
@@ -651,6 +682,7 @@ function SortableStatusRow({
   renamedBadge,
   onStartEdit,
   onEditValueChange,
+  onEditColorChange,
   onSaveEdit,
   onCancelEdit,
   onReset,
@@ -663,6 +695,7 @@ function SortableStatusRow({
   renamed: boolean;
   editing: boolean;
   editValue: string;
+  editColor: string;
   editDirty: boolean;
   canDelete: boolean;
   dragLabel: string;
@@ -671,6 +704,7 @@ function SortableStatusRow({
   renamedBadge: string;
   onStartEdit: () => void;
   onEditValueChange: (value: string) => void;
+  onEditColorChange: (value: string) => void;
   onSaveEdit: () => void;
   onCancelEdit: () => void;
   onReset?: () => void;
@@ -708,7 +742,24 @@ function SortableStatusRow({
       }`}
     >
       <DragHandle label={dragLabel} attributes={attributes} listeners={listeners} />
-      <StatusGlyph color={status.color} groupKey={status.groupKey} />
+      {editing && !system ? (
+        <label
+          className="relative inline-flex shrink-0 cursor-pointer"
+          title={t("admin.statuses.color", "Krāsa")}
+          onPointerDown={(event) => event.stopPropagation()}
+        >
+          <StatusGlyph color={editColor} groupKey={status.groupKey} />
+          <input
+            type="color"
+            value={editColor}
+            aria-label={t("admin.statuses.color", "Krāsa")}
+            onChange={(event) => onEditColorChange(event.target.value)}
+            className="absolute inset-0 size-full cursor-pointer opacity-0"
+          />
+        </label>
+      ) : (
+        <StatusGlyph color={status.color} groupKey={status.groupKey} />
+      )}
       {editing ? (
         <input
           ref={inputRef}

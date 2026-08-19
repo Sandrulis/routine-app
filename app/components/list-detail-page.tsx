@@ -16,8 +16,7 @@ import { useLists } from "@/app/lib/lists-store";
 import { useTeam } from "@/app/lib/team-store";
 import { useIsAdmin } from "@/app/lib/users/use-is-admin";
 import {
-  listAccessCapabilities,
-  resolveListAccessLevel,
+  resolveEffectiveListAccess,
 } from "@/app/lib/list-access";
 
 export function ListDetailPage({ listId }: { listId: string }) {
@@ -34,10 +33,8 @@ export function ListDetailPage({ listId }: { listId: string }) {
   const list = lists.find((item) => item.id === listId) ?? null;
   const tasks = archiveOpen ? archivedListTasks(listId) : listTasks(listId);
   const listAccess = list
-    ? listAccessCapabilities(
-        resolveListAccessLevel(list, currentUser, roles, isAdmin),
-      )
-    : listAccessCapabilities(null);
+    ? resolveEffectiveListAccess(list, currentUser, roles, isAdmin)
+    : resolveEffectiveListAccess(null, currentUser, roles, isAdmin);
 
   if (!isReady) {
     return (

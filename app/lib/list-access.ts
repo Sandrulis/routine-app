@@ -1,4 +1,11 @@
-import { currentTeamRole, OWNER_TEAM_ROLE, type TeamMember, type TeamRole } from "@/app/lib/team";
+import {
+  currentTeamRole,
+  hasTeamActionPermission,
+  hasTeamNavPermission,
+  OWNER_TEAM_ROLE,
+  type TeamMember,
+  type TeamRole,
+} from "@/app/lib/team";
 
 export const LIST_ACCESS_LEVELS = ["full_edit", "edit", "comment", "view"] as const;
 
@@ -150,6 +157,62 @@ export function resolveListAccessLevel(
   }
 
   return memberLevel ?? roleLevel ?? list.defaultAccessLevel;
+}
+
+export function applyTeamPermissionsToListAccess(
+  access: ListAccessCapabilities,
+  currentUser: Pick<TeamMember, "role" | "roleId">,
+  roles: TeamRole[],
+  isAdmin: boolean,
+): ListAccessCapabilities {
+  if (!hasTeamNavPermission(currentUser, roles, isAdmin, "lists")) {
+    return {
+      level: null,
+      canView: false,
+      canComment: false,
+      canChangeStatus: false,
+      canEditTasks: false,
+      canCreateTasks: false,
+      canEditList: false,
+      canDeleteList: false,
+    };
+  }
+
+  return {
+    ...access,
+    canEditList:
+      access.canEditList &&
+      hasTeamActionPermission(currentUser, roles, isAdmin, "lists.edit"),
+    canDeleteList:
+      access.canDeleteList &&
+      hasTeamActionPermission(currentUser, roles, isAdmin, "lists.delete"),
+    canEditTasks:
+      access.canEditTasks &&
+      hasTeamActionPermission(currentUser, roles, isAdmin, "tasks.manage"),
+    canCreateTasks:
+      access.canCreateTasks &&
+      hasTeamActionPermission(currentUser, roles, isAdmin, "tasks.manage"),
+    canChangeStatus:
+      access.canChangeStatus &&
+      (hasTeamActionPermission(currentUser, roles, isAdmin, "tasks.manage") ||
+        access.canComment),
+    canComment: access.canComment,
+    canView: access.canView,
+  };
+}
+
+export function resolveEffectiveListAccess(
+  list: ListAccessSource | null | undefined,
+  currentUser: Pick<TeamMember, "id" | "userId" | "role" | "roleId">,
+  roles: TeamRole[],
+  isAdmin: boolean,
+  options?: { isAssignee?: boolean },
+): ListAccessCapabilities {
+  const level = list
+    ? resolveListAccessLevel(list, currentUser, roles, isAdmin)
+    : null;
+  const access = listAccessCapabilities(level, options);
+  return applyTeamPermissionsToListAccess(access, currentUser, roles, isAdmin);
 }
 
 export function userIsAssignee(

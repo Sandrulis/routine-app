@@ -4,6 +4,23 @@
 
 - (none)
 
+## v0.1.15
+
+**Komandas uzaicinājumi, pamešana un dashboard bez komandas**
+
+- Biedru uzaicināšana ar e-pastu (jaunam lietotājam) un in-app `team_invite` paziņojumu (reģistrētam); apstiprinājums/noraidījums paziņojumos vai `/invite/{token}`
+- Reģistrēts lietotājs netiek automātiski pievienots komandai — jāapstiprina uzaicinājums; noraidījumā uzaicinātājs saņem `team_invite_rejected`
+- Pending biedri redzami `/team`, bet ne sānjoslas kokā; resend, kopēt uzaicinājuma linku, noņemt biedru
+- Biedrs var pats pamest komandu (`/team`, personīgie uzstādījumi); komandas īpašnieks nevar
+- Bez aktīvas komandas dashboard rāda skaidru tukšo stāvokli (jauna komanda + paziņojumu hints), ne bloķējošu modāli
+- Labojums: uzaicinājuma noraidīšana vairs nesalūst DB kaskādē; migrācijas `044`–`049`
+- Lietotāja izvēlnē **Personīgā informācija** — modālis vārda un uzvārda rediģēšanai; sinhronizē `public.users`, `team_members` un auth metadata; RPC `set_current_user_name` (`050`)
+- Apakšuzdevuma **vēsture** fiksē visas izmaiņas: statuss, datumi (no → uz), piesaistīto pievienošana/noņemšana, nosaukums, apraksts, kontrolsaraksts, pārvietošana, paslēpšana/atjaunošana, faili, kārtība; centralizēta logošana `lists-store` + `build-task-activity-events.ts`; UI `format-task-activity-text.ts`; migrācijas `051_task_activities_extended` un `052_task_activities_reordered`
+- Komandu lomu **pieejas** tagad kontrolē arī UI: sānjoslas sadaļas (nav) + darbības (listas/uzdevumi, šabloni, failu augšupielāde, komandas dzēšana u.c.); efektīvā list access kombinē listu līmeni un team permissions (`resolveEffectiveListAccess`); toggle automātiski saglabā (bez Saglabāt pogas); divkolonnu izkārtojums; migrācija `051_team_permissions_extended`
+- **Paziņojumi** iesaistītajiem par uzdevumu/apakšuzdevumu notikumiem: piešķiršana, noņemšana, komentārs, fails, statuss, citi labojumi, jauns apakšuzdevums; `task-notifications.ts` + preference filtrs `appendNotifications`; zvaniņā tikai personīgie (`recipient_id`); migrācijas `053`–`054`
+- **Paziņojumu uzstādījumi** — grupēts modālis (Uzdevumi / Atgādinājumi / Komanda) ar ikonām katram veidam; toggle automātiski saglabā bez Saglabāt pogas; pieejams no lietotāja izvēlnes un zvaniņa paneļa settings pogas
+- Paziņojumu **dzēšana** — hover uz lasītu paziņojumu rāda × pogu; automātiska tīrīšana vecākiem par 30 dienām (`deleteOldNotifications`)
+
 ## v0.1.14
 
 **Komandas šabloni, automatizācijas un veidnes redaktors**

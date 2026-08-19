@@ -14,6 +14,9 @@ import {
   type WorkTemplateItem,
 } from "@/app/lib/templates";
 import { useTemplates } from "@/app/lib/templates-store";
+import { canManageTemplates, hasTeamNavPermission } from "@/app/lib/team";
+import { useTeam } from "@/app/lib/team-store";
+import { useIsAdmin } from "@/app/lib/users/use-is-admin";
 
 function draftSnapshot(
   name: string,
@@ -38,6 +41,15 @@ export function TemplateDetailPage({ templateId }: { templateId: string }) {
   const { t } = useTranslations();
   const { showFeedback } = useFeedbackToast();
   const { templates, items: allItems, saveTemplate, isReady } = useTemplates();
+  const { currentUser, roles } = useTeam();
+  const { isAdmin } = useIsAdmin();
+  const canViewTemplates = hasTeamNavPermission(
+    currentUser,
+    roles,
+    isAdmin,
+    "templates",
+  );
+  const canManage = canManageTemplates(currentUser, roles, isAdmin);
   const template = templates.find((item) => item.id === templateId) ?? null;
   const storedItems = useMemo(
     () => allItems.filter((item) => item.templateId === templateId),
@@ -128,6 +140,19 @@ export function TemplateDetailPage({ templateId }: { templateId: string }) {
     );
   }
 
+  if (!canViewTemplates) {
+    return (
+      <SectionPage
+        title={t("nav.templates", "Šabloni")}
+        subtitle={t("templates.detail.missing", "Šablons nav atrasts")}
+      >
+        <div className="rounded-3xl border border-dashed border-zinc-200 bg-white px-6 py-12 text-center text-sm text-zinc-500">
+          {t("team.access.denied", "Tev nav pieejas šai sadaļai.")}
+        </div>
+      </SectionPage>
+    );
+  }
+
   return (
     <SectionPage
       title={t("nav.templates", "Šabloni")}
@@ -136,6 +161,7 @@ export function TemplateDetailPage({ templateId }: { templateId: string }) {
         "Definē mapes, uzdevumu sarakstus un apakšuzdevumus. Pēc tam šablonu var pievienot mapē.",
       )}
       actions={
+        canManage ? (
         <button
           type="button"
           onClick={handleSave}
@@ -144,9 +170,10 @@ export function TemplateDetailPage({ templateId }: { templateId: string }) {
         >
           {t("actions.save", "Saglabāt")}
         </button>
+        ) : null
       }
     >
-      <div className="space-y-4">
+      <fieldset disabled={!canManage} className="space-y-4 disabled:opacity-80">
         <div className="rounded-3xl border border-zinc-200 bg-white px-5 py-5">
           <label htmlFor="template-name" className="text-sm font-semibold text-zinc-700">
             {t("lists.fields.name", "Nosaukums")}
@@ -199,7 +226,7 @@ export function TemplateDetailPage({ templateId }: { templateId: string }) {
             onFocusItemId={setFocusItemId}
           />
         </div>
-      </div>
+      </fieldset>
 
       <UnsavedChangesConfirmModal
         open={confirmOpen}

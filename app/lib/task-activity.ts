@@ -9,10 +9,23 @@ export type TaskActivityKind =
   | "created"
   | "status"
   | "assignees"
+  | "assignee_added"
+  | "assignee_removed"
   | "start_date"
   | "due_date"
   | "comment"
-  | "file";
+  | "file"
+  | "file_removed"
+  | "file_renamed"
+  | "title"
+  | "description"
+  | "moved"
+  | "hidden"
+  | "restored"
+  | "checklist"
+  | "reordered";
+
+export type TaskActivityMetadata = Record<string, unknown>;
 
 export type TaskActivity = {
   id: string;
@@ -23,9 +36,15 @@ export type TaskActivity = {
   fromStatus?: WorkTaskStatus;
   toStatus?: WorkTaskStatus;
   assigneeIds?: string[];
+  fromAssigneeIds?: string[];
   dateValue?: string | null;
+  fromDateValue?: string | null;
   text?: string;
+  previousText?: string;
   fileName?: string;
+  fromParentId?: string | null;
+  toParentId?: string | null;
+  metadata?: TaskActivityMetadata;
 };
 
 export type TaskFile = {

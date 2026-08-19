@@ -16,8 +16,7 @@ import { useTranslations } from "@/app/components/translations-provider";
 import { UserAvatar } from "@/app/components/user-avatar";
 import { todayIsoDate } from "@/app/lib/format-display-date";
 import {
-  listAccessCapabilities,
-  resolveListAccessLevel,
+  resolveEffectiveListAccess,
   userIsAssignee,
 } from "@/app/lib/list-access";
 import {
@@ -208,10 +207,9 @@ export function SubtaskBulkBar({
       {};
     for (const task of tasks) {
       const list = lists.find((item) => item.id === task.listId) ?? null;
-      const access = listAccessCapabilities(
-        list ? resolveListAccessLevel(list, currentUser, roles, isAdmin) : null,
-        { isAssignee: userIsAssignee(task.assigneeIds, currentUser) },
-      );
+      const access = resolveEffectiveListAccess(list, currentUser, roles, isAdmin, {
+        isAssignee: userIsAssignee(task.assigneeIds, currentUser),
+      });
       next[task.id] = {
         canEdit: access.canEditTasks && !isTaskDeleted(task),
         canChangeStatus: access.canChangeStatus && !isTaskDeleted(task),

@@ -10,7 +10,7 @@ import {
   parseListAccessLevel,
   type ListAccessLevel,
 } from "@/app/lib/list-access";
-import { initialsFromName, type MembersByTeam, type RolesByTeam, type TeamMember, type TeamRole, type WorkTeam } from "@/app/lib/team";
+import { initialsFromName, memberInitials, type MembersByTeam, type RolesByTeam, type TeamMember, type TeamRole, type WorkTeam } from "@/app/lib/team";
 import { normalizeTeamPermissionSet } from "@/app/lib/team-permissions";
 import type { TaskActivity, TaskFile } from "@/app/lib/task-activity";
 import { isTodoStatus, type TodoItem } from "@/app/lib/team-todo";
@@ -26,6 +26,7 @@ import {
 } from "@/app/lib/list-statuses";
 import {
   mapListAutomationRow,
+  serializeConfig,
   type ListAutomation,
 } from "@/app/lib/list-automations";
 
@@ -175,7 +176,7 @@ function memberFromRow(row: {
     email: row.email,
     role: row.role,
     roleId: row.role_id,
-    initials: initialsFromName(row.name),
+    initials: memberInitials({ name: row.name, email: row.email }),
     toneClassName: row.tone_class_name,
     lastOnlineAt: row.last_online_at,
     avatarUrl: row.avatar_url,
@@ -381,9 +382,9 @@ export async function fetchTeamWorkspace(teamId: string): Promise<TeamWorkspace>
   ] = await Promise.all([
     supabase
       .from("work_lists")
-      .select("id, name, description, icon, color, kind, is_private, created_by, default_access_level, hidden_status_ids, status_order, status_group_overrides")
+      .select("id, name, description, icon, color, kind, sort_order, is_private, created_by, default_access_level, hidden_status_ids, status_order, status_group_overrides")
       .eq("team_id", teamId)
-      .order("created_at", { ascending: true }),
+      .order("sort_order", { ascending: true }),
     supabase
       .from("work_tasks")
       .select(
@@ -394,7 +395,7 @@ export async function fetchTeamWorkspace(teamId: string): Promise<TeamWorkspace>
     supabase
       .from("task_activities")
       .select(
-        "id, task_id, actor_id, kind, from_status, to_status, assignee_ids, date_value, text, file_name, created_at",
+        "id, task_id, actor_id, kind, from_status, to_status, assignee_ids, from_assignee_ids, date_value, from_date_value, text, previous_text, file_name, from_parent_id, to_parent_id, metadata, created_at",
       )
       .eq("team_id", teamId),
     supabase
@@ -409,7 +410,7 @@ export async function fetchTeamWorkspace(teamId: string): Promise<TeamWorkspace>
       .eq("team_id", teamId),
     supabase
       .from("app_notifications")
-      .select("id, kind, actor_id, recipient_id, task_title, href, created_at, read_at")
+      .select("id, kind, actor_id, recipient_id, target_user_id, invitation_id, task_title, href, created_at, read_at")
       .eq("team_id", teamId)
       .order("created_at", { ascending: false }),
     supabase
@@ -425,7 +426,7 @@ export async function fetchTeamWorkspace(teamId: string): Promise<TeamWorkspace>
     supabase
       .from("work_list_automations")
       .select(
-        "id, list_id, trigger_kind, action_kind, template_id, enabled, sort_order",
+        "id, list_id, trigger_kind, action_kind, template_id, config, enabled, sort_order",
       )
       .eq("team_id", teamId)
       .order("sort_order", { ascending: true }),
@@ -447,7 +448,7 @@ export async function fetchTeamWorkspace(teamId: string): Promise<TeamWorkspace>
     listAutomationsRes.error,
     teamStatusLabelsRes.error,
   ].filter(Boolean);
-  if (errors[0]) throw errors[0];
+  if (errors[0]) throw new Error(formatSupabaseError(errors[0]));
 
   const taskIds = (tasksRes.data ?? []).map((row) => row.id);
   let assigneeRows: { task_id: string; member_id: string }[] = [];
@@ -549,6 +550,7 @@ export async function fetchTeamWorkspace(teamId: string): Promise<TeamWorkspace>
         description: row.description,
         icon: row.icon,
         color: row.color,
+        sortOrder: row.sort_order ?? 0,
         kind: row.kind,
         isPrivate: row.is_private === true,
         createdBy: row.created_by ?? null,
@@ -601,9 +603,18 @@ export async function fetchTeamWorkspace(teamId: string): Promise<TeamWorkspace>
       fromStatus: row.from_status ?? undefined,
       toStatus: row.to_status ?? undefined,
       assigneeIds: row.assignee_ids ?? undefined,
+      fromAssigneeIds: row.from_assignee_ids ?? undefined,
       dateValue: row.date_value,
+      fromDateValue: row.from_date_value,
       text: row.text ?? undefined,
+      previousText: row.previous_text ?? undefined,
       fileName: row.file_name ?? undefined,
+      fromParentId: row.from_parent_id ?? undefined,
+      toParentId: row.to_parent_id ?? undefined,
+      metadata:
+        row.metadata && typeof row.metadata === "object"
+          ? (row.metadata as Record<string, unknown>)
+          : undefined,
     })),
     taskFiles,
     taskFileContents,
@@ -612,16 +623,7 @@ export async function fetchTeamWorkspace(teamId: string): Promise<TeamWorkspace>
     listStatuses: (listStatusesRes.data ?? []).map(mapListStatusRow),
     listAutomations: (listAutomationsRes.data ?? []).map(mapListAutomationRow),
     teamStatusLabels: parseTeamStatusLabels(teamStatusLabelsRes.data),
-    notifications: (notificationsRes.data ?? []).map((row) => ({
-      id: row.id,
-      kind: row.kind,
-      actorId: row.actor_id,
-      recipientId: row.recipient_id,
-      taskTitle: row.task_title,
-      href: row.href,
-      createdAt: row.created_at,
-      readAt: row.read_at,
-    })),
+    notifications: (notificationsRes.data ?? []).map((row) => mapNotificationRow(row)),
     todos: (todosRes.data ?? []).map((row) => ({
       id: row.id,
       title: row.title,
@@ -652,6 +654,7 @@ export async function insertList(
     description: list.description,
     icon: list.icon,
     color: list.color,
+    sort_order: list.sortOrder,
     kind: list.kind,
     is_private: list.isPrivate,
     created_by: options?.createdBy ?? list.createdBy ?? null,
@@ -720,6 +723,7 @@ export async function updateListRow(
       | "description"
       | "icon"
       | "color"
+      | "sortOrder"
       | "isPrivate"
       | "defaultAccessLevel"
       | "viewerUserIds"
@@ -738,6 +742,7 @@ export async function updateListRow(
   if (patch.description !== undefined) rowPatch.description = patch.description;
   if (patch.icon !== undefined) rowPatch.icon = patch.icon;
   if (patch.color !== undefined) rowPatch.color = patch.color;
+  if (patch.sortOrder !== undefined) rowPatch.sort_order = patch.sortOrder;
   if (patch.isPrivate !== undefined) rowPatch.is_private = patch.isPrivate;
   if (patch.defaultAccessLevel !== undefined) {
     rowPatch.default_access_level = patch.defaultAccessLevel;
@@ -887,9 +892,15 @@ export async function insertActivity(teamId: string, activity: TaskActivity) {
     from_status: activity.fromStatus ?? null,
     to_status: activity.toStatus ?? null,
     assignee_ids: activity.assigneeIds ?? [],
+    from_assignee_ids: activity.fromAssigneeIds ?? [],
     date_value: dateOrNull(activity.dateValue ?? null),
+    from_date_value: dateOrNull(activity.fromDateValue ?? null),
     text: activity.text ?? null,
+    previous_text: activity.previousText ?? null,
     file_name: activity.fileName ?? null,
+    from_parent_id: activity.fromParentId ?? null,
+    to_parent_id: activity.toParentId ?? null,
+    metadata: activity.metadata ?? null,
     created_at: activity.at,
   });
   if (error) throw error;
@@ -1014,6 +1025,8 @@ export async function insertNotifications(teamId: string, items: AppNotification
       kind: item.kind,
       actor_id: item.actorId,
       recipient_id: item.recipientId,
+      target_user_id: item.targetUserId,
+      invitation_id: item.invitationId,
       task_title: item.taskTitle,
       href: item.href,
       created_at: item.createdAt,
@@ -1029,6 +1042,23 @@ export async function markNotificationsRead(ids: string[], readAt: string) {
     .from("app_notifications")
     .update({ read_at: readAt })
     .in("id", ids);
+  if (error) throw error;
+}
+
+export async function deleteNotification(id: string) {
+  const { error } = await db()
+    .from("app_notifications")
+    .delete()
+    .eq("id", id);
+  if (error) throw error;
+}
+
+export async function deleteOldNotifications(olderThanDays: number = 30) {
+  const cutoff = new Date(Date.now() - olderThanDays * 86_400_000).toISOString();
+  const { error } = await db()
+    .from("app_notifications")
+    .delete()
+    .lt("created_at", cutoff);
   if (error) throw error;
 }
 
@@ -1054,20 +1084,143 @@ export async function replaceTeamTodos(teamId: string, items: TodoItem[]) {
 export async function fetchAppNotifications(teamId: string): Promise<AppNotification[]> {
   const { data, error } = await db()
     .from("app_notifications")
-    .select("id, kind, actor_id, recipient_id, task_title, href, created_at, read_at")
+    .select(
+      "id, kind, actor_id, recipient_id, target_user_id, invitation_id, task_title, href, created_at, read_at",
+    )
     .eq("team_id", teamId)
     .order("created_at", { ascending: false });
   if (error) throw error;
-  return (data ?? []).map((row) => ({
+  return (data ?? []).map(mapNotificationRow);
+}
+
+function mapNotificationRow(row: {
+  id: string;
+  kind: AppNotification["kind"];
+  actor_id: string | null;
+  recipient_id: string | null;
+  target_user_id?: string | null;
+  invitation_id?: string | null;
+  task_title: string;
+  href: string | null;
+  created_at: string;
+  read_at: string | null;
+}): AppNotification {
+  return {
     id: row.id,
     kind: row.kind,
     actorId: row.actor_id,
     recipientId: row.recipient_id,
+    targetUserId: row.target_user_id ?? null,
+    invitationId: row.invitation_id ?? null,
     taskTitle: row.task_title,
     href: row.href,
     createdAt: row.created_at,
     readAt: row.read_at,
+  };
+}
+
+export async function fetchVisibleNotifications(
+  teamId: string | null,
+  userId: string,
+): Promise<AppNotification[]> {
+  let selfMemberId: string | null = null;
+  if (teamId) {
+    const { data: selfRow } = await db()
+      .from("team_members")
+      .select("id")
+      .eq("team_id", teamId)
+      .eq("user_id", userId)
+      .maybeSingle();
+    selfMemberId = selfRow?.id ?? null;
+  }
+
+  let query = db()
+    .from("app_notifications")
+    .select(
+      "id, kind, actor_id, recipient_id, target_user_id, invitation_id, task_title, href, created_at, read_at, team_id",
+    )
+    .order("created_at", { ascending: false });
+
+  if (teamId) {
+    query = query.or(`team_id.eq.${teamId},target_user_id.eq.${userId}`);
+  } else {
+    query = query.eq("target_user_id", userId);
+  }
+
+  const { data, error } = await query;
+  if (error) throw error;
+
+  return (data ?? [])
+    .map(mapNotificationRow)
+    .filter((item) => {
+      if (item.kind === "team_invite") {
+        return item.targetUserId === userId;
+      }
+      if (item.kind === "team_invite_rejected") {
+        return selfMemberId !== null && item.recipientId === selfMemberId;
+      }
+      if (!teamId || selfMemberId === null) return false;
+      return item.recipientId === selfMemberId;
+    });
+}
+
+export async function fetchUserNotificationPreferences(userId: string) {
+  const { mergeNotificationPreferences } = await import(
+    "@/app/lib/notification-preferences"
+  );
+  const { data, error } = await db()
+    .from("user_notification_preferences")
+    .select("kind, enabled")
+    .eq("user_id", userId);
+  if (error) throw error;
+  const partial: Partial<Record<string, boolean>> = {};
+  for (const row of data ?? []) {
+    partial[row.kind] = row.enabled;
+  }
+  return mergeNotificationPreferences(partial);
+}
+
+export async function fetchNotificationPreferencesForUsers(userIds: string[]) {
+  const { mergeNotificationPreferences } = await import(
+    "@/app/lib/notification-preferences"
+  );
+  const map = new Map<string, ReturnType<typeof mergeNotificationPreferences>>();
+  if (userIds.length === 0) return map;
+
+  const { data, error } = await db()
+    .from("user_notification_preferences")
+    .select("user_id, kind, enabled")
+    .in("user_id", userIds);
+  if (error) throw error;
+
+  const partialByUser = new Map<string, Partial<Record<string, boolean>>>();
+  for (const row of data ?? []) {
+    const current = partialByUser.get(row.user_id) ?? {};
+    current[row.kind] = row.enabled;
+    partialByUser.set(row.user_id, current);
+  }
+
+  for (const userId of userIds) {
+    map.set(userId, mergeNotificationPreferences(partialByUser.get(userId) ?? {}));
+  }
+  return map;
+}
+
+export async function upsertUserNotificationPreferences(
+  userId: string,
+  preferences: Record<string, boolean>,
+) {
+  const rows = Object.entries(preferences).map(([kind, enabled]) => ({
+    user_id: userId,
+    kind,
+    enabled,
+    updated_at: new Date().toISOString(),
   }));
+  if (rows.length === 0) return;
+  const { error } = await db()
+    .from("user_notification_preferences")
+    .upsert(rows, { onConflict: "user_id,kind" });
+  if (error) throw error;
 }
 
 export async function fetchTeamTodos(teamId: string): Promise<TodoItem[]> {
@@ -1164,6 +1317,7 @@ export async function insertListAutomation(teamId: string, automation: ListAutom
     trigger_kind: automation.triggerKind,
     action_kind: automation.actionKind,
     template_id: automation.templateId,
+    config: serializeConfig(automation.config),
     enabled: automation.enabled,
     sort_order: automation.sortOrder,
   });
@@ -1172,13 +1326,14 @@ export async function insertListAutomation(teamId: string, automation: ListAutom
 
 export async function updateListAutomationRow(
   automationId: string,
-  patch: Partial<Pick<ListAutomation, "templateId" | "enabled" | "sortOrder">>,
+  patch: Partial<Pick<ListAutomation, "templateId" | "enabled" | "sortOrder" | "config">>,
 ) {
   const supabase = db();
   const next: Record<string, unknown> = {};
   if (patch.templateId !== undefined) next.template_id = patch.templateId;
   if (patch.enabled !== undefined) next.enabled = patch.enabled;
   if (patch.sortOrder !== undefined) next.sort_order = patch.sortOrder;
+  if (patch.config !== undefined) next.config = serializeConfig(patch.config);
   if (Object.keys(next).length === 0) return;
   const { error } = await supabase
     .from("work_list_automations")

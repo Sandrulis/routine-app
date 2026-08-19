@@ -3,6 +3,7 @@
 import { SectionPage } from "@/app/components/section-page";
 import { LoadingState } from "@/app/components/loading-state";
 import { ProfileDisplayPreferencesForm } from "@/app/components/profile-display-preferences-form";
+import { TeamLeaveSection } from "@/app/components/team-leave-section";
 import { UserAvatar } from "@/app/components/user-avatar";
 import { useTranslations } from "@/app/components/translations-provider";
 import type {
@@ -20,8 +21,14 @@ export function ProfileSettingsView({
   initialUserPreferences: UserDisplayPreferences;
 }) {
   const { t } = useTranslations();
-  const { currentUser, teams, roles, isReady } = useTeam();
+  const { currentUser, teams, roles, isReady, members } = useTeam();
   const rank = teams.length === 0 ? null : teamRankLabel(currentUser.role, t, roles);
+  const selfMember =
+    members.find(
+      (member) =>
+        member.id === currentUser.id ||
+        (member.userId && member.userId === currentUser.userId),
+    ) ?? null;
 
   if (!isReady) {
     return (
@@ -62,6 +69,8 @@ export function ProfileSettingsView({
           systemDefaults={systemDefaults}
           initialUserPreferences={initialUserPreferences}
         />
+
+        {selfMember ? <TeamLeaveSection member={selfMember} redirectTo="/" /> : null}
       </div>
     </SectionPage>
   );

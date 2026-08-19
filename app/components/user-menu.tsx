@@ -3,6 +3,8 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { ChangePasswordModal } from "@/app/components/change-password-modal";
+import { NotificationSettingsModal } from "@/app/components/notification-settings-modal";
+import { PersonalInfoModal } from "@/app/components/personal-info-modal";
 import { useFeedbackToast } from "@/app/components/feedback-toast-provider";
 import { useTranslations } from "@/app/components/translations-provider";
 import { OverflowTooltip } from "@/app/components/tooltip";
@@ -25,6 +27,8 @@ export function UserMenu({ user }: { user: TeamMember }) {
   const canChangePassword = userHasPasswordLogin(authUser);
   const [open, setOpen] = useState(false);
   const [passwordOpen, setPasswordOpen] = useState(false);
+  const [personalInfoOpen, setPersonalInfoOpen] = useState(false);
+  const [notificationSettingsOpen, setNotificationSettingsOpen] = useState(false);
 
   useEffect(() => {
     if (!open) return;
@@ -92,6 +96,29 @@ export function UserMenu({ user }: { user: TeamMember }) {
             role="menuitem"
             onClick={() =>
               closeAnd(() => {
+                setPersonalInfoOpen(true);
+              })
+            }
+            className="flex w-full items-start gap-3 px-3 py-2 text-left transition hover:bg-zinc-100"
+          >
+            <i
+              className="fas fa-id-card mt-0.5 w-4 text-center text-[13px] text-zinc-500"
+              aria-hidden="true"
+            />
+            <span className="min-w-0">
+              <span className="block text-[13px] font-medium text-zinc-900">
+                {t("user_menu.personal_info", "Personīgā informācija")}
+              </span>
+              <span className="mt-0.5 block text-[12px] text-zinc-400">
+                {t("user_menu.personal_info_hint", "Vārds un uzvārds")}
+              </span>
+            </span>
+          </button>
+          <button
+            type="button"
+            role="menuitem"
+            onClick={() =>
+              closeAnd(() => {
                 router.push("/settings/profile");
               })
             }
@@ -109,6 +136,32 @@ export function UserMenu({ user }: { user: TeamMember }) {
                 {t(
                   "user_menu.settings_hint",
                   "Profils, valoda un datumu attēlojums",
+                )}
+              </span>
+            </span>
+          </button>
+          <button
+            type="button"
+            role="menuitem"
+            onClick={() =>
+              closeAnd(() => {
+                setNotificationSettingsOpen(true);
+              })
+            }
+            className="flex w-full items-start gap-3 px-3 py-2 text-left transition hover:bg-zinc-100"
+          >
+            <i
+              className="fas fa-bell mt-0.5 w-4 text-center text-[13px] text-zinc-500"
+              aria-hidden="true"
+            />
+            <span className="min-w-0">
+              <span className="block text-[13px] font-medium text-zinc-900">
+                {t("user_menu.notifications", "Paziņojumu uzstādījumi")}
+              </span>
+              <span className="mt-0.5 block text-[12px] text-zinc-400">
+                {t(
+                  "user_menu.notifications_hint",
+                  "Izvēlies, par ko saņemt brīdinājumus",
                 )}
               </span>
             </span>
@@ -173,6 +226,23 @@ export function UserMenu({ user }: { user: TeamMember }) {
           </button>
         </div>
       ) : null}
+
+      <PersonalInfoModal
+        open={personalInfoOpen}
+        onOpenChange={setPersonalInfoOpen}
+        user={user}
+        onSave={() => {
+          showFeedback({
+            type: "success",
+            text: t("profile.personal.feedback.saved", "Profils saglabāts."),
+          });
+        }}
+      />
+
+      <NotificationSettingsModal
+        open={notificationSettingsOpen}
+        onOpenChange={setNotificationSettingsOpen}
+      />
 
       {canChangePassword ? (
         <ChangePasswordModal

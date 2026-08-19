@@ -1,12 +1,23 @@
 import { isLegacyDemoMemberId } from "@/app/lib/clear-legacy-demo-storage";
 
-export type NotificationKind = "assigned" | "comment" | "due" | "file";
+export type NotificationKind =
+  | "assigned"
+  | "unassigned"
+  | "comment"
+  | "due"
+  | "file"
+  | "status_changed"
+  | "task_updated"
+  | "team_invite"
+  | "team_invite_rejected";
 
 export type AppNotification = {
   id: string;
   kind: NotificationKind;
   actorId: string | null;
   recipientId: string | null;
+  targetUserId: string | null;
+  invitationId: string | null;
   taskTitle: string;
   href: string | null;
   createdAt: string;
@@ -18,9 +29,14 @@ export const NOTIFICATIONS_CHANGE_EVENT = "routine-app-notifications-change";
 
 const NOTIFICATION_KINDS: NotificationKind[] = [
   "assigned",
+  "unassigned",
   "comment",
   "due",
   "file",
+  "status_changed",
+  "task_updated",
+  "team_invite",
+  "team_invite_rejected",
 ];
 
 export function createNotificationId(): string {
@@ -50,6 +66,8 @@ export function notificationsForNewAssignees(input: {
       kind: "assigned" as const,
       actorId: input.actorId,
       recipientId,
+      targetUserId: null,
+      invitationId: null,
       taskTitle: title,
       href: input.href,
       createdAt: now,
@@ -98,6 +116,18 @@ export function normalizeStoredNotifications(
         item.recipientId
           ? item.recipientId
           : null;
+      const targetUserId =
+        "targetUserId" in item &&
+        typeof item.targetUserId === "string" &&
+        item.targetUserId
+          ? item.targetUserId
+          : null;
+      const invitationId =
+        "invitationId" in item &&
+        typeof item.invitationId === "string" &&
+        item.invitationId
+          ? item.invitationId
+          : null;
       if (isLegacyDemoMemberId(actorId) || isLegacyDemoMemberId(recipientId)) {
         return null;
       }
@@ -115,6 +145,8 @@ export function normalizeStoredNotifications(
         kind,
         actorId,
         recipientId,
+        targetUserId,
+        invitationId,
         taskTitle,
         href,
         createdAt,
@@ -134,19 +166,52 @@ export async function readStoredNotifications(
   userId: string | null = null,
   teamId: string | null = null,
 ): Promise<AppNotification[]> {
-  if (!teamId || (userId && !teamId)) return [];
-  const { fetchAppNotifications } = await import("@/app/lib/db/work-data");
-  return fetchAppNotifications(teamId);
+  if (!userId) return [];
+  const { fetchVisibleNotifications } = await import("@/app/lib/db/work-data");
+  return fetchVisibleNotifications(teamId, userId);
 }
 
 export async function appendNotifications(
   extra: AppNotification[],
   userId: string | null,
   teamId: string | null,
+  members: { id: string; userId?: string | null }[] = [],
 ) {
   if (extra.length === 0) return;
   if (!teamId || (userId && !teamId)) return;
-  const { insertNotifications } = await import("@/app/lib/db/work-data");
-  await insertNotifications(teamId, extra);
+
+  const memberById = new Map(members.map((member) => [member.id, member]));
+  const targetUserIds = new Set<string>();
+  for (const item of extra) {
+    if (item.targetUserId) targetUserIds.add(item.targetUserId);
+    const member = item.recipientId
+      ? memberById.get(item.recipientId)
+      : undefined;
+    if (member?.userId) targetUserIds.add(member.userId);
+  }
+
+  const { fetchNotificationPreferencesForUsers, insertNotifications } =
+    await import("@/app/lib/db/work-data");
+  const { isNotificationKindEnabled } = await import(
+    "@/app/lib/notification-preferences"
+  );
+
+  const prefsByUser =
+    targetUserIds.size > 0
+      ? await fetchNotificationPreferencesForUsers([...targetUserIds])
+      : new Map();
+
+  const filtered = extra.filter((item) => {
+    const userKey = item.targetUserId
+      ? item.targetUserId
+      : item.recipientId
+        ? memberById.get(item.recipientId)?.userId
+        : null;
+    if (!userKey) return true;
+    return isNotificationKindEnabled(prefsByUser.get(userKey), item.kind);
+  });
+
+  if (filtered.length === 0) return;
+  await insertNotifications(teamId, filtered);
   window.dispatchEvent(new Event(NOTIFICATIONS_CHANGE_EVENT));
 }
