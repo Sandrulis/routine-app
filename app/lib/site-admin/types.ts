@@ -1,4 +1,5 @@
 import type { TeamPermissionSet } from "@/app/lib/team-permissions";
+import type { SiteDisplayPreferences } from "@/app/lib/site-admin/display-preferences";
 
 export type AdminUserTeamSummary = {
   id: string;
@@ -93,12 +94,14 @@ export type SiteTranslationInput = {
 export type SiteSettingsSummary = {
   systemName: string;
   sloganValues: Record<string, string>;
+  displayPreferences: SiteDisplayPreferences;
   updatedAt: string | null;
 };
 
 export type SiteSettingsInput = {
   systemName: string;
   sloganValues: Record<string, string>;
+  displayPreferences: SiteDisplayPreferences;
 };
 
 export type TaskStatusSummary = {
@@ -115,6 +118,21 @@ export type TaskStatusInput = {
   labels: Record<string, string>;
   color: string;
   groupKey: string;
+};
+
+export type FileTypeExtensionSummary = {
+  extension: string;
+  mimeType: string;
+  icon: string;
+  color: string;
+  sortOrder: number;
+};
+
+export type FileTypeExtensionInput = {
+  extension: string;
+  mimeType: string;
+  icon: string;
+  color: string;
 };
 
 export type SystemDefaultRoleSummary = {

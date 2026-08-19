@@ -9,7 +9,7 @@ import { ListBadge } from "@/app/components/list-badge";
 import { NotificationsMenu } from "@/app/components/notifications-menu";
 import { useTranslations } from "@/app/components/translations-provider";
 import { UserAvatar } from "@/app/components/user-avatar";
-import { fileIconClassName } from "@/app/lib/list-files";
+import { FileIcon } from "@/app/components/file-icon";
 import { getTaskAncestors, isWorkFolder, isWorkSubtask } from "@/app/lib/lists";
 import { useLists } from "@/app/lib/lists-store";
 import { useListFiles } from "@/app/lib/use-list-files";
@@ -147,10 +147,10 @@ export function PageBreadcrumb() {
           label: filesReady
             ? (file?.name ?? t("files.detail.missing", "Fails nav atrasts"))
             : loadingLabel,
-          icon: (
-            <CrumbIcon
-              className={file ? fileIconClassName(file.name) : "fas fa-file"}
-            />
+          icon: file ? (
+            <FileIcon name={file.name} className="text-[11px]" />
+          ) : (
+            <CrumbIcon className="fas fa-file" />
           ),
         });
       }

@@ -55,6 +55,33 @@ export function resolveAvatarUrl(user: User): string | null {
   return null;
 }
 
+function readAuthProviders(user: User): string[] {
+  const providers = new Set<string>();
+  const metadataProvider = user.app_metadata?.provider;
+  if (typeof metadataProvider === "string" && metadataProvider.trim()) {
+    providers.add(metadataProvider.trim());
+  }
+  const metadataProviders = user.app_metadata?.providers;
+  if (Array.isArray(metadataProviders)) {
+    for (const provider of metadataProviders) {
+      if (typeof provider === "string" && provider.trim()) {
+        providers.add(provider.trim());
+      }
+    }
+  }
+  for (const identity of user.identities ?? []) {
+    if (identity.provider?.trim()) {
+      providers.add(identity.provider.trim());
+    }
+  }
+  return [...providers];
+}
+
+export function userHasPasswordLogin(user: User | null | undefined): boolean {
+  if (!user) return false;
+  return readAuthProviders(user).includes("email");
+}
+
 export function mapUserDisplay(user: User): UserDisplay {
   let name = "";
   for (const metadata of metadataSources(user)) {

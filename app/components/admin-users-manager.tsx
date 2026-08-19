@@ -14,9 +14,9 @@ import { useFeedbackToast } from "@/app/components/feedback-toast-provider";
 import { IconActionButton } from "@/app/components/icon-action-button";
 import { Tooltip } from "@/app/components/tooltip";
 import { ToggleSwitch } from "@/app/components/toggle-switch";
+import { useDisplayPreferences } from "@/app/components/display-preferences-provider";
 import { useTranslations } from "@/app/components/translations-provider";
 import { translateActionError } from "@/app/lib/i18n/action-errors";
-import { formatDisplayDateDdMmYy } from "@/app/lib/format-display-date";
 import { MemberLastOnline } from "@/app/components/member-last-online";
 import { UserAvatar } from "@/app/components/user-avatar";
 import { useTeam } from "@/app/lib/team-store";
@@ -46,6 +46,7 @@ export function AdminUsersManager({
 }) {
   const router = useRouter();
   const { t } = useTranslations();
+  const { formatDate } = useDisplayPreferences();
   const { currentUser } = useTeam();
   const { showFeedback, clearFeedback } = useFeedbackToast();
   const [modalOpen, setModalOpen] = useState(false);
@@ -166,7 +167,7 @@ export function AdminUsersManager({
                 const lastAdmin = user.isAdmin && adminCount <= 1;
                 const deleteDisabled = isSelf || lastAdmin;
                 const registered = user.registeredAt
-                  ? formatDisplayDateDdMmYy(user.registeredAt)
+                  ? formatDate(user.registeredAt)
                   : "";
                 const lastOnlineAt =
                   user.id === currentUserId

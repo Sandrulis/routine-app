@@ -7,8 +7,9 @@ import {
   type CreateMenuAnchor,
 } from "@/app/components/create-item-menu";
 import { Tooltip } from "@/app/components/tooltip";
+import { useFeedbackToast } from "@/app/components/feedback-toast-provider";
 import { useTranslations } from "@/app/components/translations-provider";
-import { fileIconClassName } from "@/app/lib/list-files";
+import { useFileTypes } from "@/app/lib/file-types-context";
 
 export type AttachmentItem = {
   id: string;
@@ -21,12 +22,12 @@ function fileExtension(name: string) {
   return name.split(".").pop()?.toLowerCase() ?? "";
 }
 
-function overlayIconClassName(name: string, mimeType: string) {
+function overlayIconDisplay(name: string, mimeType: string, getFileIconDisplay: ReturnType<typeof useFileTypes>["getFileIconDisplay"]) {
   const extension = fileExtension(name);
   if (extension === "html" || extension === "htm" || mimeType === "text/html") {
-    return "fas fa-envelope text-zinc-700";
+    return { icon: "fas fa-envelope", color: "#52525b" };
   }
-  return fileIconClassName(name);
+  return getFileIconDisplay(name);
 }
 
 export function TaskAttachments({
@@ -36,6 +37,7 @@ export function TaskAttachments({
   onRename,
   onRemove,
   disabled = false,
+  accept,
 }: {
   files: AttachmentItem[];
   onAdd: (files: File[]) => void;
@@ -43,8 +45,13 @@ export function TaskAttachments({
   onRename: (id: string) => void;
   onRemove: (id: string) => void;
   disabled?: boolean;
+  accept?: string;
 }) {
   const { t } = useTranslations();
+  const { showFeedback } = useFeedbackToast();
+  const { accept: defaultAccept, filterAllowedFiles, extensionsLabel, getFileIconDisplay } =
+    useFileTypes();
+  const fileAccept = accept ?? defaultAccept;
   const inputRef = useRef<HTMLInputElement>(null);
   const dragCountRef = useRef(0);
   const [expanded, setExpanded] = useState(true);
@@ -58,7 +65,19 @@ export function TaskAttachments({
     if (disabled) return;
     const selected = Array.from(list ?? []).filter((file) => file.size >= 0);
     if (selected.length === 0) return;
-    onAdd(selected);
+    const { allowed, rejected } = filterAllowedFiles(selected);
+    if (rejected.length > 0) {
+      showFeedback({
+        type: "error",
+        text: t(
+          "files.upload.rejected",
+          "Neatļauts faila tips. Atļautie: {types}",
+          { types: extensionsLabel },
+        ),
+      });
+    }
+    if (allowed.length === 0) return;
+    onAdd(allowed);
   }
 
   function handleDragEnter(event: DragEvent<HTMLLabelElement>) {
@@ -126,6 +145,7 @@ export function TaskAttachments({
               ref={inputRef}
               type="file"
               multiple
+              accept={fileAccept}
               disabled={disabled}
               className="hidden"
               onChange={(event) => {
@@ -143,7 +163,13 @@ export function TaskAttachments({
 
           {files.length > 0 ? (
             <ul className="flex flex-wrap gap-3">
-              {files.map((file) => (
+              {files.map((file) => {
+                const iconDisplay = overlayIconDisplay(
+                  file.name,
+                  file.mimeType,
+                  getFileIconDisplay,
+                );
+                return (
                 <li
                   key={file.id}
                   className="w-[10.75rem] rounded-2xl bg-zinc-50 p-2"
@@ -171,7 +197,8 @@ export function TaskAttachments({
                         )}
                         <span className="absolute top-2 left-2 inline-flex size-6 items-center justify-center rounded-full bg-white shadow-sm">
                           <i
-                            className={`${overlayIconClassName(file.name, file.mimeType)} text-[11px]`}
+                            className={`${iconDisplay.icon} text-[11px]`}
+                            style={{ color: iconDisplay.color }}
                             aria-hidden="true"
                           />
                         </span>
@@ -201,7 +228,8 @@ export function TaskAttachments({
                     </Tooltip>
                   </div>
                 </li>
-              ))}
+              );
+              })}
             </ul>
           ) : null}
         </div>

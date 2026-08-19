@@ -10,6 +10,10 @@ import {
 } from "@/app/components/auth-form-styles";
 import { useFeedbackToast } from "@/app/components/feedback-toast-provider";
 import { AuthDivider, GoogleAuthButton } from "@/app/components/google-auth-button";
+import {
+  RememberMeCheckbox,
+  useRememberMe,
+} from "@/app/components/remember-me-checkbox";
 import { useTranslations } from "@/app/components/translations-provider";
 
 export function LoginForm() {
@@ -20,6 +24,7 @@ export function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [pending, setPending] = useState(false);
+  const { remember, updateRemember } = useRememberMe();
 
   useEffect(() => {
     if (searchParams.get("error") !== "google") {
@@ -83,6 +88,8 @@ export function LoginForm() {
         />
       </label>
 
+      <RememberMeCheckbox checked={remember} onChange={updateRemember} />
+
       <div className="flex justify-end">
         <Link
           href="/forgot-password"
@@ -101,7 +108,7 @@ export function LoginForm() {
       </button>
 
       <AuthDivider />
-      <GoogleAuthButton disabled={pending} />
+      <GoogleAuthButton disabled={pending} rememberMe={remember} />
 
       <p className="text-center text-sm text-zinc-500">
         {t("auth.login.no_account", "Nav konta?")}{" "}

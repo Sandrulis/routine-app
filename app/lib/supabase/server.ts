@@ -1,5 +1,11 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import {
+  parseRememberSession,
+  REMEMBER_SESSION_COOKIE,
+  toResponseCookieOptions,
+  withAuthCookieOptions,
+} from "@/app/lib/auth/remember-session";
 import { getSupabasePublicEnv } from "@/app/lib/supabase/env";
 
 export async function createClient() {
@@ -11,6 +17,9 @@ export async function createClient() {
   }
 
   const cookieStore = await cookies();
+  const remember = parseRememberSession(
+    cookieStore.get(REMEMBER_SESSION_COOKIE)?.value,
+  );
 
   return createServerClient(env.url, env.anonKey, {
     cookies: {
@@ -19,8 +28,9 @@ export async function createClient() {
       },
       setAll(cookiesToSet) {
         try {
-          cookiesToSet.forEach(({ name, value, options }) =>
-            cookieStore.set(name, value, options),
+          withAuthCookieOptions(cookiesToSet, remember).forEach(
+            ({ name, value, options }) =>
+              cookieStore.set(name, value, toResponseCookieOptions(options)),
           );
         } catch {
           // Called from a Server Component — proxy refreshes sessions.

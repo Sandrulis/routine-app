@@ -16,10 +16,11 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { AssigneeFaces } from "@/app/components/assignee-faces";
-import { DragHandle } from "@/app/components/drag-handle";
+import { StatusReorderHandle } from "@/app/components/drag-handle";
 import { createMenuAnchorFromEvent, type CreateMenuAnchor } from "@/app/components/create-item-menu";
 import { IconActionButton } from "@/app/components/icon-action-button";
 import { MoveSubtaskModal } from "@/app/components/move-subtask-modal";
+import { SubtaskBulkBar, SubtaskSelectCheckbox } from "@/app/components/subtask-bulk-bar";
 import { StatusControl, statusClassName } from "@/app/components/status-control";
 import {
   dropHintFromEvent,
@@ -32,12 +33,10 @@ import {
   type DropHint,
 } from "@/app/components/task-drop-line";
 import { UserAvatar } from "@/app/components/user-avatar";
+import { useDisplayPreferences } from "@/app/components/display-preferences-provider";
 import { useTranslations } from "@/app/components/translations-provider";
 import { assignedMembersOf, assignedRolesOf } from "@/app/lib/assignees";
-import {
-  calendarDaysFromToday,
-  formatDisplayDateDdMmYy,
-} from "@/app/lib/format-display-date";
+import { calendarDaysFromToday } from "@/app/lib/format-display-date";
 import { useLists } from "@/app/lib/lists-store";
 import { teamRankLabel } from "@/app/lib/team";
 import { useTeam } from "@/app/lib/team-store";
@@ -70,11 +69,11 @@ export { statusClassName };
 const EXIT_MS = 280;
 
 const TASK_TABLE_COLS = {
-  handle: "2rem",
+  handle: "3.5rem",
   title: "16rem",
   assignee: "7rem",
   date: "9.5rem",
-  status: "18rem",
+  status: "16rem",
 } as const;
 
 const TASK_TABLE_MIN_WIDTH = `calc(${TASK_TABLE_COLS.handle} + ${TASK_TABLE_COLS.title} + ${TASK_TABLE_COLS.assignee} + ${TASK_TABLE_COLS.date} + ${TASK_TABLE_COLS.date} + ${TASK_TABLE_COLS.status})`;
@@ -154,6 +153,7 @@ export function DateCell({
   disabled?: boolean;
 }) {
   const { t } = useTranslations();
+  const { formatDate } = useDisplayPreferences();
   const inputRef = useRef<HTMLInputElement>(null);
   const days = value ? calendarDaysFromToday(value) : null;
   const overdue = days != null && days < 0;
@@ -191,7 +191,7 @@ export function DateCell({
                 overdue ? "text-red-600" : "text-zinc-700"
               }`}
             >
-              {formatDisplayDateDdMmYy(value)}
+              {formatDate(value)}
             </span>
             {relative ? (
               <span
@@ -378,6 +378,8 @@ export function SubtaskTable({
   const [movingTask, setMovingTask] = useState<WorkTask | null>(null);
   const [moveAnchor, setMoveAnchor] = useState<CreateMenuAnchor | null>(null);
   const [dropHint, setDropHint] = useState<DropHint | null>(null);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const lastSelectedIdRef = useRef<string | null>(null);
   const { currentUser, roles } = useTeam();
   const { isAdmin } = useIsAdmin();
   const { statuses, colorFor, labelFor } = useTaskStatuses(listId);
@@ -414,6 +416,72 @@ export function SubtaskTable({
       }))
       .filter((group) => group.items.length > 0);
   }, [displayed, groupByStatus, statuses, view]);
+  const selectableTasks = displayed.filter(
+    (task) => !exitingIds.has(task.id) && !isTaskDeleted(task),
+  );
+  const selectableIds = selectableTasks.map((task) => task.id);
+  const selectedIdSet = new Set(selectedIds);
+  const selectedTasks = selectableTasks.filter((task) =>
+    selectedIdSet.has(task.id),
+  );
+  const allSelectableSelected =
+    selectableIds.length > 0 &&
+    selectableIds.every((id) => selectedIdSet.has(id));
+  const someSelectableSelected = selectedTasks.length > 0;
+
+  useEffect(() => {
+    const visible = new Set(selectableIds);
+    setSelectedIds((current) => {
+      const next = current.filter((id) => visible.has(id));
+      return next.length === current.length ? current : next;
+    });
+  }, [selectableIds.join("\0")]);
+
+  useEffect(() => {
+    if (selectedIds.length === 0) return;
+
+    function handleKey(event: KeyboardEvent) {
+      if (event.key !== "Escape") return;
+      event.preventDefault();
+      setSelectedIds([]);
+      lastSelectedIdRef.current = null;
+    }
+
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+  }, [selectedIds.length]);
+
+  function toggleSelected(taskId: string, shiftKey = false) {
+    const orderedIds = selectableIds;
+    if (shiftKey && lastSelectedIdRef.current) {
+      const from = orderedIds.indexOf(lastSelectedIdRef.current);
+      const to = orderedIds.indexOf(taskId);
+      if (from >= 0 && to >= 0) {
+        const start = Math.min(from, to);
+        const end = Math.max(from, to);
+        const range = orderedIds.slice(start, end + 1);
+        setSelectedIds((current) => [...new Set([...current, ...range])]);
+        lastSelectedIdRef.current = taskId;
+        return;
+      }
+    }
+    setSelectedIds((current) =>
+      current.includes(taskId)
+        ? current.filter((id) => id !== taskId)
+        : [...current, taskId],
+    );
+    lastSelectedIdRef.current = taskId;
+  }
+
+  function toggleSelectAll() {
+    if (allSelectableSelected) {
+      setSelectedIds([]);
+      lastSelectedIdRef.current = null;
+      return;
+    }
+    setSelectedIds(selectableIds);
+    lastSelectedIdRef.current = selectableIds[selectableIds.length - 1] ?? null;
+  }
 
   function accessFor(task: WorkTask) {
     const list = lists.find((item) => item.id === task.listId) ?? null;
@@ -558,6 +626,10 @@ export function SubtaskTable({
         moveLabel={t("actions.move", "Pārvietot")}
         restoreLabel={t("subtasks.restore", "Atjaunot")}
         dragLabel={t("subtasks.drag", "Mainīt secību")}
+        selectLabel={t("subtasks.select", "Iezīmēt")}
+        selected={selectedIdSet.has(task.id)}
+        selectionActive={someSelectableSelected}
+        onToggleSelect={(shiftKey) => toggleSelected(task.id, shiftKey)}
         canEdit={access.canEditTasks && !deleted}
         canChangeStatus={access.canChangeStatus && !deleted}
       />
@@ -569,8 +641,10 @@ export function SubtaskTable({
     <div
       className={
         embedded
-          ? "w-full overflow-x-auto"
-          : "w-full overflow-x-auto rounded-2xl border border-zinc-200 bg-white"
+          ? `w-full overflow-x-auto ${someSelectableSelected ? "pb-16" : ""}`
+          : `w-full overflow-x-auto rounded-2xl border border-zinc-200 bg-white ${
+              someSelectableSelected ? "pb-16" : ""
+            }`
       }
     >
       <DndContext
@@ -586,7 +660,7 @@ export function SubtaskTable({
         onDragEnd={handleDragEnd}
       >
         <table
-          className="w-full table-fixed text-left text-sm"
+          className="group/table w-full table-fixed text-left text-sm"
           style={{ minWidth: TASK_TABLE_MIN_WIDTH }}
         >
           <colgroup>
@@ -598,21 +672,32 @@ export function SubtaskTable({
             <col style={{ width: TASK_TABLE_COLS.status }} />
           </colgroup>
           <thead>
-            <tr className="border-b border-zinc-100 text-[12px] font-medium whitespace-nowrap text-zinc-400">
-              <th className="px-1 py-2.5" />
-              <th className="px-2 py-2.5 font-medium">
+            <tr className="group/row border-b border-zinc-100 text-[12px] font-medium whitespace-nowrap text-zinc-400">
+              <th className="py-1.5 pr-1 pl-3">
+                {selectableIds.length > 0 ? (
+                  <SubtaskSelectCheckbox
+                    checked={allSelectableSelected}
+                    mixed={someSelectableSelected && !allSelectableSelected}
+                    visible={someSelectableSelected}
+                    className="group-hover/table:opacity-100"
+                    label={t("subtasks.bulk.select_all", "Iezīmēt visus")}
+                    onToggle={() => toggleSelectAll()}
+                  />
+                ) : null}
+              </th>
+              <th className="px-2 py-1.5 font-medium">
                 {t("tasks.fields.title", "Nosaukums")}
               </th>
-              <th className="px-3 py-2.5 font-medium">
+              <th className="px-3 py-1.5 font-medium">
                 {t("todo.fields.assignee", "Atbildīgais")}
               </th>
-              <th className="px-3 py-2.5 font-medium">
+              <th className="px-3 py-1.5 font-medium">
                 {t("tasks.fields.start_date", "Sākums")}
               </th>
-              <th className="px-3 py-2.5 font-medium">
+              <th className="px-3 py-1.5 font-medium">
                 {t("todo.fields.due_date", "Termiņš")}
               </th>
-              <th className="px-3 py-2.5 font-medium">
+              <th className="px-3 py-1.5 font-medium">
                 {t("subtasks.table.status", "Statuss")}
               </th>
             </tr>
@@ -664,6 +749,13 @@ export function SubtaskTable({
           setMovingTask(null);
           setMoveAnchor(null);
         }
+      }}
+    />
+    <SubtaskBulkBar
+      tasks={selectedTasks}
+      onClear={() => {
+        setSelectedIds([]);
+        lastSelectedIdRef.current = null;
       }}
     />
     </>
@@ -724,6 +816,10 @@ function SortableSubtaskRow({
   moveLabel,
   restoreLabel,
   dragLabel,
+  selectLabel,
+  selected,
+  selectionActive,
+  onToggleSelect,
   canEdit,
   canChangeStatus,
   exiting,
@@ -745,6 +841,10 @@ function SortableSubtaskRow({
   moveLabel: string;
   restoreLabel: string;
   dragLabel: string;
+  selectLabel: string;
+  selected: boolean;
+  selectionActive: boolean;
+  onToggleSelect: (shiftKey: boolean) => void;
   canEdit: boolean;
   canChangeStatus: boolean;
   exiting: boolean;
@@ -784,24 +884,43 @@ function SortableSubtaskRow({
       style={{
         transform: CSS.Transform.toString(transform),
         transition,
-        backgroundColor: isDragging ? undefined : rowTint ?? undefined,
+        backgroundColor:
+          isDragging || selected ? undefined : rowTint ?? undefined,
       }}
       className={`group/row border-b border-zinc-100 last:border-b-0 ${
-        rowTint && !isDragging ? "hover:brightness-[0.97]" : "hover:bg-zinc-50/80"
+        selected
+          ? "bg-emerald-50 hover:bg-emerald-50/90"
+          : rowTint && !isDragging
+            ? "hover:brightness-[0.97]"
+            : "hover:bg-zinc-50/80"
       } ${
         isDragging ? "relative z-10 bg-white opacity-40 shadow-sm" : ""
       } ${exiting ? "subtask-row-exit" : ""}`}
     >
-      <td className="px-1 py-2.5">
-        {canDrag ? (
-          <DragHandle
+      <td className="py-1.5 pr-1 pl-3">
+        <div className="flex items-center gap-1">
+          {deleted ? (
+            <span className="size-4 shrink-0" />
+          ) : (
+            <SubtaskSelectCheckbox
+              checked={selected}
+              visible={selected || selectionActive}
+              label={selectLabel}
+              onToggle={onToggleSelect}
+            />
+          )}
+          <StatusReorderHandle
+            status={task.status}
+            listId={listId}
             label={dragLabel}
             attributes={attributes}
             listeners={listeners}
+            canDrag={canDrag}
+            isDragging={isDragging}
           />
-        ) : null}
+        </div>
       </td>
-      <td className="min-w-0 px-2 py-2.5">
+      <td className="min-w-0 px-2 py-1.5">
         <button
           type="button"
           onClick={() => {
@@ -822,10 +941,10 @@ function SortableSubtaskRow({
           <p className="mt-0.5 truncate text-[11px] text-zinc-400">{listName}</p>
         ) : null}
       </td>
-      <td className="px-3 py-2.5">
+      <td className="px-3 py-1.5">
         <AssigneeCell task={task} disabled={!canEdit || deleted} />
       </td>
-      <td className="px-3 py-2.5">
+      <td className="px-3 py-1.5">
         <DateCell
           value={task.startDate}
           emptyLabel={t("tasks.fields.start_date", "Sākums")}
@@ -833,7 +952,7 @@ function SortableSubtaskRow({
           onChange={(startDate) => onUpdate(task.id, { startDate })}
         />
       </td>
-      <td className="px-3 py-2.5">
+      <td className="px-3 py-1.5">
         <DateCell
           value={task.dueDate}
           emptyLabel={t("todo.fields.due_date", "Termiņš")}
@@ -841,7 +960,7 @@ function SortableSubtaskRow({
           onChange={(dueDate) => onUpdate(task.id, { dueDate })}
         />
       </td>
-      <td className="whitespace-nowrap px-3 py-2.5">
+      <td className="whitespace-nowrap px-3 py-1.5">
         <StatusControl
           listId={listId}
           status={task.status}

@@ -5,7 +5,9 @@ alwaysApply: true
 
 # Datumu formāti
 
-Lietotājam redzamos **datumus** formatē ar **`formatDisplayDateDdMmYy()`** no `app/lib/format-display-date.ts` — formāts **`dd.mm.yy`**.
+Lietotājam redzamos **datumus un laiku** formatē ar **`useDisplayPreferences()`** (`formatDate`, `formatDateTime`) vai **`formatDisplayDate()`** / **`formatDisplayDateTime()`** no `app/lib/format-display-date.ts`.
+
+Noklusējuma preferences nāk no `site_settings` (`week_start_day`, `date_format`, `date_separator`, `time_format`).
 
 DB un iekšējais stāvoklis: **ISO** `YYYY-MM-DD`. Jaunam „šodienas” datumam: **`todayIsoDate()`**.
 

@@ -9,12 +9,16 @@ import {
 import { createClient } from "@/app/lib/supabase/server";
 import { isSupabaseConfigured } from "@/app/lib/supabase/env";
 
-export async function ensureCurrentUserProfile() {
+type ProfileSupabaseClient = Awaited<ReturnType<typeof createClient>>;
+
+export async function ensureCurrentUserProfile(
+  client?: ProfileSupabaseClient,
+) {
   if (!isSupabaseConfigured()) {
     return;
   }
 
-  const supabase = await createClient();
+  const supabase = client ?? (await createClient());
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -38,7 +42,7 @@ export async function ensureCurrentUserProfile() {
 }
 
 async function persistGuestLanguageChoice(
-  supabase: Awaited<ReturnType<typeof createClient>>,
+  supabase: ProfileSupabaseClient,
   userId: string,
 ) {
   const { data } = await supabase

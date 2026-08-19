@@ -4,12 +4,14 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { LanguageSwitcher } from "@/app/components/language-switcher";
 import { useTranslations } from "@/app/components/translations-provider";
+import { useAuthSession } from "@/app/lib/auth/use-auth-session";
 
 const AUTH_PATHS = new Set(["/login", "/signup", "/forgot-password"]);
 
 export function SiteHeader() {
   const pathname = usePathname();
   const { t } = useTranslations();
+  const { user, isReady } = useAuthSession();
   const isAuthPage = AUTH_PATHS.has(pathname);
 
   return (
@@ -38,18 +40,29 @@ export function SiteHeader() {
         ) : (
           <div className="flex items-center gap-2">
             <LanguageSwitcher variant="menu" />
-            <Link
-              href="/login"
-              className="rounded-lg px-3 py-2 text-sm font-medium text-zinc-700 transition hover:bg-zinc-100"
-            >
-              {t("auth.login.title", "Ienākt")}
-            </Link>
-            <Link
-              href="/signup"
-              className="rounded-lg bg-zinc-900 px-3 py-2 text-sm font-semibold text-white transition hover:bg-zinc-700"
-            >
-              {t("auth.signup.title", "Reģistrēties")}
-            </Link>
+            {isReady && user ? (
+              <Link
+                href="/dashboard"
+                className="rounded-lg bg-zinc-900 px-3 py-2 text-sm font-semibold text-white transition hover:bg-zinc-700"
+              >
+                {t("auth.open_app", "Atvērt lietotni")}
+              </Link>
+            ) : (
+              <>
+                <Link
+                  href="/login"
+                  className="rounded-lg px-3 py-2 text-sm font-medium text-zinc-700 transition hover:bg-zinc-100"
+                >
+                  {t("auth.login.title", "Ienākt")}
+                </Link>
+                <Link
+                  href="/signup"
+                  className="rounded-lg bg-zinc-900 px-3 py-2 text-sm font-semibold text-white transition hover:bg-zinc-700"
+                >
+                  {t("auth.signup.title", "Reģistrēties")}
+                </Link>
+              </>
+            )}
           </div>
         )}
       </div>

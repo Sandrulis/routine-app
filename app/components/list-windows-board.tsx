@@ -19,7 +19,7 @@ import { CSS } from "@dnd-kit/utilities";
 import Link from "next/link";
 import { useEffect, useId, useRef, useState, type ChangeEvent, type ReactNode } from "react";
 import { AssigneeFaces } from "@/app/components/assignee-faces";
-import { DragHandle } from "@/app/components/drag-handle";
+import { DragHandle, StatusReorderHandle } from "@/app/components/drag-handle";
 import {
   SortableTaskGroup,
   SortableTaskItem,
@@ -34,7 +34,7 @@ import {
   TaskDropLine,
   type DropHint,
 } from "@/app/components/task-drop-line";
-import { statusClassName, statusDotClassName, statusTextClassName } from "@/app/components/status-control";
+import { statusClassName, statusTextClassName } from "@/app/components/status-control";
 import {
   useSystemTaskStatuses,
   useTaskStatuses,
@@ -42,15 +42,17 @@ import {
 import { OptionalTooltip, Tooltip } from "@/app/components/tooltip";
 import { SubtaskDetailModal } from "@/app/components/subtask-detail-modal";
 import { LoadingState } from "@/app/components/loading-state";
+import { FileIcon } from "@/app/components/file-icon";
+import { useFeedbackToast } from "@/app/components/feedback-toast-provider";
 import { useTranslations } from "@/app/components/translations-provider";
 import {
   addStoredListFile,
   childListFiles,
-  fileIconClassName,
   filePageHref,
   nextItemSortOrder,
   type ListFile,
 } from "@/app/lib/list-files";
+import { useFileTypes } from "@/app/lib/file-types-context";
 import {
   DEFAULT_LIST_WINDOW_ORDER,
   readListWindowOrder,
@@ -350,10 +352,7 @@ function FilesWindow({
             href={filePageHref(listId, file.id)}
             className="flex items-center gap-2 rounded-xl px-2 py-2 transition hover:bg-zinc-50"
           >
-            <i
-              className={`${fileIconClassName(file.name)} w-4 text-center text-[13px]`}
-              aria-hidden="true"
-            />
+            <FileIcon name={file.name} className="w-4 text-center text-[13px]" />
             <span className="truncate text-sm font-medium text-zinc-900">
               {file.name}
             </span>
@@ -430,6 +429,17 @@ function OverviewSubtaskRow({
     animateLayoutChanges: () => false,
   });
 
+  const handleLabel = checklistBlocked
+    ? t(
+        "subtasks.checklist.incomplete",
+        "Vispirms izpildi visus kontrolsaraksta punktus.",
+      )
+    : canDrag
+      ? t("subtasks.drag", "Mainīt secību")
+      : done
+        ? task.title
+        : t("status.complete_ask", "Pabeidzi?");
+
   return (
     <li
       ref={setNodeRef}
@@ -437,65 +447,30 @@ function OverviewSubtaskRow({
         transform: CSS.Transform.toString(transform),
         transition,
       }}
-      className={`flex min-w-0 items-center gap-2 ${
+      className={`group/row flex min-w-0 items-center gap-2 ${
         isDragging ? "relative z-10 opacity-40" : ""
       }`}
     >
-      {canDrag ? (
-        <span
-          className="shrink-0"
-          onPointerDown={(event) => event.stopPropagation()}
-        >
-          <DragHandle
-            label={t("subtasks.drag", "Mainīt secību")}
-            attributes={attributes}
-            listeners={listeners}
-          />
-        </span>
-      ) : null}
-      <OptionalTooltip
-        label={
-          checklistBlocked
-            ? t(
-                "subtasks.checklist.incomplete",
-                "Vispirms izpildi visus kontrolsaraksta punktus.",
-              )
-            : done
-              ? null
-              : t("status.complete_ask", "Pabeidzi?")
+      <StatusReorderHandle
+        status={task.status}
+        listId={listId}
+        label={handleLabel}
+        attributes={attributes}
+        listeners={listeners}
+        canDrag={canDrag}
+        isDragging={isDragging}
+        pressed={done}
+        disabled={checklistBlocked && !canDrag}
+        onClick={
+          canToggle
+            ? (event) => {
+                event.stopPropagation();
+                if (checklistBlocked) return;
+                onComplete();
+              }
+            : undefined
         }
-      >
-        <button
-          type="button"
-          aria-pressed={done}
-          aria-label={
-            done
-              ? task.title
-              : t("status.complete_ask", "Pabeidzi?")
-          }
-          disabled={!canToggle || checklistBlocked}
-          onPointerDown={(event) => event.stopPropagation()}
-          onClick={(event) => {
-            event.stopPropagation();
-            if (checklistBlocked) return;
-            onComplete();
-          }}
-          className={`inline-flex size-4 shrink-0 items-center justify-center rounded-full border ${
-            statusColor ? "" : statusDotClassName(task.status)
-          } ${
-            done
-              ? "text-white"
-              : "text-transparent hover:text-white"
-          } disabled:cursor-not-allowed disabled:opacity-60`}
-          style={
-            statusColor
-              ? { backgroundColor: statusColor, borderColor: statusColor }
-              : undefined
-          }
-        >
-          <i className="fas fa-check text-[8px]" aria-hidden="true" />
-        </button>
-      </OptionalTooltip>
+      />
       <button
         type="button"
         onClick={onOpen}
@@ -863,6 +838,8 @@ export function ListWindowsBoard({
   parentId?: string | null;
 }) {
   const { t } = useTranslations();
+  const { showFeedback } = useFeedbackToast();
+  const { accept, filterAllowedFiles, extensionsLabel } = useFileTypes();
   const { lists } = useLists();
   const { currentUser, roles } = useTeam();
   const { isAdmin } = useIsAdmin();
@@ -893,12 +870,25 @@ export function ListWindowsBoard({
     if (!canUploadFiles) return;
     const selected = Array.from(event.target.files ?? []);
     event.target.value = "";
+    const { allowed, rejected } = filterAllowedFiles(selected);
+    if (rejected.length > 0) {
+      showFeedback({
+        type: "error",
+        text: t(
+          "files.upload.rejected",
+          "Neatļauts faila tips. Atļautie: {types}",
+          { types: extensionsLabel },
+        ),
+      });
+    }
+    if (allowed.length === 0) return;
     let nextOrder = nextItemSortOrder([
       ...tasks,
       ...childListFiles(allFiles, listId, parentId),
     ]);
-    for (const file of selected) {
-      await addStoredListFile(listId, file, parentId, nextOrder);
+    for (const file of allowed) {
+      const stored = await addStoredListFile(listId, file, parentId, nextOrder);
+      if (!stored) continue;
       nextOrder += 1;
     }
   }
@@ -952,6 +942,7 @@ export function ListWindowsBoard({
               ref={fileInputRef}
               type="file"
               multiple
+              accept={accept}
               className="hidden"
               onChange={handleUpload}
             />

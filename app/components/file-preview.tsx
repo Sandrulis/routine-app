@@ -1,9 +1,9 @@
 "use client";
 
 import { useTranslations } from "@/app/components/translations-provider";
+import { FileIcon } from "@/app/components/file-icon";
 import {
   decodeDataUrlText,
-  fileIconClassName,
   isTextFile,
 } from "@/app/lib/list-files";
 
@@ -25,10 +25,7 @@ export function FilePreview({
   if (!content) {
     return (
       <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-zinc-200 bg-white px-6 py-16 text-center">
-        <i
-          className={`${fileIconClassName(file.name)} text-3xl`}
-          aria-hidden="true"
-        />
+        <FileIcon name={file.name} className="text-3xl" />
         <p className="text-sm text-zinc-500">
           {file.size > 0
             ? t(
@@ -97,10 +94,7 @@ export function FilePreview({
 
   return (
     <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-zinc-200 bg-white px-6 py-16 text-center">
-      <i
-        className={`${fileIconClassName(file.name)} text-3xl`}
-        aria-hidden="true"
-      />
+      <FileIcon name={file.name} className="text-3xl" />
       <p className="text-sm text-zinc-500">
         {t(
           "files.detail.preview_unavailable",

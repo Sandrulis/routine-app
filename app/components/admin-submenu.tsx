@@ -30,6 +30,12 @@ const ITEMS = [
     fallback: "Statusi",
   },
   {
+    href: "/admin/file-types",
+    icon: "fas fa-file-lines",
+    labelKey: "admin.nav.file_types",
+    fallback: "Failu tipi",
+  },
+  {
     href: "/admin/languages",
     icon: "fas fa-language",
     labelKey: "admin.nav.languages",

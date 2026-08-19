@@ -5,6 +5,7 @@ import { authSecondaryButtonClassName } from "@/app/components/auth-form-styles"
 import { useFeedbackToast } from "@/app/components/feedback-toast-provider";
 import { useTranslations } from "@/app/components/translations-provider";
 import { signInWithGoogle } from "@/app/lib/auth/sign-in-with-google";
+import { writeRememberSessionPreference } from "@/app/lib/auth/remember-session";
 
 function GoogleIcon() {
   return (
@@ -46,10 +47,12 @@ export function AuthDivider() {
 export function GoogleAuthButton({
   disabled = false,
   returnPath = "/dashboard",
+  rememberMe = true,
   onBeforeSignIn,
 }: {
   disabled?: boolean;
   returnPath?: string;
+  rememberMe?: boolean;
   onBeforeSignIn?: () => boolean;
 }) {
   const { t } = useTranslations();
@@ -63,6 +66,7 @@ export function GoogleAuthButton({
 
     clearFeedback();
     setPending(true);
+    writeRememberSessionPreference(rememberMe);
 
     const { error } = await signInWithGoogle(returnPath);
 

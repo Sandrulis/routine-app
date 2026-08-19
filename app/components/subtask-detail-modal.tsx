@@ -18,8 +18,8 @@ import { RelativeTime } from "@/app/components/relative-time";
 import { Tooltip } from "@/app/components/tooltip";
 import { UserAvatar } from "@/app/components/user-avatar";
 import { useFeedbackToast } from "@/app/components/feedback-toast-provider";
+import { useDisplayPreferences } from "@/app/components/display-preferences-provider";
 import { useTranslations } from "@/app/components/translations-provider";
-import { formatDisplayDateDdMmYy } from "@/app/lib/format-display-date";
 import { mimeFromName } from "@/app/lib/list-files";
 import { useLists } from "@/app/lib/lists-store";
 import { useTeam } from "@/app/lib/team-store";
@@ -118,6 +118,7 @@ export function SubtaskDetailModal({
   onCreated?: (task: WorkTask) => void;
 }) {
   const { t } = useTranslations();
+  const { formatDate } = useDisplayPreferences();
   const { showFeedback } = useFeedbackToast();
   const {
     lists,
@@ -192,7 +193,7 @@ export function SubtaskDetailModal({
         !oldest || item.at < oldest ? item.at : oldest,
       null,
     );
-  const createdOn = createdAt ? formatDisplayDateDdMmYy(createdAt) : "";
+  const createdOn = createdAt ? formatDate(createdAt) : "";
   const checklistBlocked = taskHasIncompleteChecklists(draft.checklists);
   const checklistsProgress = checklistProgress(draft.checklists);
   const checklistBlockedLabel = t(
@@ -305,12 +306,12 @@ export function SubtaskDetailModal({
     }
     if (item.kind === "start_date") {
       return t("subtasks.history.start_date", "Sākums: {date}", {
-        date: item.dateValue ? formatDisplayDateDdMmYy(item.dateValue) : "—",
+        date: item.dateValue ? formatDate(item.dateValue) : "—",
       });
     }
     if (item.kind === "due_date") {
       return t("subtasks.history.due_date", "Termiņš: {date}", {
-        date: item.dateValue ? formatDisplayDateDdMmYy(item.dateValue) : "—",
+        date: item.dateValue ? formatDate(item.dateValue) : "—",
       });
     }
     if (item.kind === "comment") {
@@ -330,7 +331,7 @@ export function SubtaskDetailModal({
       let storedWithoutPreview = false;
       for (const file of selected) {
         const record = await addTaskFile(task.id, file);
-        if (file.size > 0 && !record.hasContent) storedWithoutPreview = true;
+        if (record && file.size > 0 && !record.hasContent) storedWithoutPreview = true;
       }
       if (storedWithoutPreview) {
         showFeedback({

@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { Tooltip } from "@/app/components/tooltip";
+import { useDisplayPreferences } from "@/app/components/display-preferences-provider";
 import { useTranslations } from "@/app/components/translations-provider";
-import { formatDisplayDateTimeDdMmYy } from "@/app/lib/format-display-date";
 import { getLastOnlineDisplay } from "@/app/lib/last-online";
 
 export function RelativeTime({
@@ -14,9 +14,10 @@ export function RelativeTime({
   className?: string;
 }) {
   const { t } = useTranslations();
+  const { formatDateTime } = useDisplayPreferences();
   const [now, setNow] = useState(() => Date.now());
   const display = getLastOnlineDisplay(at, now);
-  const exact = at ? formatDisplayDateTimeDdMmYy(at) : "";
+  const exact = at ? formatDateTime(at) : "";
 
   useEffect(() => {
     const timer = window.setInterval(() => setNow(Date.now()), 15_000);

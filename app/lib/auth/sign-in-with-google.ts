@@ -30,6 +30,9 @@ export async function signInWithGoogle(returnPath?: string) {
     provider: "google",
     options: {
       redirectTo: callbackUrl.toString(),
+      queryParams: {
+        access_type: "offline",
+      },
     },
   });
 }

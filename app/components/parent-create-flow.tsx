@@ -15,6 +15,7 @@ import {
 } from "@/app/lib/list-files";
 import { useLists } from "@/app/lib/lists-store";
 import { useListFiles } from "@/app/lib/use-list-files";
+import { useFileTypes } from "@/app/lib/file-types-context";
 
 export type ParentCreateContext = {
   listId: string;
@@ -39,6 +40,7 @@ export function ParentCreateFlow({
   const { showFeedback } = useFeedbackToast();
   const { addTask, listTasks, childTasks } = useLists();
   const { files } = useListFiles();
+  const { accept, filterAllowedFiles, extensionsLabel } = useFileTypes();
   const [step, setStep] = useState<"choice" | "folder" | "task">("choice");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const contextRef = useRef(context);
@@ -67,6 +69,19 @@ export function ParentCreateFlow({
     event.target.value = "";
     if (!current || selected.length === 0) return;
 
+    const { allowed, rejected } = filterAllowedFiles(selected);
+    if (rejected.length > 0) {
+      showFeedback({
+        type: "error",
+        text: t(
+          "files.upload.rejected",
+          "Neatļauts faila tips. Atļautie: {types}",
+          { types: extensionsLabel },
+        ),
+      });
+    }
+    if (allowed.length === 0) return;
+
     const created: ListFile[] = [];
     let skippedContent = false;
     let nextOrder = nextItemSortOrder([
@@ -75,13 +90,14 @@ export function ParentCreateFlow({
         : listTasks(current.listId)),
       ...childListFiles(files, current.listId, current.parentId),
     ]);
-    for (const file of selected) {
+    for (const file of allowed) {
       const stored = await addStoredListFile(
         current.listId,
         file,
         current.parentId,
         nextOrder,
       );
+      if (!stored) continue;
       nextOrder += 1;
       created.push(stored);
       if (!stored.hasContent && file.size > 0) skippedContent = true;
@@ -110,6 +126,7 @@ export function ParentCreateFlow({
         ref={fileInputRef}
         type="file"
         multiple
+        accept={accept}
         className="hidden"
         onChange={handleFiles}
       />

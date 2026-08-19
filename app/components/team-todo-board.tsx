@@ -36,7 +36,7 @@ import { SectionPage } from "@/app/components/section-page";
 import { useTranslations } from "@/app/components/translations-provider";
 import { UserAvatar } from "@/app/components/user-avatar";
 import { useAuthSession } from "@/app/lib/auth/use-auth-session";
-import { formatDisplayDateDdMmYy } from "@/app/lib/format-display-date";
+import { useDisplayPreferences } from "@/app/components/display-preferences-provider";
 import {
   appendNotifications,
   notificationsForNewAssignees,
@@ -129,6 +129,7 @@ function TodoTaskCardShell({
   onOpen?: (item: TodoItem) => void;
 }) {
   const { t } = useTranslations();
+  const { formatDate } = useDisplayPreferences();
   const { members } = useTeam();
   const assignee = getTeamMember(item.assigneeId, members);
 
@@ -193,7 +194,7 @@ function TodoTaskCardShell({
           {item.dueDate ? (
             <span className="inline-flex items-center gap-1 text-xs text-zinc-500">
               <i className="far fa-calendar text-[10px]" aria-hidden="true" />
-              {formatDisplayDateDdMmYy(item.dueDate)}
+              {formatDate(item.dueDate)}
             </span>
           ) : null}
         </div>

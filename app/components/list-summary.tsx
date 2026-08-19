@@ -4,15 +4,19 @@ import { useState } from "react";
 import { GroupedSubtaskTables } from "@/app/components/grouped-subtask-tables";
 import { UserAvatar } from "@/app/components/user-avatar";
 import { OptionalTooltip } from "@/app/components/tooltip";
+import { useDisplayPreferences } from "@/app/components/display-preferences-provider";
 import { useTranslations } from "@/app/components/translations-provider";
-import { formatDisplayDateDdMmYy } from "@/app/lib/format-display-date";
 import { compareTasksByStatusPriority } from "@/app/lib/list-statuses";
 import { getTaskAncestors, isTaskActiveInLists, isTaskDeleted, isWorkFolder, workItemIcon, type WorkTask } from "@/app/lib/lists";
 import { useLists } from "@/app/lib/lists-store";
 import { useTaskStatuses } from "@/app/lib/task-statuses";
 import { useTeam } from "@/app/lib/team-store";
 
-function dateRange(task: WorkTask, children: WorkTask[]) {
+function dateRange(
+  task: WorkTask,
+  children: WorkTask[],
+  formatDate: (value: string) => string,
+) {
   const dates = [
     task.startDate,
     task.dueDate,
@@ -22,8 +26,8 @@ function dateRange(task: WorkTask, children: WorkTask[]) {
     .sort();
 
   if (dates.length === 0) return null;
-  const start = formatDisplayDateDdMmYy(dates[0]);
-  const end = formatDisplayDateDdMmYy(dates[dates.length - 1]);
+  const start = formatDate(dates[0]);
+  const end = formatDate(dates[dates.length - 1]);
   return start === end ? start : `${start} - ${end}`;
 }
 
@@ -43,6 +47,7 @@ function TaskSummarySection({
   onOpenTask: (task: WorkTask) => void;
 }) {
   const { t } = useTranslations();
+  const { formatDate } = useDisplayPreferences();
   const { members } = useTeam();
   const { tasks, childTasks, subtasks } = useLists();
   const [expanded, setExpanded] = useState(defaultExpanded);
@@ -65,7 +70,7 @@ function TaskSummarySection({
     .sort((left, right) =>
       compareTasksByStatusPriority(left, right, statuses),
     );
-  const range = dateRange(task, [...nestedItems, ...children]);
+  const range = dateRange(task, [...nestedItems, ...children], formatDate);
   const assignees = members.filter((member) =>
     [task, ...nestedItems, ...children].some((item) =>
       item.assigneeIds.includes(member.id),

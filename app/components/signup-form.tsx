@@ -10,6 +10,10 @@ import {
 } from "@/app/components/auth-form-styles";
 import { useFeedbackToast } from "@/app/components/feedback-toast-provider";
 import { AuthDivider, GoogleAuthButton } from "@/app/components/google-auth-button";
+import {
+  RememberMeCheckbox,
+  useRememberMe,
+} from "@/app/components/remember-me-checkbox";
 import { useTranslations } from "@/app/components/translations-provider";
 
 export function SignupForm() {
@@ -22,6 +26,7 @@ export function SignupForm() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [accepted, setAccepted] = useState(false);
   const [pending, setPending] = useState(false);
+  const { remember, updateRemember } = useRememberMe();
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -157,6 +162,8 @@ export function SignupForm() {
         </span>
       </label>
 
+      <RememberMeCheckbox checked={remember} onChange={updateRemember} />
+
       <button
         type="submit"
         disabled={pending}
@@ -168,6 +175,7 @@ export function SignupForm() {
       <AuthDivider />
       <GoogleAuthButton
         disabled={pending}
+        rememberMe={remember}
         onBeforeSignIn={() => {
           if (accepted) {
             return true;

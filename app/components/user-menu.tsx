@@ -3,11 +3,12 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { ChangePasswordModal } from "@/app/components/change-password-modal";
-import { LanguageSwitcher } from "@/app/components/language-switcher";
 import { useFeedbackToast } from "@/app/components/feedback-toast-provider";
 import { useTranslations } from "@/app/components/translations-provider";
 import { OverflowTooltip } from "@/app/components/tooltip";
 import { UserAvatar } from "@/app/components/user-avatar";
+import { userHasPasswordLogin } from "@/app/lib/auth/map-user-display";
+import { useAuthSession } from "@/app/lib/auth/use-auth-session";
 import { createClient } from "@/app/lib/supabase/client";
 import { isSupabaseConfigured } from "@/app/lib/supabase/env";
 import { useTeam } from "@/app/lib/team-store";
@@ -20,6 +21,8 @@ export function UserMenu({ user }: { user: TeamMember }) {
   const { teams, roles } = useTeam();
   const rank = teams.length === 0 ? null : teamRankLabel(user.role, t, roles);
   const { showFeedback } = useFeedbackToast();
+  const { user: authUser } = useAuthSession();
+  const canChangePassword = userHasPasswordLogin(authUser);
   const [open, setOpen] = useState(false);
   const [passwordOpen, setPasswordOpen] = useState(false);
 
@@ -84,9 +87,6 @@ export function UserMenu({ user }: { user: TeamMember }) {
           <p className="px-3 pb-1.5 text-[11px] font-medium tracking-wide text-zinc-400 uppercase">
             {t("user_menu.heading", "Konts")}
           </p>
-          <div className="px-3 pb-2">
-            <LanguageSwitcher />
-          </div>
           <button
             type="button"
             role="menuitem"
@@ -108,34 +108,36 @@ export function UserMenu({ user }: { user: TeamMember }) {
               <span className="mt-0.5 block text-[12px] text-zinc-400">
                 {t(
                   "user_menu.settings_hint",
-                  "Profils, valoda un paziņojumi",
+                  "Profils, valoda un datumu attēlojums",
                 )}
               </span>
             </span>
           </button>
-          <button
-            type="button"
-            role="menuitem"
-            onClick={() =>
-              closeAnd(() => {
-                setPasswordOpen(true);
-              })
-            }
-            className="flex w-full items-start gap-3 px-3 py-2 text-left transition hover:bg-zinc-100"
-          >
-            <i
-              className="fas fa-key mt-0.5 w-4 text-center text-[13px] text-zinc-500"
-              aria-hidden="true"
-            />
-            <span className="min-w-0">
-              <span className="block text-[13px] font-medium text-zinc-900">
-                {t("user_menu.password", "Mainīt paroli")}
+          {canChangePassword ? (
+            <button
+              type="button"
+              role="menuitem"
+              onClick={() =>
+                closeAnd(() => {
+                  setPasswordOpen(true);
+                })
+              }
+              className="flex w-full items-start gap-3 px-3 py-2 text-left transition hover:bg-zinc-100"
+            >
+              <i
+                className="fas fa-key mt-0.5 w-4 text-center text-[13px] text-zinc-500"
+                aria-hidden="true"
+              />
+              <span className="min-w-0">
+                <span className="block text-[13px] font-medium text-zinc-900">
+                  {t("user_menu.password", "Mainīt paroli")}
+                </span>
+                <span className="mt-0.5 block text-[12px] text-zinc-400">
+                  {t("user_menu.password_hint", "Atjauno piekļuves paroli")}
+                </span>
               </span>
-              <span className="mt-0.5 block text-[12px] text-zinc-400">
-                {t("user_menu.password_hint", "Atjauno piekļuves paroli")}
-              </span>
-            </span>
-          </button>
+            </button>
+          ) : null}
           <div className="my-1.5 border-t border-zinc-100" />
           <button
             type="button"
@@ -172,16 +174,18 @@ export function UserMenu({ user }: { user: TeamMember }) {
         </div>
       ) : null}
 
-      <ChangePasswordModal
-        open={passwordOpen}
-        onOpenChange={setPasswordOpen}
-        onSave={() => {
-          showFeedback({
-            type: "success",
-            text: t("user_menu.password.saved", "Parole atjaunota."),
-          });
-        }}
-      />
+      {canChangePassword ? (
+        <ChangePasswordModal
+          open={passwordOpen}
+          onOpenChange={setPasswordOpen}
+          onSave={() => {
+            showFeedback({
+              type: "success",
+              text: t("user_menu.password.saved", "Parole atjaunota."),
+            });
+          }}
+        />
+      ) : null}
     </div>
   );
 }

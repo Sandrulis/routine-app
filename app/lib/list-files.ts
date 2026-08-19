@@ -1,3 +1,9 @@
+import {
+  getFileIconDisplay,
+  isAllowedFileName,
+  mimeFromFileName,
+} from "@/app/lib/file-types";
+
 export type ListFile = {
   id: string;
   listId: string;
@@ -50,68 +56,48 @@ export function fileContentKey(fileId: string): string {
 }
 
 export function mimeFromName(name: string): string {
-  const extension = name.split(".").pop()?.toLowerCase() ?? "";
-  const types: Record<string, string> = {
-    pdf: "application/pdf",
-    png: "image/png",
-    jpg: "image/jpeg",
-    jpeg: "image/jpeg",
-    gif: "image/gif",
-    webp: "image/webp",
-    svg: "image/svg+xml",
-    txt: "text/plain",
-    md: "text/markdown",
-    json: "application/json",
-    csv: "text/csv",
-    html: "text/html",
-    css: "text/css",
-    js: "text/javascript",
-    ts: "text/plain",
-    log: "text/plain",
-    xml: "application/xml",
-    doc: "application/msword",
-    docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-    xls: "application/vnd.ms-excel",
-    xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-  };
-  return types[extension] ?? "application/octet-stream";
+  return mimeFromFileName(name);
 }
 
 export function fileIconClassName(name: string): string {
-  const extension = name.split(".").pop()?.toLowerCase() ?? "";
-  if (extension === "pdf") return "fas fa-file-pdf text-rose-500";
-  if (extension === "fig" || extension === "sketch") {
-    return "fas fa-bezier-curve text-violet-500";
-  }
-  if (extension === "doc" || extension === "docx") {
-    return "fas fa-file-word text-sky-600";
-  }
-  if (extension === "xls" || extension === "xlsx") {
-    return "fas fa-file-excel text-emerald-600";
-  }
-  if (["png", "jpg", "jpeg", "gif", "webp", "svg"].includes(extension)) {
-    return "fas fa-file-image text-amber-500";
-  }
-  if (extension === "html" || extension === "htm") {
-    return "fas fa-envelope text-zinc-500";
-  }
-  if (["txt", "md", "json", "csv", "log"].includes(extension)) {
-    return "fas fa-file-lines text-zinc-500";
-  }
-  return "fas fa-file text-zinc-400";
+  return getFileIconDisplay(name).icon;
+}
+
+export function fileIconColor(name: string): string {
+  return getFileIconDisplay(name).color;
+}
+
+function groupThousands(value: string): string {
+  const [integer, fraction] = value.split(".");
+  const grouped = integer.replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+  return fraction === undefined ? grouped : `${grouped}.${fraction}`;
+}
+
+export function fileStoredBytes(file: { size: number }): number {
+  const size = Number(file.size);
+  return Number.isFinite(size) && size > 0 ? Math.round(size) : 0;
+}
+
+export function sumFileBytes(files: Array<{ size: number }>): number {
+  return files.reduce((total, file) => total + fileStoredBytes(file), 0);
 }
 
 export function formatFileSize(bytes: number): string {
-  if (!Number.isFinite(bytes) || bytes <= 0) return "";
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) {
-    const kb = bytes / 1024;
+  const size = Number.isFinite(bytes) ? Math.max(0, bytes) : 0;
+  if (size < 1024) return `${groupThousands(String(Math.round(size)))} B`;
+  if (size < 1024 * 1024) {
+    const kb = size / 1024;
     const value = kb >= 100 ? kb.toFixed(0) : kb.toFixed(1);
-    return `${value} KB`;
+    return `${groupThousands(value)} KB`;
   }
-  const mb = bytes / (1024 * 1024);
-  const value = mb >= 100 ? mb.toFixed(0) : mb.toFixed(1);
-  return `${value} MB`;
+  if (size < 1024 * 1024 * 1024) {
+    const mb = size / (1024 * 1024);
+    const value = mb >= 100 ? mb.toFixed(0) : mb.toFixed(1);
+    return `${groupThousands(value)} MB`;
+  }
+  const gb = size / (1024 * 1024 * 1024);
+  const value = gb >= 100 ? gb.toFixed(0) : gb.toFixed(1);
+  return `${groupThousands(value)} GB`;
 }
 
 export function nextItemSortOrder(items: Array<{ sortOrder: number }>): number {
@@ -329,15 +315,20 @@ export async function addStoredListFile(
   file: File,
   parentId: string | null = null,
   sortOrder?: number,
-): Promise<ListFile> {
+): Promise<ListFile | null> {
+  const fileName = file.name.trim() || "file";
+  if (!isAllowedFileName(fileName)) {
+    return null;
+  }
+
   const all = readAllListFiles();
   const record: ListFile = {
     id: createFileId(),
     listId,
     parentId,
-    name: file.name.trim() || "file",
-    mimeType: file.type || mimeFromName(file.name),
-    size: file.size,
+    name: fileName,
+    mimeType: file.type || mimeFromName(fileName),
+    size: Math.max(0, Math.round(file.size)),
     hasContent: false,
     createdAt: new Date().toISOString(),
     sortOrder:

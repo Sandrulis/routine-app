@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
 import { Geist } from "next/font/google";
 import { CookieConsentProvider } from "@/app/components/cookie-consent-provider";
+import { DisplayPreferencesProvider } from "@/app/components/display-preferences-provider";
 import { FeedbackToastProvider } from "@/app/components/feedback-toast-provider";
 import { TranslationsProvider } from "@/app/components/translations-provider";
 import { getActiveUiLanguages, getServerTranslations } from "@/app/lib/i18n/server";
 import { getSiteSettings } from "@/app/lib/site-admin/repository";
+import { getEffectiveDisplayPreferences } from "@/app/lib/users/display-preferences";
 import "@fortawesome/fontawesome-free/css/all.min.css";
 import "./globals.css";
 
@@ -34,10 +36,12 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const [{ languageCode, overlay }, languages] = await Promise.all([
-    getServerTranslations(),
-    getActiveUiLanguages(),
-  ]);
+  const [{ languageCode, overlay }, languages, effectiveDisplayPreferences] =
+    await Promise.all([
+      getServerTranslations(),
+      getActiveUiLanguages(),
+      getEffectiveDisplayPreferences(),
+    ]);
 
   return (
     <html lang={languageCode} className={`${geistSans.variable} h-full`}>
@@ -47,9 +51,11 @@ export default async function RootLayout({
           overlay={overlay}
           languages={languages}
         >
-          <FeedbackToastProvider>
-            <CookieConsentProvider>{children}</CookieConsentProvider>
-          </FeedbackToastProvider>
+          <DisplayPreferencesProvider preferences={effectiveDisplayPreferences}>
+            <FeedbackToastProvider>
+              <CookieConsentProvider>{children}</CookieConsentProvider>
+            </FeedbackToastProvider>
+          </DisplayPreferencesProvider>
         </TranslationsProvider>
       </body>
     </html>

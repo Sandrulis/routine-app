@@ -59,6 +59,7 @@ import {
   nextItemSortOrder,
   readAllListFiles,
 } from "@/app/lib/list-files";
+import { isAllowedFileName } from "@/app/lib/file-types";
 import {
   deleteListRow,
   deleteTaskFileRow,
@@ -157,11 +158,12 @@ type ListsContextValue = {
   ) => void;
   deleteTask: (taskId: string) => void;
   addTaskComment: (taskId: string, text: string) => void;
-  addTaskFile: (taskId: string, file: File) => Promise<TaskFile>;
+  addTaskFile: (taskId: string, file: File) => Promise<TaskFile | null>;
   renameTaskFile: (fileId: string, name: string) => void;
   removeTaskFile: (fileId: string) => void;
   taskActivities: (taskId: string) => TaskActivity[];
   taskFiles: (taskId: string) => TaskFile[];
+  allTaskFiles: TaskFile[];
   listTasks: (listId: string) => WorkTask[];
   childTasks: (parentId: string) => WorkTask[];
   subtasks: (parentId: string) => WorkTask[];
@@ -697,12 +699,15 @@ export function ListsProvider({ children }: { children: ReactNode }) {
 
   const addTaskFile = useCallback(async (taskId: string, file: File) => {
     const name = file.name.trim() || "file";
+    if (!isAllowedFileName(name)) {
+      return null;
+    }
     const record: TaskFile = {
       id: createTaskFileId(),
       taskId,
       name,
       mimeType: file.type || mimeFromName(name),
-      size: file.size,
+      size: Math.max(0, Math.round(file.size)),
       hasContent: false,
       createdAt: new Date().toISOString(),
     };
@@ -1082,6 +1087,7 @@ export function ListsProvider({ children }: { children: ReactNode }) {
           .sort((left, right) => right.at.localeCompare(left.at)),
       taskFiles: (taskId: string) =>
         files.filter((file) => file.taskId === taskId),
+      allTaskFiles: files,
       listTasks: (listId: string) => getListTasks(tasks, listId),
       childTasks: (parentId: string) => getChildTasks(tasks, parentId),
       subtasks: (parentId: string) => getSubtasks(tasks, parentId),

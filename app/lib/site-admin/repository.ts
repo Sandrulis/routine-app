@@ -14,9 +14,23 @@ import {
 import { DEFAULT_LIST_COLOR, randomListColorId } from "@/app/lib/lists";
 import { groupWouldBeEmpty, isSingletonStatusGroup } from "@/app/lib/list-statuses";
 import {
+  isValidFileColorInput,
+  isValidFileExtensionInput,
+  isValidFileIconInput,
+  normalizeFileExtension,
+} from "@/app/lib/file-types";
+import {
   createFullTeamPermissions,
   normalizeTeamPermissionSet,
 } from "@/app/lib/team-permissions";
+import {
+  DEFAULT_SITE_DISPLAY_PREFERENCES,
+  normalizeDateFormat,
+  normalizeDateSeparator,
+  normalizeSiteDisplayPreferences,
+  normalizeTimeFormat,
+  normalizeWeekStartDay,
+} from "@/app/lib/site-admin/display-preferences";
 import type {
   ActionResult,
   AdminTeamInput,
@@ -35,6 +49,8 @@ import type {
   TranslationDictionary,
   SystemDefaultRoleInput,
   SystemDefaultRoleSummary,
+  FileTypeExtensionInput,
+  FileTypeExtensionSummary,
 } from "@/app/lib/site-admin/types";
 
 const LANGUAGE_CODE_RE = /^[a-z]{2}(-[A-Z]{2})?$/;
@@ -103,6 +119,10 @@ type SettingsRow = {
   system_name: string;
   slogan: string;
   slogan_values: Record<string, unknown> | null;
+  week_start_day: string | null;
+  date_format: string | null;
+  date_separator: string | null;
+  time_format: string | null;
   updated_at: string | null;
 };
 
@@ -909,6 +929,15 @@ export async function getSiteTranslationDictionary(
   );
 }
 
+function readDisplayPreferences(row: SettingsRow) {
+  return {
+    weekStartDay: normalizeWeekStartDay(row.week_start_day),
+    dateFormat: normalizeDateFormat(row.date_format),
+    dateSeparator: normalizeDateSeparator(row.date_separator),
+    timeFormat: normalizeTimeFormat(row.time_format),
+  };
+}
+
 export const getSiteSettings = cache(async function getSiteSettings(): Promise<SiteSettingsSummary> {
   const fallback: SiteSettingsSummary = {
     systemName: messages.lv["app.name"] || "Routine",
@@ -917,6 +946,7 @@ export const getSiteSettings = cache(async function getSiteSettings(): Promise<S
       en: messages.en["app.subtitle"] || "",
       ru: messages.ru["app.subtitle"] || "",
     },
+    displayPreferences: DEFAULT_SITE_DISPLAY_PREFERENCES,
     updatedAt: null,
   };
 
@@ -927,7 +957,9 @@ export const getSiteSettings = cache(async function getSiteSettings(): Promise<S
   const supabase = await getSessionClient();
   const { data, error } = await supabase
     .from("site_settings")
-    .select("system_name, slogan, slogan_values, updated_at")
+    .select(
+      "system_name, slogan, slogan_values, week_start_day, date_format, date_separator, time_format, updated_at",
+    )
     .eq("id", 1)
     .maybeSingle();
 
@@ -945,6 +977,7 @@ export const getSiteSettings = cache(async function getSiteSettings(): Promise<S
       ru: stored.ru || "",
       ...stored,
     },
+    displayPreferences: readDisplayPreferences(row),
     updatedAt: row.updated_at,
   };
 });
@@ -957,6 +990,7 @@ export async function saveSiteSettings(input: SiteSettingsInput): Promise<Action
   if (!Object.values(input.sloganValues).some((value) => value.trim())) {
     return { ok: false, error: "errors.slogan_required" };
   }
+  const displayPreferences = normalizeSiteDisplayPreferences(input.displayPreferences);
   const missing = requireConfiguredDb();
   if (missing) return missing;
 
@@ -971,6 +1005,10 @@ export async function saveSiteSettings(input: SiteSettingsInput): Promise<Action
     system_name: systemName,
     slogan,
     slogan_values: input.sloganValues,
+    week_start_day: displayPreferences.weekStartDay,
+    date_format: displayPreferences.dateFormat,
+    date_separator: displayPreferences.dateSeparator,
+    time_format: displayPreferences.timeFormat,
   });
 
   if (error) {
@@ -1493,6 +1531,167 @@ export async function reorderSystemDefaultRoles(
     if (error) {
       return { ok: false, error: "errors.role_reorder_failed" };
     }
+  }
+
+  return { ok: true };
+}
+
+// ---------------------------------------------------------------------------
+// File type extensions
+// ---------------------------------------------------------------------------
+
+type FileTypeExtensionRow = {
+  extension: string;
+  mime_type: string;
+  icon: string;
+  color: string;
+  sort_order: number;
+};
+
+function mapFileTypeExtensionRow(row: FileTypeExtensionRow): FileTypeExtensionSummary {
+  return {
+    extension: row.extension,
+    mimeType: row.mime_type,
+    icon: row.icon,
+    color: row.color,
+    sortOrder: row.sort_order,
+  };
+}
+
+export const listFileTypeExtensions = cache(async function listFileTypeExtensions(): Promise<
+  FileTypeExtensionSummary[]
+> {
+  if (!isSupabaseConfigured()) {
+    return [];
+  }
+
+  const supabase = await getSessionClient();
+  const { data, error } = await supabase
+    .from("file_type_extensions")
+    .select("extension, mime_type, icon, color, sort_order")
+    .order("sort_order", { ascending: true });
+
+  if (error) {
+    console.error("listFileTypeExtensions failed:", error.message);
+    return [];
+  }
+
+  return ((data ?? []) as FileTypeExtensionRow[]).map(mapFileTypeExtensionRow);
+});
+
+export async function createFileTypeExtension(
+  input: FileTypeExtensionInput,
+): Promise<ActionResult> {
+  const extension = normalizeFileExtension(input.extension);
+  const mimeType = input.mimeType.trim();
+  const icon = input.icon.trim();
+  const color = input.color.trim() || "#71717a";
+
+  if (!isValidFileExtensionInput(extension)) {
+    return { ok: false, error: "errors.file_extension_invalid" };
+  }
+  if (!mimeType) {
+    return { ok: false, error: "errors.file_mime_required" };
+  }
+  if (!isValidFileIconInput(icon)) {
+    return { ok: false, error: "errors.file_icon_invalid" };
+  }
+  if (!isValidFileColorInput(color)) {
+    return { ok: false, error: "errors.file_color_invalid" };
+  }
+  if (!isSupabaseConfigured()) {
+    return dbNotConfigured();
+  }
+
+  const supabase = await getSessionClient();
+  const { data: existing } = await supabase
+    .from("file_type_extensions")
+    .select("sort_order")
+    .order("sort_order", { ascending: false })
+    .limit(1);
+  const nextOrder =
+    ((existing?.[0] as { sort_order: number } | undefined)?.sort_order ?? -1) + 1;
+
+  const { error } = await supabase.from("file_type_extensions").insert({
+    extension,
+    mime_type: mimeType,
+    icon,
+    color,
+    sort_order: nextOrder,
+  });
+
+  if (error) {
+    console.error("createFileTypeExtension failed:", error.message, error.code);
+    if (error.code === "23505") {
+      return { ok: false, error: "errors.file_extension_exists" };
+    }
+    return { ok: false, error: "errors.file_extension_create_failed" };
+  }
+
+  return { ok: true };
+}
+
+export async function updateFileTypeExtension(
+  extension: string,
+  input: Omit<FileTypeExtensionInput, "extension">,
+): Promise<ActionResult> {
+  const currentExtension = normalizeFileExtension(extension);
+  const mimeType = input.mimeType.trim();
+  const icon = input.icon.trim();
+  const color = input.color.trim() || "#71717a";
+
+  if (!isValidFileExtensionInput(currentExtension)) {
+    return { ok: false, error: "errors.file_extension_invalid" };
+  }
+  if (!mimeType) {
+    return { ok: false, error: "errors.file_mime_required" };
+  }
+  if (!isValidFileIconInput(icon)) {
+    return { ok: false, error: "errors.file_icon_invalid" };
+  }
+  if (!isValidFileColorInput(color)) {
+    return { ok: false, error: "errors.file_color_invalid" };
+  }
+  if (!isSupabaseConfigured()) {
+    return dbNotConfigured();
+  }
+
+  const supabase = await getSessionClient();
+  const { error } = await supabase
+    .from("file_type_extensions")
+    .update({
+      mime_type: mimeType,
+      icon,
+      color,
+    })
+    .eq("extension", currentExtension);
+
+  if (error) {
+    console.error("updateFileTypeExtension failed:", error.message, error.code);
+    return { ok: false, error: "errors.file_extension_update_failed" };
+  }
+
+  return { ok: true };
+}
+
+export async function deleteFileTypeExtension(extension: string): Promise<ActionResult> {
+  const normalized = normalizeFileExtension(extension);
+  if (!isValidFileExtensionInput(normalized)) {
+    return { ok: false, error: "errors.file_extension_invalid" };
+  }
+  if (!isSupabaseConfigured()) {
+    return dbNotConfigured();
+  }
+
+  const supabase = await getSessionClient();
+  const { error } = await supabase
+    .from("file_type_extensions")
+    .delete()
+    .eq("extension", normalized);
+
+  if (error) {
+    console.error("deleteFileTypeExtension failed:", error.message, error.code);
+    return { ok: false, error: "errors.file_extension_delete_failed" };
   }
 
   return { ok: true };

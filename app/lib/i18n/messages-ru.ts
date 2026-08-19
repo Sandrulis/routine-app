@@ -86,7 +86,9 @@ export const ru: Record<string, string> = {
     "Google не настроен. Добавьте ключи Supabase в .env.local.",
   "auth.google.not_enabled":
     "Google не включён в проекте Supabase. Authentication → Providers → Google → Enable.",
-  "legal.common.updated_at": "17.08.26",
+  "auth.login.remember": "Запомнить меня",
+  "auth.open_app": "Открыть приложение",
+  "legal.common.updated_at": "19.08.26",
   "legal.nav.updated_at": "Обновлено {date}",
   "legal.toc.label": "Содержание",
   "legal.privacy.title": "Политика конфиденциальности",
@@ -117,7 +119,7 @@ export const ru: Record<string, string> = {
     "Исполнение бухгалтерских и иных нормативных требований, если они относятся к сервису — исполнение юридической обязанности (ст. 6(1)(c) GDPR).",
   "legal.privacy.cookies.title": "4. Файлы cookie",
   "legal.privacy.cookies.p1":
-    "Мы используем обязательные файлы cookie, чтобы сохранить ваше согласие и обеспечить работу сайта. Файлы cookie для предпочтений, статистики и маркетинга включаются только с вашего согласия. Полный перечень приведён в политике использования файлов cookie.",
+    "Мы используем обязательные файлы cookie, чтобы сохранить ваше согласие, поддерживать сессию входа и обеспечить работу сайта. Файлы cookie для предпочтений, статистики и маркетинга включаются только с вашего согласия. Полный перечень приведён в политике использования файлов cookie.",
   "legal.privacy.recipients.title": "5. Получатели данных",
   "legal.privacy.recipients.p1":
     "Данные видят уполномоченные пользователи вашей команды в соответствии с предоставленными правами. Для размещения и электронной почты мы можем привлекать обработчиков, которые действуют на основании договора об обработке данных.",
@@ -127,7 +129,7 @@ export const ru: Record<string, string> = {
   "legal.privacy.retention.p1":
     "Данные учётной записи и команды хранятся, пока аккаунт активен. После удаления мы стираем или обезличиваем данные в разумный срок, если более длительное хранение не требуется по закону.",
   "legal.privacy.retention.p2":
-    "Согласие на файлы cookie хранится до 180 дней или до момента, когда вы его измените. Технические журналы хранятся только столько, сколько нужно для безопасности.",
+    "Согласие на файлы cookie хранится до 180 дней или до момента, когда вы его измените. Сессия входа с «Запомнить меня» хранится до 30 дней. Технические журналы хранятся только столько, сколько нужно для безопасности.",
   "legal.privacy.rights.title": "7. Ваши права",
   "legal.privacy.rights.p1":
     "Вы имеете право получить доступ к своим данным, исправить их, удалить, ограничить обработку, возразить против обработки, основанной на законных интересах, и получить данные в переносимом формате.",
@@ -186,7 +188,7 @@ export const ru: Record<string, string> = {
     "Аналогичные технологии, например локальное хранилище (localStorage), могут использоваться с той же целью. В этой политике мы обозначаем их вместе с файлами cookie.",
   "legal.cookies.necessary.title": "2. Обязательные файлы cookie",
   "legal.cookies.necessary.p1":
-    "Обязательные файлы cookie нужны для работы сайта: мы сохраняем ваш выбор cookie и обеспечиваем безопасный просмотр. Без них окно согласия появлялось бы при каждом посещении, а часть функций была бы недоступна.",
+    "Обязательные файлы cookie нужны для работы сайта: мы сохраняем ваш выбор cookie, поддерживаем сессию входа (в том числе через Google) до 30 дней, если вы выбираете «Запомнить меня», и обеспечиваем безопасный просмотр. Без них окно согласия появлялось бы при каждом посещении, а часть функций была бы недоступна.",
   "legal.cookies.necessary.p2":
     "Эти файлы cookie нельзя отключить в системе. Их можно заблокировать в настройках браузера, но тогда Routine может работать некорректно.",
   "legal.cookies.preferences.title": "3. Файлы cookie предпочтений",
@@ -220,7 +222,7 @@ export const ru: Record<string, string> = {
   "cookie_consent.settings.always_on": "Всегда включены",
   "cookie_consent.category.necessary.title": "Обязательные файлы cookie",
   "cookie_consent.category.necessary.description":
-    "Обеспечивают безопасность и сохранение вашего согласия. Без них система не работает.",
+    "Обеспечивают безопасность, сохраняют вход в систему и ваше согласие. Без них система не работает.",
   "cookie_consent.category.preferences.title": "Файлы cookie предпочтений",
   "cookie_consent.category.preferences.description":
     "Запоминают ваш выбор в интерфейсе, например порядок окон списка.",
@@ -234,6 +236,8 @@ export const ru: Record<string, string> = {
   "nav.lists": "Списки",
   "nav.team": "Команда",
   "nav.settings": "Настройки",
+  "nav.storage.used": "Место файлов",
+  "nav.storage.hint": "Файлы, загруженные в дереве и подзадачах",
   "admin.panel.title": "Панель администрирования",
   "admin.page.subtitle":
     "Системные настройки. Доступно только администраторам.",
@@ -242,6 +246,7 @@ export const ru: Record<string, string> = {
   "admin.nav.teams": "Команды",
   "admin.nav.roles": "Роли",
   "admin.nav.statuses": "Статусы",
+  "admin.nav.file_types": "Типы файлов",
   "admin.nav.languages": "Языки",
   "admin.nav.translations": "Переводы",
   "admin.users.create": "Новый пользователь",
@@ -286,6 +291,21 @@ export const ru: Record<string, string> = {
   "admin.statuses.feedback.deleted": "Статус удалён.",
   "admin.statuses.delete.title": "Удалить статус?",
   "admin.statuses.delete.confirm_prefix": "Действительно удалить статус",
+  "admin.file_types.add": "Новый тип",
+  "admin.file_types.empty": "Типы файлов не настроены.",
+  "admin.file_types.extension": "Расширение",
+  "admin.file_types.mime": "MIME-тип",
+  "admin.file_types.icon": "Иконка",
+  "admin.file_types.color": "Цвет",
+  "admin.file_types.hint":
+    "Здесь указываются расширения файлов, которые можно загружать в дерево и подзадачи.",
+  "admin.file_types.form.description":
+    "Укажите расширение, MIME-тип, иконку Font Awesome и цвет.",
+  "admin.file_types.feedback.created": "Тип файла добавлен.",
+  "admin.file_types.feedback.saved": "Тип файла сохранён.",
+  "admin.file_types.feedback.deleted": "Тип файла удалён.",
+  "admin.file_types.delete.title": "Удалить тип файла?",
+  "admin.file_types.delete.confirm_prefix": "Действительно удалить тип",
   "admin.roles.add": "Новая роль",
   "admin.roles.empty": "Пока нет ролей по умолчанию.",
   "admin.roles.system": "Системная",
@@ -351,8 +371,37 @@ export const ru: Record<string, string> = {
   "site_settings.form.slogan": "Слоган",
   "site_settings.form.slogan_hint":
     "Укажите слоган для каждого языка системы.",
+  "site_settings.form.display.title": "Даты и время",
+  "site_settings.form.display.description":
+    "Формат по умолчанию во всей системе: даты, время и начало недели в календаре.",
+  "site_settings.form.week_start_day": "Первый день недели",
+  "site_settings.form.week_start_day_hint":
+    "Выберите, с какого дня начинается неделя в календарях.",
+  "site_settings.form.week_start_day.monday": "Понедельник",
+  "site_settings.form.week_start_day.sunday": "Воскресенье",
+  "site_settings.form.date_format": "Формат даты",
+  "site_settings.form.date_format.Y-m-d": "ГГГГ-ММ-ДД (2026-08-19)",
+  "site_settings.form.date_format.d-m-Y": "ДД-ММ-ГГГГ (19-08-2026)",
+  "site_settings.form.date_format.d/m/Y": "ДД/ММ/ГГГГ (19/08/2026)",
+  "site_settings.form.date_format.m/d/Y": "ММ/ДД/ГГГГ (08/19/2026)",
+  "site_settings.form.date_format.d.m.Y": "ДД.ММ.ГГ (19.08.26)",
+  "site_settings.form.date_separator": "Разделитель даты",
+  "site_settings.form.date_separator_hint":
+    "Разделитель между частями даты при отображении.",
+  "site_settings.form.date_separator.dot": "Точка (.)",
+  "site_settings.form.date_separator.dash": "Дефис (-)",
+  "site_settings.form.date_separator.slash": "Косая черта (/)",
+  "site_settings.form.date_separator.space": "Пробел",
+  "site_settings.form.time_format": "Формат времени",
+  "site_settings.form.time_format_hint":
+    "Выберите 12-часовой (AM/PM) или 24-часовой формат.",
+  "site_settings.form.time_format.24": "24-часовой формат",
+  "site_settings.form.time_format.12": "12-часовой формат (AM/PM)",
   "site_settings.feedback.saved": "Системные настройки сохранены.",
   "site_settings.preview.title": "Предпросмотр",
+  "site_settings.preview.date": "Дата:",
+  "site_settings.preview.time": "Время:",
+  "site_settings.preview.datetime": "Дата и время:",
   "site_settings.preview.description":
     "Эти значения используются в заголовке браузера и метаданных описания страницы.",
   "site_settings.preview.last_saved": "Последние сохранённые изменения:",
@@ -599,6 +648,8 @@ export const ru: Record<string, string> = {
   "lists.windows.files_created": "Файл добавлен.",
   "files.created_without_preview":
     "Файл добавлен, но содержимое не удалось сохранить для предпросмотра.",
+  "files.upload.rejected":
+    "Недопустимый тип файла. Разрешены: {types}",
   "files.detail.loading": "Загрузка файла",
   "files.detail.missing": "Файл не найден",
   "files.detail.missing_description": "Этот файл больше недоступен.",
@@ -655,6 +706,17 @@ export const ru: Record<string, string> = {
   "subtasks.move.description": "Выберите задачу, в которую переместить «{name}».",
   "subtasks.move.empty": "В списке нет других задач.",
   "subtasks.drag": "Изменить порядок",
+  "subtasks.select": "Выбрать",
+  "subtasks.bulk.selected_one": "1 выбрано",
+  "subtasks.bulk.selected": "{count} выбрано",
+  "subtasks.bulk.clear": "Снять выделение",
+  "subtasks.bulk.select_all": "Выбрать все",
+  "subtasks.bulk.dates": "Даты",
+  "subtasks.bulk.updated": "Выбранные подзадачи обновлены.",
+  "subtasks.bulk.moved": "Выбранные подзадачи перемещены.",
+  "subtasks.bulk.deleted": "Выбранные подзадачи удалены.",
+  "subtasks.bulk.delete.title": "Удалить выбранные подзадачи?",
+  "subtasks.bulk.delete.description": "{count} подзадач будут удалены.",
   "subtasks.table.status": "Статус",
   "subtasks.status.changed_at": "Статус изменён",
   "status.next": "Следующий статус",
@@ -726,6 +788,9 @@ export const ru: Record<string, string> = {
   "todo.fields.unassigned": "Не назначено",
   "todo.fields.due_date": "Срок",
   "dates.today": "Сегодня",
+  "dates.tomorrow": "Завтра",
+  "dates.next_week": "Следующая неделя",
+  "dates.clear": "Убрать дату",
   "dates.days_left": "{count} д осталось",
   "dates.days_overdue": "{count} д просрочено",
   "todo.drag_task": "Переместить задачу: {name}",
@@ -781,7 +846,7 @@ export const ru: Record<string, string> = {
   "user_menu.label": "Меню пользователя",
   "user_menu.heading": "Аккаунт",
   "user_menu.settings": "Личные настройки",
-  "user_menu.settings_hint": "Профиль, язык и уведомления",
+  "user_menu.settings_hint": "Профиль и отображение дат",
   "user_menu.password": "Сменить пароль",
   "user_menu.password_hint": "Обновите пароль для входа",
   "user_menu.password.description":
@@ -790,12 +855,21 @@ export const ru: Record<string, string> = {
   "user_menu.password.next": "Новый пароль",
   "user_menu.password.confirm": "Повторите новый пароль",
   "user_menu.password.saved": "Пароль обновлён.",
+  "user_menu.password.failed": "Не удалось обновить пароль.",
+  "user_menu.password.current_invalid": "Текущий пароль неверный.",
+  "user_menu.password.same": "Новый пароль не должен совпадать с текущим.",
   "user_menu.sign_out": "Выйти",
   "user_menu.sign_out_hint": "Выйти из системы",
   "user_menu.sign_out_done": "Вы вышли из системы.",
-  "profile.page.subtitle": "Ваш профиль, язык и уведомления.",
+  "profile.page.subtitle": "Ваш профиль и настройки отображения дат.",
   "profile.page.placeholder":
     "Редактирование профиля можно будет настроить на следующем шаге.",
+  "profile.display.title": "Даты и время",
+  "profile.display.description":
+    "Настройте отображение дат, времени и начала недели. Пустое поле — системное значение по умолчанию.",
+  "profile.display.system_default": "Системное значение ({value})",
+  "profile.display.reset": "Сбросить к системным настройкам",
+  "profile.display.feedback.saved": "Личные настройки отображения сохранены.",
   "actions.save": "Сохранить",
   "actions.saving": "Сохранение…",
   "actions.add": "Добавить",
@@ -860,6 +934,12 @@ export const ru: Record<string, string> = {
   "errors.system_name_required": "Введите название системы.",
   "errors.slogan_required": "Введите слоган хотя бы на одном языке.",
   "errors.settings_save_failed": "Не удалось сохранить настройки.",
+  "errors.auth_required": "Требуется авторизованная сессия.",
+  "unsaved_changes.title": "Уйти без сохранения?",
+  "unsaved_changes.description":
+    "Действительно уйти без сохранения? Несохранённые изменения будут потеряны.",
+  "unsaved_changes.stay": "Продолжить редактирование",
+  "unsaved_changes.leave": "Уйти",
   "errors.status_id_invalid":
     "Код статуса недействителен. Используйте буквы, цифры и подчёркивание.",
   "errors.status_group_invalid": "Выберите группу статуса.",
@@ -881,4 +961,13 @@ export const ru: Record<string, string> = {
     "В группах Не начато и Закрыто может быть только один статус.",
   "errors.status_singleton_group":
     "В группах Не начато и Закрыто может быть только один статус.",
+  "errors.file_extension_invalid": "Недопустимое расширение файла.",
+  "errors.file_extension_exists": "Это расширение уже добавлено.",
+  "errors.file_mime_required": "Укажите MIME-тип.",
+  "errors.file_icon_invalid":
+    "Недопустимая иконка. Используйте класс Font Awesome, например fas fa-file-pdf.",
+  "errors.file_color_invalid": "Недопустимый код цвета.",
+  "errors.file_extension_create_failed": "Не удалось добавить тип файла.",
+  "errors.file_extension_update_failed": "Не удалось сохранить тип файла.",
+  "errors.file_extension_delete_failed": "Не удалось удалить тип файла.",
 };

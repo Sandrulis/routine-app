@@ -47,15 +47,17 @@ import {
   type WorkTaskStatus,
 } from "@/app/lib/lists";
 import { StatusTreeDot } from "@/app/components/status-control";
+import { useFileTypes } from "@/app/lib/file-types-context";
 import { useLists } from "@/app/lib/lists-store";
 import {
   childListFiles,
   deleteStoredListFile,
-  fileIconClassName,
   filePageHref,
+  formatFileSize,
   renameStoredListFile,
   placeStoredListFile,
   reorderStoredListFiles,
+  sumFileBytes,
   type ListFile,
 } from "@/app/lib/list-files";
 import { useListFiles } from "@/app/lib/use-list-files";
@@ -195,6 +197,7 @@ function ToggleChevron({
 function NavTreeSection({
   href,
   icon,
+  iconColor,
   iconToneClassName,
   iconClassName,
   listAppearance,
@@ -221,6 +224,7 @@ function NavTreeSection({
 }: {
   href?: string;
   icon?: string;
+  iconColor?: string;
   iconToneClassName?: string;
   iconClassName?: string;
   listAppearance?: { icon: string | null; color: string };
@@ -338,7 +342,8 @@ function NavTreeSection({
             </span>
           ) : icon ? (
             <i
-              className={`${icon} pointer-events-none w-4 text-center text-[12px] ${iconClassName ?? "text-zinc-400"}`}
+              className={`${icon} pointer-events-none w-4 text-center text-[12px] ${iconClassName ?? (iconColor ? "" : "text-zinc-400")}`}
+              style={iconColor ? { color: iconColor } : undefined}
               aria-hidden="true"
             />
           ) : null}
@@ -433,7 +438,7 @@ export function AppNav() {
   const router = useRouter();
   const { t } = useTranslations();
   const { showFeedback } = useFeedbackToast();
-  const { lists, tasks, listTasks, childTasks, subtasks, addList, updateList, deleteList, updateTask, deleteTask, reorderTasks, moveWorkItem, isReady: listsReady } = useLists();
+  const { lists, tasks, listTasks, childTasks, subtasks, addList, updateList, deleteList, updateTask, deleteTask, reorderTasks, moveWorkItem, allTaskFiles, isReady: listsReady } = useLists();
   const { files: storedFiles } = useListFiles();
   const files = storedFiles.filter((file) =>
     lists.some((list) => list.id === file.listId),
@@ -441,6 +446,7 @@ export function AppNav() {
   const { members, roles, currentUser, currentTeam, inviteMember, isReady: teamReady } = useTeam();
   const { isAdmin } = useIsAdmin();
   const { statuses } = useTaskStatuses();
+  const { getFileIconDisplay } = useFileTypes();
   const [inviteOpen, setInviteOpen] = useState(false);
   const [createListOpen, setCreateListOpen] = useState(false);
   const [parentCreate, setParentCreate] = useState<ParentCreateContext | null>(
@@ -552,6 +558,10 @@ export function AppNav() {
   const isHome = pathname === "/dashboard";
   const isSettings = pathname === "/settings" || pathname.startsWith("/settings/");
   const isTeam = pathname === "/team";
+  const storageUsedLabel = useMemo(
+    () => formatFileSize(sumFileBytes(storedFiles) + sumFileBytes(allTaskFiles)),
+    [allTaskFiles, storedFiles],
+  );
   const activeTaskIds = useMemo(() => {
     const ids = new Set<string>();
     const parts = pathname.split("/");
@@ -626,6 +636,7 @@ export function AppNav() {
 
   function renderFileRow(listId: string, file: ListFile, canReorder: boolean) {
     const href = filePageHref(listId, file.id);
+    const fileIcon = getFileIconDisplay(file.name);
     const data: NavTreeItemData = {
       kind: "file",
       listId,
@@ -636,7 +647,8 @@ export function AppNav() {
         {(handle) => (
           <NavTreeSection
             href={href}
-            icon={fileIconClassName(file.name)}
+            icon={fileIcon.icon}
+            iconColor={fileIcon.color}
             iconClassName=""
             leaf
             itemId={file.id}
@@ -965,6 +977,27 @@ export function AppNav() {
         </nav>
 
         <div className="shrink-0 space-y-0.5 border-t border-zinc-100 px-2 py-2">
+          {currentTeam ? (
+            <Tooltip
+              label={t(
+                "nav.storage.hint",
+                "Kokā un apakšuzdevumos augšupielādētie faili",
+              )}
+              className="block"
+            >
+              <div className="flex min-h-8 items-center gap-2 rounded-md px-1.5 text-[13px] text-zinc-500">
+                <span className="inline-flex size-5 shrink-0 items-center justify-center text-zinc-400">
+                  <i className="fas fa-hard-drive text-[12px]" aria-hidden="true" />
+                </span>
+                <span className="min-w-0 flex-1 truncate">
+                  {t("nav.storage.used", "Failu vieta")}
+                </span>
+                <span className="shrink-0 tabular-nums text-zinc-600">
+                  {storageUsedLabel}
+                </span>
+              </div>
+            </Tooltip>
+          ) : null}
           <Link href="/settings" className={rowClassName(isSettings)}>
             <span className="inline-flex size-5 shrink-0 items-center justify-center text-zinc-500">
               <i className="fas fa-gear text-[12px]" aria-hidden="true" />

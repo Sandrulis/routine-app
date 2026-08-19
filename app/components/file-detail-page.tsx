@@ -9,8 +9,8 @@ import { LoadingState } from "@/app/components/loading-state";
 import { NameFormModal } from "@/app/components/name-form-modal";
 import { SectionPage } from "@/app/components/section-page";
 import { useFeedbackToast } from "@/app/components/feedback-toast-provider";
+import { useDisplayPreferences } from "@/app/components/display-preferences-provider";
 import { useTranslations } from "@/app/components/translations-provider";
-import { formatDisplayDateDdMmYy } from "@/app/lib/format-display-date";
 import {
   deleteStoredListFile,
   formatFileSize,
@@ -28,6 +28,7 @@ export function FileDetailPage({
   fileId: string;
 }) {
   const { t } = useTranslations();
+  const { formatDate } = useDisplayPreferences();
   const router = useRouter();
   const { showFeedback } = useFeedbackToast();
   const { lists, isReady } = useLists();
@@ -77,7 +78,7 @@ export function FileDetailPage({
   }
 
   const sizeLabel = formatFileSize(file.size);
-  const dateLabel = formatDisplayDateDdMmYy(file.createdAt);
+  const dateLabel = formatDate(file.createdAt);
   const subtitle =
     [sizeLabel, dateLabel].filter(Boolean).join(" - ") ||
     t("files.detail.empty_description", "Augšupielādēts fails.");

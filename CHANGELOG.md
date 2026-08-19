@@ -4,6 +4,15 @@
 
 - (none)
 
+## v0.1.12
+
+**Atcerēties mani, failu tipi un datumu attēlojums**
+
+- Google ienākšana paliek pārlūkā, ja ieslēgts Atcerēties mani (noklusējums); bez ķeksīša sesija beidzas, aizverot pārlūku. Sesija 30 dienas; ielogotam `/`, `/login` un `/signup` ved uz dashboard
+- Kokā un apakšuzdevumos var augšupielādēt tikai admin konfigurētos tipus (sākumā pdf, dwg, Word, Excel); `/admin/file-types` pievieno, labo un dzēš paplašinājumu, ikonu un krāsu
+- Sānjoslā virs Uzstādījumiem rādās failu vietas summa (koks + apakšuzdevumu pielikumi)
+- Admin `/admin/settings` un personīgie uzstādījumi: nedēļas sākums, datuma formāts/atdalītājs, 12/24 h; lietotāja izvēle pārspēj sistēmas noklusējumu
+
 ## v0.1.11
 
 **Arhīva rindas, grupēta tabula un drop līnija**

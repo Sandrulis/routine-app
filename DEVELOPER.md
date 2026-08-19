@@ -8,7 +8,7 @@
 - Ports: **3120**
 - i18n: `t(key, fallback, params)` no `app/lib/i18n/messages.ts` (lv + en) un `messages-ru.ts`; `site_translations` ir overlay
 - Ja aktīvas valodas > 1, ceļa joslā aiz paziņojumiem rādās valodas kods (`LanguageSwitcher` `variant="menu"`). UI valoda: `users.language_code` (apzināta izvēle), citādi viesu cookie ar `routine-app-language-chosen`, citādi sistēmas noklusējuma valoda.
-- Datumi UI: `formatDisplayDateDdMmYy()` → `dd.mm.yy`
+- Datumi UI: `useDisplayPreferences().formatDate()` / `formatDateTime()`. Efektīvās preferences: lietotāja (`users.week_start_day`, `date_format`, `date_separator`, `time_format`) ja norādītas, citādi `site_settings`. Noklusējums: pirmdiena, `d.m.Y`, `.`, 24 h. DB paliek ISO `YYYY-MM-DD`.
 
 ## Sānjosla
 
@@ -21,8 +21,9 @@
 | Saraksts (bērns) | `/lists/[listId]` projekta logi: Uzdevumi | Faili augšā, Saraksts pilnā platumā |
 | Uzdevums | `/lists/[listId]/tasks/[taskId]` apakšuzdevumu tabula; ikona `fas fa-list-check` |
 | Komanda | `/team` biedri ar pēdējo tiešsaistes zīmi |
+| Failu vieta | koka + apakšuzdevumu failu `size` summa (`formatFileSize`); tooltip ar hint |
 | Uzstādījumi | `/settings` |
-| Lietotājs | avatars, parole, iziet (ved uz `/`) |
+| Lietotājs | avatars, **Personīgie uzstādījumi** (`/settings/profile`), parole, iziet (ved uz `/`) |
 
 Koks: **Saraksts → mape (`kind: "folder"`) vai uzdevumu saraksts (`kind: "task"`) vai fails → apakšuzdevumi (`kind: "subtask"`)**. Apakšuzdevuma rinda rāda `StatusTreeDot` (fons un apmale = statusa krāsa: `todo` pelēks, `in_progress` oranžs, `done` zaļš).
 
@@ -34,7 +35,8 @@ Uzvedība:
 - Apakšuzdevuma rindā krāsains aplītis; hover neaizstāj ar chevron.
 - Saraksta `+` atver izveides formu, ja loma ļauj veidot sarakstus un saraksta pieeja ir **pilna labošana**. Mapes `+` — mape, uzdevumu saraksts vai faila augšupielāde. Uzdevuma `+` atver apakšuzdevuma modāli (tikai `full_edit`).
 - Saraksta `...` ar `canEditList`: **Labot**, **Statusi** (`ListStatusesModal`), **Dzēst**.
-- Faila rinda atver `/lists/[listId]/files/[fileId]`.
+- Faila rinda atver `/lists/[listId]/files/[fileId]`; ikona un krāsa no `file_type_extensions` (`FileIcon` / `useFileTypes`).
+- Augšupielāde kokā un apakšuzdevumos: tikai katalogā esoši paplašinājumi (`isAllowedFileName`); `input accept` + toast `files.upload.rejected`.
 - Vilkšana (`NavTreeDnd`, `app/components/nav-tree-dnd.tsx`): mapes, uzdevumus un failus var ievilkt mapē (mapes rinda iezīmējas) vai iznest ārā (uz saraksta nosaukumu vai kaimiņu). Drop līnija ir `fixed` portal virs overlay (`z-1100`); overlay paliek blakus kursoram. Loģika: `app/lib/nav-tree-move.ts`. Apakšuzdevumi paliek zem sava uzdevuma. Mapi nevar ielikt sevī.
 
 Vecie `/projects` ceļi novirza uz `/lists`.
@@ -53,7 +55,7 @@ Route group `app/(marketing)/` - bez sānjoslas. Galvene `SiteHeader`, kājene `
 | `/terms` | Lietošanas noteikumi |
 | `/cookies` | Sīkdatņu politika + iestatījumu poga |
 
-Auth: e-pasta Ienākt / Reģistrēties joprojām frontend (toast + `/dashboard`). **Turpināt ar Google** ir īsts Supabase OAuth (sk. Google OAuth). Iziet ved uz `/`.
+Auth: e-pasta Ienākt / Reģistrēties joprojām frontend (toast + `/dashboard`). **Turpināt ar Google** ir īsts Supabase OAuth (sk. Google OAuth). **Atcerēties mani** pēc noklusējuma ieslēgts: sesijas sīkdatne 30 dienas; bez ķeksīša - līdz pārlūka aizvēršanai. Ielogotam `proxy` `/`, `/login`, `/signup` un `/forgot-password` novirza uz `/dashboard`. Iziet ved uz `/`. Publiskajā galvenē ielogotam rādās **Atvērt lietotni**.
 
 Legal teksti: `app/lib/legal/documents.ts`. UI: `LegalDocumentView` ar **Saturs** sānjoslu (`sticky` zem galvenes): klikšķis ritina uz sadaļu, josla paliek redzama visā dokumentā.
 
@@ -64,6 +66,7 @@ Legal teksti: `app/lib/legal/documents.ts`. UI: `LegalDocumentView` ar **Saturs*
 - Cookie: `routine-app-cookie-consent` (versija 1, 180 dienas)
 - Kategorijas: `necessary`, `preferences`, `analytics`, `marketing`
 - `routine-app-list-window-order` raksta tikai ar `preferences` piekrišanu
+- Pieslēgšanās sesija un `routine-app-remember-session` ir **obligātās** sīkdatnes (`app/lib/auth/remember-session.ts`); 30 dienas, ja Atcerēties mani
 
 ## Skati
 
@@ -75,7 +78,8 @@ Legal teksti: `app/lib/legal/documents.ts`. UI: `LegalDocumentView` ar **Saturs*
 | Uzdevums | `/lists/[listId]/tasks/[taskId]` | `GroupedSubtaskTables` / `SubtaskTable` — viena tabula ar statusu galvenēm, arhīvs, pārvietošana, mīkstā dzēšana; hover rāda darbības |
 | Fails | `/lists/[listId]/files/[fileId]` | `FileDetailPage` — priekšskatījums, lejupielāde, pārsaukšana, dzēšana |
 | Apakšuzdevums | uzdevuma ceļš vai saraksta skats + modālis | `SubtaskDetailModal` — lauki kreisajā, Check List pirms pielikumiem, vēsture labajā |
-| Administrācija | `/admin` | horizontāla apakšizvēlne: lietotāji, komandas, lomas, statusi, valodas, tulkojumi, uzstādījumi; tikai `is_admin` |
+| Personīgie uzstādījumi | `/settings/profile` | profils + datumu/laika preferences (nedēļas sākums, formāts, atdalītājs, 12/24 h); valodas bloka nav |
+| Administrācija | `/admin` | horizontāla apakšizvēlne: lietotāji, komandas, lomas, statusi, failu tipi, valodas, tulkojumi, uzstādījumi; tikai `is_admin` |
 
 Ceļa josla: `app/components/page-breadcrumb.tsx`. Labajā malā `AdminPanelButton` (`fas fa-users-cog`, tikai `is_admin`), `NotificationsMenu` (zvaniņš) un valodas kods, ja aktīvas valodas > 1.
 
@@ -91,15 +95,16 @@ Ielāde: `LoadingState` (`app/components/loading-state.tsx`, `fas fa-circle-notc
 | `/admin/teams` | Visas `teams`: pievienot, labot, dzēst (kaskāde uz darba datiem) |
 | `/admin/roles` | Sistēmas noklusējuma lomas un pieejas (`system_default_roles`); jaunām komandām |
 | `/admin/statuses` | Uzdevumu statusu katalogs (`task_statuses`): nosaukums katrā valodā, krāsa, grupa, kārtojums |
+| `/admin/file-types` | Atļautie failu paplašinājumi (`file_type_extensions`): paplašinājums, MIME, Font Awesome ikona, krāsa; CRUD |
 | `/admin/languages` | `site_languages`: pievienot, labot nosaukumu, aktīva/noklusējuma, dzēst |
 | `/admin/translations` | `site_translations` + `messages.ts` atslēgas: meklēšana, pievienot, labot, dzēst (koda atslēgas dzēst nevar) |
-| `/admin/settings` | `site_settings`: sistēmas nosaukums un slogans katrā valodā |
+| `/admin/settings` | `site_settings`: sistēmas nosaukums, slogans, nedēļas sākums, datuma formāts/atdalītājs, 12/24 h; hinti zem laukiem |
 
 - Servera vārti: `requireAdmin()` layoutā un `admin/actions.ts`
 - Klienta pārbaude: `useIsAdmin()` caur RPC `current_user_is_admin()` (ikona)
 - Lietotāju saraksts caur ielogotā admin sesiju (RLS `008_admin_list_access.sql`); jauna lietotāja izveide ar service role
 - Valodas, tulkojumi, uzstādījumi caur to pašu sesiju (RLS `010_site_admin_session_access.sql`); `site_*` SELECT arī `anon`
-- Migrācijas: `003` admin RPC, `006` valodas/tulkojumi/uzstādījumi, `007` RU, `008` admin list access, `009` `users` aktivitātes lauki, `010` site admin session RLS, `011` `users.language_code`, `012`/`016`/`018` statusi, `017`/`020`/`021` lomas, `013`/`014`/`019` privāti saraksti, `022`/`023` sarakstu pieeju līmeņi, `024` `work_tasks.deleted_at`, `025` kataloga statusa check, `027`/`028`/`030` saraksta statusi, `029` `work_tasks.checklists`, `031` `team_status_labels`
+- Migrācijas: `003` admin RPC, `006` valodas/tulkojumi/uzstādījumi, `007` RU, `008` admin list access, `009` `users` aktivitātes lauki, `010` site admin session RLS, `011` `users.language_code`, `012`/`016`/`018` statusi, `017`/`020`/`021` lomas, `013`/`014`/`019` privāti saraksti, `022`/`023` sarakstu pieeju līmeņi, `024` `work_tasks.deleted_at`, `025` kataloga statusa check, `027`/`028`/`030` saraksta statusi, `029` `work_tasks.checklists`, `031` `team_status_labels`, `032` failu `size` backfill, `033`/`035` display preferences, `034` `file_type_extensions`
 
 ## Paziņojumi
 
@@ -113,7 +118,7 @@ Ielāde: `LoadingState` (`app/components/loading-state.tsx`, `fas fa-circle-notc
 
 ## Apakšuzdevuma modālis
 
-`app/components/subtask-detail-modal.tsx` + `AppModal` (`dirty` no nosaukuma, apraksta, datumiem, atbildīgajiem — **statuss un čeklisti dirty neskaita**). Statusa maiņa esošam apakšuzdevumam `updateTask` uzreiz. Čeklisti esošam uzdevumam persistējas uzreiz (tekstam debounce). Saglabāt **neaizver** modāli un nepāriet uz citu lapu; aizver X / ESC / Atcelt. Pēc jauna apakšuzdevuma izveides paliek edit mode. Poga **Pievienot jaunu** (tikai plus + tooltip `actions.add_new`) rādās, kad ir nosaukums un Saglabāt nav aktīvs; klikšķis atver tukšu formu tajā pašā modālī. `headerMeta` rāda `izveidots {date}` no aktivitātes `kind === "created"` (`formatDisplayDateDdMmYy`); jaunam nesaglabātam apakšuzdevumam datums nav. Atverams arī no saraksta loga un `/lists` kopsavilkuma, bez navigācijas.
+`app/components/subtask-detail-modal.tsx` + `AppModal` (`dirty` no nosaukuma, apraksta, datumiem, atbildīgajiem — **statuss un čeklisti dirty neskaita**). Statusa maiņa esošam apakšuzdevumam `updateTask` uzreiz. Čeklisti esošam uzdevumam persistējas uzreiz (tekstam debounce). Saglabāt **neaizver** modāli un nepāriet uz citu lapu; aizver X / ESC / Atcelt. Pēc jauna apakšuzdevuma izveides paliek edit mode. Poga **Pievienot jaunu** (tikai plus + tooltip `actions.add_new`) rādās, kad ir nosaukums un Saglabāt nav aktīvs; klikšķis atver tukšu formu tajā pašā modālī. `headerMeta` rāda `izveidots {date}` no aktivitātes `kind === "created"` (`useDisplayPreferences().formatDate`); jaunam nesaglabātam apakšuzdevumam datums nav. Atverams arī no saraksta loga un `/lists` kopsavilkuma, bez navigācijas.
 
 | Lauks | Uzvedība |
 |---|---|
@@ -123,14 +128,14 @@ Ielāde: `LoadingState` (`app/components/loading-state.tsx`, `fas fa-circle-notc
 | Statuss | `StatusControl` — krāsaina poga; nākamais (`fa-angle-right`) un Check. Tabulā bez hover tikai nosaukums, hover rāda `>` / Check / pārvietot / dzēst (bez animācijas). Klikšķis uz nosaukuma atver picker. `comment` līmenī statusu drīkst mainīt izpildītājs. Ja ir čeklista punkti, zem pogas zaļa progresa josla; slēgto grupu un Check tikai pie 100% |
 | Projekts, atbildīgie | Saraksta badge, `AssigneeCell` |
 | Check List | `TaskChecklists` — pirms pielikumiem; vairāki saraksti ar nosaukumu; nākamais tukšais punkts parādās pēc teksta; atzīmēšana ar ķeksīti. Struktūru labo `canEditTasks`; punktus atzīmē arī `canChangeStatus` |
-| Pielikumi | `TaskAttachments` — drag-and-drop vai **pārlūko**; kartītes ar priekšskatījumu; `disabled` bez `edit` / `full_edit` |
+| Pielikumi | `TaskAttachments` — drag-and-drop vai **pārlūko**; `accept` no failu tipu kataloga; kartītes ar ikonu/krāsu; `disabled` bez `edit` / `full_edit` |
 | Faila `...` | `CreateItemMenu`: Apskatīt, Pārsaukt, Dzēst. Klikšķis uz kartītes arī atver apskati. Izvēlne ar `data-app-modal-ignore-backdrop`, lai neaizvērtu apakšuzdevuma modāli |
 | Dzēst failu | Tikai `ConfirmModal` (`files.delete.*`) |
 | Pārsaukt failu | `NameFormModal` (`files.edit.*`) |
 | Apskatīt failu | `FilePreview` ligzdotā `AppModal` |
 | Vēsture | Labā kolonna, `taskActivities`; statusu nosaukumi no kataloga (`labelFor`); laiks `RelativeTime` (kā pēdējā tiešsaiste); no `comment` līmeņa — komentāra lauks (`addTaskComment`) |
 
-Failu metadati: `TaskFile` (`id`, `taskId`, `name`, `mimeType`, `size`, `hasContent`, `createdAt`). Saturs Postgres `task_files.content` (data URL, līdz `MAX_STORED_FILE_BYTES`, 1.5 MB).
+Failu metadati: `TaskFile` (`id`, `taskId`, `name`, `mimeType`, `size`, `hasContent`, `createdAt`). Saturs Postgres `task_files.content` (data URL, līdz `MAX_STORED_FILE_BYTES`, 1.5 MB). Atļautie paplašinājumi: `file_type_extensions` (sākumā pdf, dwg, doc, docx, xls, xlsx); `app/lib/file-types.ts` + `FileTypesProvider`. Ikona/krāsa: `FileIcon`.
 
 ## Saraksti un uzdevumi
 
@@ -138,7 +143,7 @@ Hierarhija: **Saraksts → mape / uzdevumu saraksts / fails → apakšuzdevumi t
 
 - Tipi: `app/lib/lists.ts` (`WorkTaskKind`: `folder` \| `task` \| `subtask`)
 - Stāvoklis: `app/lib/lists-store.tsx` — ielāde no `work_lists` / `work_tasks`; pieslēgtam lietotājam bez komandas tukšs koks (nav dummy datu)
-- Saraksta faili kokā: `app/lib/list-files.ts`
+- Saraksta faili kokā: `app/lib/list-files.ts` — augšupielāde tikai `file_type_extensions` katalogā
 - Jauns/labot sarakstu: `ListFormModal` — izskats, privāts slēdzis, **noklusējuma pieeja**; slēdzis **Pielāgot katrai lomai** parāda lomu līmeņus un paslēpj globālo izvēli (privātam arī biedriem un „nav pieejas”)
 - Apakšuzdevumu tabula (`SubtaskTable` + `GroupedSubtaskTables`): viena tabula ar `groupByStatus` galvenēm iekšā; pie Pievienot arhīva poga (`IconActionButton` `variant="delete"`, aktīva paliek sarkanīga) rāda aktīvos **un** arhivētos; pabeigšana fade-out vietā; miskaste aiz Check (`deleted_at`, nav statusa katalogā); klikšķis uz dzēstā atjauno; **Pārvietot** (`fa-exchange-alt`) atver `MoveSubtaskModal`; slēgtajiem/dzēstajiem **rindai** viegls fons (`fadeHexColor` 0.88; dzēstajiem `#ef4444`); statusa pogai atsevišķi blāvs fons; zem statusa `RelativeTime` un, ja ir čeklista punkti, zaļa progresa josla; jaunam uzdevumam `statusChangedAt` = izveides laiks; `reorderable={false}` (Sākums) slēpj kārtību, bet statusu joprojām var vilkt
 - Vilkšana: `app/components/task-drop-line.tsx` (`TaskDropLine`, `dropHintFromEvent`, `frozenSortingStrategy`, `groupedStatusCollisionDetection`). Vilkšanas laikā saraksts neslīd; drop ir bieza zila līnija. Starp statusu grupām vilkšana **tikai maina statusu**, nesamaina vietām ar cita grupas pēdējo uzdevumu
@@ -212,17 +217,18 @@ app/
     dashboard/page.tsx            # Sākums: Mani uzdevumi + saraksti
     lists/                        # Kopsavilkums, 3 logi, uzdevums, fails
     team/ settings/ projects/
-    admin/                        # users, teams, roles, statuses, languages, …
+    admin/                        # users, teams, roles, statuses, file-types, languages, …
 
   globals.css                     # Zinc light theme; `--radius-*` uz pusi
   components/
-    site-header.tsx               # Publiskā galvene
+    site-header.tsx               # Publiskā galvene; ielogotam Atvērt lietotni
     site-footer.tsx               # Publiskā kājene
     landing-page.tsx              # Landing saturs
     landing-app-preview.tsx       # Hero dashboard vizuālis
-    login-form.tsx                # Ienākt + Google
-    signup-form.tsx               # Reģistrēties + Google
+    login-form.tsx                # Ienākt + Google + Atcerēties mani
+    signup-form.tsx               # Reģistrēties + Google + Atcerēties mani
     google-auth-button.tsx        # Turpināt ar Google
+    remember-me-checkbox.tsx      # Atcerēties mani (30 dienas)
     forgot-password-form.tsx      # Aizmirsi paroli
     legal-document-view.tsx       # Legal lapas + fiksēta satura TOC
     cookie-consent-provider.tsx   # Piekrišanas stāvoklis
@@ -252,7 +258,9 @@ app/
     team-permission-fields.tsx    # Nav + actions slēdži
     admin-roles-manager.tsx       # Sistēmas noklusējuma lomas
     admin-statuses-manager.tsx    # Uzdevumu statusu katalogs
+    admin-file-types-manager.tsx  # Failu paplašinājumu CRUD
     task-attachments.tsx          # Pielikumu drop zona, kartītes, ... izvēlne
+    file-icon.tsx                 # Faila ikona + krāsa no kataloga
     file-preview.tsx              # Faila priekšskatījums
     create-item-menu.tsx          # Darbību izvēlne
     confirm-modal.tsx             # Dzēšanas apstiprinājums
@@ -283,7 +291,9 @@ app/
     list-access.ts                # Saraksta pieeju līmeņi un resolve
     lists-store.tsx               # Saraksti un uzdevumi no Postgres
     list-windows.ts               # Logu kārtība (preferences cookie)
-    list-files.ts                 # Saraksta faili kokā; persist DB
+    list-files.ts                 # Saraksta faili kokā; persist DB; size helpers
+    file-types.ts                 # Atļautie paplašinājumi, MIME, ikona, krāsa
+    file-types-context.tsx        # Katalogs klientam (accept, validācija)
     task-activity.ts              # Vēsture un apakšuzdevumu pielikumi
     team.ts                       # Biedru, lomu un WorkTeam tipi
     team-store.tsx                # Komandas, biedri un lomas no Postgres
@@ -296,21 +306,24 @@ app/
     db/work-data.ts               # Komandas darba datu CRUD
     db/import-local-work.ts       # Vienreizējs localStorage → DB imports
     clear-legacy-demo-storage.ts  # Veco dummy localStorage atslēgu tīrīšana
-    format-display-date.ts        # dd.mm.yy
+    format-display-date.ts        # datums/laiks pēc display preferences
+    site-admin/display-preferences.ts # tipi, merge (lietotājs > sistēma)
     i18n/messages.ts              # lv + en teksti
     i18n/messages-ru.ts           # ru teksti
     i18n/                          # language, server overlay no site_translations
     site-admin/                   # Admin CRUD repository, tipi
     supabase/                     # env, browser/server/admin klienti, session refresh
-    auth/                         # Google OAuth, sesija, display mapping, getCurrentUser
+    auth/                         # Google OAuth, remember-session (30 dienas), getCurrentUser
     users/ensure-profile.ts       # public.users rinda pēc OAuth
+    users/display-preferences.ts  # efektīvās UI datumu preferences
+    users/actions.ts              # saglabāt personīgās display preferences
     users/require-admin.ts        # /admin servera pārbaude
     users/use-is-admin.tsx        # is_admin RPC + profils klientā
     security/safe-redirect-path.ts
-app/auth/callback/route.ts        # OAuth code → session
-proxy.ts                          # Supabase session refresh
+app/auth/callback/route.ts        # OAuth code → session; Set-Cookie uz redirect
+proxy.ts                          # Sesijas refresh + ielogota novirzīšana no / un /login
 scripts/                          # audit-check.mjs, apply-migrations.mjs, test-supabase.mjs
-supabase/migrations/              # 001–031: shēma, admin, valodas, work data, lomas, statusi, sarakstu pieejas, deleted_at, kataloga statusi, list_statuses, checklists, team_status_labels
+supabase/migrations/              # 001–035: shēma, admin, valodas, work data, lomas, statusi, sarakstu pieejas, deleted_at, kataloga statusi, list_statuses, checklists, team_status_labels, failu size, display preferences, file_type_extensions
 .github/workflows/                # secret-scan.yml, security-audit.yml, security-smoke.yml
 .gitleaks.toml                    # default rules + i18n translation key allowlist
 .cursor/rules/                    # README bump, commits
@@ -371,13 +384,13 @@ Login un signup rāda **Turpināt ar Google**. Client ID un Secret **nav** `.env
    - Site URL: `http://localhost:3120`
    - Redirect URLs: `http://localhost:3120/auth/callback`
 
-Aplikācijas callback: `/auth/callback` (`app/auth/callback/route.ts`). `redirectTo` ņem `window.location.origin`. Pēc Google pieslēgšanās `ensure_user_profile` izveido `public.users` rindu. Pirmais reģistrētais saņem `is_admin = true`, pārējie `false`.
+Aplikācijas callback: `/auth/callback` (`app/auth/callback/route.ts`). `redirectTo` ņem `window.location.origin`. Pēc Google pieslēgšanās `ensure_user_profile` izveido `public.users` rindu. Pirmais reģistrētais saņem `is_admin = true`, pārējie `false`. Sesijas sīkdatnes ir **obligātās** (ePrivacy izņēmums autentifikācijai). **Atcerēties mani** (noklusējums) glabā sesiju **30 dienas**; bez ķeksīša sesija dzēšas, aizverot pārlūku. Ielogotam lietotājam `/`, `/login` un `/signup` ved uz `/dashboard`.
 
 ## Dati
 
 Darba dati dzīvo **Postgres**, ne pārlūkā un ne sīkdatnēs. Komandas biedri redz kopīgos sarakstus, mapes, uzdevumus un apakšuzdevumus. CRUD: `app/lib/db/work-data.ts`; ielāde `fetchTeamWorkspace`. Vecie `localStorage` dati (ja tādi bija pirms `005`) vienreiz tiek importēti ar `importLocalWorkIfNeeded` (karogs `routine-app-db-import-v1:{userId}`).
 
-`public.users` ir konta profils + `is_admin` + `language_code`. Komandas biedra loma ir `team_members.role` / `role_id` (katalogs `team_roles`). Uzaicināts biedrs sākumā ir bez `user_id`; pēc reģistrācijas ar to pašu e-pastu trigger `users_link_team_members` piesaista kontu, un tad viņš redz komandas datus. Ja uzaicinātais izveido savu komandu, viņš neredz uzaicinātāja sarakstus.
+`public.users` ir konta profils + `is_admin` + `language_code` + nullable display preferences (`week_start_day`, `date_format`, `date_separator`, `time_format`; `null` = sistēmas noklusējums no `site_settings`). Komandas biedra loma ir `team_members.role` / `role_id` (katalogs `team_roles`). Uzaicināts biedrs sākumā ir bez `user_id`; pēc reģistrācijas ar to pašu e-pastu trigger `users_link_team_members` piesaista kontu, un tad viņš redz komandas datus. Ja uzaicinātais izveido savu komandu, viņš neredz uzaicinātāja sarakstus.
 
 RLS (`005_work_data.sql`): `authenticated` drīkst SELECT/INSERT/UPDATE/DELETE tikai savas komandas rindās (`is_team_member`); komandas dzēšana / biedru uzaicināšana - `is_team_owner`. Saraksta satura rakstīšanu sašaurina `work_list_has_access` (`022`). `anon` policy ir deny.
 
@@ -388,6 +401,8 @@ RLS (`005_work_data.sql`): `authenticated` drīkst SELECT/INSERT/UPDATE/DELETE t
 | `team_roles` | Komandas lomas un `permissions` JSON |
 | `system_default_roles` | Admin noklusējuma lomas jaunām komandām |
 | `task_statuses` | Uzdevumu statusu katalogs (nosaukumi, krāsa, grupa) |
+| `file_type_extensions` | Atļautie failu tipi (paplašinājums, MIME, ikona, krāsa); SELECT authenticated, raksta `is_admin` |
+| `site_settings` | Sistēmas nosaukums, slogans, datumu/laika noklusējums (`week_start_day`, `date_format`, `date_separator`, `time_format`) |
 | `list_statuses` | Komandas statusi vienam sarakstam (`lsts-…`) |
 | `team_status_labels` | Komandas overlay sistēmas statusu nosaukumiem |
 | `work_lists` | Saraksti (`kind`, `is_private`, `default_access_level`, `created_by`) |
@@ -408,7 +423,7 @@ localStorage paliek tikai UI preferencei:
 | `routine-app-current-team-id` | Aktīvā komanda (`:userId`) |
 | `routine-app-nav-trees` | Sānjoslas sakļaušanas stāvoklis |
 
-Cookie `routine-app-cookie-consent` saglabā sīkdatņu piekrišanu. Cookie `routine-app-list-window-order` saglabā 3 logu kārtību katrā sarakstā, ja atļautas preferenču sīkdatnes. Cookie `routine-app-language` + `routine-app-language-chosen` saglabā viesu apzināto UI valodu; bez `chosen` rāda sistēmas noklusējumu, pēc ielogošanās izvēle nonāk `users.language_code`.
+Cookie `routine-app-cookie-consent` saglabā sīkdatņu piekrišanu (180 dienas). Cookie `routine-app-remember-session` (`1`/`0`) ir obligātā: vai Atcerēties mani ir ieslēgts. Supabase auth sīkdatnes paliek 30 dienas, ja `1`; bez tā - sesijas sīkdatnes. Cookie `routine-app-list-window-order` saglabā 3 logu kārtību katrā sarakstā, ja atļautas preferenču sīkdatnes. Cookie `routine-app-language` + `routine-app-language-chosen` saglabā viesu apzināto UI valodu; bez `chosen` rāda sistēmas noklusējumu, pēc ielogošanās izvēle nonāk `users.language_code`.
 
 ## Versioning & commits
 

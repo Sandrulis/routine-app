@@ -15,6 +15,9 @@ import {
   deleteTaskStatus,
   listAdminTeamMembers,
   listTaskStatuses,
+  createFileTypeExtension,
+  deleteFileTypeExtension,
+  updateFileTypeExtension,
   reorderTaskStatuses,
   saveSiteSettings,
   updateTaskStatus,
@@ -36,6 +39,7 @@ import type {
   AdminUserInput,
   TaskStatusInput,
   TaskStatusSummary,
+  FileTypeExtensionInput,
   SiteLanguageInput,
   SiteSettingsInput,
   SiteTranslationInput,
@@ -238,6 +242,30 @@ export async function deleteSystemDefaultRoleAction(roleId: string) {
 export async function reorderSystemDefaultRolesAction(orderedIds: string[]) {
   await requireAdmin();
   const result = await reorderSystemDefaultRoles(orderedIds);
+  if (result.ok) refreshAdmin();
+  return result;
+}
+
+export async function createFileTypeExtensionAction(input: FileTypeExtensionInput) {
+  await requireAdmin();
+  const result = await createFileTypeExtension(input);
+  if (result.ok) refreshAdmin();
+  return result;
+}
+
+export async function updateFileTypeExtensionAction(
+  extension: string,
+  input: Omit<FileTypeExtensionInput, "extension">,
+) {
+  await requireAdmin();
+  const result = await updateFileTypeExtension(extension, input);
+  if (result.ok) refreshAdmin();
+  return result;
+}
+
+export async function deleteFileTypeExtensionAction(extension: string) {
+  await requireAdmin();
+  const result = await deleteFileTypeExtension(extension);
   if (result.ok) refreshAdmin();
   return result;
 }
