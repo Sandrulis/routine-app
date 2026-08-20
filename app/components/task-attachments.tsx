@@ -36,6 +36,7 @@ export function TaskAttachments({
   files,
   onAdd,
   onView,
+  onDownload,
   onRename,
   onRemove,
   disabled = false,
@@ -44,6 +45,7 @@ export function TaskAttachments({
   files: AttachmentItem[];
   onAdd: (files: File[]) => void;
   onView: (id: string) => void;
+  onDownload: (id: string) => void;
   onRename: (id: string) => void;
   onRemove: (id: string) => void;
   disabled?: boolean;
@@ -261,6 +263,11 @@ export function TaskAttachments({
             title: t("actions.view", "Apskatīt"),
           },
           {
+            id: "download",
+            icon: "fas fa-download",
+            title: t("files.detail.download", "Lejupielādēt"),
+          },
+          {
             id: "rename",
             icon: "fas fa-pen",
             title: t("actions.rename", "Pārsaukt"),
@@ -279,6 +286,7 @@ export function TaskAttachments({
           const fileId = menu.fileId;
           setMenu(null);
           if (id === "view") onView(fileId);
+          if (id === "download") onDownload(fileId);
           if (id === "rename") onRename(fileId);
           if (id === "delete") onRemove(fileId);
         }}

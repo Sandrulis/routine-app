@@ -52,7 +52,7 @@ export async function getMicrosoftOAuthIntegrationStatusAction(
 export async function saveMicrosoftOAuthCredentialsAction(
   input: MicrosoftOAuthCredentialsInput,
 ): Promise<ActionResult> {
-  await requireAdmin();
+  await requireAdmin({ action: "integrations.microsoft.save" });
   const result = await saveMicrosoftOAuthCredentials(input);
   if (result.ok) refreshIntegrations();
   return result;
@@ -61,14 +61,14 @@ export async function saveMicrosoftOAuthCredentialsAction(
 export async function setMicrosoftOAuthEnabledAction(
   enabled: boolean,
 ): Promise<ActionResult> {
-  await requireAdmin();
+  await requireAdmin({ action: "integrations.microsoft.toggle" });
   const result = await setMicrosoftOAuthEnabled(enabled);
   if (result.ok) refreshIntegrations();
   return result;
 }
 
 export async function resetMicrosoftOAuthConfigurationAction(): Promise<ActionResult> {
-  await requireAdmin();
+  await requireAdmin({ action: "integrations.microsoft.reset" });
   const result = await resetMicrosoftOAuthConfiguration();
   if (result.ok) refreshIntegrations();
   return result;
@@ -77,7 +77,7 @@ export async function resetMicrosoftOAuthConfigurationAction(): Promise<ActionRe
 export async function startMicrosoftOAuthConfigureAction(
   origin: string,
 ): Promise<ActionResult<{ url: string }>> {
-  const admin = await requireAdmin();
+  const admin = await requireAdmin({ action: "integrations.microsoft.configure" });
   if (!(await isMicrosoftOAuthCredentialsAvailable())) {
     return { ok: false, error: "errors.integrations_microsoft_credentials_missing" };
   }

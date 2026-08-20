@@ -16,8 +16,7 @@ type AuthCookie = {
 export function parseRememberSession(
   raw: string | null | undefined,
 ): boolean {
-  if (raw === "0" || raw === "false") return false;
-  return true;
+  return raw === "1" || raw === "true";
 }
 
 export function readRememberSessionPreference(): boolean {
@@ -82,8 +81,13 @@ export function toResponseCookieOptions(options?: CookieOptions) {
   } = {
     path: options?.path ?? "/",
     domain: options?.domain,
-    secure: options?.secure,
-    httpOnly: options?.httpOnly,
+    secure:
+      options?.secure ??
+      (process.env.NODE_ENV === "production" ||
+        (process.env.NEXT_PUBLIC_SITE_URL ?? "").startsWith("https://")),
+    // Browser Supabase client still reads auth via document.cookie for RLS
+    // queries. HttpOnly is set on OAuth state cookies separately.
+    httpOnly: false,
   };
 
   if (

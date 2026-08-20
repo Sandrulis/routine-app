@@ -63,6 +63,7 @@ export type WorkTask = {
   statusChangedAt: string | null;
   deletedAt: string | null;
   archivedAt: string | null;
+  createdAt: string | null;
   assigneeIds: string[];
   startDate: string | null;
   dueDate: string | null;
@@ -340,7 +341,7 @@ function siblingGroupKey(
   return `${task.listId}:${task.parentId ?? ""}:${group}`;
 }
 
-function compareBySortOrder(a: WorkTask, b: WorkTask) {
+export function compareBySortOrder(a: WorkTask, b: WorkTask) {
   if (a.sortOrder !== b.sortOrder) return a.sortOrder - b.sortOrder;
   return a.id.localeCompare(b.id);
 }
@@ -556,6 +557,11 @@ export function normalizeStoredTasks(value: unknown): WorkTask[] | null {
         statusChangedAt,
         deletedAt,
         archivedAt,
+        createdAt:
+          "createdAt" in item &&
+          (typeof item.createdAt === "string" || item.createdAt === null)
+            ? item.createdAt
+            : null,
         assigneeIds,
         startDate,
         dueDate,

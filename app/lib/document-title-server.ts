@@ -2,7 +2,7 @@ import { createClient } from "@/app/lib/supabase/server";
 import { isSupabaseConfigured } from "@/app/lib/supabase/env";
 
 async function fetchNamedRecord(
-  table: "work_lists" | "list_files" | "team_members" | "work_templates",
+  table: "work_lists" | "list_files" | "task_files" | "team_members" | "work_templates",
   id: string,
 ): Promise<string | null> {
   if (!isSupabaseConfigured()) return null;
@@ -42,6 +42,10 @@ export function fetchWorkTaskTitle(taskId: string) {
 
 export function fetchListFileName(fileId: string) {
   return fetchNamedRecord("list_files", fileId);
+}
+
+export function fetchTaskFileName(fileId: string) {
+  return fetchNamedRecord("task_files", fileId);
 }
 
 export function fetchTeamMemberName(memberId: string) {

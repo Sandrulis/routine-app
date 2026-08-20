@@ -1,3 +1,9 @@
+import { logError } from "@/app/lib/security/log-error";
+import {
+  decryptSecret,
+  isEncryptedSecret,
+  persistSecret,
+} from "@/app/lib/security/secret-box";
 import { createAdminClient } from "@/app/lib/supabase/admin";
 import { isSupabaseAdminConfigured } from "@/app/lib/supabase/env";
 import {
@@ -36,10 +42,21 @@ async function fetchIntegrationRow(key: SimpleSiteIntegrationKey) {
     .eq("integration_key", key)
     .maybeSingle();
   if (error) {
-    console.error(`fetchIntegrationRow(${key}) failed:`, error.message);
+    logError(`fetchIntegrationRow(${key}) failed`, error.message);
     return null;
   }
-  return data as IntegrationRow | null;
+  const row = data as IntegrationRow | null;
+  if (row?.client_secret && !isEncryptedSecret(row.client_secret)) {
+    void admin
+      .from("site_integrations")
+      .update({ client_secret: persistSecret(row.client_secret) })
+      .eq("integration_key", key);
+  }
+  if (!row) return null;
+  return {
+    ...row,
+    client_secret: decryptSecret(row.client_secret),
+  };
 }
 
 export async function fetchSimpleIntegrationStatus(
@@ -145,7 +162,7 @@ export async function saveSimpleIntegrationCredentials(
   };
 
   if (clientSecretInput || (!existingSecret && nextSecret)) {
-    patch.client_secret = nextSecret;
+    patch.client_secret = persistSecret(nextSecret);
   }
 
   if (!configured) {

@@ -4,9 +4,9 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAuthSession } from "@/app/lib/auth/use-auth-session";
 import {
   deleteNotification,
-  deleteOldNotifications,
   fetchVisibleNotifications,
   markNotificationsRead,
+  purgeOldNotificationsOnce,
 } from "@/app/lib/db/work-data";
 import {
   NOTIFICATIONS_CHANGE_EVENT,
@@ -31,7 +31,7 @@ export function useNotifications() {
       return;
     }
     if (!options?.silent) setIsLoading(true);
-    void deleteOldNotifications(30).catch(() => undefined);
+    void purgeOldNotificationsOnce(30).catch(() => undefined);
     void fetchVisibleNotifications(teamId, userId)
       .then(setItems)
       .catch((error) => {

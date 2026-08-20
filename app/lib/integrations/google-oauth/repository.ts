@@ -1,3 +1,9 @@
+import { logError } from "@/app/lib/security/log-error";
+import {
+  decryptSecret,
+  isEncryptedSecret,
+  persistSecret,
+} from "@/app/lib/security/secret-box";
 import { createAdminClient } from "@/app/lib/supabase/admin";
 import { isSupabaseAdminConfigured } from "@/app/lib/supabase/env";
 import { FRONTEND_MODULE_KEYS } from "@/app/lib/frontend-modules/keys";
@@ -21,7 +27,7 @@ async function disableDependentGoogleDriveModule() {
     .eq("module_key", FRONTEND_MODULE_KEYS.googleDrive)
     .eq("is_enabled", true);
   if (error) {
-    console.error("disableDependentGoogleDriveModule failed:", error.message);
+    logError("disableDependentGoogleDriveModule failed", error.message);
   }
 }
 
@@ -67,7 +73,17 @@ async function fetchIntegrationRow(): Promise<IntegrationRow | null> {
     .eq("integration_key", SITE_INTEGRATION_KEYS.googleOAuth)
     .maybeSingle();
   if (error || !data) return null;
-  return data as IntegrationRow;
+  const row = data as IntegrationRow;
+  if (row.client_secret && !isEncryptedSecret(row.client_secret)) {
+    void admin
+      .from("site_integrations")
+      .update({ client_secret: persistSecret(row.client_secret) })
+      .eq("integration_key", SITE_INTEGRATION_KEYS.googleOAuth);
+  }
+  return {
+    ...row,
+    client_secret: decryptSecret(row.client_secret),
+  };
 }
 
 export function getGoogleOAuthCredentialsFromEnv() {
@@ -95,6 +111,12 @@ export function buildGoogleOAuthCallbackUrl(origin?: string) {
   return `${base}${GOOGLE_OAUTH_CALLBACK_PATH}`;
 }
 
+export function buildGoogleDriveCallbackUrl(origin?: string) {
+  const base = (origin?.trim() || resolveSiteOrigin()).replace(/\/$/, "");
+  if (!base) return "/auth/google-drive/callback";
+  return `${base}/auth/google-drive/callback`;
+}
+
 export async function fetchGoogleOAuthIntegrationStatus(
   origin = "",
 ): Promise<GoogleOAuthIntegrationStatus> {
@@ -115,6 +137,7 @@ export async function fetchGoogleOAuthIntegrationStatus(
     enabled,
     configuredAccountEmail: row?.configured_account_email?.trim() ?? "",
     callbackUrl: buildGoogleOAuthCallbackUrl(origin),
+    googleDriveCallbackUrl: buildGoogleDriveCallbackUrl(origin),
   };
 }
 
@@ -141,7 +164,7 @@ export async function saveGoogleOAuthCredentials(input: GoogleOAuthCredentialsIn
   };
 
   if (clientSecret) {
-    patch.client_secret = clientSecret;
+    patch.client_secret = persistSecret(clientSecret);
   }
 
   const { error } = await admin

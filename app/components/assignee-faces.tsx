@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import { OptionalTooltip } from "@/app/components/tooltip";
 import { UserAvatar } from "@/app/components/user-avatar";
 import { useTranslations } from "@/app/components/translations-provider";
@@ -11,7 +12,7 @@ import {
 import { teamRankLabel } from "@/app/lib/team";
 import { useTeam } from "@/app/lib/team-store";
 
-export function AssigneeFaces({
+export const AssigneeFaces = memo(function AssigneeFaces({
   assigneeIds,
   className = "",
 }: {
@@ -54,4 +55,4 @@ export function AssigneeFaces({
       </span>
     </OptionalTooltip>
   );
-}
+});

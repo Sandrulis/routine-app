@@ -22,6 +22,8 @@ import {
   getArchivedListRoots,
   getTaskAncestors,
   isWorkSubtask,
+  isWorkItemArchived,
+  compareBySortOrder,
   type WorkTaskKind,
   listColorById,
   randomListColorId,
@@ -42,11 +44,22 @@ import {
   type ListAccessLevel,
 } from "@/app/lib/list-access";
 import { useAuthSession } from "@/app/lib/auth/use-auth-session";
+import { peekStoredTeamId } from "@/app/lib/db/import-local-work";
+import {
+  appendTaskActivity,
+  clearTaskActivities,
+  readTaskActivities,
+} from "@/app/lib/task-activities-cache";
 import { memberIdsNotifiedForAssignees } from "@/app/lib/assignees";
 import { FRONTEND_MODULE_KEYS } from "@/app/lib/frontend-modules/keys";
 import { useFrontendModules } from "@/app/lib/frontend-modules/context";
 import { googleDrivePathForTaskFile } from "@/app/lib/google-drive/path";
-import { queueGoogleDriveUpload } from "@/app/lib/google-drive/queue-upload";
+import {
+  driveFileIdFromUpload,
+  queueGoogleDriveRename,
+  shouldStoreFileOnServer,
+  uploadGoogleDriveFile,
+} from "@/app/lib/google-drive/queue-upload";
 import { queueOneDriveUpload } from "@/app/lib/onedrive/queue-upload";
 import { useTeam } from "@/app/lib/team-store";
 import {
@@ -85,7 +98,7 @@ import {
   nextItemSortOrder,
   readAllListFiles,
 } from "@/app/lib/list-files";
-import { isAllowedFileName } from "@/app/lib/file-types";
+import { isAllowedFileName, renameKeepingExtension } from "@/app/lib/file-types";
 import {
   deleteListRow,
   deleteTaskFileRow,
@@ -109,6 +122,8 @@ import {
   updateTaskRow,
   updateTaskSortOrders,
   updateTasksArchivedAt,
+  updateListSortOrders,
+  updateTasksStatus,
   upsertTeamStatusLabel,
   insertListAutomation,
   updateListAutomationRow,
@@ -216,7 +231,11 @@ type ListsContextValue = {
   deleteTask: (taskId: string) => void;
   setWorkItemArchived: (taskId: string, archived: boolean) => void;
   addTaskComment: (taskId: string, text: string) => void;
-  addTaskFile: (taskId: string, file: File) => Promise<TaskFile | null>;
+  addTaskFile: (
+    taskId: string,
+    file: File,
+    options?: { onProgress?: (percent: number) => void },
+  ) => Promise<TaskFile | null>;
   renameTaskFile: (fileId: string, name: string) => void;
   removeTaskFile: (fileId: string) => void;
   taskActivities: (taskId: string) => TaskActivity[];
@@ -283,6 +302,25 @@ type ListsContextValue = {
 };
 
 const ListsContext = createContext<ListsContextValue | null>(null);
+const ListsActionsContext = createContext<
+  Omit<
+    ListsContextValue,
+    | "isReady"
+    | "lists"
+    | "tasks"
+    | "listStatuses"
+    | "workTaskStatuses"
+    | "listAutomations"
+    | "teamStatusLabels"
+    | "allTaskFiles"
+    | "taskActivities"
+    | "taskFiles"
+    | "listTasks"
+    | "archivedListTasks"
+    | "childTasks"
+    | "subtasks"
+  > | null
+>(null);
 
 export function ListsProvider({ children }: { children: ReactNode }) {
   const { user: authUser, isReady: authReady } = useAuthSession();
@@ -313,11 +351,8 @@ export function ListsProvider({ children }: { children: ReactNode }) {
   onedriveEnabledRef.current = onedriveEnabled;
   const userId = authUser?.id ?? null;
   const teamId = currentTeam?.id ?? null;
-  const scopeKey = `${userId ?? "anon"}:${teamId ?? ""}`;
-  const canLoad = authReady && teamReady;
   const [lists, setLists] = useState<WorkList[]>([]);
   const [tasks, setTasks] = useState<WorkTask[]>([]);
-  const [activities, setActivities] = useState<TaskActivity[]>([]);
   const [files, setFiles] = useState<TaskFile[]>([]);
   const [listStatuses, setListStatuses] = useState<ListStatus[]>([]);
   const [workTaskStatuses, setWorkTaskStatuses] = useState<WorkTaskStatusDef[]>([]);
@@ -359,6 +394,7 @@ export function ListsProvider({ children }: { children: ReactNode }) {
 
   const persistActivity = useCallback(
     (activity: TaskActivity, label = "Failed to save activity") => {
+      appendTaskActivity(activity);
       const activeTeamId = assignmentNotifyRef.current.teamId;
       if (!activeTeamId) return;
       void waitForTaskRow(activity.taskId)
@@ -381,13 +417,10 @@ export function ListsProvider({ children }: { children: ReactNode }) {
   }, [privateListsEnabled]);
 
   useEffect(() => {
-    if (!canLoad) return;
-    setIsReady(false);
-
-    if (userId && !teamId) {
+    if (!authReady) return;
+    if (!userId) {
       setLists([]);
       setTasks([]);
-      setActivities([]);
       setFiles([]);
       setListStatuses([]);
       setWorkTaskStatuses([]);
@@ -399,10 +432,14 @@ export function ListsProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    if (!teamId) {
+    const activeTeamId = teamId || peekStoredTeamId(userId);
+    if (!activeTeamId) {
+      if (!teamReady) {
+        setIsReady(false);
+        return;
+      }
       setLists([]);
       setTasks([]);
-      setActivities([]);
       setFiles([]);
       setListStatuses([]);
       setWorkTaskStatuses([]);
@@ -415,31 +452,30 @@ export function ListsProvider({ children }: { children: ReactNode }) {
     }
 
     let cancelled = false;
+    setIsReady(false);
     pendingTaskInsertsRef.current.clear();
-    void fetchTeamWorkspace(teamId)
+    void fetchTeamWorkspace(activeTeamId)
       .then((workspace) => {
         if (cancelled) return;
         setLists(workspace.lists);
         setTasks(workspace.tasks);
-        setActivities(workspace.activities);
         setFiles(workspace.taskFiles);
         setListStatuses(workspace.listStatuses);
         setWorkTaskStatuses(workspace.workTaskStatuses);
         setListAutomations(workspace.listAutomations);
         setTeamStatusLabels(workspace.teamStatusLabels);
-        hydrateListFiles(teamId, workspace.listFiles, workspace.listFileContents);
-        hydrateTaskFileContents(workspace.taskFileContents);
+        hydrateListFiles(activeTeamId, workspace.listFiles, {});
+        hydrateTaskFileContents({});
       })
       .catch((error) => {
         console.error("Failed to load lists", formatSupabaseError(error));
         if (cancelled) return;
         setLists([]);
         setTasks([]);
-        setActivities([]);
         setFiles([]);
         setListStatuses([]);
         setTeamStatusLabels({});
-        hydrateListFiles(teamId, [], {});
+        hydrateListFiles(activeTeamId, [], {});
         hydrateTaskFileContents({});
       })
       .finally(() => {
@@ -450,7 +486,7 @@ export function ListsProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, [canLoad, scopeKey, teamId, userId]);
+  }, [authReady, teamId, teamReady, userId]);
 
   const addList = useCallback(
     (input: {
@@ -609,9 +645,7 @@ export function ListsProvider({ children }: { children: ReactNode }) {
       const removedIds = new Set(
         current.filter((task) => task.listId === listId).map((task) => task.id),
       );
-      setActivities((items) =>
-        items.filter((item) => !removedIds.has(item.taskId)),
-      );
+      clearTaskActivities([...removedIds]);
       setFiles((items) => {
         const next = items.filter((item) => !removedIds.has(item.taskId));
         for (const file of items) {
@@ -639,11 +673,9 @@ export function ListsProvider({ children }: { children: ReactNode }) {
       if (ordered.length !== current.length) return current;
       return ordered;
     });
-    for (const [index, id] of orderedIds.entries()) {
-      void updateListRow(id, { sortOrder: index }).catch((error) => {
-        console.error("Failed to reorder lists", error);
-      });
-    }
+    void updateListSortOrders(orderedIds).catch((error) => {
+      console.error("Failed to reorder lists", error);
+    });
   }, []);
 
   const addTask = useCallback(
@@ -673,6 +705,7 @@ export function ListsProvider({ children }: { children: ReactNode }) {
         statusChangedAt: createdAt,
         deletedAt: null,
         archivedAt: null,
+        createdAt,
         assigneeIds,
         startDate: null,
         dueDate: null,
@@ -711,7 +744,7 @@ export function ListsProvider({ children }: { children: ReactNode }) {
         kind: "created",
         at: createdAt,
       });
-      setActivities((current) => [...current, createdActivity]);
+      appendTaskActivity(createdActivity);
       const activeTeamId = assignmentNotifyRef.current.teamId;
       if (activeTeamId) {
         const parentId = task.parentId;
@@ -834,10 +867,6 @@ export function ListsProvider({ children }: { children: ReactNode }) {
           patch,
         );
         if (nextEvents.length > 0) {
-          setActivities((currentActivities) => [
-            ...currentActivities,
-            ...nextEvents,
-          ]);
           for (const event of nextEvents) {
             persistActivity(event);
           }
@@ -1010,7 +1039,6 @@ export function ListsProvider({ children }: { children: ReactNode }) {
       kind: "comment",
       text: trimmed,
     });
-    setActivities((current) => [...current, activity]);
     persistActivity(activity, "Failed to save comment");
     if (task) {
       const notify = assignmentNotifyRef.current;
@@ -1033,12 +1061,40 @@ export function ListsProvider({ children }: { children: ReactNode }) {
     }
   }, [persistActivity]);
 
-  const addTaskFile = useCallback(async (taskId: string, file: File) => {
+  const addTaskFile = useCallback(async (
+    taskId: string,
+    file: File,
+    options?: { onProgress?: (percent: number) => void },
+  ) => {
     if (!fileUploadsEnabledRef.current) return null;
     const name = file.name.trim() || "file";
     if (!isAllowedFileName(name)) {
       return null;
     }
+
+    const onProgress = options?.onProgress;
+    onProgress?.(0);
+
+    let driveResult = null;
+    if (googleDriveEnabledRef.current) {
+      driveResult = await uploadGoogleDriveFile({
+        teamId: assignmentNotifyRef.current.teamId,
+        listId: tasksRef.current.find((item) => item.id === taskId)?.listId ?? "",
+        file,
+        pathParts: googleDrivePathForTaskFile({
+          lists: listsRef.current,
+          tasks: tasksRef.current,
+          taskId,
+        }),
+        onProgress,
+      });
+    } else {
+      onProgress?.(40);
+    }
+
+    onProgress?.(85);
+    const storeContent = shouldStoreFileOnServer(driveResult);
+    const googleDriveFileId = driveFileIdFromUpload(driveResult);
     const record: TaskFile = {
       id: createTaskFileId(),
       taskId,
@@ -1046,26 +1102,34 @@ export function ListsProvider({ children }: { children: ReactNode }) {
       mimeType: file.type || mimeFromName(name),
       size: Math.max(0, Math.round(file.size)),
       hasContent: false,
+      googleDriveFileId,
       createdAt: new Date().toISOString(),
     };
-    const content = await storeTaskFileContent(record.id, file);
+    const content = storeContent
+      ? await storeTaskFileContent(record.id, file)
+      : null;
     record.hasContent = Boolean(content);
-    setFiles((current) => [...current, record]);
     const activity = createActivity({
       actorId: assignmentNotifyRef.current.actorId,
       taskId,
       kind: "file",
       fileName: record.name,
     });
-    setActivities((current) => [...current, activity]);
     const activeTeamId = assignmentNotifyRef.current.teamId;
     if (activeTeamId) {
-      void insertTaskFile(activeTeamId, record, content)
-        .then(() => insertActivity(activeTeamId, activity))
-        .catch((error) => {
-          console.error("Failed to save task file", formatSupabaseError(error));
-        });
+      try {
+        // Await DB insert before UI/download can use /api/google-drive/content.
+        await insertTaskFile(activeTeamId, record, content);
+        await insertActivity(activeTeamId, activity);
+      } catch (error) {
+        console.error("Failed to save task file", formatSupabaseError(error));
+        cacheTaskFileContent(record.id, null);
+        onProgress?.(100);
+        return null;
+      }
     }
+    setFiles((current) => [...current, record]);
+    appendTaskActivity(activity);
     const task = tasksRef.current.find((item) => item.id === taskId);
     if (task) {
       const notify = assignmentNotifyRef.current;
@@ -1085,20 +1149,10 @@ export function ListsProvider({ children }: { children: ReactNode }) {
           ),
         );
       }
-      if (googleDriveEnabledRef.current) {
-        queueGoogleDriveUpload({
-          teamId: assignmentNotifyRef.current.teamId,
-          file,
-          pathParts: googleDrivePathForTaskFile({
-            lists: listsRef.current,
-            tasks: tasksRef.current,
-            taskId,
-          }),
-        });
-      }
       if (onedriveEnabledRef.current) {
         queueOneDriveUpload({
           teamId: assignmentNotifyRef.current.teamId,
+          listId: tasksRef.current.find((item) => item.id === taskId)?.listId ?? "",
           file,
           pathParts: googleDrivePathForTaskFile({
             lists: listsRef.current,
@@ -1108,6 +1162,7 @@ export function ListsProvider({ children }: { children: ReactNode }) {
         });
       }
     }
+    onProgress?.(100);
     return record;
   }, []);
 
@@ -1120,7 +1175,6 @@ export function ListsProvider({ children }: { children: ReactNode }) {
           assignmentNotifyRef.current.actorId,
           file.name,
         );
-        setActivities((items) => [...items, activity]);
         persistActivity(activity, "Failed to save file removal activity");
       }
       return current.filter((item) => item.id !== fileId);
@@ -1132,18 +1186,21 @@ export function ListsProvider({ children }: { children: ReactNode }) {
   }, [persistActivity]);
 
   const renameTaskFile = useCallback((fileId: string, name: string) => {
-    const trimmed = name.trim();
+    let trimmed = name.trim();
     if (!trimmed) return;
+    let hasDriveFile = false;
     setFiles((current) => {
       const file = current.find((item) => item.id === fileId);
-      if (file && file.name !== trimmed) {
+      if (!file) return current;
+      trimmed = renameKeepingExtension(file.name, trimmed);
+      if (file.googleDriveFileId) hasDriveFile = true;
+      if (file.name !== trimmed) {
         const activity = buildFileRenamedActivity(
           file.taskId,
           assignmentNotifyRef.current.actorId,
           file.name,
           trimmed,
         );
-        setActivities((items) => [...items, activity]);
         persistActivity(activity, "Failed to save file rename activity");
       }
       return current.map((item) =>
@@ -1155,6 +1212,9 @@ export function ListsProvider({ children }: { children: ReactNode }) {
     void updateTaskFileName(fileId, trimmed, mimeFromName(trimmed)).catch((error) => {
       console.error("Failed to rename task file", error);
     });
+    if (hasDriveFile && googleDriveEnabledRef.current) {
+      queueGoogleDriveRename({ kind: "task", id: fileId, name: trimmed });
+    }
   }, [persistActivity]);
 
   const hideTask = useCallback(
@@ -1188,7 +1248,6 @@ export function ListsProvider({ children }: { children: ReactNode }) {
         existing.parentId,
         parentId,
       );
-      setActivities((items) => [...items, activity]);
       persistActivity(activity, "Failed to save move activity");
       const notify = assignmentNotifyRef.current;
       const moveNotifications = notificationsFromTaskActivities({
@@ -1248,9 +1307,7 @@ export function ListsProvider({ children }: { children: ReactNode }) {
     let removedIds: string[] = [];
     setTasks((current) => {
       removedIds = collectTaskSubtreeIds(current, taskId);
-      setActivities((items) =>
-        items.filter((item) => !removedIds.includes(item.taskId)),
-      );
+      clearTaskActivities(removedIds);
       setFiles((items) => {
         const next = items.filter((item) => !removedIds.includes(item.taskId));
         for (const file of items) {
@@ -1322,7 +1379,6 @@ export function ListsProvider({ children }: { children: ReactNode }) {
         }
       }
       if (nextEvents.length > 0) {
-        setActivities((items) => [...items, ...nextEvents]);
         for (const event of nextEvents) {
           persistActivity(event, "Failed to save reorder activity");
         }
@@ -1732,17 +1788,19 @@ export function ListsProvider({ children }: { children: ReactNode }) {
           at: now,
         }),
       );
-      setActivities((current) => [...current, ...nextEvents]);
-      for (const change of changes) {
-        void updateTaskRow(change.taskId, {
-          status: change.toStatus as WorkTaskStatus,
-          statusChangedAt: now,
-        }).catch((error) => {
-          console.error("Failed to reassign task status", formatSupabaseError(error));
-        });
-      }
       for (const event of nextEvents) {
         persistActivity(event, "Failed to save status activity");
+      }
+      const byStatus = new Map<string, string[]>();
+      for (const change of changes) {
+        const ids = byStatus.get(change.toStatus) ?? [];
+        ids.push(change.taskId);
+        byStatus.set(change.toStatus, ids);
+      }
+      for (const [status, ids] of byStatus) {
+        void updateTasksStatus(ids, status as WorkTaskStatus, now).catch((error) => {
+          console.error("Failed to reassign task status", formatSupabaseError(error));
+        });
       }
     },
     [persistActivity],
@@ -1813,17 +1871,19 @@ export function ListsProvider({ children }: { children: ReactNode }) {
           at: now,
         }),
       );
-      setActivities((current) => [...current, ...nextEvents]);
-      for (const change of changes) {
-        void updateTaskRow(change.taskId, {
-          status: change.toStatus as WorkTaskStatus,
-          statusChangedAt: now,
-        }).catch((error) => {
-          console.error("Failed to reassign subtask status", formatSupabaseError(error));
-        });
-      }
       for (const event of nextEvents) {
         persistActivity(event, "Failed to save status activity");
+      }
+      const byStatus = new Map<string, string[]>();
+      for (const change of changes) {
+        const ids = byStatus.get(change.toStatus) ?? [];
+        ids.push(change.taskId);
+        byStatus.set(change.toStatus, ids);
+      }
+      for (const [status, ids] of byStatus) {
+        void updateTasksStatus(ids, status as WorkTaskStatus, now).catch((error) => {
+          console.error("Failed to reassign subtask status", formatSupabaseError(error));
+        });
       }
     },
     [persistActivity],
@@ -1895,7 +1955,80 @@ export function ListsProvider({ children }: { children: ReactNode }) {
     [lists, privateListsEnabled],
   );
 
-  const value = useMemo(
+  const listTasksById = useMemo(() => {
+    const map = new Map<string, WorkTask[]>();
+    for (const list of visibleLists) {
+      map.set(list.id, getListTasks(tasks, list.id));
+    }
+    return map;
+  }, [tasks, visibleLists]);
+
+  const childTasksByParent = useMemo(() => {
+    const map = new Map<string, WorkTask[]>();
+    for (const task of tasks) {
+      if (!task.parentId) continue;
+      const list = map.get(task.parentId) ?? [];
+      list.push(task);
+      map.set(task.parentId, list);
+    }
+    for (const [parentId, list] of map) {
+      map.set(parentId, list.slice().sort(compareBySortOrder));
+    }
+    return map;
+  }, [tasks]);
+
+  const filesByTask = useMemo(() => {
+    const map = new Map<string, TaskFile[]>();
+    for (const file of files) {
+      const list = map.get(file.taskId) ?? [];
+      list.push(file);
+      map.set(file.taskId, list);
+    }
+    return map;
+  }, [files]);
+
+  const listTasksFn = useCallback(
+    (listId: string) => listTasksById.get(listId) ?? getListTasks(tasks, listId),
+    [listTasksById, tasks],
+  );
+  const archivedListTasksFn = useCallback(
+    (listId: string) => getArchivedListRoots(tasks, listId),
+    [tasks],
+  );
+  const childTasksFn = useCallback(
+    (parentId: string) => {
+      const children = childTasksByParent.get(parentId);
+      if (!children) return getChildTasks(tasks, parentId);
+      const archived = isWorkItemArchived(
+        tasks.find((task) => task.id === parentId) ?? { archivedAt: null },
+      );
+      return children.filter(
+        (task) =>
+          task.kind !== "subtask" && isWorkItemArchived(task) === archived,
+      );
+    },
+    [childTasksByParent, tasks],
+  );
+  const subtasksFn = useCallback(
+    (parentId: string) => {
+      const children = childTasksByParent.get(parentId);
+      if (!children) return getSubtasks(tasks, parentId);
+      const archived = isWorkItemArchived(
+        tasks.find((task) => task.id === parentId) ?? { archivedAt: null },
+      );
+      return children.filter(
+        (task) =>
+          task.kind === "subtask" && isWorkItemArchived(task) === archived,
+      );
+    },
+    [childTasksByParent, tasks],
+  );
+  const taskFilesFn = useCallback(
+    (taskId: string) => filesByTask.get(taskId) ?? [],
+    [filesByTask],
+  );
+
+  const dataValue = useMemo(
     () => ({
       isReady,
       lists: visibleLists,
@@ -1903,106 +2036,129 @@ export function ListsProvider({ children }: { children: ReactNode }) {
       listStatuses,
       workTaskStatuses,
       listAutomations,
-      addList,
-      updateList,
-      deleteList,
-      reorderLists,
-      addTask,
-      applyTemplate,
-      updateTask,
-      hideTask,
-      restoreTask,
-      moveSubtask,
-      moveWorkItem,
-      deleteTask,
-      setWorkItemArchived,
-      updateTaskStatus,
-      addTaskComment,
-      addTaskFile,
-      renameTaskFile,
-      removeTaskFile,
-      reorderTasks,
-      addListStatus,
-      updateListStatus,
-      deleteListStatus,
-      reorderListStatuses,
-      addWorkTaskStatus,
-      updateWorkTaskStatus,
-      deleteWorkTaskStatus,
-      reassignSubtasksOffStatus,
-      addListAutomation,
-      updateListAutomation,
-      deleteListAutomation,
-      reassignTasksOffStatus,
       teamStatusLabels,
-      renameSystemStatus,
-      resetSystemStatusLabel,
-      taskActivities: (taskId: string) =>
-        activities
-          .filter((item) => item.taskId === taskId)
-          .slice()
-          .sort((left, right) => right.at.localeCompare(left.at)),
-      taskFiles: (taskId: string) =>
-        files.filter((file) => file.taskId === taskId),
       allTaskFiles: files,
-      listTasks: (listId: string) => getListTasks(tasks, listId),
-      archivedListTasks: (listId: string) => getArchivedListRoots(tasks, listId),
-      childTasks: (parentId: string) => getChildTasks(tasks, parentId),
-      subtasks: (parentId: string) => getSubtasks(tasks, parentId),
+      taskActivities: (taskId: string) => readTaskActivities(taskId),
+      taskFiles: taskFilesFn,
+      listTasks: listTasksFn,
+      archivedListTasks: archivedListTasksFn,
+      childTasks: childTasksFn,
+      subtasks: subtasksFn,
     }),
     [
-      activities,
-      addList,
-      updateList,
-      deleteList,
-      reorderLists,
-      addTask,
-      applyTemplate,
-      addTaskComment,
-      addTaskFile,
-      renameTaskFile,
-      removeTaskFile,
-      deleteTask,
-      setWorkItemArchived,
-      hideTask,
-      restoreTask,
-      moveSubtask,
-      moveWorkItem,
+      archivedListTasksFn,
+      childTasksFn,
       files,
       isReady,
-      visibleLists,
-      listStatuses,
-      workTaskStatuses,
       listAutomations,
-      reorderTasks,
-      addListStatus,
-      updateListStatus,
-      deleteListStatus,
-      reorderListStatuses,
-      addWorkTaskStatus,
-      updateWorkTaskStatus,
-      deleteWorkTaskStatus,
-      reassignSubtasksOffStatus,
-      addListAutomation,
-      updateListAutomation,
-      deleteListAutomation,
-      reassignTasksOffStatus,
+      listStatuses,
+      listTasksFn,
+      subtasksFn,
+      taskFilesFn,
       teamStatusLabels,
-      renameSystemStatus,
-      resetSystemStatusLabel,
       tasks,
-      updateTask,
-      updateTaskStatus,
+      visibleLists,
+      workTaskStatuses,
     ],
   );
 
-  return <ListsContext.Provider value={value}>{children}</ListsContext.Provider>;
+  const actionsValue = useMemo(
+    () => ({
+      addList,
+      updateList,
+      deleteList,
+      reorderLists,
+      addTask,
+      applyTemplate,
+      updateTask,
+      hideTask,
+      restoreTask,
+      moveSubtask,
+      moveWorkItem,
+      deleteTask,
+      setWorkItemArchived,
+      updateTaskStatus,
+      addTaskComment,
+      addTaskFile,
+      renameTaskFile,
+      removeTaskFile,
+      reorderTasks,
+      addListStatus,
+      updateListStatus,
+      deleteListStatus,
+      reorderListStatuses,
+      addWorkTaskStatus,
+      updateWorkTaskStatus,
+      deleteWorkTaskStatus,
+      reassignSubtasksOffStatus,
+      addListAutomation,
+      updateListAutomation,
+      deleteListAutomation,
+      reassignTasksOffStatus,
+      renameSystemStatus,
+      resetSystemStatusLabel,
+    }),
+    [
+      addList,
+      addListAutomation,
+      addListStatus,
+      addTask,
+      addTaskComment,
+      addTaskFile,
+      addWorkTaskStatus,
+      applyTemplate,
+      deleteList,
+      deleteListAutomation,
+      deleteListStatus,
+      deleteTask,
+      deleteWorkTaskStatus,
+      hideTask,
+      moveSubtask,
+      moveWorkItem,
+      reassignSubtasksOffStatus,
+      reassignTasksOffStatus,
+      removeTaskFile,
+      renameSystemStatus,
+      renameTaskFile,
+      reorderListStatuses,
+      reorderLists,
+      reorderTasks,
+      resetSystemStatusLabel,
+      restoreTask,
+      setWorkItemArchived,
+      updateList,
+      updateListAutomation,
+      updateListStatus,
+      updateTask,
+      updateTaskStatus,
+      updateWorkTaskStatus,
+    ],
+  );
+
+  const value = useMemo(
+    () => ({ ...dataValue, ...actionsValue }),
+    [actionsValue, dataValue],
+  );
+
+  return (
+    <ListsActionsContext.Provider value={actionsValue}>
+      <ListsContext.Provider value={value}>{children}</ListsContext.Provider>
+    </ListsActionsContext.Provider>
+  );
 }
 
 export function useLists() {
   const context = useContext(ListsContext);
   if (!context) {
     throw new Error("useLists must be used within ListsProvider");
+  }
+  return context;
+}
+
+export function useListsActions() {
+  const context = useContext(ListsActionsContext);
+  if (!context) {
+    throw new Error("useListsActions must be used within ListsProvider");
   }
   return context;
 }

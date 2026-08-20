@@ -1,5 +1,7 @@
+import { cache } from "react";
 import { cookies } from "next/headers";
 import { mapUserDisplay } from "@/app/lib/auth/map-user-display";
+import { getCurrentUser } from "@/app/lib/auth/get-current-user";
 import {
   hasExplicitLanguageChoice,
   isLanguageCode,
@@ -11,26 +13,15 @@ import { isSupabaseConfigured } from "@/app/lib/supabase/env";
 
 type ProfileSupabaseClient = Awaited<ReturnType<typeof createClient>>;
 
-export async function ensureCurrentUserProfile(
-  client?: ProfileSupabaseClient,
+async function ensureProfileWithClient(
+  supabase: ProfileSupabaseClient,
+  userId: string,
+  name: string,
+  avatarUrl: string | null,
 ) {
-  if (!isSupabaseConfigured()) {
-    return;
-  }
-
-  const supabase = client ?? (await createClient());
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return;
-  }
-
-  const display = mapUserDisplay(user);
   const { error } = await supabase.rpc("ensure_user_profile", {
-    p_name: display.name,
-    p_avatar: display.avatarUrl ?? "",
+    p_name: name,
+    p_avatar: avatarUrl ?? "",
   });
 
   if (error) {
@@ -38,7 +29,51 @@ export async function ensureCurrentUserProfile(
     return;
   }
 
-  await persistGuestLanguageChoice(supabase, user.id);
+  await persistGuestLanguageChoice(supabase, userId);
+}
+
+const ensureCurrentUserProfileCached = cache(async function ensureCurrentUserProfileCached() {
+  if (!isSupabaseConfigured()) {
+    return;
+  }
+
+  const user = await getCurrentUser();
+  if (!user) {
+    return;
+  }
+
+  const supabase = await createClient();
+  const display = mapUserDisplay(user);
+  await ensureProfileWithClient(
+    supabase,
+    user.id,
+    display.name,
+    display.avatarUrl,
+  );
+});
+
+export async function ensureCurrentUserProfile(
+  client?: ProfileSupabaseClient,
+) {
+  if (!isSupabaseConfigured()) {
+    return;
+  }
+
+  if (!client) {
+    await ensureCurrentUserProfileCached();
+    return;
+  }
+
+  const {
+    data: { user },
+  } = await client.auth.getUser();
+
+  if (!user) {
+    return;
+  }
+
+  const display = mapUserDisplay(user);
+  await ensureProfileWithClient(client, user.id, display.name, display.avatarUrl);
 }
 
 async function persistGuestLanguageChoice(

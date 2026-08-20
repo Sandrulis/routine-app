@@ -70,28 +70,28 @@ function refreshAdmin() {
 }
 
 export async function createAdminUserAction(input: AdminUserInput) {
-  await requireAdmin();
+  await requireAdmin({ action: "admin.user.create" });
   const result = await createAdminUser(input);
   if (result.ok) refreshAdmin();
   return result;
 }
 
 export async function updateAdminUserAction(userId: string, input: AdminUserInput) {
-  const actor = await requireAdmin();
+  const actor = await requireAdmin({ action: "admin.user.update", target: userId });
   const result = await updateAdminUser(userId, input, actor.id);
   if (result.ok) refreshAdmin();
   return result;
 }
 
 export async function deleteAdminUserAction(userId: string) {
-  const actor = await requireAdmin();
+  const actor = await requireAdmin({ action: "admin.user.delete", target: userId });
   const result = await deleteAdminUser(userId, actor.id);
   if (result.ok) refreshAdmin();
   return result;
 }
 
 export async function createAdminTeamAction(input: AdminTeamInput) {
-  const user = await requireAdmin();
+  const user = await requireAdmin({ action: "admin.team.create" });
   const display = mapUserDisplay(user);
   const result = await createAdminTeam(input, {
     id: user.id,
@@ -104,14 +104,14 @@ export async function createAdminTeamAction(input: AdminTeamInput) {
 }
 
 export async function updateAdminTeamAction(teamId: string, input: AdminTeamInput) {
-  await requireAdmin();
+  await requireAdmin({ action: "admin.team.update", target: teamId });
   const result = await updateAdminTeam(teamId, input);
   if (result.ok) refreshAdmin();
   return result;
 }
 
 export async function deleteAdminTeamAction(teamId: string) {
-  await requireAdmin();
+  await requireAdmin({ action: "admin.team.delete", target: teamId });
   const result = await deleteAdminTeam(teamId);
   if (result.ok) refreshAdmin();
   return result;
@@ -125,42 +125,42 @@ export async function listAdminTeamMembersAction(
 }
 
 export async function createSiteLanguageAction(input: SiteLanguageInput) {
-  await requireAdmin();
+  await requireAdmin({ action: "admin.language.create" });
   const result = await createSiteLanguage(input);
   if (result.ok) refreshAdmin();
   return result;
 }
 
 export async function updateSiteLanguageNameAction(code: string, name: string) {
-  await requireAdmin();
+  await requireAdmin({ action: "admin.language.rename", target: code });
   const result = await updateSiteLanguageName(code, name);
   if (result.ok) refreshAdmin();
   return result;
 }
 
 export async function updateSiteLanguageActiveStatusAction(code: string, isActive: boolean) {
-  await requireAdmin();
+  await requireAdmin({ action: "admin.language.active", target: code });
   const result = await updateSiteLanguageActiveStatus(code, isActive);
   if (result.ok) refreshAdmin();
   return result;
 }
 
 export async function setDefaultSiteLanguageAction(code: string) {
-  await requireAdmin();
+  await requireAdmin({ action: "admin.language.default", target: code });
   const result = await setDefaultSiteLanguage(code);
   if (result.ok) refreshAdmin();
   return result;
 }
 
 export async function deleteSiteLanguageAction(code: string) {
-  await requireAdmin();
+  await requireAdmin({ action: "admin.language.delete", target: code });
   const result = await deleteSiteLanguage(code);
   if (result.ok) refreshAdmin();
   return result;
 }
 
 export async function createSiteTranslationAction(input: SiteTranslationInput) {
-  await requireAdmin();
+  await requireAdmin({ action: "admin.translation.create" });
   const result = await createSiteTranslation(input);
   if (result.ok) refreshAdmin();
   return result;
@@ -170,21 +170,21 @@ export async function updateSiteTranslationAction(
   currentKey: string,
   input: SiteTranslationInput,
 ) {
-  await requireAdmin();
+  await requireAdmin({ action: "admin.translation.update", target: currentKey });
   const result = await updateSiteTranslation(currentKey, input);
   if (result.ok) refreshAdmin();
   return result;
 }
 
 export async function deleteSiteTranslationAction(key: string) {
-  await requireAdmin();
+  await requireAdmin({ action: "admin.translation.delete", target: key });
   const result = await deleteSiteTranslation(key);
   if (result.ok) refreshAdmin();
   return result;
 }
 
 export async function saveSiteSettingsAction(input: SiteSettingsInput) {
-  await requireAdmin();
+  await requireAdmin({ action: "admin.settings.save" });
   const result = await saveSiteSettings(input);
   if (result.ok) refreshAdmin();
   return result;
@@ -197,7 +197,7 @@ export async function listTaskStatusesAction(): Promise<TaskStatusSummary[]> {
 }
 
 export async function createTaskStatusAction(input: TaskStatusInput) {
-  await requireAdmin();
+  await requireAdmin({ action: "admin.status.create" });
   const result = await createTaskStatus(input);
   if (result.ok) refreshAdmin();
   return result;
@@ -207,21 +207,21 @@ export async function updateTaskStatusAction(
   statusId: string,
   input: Omit<TaskStatusInput, "id">,
 ) {
-  await requireAdmin();
+  await requireAdmin({ action: "admin.status.update", target: statusId });
   const result = await updateTaskStatus(statusId, input);
   if (result.ok) refreshAdmin();
   return result;
 }
 
 export async function deleteTaskStatusAction(statusId: string) {
-  await requireAdmin();
+  await requireAdmin({ action: "admin.status.delete", target: statusId });
   const result = await deleteTaskStatus(statusId);
   if (result.ok) refreshAdmin();
   return result;
 }
 
 export async function reorderTaskStatusesAction(orderedIds: string[]) {
-  await requireAdmin();
+  await requireAdmin({ action: "admin.status.reorder" });
   const result = await reorderTaskStatuses(orderedIds);
   if (result.ok) refreshAdmin();
   return result;
@@ -233,7 +233,7 @@ export async function listSystemDefaultRolesAction() {
 }
 
 export async function createSystemDefaultRoleAction(input: SystemDefaultRoleInput) {
-  await requireAdmin();
+  await requireAdmin({ action: "admin.role.create" });
   const result = await createSystemDefaultRole(input);
   if (result.ok) refreshAdmin();
   return result;
@@ -243,28 +243,28 @@ export async function updateSystemDefaultRoleAction(
   roleId: string,
   input: SystemDefaultRoleInput,
 ) {
-  await requireAdmin();
+  await requireAdmin({ action: "admin.role.update", target: roleId });
   const result = await updateSystemDefaultRole(roleId, input);
   if (result.ok) refreshAdmin();
   return result;
 }
 
 export async function deleteSystemDefaultRoleAction(roleId: string) {
-  await requireAdmin();
+  await requireAdmin({ action: "admin.role.delete", target: roleId });
   const result = await deleteSystemDefaultRole(roleId);
   if (result.ok) refreshAdmin();
   return result;
 }
 
 export async function reorderSystemDefaultRolesAction(orderedIds: string[]) {
-  await requireAdmin();
+  await requireAdmin({ action: "admin.role.reorder" });
   const result = await reorderSystemDefaultRoles(orderedIds);
   if (result.ok) refreshAdmin();
   return result;
 }
 
 export async function createFileTypeExtensionAction(input: FileTypeExtensionInput) {
-  await requireAdmin();
+  await requireAdmin({ action: "admin.file_type.create" });
   const result = await createFileTypeExtension(input);
   if (result.ok) refreshAdmin();
   return result;
@@ -274,21 +274,21 @@ export async function updateFileTypeExtensionAction(
   extension: string,
   input: Omit<FileTypeExtensionInput, "extension">,
 ) {
-  await requireAdmin();
+  await requireAdmin({ action: "admin.file_type.update", target: extension });
   const result = await updateFileTypeExtension(extension, input);
   if (result.ok) refreshAdmin();
   return result;
 }
 
 export async function deleteFileTypeExtensionAction(extension: string) {
-  await requireAdmin();
+  await requireAdmin({ action: "admin.file_type.delete", target: extension });
   const result = await deleteFileTypeExtension(extension);
   if (result.ok) refreshAdmin();
   return result;
 }
 
 export async function createFrontendModuleAction(input: FrontendModuleInput) {
-  await requireAdmin();
+  await requireAdmin({ action: "admin.module.create" });
   const result = await createFrontendModule(input);
   if (result.ok) refreshAdmin();
   return result;
@@ -298,42 +298,42 @@ export async function updateFrontendModuleEnabledAction(
   moduleKey: string,
   isEnabled: boolean,
 ) {
-  await requireAdmin();
+  await requireAdmin({ action: "admin.module.toggle", target: moduleKey });
   const result = await updateFrontendModuleEnabled(moduleKey, isEnabled);
   if (result.ok) refreshAdmin();
   return result;
 }
 
 export async function deleteFrontendModuleAction(moduleKey: string) {
-  await requireAdmin();
+  await requireAdmin({ action: "admin.module.delete", target: moduleKey });
   const result = await deleteFrontendModule(moduleKey);
   if (result.ok) refreshAdmin();
   return result;
 }
 
 export async function setPaymentPlansEnabledAction(enabled: boolean) {
-  await requireAdmin();
+  await requireAdmin({ action: "admin.billing.toggle" });
   const result = await setPaymentPlansEnabled(enabled);
   if (result.ok) refreshAdmin();
   return result;
 }
 
 export async function saveTrialSettingsAction(input: TrialSettings) {
-  await requireAdmin();
+  await requireAdmin({ action: "admin.billing.trial" });
   const result = await saveTrialSettings(input);
   if (result.ok) refreshAdmin();
   return result;
 }
 
 export async function saveEarlyBirdSettingsAction(input: EarlyBirdSettings) {
-  await requireAdmin();
+  await requireAdmin({ action: "admin.billing.early_bird" });
   const result = await saveEarlyBirdSettings(input);
   if (result.ok) refreshAdmin();
   return result;
 }
 
 export async function createPaymentPlanAction(input: PaymentPlanInput) {
-  await requireAdmin();
+  await requireAdmin({ action: "admin.billing.plan.create" });
   const result = await createPaymentPlan(input);
   if (result.ok) refreshAdmin();
   return result;
@@ -343,14 +343,14 @@ export async function updatePaymentPlanAction(
   planId: string,
   input: PaymentPlanInput,
 ) {
-  await requireAdmin();
+  await requireAdmin({ action: "admin.billing.plan.update", target: planId });
   const result = await updatePaymentPlan(planId, input);
   if (result.ok) refreshAdmin();
   return result;
 }
 
 export async function deletePaymentPlanAction(planId: string) {
-  await requireAdmin();
+  await requireAdmin({ action: "admin.billing.plan.delete", target: planId });
   const result = await deletePaymentPlan(planId);
   if (result.ok) refreshAdmin();
   return result;

@@ -5,6 +5,8 @@ import { useEffect, useRef, useState } from "react";
 import { OptionalTooltip } from "@/app/components/tooltip";
 import { LoadingState } from "@/app/components/loading-state";
 import { NotificationSettingsModal } from "@/app/components/notification-settings-modal";
+import { useNow } from "@/app/components/now-provider";
+import { VirtualWindow } from "@/app/components/virtual-window";
 import { useFeedbackToast } from "@/app/components/feedback-toast-provider";
 import { useTranslations } from "@/app/components/translations-provider";
 import { UserAvatar } from "@/app/components/user-avatar";
@@ -119,17 +121,11 @@ export function NotificationsMenu() {
   const { items, isLoading, unreadCount, markRead, markAllRead, dismiss } = useNotifications();
   const [open, setOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [now, setNow] = useState(() => Date.now());
+  const now = useNow();
   const [pendingInviteId, setPendingInviteId] = useState<string | null>(null);
   const label = t("notifications.label", "Paziņojumi");
   const settingsLabel = t("user_menu.notifications", "Paziņojumu uzstādījumi");
   const dismissLabel = t("notifications.dismiss", "Noņemt");
-
-  useEffect(() => {
-    if (!open) return;
-    const timer = window.setInterval(() => setNow(Date.now()), 15_000);
-    return () => window.clearInterval(timer);
-  }, [open]);
 
   useEffect(() => {
     if (!open) return;
@@ -255,8 +251,14 @@ export function NotificationsMenu() {
               {t("notifications.empty", "Nav paziņojumu")}
             </p>
           ) : (
-            <div className="max-h-[min(24rem,calc(100vh-6rem))] overflow-y-auto">
-              {items.map((item) => {
+            <VirtualWindow
+              count={items.length}
+              itemHeight={80}
+              threshold={40}
+              className="max-h-[min(24rem,calc(100vh-6rem))] overflow-y-auto"
+            >
+              {(index) => {
+                const item = items[index];
                 const actor = getTeamMember(members, item.actorId);
                 const recipient = getTeamMember(members, item.recipientId);
                 const unread = item.readAt === null;
@@ -468,8 +470,8 @@ export function NotificationsMenu() {
                     )}
                   </div>
                 );
-              })}
-            </div>
+              }}
+            </VirtualWindow>
           )}
         </div>
       ) : null}

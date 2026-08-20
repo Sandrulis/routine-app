@@ -131,7 +131,7 @@ async function multipartUpload(
   if (!response.ok || !data?.id) {
     throw new Error("Google Drive upload failed");
   }
-  return data.id;
+  return data.id as string;
 }
 
 async function resumableUpload(
@@ -166,7 +166,7 @@ async function resumableUpload(
   if (!response.ok || !data?.id) {
     throw new Error("Google Drive resumable upload failed");
   }
-  return data.id;
+  return data.id as string;
 }
 
 export async function uploadTeamFileToGoogleDrive(input: {
@@ -178,7 +178,11 @@ export async function uploadTeamFileToGoogleDrive(input: {
 }) {
   const row = await fetchGoogleDriveSecretRow(input.teamId);
   if (!row?.isConnected || !row.isEnabled || !row.refreshToken) {
-    return { ok: true as const, skipped: true as const };
+    return {
+      ok: true as const,
+      skipped: true as const,
+      storeOnServer: true as const,
+    };
   }
 
   const accessToken = await getAccessToken(row);
@@ -194,10 +198,62 @@ export async function uploadTeamFileToGoogleDrive(input: {
   }
 
   const meta = { name: fileName, parents: [parentId] };
-  if (input.bytes.length <= GOOGLE_DRIVE_SIMPLE_UPLOAD_MAX_BYTES) {
-    await multipartUpload(accessToken, meta, input.bytes, input.mimeType);
-  } else {
-    await resumableUpload(accessToken, meta, input.bytes, input.mimeType);
+  const driveFileId =
+    input.bytes.length <= GOOGLE_DRIVE_SIMPLE_UPLOAD_MAX_BYTES
+      ? await multipartUpload(accessToken, meta, input.bytes, input.mimeType)
+      : await resumableUpload(accessToken, meta, input.bytes, input.mimeType);
+
+  return {
+    ok: true as const,
+    skipped: false as const,
+    storeOnServer: row.storeOnServer,
+    driveFileId,
+  };
+}
+
+export async function downloadTeamGoogleDriveFile(input: {
+  teamId: string;
+  driveFileId: string;
+}) {
+  const row = await fetchGoogleDriveSecretRow(input.teamId);
+  if (!row?.isConnected || !row.refreshToken) {
+    throw new Error("Google Drive not connected");
   }
+  const accessToken = await getAccessToken(row);
+  const response = await fetch(
+    `${DRIVE_API}/files/${encodeURIComponent(input.driveFileId)}?alt=media`,
+    {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    },
+  );
+  if (!response.ok) {
+    throw new Error(`Google Drive download failed (${response.status})`);
+  }
+  const mimeType =
+    response.headers.get("content-type") || "application/octet-stream";
+  const bytes = new Uint8Array(await response.arrayBuffer());
+  return { bytes, mimeType };
+}
+
+export async function renameTeamGoogleDriveFile(input: {
+  teamId: string;
+  driveFileId: string;
+  fileName: string;
+}) {
+  const row = await fetchGoogleDriveSecretRow(input.teamId);
+  if (!row?.isConnected || !row.isEnabled || !row.refreshToken) {
+    return { ok: true as const, skipped: true as const };
+  }
+
+  const accessToken = await getAccessToken(row);
+  const fileName = sanitizeSegment(input.fileName) || "file";
+  await driveJson(
+    accessToken,
+    `${DRIVE_API}/files/${encodeURIComponent(input.driveFileId)}?fields=id`,
+    {
+      method: "PATCH",
+      body: JSON.stringify({ name: fileName }),
+    },
+  );
   return { ok: true as const, skipped: false as const };
 }

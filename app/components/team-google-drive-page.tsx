@@ -25,6 +25,7 @@ const emptyStatus: GoogleDriveStatus = {
   configured: false,
   connected: false,
   enabled: false,
+  storeOnServer: false,
   folderPath: "Routine",
   accountEmail: "",
   canConfigure: false,
@@ -41,13 +42,16 @@ export function TeamGoogleDrivePage() {
   const [status, setStatus] = useState<GoogleDriveStatus>(emptyStatus);
   const [folderPath, setFolderPath] = useState("Routine");
   const [enabled, setEnabled] = useState(false);
+  const [storeOnDrive, setStoreOnDrive] = useState(true);
   const [loaded, setLoaded] = useState(false);
   const [disconnectOpen, setDisconnectOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
   const canConfigure = canConfigureUi && status.canConfigure;
   const hasChanges =
     loaded &&
-    (folderPath.trim() !== status.folderPath || enabled !== status.enabled);
+    (folderPath.trim() !== status.folderPath ||
+      enabled !== status.enabled ||
+      storeOnDrive !== !status.storeOnServer);
   const { confirmOpen, stayOnPage, confirmLeave } = useUnsavedChangesGuard({
     isDirty: hasChanges,
   });
@@ -93,6 +97,7 @@ export function TeamGoogleDrivePage() {
       setStatus(result.data);
       setFolderPath(result.data.folderPath);
       setEnabled(result.data.enabled);
+      setStoreOnDrive(!result.data.storeOnServer);
       setLoaded(true);
     });
     return () => {
@@ -124,6 +129,7 @@ export function TeamGoogleDrivePage() {
       const result = await saveGoogleDriveSettingsAction({
         teamId: currentTeam.id,
         isEnabled: enabled,
+        storeOnServer: !storeOnDrive,
         folderPath,
       });
       if (!result.ok) {
@@ -133,9 +139,11 @@ export function TeamGoogleDrivePage() {
       setStatus((current) => ({
         ...current,
         enabled,
+        storeOnServer: result.data.storeOnServer,
         folderPath: result.data.folderPath,
       }));
       setFolderPath(result.data.folderPath);
+      setStoreOnDrive(!result.data.storeOnServer);
       showFeedback({
         type: "success",
         text: t("google_drive.feedback.saved", "Google Drive iestatījumi saglabāti."),
@@ -297,6 +305,31 @@ export function TeamGoogleDrivePage() {
                   "google_drive.upload.enabled",
                   "Augšupielādēt failus uz Google Drive, kad tos pievieno Routine",
                 )}
+              </span>
+            </label>
+            <label className="mt-4 flex items-start gap-3 text-sm text-zinc-800">
+              <input
+                type="checkbox"
+                checked={storeOnDrive}
+                disabled={
+                  !canConfigure || isPending || !status.connected || !enabled
+                }
+                onChange={(event) => setStoreOnDrive(event.target.checked)}
+                className="mt-0.5"
+              />
+              <span>
+                <span className="block">
+                  {t(
+                    "google_drive.storage.drive_primary",
+                    "Glabāt failus Google Drive",
+                  )}
+                </span>
+                <span className="mt-0.5 block text-xs font-normal text-zinc-500">
+                  {t(
+                    "google_drive.storage.drive_primary_hint",
+                    "Ieslēgts pēc noklusējuma: Routine glabā tikai saiti. Ja izķeksē, faila saturs tiek saglabāts arī Routine serverī.",
+                  )}
+                </span>
               </span>
             </label>
             {canConfigure ? (

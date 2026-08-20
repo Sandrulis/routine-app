@@ -3,20 +3,29 @@
 import { useEffect, useRef, useState, type ChangeEvent } from "react";
 import { useRouter } from "next/navigation";
 import { CreateItemMenu, type CreateMenuAnchor } from "@/app/components/create-item-menu";
+import {
+  FileUploadOverlay,
+  type FileUploadProgressState,
+} from "@/app/components/file-upload-overlay";
 import { NameFormModal } from "@/app/components/name-form-modal";
 import { useFeedbackToast } from "@/app/components/feedback-toast-provider";
 import { useTranslations } from "@/app/components/translations-provider";
 import {
   addStoredListFile,
   childListFiles,
-  filePageHref,
   nextItemSortOrder,
   type ListFile,
 } from "@/app/lib/list-files";
+import { useFileViewer } from "@/app/components/file-viewer-provider";
 import { FRONTEND_MODULE_KEYS } from "@/app/lib/frontend-modules/keys";
 import { useFrontendModules } from "@/app/lib/frontend-modules/context";
 import { googleDrivePathForListFile } from "@/app/lib/google-drive/path";
-import { queueGoogleDriveUpload } from "@/app/lib/google-drive/queue-upload";
+import {
+  batchUploadPercent,
+  driveFileIdFromUpload,
+  shouldStoreFileOnServer,
+  uploadGoogleDriveFile,
+} from "@/app/lib/google-drive/queue-upload";
 import { queueOneDriveUpload } from "@/app/lib/onedrive/queue-upload";
 import { useLists } from "@/app/lib/lists-store";
 import { activeFolderCreatedTemplateAutomations } from "@/app/lib/list-automations";
@@ -52,11 +61,15 @@ export function ParentCreateFlow({
   const { t } = useTranslations();
   const router = useRouter();
   const { showFeedback } = useFeedbackToast();
+  const { openListFile } = useFileViewer();
   const { addTask, applyTemplate, listTasks, childTasks, listAutomations, lists, tasks } = useLists();
-  const { templates, templateItems, isReady: templatesReady } = useTemplates();
+  const { templates, templateItems, isReady: templatesReady, ensureLoaded } = useTemplates();
   const { files } = useListFiles();
   const { currentTeam, currentUser, roles } = useTeam();
   const { isAdmin } = useIsAdmin();
+  useEffect(() => {
+    ensureLoaded();
+  }, [ensureLoaded]);
   const { isEnabled: isModuleEnabled } = useFrontendModules();
   const fileUploadsEnabled = isModuleEnabled(FRONTEND_MODULE_KEYS.fileUpload);
   const googleDriveEnabled =
@@ -79,6 +92,8 @@ export function ParentCreateFlow({
     "choice",
   );
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploadProgress, setUploadProgress] =
+    useState<FileUploadProgressState | null>(null);
   const contextRef = useRef(context);
   contextRef.current = context;
 
@@ -122,7 +137,9 @@ export function ParentCreateFlow({
     const current = contextRef.current;
     const selected = Array.from(event.target.files ?? []);
     event.target.value = "";
-    if (!current || selected.length === 0 || !canUploadFiles) return;
+    if (!current || selected.length === 0 || !canUploadFiles || uploadProgress) {
+      return;
+    }
 
     const { allowed, rejected } = filterAllowedFiles(selected);
     if (rejected.length > 0) {
@@ -145,41 +162,73 @@ export function ParentCreateFlow({
         : listTasks(current.listId)),
       ...childListFiles(files, current.listId, current.parentId),
     ]);
-    for (const file of allowed) {
-      const stored = await addStoredListFile(
-        current.listId,
-        file,
-        current.parentId,
-        nextOrder,
-      );
-      if (!stored) continue;
-      nextOrder += 1;
-      created.push(stored);
-      if (!stored.hasContent && file.size > 0) skippedContent = true;
-      if (googleDriveEnabled) {
-        queueGoogleDriveUpload({
-          teamId: currentTeam?.id,
-          file,
-          pathParts: googleDrivePathForListFile({
-            lists,
-            tasks,
+    const total = allowed.length;
+    try {
+      for (let index = 0; index < allowed.length; index += 1) {
+        const file = allowed[index];
+        const updateProgress = (filePercent: number) => {
+          setUploadProgress({
+            fileName: file.name.trim() || "file",
+            current: index + 1,
+            total,
+            percent: batchUploadPercent(index, total, filePercent),
+          });
+        };
+        updateProgress(0);
+        let driveResult = null;
+        if (googleDriveEnabled) {
+          driveResult = await uploadGoogleDriveFile({
+            teamId: currentTeam?.id,
             listId: current.listId,
-            parentId: current.parentId,
-          }),
-        });
-      }
-      if (onedriveEnabled) {
-        queueOneDriveUpload({
-          teamId: currentTeam?.id,
+            file,
+            pathParts: googleDrivePathForListFile({
+              lists,
+              tasks,
+              listId: current.listId,
+              parentId: current.parentId,
+            }),
+            onProgress: updateProgress,
+          });
+        } else {
+          updateProgress(40);
+        }
+        updateProgress(85);
+        const stored = await addStoredListFile(
+          current.listId,
           file,
-          pathParts: googleDrivePathForListFile({
-            lists,
-            tasks,
+          current.parentId,
+          nextOrder,
+          {
+            storeContent: shouldStoreFileOnServer(driveResult),
+            googleDriveFileId: driveFileIdFromUpload(driveResult),
+          },
+        );
+        if (!stored) {
+          updateProgress(100);
+          continue;
+        }
+        nextOrder += 1;
+        created.push(stored);
+        if (!stored.hasContent && !stored.googleDriveFileId && file.size > 0) {
+          skippedContent = true;
+        }
+        if (onedriveEnabled) {
+          queueOneDriveUpload({
+            teamId: currentTeam?.id,
             listId: current.listId,
-            parentId: current.parentId,
-          }),
-        });
+            file,
+            pathParts: googleDrivePathForListFile({
+              lists,
+              tasks,
+              listId: current.listId,
+              parentId: current.parentId,
+            }),
+          });
+        }
+        updateProgress(100);
       }
+    } finally {
+      setUploadProgress(null);
     }
 
     showFeedback({
@@ -195,7 +244,7 @@ export function ParentCreateFlow({
     if (first) onFileCreated?.(first);
     onClose();
     if (first) {
-      router.push(filePageHref(current.listId, first.id));
+      openListFile(first);
     }
   }
 
@@ -400,6 +449,7 @@ export function ParentCreateFlow({
           router.push(`/lists/${context.listId}/tasks/${task.id}`);
         }}
       />
+      <FileUploadOverlay progress={uploadProgress} />
     </>
   );
 }

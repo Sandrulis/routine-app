@@ -51,7 +51,7 @@ export async function getGoogleOAuthIntegrationStatusAction(
 export async function saveGoogleOAuthCredentialsAction(
   input: GoogleOAuthCredentialsInput,
 ): Promise<ActionResult> {
-  await requireAdmin();
+  await requireAdmin({ action: "integrations.google.save" });
   const result = await saveGoogleOAuthCredentials(input);
   if (result.ok) refreshIntegrations();
   return result;
@@ -60,14 +60,14 @@ export async function saveGoogleOAuthCredentialsAction(
 export async function setGoogleOAuthEnabledAction(
   enabled: boolean,
 ): Promise<ActionResult> {
-  await requireAdmin();
+  await requireAdmin({ action: "integrations.google.toggle" });
   const result = await setGoogleOAuthEnabled(enabled);
   if (result.ok) refreshIntegrations();
   return result;
 }
 
 export async function resetGoogleOAuthConfigurationAction(): Promise<ActionResult> {
-  await requireAdmin();
+  await requireAdmin({ action: "integrations.google.reset" });
   const result = await resetGoogleOAuthConfiguration();
   if (result.ok) refreshIntegrations();
   return result;
@@ -76,7 +76,7 @@ export async function resetGoogleOAuthConfigurationAction(): Promise<ActionResul
 export async function startGoogleOAuthConfigureAction(
   origin: string,
 ): Promise<ActionResult<{ url: string }>> {
-  const admin = await requireAdmin();
+  const admin = await requireAdmin({ action: "integrations.google.configure" });
   if (!(await isGoogleOAuthCredentialsAvailable())) {
     return { ok: false, error: "errors.integrations_credentials_missing" };
   }

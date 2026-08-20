@@ -17,7 +17,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import Link from "next/link";
-import { useEffect, useId, useRef, useState, type ChangeEvent, type ReactNode } from "react";
+import { useEffect, useId, useMemo, useRef, useState, type ChangeEvent, type ReactNode } from "react";
 import { AssigneeFaces } from "@/app/components/assignee-faces";
 import { DragHandle, StatusReorderHandle } from "@/app/components/drag-handle";
 import {
@@ -41,16 +41,21 @@ import {
 } from "@/app/lib/task-statuses";
 import { OptionalTooltip, Tooltip } from "@/app/components/tooltip";
 import { LoadingState } from "@/app/components/loading-state";
+import {
+  FileUploadOverlay,
+  type FileUploadProgressState,
+} from "@/app/components/file-upload-overlay";
 import { FileIcon } from "@/app/components/file-icon";
+import { VirtualWindow } from "@/app/components/virtual-window";
 import { useFeedbackToast } from "@/app/components/feedback-toast-provider";
 import { useTranslations } from "@/app/components/translations-provider";
 import {
   addStoredListFile,
   childListFiles,
-  filePageHref,
   nextItemSortOrder,
   type ListFile,
 } from "@/app/lib/list-files";
+import { useFileViewer } from "@/app/components/file-viewer-provider";
 import { useFileTypes } from "@/app/lib/file-types-context";
 import {
   DEFAULT_LIST_WINDOW_ORDER,
@@ -77,8 +82,14 @@ import {
 import { FRONTEND_MODULE_KEYS } from "@/app/lib/frontend-modules/keys";
 import { useFrontendModules } from "@/app/lib/frontend-modules/context";
 import { googleDrivePathForListFile } from "@/app/lib/google-drive/path";
-import { queueGoogleDriveUpload } from "@/app/lib/google-drive/queue-upload";
+import {
+  batchUploadPercent,
+  driveFileIdFromUpload,
+  shouldStoreFileOnServer,
+  uploadGoogleDriveFile,
+} from "@/app/lib/google-drive/queue-upload";
 import { queueOneDriveUpload } from "@/app/lib/onedrive/queue-upload";
+import type { TaskFile } from "@/app/lib/task-activity";
 import { useLists } from "@/app/lib/lists-store";
 import { useListFiles } from "@/app/lib/use-list-files";
 import { useTeam } from "@/app/lib/team-store";
@@ -324,22 +335,25 @@ function TasksWindow({
   );
 }
 
+type FilesWindowEntry =
+  | { kind: "list"; file: ListFile }
+  | { kind: "task"; file: TaskFile; task: WorkTask };
+
 function FilesWindow({
-  listId,
-  files,
+  entries,
   loading,
 }: {
-  listId: string;
-  files: ListFile[];
+  entries: FilesWindowEntry[];
   loading?: boolean;
 }) {
   const { t } = useTranslations();
+  const { openListFile, openTaskFile } = useFileViewer();
 
   if (loading) {
     return <LoadingState compact className="justify-center py-8" />;
   }
 
-  if (files.length === 0) {
+  if (entries.length === 0) {
     return (
       <p className="px-1 py-8 text-center text-sm text-zinc-400">
         {t("lists.windows.files_empty", "Šajā sarakstā vēl nav failu.")}
@@ -348,21 +362,63 @@ function FilesWindow({
   }
 
   return (
-    <ul className="space-y-1.5">
-      {files.map((file) => (
-        <li key={file.id}>
-          <Link
-            href={filePageHref(listId, file.id)}
-            className="flex items-center gap-2 rounded-xl px-2 py-2 transition hover:bg-zinc-50"
-          >
-            <FileIcon name={file.name} className="w-4 text-center text-[13px]" />
-            <span className="truncate text-sm font-medium text-zinc-900">
-              {file.name}
-            </span>
-          </Link>
-        </li>
-      ))}
-    </ul>
+    <VirtualWindow
+      count={entries.length}
+      itemHeight={52}
+      threshold={40}
+      className="max-h-[28rem] overflow-y-auto"
+    >
+      {(index) => {
+        const entry = entries[index];
+        if (entry.kind === "list") {
+          return (
+            <div key={`list:${entry.file.id}`}>
+              <button
+                type="button"
+                onClick={() => openListFile(entry.file)}
+                className="flex w-full items-center gap-2 rounded-xl px-2 py-2 text-left transition hover:bg-zinc-50"
+              >
+                <FileIcon
+                  name={entry.file.name}
+                  className="w-4 text-center text-[13px]"
+                />
+                <span className="truncate text-sm font-medium text-zinc-900">
+                  {entry.file.name}
+                </span>
+              </button>
+            </div>
+          );
+        }
+
+        return (
+          <div key={`task:${entry.file.id}`}>
+            <button
+              type="button"
+              onClick={() => openTaskFile(entry.file)}
+              className="flex w-full items-center gap-2 rounded-xl px-2 py-2 text-left transition hover:bg-zinc-50"
+            >
+              <FileIcon
+                name={entry.file.name}
+                className="w-4 text-center text-[13px]"
+              />
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-sm font-medium text-zinc-900">
+                  {entry.file.name}
+                </span>
+                <span className="mt-0.5 block truncate text-[11px] text-zinc-400">
+                  {entry.task.title}
+                </span>
+              </span>
+              <i
+                className="fas fa-paperclip shrink-0 text-[11px] text-zinc-400"
+                aria-hidden="true"
+                title={t("subtasks.attachments.title", "Pielikumi")}
+              />
+            </button>
+          </div>
+        );
+      }}
+    </VirtualWindow>
   );
 }
 
@@ -417,6 +473,11 @@ function OverviewSubtaskRow({
 }) {
   const { t } = useTranslations();
   const { colorFor, statuses } = useTaskStatuses(listId);
+  const { taskFiles } = useLists();
+  const { isEnabled: isModuleEnabled } = useFrontendModules();
+  const fileUploadsEnabled = isModuleEnabled(FRONTEND_MODULE_KEYS.fileUpload);
+  const hasAttachments =
+    fileUploadsEnabled && taskFiles(task.id).length > 0;
   const done = isClosedTaskStatus(task.status, statuses);
   const statusColor = colorFor(task.status);
   const {
@@ -477,12 +538,19 @@ function OverviewSubtaskRow({
       <button
         type="button"
         onClick={onOpen}
-        className={`min-w-0 flex-1 truncate text-left text-[13px] ${
+        className={`flex min-w-0 flex-1 items-center gap-1.5 text-left text-[13px] ${
           statusColor ? "" : statusTextClassName(task.status)
         } ${done ? "line-through" : "hover:opacity-80"}`}
         style={statusColor ? { color: statusColor } : undefined}
       >
-        {task.title}
+        <span className="truncate">{task.title}</span>
+        {hasAttachments ? (
+          <i
+            className="fas fa-paperclip shrink-0 text-[11px] text-zinc-400"
+            aria-hidden="true"
+            title={t("subtasks.attachments.title", "Pielikumi")}
+          />
+        ) : null}
       </button>
       <AssigneeFaces assigneeIds={task.assigneeIds} />
     </li>
@@ -852,7 +920,7 @@ export function ListWindowsBoard({
   const { t } = useTranslations();
   const { showFeedback } = useFeedbackToast();
   const { accept, filterAllowedFiles, extensionsLabel } = useFileTypes();
-  const { lists } = useLists();
+  const { lists, tasks: allTasks, allTaskFiles } = useLists();
   const { currentTeam, currentUser, roles } = useTeam();
   const { isAdmin } = useIsAdmin();
   const { isEnabled: isModuleEnabled } = useFrontendModules();
@@ -878,8 +946,31 @@ export function ListWindowsBoard({
   const allFilesHook = useListFiles();
   const allFiles = allFilesHook.files;
   const filesReady = allFilesHook.isReady;
-  const files = childListFiles(allFiles, listId, parentId);
+  const listScopedFiles = childListFiles(allFiles, listId, parentId);
+  const fileEntries = useMemo((): FilesWindowEntry[] => {
+    const listEntries: FilesWindowEntry[] = listScopedFiles.map((file) => ({
+      kind: "list",
+      file,
+    }));
+    if (!parentId) return listEntries;
+
+    const descendantSubtasks = getDescendantSubtasks(allTasks, parentId);
+    const byId = new Map(descendantSubtasks.map((task) => [task.id, task]));
+    const taskEntries: FilesWindowEntry[] = allTaskFiles
+      .filter((file) => byId.has(file.taskId))
+      .slice()
+      .sort((left, right) => right.createdAt.localeCompare(left.createdAt))
+      .map((file) => ({
+        kind: "task" as const,
+        file,
+        task: byId.get(file.taskId)!,
+      }));
+
+    return [...listEntries, ...taskEntries];
+  }, [allTaskFiles, allTasks, listScopedFiles, parentId]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploadProgress, setUploadProgress] =
+    useState<FileUploadProgressState | null>(null);
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
   );
@@ -904,7 +995,7 @@ export function ListWindowsBoard({
   }
 
   async function handleUpload(event: ChangeEvent<HTMLInputElement>) {
-    if (!canUploadFiles) return;
+    if (!canUploadFiles || uploadProgress) return;
     const selected = Array.from(event.target.files ?? []);
     event.target.value = "";
     const { allowed, rejected } = filterAllowedFiles(selected);
@@ -923,34 +1014,63 @@ export function ListWindowsBoard({
       ...tasks,
       ...childListFiles(allFiles, listId, parentId),
     ]);
-    for (const file of allowed) {
-      const stored = await addStoredListFile(listId, file, parentId, nextOrder);
-      if (!stored) continue;
-      nextOrder += 1;
-      if (googleDriveEnabled) {
-        queueGoogleDriveUpload({
-          teamId: currentTeam?.id,
-          file,
-          pathParts: googleDrivePathForListFile({
-            lists,
-            tasks,
+    const total = allowed.length;
+    try {
+      for (let index = 0; index < allowed.length; index += 1) {
+        const file = allowed[index];
+        const updateProgress = (filePercent: number) => {
+          setUploadProgress({
+            fileName: file.name.trim() || "file",
+            current: index + 1,
+            total,
+            percent: batchUploadPercent(index, total, filePercent),
+          });
+        };
+        updateProgress(0);
+        let driveResult = null;
+        if (googleDriveEnabled) {
+          driveResult = await uploadGoogleDriveFile({
+            teamId: currentTeam?.id,
             listId,
-            parentId,
-          }),
+            file,
+            pathParts: googleDrivePathForListFile({
+              lists,
+              tasks,
+              listId,
+              parentId,
+            }),
+            onProgress: updateProgress,
+          });
+        } else {
+          updateProgress(40);
+        }
+        updateProgress(85);
+        const stored = await addStoredListFile(listId, file, parentId, nextOrder, {
+          storeContent: shouldStoreFileOnServer(driveResult),
+          googleDriveFileId: driveFileIdFromUpload(driveResult),
         });
-      }
-      if (onedriveEnabled) {
-        queueOneDriveUpload({
-          teamId: currentTeam?.id,
-          file,
-          pathParts: googleDrivePathForListFile({
-            lists,
-            tasks,
+        if (!stored) {
+          updateProgress(100);
+          continue;
+        }
+        nextOrder += 1;
+        if (onedriveEnabled) {
+          queueOneDriveUpload({
+            teamId: currentTeam?.id,
             listId,
-            parentId,
-          }),
-        });
+            file,
+            pathParts: googleDrivePathForListFile({
+              lists,
+              tasks,
+              listId,
+              parentId,
+            }),
+          });
+        }
+        updateProgress(100);
       }
+    } finally {
+      setUploadProgress(null);
     }
   }
 
@@ -1009,8 +1129,9 @@ export function ListWindowsBoard({
             />
             <button
               type="button"
+              disabled={Boolean(uploadProgress)}
               onClick={() => fileInputRef.current?.click()}
-              className="inline-flex size-7 items-center justify-center rounded-lg text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-700"
+              className="inline-flex size-7 items-center justify-center rounded-lg text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-700 disabled:cursor-not-allowed disabled:opacity-50"
               aria-label={t("create.file.upload_title", "Augšupielādēt failu")}
             >
               <i className="fas fa-plus text-[11px]" aria-hidden="true" />
@@ -1019,7 +1140,10 @@ export function ListWindowsBoard({
           ) : undefined
         }
       >
-        <FilesWindow listId={listId} files={files} loading={!filesReady} />
+        <FilesWindow
+          entries={fileEntries}
+          loading={!filesReady}
+        />
       </WindowCard>
     ),
     overview: (
@@ -1068,6 +1192,7 @@ export function ListWindowsBoard({
         </div>
       </SortableContext>
     </DndContext>
+    <FileUploadOverlay progress={uploadProgress} />
     </>
   );
 }

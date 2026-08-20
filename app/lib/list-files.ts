@@ -2,6 +2,7 @@ import {
   getFileIconDisplay,
   isAllowedFileName,
   mimeFromFileName,
+  renameKeepingExtension,
 } from "@/app/lib/file-types";
 
 export type ListFile = {
@@ -12,6 +13,7 @@ export type ListFile = {
   mimeType: string;
   size: number;
   hasContent: boolean;
+  googleDriveFileId: string | null;
   createdAt: string;
   sortOrder: number;
 };
@@ -51,6 +53,18 @@ export function filePageHref(listId: string, fileId: string): string {
   return `/lists/${listId}/files/${fileId}`;
 }
 
+export function taskFilePageHref(
+  listId: string,
+  taskId: string,
+  fileId: string,
+): string {
+  return `/lists/${listId}/tasks/${taskId}/files/${fileId}`;
+}
+
+export function openHrefInNewTab(href: string) {
+  window.open(href, "_blank", "noopener,noreferrer");
+}
+
 export function fileContentKey(fileId: string): string {
   return `${LIST_FILE_CONTENT_PREFIX}${fileId}`;
 }
@@ -82,6 +96,35 @@ export function sumFileBytes(files: Array<{ size: number }>): number {
   return files.reduce((total, file) => total + fileStoredBytes(file), 0);
 }
 
+export type FileStorageBucketBytes = {
+  /** Unique total of all tracked file sizes. */
+  totalBytes: number;
+  /** Bytes kept as content on Routine server. */
+  serverBytes: number;
+  /** Bytes uploaded to Google Drive (cloud). */
+  cloudBytes: number;
+};
+
+export function sumFileStorageBuckets(
+  files: Array<{
+    size: number;
+    hasContent?: boolean;
+    googleDriveFileId?: string | null;
+  }>,
+): FileStorageBucketBytes {
+  let totalBytes = 0;
+  let serverBytes = 0;
+  let cloudBytes = 0;
+  for (const file of files) {
+    const size = fileStoredBytes(file);
+    if (size <= 0) continue;
+    totalBytes += size;
+    if (file.hasContent) serverBytes += size;
+    if (file.googleDriveFileId) cloudBytes += size;
+  }
+  return { totalBytes, serverBytes, cloudBytes };
+}
+
 export function formatFileSize(bytes: number): string {
   const size = Number.isFinite(bytes) ? Math.max(0, bytes) : 0;
   if (size < 1024) return `${groupThousands(String(Math.round(size)))} B`;
@@ -110,12 +153,14 @@ function persistListFilePatches(
   if (patches.length === 0 || !listFilesTeamId) return;
   void import("@/app/lib/db/work-data")
     .then(async ({ updateListFileRow }) => {
-      for (const patch of patches) {
-        await updateListFileRow(patch.id, {
-          parentId: patch.parentId,
-          sortOrder: patch.sortOrder,
-        });
-      }
+      await Promise.all(
+        patches.map((patch) =>
+          updateListFileRow(patch.id, {
+            parentId: patch.parentId,
+            sortOrder: patch.sortOrder,
+          }),
+        ),
+      );
     })
     .catch((error) => {
       console.error("Failed to update list files", error);
@@ -243,6 +288,10 @@ export function normalizeStoredFiles(value: unknown): ListFile[] | null {
           : 0;
       const hasContent =
         "hasContent" in item ? Boolean(item.hasContent) : false;
+      const googleDriveFileId =
+        "googleDriveFileId" in item && item.googleDriveFileId
+          ? String(item.googleDriveFileId)
+          : null;
       const createdAt =
         "createdAt" in item && item.createdAt
           ? String(item.createdAt)
@@ -261,6 +310,7 @@ export function normalizeStoredFiles(value: unknown): ListFile[] | null {
         mimeType,
         size,
         hasContent,
+        googleDriveFileId,
         createdAt,
         sortOrder,
       };
@@ -272,6 +322,11 @@ export function normalizeStoredFiles(value: unknown): ListFile[] | null {
 
 export function readAllListFiles(): ListFile[] {
   return listFilesCache;
+}
+
+export function cacheListFileContent(fileId: string, content: string | null) {
+  if (content) listFileContentCache.set(fileId, content);
+  else listFileContentCache.delete(fileId);
 }
 
 export function readListFileContent(fileId: string): string | null {
@@ -315,11 +370,18 @@ export async function addStoredListFile(
   file: File,
   parentId: string | null = null,
   sortOrder?: number,
+  options?: {
+    storeContent?: boolean;
+    googleDriveFileId?: string | null;
+  },
 ): Promise<ListFile | null> {
   const fileName = file.name.trim() || "file";
   if (!isAllowedFileName(fileName)) {
     return null;
   }
+
+  const googleDriveFileId = options?.googleDriveFileId?.trim() || null;
+  const storeContent = options?.storeContent !== false;
 
   const all = readAllListFiles();
   const record: ListFile = {
@@ -330,6 +392,7 @@ export async function addStoredListFile(
     mimeType: file.type || mimeFromName(fileName),
     size: Math.max(0, Math.round(file.size)),
     hasContent: false,
+    googleDriveFileId,
     createdAt: new Date().toISOString(),
     sortOrder:
       sortOrder ??
@@ -338,34 +401,46 @@ export async function addStoredListFile(
       ),
   };
 
-  const content = await storeFileContent(record.id, file);
+  const content = storeContent ? await storeFileContent(record.id, file) : null;
   record.hasContent = Boolean(content);
 
   writeAllListFiles([...all, record]);
   if (listFilesTeamId) {
     const teamId = listFilesTeamId;
-    void import("@/app/lib/db/work-data")
-      .then(({ insertListFile }) => insertListFile(teamId, record, content))
-      .catch((error) => {
-        console.error("Failed to save list file", error);
-      });
+    try {
+      const { insertListFile } = await import("@/app/lib/db/work-data");
+      await insertListFile(teamId, record, content);
+    } catch (error) {
+      console.error("Failed to save list file", error);
+      writeAllListFiles(all);
+      removeListFileContent(record.id);
+      return null;
+    }
   }
 
   return record;
 }
 
 export function renameStoredListFile(fileId: string, name: string): ListFile | null {
-  const trimmed = name.trim();
+  const all = readAllListFiles();
+  const existing = all.find((file) => file.id === fileId);
+  if (!existing) return null;
+  const trimmed = renameKeepingExtension(existing.name, name);
   if (!trimmed) return null;
 
-  const all = readAllListFiles();
   let updated: ListFile | null = null;
   const next = all.map((file) => {
     if (file.id !== fileId) return file;
-    updated = { ...file, name: trimmed, mimeType: mimeFromName(trimmed) };
-    return updated;
+    const renamed: ListFile = {
+      ...file,
+      name: trimmed,
+      mimeType: mimeFromName(trimmed),
+    };
+    updated = renamed;
+    return renamed;
   });
   if (!updated) return null;
+  const renamedFile: ListFile = updated;
   writeAllListFiles(next);
   if (listFilesTeamId) {
     void import("@/app/lib/db/work-data")
@@ -376,7 +451,14 @@ export function renameStoredListFile(fileId: string, name: string): ListFile | n
         console.error("Failed to rename list file", error);
       });
   }
-  return updated;
+  if (renamedFile.googleDriveFileId) {
+    void import("@/app/lib/google-drive/queue-upload").then(
+      ({ queueGoogleDriveRename }) => {
+        queueGoogleDriveRename({ kind: "list", id: fileId, name: trimmed });
+      },
+    );
+  }
+  return renamedFile;
 }
 
 export function deleteStoredListFile(fileId: string) {

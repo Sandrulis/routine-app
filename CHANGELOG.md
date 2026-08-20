@@ -4,6 +4,28 @@
 
 - (none)
 
+## v0.2.0
+
+- Drošība: īsta e-pasta pieteikšanās/reģistrācija/paroles atjaunošana, rate limit, šifrēti integrāciju tokeni (`enc:v1:`), Drive/OneDrive saraksta pieeja, kalendāra ICS bez aprakstiem un ar token hash (`073`/`074`)
+- MFA: parastajam lietotājam opcija profilā; adminam TOTP pie `/admin` kā modālis (bez novirzes uz profilu katru sesiju)
+- Auth: **Atcerēties mani** pēc noklusējuma izslēgts; Microsoft login tikai ar verificētu e-pastu; uzaicinājuma `token` nav SELECT authenticated
+- Gmail Chrome extension: Gmail API pielikumiem (OAuth), failu limīts līdz 25 MB ar Drive lieliem failiem; `txt`/`html` (`072`)
+- Gmail Chrome extension MVP (`extensions/gmail`): logo Gmailā, e-pasta pievienošana apakšuzdevumam; API `/api/extension/*`
+- Ātrāka pirmā ielāde: darbvieta bez failu `content`, aktivitātēm un unused notifs/todos; saturs un vēsture pēc vajadzības; PostgREST lapošana (`073`)
+- Mazāk pārzīmēšanas: `ListsContext` dati/darbības, šabloni tikai `/templates`, last-online bez visiem biedriem, kopīgs `now` taimeris
+- Mazāks bundle un rakstīšana: Font Awesome bez `all.min.css`, i18n viena valoda no servera, `dynamic()` smagajiem skatiem, RPC pārkārtošanai un assignees
+- Google Drive: noklusējumā faili glabājas Drive (`store_on_server` = false); opcija saglabāt saturu arī Routine serverī; `google_drive_file_id` uz `list_files` / `task_files`; priekšskatījums caur `/api/google-drive/content` (`070`)
+- Augšupielādes overlay ar progresu (koks, Faili logs, apakšuzdevuma pielikumi); Drive upload caur XHR ar procentiem
+- Atļautie failu tipi: arī attēli (png, jpg, jpeg, gif, webp) — seed `071` + noklusējums `file-types.ts`
+- Apakšuzdevumu pielikumu `...` izvēlnē **Lejupielādēt**; Drive-first lejupielāde; DB ieraksts tiek sagaidīts pirms fails ir pieejams
+- Faila pārsaukšana sinhronizē nosaukumu arī Google Drive (`POST /api/google-drive/rename`); paplašinājumu pārsaukt nevar (fiksēts sufikss formā)
+- Klikšķis uz failu: bildes/PDF → priekšskatījuma modālis; Excel u.c. → lejupielāde (`FileViewerProvider`); uzreiz overlay ar spinneri (Atver / Lejupielādē), kamēr saturs ielādējas
+- PDF priekšskatījums: CSP `frame-src` atļauj `blob:`; `data:` PDF pārvērš uz blob iframe
+- Apakšuzdevumiem ar pielikumiem `fa-paperclip` aiz nosaukuma: tabula un mapes **Saraksts** skatā
+- Mapes **Faili** logs rāda arī apakšuzdevumu pielikumus no mapes apakškoka; klikšķis caur `FileViewerProvider`
+- Sānjoslas **Failu vieta**: skaita arī Cloud-only failus; tooltipā Serveris / Cloud (bez nulles rindām)
+- Auth: sesijas sīkdatnes `httpOnly: false` (klienta Supabase lasa cookie); neautentificēts lietotājs no app ceļiem uz `/login`
+
 ## v0.1.18
 
 - Ceļa joslā un uzdevuma PATH pirms katra posma rāda tipa ikonu: saraksts, mape, uzdevums, apakšuzdevums vai fails

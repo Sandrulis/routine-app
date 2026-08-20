@@ -2,6 +2,7 @@
 
 /* eslint-disable @next/next/no-img-element */
 
+import { useEffect, useState } from "react";
 import { useTranslations } from "@/app/components/translations-provider";
 import { FileIcon } from "@/app/components/file-icon";
 import {
@@ -15,6 +16,43 @@ export type FilePreviewSource = {
   size: number;
 };
 
+/** Chrome blocks `data:` in iframes; CSP needs `blob:` in frame-src. */
+function useEmbeddableUrl(content: string | null, preferBlob: boolean) {
+  const [url, setUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!content) {
+      setUrl(null);
+      return;
+    }
+    if (!preferBlob || !content.startsWith("data:")) {
+      setUrl(content);
+      return;
+    }
+
+    let objectUrl: string | null = null;
+    let cancelled = false;
+
+    void fetch(content)
+      .then((response) => response.blob())
+      .then((blob) => {
+        if (cancelled) return;
+        objectUrl = URL.createObjectURL(blob);
+        setUrl(objectUrl);
+      })
+      .catch(() => {
+        if (!cancelled) setUrl(content);
+      });
+
+    return () => {
+      cancelled = true;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [content, preferBlob]);
+
+  return url;
+}
+
 export function FilePreview({
   file,
   content,
@@ -23,6 +61,10 @@ export function FilePreview({
   content: string | null;
 }) {
   const { t } = useTranslations();
+  const isPdf =
+    file.mimeType === "application/pdf" ||
+    file.name.toLowerCase().endsWith(".pdf");
+  const embedUrl = useEmbeddableUrl(content, isPdf);
 
   if (!content) {
     return (
@@ -55,12 +97,22 @@ export function FilePreview({
     );
   }
 
-  if (file.mimeType === "application/pdf" || file.name.toLowerCase().endsWith(".pdf")) {
+  if (isPdf) {
+    if (!embedUrl) {
+      return (
+        <div className="flex min-h-[50vh] items-center justify-center rounded-2xl border border-zinc-200 bg-white">
+          <p className="text-sm text-zinc-400">
+            {t("files.detail.loading", "Ielādē failu")}
+          </p>
+        </div>
+      );
+    }
     return (
       <iframe
-        src={content}
+        src={embedUrl}
         title={file.name}
-        className="min-h-[50vh] w-full rounded-2xl border border-zinc-200 bg-white"
+        sandbox=""
+        className="min-h-[70vh] w-full rounded-2xl border border-zinc-200 bg-white"
       />
     );
   }

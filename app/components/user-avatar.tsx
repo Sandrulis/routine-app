@@ -1,11 +1,9 @@
 "use client";
 
-/* eslint-disable @next/next/no-img-element */
-
-import { useState } from "react";
+import { memo, useState } from "react";
 import type { TeamMember } from "@/app/lib/team";
 
-export function UserAvatar({
+export const UserAvatar = memo(function UserAvatar({
   member,
   size = "md",
 }: {
@@ -24,11 +22,15 @@ export function UserAvatar({
 
   if (avatarUrl && !imgError) {
     return (
+      // Avatars are often Google/Microsoft hosts or data URLs — keep <img>.
+      // eslint-disable-next-line @next/next/no-img-element
       <img
         src={avatarUrl}
         alt=""
         width={pixels}
         height={pixels}
+        loading="lazy"
+        decoding="async"
         referrerPolicy="no-referrer"
         className={`inline-flex shrink-0 rounded-full object-cover ${sizeClassName}`}
         onError={() => setImgError(true)}
@@ -44,4 +46,4 @@ export function UserAvatar({
       {member.initials}
     </span>
   );
-}
+});

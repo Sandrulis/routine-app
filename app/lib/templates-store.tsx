@@ -9,6 +9,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { usePathname } from "next/navigation";
 import { useAuthSession } from "@/app/lib/auth/use-auth-session";
 import {
   deleteTemplateRow,
@@ -38,6 +39,7 @@ type TemplatesContextValue = {
   }) => void;
   deleteTemplate: (templateId: string) => void;
   templateItems: (templateId: string) => WorkTemplateItem[];
+  ensureLoaded: () => void;
 };
 
 const TemplatesContext = createContext<TemplatesContextValue | null>(null);
@@ -45,15 +47,23 @@ const TemplatesContext = createContext<TemplatesContextValue | null>(null);
 export function TemplatesProvider({ children }: { children: ReactNode }) {
   const { user: authUser, isReady: authReady } = useAuthSession();
   const { isReady: teamReady, currentTeam } = useTeam();
+  const pathname = usePathname();
   const userId = authUser?.id ?? null;
   const teamId = currentTeam?.id ?? null;
   const canLoad = authReady && teamReady;
   const [templates, setTemplates] = useState<WorkTemplate[]>([]);
   const [items, setItems] = useState<WorkTemplateItem[]>([]);
   const [isReady, setIsReady] = useState(false);
+  const [loadRequested, setLoadRequested] = useState(false);
+  const shouldLoad = loadRequested || pathname.startsWith("/templates");
+  const ensureLoaded = useCallback(() => setLoadRequested(true), []);
 
   useEffect(() => {
     if (!canLoad) return;
+    if (!shouldLoad) {
+      setIsReady(true);
+      return;
+    }
     setIsReady(false);
 
     if (!userId || !teamId) {
@@ -82,7 +92,7 @@ export function TemplatesProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, [canLoad, teamId, userId]);
+  }, [canLoad, shouldLoad, teamId, userId]);
 
   const addTemplate = useCallback(
     (input: { name: string; description: string }) => {
@@ -155,10 +165,11 @@ export function TemplatesProvider({ children }: { children: ReactNode }) {
       addTemplate,
       saveTemplate,
       deleteTemplate,
+      ensureLoaded,
       templateItems: (templateId: string) =>
         items.filter((item) => item.templateId === templateId),
     }),
-    [addTemplate, deleteTemplate, isReady, items, saveTemplate, templates],
+    [addTemplate, deleteTemplate, ensureLoaded, isReady, items, saveTemplate, templates],
   );
 
   return (

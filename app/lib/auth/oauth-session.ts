@@ -9,6 +9,7 @@ import {
   withAuthCookieOptions,
 } from "@/app/lib/auth/remember-session";
 import type { OAuthLoginErrorPage } from "@/app/lib/auth/oauth-login-state";
+import { logError } from "@/app/lib/security/log-error";
 import { createAdminClient } from "@/app/lib/supabase/admin";
 import {
   getSupabasePublicEnv,
@@ -83,7 +84,7 @@ async function findOrCreateOAuthUser(profile: OAuthSignInProfile) {
   }
 
   if (!created.error || !isExistingUserError(created.error.message)) {
-    console.error("createUser for OAuth failed:", created.error?.message);
+    logError("createUser for OAuth failed", created.error?.message);
     return { ok: false as const };
   }
 
@@ -92,7 +93,7 @@ async function findOrCreateOAuthUser(profile: OAuthSignInProfile) {
     email,
   });
   if (error || !data.user) {
-    console.error("generateLink for existing OAuth user failed:", error?.message);
+    logError("generateLink for existing OAuth user failed", error?.message);
     return { ok: false as const };
   }
 
@@ -147,7 +148,7 @@ export async function completeOAuthSignIn(
   });
   const hashedToken = linkData?.properties?.hashed_token?.trim() ?? "";
   if (linkError || !hashedToken) {
-    console.error("OAuth generateLink failed:", linkError?.message);
+    logError("OAuth generateLink failed", linkError?.message);
     return fail();
   }
 

@@ -2,6 +2,12 @@ import { createAdminClient } from "@/app/lib/supabase/admin";
 import { isSupabaseAdminConfigured } from "@/app/lib/supabase/env";
 import { OWNER_TEAM_ROLE } from "@/app/lib/team";
 import { normalizeTeamPermissionSet } from "@/app/lib/team-permissions";
+import { logError } from "@/app/lib/security/log-error";
+import {
+  decryptSecret,
+  isEncryptedSecret,
+  persistSecret,
+} from "@/app/lib/security/secret-box";
 
 export type OneDriveStatus = {
   configured: boolean;
@@ -41,8 +47,8 @@ function mapSecretRow(row: IntegrationRow): OneDriveSecretRow {
     isEnabled: row.is_enabled,
     folderPath: row.folder_path || "Routine",
     accountEmail: row.account_email || "",
-    refreshToken: row.refresh_token?.trim() ?? "",
-    accessToken: row.access_token?.trim() ?? "",
+    refreshToken: decryptSecret(row.refresh_token),
+    accessToken: decryptSecret(row.access_token),
     accessTokenExpiresAt: row.access_token_expires_at,
   };
 }
@@ -125,7 +131,20 @@ export async function fetchOneDriveSecretRow(
     .eq("team_id", teamId)
     .maybeSingle();
   if (error || !data) return null;
-  return mapSecretRow(data as IntegrationRow);
+  const row = data as IntegrationRow;
+  if (
+    (row.refresh_token && !isEncryptedSecret(row.refresh_token)) ||
+    (row.access_token && !isEncryptedSecret(row.access_token))
+  ) {
+    void admin
+      .from("team_onedrive_integrations")
+      .update({
+        refresh_token: persistSecret(row.refresh_token),
+        access_token: persistSecret(row.access_token),
+      })
+      .eq("team_id", teamId);
+  }
+  return mapSecretRow(row);
 }
 
 export async function fetchOneDriveStatus(
@@ -169,14 +188,14 @@ export async function saveOneDriveTokens(input: {
     is_enabled: existing?.isEnabled ?? true,
     folder_path: existing?.folderPath ?? "Routine",
     account_email: input.accountEmail,
-    refresh_token: refreshToken,
-    access_token: input.accessToken,
+    refresh_token: persistSecret(refreshToken),
+    access_token: persistSecret(input.accessToken),
     access_token_expires_at: expiresAt,
     connected_by: input.connectedBy,
     connected_at: new Date().toISOString(),
   });
   if (error) {
-    console.error("saveOneDriveTokens failed:", error.message);
+    logError("saveOneDriveTokens failed", error.message);
     return { ok: false as const, error: "errors.onedrive_connect_failed" };
   }
   return { ok: true as const };
@@ -191,13 +210,13 @@ export async function updateOneDriveAccessToken(
   if (!isSupabaseAdminConfigured()) return;
   const admin = createAdminClient();
   const patch: Record<string, unknown> = {
-    access_token: accessToken,
+    access_token: persistSecret(accessToken),
     access_token_expires_at: new Date(
       Date.now() + Math.max(30, expiresIn) * 1000,
     ).toISOString(),
   };
   if (refreshToken?.trim()) {
-    patch.refresh_token = refreshToken.trim();
+    patch.refresh_token = persistSecret(refreshToken.trim());
   }
   await admin.from("team_onedrive_integrations").update(patch).eq("team_id", teamId);
 }
@@ -228,7 +247,7 @@ export async function saveOneDriveSettings(input: {
         ...payload,
       });
   if (error) {
-    console.error("saveOneDriveSettings failed:", error.message);
+    logError("saveOneDriveSettings failed", error.message);
     return { ok: false as const, error: "errors.onedrive_save_failed" };
   }
   return { ok: true as const, folderPath };
@@ -253,7 +272,7 @@ export async function disconnectOneDrive(teamId: string) {
     connected_at: null,
   });
   if (error) {
-    console.error("disconnectOneDrive failed:", error.message);
+    logError("disconnectOneDrive failed", error.message);
     return { ok: false as const, error: "errors.onedrive_disconnect_failed" };
   }
   return { ok: true as const };

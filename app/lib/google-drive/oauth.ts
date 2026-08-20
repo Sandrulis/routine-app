@@ -3,7 +3,7 @@ import {
   GOOGLE_DRIVE_CALLBACK_PATH,
   GOOGLE_DRIVE_OAUTH_COOKIE,
   GOOGLE_DRIVE_SCOPES,
-  getGoogleDriveOAuthEnv,
+  getGoogleDriveOAuthCredentials,
 } from "@/app/lib/google-drive/env";
 
 export type GoogleDriveOAuthState = {
@@ -48,8 +48,8 @@ export function googleDriveRedirectUri(origin: string) {
   return `${origin.replace(/\/$/, "")}${GOOGLE_DRIVE_CALLBACK_PATH}`;
 }
 
-export function buildGoogleDriveAuthorizeUrl(origin: string, state: string) {
-  const env = getGoogleDriveOAuthEnv();
+export async function buildGoogleDriveAuthorizeUrl(origin: string, state: string) {
+  const env = await getGoogleDriveOAuthCredentials();
   if (!env) return null;
   const params = new URLSearchParams({
     client_id: env.clientId,
@@ -86,7 +86,7 @@ async function postToken(body: URLSearchParams): Promise<TokenResponse | null> {
 }
 
 export async function exchangeGoogleDriveCode(origin: string, code: string) {
-  const env = getGoogleDriveOAuthEnv();
+  const env = await getGoogleDriveOAuthCredentials();
   if (!env) return null;
   return postToken(
     new URLSearchParams({
@@ -100,7 +100,7 @@ export async function exchangeGoogleDriveCode(origin: string, code: string) {
 }
 
 export async function refreshGoogleDriveAccessToken(refreshToken: string) {
-  const env = getGoogleDriveOAuthEnv();
+  const env = await getGoogleDriveOAuthCredentials();
   if (!env) return null;
   return postToken(
     new URLSearchParams({

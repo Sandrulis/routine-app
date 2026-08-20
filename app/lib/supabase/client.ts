@@ -34,6 +34,8 @@ function readDocumentCookies() {
   });
 }
 
+let browserClient: ReturnType<typeof createBrowserClient> | null = null;
+
 export function createClient() {
   const env = getSupabasePublicEnv();
   if (!env) {
@@ -42,7 +44,9 @@ export function createClient() {
     );
   }
 
-  return createBrowserClient(env.url, env.anonKey, {
+  if (browserClient) return browserClient;
+
+  browserClient = createBrowserClient(env.url, env.anonKey, {
     cookies: {
       getAll() {
         return readDocumentCookies();
@@ -67,4 +71,6 @@ export function createClient() {
       },
     },
   });
+
+  return browserClient;
 }

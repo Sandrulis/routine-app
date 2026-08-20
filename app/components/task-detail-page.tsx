@@ -1,12 +1,12 @@
 "use client";
 
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { createMenuAnchorFromEvent } from "@/app/components/create-item-menu";
 import { GroupedSubtaskTables } from "@/app/components/grouped-subtask-tables";
 import { IconActionButton } from "@/app/components/icon-action-button";
-import { ListWindowsBoard } from "@/app/components/list-windows-board";
 import { LoadingState } from "@/app/components/loading-state";
 import { ParentCreateFlow, type ParentCreateContext } from "@/app/components/parent-create-flow";
 import { SectionPage } from "@/app/components/section-page";
@@ -20,6 +20,14 @@ import {
   resolveEffectiveListAccess,
 } from "@/app/lib/list-access";
 import { WorkItemArchiveButton } from "@/app/components/work-item-archive-button";
+
+const ListWindowsBoard = dynamic(
+  () =>
+    import("@/app/components/list-windows-board").then((mod) => ({
+      default: mod.ListWindowsBoard,
+    })),
+  { ssr: false, loading: () => <LoadingState compact /> },
+);
 
 export function TaskDetailPage({
   listId,

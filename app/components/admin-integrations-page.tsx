@@ -593,11 +593,12 @@ export function AdminIntegrationsPage({
             </p>
             <ul className="mt-2 space-y-1 font-mono text-xs text-zinc-700">
               <li>{googleStatus.callbackUrl}</li>
+              <li>{googleStatus.googleDriveCallbackUrl}</li>
             </ul>
             <p className="mt-2 text-xs text-zinc-500">
               {t(
                 "integrations.google_oauth.redirects.hint",
-                "Šo URI izmanto konfigurācijas pārbaudei un login/signup ar Google.",
+                "Pirmo URI izmanto login/signup, otro — komandas Google Drive pieslēgšanai. Google Cloud projektā ieslēdz arī Drive API.",
               )}
             </p>
           </div>

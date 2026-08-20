@@ -1,10 +1,20 @@
 import type { ReactNode } from "react";
 import { AdminPanelShell } from "@/app/components/admin-panel-shell";
-import { requireAdmin } from "@/app/lib/users/require-admin";
+import { MfaVerifyModal } from "@/app/components/mfa-verify-modal";
+import { requireAdminLayout } from "@/app/lib/users/require-admin";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminLayout({ children }: { children: ReactNode }) {
-  await requireAdmin();
+  const { needsMfaVerify } = await requireAdminLayout();
+
+  if (needsMfaVerify) {
+    return (
+      <AdminPanelShell>
+        <MfaVerifyModal open />
+      </AdminPanelShell>
+    );
+  }
+
   return <AdminPanelShell>{children}</AdminPanelShell>;
 }

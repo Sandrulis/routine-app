@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { memo, useState } from "react";
 import { GroupedSubtaskTables } from "@/app/components/grouped-subtask-tables";
 import { UserAvatar } from "@/app/components/user-avatar";
 import { OptionalTooltip } from "@/app/components/tooltip";
@@ -32,7 +32,7 @@ function dateRange(
   return start === end ? start : `${start} - ${end}`;
 }
 
-function TaskSummarySection({
+const TaskSummarySection = memo(function TaskSummarySection({
   listId,
   listName,
   task,
@@ -202,7 +202,7 @@ function TaskSummarySection({
       ) : null}
     </section>
   );
-}
+});
 
 export function ListSummary({
   listId,

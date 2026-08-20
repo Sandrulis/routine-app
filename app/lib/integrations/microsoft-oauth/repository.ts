@@ -1,3 +1,9 @@
+import { logError } from "@/app/lib/security/log-error";
+import {
+  decryptSecret,
+  isEncryptedSecret,
+  persistSecret,
+} from "@/app/lib/security/secret-box";
 import { createAdminClient } from "@/app/lib/supabase/admin";
 import { isSupabaseAdminConfigured } from "@/app/lib/supabase/env";
 import { FRONTEND_MODULE_KEYS } from "@/app/lib/frontend-modules/keys";
@@ -27,7 +33,7 @@ async function disableDependentOneDriveModule() {
     .eq("module_key", FRONTEND_MODULE_KEYS.onedrive)
     .eq("is_enabled", true);
   if (error) {
-    console.error("disableDependentOneDriveModule failed:", error.message);
+    logError("disableDependentOneDriveModule failed", error.message);
   }
 }
 
@@ -73,7 +79,17 @@ async function fetchIntegrationRow(): Promise<IntegrationRow | null> {
     .eq("integration_key", SITE_INTEGRATION_KEYS.microsoftOAuth)
     .maybeSingle();
   if (error || !data) return null;
-  return data as IntegrationRow;
+  const row = data as IntegrationRow;
+  if (row.client_secret && !isEncryptedSecret(row.client_secret)) {
+    void admin
+      .from("site_integrations")
+      .update({ client_secret: persistSecret(row.client_secret) })
+      .eq("integration_key", SITE_INTEGRATION_KEYS.microsoftOAuth);
+  }
+  return {
+    ...row,
+    client_secret: decryptSecret(row.client_secret),
+  };
 }
 
 export async function getMicrosoftOAuthCredentials() {
@@ -154,7 +170,7 @@ export async function saveMicrosoftOAuthCredentials(
   };
 
   if (clientSecret) {
-    patch.client_secret = clientSecret;
+    patch.client_secret = persistSecret(clientSecret);
   }
 
   const { error } = await admin

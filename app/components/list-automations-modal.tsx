@@ -29,10 +29,13 @@ export function ListAutomationsModal({
   const { showFeedback } = useFeedbackToast();
   const { lists, listAutomations, addListAutomation, updateListAutomation, deleteListAutomation } =
     useLists();
-  const { templates } = useTemplates();
+  const { templates, ensureLoaded } = useTemplates();
   const { members } = useTeam();
   const { isEnabled: isModuleEnabled } = useFrontendModules();
   const templatesEnabled = isModuleEnabled(FRONTEND_MODULE_KEYS.templates);
+  useEffect(() => {
+    if (open) ensureLoaded();
+  }, [ensureLoaded, open]);
   const liveList = (list && lists.find((item) => item.id === list.id)) || list;
   const { statuses: statusesForList, labelFor, colorFor } = useTaskStatuses(liveList?.id);
   const automations = useMemo(

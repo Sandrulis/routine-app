@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
-import { TeamOneDrivePage } from "@/app/components/team-onedrive-page";
+import { TeamOneDrivePageLazy } from "@/app/components/lazy-heavy-pages";
 import { LoadingState } from "@/app/components/loading-state";
 import { requireFrontendModules } from "@/app/lib/frontend-modules/access";
 import { FRONTEND_MODULE_KEYS } from "@/app/lib/frontend-modules/keys";
@@ -17,7 +17,7 @@ export default async function TeamOneDriveRoute() {
   ]);
   return (
     <Suspense fallback={<LoadingState />}>
-      <TeamOneDrivePage />
+      <TeamOneDrivePageLazy />
     </Suspense>
   );
 }

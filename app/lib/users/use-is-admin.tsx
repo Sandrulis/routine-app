@@ -36,14 +36,9 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     let cancelled = false;
     const supabase = createClient();
 
-    void Promise.all([
-      supabase.rpc("current_user_is_admin"),
-      supabase.from("users").select("is_admin").eq("id", user.id).maybeSingle(),
-    ]).then(([rpcResult, profileResult]) => {
+    void supabase.rpc("current_user_is_admin").then((rpcResult: { error: unknown; data: unknown }) => {
       if (cancelled) return;
-      const fromRpc = !rpcResult.error && rpcResult.data === true;
-      const fromProfile = profileResult.data?.is_admin === true;
-      setIsAdmin(fromRpc || fromProfile);
+      setIsAdmin(!rpcResult.error && rpcResult.data === true);
       setIsReady(true);
     });
 

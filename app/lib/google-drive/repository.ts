@@ -2,11 +2,19 @@ import { createAdminClient } from "@/app/lib/supabase/admin";
 import { isSupabaseAdminConfigured } from "@/app/lib/supabase/env";
 import { OWNER_TEAM_ROLE } from "@/app/lib/team";
 import { normalizeTeamPermissionSet } from "@/app/lib/team-permissions";
+import { logError } from "@/app/lib/security/log-error";
+import {
+  decryptSecret,
+  isEncryptedSecret,
+  persistSecret,
+} from "@/app/lib/security/secret-box";
 
 export type GoogleDriveStatus = {
   configured: boolean;
   connected: boolean;
   enabled: boolean;
+  /** When false (default), file bytes stay on Drive only. */
+  storeOnServer: boolean;
   folderPath: string;
   accountEmail: string;
   canConfigure: boolean;
@@ -16,6 +24,7 @@ export type GoogleDriveSecretRow = {
   teamId: string;
   isConnected: boolean;
   isEnabled: boolean;
+  storeOnServer: boolean;
   folderPath: string;
   accountEmail: string;
   refreshToken: string;
@@ -28,6 +37,7 @@ type IntegrationRow = {
   team_id: string;
   is_connected: boolean;
   is_enabled: boolean;
+  store_on_server?: boolean | null;
   folder_path: string;
   account_email: string;
   refresh_token: string | null;
@@ -52,10 +62,11 @@ function mapSecretRow(row: IntegrationRow): GoogleDriveSecretRow {
     teamId: row.team_id,
     isConnected: row.is_connected,
     isEnabled: row.is_enabled,
+    storeOnServer: row.store_on_server === true,
     folderPath: row.folder_path || "Routine",
     accountEmail: row.account_email || "",
-    refreshToken: row.refresh_token?.trim() ?? "",
-    accessToken: row.access_token?.trim() ?? "",
+    refreshToken: decryptSecret(row.refresh_token),
+    accessToken: decryptSecret(row.access_token),
     accessTokenExpiresAt: row.access_token_expires_at,
     folderIdCache: parseFolderCache(row.folder_id_cache),
   };
@@ -134,12 +145,25 @@ export async function fetchGoogleDriveSecretRow(
   const { data, error } = await admin
     .from("team_google_drive_integrations")
     .select(
-      "team_id, is_connected, is_enabled, folder_path, account_email, refresh_token, access_token, access_token_expires_at, folder_id_cache",
+      "team_id, is_connected, is_enabled, store_on_server, folder_path, account_email, refresh_token, access_token, access_token_expires_at, folder_id_cache",
     )
     .eq("team_id", teamId)
     .maybeSingle();
   if (error || !data) return null;
-  return mapSecretRow(data as IntegrationRow);
+  const row = data as IntegrationRow;
+  if (
+    (row.refresh_token && !isEncryptedSecret(row.refresh_token)) ||
+    (row.access_token && !isEncryptedSecret(row.access_token))
+  ) {
+    void admin
+      .from("team_google_drive_integrations")
+      .update({
+        refresh_token: persistSecret(row.refresh_token),
+        access_token: persistSecret(row.access_token),
+      })
+      .eq("team_id", teamId);
+  }
+  return mapSecretRow(row);
 }
 
 export async function fetchGoogleDriveStatus(
@@ -153,6 +177,7 @@ export async function fetchGoogleDriveStatus(
     configured,
     connected: Boolean(row?.isConnected && row.refreshToken),
     enabled: Boolean(row?.isEnabled),
+    storeOnServer: Boolean(row?.storeOnServer),
     folderPath: row?.folderPath ?? "Routine",
     accountEmail: row?.accountEmail ?? "",
     canConfigure,
@@ -181,17 +206,18 @@ export async function saveGoogleDriveTokens(input: {
     team_id: input.teamId,
     is_connected: true,
     is_enabled: existing?.isEnabled ?? true,
+    store_on_server: existing?.storeOnServer ?? false,
     folder_path: existing?.folderPath ?? "Routine",
     account_email: input.accountEmail,
-    refresh_token: refreshToken,
-    access_token: input.accessToken,
+    refresh_token: persistSecret(refreshToken),
+    access_token: persistSecret(input.accessToken),
     access_token_expires_at: expiresAt,
     folder_id_cache: existing?.folderIdCache ?? {},
     connected_by: input.connectedBy,
     connected_at: new Date().toISOString(),
   });
   if (error) {
-    console.error("saveGoogleDriveTokens failed:", error.message);
+    logError("saveGoogleDriveTokens failed", error.message);
     return { ok: false as const, error: "errors.google_drive_connect_failed" };
   }
   return { ok: true as const };
@@ -207,7 +233,7 @@ export async function updateGoogleDriveAccessToken(
   await admin
     .from("team_google_drive_integrations")
     .update({
-      access_token: accessToken,
+      access_token: persistSecret(accessToken),
       access_token_expires_at: new Date(
         Date.now() + Math.max(30, expiresIn) * 1000,
       ).toISOString(),
@@ -218,6 +244,7 @@ export async function updateGoogleDriveAccessToken(
 export async function saveGoogleDriveSettings(input: {
   teamId: string;
   isEnabled: boolean;
+  storeOnServer: boolean;
   folderPath: string;
 }) {
   if (!isSupabaseAdminConfigured()) {
@@ -229,6 +256,7 @@ export async function saveGoogleDriveSettings(input: {
   const folderChanged = existing?.folderPath !== folderPath;
   const payload = {
     is_enabled: input.isEnabled,
+    store_on_server: input.storeOnServer,
     folder_path: folderPath,
     folder_id_cache: folderChanged ? {} : (existing?.folderIdCache ?? {}),
   };
@@ -243,10 +271,10 @@ export async function saveGoogleDriveSettings(input: {
         ...payload,
       });
   if (error) {
-    console.error("saveGoogleDriveSettings failed:", error.message);
+    logError("saveGoogleDriveSettings failed", error.message);
     return { ok: false as const, error: "errors.google_drive_save_failed" };
   }
-  return { ok: true as const, folderPath };
+  return { ok: true as const, folderPath, storeOnServer: input.storeOnServer };
 }
 
 export async function disconnectGoogleDrive(teamId: string) {
@@ -259,6 +287,7 @@ export async function disconnectGoogleDrive(teamId: string) {
     team_id: teamId,
     is_connected: false,
     is_enabled: false,
+    store_on_server: existing?.storeOnServer ?? false,
     folder_path: existing?.folderPath ?? "Routine",
     account_email: "",
     refresh_token: null,
@@ -269,7 +298,7 @@ export async function disconnectGoogleDrive(teamId: string) {
     connected_at: null,
   });
   if (error) {
-    console.error("disconnectGoogleDrive failed:", error.message);
+    logError("disconnectGoogleDrive failed", error.message);
     return { ok: false as const, error: "errors.google_drive_disconnect_failed" };
   }
   return { ok: true as const };

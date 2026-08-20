@@ -86,8 +86,9 @@ jobs:
           fi
           for file in $(find app/api -name "route.ts"); do
             if grep -qE "export async function (GET|POST|PUT|DELETE|PATCH)" "$file"; then
-              if ! grep -qE "(getCurrentUser|requireAuth)" "$file"; then
-                echo "WARN: No auth check in $file"
+              if ! grep -qE "(getCurrentUser|requireAuth|getExtensionAuth)" "$file"; then
+                echo "FAIL: No auth check in $file"
+                exit 1
               fi
             fi
           done

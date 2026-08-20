@@ -8,6 +8,7 @@ import {
 export type UmamiPublicConfig = {
   websiteId: string;
   scriptSrc: string;
+  integrity?: string;
 };
 
 export async function getUmamiPublicConfig(): Promise<UmamiPublicConfig | null> {
@@ -21,5 +22,9 @@ export async function getUmamiPublicConfig(): Promise<UmamiPublicConfig | null> 
   if (!websiteId) return null;
   const scriptSrc =
     credentials?.clientSecret?.trim() || DEFAULT_UMAMI_SCRIPT_URL;
-  return { websiteId, scriptSrc };
+  const integrity =
+    process.env.UMAMI_SCRIPT_INTEGRITY?.trim() ||
+    process.env.NEXT_PUBLIC_UMAMI_SCRIPT_INTEGRITY?.trim() ||
+    "";
+  return { websiteId, scriptSrc, integrity: integrity || undefined };
 }

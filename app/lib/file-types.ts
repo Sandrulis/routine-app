@@ -45,6 +45,55 @@ export const DEFAULT_FILE_TYPE_EXTENSIONS: FileTypeExtensionSummary[] = [
     color: "#059669",
     sortOrder: 5,
   },
+  {
+    extension: "png",
+    mimeType: "image/png",
+    icon: "fas fa-file-image",
+    color: "#0ea5e8",
+    sortOrder: 6,
+  },
+  {
+    extension: "jpg",
+    mimeType: "image/jpeg",
+    icon: "fas fa-file-image",
+    color: "#0ea5e8",
+    sortOrder: 7,
+  },
+  {
+    extension: "jpeg",
+    mimeType: "image/jpeg",
+    icon: "fas fa-file-image",
+    color: "#0ea5e8",
+    sortOrder: 8,
+  },
+  {
+    extension: "gif",
+    mimeType: "image/gif",
+    icon: "fas fa-file-image",
+    color: "#0ea5e8",
+    sortOrder: 9,
+  },
+  {
+    extension: "webp",
+    mimeType: "image/webp",
+    icon: "fas fa-file-image",
+    color: "#0ea5e8",
+    sortOrder: 10,
+  },
+  {
+    extension: "txt",
+    mimeType: "text/plain",
+    icon: "fas fa-file-lines",
+    color: "#64748b",
+    sortOrder: 11,
+  },
+  {
+    extension: "html",
+    mimeType: "text/html",
+    icon: "fas fa-file-code",
+    color: "#ea580c",
+    sortOrder: 12,
+  },
 ];
 
 const EXTENSION_RE = /^[a-z0-9]+$/;
@@ -70,6 +119,57 @@ export function fileExtensionFromName(name: string): string {
   const parts = name.trim().split(".");
   if (parts.length < 2) return "";
   return normalizeFileExtension(parts.at(-1) ?? "");
+}
+
+/** Name without the last extension segment (`report.final.pdf` → `report.final`). */
+export function fileBaseName(name: string): string {
+  const trimmed = name.trim();
+  const extension = fileExtensionFromName(trimmed);
+  if (!extension) return trimmed;
+  return trimmed.slice(0, -(extension.length + 1));
+}
+
+/**
+ * Rename while keeping the original extension.
+ * User-provided extensions in `nextName` are ignored when the original had one.
+ */
+export function renameKeepingExtension(
+  originalName: string,
+  nextName: string,
+): string {
+  const original = originalName.trim() || "file";
+  const extension = fileExtensionFromName(original);
+  let base = nextName.trim();
+  if (extension) {
+    // Strip trailing `.ext` repeats (e.g. `report.pdf` or `report.pdf.pdf` in the base field).
+    while (fileExtensionFromName(base) === extension) {
+      const without = fileBaseName(base);
+      if (without === base) break;
+      base = without;
+    }
+    if (fileExtensionFromName(base)) {
+      base = fileBaseName(base);
+    }
+    if (!base) base = fileBaseName(original) || "file";
+    return `${base}.${extension}`;
+  }
+  return base || original;
+}
+
+/** Images and PDF can open in the in-app preview modal. */
+export function isBrowserPreviewableFile(name: string, mimeType = ""): boolean {
+  const mime = mimeType.trim().toLowerCase();
+  if (mime.startsWith("image/") || mime === "application/pdf") return true;
+  const extension = fileExtensionFromName(name);
+  return (
+    extension === "pdf" ||
+    extension === "png" ||
+    extension === "jpg" ||
+    extension === "jpeg" ||
+    extension === "gif" ||
+    extension === "webp" ||
+    extension === "svg"
+  );
 }
 
 export function findFileTypeExtension(

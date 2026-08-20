@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, type CSSProperties, type ReactNode } from "react";
+import { memo, useId, type CSSProperties, type ReactNode } from "react";
 import {
   DndContext,
   PointerSensor,
@@ -69,7 +69,7 @@ export function SortableTaskGroup({
   );
 }
 
-export function SortableTaskItem({
+export const SortableTaskItem = memo(function SortableTaskItem({
   id,
   as: Component = "div",
   className,
@@ -105,4 +105,4 @@ export function SortableTaskItem({
       {children({ attributes, listeners, isDragging })}
     </Component>
   );
-}
+});

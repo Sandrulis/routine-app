@@ -14,9 +14,10 @@ import { useTranslations } from "@/app/components/translations-provider";
 import {
   deleteStoredListFile,
   formatFileSize,
-  readListFileContent,
   renameStoredListFile,
 } from "@/app/lib/list-files";
+import { ensureListFileContent } from "@/app/lib/file-content";
+import { fileBaseName, fileExtensionFromName } from "@/app/lib/file-types";
 import { FRONTEND_MODULE_KEYS } from "@/app/lib/frontend-modules/keys";
 import { useFrontendModules } from "@/app/lib/frontend-modules/context";
 import { useLists } from "@/app/lib/lists-store";
@@ -50,11 +51,40 @@ export function FileDetailPage({
   }, [fileUploadsEnabled, listId, router]);
 
   useEffect(() => {
-    if (!file?.hasContent) {
+    let cancelled = false;
+    let objectUrl: string | null = null;
+
+    async function loadContent() {
+      if (!file) {
+        setContent(null);
+        return;
+      }
+      if (file.hasContent) {
+        const local = await ensureListFileContent(file.id);
+        if (!cancelled) setContent(local);
+        return;
+      }
+      if (file.googleDriveFileId) {
+        const { fetchGoogleDriveContentAsObjectUrl } = await import(
+          "@/app/lib/google-drive/content-url"
+        );
+        const url = await fetchGoogleDriveContentAsObjectUrl("list", file.id);
+        if (cancelled) {
+          if (url) URL.revokeObjectURL(url);
+          return;
+        }
+        objectUrl = url;
+        setContent(url);
+        return;
+      }
       setContent(null);
-      return;
     }
-    setContent(readListFileContent(file.id));
+
+    void loadContent();
+    return () => {
+      cancelled = true;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
   }, [file]);
 
   if (!fileUploadsEnabled) {
@@ -161,7 +191,13 @@ export function FileDetailPage({
         )}
         submitLabel={t("actions.save", "Saglabāt")}
         showDescription={false}
-        initialValue={{ name: file.name, description: "" }}
+        nameSuffix={
+          (() => {
+            const extension = fileExtensionFromName(file.name);
+            return extension ? `.${extension}` : null;
+          })()
+        }
+        initialValue={{ name: fileBaseName(file.name), description: "" }}
         onCreate={(input) => {
           renameStoredListFile(file.id, input.name);
           showFeedback({

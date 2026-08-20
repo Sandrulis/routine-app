@@ -9,6 +9,7 @@ import {
 } from "@/app/components/auth-form-styles";
 import { useFeedbackToast } from "@/app/components/feedback-toast-provider";
 import { useTranslations } from "@/app/components/translations-provider";
+import { requestPasswordResetAction } from "@/app/lib/auth/actions";
 
 export function ForgotPasswordForm() {
   const { t } = useTranslations();
@@ -16,10 +17,12 @@ export function ForgotPasswordForm() {
   const [email, setEmail] = useState("");
   const [pending, setPending] = useState(false);
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     clearFeedback();
     setPending(true);
+    await requestPasswordResetAction({ email });
+    setPending(false);
     showFeedback({
       type: "success",
       text: t(
@@ -27,7 +30,6 @@ export function ForgotPasswordForm() {
         "Ja konts pastāv, nosūtīsim atjaunošanas saiti.",
       ),
     });
-    setPending(false);
   }
 
   return (

@@ -2,6 +2,7 @@
 
 import {
   createContext,
+  memo,
   useContext,
   useId,
   useMemo,
@@ -301,7 +302,7 @@ export type NavTreeSortableHandle = {
   style: CSSProperties;
 };
 
-export function NavTreeSortableItem({
+export const NavTreeSortableItem = memo(function NavTreeSortableItem({
   id,
   data,
   disabled = false,
@@ -322,7 +323,7 @@ export function NavTreeSortableItem({
   const style: CSSProperties = isDragging ? { opacity: 0.4 } : {};
 
   return children({ attributes, listeners, isDragging, setNodeRef, style });
-}
+});
 
 export function NavTreeEndDrop({
   id,

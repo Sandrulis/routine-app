@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { Tooltip } from "@/app/components/tooltip";
 import { useDisplayPreferences } from "@/app/components/display-preferences-provider";
+import { useNow } from "@/app/components/now-provider";
 import { useTranslations } from "@/app/components/translations-provider";
 import { getLastOnlineDisplay } from "@/app/lib/last-online";
 
@@ -15,14 +15,9 @@ export function RelativeTime({
 }) {
   const { t } = useTranslations();
   const { formatDateTime } = useDisplayPreferences();
-  const [now, setNow] = useState(() => Date.now());
+  const now = useNow();
   const display = getLastOnlineDisplay(at, now);
   const exact = at ? formatDateTime(at) : "";
-
-  useEffect(() => {
-    const timer = window.setInterval(() => setNow(Date.now()), 15_000);
-    return () => window.clearInterval(timer);
-  }, []);
 
   if (display.kind === "unknown") return null;
 

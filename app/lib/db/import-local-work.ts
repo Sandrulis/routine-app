@@ -183,8 +183,21 @@ async function importTeamWorkspace(
   }
 }
 
+export function hasCompletedLocalImport(userId: string): boolean {
+  try {
+    return Boolean(window.localStorage.getItem(`${IMPORT_FLAG}:${userId}`));
+  } catch {
+    return false;
+  }
+}
+
+export function peekStoredTeamId(userId: string | null): string | null {
+  if (!userId || typeof window === "undefined") return null;
+  return window.localStorage.getItem(currentTeamIdStorageKey(userId));
+}
+
 export function readStoredCurrentTeamId(userId: string, teamIds: string[]): string {
-  const stored = window.localStorage.getItem(currentTeamIdStorageKey(userId));
+  const stored = peekStoredTeamId(userId);
   if (stored && teamIds.includes(stored)) return stored;
   return teamIds[0] ?? "";
 }

@@ -1,13 +1,12 @@
 "use client";
 
 import { createContext, useContext, useMemo, type ReactNode } from "react";
+import { interpolate } from "@/app/lib/i18n/interpolate";
 import {
   DEFAULT_LANGUAGE,
-  interpolate,
-  messages,
   type LanguageCode,
-} from "@/app/lib/i18n/messages";
-import type { UiLanguageOption } from "@/app/lib/i18n/language";
+  type UiLanguageOption,
+} from "@/app/lib/i18n/language";
 
 type TranslateFn = (
   key: string,
@@ -26,17 +25,17 @@ const TranslationsContext = createContext<TranslationsContextValue | null>(null)
 export function TranslationsProvider({
   languageCode = DEFAULT_LANGUAGE,
   overlay = {},
+  table = {},
   languages = [],
   children,
 }: {
   languageCode?: LanguageCode;
   overlay?: Record<string, string>;
+  table?: Record<string, string>;
   languages?: UiLanguageOption[];
   children: ReactNode;
 }) {
   const value = useMemo<TranslationsContextValue>(() => {
-    const table = messages[languageCode] ?? messages[DEFAULT_LANGUAGE];
-
     return {
       languageCode,
       languages,
@@ -45,7 +44,7 @@ export function TranslationsProvider({
         return interpolate(fromOverlay || table[key] || fallback, params);
       },
     };
-  }, [languageCode, languages, overlay]);
+  }, [languageCode, languages, overlay, table]);
 
   return (
     <TranslationsContext.Provider value={value}>

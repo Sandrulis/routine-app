@@ -77,10 +77,54 @@ export async function buildMicrosoftOAuthAuthorizeUrl(
 type TokenResponse = {
   access_token?: string;
   refresh_token?: string;
+  id_token?: string;
   expires_in?: number;
   token_type?: string;
   error?: string;
 };
+
+type OidcClaims = Record<string, unknown>;
+
+function parseJwtPayload(token: string | undefined): OidcClaims | null {
+  if (!token) return null;
+  const parts = token.split(".");
+  if (parts.length < 2) return null;
+  try {
+    const json = Buffer.from(parts[1], "base64url").toString("utf8");
+    const parsed = JSON.parse(json) as unknown;
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return null;
+    return parsed as OidcClaims;
+  } catch {
+    return null;
+  }
+}
+
+function claimEmail(value: unknown) {
+  return typeof value === "string" ? value.trim().toLowerCase() : "";
+}
+
+function claimVerified(value: unknown): boolean | null {
+  if (value === true || value === "true") return true;
+  if (value === false || value === "false") return false;
+  return null;
+}
+
+function pickVerifiedMicrosoftEmail(
+  idToken: OidcClaims | null,
+  userinfo: OidcClaims | null,
+) {
+  const tokenEmail = claimEmail(idToken?.email);
+  const tokenVerified = claimVerified(idToken?.email_verified);
+  const infoEmail = claimEmail(userinfo?.email);
+  const infoVerified = claimVerified(userinfo?.email_verified);
+
+  if (tokenEmail && tokenVerified === true) return tokenEmail;
+  if (infoEmail && infoVerified === true) return infoEmail;
+  if (tokenEmail && tokenVerified !== false && infoEmail && tokenEmail === infoEmail) {
+    return tokenEmail;
+  }
+  return "";
+}
 
 async function postToken(body: URLSearchParams): Promise<TokenResponse | null> {
   const response = await fetch(
@@ -108,32 +152,40 @@ export async function exchangeMicrosoftOAuthCode(origin: string, code: string) {
       client_secret: credentials.clientSecret,
       redirect_uri: microsoftOAuthRedirectUri(origin),
       grant_type: "authorization_code",
+      scope: MICROSOFT_OAUTH_SCOPES,
     }),
   );
 }
 
-export async function fetchMicrosoftOAuthUserInfo(accessToken: string) {
-  const response = await fetch("https://graph.microsoft.com/v1.0/me", {
-    headers: { Authorization: `Bearer ${accessToken}` },
-  });
-  const data = (await response.json().catch(() => null)) as
-    | {
-        mail?: string;
-        userPrincipalName?: string;
-        displayName?: string;
-      }
+export async function fetchMicrosoftOAuthUserInfo(
+  accessToken: string,
+  idToken?: string,
+) {
+  const [userinfoResponse, graphResponse] = await Promise.all([
+    fetch("https://graph.microsoft.com/oidc/userinfo", {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    }),
+    fetch("https://graph.microsoft.com/v1.0/me", {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    }),
+  ]);
+  const userinfo = (await userinfoResponse.json().catch(() => null)) as OidcClaims | null;
+  const graph = (await graphResponse.json().catch(() => null)) as
+    | { displayName?: string }
     | null;
-  if (!response.ok) {
-    return { email: "", name: "" };
-  }
-  return {
-    email: (data?.mail || data?.userPrincipalName || "").trim(),
-    name: data?.displayName?.trim() ?? "",
-  };
+  const email = pickVerifiedMicrosoftEmail(parseJwtPayload(idToken), userinfoResponse.ok ? userinfo : null);
+  const name =
+    (typeof userinfo?.name === "string" ? userinfo.name.trim() : "") ||
+    graph?.displayName?.trim() ||
+    "";
+  return { email, name };
 }
 
-export async function fetchMicrosoftOAuthAccountEmail(accessToken: string) {
-  const profile = await fetchMicrosoftOAuthUserInfo(accessToken);
+export async function fetchMicrosoftOAuthAccountEmail(
+  accessToken: string,
+  idToken?: string,
+) {
+  const profile = await fetchMicrosoftOAuthUserInfo(accessToken, idToken);
   return profile.email;
 }
 

@@ -14,6 +14,9 @@ import type {
   CalendarIntegrationSummary,
   CalendarProvider,
 } from "@/app/lib/calendar/types";
+import { sha256Hex } from "@/app/lib/security/hash-token";
+import { logError } from "@/app/lib/security/log-error";
+import { decryptSecret, persistSecret } from "@/app/lib/security/secret-box";
 
 type IntegrationRow = {
   user_id: string;
@@ -25,7 +28,6 @@ type IntegrationRow = {
 type TaskRow = {
   id: string;
   title: string;
-  description: string | null;
   start_date: string | null;
   due_date: string;
   list_id: string;
@@ -37,12 +39,27 @@ const EMPTY_SUMMARY: CalendarIntegrationSummary = {
   feedPath: null,
 };
 
-function mapSummary(row: IntegrationRow | null): CalendarIntegrationSummary {
+function revealFeedToken(stored: string | null | undefined) {
+  return decryptSecret(stored);
+}
+
+function persistFeedFields(plaintext: string) {
+  return {
+    feed_token: persistSecret(plaintext),
+    feed_token_hash: sha256Hex(plaintext),
+  };
+}
+
+function mapSummary(
+  row: IntegrationRow | null,
+  plaintextToken?: string,
+): CalendarIntegrationSummary {
   if (!row) return EMPTY_SUMMARY;
+  const token = plaintextToken || revealFeedToken(row.feed_token);
   return {
     enabled: row.is_enabled,
     provider: row.provider,
-    feedPath: calendarFeedPath(row.feed_token),
+    feedPath: token ? calendarFeedPath(token) : null,
   };
 }
 
@@ -59,7 +76,7 @@ export async function getCalendarIntegration(
     .maybeSingle();
 
   if (error) {
-    console.error("getCalendarIntegration failed:", error.message);
+    logError("getCalendarIntegration failed", error.message);
     throw new Error("errors.calendar_load_failed");
   }
 
@@ -82,7 +99,7 @@ export async function upsertCalendarIntegration(
     .maybeSingle();
 
   const feedToken =
-    (existing as { feed_token?: string } | null)?.feed_token ??
+    revealFeedToken((existing as { feed_token?: string } | null)?.feed_token) ||
     createCalendarFeedToken();
 
   const { data, error } = await supabase
@@ -92,7 +109,7 @@ export async function upsertCalendarIntegration(
         user_id: userId,
         is_enabled: input.enabled,
         provider: input.provider,
-        feed_token: feedToken,
+        ...persistFeedFields(feedToken),
       },
       { onConflict: "user_id" },
     )
@@ -100,11 +117,11 @@ export async function upsertCalendarIntegration(
     .single();
 
   if (error || !data) {
-    console.error("upsertCalendarIntegration failed:", error?.message);
+    logError("upsertCalendarIntegration failed", error?.message);
     throw new Error("errors.calendar_save_failed");
   }
 
-  return mapSummary(data as IntegrationRow);
+  return mapSummary(data as IntegrationRow, feedToken);
 }
 
 export async function regenerateCalendarFeedToken(
@@ -126,6 +143,8 @@ export async function regenerateCalendarFeedToken(
     provider?: CalendarProvider | null;
   } | null) ?? { is_enabled: false, provider: null };
 
+  const feedToken = createCalendarFeedToken();
+
   const { data, error } = await supabase
     .from("user_calendar_integrations")
     .upsert(
@@ -133,7 +152,7 @@ export async function regenerateCalendarFeedToken(
         user_id: userId,
         is_enabled: current.is_enabled ?? false,
         provider: current.provider ?? null,
-        feed_token: createCalendarFeedToken(),
+        ...persistFeedFields(feedToken),
       },
       { onConflict: "user_id" },
     )
@@ -141,11 +160,11 @@ export async function regenerateCalendarFeedToken(
     .single();
 
   if (error || !data) {
-    console.error("regenerateCalendarFeedToken failed:", error?.message);
+    logError("regenerateCalendarFeedToken failed", error?.message);
     throw new Error("errors.calendar_save_failed");
   }
 
-  return mapSummary(data as IntegrationRow);
+  return mapSummary(data as IntegrationRow, feedToken);
 }
 
 export async function loadCalendarFeedByToken(token: string): Promise<{
@@ -157,14 +176,15 @@ export async function loadCalendarFeedByToken(token: string): Promise<{
   }
 
   const admin = createAdminClient();
+  const tokenHash = sha256Hex(token);
   const { data: integration, error: integrationError } = await admin
     .from("user_calendar_integrations")
     .select("user_id, is_enabled")
-    .eq("feed_token", token)
+    .eq("feed_token_hash", tokenHash)
     .maybeSingle();
 
   if (integrationError) {
-    console.error("loadCalendarFeedByToken lookup failed:", integrationError.message);
+    logError("loadCalendarFeedByToken lookup failed", integrationError.message);
     return null;
   }
 
@@ -209,7 +229,7 @@ async function loadAssignedDatedTasks(
     .eq("user_id", userId);
 
   if (membersError) {
-    console.error("calendar feed members failed:", membersError.message);
+    logError("calendar feed members failed", membersError.message);
     return [];
   }
 
@@ -222,7 +242,7 @@ async function loadAssignedDatedTasks(
     .in("member_id", memberIds);
 
   if (assigneesError) {
-    console.error("calendar feed assignees failed:", assigneesError.message);
+    logError("calendar feed assignees failed", assigneesError.message);
     return [];
   }
 
@@ -237,7 +257,7 @@ async function loadAssignedDatedTasks(
     const chunk = taskIds.slice(index, index + chunkSize);
     const { data, error } = await admin
       .from("work_tasks")
-      .select("id, title, description, start_date, due_date, list_id")
+      .select("id, title, start_date, due_date, list_id")
       .in("id", chunk)
       .in("kind", ["task", "subtask"])
       .is("deleted_at", null)
@@ -245,7 +265,7 @@ async function loadAssignedDatedTasks(
       .not("due_date", "is", null);
 
     if (error) {
-      console.error("calendar feed tasks failed:", error.message);
+      logError("calendar feed tasks failed", error.message);
       continue;
     }
 
@@ -256,7 +276,7 @@ async function loadAssignedDatedTasks(
   return tasks.map((task) => ({
     id: task.id,
     title: task.title,
-    description: task.description ?? "",
+    description: "",
     startDate: task.start_date ?? task.due_date,
     dueDate: task.due_date,
     url: `${origin}/lists/${task.list_id}/tasks/${task.id}`,

@@ -32,6 +32,7 @@ import {
   serializeConfig,
   type ListAutomation,
 } from "@/app/lib/list-automations";
+import { fetchAllRows, fetchInChunks } from "@/app/lib/db/fetch-all-rows";
 
 function db() {
   return createClient();
@@ -59,43 +60,12 @@ async function replaceTaskAssignees(taskId: string, assigneeIds: string[]) {
 }
 
 async function replaceTaskAssigneesNow(taskId: string, assigneeIds: string[]) {
-  const supabase = db();
   const uniqueIds = [...new Set(assigneeIds.filter((id) => id.trim()))];
-  const [{ error: delMembers }, { error: delRoles }] = await Promise.all([
-    supabase.from("task_assignees").delete().eq("task_id", taskId),
-    supabase.from("task_assignee_roles").delete().eq("task_id", taskId),
-  ]);
-  if (delMembers) throw new Error(formatSupabaseError(delMembers));
-  if (delRoles) throw new Error(formatSupabaseError(delRoles));
-  if (uniqueIds.length === 0) return;
-
-  const [membersRes, rolesRes] = await Promise.all([
-    supabase.from("team_members").select("id").in("id", uniqueIds),
-    supabase.from("team_roles").select("id").in("id", uniqueIds),
-  ]);
-  if (membersRes.error) throw new Error(formatSupabaseError(membersRes.error));
-  if (rolesRes.error) throw new Error(formatSupabaseError(rolesRes.error));
-
-  const memberIds = new Set((membersRes.data ?? []).map((row) => row.id));
-  const roleIds = new Set((rolesRes.data ?? []).map((row) => row.id));
-  const memberRows = uniqueIds
-    .filter((id) => memberIds.has(id))
-    .map((memberId) => ({ task_id: taskId, member_id: memberId }));
-  const roleRows = uniqueIds
-    .filter((id) => roleIds.has(id) && !memberIds.has(id))
-    .map((roleId) => ({ task_id: taskId, role_id: roleId }));
-
-  if (memberRows.length > 0) {
-    const { error } = await supabase.from("task_assignees").upsert(memberRows, {
-      onConflict: "task_id,member_id",
-      ignoreDuplicates: true,
-    });
-    if (error) throw new Error(formatSupabaseError(error));
-  }
-  if (roleRows.length > 0) {
-    const { error } = await supabase.from("task_assignee_roles").insert(roleRows);
-    if (error) throw new Error(formatSupabaseError(error));
-  }
+  const { error } = await db().rpc("set_task_assignees", {
+    p_task_id: taskId,
+    p_ids: uniqueIds,
+  });
+  if (error) throw new Error(formatSupabaseError(error));
 }
 
 export function formatSupabaseError(error: unknown): string {
@@ -295,9 +265,11 @@ export async function updateTeamRoleRow(
 }
 
 export async function reorderTeamRoleRows(orderedIds: string[]) {
-  for (let index = 0; index < orderedIds.length; index += 1) {
-    await updateTeamRoleRow(orderedIds[index], { sortOrder: index });
-  }
+  if (orderedIds.length === 0) return;
+  const { error } = await db().rpc("update_team_role_sort_orders", {
+    p_ids: orderedIds,
+  });
+  if (error) throw new Error(formatSupabaseError(error));
 }
 
 export async function deleteTeamRoleRow(roleId: string) {
@@ -374,131 +346,174 @@ export async function touchMemberOnline(
 export type TeamWorkspace = {
   lists: WorkList[];
   tasks: WorkTask[];
-  activities: TaskActivity[];
   taskFiles: TaskFile[];
-  taskFileContents: Record<string, string>;
   listFiles: ListFile[];
-  listFileContents: Record<string, string>;
   listStatuses: ListStatus[];
   workTaskStatuses: WorkTaskStatusDef[];
   listAutomations: ListAutomation[];
   teamStatusLabels: Record<string, string>;
-  notifications: AppNotification[];
-  todos: TodoItem[];
 };
+
+function mapActivityRow(row: {
+  id: string;
+  task_id: string;
+  actor_id: string;
+  kind: TaskActivity["kind"];
+  from_status?: string | null;
+  to_status?: string | null;
+  assignee_ids?: string[] | null;
+  from_assignee_ids?: string[] | null;
+  date_value?: string | null;
+  from_date_value?: string | null;
+  text?: string | null;
+  previous_text?: string | null;
+  file_name?: string | null;
+  from_parent_id?: string | null;
+  to_parent_id?: string | null;
+  metadata?: unknown;
+  created_at: string;
+}): TaskActivity {
+  return {
+    id: row.id,
+    taskId: row.task_id,
+    actorId: row.actor_id,
+    kind: row.kind,
+    at: row.created_at,
+    fromStatus: (row.from_status ?? undefined) as TaskActivity["fromStatus"],
+    toStatus: (row.to_status ?? undefined) as TaskActivity["toStatus"],
+    assigneeIds: row.assignee_ids ?? undefined,
+    fromAssigneeIds: row.from_assignee_ids ?? undefined,
+    dateValue: row.date_value,
+    fromDateValue: row.from_date_value,
+    text: row.text ?? undefined,
+    previousText: row.previous_text ?? undefined,
+    fileName: row.file_name ?? undefined,
+    fromParentId: row.from_parent_id ?? undefined,
+    toParentId: row.to_parent_id ?? undefined,
+    metadata:
+      row.metadata && typeof row.metadata === "object"
+        ? (row.metadata as Record<string, unknown>)
+        : undefined,
+  };
+}
+
+export async function fetchTaskActivities(
+  taskId: string,
+  limit = 80,
+): Promise<TaskActivity[]> {
+  const { data, error } = await db()
+    .from("task_activities")
+    .select(
+      "id, task_id, actor_id, kind, from_status, to_status, assignee_ids, from_assignee_ids, date_value, from_date_value, text, previous_text, file_name, from_parent_id, to_parent_id, metadata, created_at",
+    )
+    .eq("task_id", taskId)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  if (error) throw new Error(formatSupabaseError(error));
+  return ((data ?? []) as Parameters<typeof mapActivityRow>[0][]).map(mapActivityRow);
+}
 
 export async function fetchTeamWorkspace(teamId: string): Promise<TeamWorkspace> {
   const supabase = db();
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  if (!session?.user) {
+    throw new Error(
+      "Not authenticated. Sign out and sign in again, then reload the page.",
+    );
+  }
+
   const [
-    listsRes,
-    tasksRes,
-    activitiesRes,
-    taskFilesRes,
-    listFilesRes,
-    notificationsRes,
-    todosRes,
-    listStatusesRes,
-    workTaskStatusesRes,
-    listAutomationsRes,
-    teamStatusLabelsRes,
+    lists,
+    tasks,
+    taskFileRows,
+    listFileRows,
+    listStatuses,
+    workTaskStatuses,
+    listAutomations,
+    teamStatusLabelRows,
   ] = await Promise.all([
-    supabase
-      .from("work_lists")
-      .select("id, name, description, icon, color, kind, sort_order, is_private, created_by, default_access_level, hidden_status_ids, status_order, status_group_overrides")
-      .eq("team_id", teamId)
-      .order("sort_order", { ascending: true }),
-    supabase
-      .from("work_tasks")
-      .select(
-        "id, list_id, parent_id, kind, title, description, status, status_changed_at, deleted_at, archived_at, start_date, due_date, sort_order, checklists, hidden_status_ids, status_order, status_group_overrides",
-      )
-      .eq("team_id", teamId)
-      .order("sort_order", { ascending: true }),
-    supabase
-      .from("task_activities")
-      .select(
-        "id, task_id, actor_id, kind, from_status, to_status, assignee_ids, from_assignee_ids, date_value, from_date_value, text, previous_text, file_name, from_parent_id, to_parent_id, metadata, created_at",
-      )
-      .eq("team_id", teamId),
-    supabase
-      .from("task_files")
-      .select("id, task_id, name, mime_type, size, content, created_at")
-      .eq("team_id", teamId),
-    supabase
-      .from("list_files")
-      .select(
-        "id, list_id, parent_id, name, mime_type, size, content, sort_order, created_at",
-      )
-      .eq("team_id", teamId),
-    supabase
-      .from("app_notifications")
-      .select("id, kind, actor_id, recipient_id, target_user_id, invitation_id, task_title, href, created_at, read_at")
-      .eq("team_id", teamId)
-      .order("created_at", { ascending: false }),
-    supabase
-      .from("team_todos")
-      .select("id, title, description, status, assignee_id, due_date")
-      .eq("team_id", teamId)
-      .order("created_at", { ascending: true }),
-    supabase
-      .from("list_statuses")
-      .select("id, list_id, label, labels, color, sort_order, group_key")
-      .eq("team_id", teamId)
-      .order("sort_order", { ascending: true }),
-    supabase
-      .from("work_task_statuses")
-      .select(
-        "id, parent_task_id, list_id, label, labels, color, sort_order, group_key",
-      )
-      .eq("team_id", teamId)
-      .order("sort_order", { ascending: true }),
-    supabase
-      .from("work_list_automations")
-      .select(
-        "id, list_id, trigger_kind, action_kind, template_id, config, enabled, sort_order",
-      )
-      .eq("team_id", teamId)
-      .order("sort_order", { ascending: true }),
-    supabase
-      .from("team_status_labels")
-      .select("status_id, label")
-      .eq("team_id", teamId),
+    fetchAllRows((from, to) =>
+      supabase
+        .from("work_lists")
+        .select("id, name, description, icon, color, kind, sort_order, is_private, created_by, default_access_level, hidden_status_ids, status_order, status_group_overrides")
+        .eq("team_id", teamId)
+        .order("sort_order", { ascending: true })
+        .range(from, to),
+    ),
+    fetchAllRows((from, to) =>
+      supabase
+        .from("work_tasks")
+        .select(
+          "id, list_id, parent_id, kind, title, description, status, status_changed_at, deleted_at, archived_at, start_date, due_date, sort_order, checklists, hidden_status_ids, status_order, status_group_overrides, created_at",
+        )
+        .eq("team_id", teamId)
+        .order("sort_order", { ascending: true })
+        .range(from, to),
+    ),
+    fetchAllRows((from, to) =>
+      supabase
+        .from("task_files")
+        .select("id, task_id, name, mime_type, size, has_content, google_drive_file_id, created_at")
+        .eq("team_id", teamId)
+        .range(from, to),
+    ),
+    fetchAllRows((from, to) =>
+      supabase
+        .from("list_files")
+        .select(
+          "id, list_id, parent_id, name, mime_type, size, has_content, google_drive_file_id, sort_order, created_at",
+        )
+        .eq("team_id", teamId)
+        .range(from, to),
+    ),
+    fetchAllRows((from, to) =>
+      supabase
+        .from("list_statuses")
+        .select("id, list_id, label, labels, color, sort_order, group_key")
+        .eq("team_id", teamId)
+        .order("sort_order", { ascending: true })
+        .range(from, to),
+    ),
+    fetchAllRows((from, to) =>
+      supabase
+        .from("work_task_statuses")
+        .select(
+          "id, parent_task_id, list_id, label, labels, color, sort_order, group_key",
+        )
+        .eq("team_id", teamId)
+        .order("sort_order", { ascending: true })
+        .range(from, to),
+    ),
+    fetchAllRows((from, to) =>
+      supabase
+        .from("work_list_automations")
+        .select(
+          "id, list_id, trigger_kind, action_kind, template_id, config, enabled, sort_order",
+        )
+        .eq("team_id", teamId)
+        .order("sort_order", { ascending: true })
+        .range(from, to),
+    ),
+    fetchAllRows((from, to) =>
+      supabase
+        .from("team_status_labels")
+        .select("status_id, label")
+        .eq("team_id", teamId)
+        .range(from, to),
+    ),
   ]);
 
-  const errors = [
-    listsRes.error,
-    tasksRes.error,
-    activitiesRes.error,
-    taskFilesRes.error,
-    listFilesRes.error,
-    notificationsRes.error,
-    todosRes.error,
-    listStatusesRes.error,
-    workTaskStatusesRes.error,
-    listAutomationsRes.error,
-    teamStatusLabelsRes.error,
-  ].filter(Boolean);
-  if (errors[0]) throw new Error(formatSupabaseError(errors[0]));
-
-  const taskIds = (tasksRes.data ?? []).map((row) => row.id);
-  let assigneeRows: { task_id: string; member_id: string }[] = [];
-  let assigneeRoleRows: { task_id: string; role_id: string }[] = [];
-  if (taskIds.length > 0) {
-    const [assigneesRes, assigneeRolesRes] = await Promise.all([
-      supabase
-        .from("task_assignees")
-        .select("task_id, member_id")
-        .in("task_id", taskIds),
-      supabase
-        .from("task_assignee_roles")
-        .select("task_id, role_id")
-        .in("task_id", taskIds),
-    ]);
-    if (assigneesRes.error) throw assigneesRes.error;
-    if (assigneeRolesRes.error) throw assigneeRolesRes.error;
-    assigneeRows = assigneesRes.data ?? [];
-    assigneeRoleRows = assigneeRolesRes.data ?? [];
-  }
+  const taskIds = tasks.map((row) => row.id);
+  const [assigneeRows, assigneeRoleRows] = await Promise.all([
+    fetchInChunks(taskIds, (chunk) =>
+      supabase.from("task_assignees").select("task_id, member_id").in("task_id", chunk),
+    ),
+    fetchInChunks(taskIds, (chunk) =>
+      supabase.from("task_assignee_roles").select("task_id, role_id").in("task_id", chunk),
+    ),
+  ]);
 
   const assigneesByTask = new Map<string, string[]>();
   for (const row of assigneeRows) {
@@ -512,66 +527,64 @@ export async function fetchTeamWorkspace(teamId: string): Promise<TeamWorkspace>
     assigneesByTask.set(row.task_id, list);
   }
 
-  const taskFileContents: Record<string, string> = {};
-  const taskFiles: TaskFile[] = (taskFilesRes.data ?? []).map((row) => {
-    if (row.content) taskFileContents[row.id] = row.content;
-    return {
-      id: row.id,
-      taskId: row.task_id,
-      name: row.name,
-      mimeType: row.mime_type,
-      size: Number(row.size) || 0,
-      hasContent: Boolean(row.content),
-      createdAt: row.created_at,
-    };
-  });
+  const taskFiles: TaskFile[] = taskFileRows.map((row) => ({
+    id: row.id,
+    taskId: row.task_id,
+    name: row.name,
+    mimeType: row.mime_type,
+    size: Number(row.size) || 0,
+    hasContent: Boolean(row.has_content),
+    googleDriveFileId: row.google_drive_file_id
+      ? String(row.google_drive_file_id)
+      : null,
+    createdAt: row.created_at,
+  }));
 
-  const listFileContents: Record<string, string> = {};
-  const listFiles: ListFile[] = (listFilesRes.data ?? []).map((row) => {
-    if (row.content) listFileContents[row.id] = row.content;
-    return {
-      id: row.id,
-      listId: row.list_id,
-      parentId: row.parent_id,
-      name: row.name,
-      mimeType: row.mime_type,
-      size: Number(row.size) || 0,
-      hasContent: Boolean(row.content),
-      createdAt: row.created_at,
-      sortOrder: row.sort_order,
-    };
-  });
+  const listFiles: ListFile[] = listFileRows.map((row) => ({
+    id: row.id,
+    listId: row.list_id,
+    parentId: row.parent_id,
+    name: row.name,
+    mimeType: row.mime_type,
+    size: Number(row.size) || 0,
+    hasContent: Boolean(row.has_content),
+    googleDriveFileId: row.google_drive_file_id
+      ? String(row.google_drive_file_id)
+      : null,
+    createdAt: row.created_at,
+    sortOrder: row.sort_order,
+  }));
 
-  const listIds = (listsRes.data ?? []).map((row) => row.id);
+  const listIds = lists.map((row) => row.id);
   const viewersByList = new Map<string, Record<string, ListAccessLevel>>();
   const viewerRolesByList = new Map<string, Record<string, ListAccessLevel>>();
-  if (listIds.length > 0) {
-    const [viewersRes, viewerRolesRes] = await Promise.all([
+  const [viewerRows, viewerRoleRows] = await Promise.all([
+    fetchInChunks(listIds, (chunk) =>
       supabase
         .from("work_list_viewers")
         .select("list_id, user_id, access_level")
-        .in("list_id", listIds),
+        .in("list_id", chunk),
+    ),
+    fetchInChunks(listIds, (chunk) =>
       supabase
         .from("work_list_viewer_roles")
         .select("list_id, role_id, access_level")
-        .in("list_id", listIds),
-    ]);
-    if (viewersRes.error) throw viewersRes.error;
-    if (viewerRolesRes.error) throw viewerRolesRes.error;
-    for (const row of viewersRes.data ?? []) {
-      const list = viewersByList.get(row.list_id) ?? {};
-      list[row.user_id] = parseListAccessLevel(row.access_level);
-      viewersByList.set(row.list_id, list);
-    }
-    for (const row of viewerRolesRes.data ?? []) {
-      const list = viewerRolesByList.get(row.list_id) ?? {};
-      list[row.role_id] = parseListAccessLevel(row.access_level);
-      viewerRolesByList.set(row.list_id, list);
-    }
+        .in("list_id", chunk),
+    ),
+  ]);
+  for (const row of viewerRows) {
+    const list = viewersByList.get(row.list_id) ?? {};
+    list[row.user_id] = parseListAccessLevel(row.access_level);
+    viewersByList.set(row.list_id, list);
+  }
+  for (const row of viewerRoleRows) {
+    const list = viewerRolesByList.get(row.list_id) ?? {};
+    list[row.role_id] = parseListAccessLevel(row.access_level);
+    viewerRolesByList.set(row.list_id, list);
   }
 
   return {
-    lists: (listsRes.data ?? []).map((row) => {
+    lists: lists.map((row) => {
       const viewerUserAccess = viewersByList.get(row.id) ?? {};
       const viewerRoleAccess = viewerRolesByList.get(row.id) ?? {};
       return {
@@ -607,7 +620,7 @@ export async function fetchTeamWorkspace(teamId: string): Promise<TeamWorkspace>
         statusGroupOverrides: parseStatusGroupOverrides(row.status_group_overrides),
       };
     }),
-    tasks: (tasksRes.data ?? []).map((row) => ({
+    tasks: tasks.map((row) => ({
       id: row.id,
       listId: row.list_id,
       parentId: row.parent_id,
@@ -618,6 +631,7 @@ export async function fetchTeamWorkspace(teamId: string): Promise<TeamWorkspace>
       statusChangedAt: row.status_changed_at ?? null,
       deletedAt: row.deleted_at ?? null,
       archivedAt: row.archived_at ?? null,
+      createdAt: row.created_at ?? null,
       assigneeIds: assigneesByTask.get(row.id) ?? [],
       startDate: row.start_date,
       dueDate: row.due_date,
@@ -625,55 +639,22 @@ export async function fetchTeamWorkspace(teamId: string): Promise<TeamWorkspace>
       checklists: parseTaskChecklists(row.checklists),
       hiddenStatusIds: Array.isArray(row.hidden_status_ids)
         ? row.hidden_status_ids.filter(
-            (id): id is string => typeof id === "string" && id.trim().length > 0,
+            (id: unknown): id is string => typeof id === "string" && id.trim().length > 0,
           )
         : [],
       statusOrder: Array.isArray(row.status_order)
         ? row.status_order.filter(
-            (id): id is string => typeof id === "string" && id.trim().length > 0,
+            (id: unknown): id is string => typeof id === "string" && id.trim().length > 0,
           )
         : [],
       statusGroupOverrides: parseStatusGroupOverrides(row.status_group_overrides),
     })),
-    activities: (activitiesRes.data ?? []).map((row) => ({
-      id: row.id,
-      taskId: row.task_id,
-      actorId: row.actor_id,
-      kind: row.kind,
-      at: row.created_at,
-      fromStatus: row.from_status ?? undefined,
-      toStatus: row.to_status ?? undefined,
-      assigneeIds: row.assignee_ids ?? undefined,
-      fromAssigneeIds: row.from_assignee_ids ?? undefined,
-      dateValue: row.date_value,
-      fromDateValue: row.from_date_value,
-      text: row.text ?? undefined,
-      previousText: row.previous_text ?? undefined,
-      fileName: row.file_name ?? undefined,
-      fromParentId: row.from_parent_id ?? undefined,
-      toParentId: row.to_parent_id ?? undefined,
-      metadata:
-        row.metadata && typeof row.metadata === "object"
-          ? (row.metadata as Record<string, unknown>)
-          : undefined,
-    })),
     taskFiles,
-    taskFileContents,
     listFiles,
-    listFileContents,
-    listStatuses: (listStatusesRes.data ?? []).map(mapListStatusRow),
-    workTaskStatuses: (workTaskStatusesRes.data ?? []).map(mapWorkTaskStatusRow),
-    listAutomations: (listAutomationsRes.data ?? []).map(mapListAutomationRow),
-    teamStatusLabels: parseTeamStatusLabels(teamStatusLabelsRes.data),
-    notifications: (notificationsRes.data ?? []).map((row) => mapNotificationRow(row)),
-    todos: (todosRes.data ?? []).map((row) => ({
-      id: row.id,
-      title: row.title,
-      description: row.description,
-      status: isTodoStatus(row.status) ? row.status : "todo",
-      assigneeId: row.assignee_id,
-      dueDate: row.due_date,
-    })),
+    listStatuses: listStatuses.map(mapListStatusRow),
+    workTaskStatuses: workTaskStatuses.map(mapWorkTaskStatusRow),
+    listAutomations: listAutomations.map(mapListAutomationRow),
+    teamStatusLabels: parseTeamStatusLabels(teamStatusLabelRows),
   };
 }
 
@@ -848,6 +829,7 @@ export async function insertTask(teamId: string, task: WorkTask) {
     hidden_status_ids: task.hiddenStatusIds ?? [],
     status_order: task.statusOrder ?? [],
     status_group_overrides: task.statusGroupOverrides ?? {},
+    created_at: task.createdAt ?? undefined,
   });
   if (error) throw new Error(formatSupabaseError(error));
   await replaceTaskAssignees(task.id, task.assigneeIds);
@@ -929,12 +911,33 @@ export async function deleteTaskRow(taskId: string) {
 }
 
 export async function updateTaskSortOrders(orderedIds: string[]) {
-  const supabase = db();
-  await Promise.all(
-    orderedIds.map((id, index) =>
-      supabase.from("work_tasks").update({ sort_order: index }).eq("id", id),
-    ),
-  );
+  if (orderedIds.length === 0) return;
+  const { error } = await db().rpc("update_task_sort_orders", {
+    p_ids: orderedIds,
+  });
+  if (error) throw new Error(formatSupabaseError(error));
+}
+
+export async function updateListSortOrders(orderedIds: string[]) {
+  if (orderedIds.length === 0) return;
+  const { error } = await db().rpc("update_list_sort_orders", {
+    p_ids: orderedIds,
+  });
+  if (error) throw new Error(formatSupabaseError(error));
+}
+
+export async function updateTasksStatus(
+  taskIds: string[],
+  status: WorkTask["status"],
+  statusChangedAt: string,
+) {
+  if (taskIds.length === 0) return;
+  const { error } = await db().rpc("update_tasks_status", {
+    p_ids: taskIds,
+    p_status: status,
+    p_changed_at: statusChangedAt,
+  });
+  if (error) throw new Error(formatSupabaseError(error));
 }
 
 export async function insertActivity(teamId: string, activity: TaskActivity) {
@@ -974,6 +977,8 @@ export async function insertTaskFile(
     mime_type: file.mimeType,
     size: Math.max(0, Math.round(Number(file.size) || 0)),
     content,
+    google_drive_file_id: file.googleDriveFileId,
+    has_content: Boolean(content),
     created_at: file.createdAt,
   });
   if (error) throw error;
@@ -1006,6 +1011,8 @@ export async function insertListFile(
     mime_type: file.mimeType,
     size: Math.max(0, Math.round(Number(file.size) || 0)),
     content,
+    google_drive_file_id: file.googleDriveFileId,
+    has_content: Boolean(content),
     sort_order: file.sortOrder,
     created_at: file.createdAt,
   });
@@ -1117,6 +1124,14 @@ export async function deleteOldNotifications(olderThanDays: number = 30) {
   if (error) throw error;
 }
 
+let oldNotificationsPurged = false;
+
+export async function purgeOldNotificationsOnce(olderThanDays: number = 30) {
+  if (oldNotificationsPurged) return;
+  oldNotificationsPurged = true;
+  await deleteOldNotifications(olderThanDays);
+}
+
 export async function replaceTeamTodos(teamId: string, items: TodoItem[]) {
   const supabase = db();
   const { error: delError } = await supabase.from("team_todos").delete().eq("team_id", teamId);
@@ -1189,33 +1204,33 @@ export async function fetchVisibleNotifications(
     selfMemberId = selfRow?.id ?? null;
   }
 
-  let query = db()
+  const filters = [`target_user_id.eq.${userId}`];
+  if (selfMemberId) {
+    filters.push(`recipient_id.eq.${selfMemberId}`);
+  }
+
+  const { data, error } = await db()
     .from("app_notifications")
     .select(
       "id, kind, actor_id, recipient_id, target_user_id, invitation_id, task_title, href, created_at, read_at, team_id",
     )
-    .order("created_at", { ascending: false });
-
-  if (teamId) {
-    query = query.or(`team_id.eq.${teamId},target_user_id.eq.${userId}`);
-  } else {
-    query = query.eq("target_user_id", userId);
-  }
-
-  const { data, error } = await query;
+    .or(filters.join(","))
+    .order("created_at", { ascending: false })
+    .limit(50);
   if (error) throw error;
-
-  return (data ?? [])
+  return ((data ?? []) as Parameters<typeof mapNotificationRow>[0][])
     .map(mapNotificationRow)
-    .filter((item) => {
+    .filter((item: AppNotification) => {
       if (item.kind === "team_invite") {
         return item.targetUserId === userId;
       }
       if (item.kind === "team_invite_rejected") {
         return selfMemberId !== null && item.recipientId === selfMemberId;
       }
-      if (!teamId || selfMemberId === null) return false;
-      return item.recipientId === selfMemberId;
+      if (!teamId || selfMemberId === null) {
+        return item.targetUserId === userId;
+      }
+      return item.recipientId === selfMemberId || item.targetUserId === userId;
     });
 }
 
@@ -1285,7 +1300,14 @@ export async function fetchTeamTodos(teamId: string): Promise<TodoItem[]> {
     .eq("team_id", teamId)
     .order("created_at", { ascending: true });
   if (error) throw error;
-  return (data ?? []).map((row) => ({
+  return ((data ?? []) as Array<{
+    id: string;
+    title: string;
+    description: string;
+    status: string;
+    assignee_id: string | null;
+    due_date: string | null;
+  }>).map((row) => ({
     id: row.id,
     title: row.title,
     description: row.description,
@@ -1418,14 +1440,11 @@ export async function deleteWorkTaskStatusRow(statusId: string) {
 }
 
 export async function updateWorkTaskStatusSortOrders(orderedIds: string[]) {
-  const supabase = db();
-  for (let index = 0; index < orderedIds.length; index += 1) {
-    const { error } = await supabase
-      .from("work_task_statuses")
-      .update({ sort_order: index })
-      .eq("id", orderedIds[index]);
-    if (error) throw error;
-  }
+  if (orderedIds.length === 0) return;
+  const { error } = await db().rpc("update_work_task_status_sort_orders", {
+    p_ids: orderedIds,
+  });
+  if (error) throw new Error(formatSupabaseError(error));
 }
 
 export async function insertListAutomation(teamId: string, automation: ListAutomation) {
@@ -1471,14 +1490,11 @@ export async function deleteListAutomationRow(automationId: string) {
 }
 
 export async function updateListStatusSortOrders(orderedIds: string[]) {
-  const supabase = db();
-  for (let index = 0; index < orderedIds.length; index += 1) {
-    const { error } = await supabase
-      .from("list_statuses")
-      .update({ sort_order: index })
-      .eq("id", orderedIds[index]);
-    if (error) throw error;
-  }
+  if (orderedIds.length === 0) return;
+  const { error } = await db().rpc("update_list_status_sort_orders", {
+    p_ids: orderedIds,
+  });
+  if (error) throw new Error(formatSupabaseError(error));
 }
 
 export async function upsertTeamStatusLabel(
@@ -1565,13 +1581,13 @@ function templateItemFromRow(row: {
     hiddenStatusIds:
       row.kind === "task" && Array.isArray(row.hidden_status_ids)
         ? row.hidden_status_ids.filter(
-            (id): id is string => typeof id === "string" && id.trim().length > 0,
+            (id: unknown): id is string => typeof id === "string" && id.trim().length > 0,
           )
         : [],
     statusOrder:
       row.kind === "task" && Array.isArray(row.status_order)
         ? row.status_order.filter(
-            (id): id is string => typeof id === "string" && id.trim().length > 0,
+            (id: unknown): id is string => typeof id === "string" && id.trim().length > 0,
           )
         : [],
     statusGroupOverrides:
@@ -1613,7 +1629,9 @@ export async function fetchTeamTemplates(teamId: string): Promise<{
     .order("created_at", { ascending: true });
   if (templatesError) throw new Error(formatSupabaseError(templatesError));
 
-  const templates = (templateRows ?? []).map(templateFromRow);
+  const templates = ((templateRows ?? []) as Parameters<typeof templateFromRow>[0][]).map(
+    templateFromRow,
+  );
   const templateIds = templates.map((item) => item.id);
   if (templateIds.length === 0) return { templates, items: [] };
 

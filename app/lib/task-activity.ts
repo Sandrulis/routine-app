@@ -54,6 +54,7 @@ export type TaskFile = {
   mimeType: string;
   size: number;
   hasContent: boolean;
+  googleDriveFileId: string | null;
   createdAt: string;
 };
 
@@ -147,11 +148,24 @@ export function normalizeStoredTaskFiles(value: unknown): TaskFile[] | null {
           : 0;
       const hasContent =
         "hasContent" in item ? Boolean(item.hasContent) : false;
+      const googleDriveFileId =
+        "googleDriveFileId" in item && item.googleDriveFileId
+          ? String(item.googleDriveFileId)
+          : null;
       const createdAt =
         "createdAt" in item && item.createdAt
           ? String(item.createdAt)
           : "2026-01-01T00:00:00.000Z";
-      return { id, taskId, name, mimeType, size, hasContent, createdAt };
+      return {
+        id,
+        taskId,
+        name,
+        mimeType,
+        size,
+        hasContent,
+        googleDriveFileId,
+        createdAt,
+      };
     })
     .filter((item): item is TaskFile => item !== null);
 

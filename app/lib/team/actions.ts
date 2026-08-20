@@ -4,6 +4,8 @@ import { randomBytes } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { getCurrentUser } from "@/app/lib/auth/get-current-user";
 import { createNotificationId } from "@/app/lib/notifications";
+import { getClientIp } from "@/app/lib/security/client-ip";
+import { consumeRateLimit } from "@/app/lib/security/rate-limit";
 import { createAdminClient } from "@/app/lib/supabase/admin";
 import {
   isSupabaseAdminConfigured,
@@ -567,7 +569,11 @@ export async function resendTeamInvitationAction(
     return access;
   }
 
-  const { data: invitation, error: invitationError } = await supabase
+  if (!isSupabaseAdminConfigured()) {
+    return { ok: false, error: "errors.db_not_configured" };
+  }
+
+  const { data: invitation, error: invitationError } = await createAdminClient()
     .from("team_invitations")
     .select("id, email, token, invited_user_id, status")
     .eq("member_id", trimmedMemberId)
@@ -673,7 +679,11 @@ export async function getTeamInviteLinkAction(
     return access;
   }
 
-  const { data: invitation, error: invitationError } = await supabase
+  if (!isSupabaseAdminConfigured()) {
+    return { ok: false, error: "errors.db_not_configured" };
+  }
+
+  const { data: invitation, error: invitationError } = await createAdminClient()
     .from("team_invitations")
     .select("token")
     .eq("member_id", trimmedMemberId)
@@ -771,6 +781,15 @@ export async function getTeamInvitationByTokenAction(token: string): Promise<
 > {
   if (!isSupabaseConfigured()) {
     return { ok: false, error: "errors.db_not_configured" };
+  }
+
+  const limited = consumeRateLimit(
+    `invite-preview:${await getClientIp()}`,
+    30,
+    15 * 60 * 1000,
+  );
+  if (!limited.ok) {
+    return { ok: false, error: "errors.auth_rate_limited" };
   }
 
   const supabase = await createClient();

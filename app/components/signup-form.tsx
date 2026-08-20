@@ -15,6 +15,8 @@ import {
   useRememberMe,
 } from "@/app/components/remember-me-checkbox";
 import { useTranslations } from "@/app/components/translations-provider";
+import { signUpWithPasswordAction } from "@/app/lib/auth/actions";
+import { getSafeRedirectPath } from "@/app/lib/security/safe-redirect-path";
 
 export function SignupForm({
   googleSignInEnabled = false,
@@ -52,7 +54,7 @@ export function SignupForm({
     }
   }, [searchParams, showFeedback, t]);
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     clearFeedback();
 
@@ -84,11 +86,37 @@ export function SignupForm({
     }
 
     setPending(true);
+    const result = await signUpWithPasswordAction({
+      name,
+      email,
+      password,
+      next: getSafeRedirectPath(searchParams.get("next")),
+    });
+    setPending(false);
+    if (!result.ok) {
+      showFeedback({
+        type: "error",
+        text: t(result.error, "Reģistrācija neizdevās."),
+      });
+      return;
+    }
+    if (result.needsEmail) {
+      showFeedback({
+        type: "success",
+        text: t(
+          "auth.signup.check_email",
+          "Pārbaudi e-pastu, lai apstiprinātu kontu.",
+        ),
+      });
+      router.push("/login");
+      return;
+    }
     showFeedback({
       type: "success",
       text: t("auth.signup.success", "Konts izveidots. Laipni lūgts Routine."),
     });
-    router.push("/dashboard");
+    router.push(result.next);
+    router.refresh();
   }
 
   return (

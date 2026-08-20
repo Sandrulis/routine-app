@@ -971,9 +971,12 @@ function SortableSubtaskRow({
   locationSegments?: TaskLocationSegment[];
 }) {
   const { t } = useTranslations();
-  const { taskActivities } = useLists();
+  const { taskFiles } = useLists();
   const { isEnabled: isModuleEnabled } = useFrontendModules();
   const checklistsEnabled = isModuleEnabled(FRONTEND_MODULE_KEYS.checklist);
+  const fileUploadsEnabled = isModuleEnabled(FRONTEND_MODULE_KEYS.fileUpload);
+  const hasAttachments =
+    fileUploadsEnabled && taskFiles(task.id).length > 0;
   const { colorFor, statuses, groupKeyFor } = useTaskStatuses(listId, parentTaskId);
   const deleted = isTaskDeleted(task);
   const closed = isClosedTaskStatus(task.status, statuses);
@@ -1057,11 +1060,18 @@ function SortableSubtaskRow({
             onOpenTask(task);
           }}
           aria-label={deleted ? restoreLabel : undefined}
-          className={`block w-full truncate text-left font-medium hover:text-blue-700 ${
+          className={`flex w-full min-w-0 items-center gap-1.5 text-left font-medium hover:text-blue-700 ${
             deleted ? "text-zinc-400 line-through" : "text-zinc-900"
           }`}
         >
-          {task.title}
+          <span className="truncate">{task.title}</span>
+          {hasAttachments ? (
+            <i
+              className="fas fa-paperclip shrink-0 text-[11px] text-zinc-400"
+              aria-hidden="true"
+              title={t("subtasks.attachments.title", "Pielikumi")}
+            />
+          ) : null}
         </button>
         {locationSegments.length > 0 ? (
           <TaskLocationPath
@@ -1102,8 +1112,7 @@ function SortableSubtaskRow({
           statusChangedAt={
             deleted
               ? task.deletedAt
-              : task.statusChangedAt ??
-                taskActivities(task.id).find((item) => item.kind === "created")?.at ??
+              : task.statusChangedAt ?? task.createdAt ??
                 null
           }
           deleted={deleted}

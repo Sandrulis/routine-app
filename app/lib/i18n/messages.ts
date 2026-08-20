@@ -1,6 +1,8 @@
 import { ru } from "@/app/lib/i18n/messages-ru";
 import type { LanguageCode } from "@/app/lib/i18n/language";
 
+export { interpolate } from "@/app/lib/i18n/interpolate";
+
 export type { LanguageCode } from "@/app/lib/i18n/language";
 export { DEFAULT_LANGUAGE } from "@/app/lib/i18n/language";
 
@@ -74,6 +76,7 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
     "auth.signup.password_mismatch": "Paroles nesakrīt.",
     "auth.signup.terms_required": "Lai reģistrētos, piekrīti noteikumiem.",
     "auth.signup.success": "Konts izveidots. Laipni lūgts Routine.",
+    "auth.signup.check_email": "Pārbaudi e-pastu, lai apstiprinātu kontu.",
     "auth.forgot.title": "Aizmirsi paroli",
     "auth.forgot.subtitle":
       "Ievadi e-pastu, un nosūtīsim paroles atjaunošanas saiti.",
@@ -99,6 +102,23 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
       "Microsoft pieslēgšanās nav ieslēgta. Ieslēdz Microsoft OAuth Administrācija → Integrācijas.",
     "auth.login.remember": "Atcerēties mani",
     "auth.open_app": "Atvērt lietotni",
+    "auth.update_password.title": "Jauna parole",
+    "auth.update_password.subtitle": "Izvēlies jaunu paroli savam kontam.",
+    "auth.update_password.submit": "Saglabāt paroli",
+    "auth.update_password.success": "Parole atjaunota.",
+    "auth.mfa.title": "Divfaktoru autentifikācija",
+    "auth.mfa.subtitle":
+      "Administrācijas panelim nepieciešams TOTP kods (Authenticator).",
+    "auth.mfa.required": "Lai atvērtu administrāciju, vispirms ieslēdz MFA.",
+    "auth.mfa.verify_session":
+      "Ievadi Authenticator kodu, lai apstiprinātu šo sesiju.",
+    "auth.mfa.secret": "Noslēpums",
+    "auth.mfa.code": "Kods",
+    "auth.mfa.enroll": "Ieslēgt MFA",
+    "auth.mfa.verify": "Apstiprināt",
+    "auth.mfa.unenroll": "Izslēgt MFA",
+    "auth.mfa.enabled": "Divfaktoru autentifikācija ir ieslēgta.",
+    "auth.mfa.qr_alt": "MFA QR kods",
     "legal.common.updated_at": "19.08.26",
     "legal.nav.updated_at": "Atjaunināts {date}",
     "legal.toc.label": "Saturs",
@@ -253,6 +273,8 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
     "nav.modules": "Moduļi",
     "nav.storage.used": "Failu vieta",
     "nav.storage.hint": "Kokā un apakšuzdevumos augšupielādētie faili",
+    "nav.storage.hint.server": "Serveris: {size}",
+    "nav.storage.hint.cloud": "Cloud: {size}",
     "admin.panel.title": "Administrācijas panelis",
     "admin.page.subtitle":
       "Sistēmas iestatījumi. Pieejams tikai administratoriem.",
@@ -292,7 +314,7 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
       "Integrācija tiks izslēgta un lietotāji vairs neredzēs Google pieslēgšanos.",
     "integrations.google_oauth.redirects.title": "Redirect URI",
     "integrations.google_oauth.redirects.hint":
-      "Šo URI izmanto konfigurācijas pārbaudei un login/signup ar Google.",
+      "Pirmo URI izmanto login/signup, otro — komandas Google Drive pieslēgšanai. Google Cloud projektā ieslēdz arī Drive API.",
     "integrations.google_oauth.aria.enabled": "Google OAuth integrācija ieslēgta",
     "integrations.google_oauth.feedback.configured": "Google OAuth integrācija konfigurēta.",
     "integrations.google_oauth.feedback.credentials_saved": "Google OAuth dati saglabāti.",
@@ -935,7 +957,7 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
     "google_drive.menu_description":
       "Sūti augšupielādētos failus uz komandas Google Drive",
     "google_drive.page.subtitle":
-      "Pieslēdz komandas Google kontu, lai augšupielādētie faili nonāktu arī Drive mapē.",
+      "Pieslēdz komandas Google kontu. Pēc noklusējuma faili tiek glabāti Drive; pēc izvēles arī Routine serverī.",
     "google_drive.connect.title": "Google konts",
     "google_drive.connect.description":
       "Piekļuve tikai failiem, ko izveido Routine (Drive scope: drive.file).",
@@ -943,7 +965,7 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
     "google_drive.status.connected": "Savienots",
     "google_drive.status.disconnected": "Nav savienots",
     "google_drive.not_configured":
-      "Sistēmā nav iestatīts Google Drive OAuth Client ID un Secret (.env).",
+      "Google OAuth integrācija nav konfigurēta (Administrācija → Integrācijas).",
     "google_drive.configure_owner_only":
       "Integrāciju var mainīt tikai komandas īpašnieks vai lietotājs ar tiesībām labot komandas datus.",
     "google_drive.disconnect": "Atvienot Google kontu",
@@ -958,6 +980,9 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
       "Piemēram Routine vai Komanda/Faili. Mape tiek izveidota, ja tās vēl nav.",
     "google_drive.upload.enabled":
       "Augšupielādēt failus uz Google Drive, kad tos pievieno Routine",
+    "google_drive.storage.drive_primary": "Glabāt failus Google Drive",
+    "google_drive.storage.drive_primary_hint":
+      "Ieslēgts pēc noklusējuma: Routine glabā tikai saiti. Ja izķeksē, faila saturs tiek saglabāts arī Routine serverī.",
     "google_drive.feedback.connected": "Google konts pieslēgts.",
     "google_drive.feedback.disconnected": "Google konts atvienots.",
     "google_drive.feedback.saved": "Google Drive iestatījumi saglabāti.",
@@ -1071,6 +1096,9 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
     "files.upload.rejected":
       "Neatļauts faila tips. Atļautie: {types}",
     "files.upload.allowed_types": "Atļautie failu tipi: {types}",
+    "files.upload.progress_title": "Augšupielādē failu",
+    "files.upload.progress_count": "{current} no {total}",
+    "files.upload.progress_percent": "{percent}%",
     "files.detail.loading": "Ielādē failu",
     "files.detail.missing": "Fails nav atrasts",
     "files.detail.missing_description": "Šis fails vairs nav pieejams.",
@@ -1080,6 +1108,12 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
       "Faila saturu nevar parādīt. Tas ir pārāk liels vai nav saglabāts.",
     "files.detail.preview_unavailable": "Šo faila veidu nevar parādīt pārlūkā.",
     "files.detail.download": "Lejupielādēt",
+    "files.preview.progress_title": "Atver failu",
+    "files.preview.progress_hint": "Ielādē priekšskatījumu…",
+    "files.download.progress_title": "Lejupielādē failu",
+    "files.download.progress_hint": "Sagatavo lejupielādi…",
+    "files.download.failed": "Neizdevās lejupielādēt failu.",
+    "files.save.failed": "Neizdevās saglabāt failu. Mēģini vēlreiz.",
     "files.edit.title": "Pārsaukt failu",
     "files.edit.description": "Maini faila nosaukumu.",
     "files.fields.name_placeholder": "Faila nosaukums",
@@ -1466,6 +1500,28 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
     "errors.slogan_required": "Ievadi sistēmas sloganu vismaz vienā valodā.",
     "errors.settings_save_failed": "Neizdevās saglabāt uzstādījumus.",
     "errors.auth_required": "Nepieciešama autentificēta sesija.",
+    "errors.auth_invalid": "E-pasts vai parole nav pareiza.",
+    "errors.auth_rate_limited": "Pārāk daudz mēģinājumu. Mēģini vēlāk.",
+    "errors.auth_signup_failed": "Neizdevās izveidot kontu.",
+    "errors.mfa_invalid": "MFA iestatīšana neizdevās.",
+    "errors.file_type_mismatch": "Faila saturs nesakrīt ar tipu.",
+    "errors.extension_not_subtask": "Izvēlētais ieraksts nav apakšuzdevums.",
+    "errors.extension_subtask_unavailable": "Apakšuzdevums nav pieejams (dzēsts vai arhivēts).",
+    "errors.extension_file_type": "Faila tips nav atļauts.",
+    "errors.extension_file_empty": "Fails ir tukšs.",
+    "errors.extension_file_too_large": "Fails pārsniedz 25 MB limitu.",
+    "errors.extension_file_needs_drive":
+      "Liels fails: ieslēdz komandas Google Drive integrāciju.",
+    "errors.extension_upload_failed": "Neizdevās pievienot failu.",
+    "errors.extension_nothing_attached": "Nekas netika pievienots.",
+    "errors.extension_search_failed": "Neizdevās meklēt apakšuzdevumus.",
+    "errors.extension_uploads_disabled": "Failu augšupielāde ir izslēgta.",
+    "errors.extension_invalid_body": "Nederīgs pieprasījums.",
+    "errors.extension_task_required": "Izvēlies apakšuzdevumu.",
+    "errors.extension_gmail_client_id": "Trūkst Gmail OAuth Client ID paplašinājuma opcijās.",
+    "errors.extension_gmail_auth": "Nepieciešama Gmail OAuth atļauja.",
+    "errors.extension_gmail_fetch_failed": "Neizdevās ielādēt e-pastu no Gmail API.",
+    "errors.extension_gmail_message_id": "Neatrada Gmail ziņas ID.",
     "errors.auth_google_disabled":
       "Google pieslēgšanās nav ieslēgta. Ieslēdz Google OAuth Administrācija → Integrācijas.",
     "errors.auth_google_failed": "Neizdevās pieslēgties ar Google.",
@@ -1650,6 +1706,7 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
     "auth.signup.password_mismatch": "Passwords do not match.",
     "auth.signup.terms_required": "Please accept the terms to sign up.",
     "auth.signup.success": "Account created. Welcome to Routine.",
+    "auth.signup.check_email": "Check your email to confirm the account.",
     "auth.forgot.title": "Forgot password",
     "auth.forgot.subtitle":
       "Enter your email and we will send a password reset link.",
@@ -1675,6 +1732,23 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
       "Microsoft sign-in is not enabled. Turn on Microsoft OAuth in Administration → Integrations.",
     "auth.login.remember": "Remember me",
     "auth.open_app": "Open app",
+    "auth.update_password.title": "New password",
+    "auth.update_password.subtitle": "Choose a new password for your account.",
+    "auth.update_password.submit": "Save password",
+    "auth.update_password.success": "Password updated.",
+    "auth.mfa.title": "Two-factor authentication",
+    "auth.mfa.subtitle":
+      "The administration panel requires a TOTP code (Authenticator).",
+    "auth.mfa.required": "Enable MFA before opening administration.",
+    "auth.mfa.verify_session":
+      "Enter your Authenticator code to confirm this session.",
+    "auth.mfa.secret": "Secret",
+    "auth.mfa.code": "Code",
+    "auth.mfa.enroll": "Enable MFA",
+    "auth.mfa.verify": "Confirm",
+    "auth.mfa.unenroll": "Turn off MFA",
+    "auth.mfa.enabled": "Two-factor authentication is enabled.",
+    "auth.mfa.qr_alt": "MFA QR code",
     "legal.common.updated_at": "19.08.26",
     "legal.nav.updated_at": "Updated {date}",
     "legal.toc.label": "Contents",
@@ -1829,6 +1903,8 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
     "nav.modules": "Modules",
     "nav.storage.used": "File storage",
     "nav.storage.hint": "Files uploaded in the tree and subtasks",
+    "nav.storage.hint.server": "Server: {size}",
+    "nav.storage.hint.cloud": "Cloud: {size}",
     "admin.panel.title": "Administration panel",
     "admin.page.subtitle": "System settings. Available only to administrators.",
     "admin.nav.label": "Administration sections",
@@ -1866,7 +1942,7 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
       "The integration will be disabled and users will no longer see Google sign-in.",
     "integrations.google_oauth.redirects.title": "Redirect URI",
     "integrations.google_oauth.redirects.hint":
-      "This URI is used for configuration verification and Google login/signup.",
+      "The first URI is for login/signup; the second is for team Google Drive. Also enable the Drive API in Google Cloud.",
     "integrations.google_oauth.aria.enabled": "Google OAuth integration enabled",
     "integrations.google_oauth.feedback.configured": "Google OAuth integration configured.",
     "integrations.google_oauth.feedback.credentials_saved": "Google OAuth credentials saved.",
@@ -2501,7 +2577,7 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
     "google_drive.menu_description":
       "Send uploaded files to the team Google Drive",
     "google_drive.page.subtitle":
-      "Connect a team Google account so uploaded files are also stored in Drive.",
+      "Connect a team Google account. By default files are stored on Drive; optionally also on the Routine server.",
     "google_drive.connect.title": "Google account",
     "google_drive.connect.description":
       "Access is limited to files created by Routine (Drive scope: drive.file).",
@@ -2509,7 +2585,7 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
     "google_drive.status.connected": "Connected",
     "google_drive.status.disconnected": "Not connected",
     "google_drive.not_configured":
-      "Google Drive OAuth Client ID and Secret are not set in the server environment.",
+      "Google OAuth integration is not configured (Administration → Integrations).",
     "google_drive.configure_owner_only":
       "Only the team owner or a member who can edit team settings can change this integration.",
     "google_drive.disconnect": "Disconnect Google account",
@@ -2524,6 +2600,9 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
       "For example Routine or Team/Files. The folder is created if it does not exist yet.",
     "google_drive.upload.enabled":
       "Upload files to Google Drive when they are added in Routine",
+    "google_drive.storage.drive_primary": "Store files on Google Drive",
+    "google_drive.storage.drive_primary_hint":
+      "On by default: Routine keeps only a link. If unchecked, file content is also saved on the Routine server.",
     "google_drive.feedback.connected": "Google account connected.",
     "google_drive.feedback.disconnected": "Google account disconnected.",
     "google_drive.feedback.saved": "Google Drive settings saved.",
@@ -2635,6 +2714,9 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
     "files.upload.rejected":
       "File type not allowed. Allowed: {types}",
     "files.upload.allowed_types": "Allowed file types: {types}",
+    "files.upload.progress_title": "Uploading file",
+    "files.upload.progress_count": "{current} of {total}",
+    "files.upload.progress_percent": "{percent}%",
     "files.detail.loading": "Loading file",
     "files.detail.missing": "File not found",
     "files.detail.missing_description": "This file is no longer available.",
@@ -2644,6 +2726,12 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
       "This file cannot be previewed. It is too large or was not stored.",
     "files.detail.preview_unavailable": "This file type cannot be previewed in the browser.",
     "files.detail.download": "Download",
+    "files.preview.progress_title": "Opening file",
+    "files.preview.progress_hint": "Loading preview…",
+    "files.download.progress_title": "Downloading file",
+    "files.download.progress_hint": "Preparing download…",
+    "files.download.failed": "Could not download the file.",
+    "files.save.failed": "Could not save the file. Please try again.",
     "files.edit.title": "Rename file",
     "files.edit.description": "Change the file name.",
     "files.fields.name_placeholder": "File name",
@@ -3022,6 +3110,28 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
     "errors.slogan_required": "Enter a slogan in at least one language.",
     "errors.settings_save_failed": "Could not save settings.",
     "errors.auth_required": "An authenticated session is required.",
+    "errors.auth_invalid": "Email or password is incorrect.",
+    "errors.auth_rate_limited": "Too many attempts. Try again later.",
+    "errors.auth_signup_failed": "Could not create the account.",
+    "errors.mfa_invalid": "Could not set up MFA.",
+    "errors.file_type_mismatch": "File contents do not match the file type.",
+    "errors.extension_not_subtask": "The selected item is not a subtask.",
+    "errors.extension_subtask_unavailable": "Subtask is unavailable (deleted or archived).",
+    "errors.extension_file_type": "File type is not allowed.",
+    "errors.extension_file_empty": "File is empty.",
+    "errors.extension_file_too_large": "File exceeds the 25 MB limit.",
+    "errors.extension_file_needs_drive":
+      "Large file: enable the team Google Drive integration.",
+    "errors.extension_upload_failed": "Could not attach the file.",
+    "errors.extension_nothing_attached": "Nothing was attached.",
+    "errors.extension_search_failed": "Could not search subtasks.",
+    "errors.extension_uploads_disabled": "File upload is disabled.",
+    "errors.extension_invalid_body": "Invalid request body.",
+    "errors.extension_task_required": "Select a subtask.",
+    "errors.extension_gmail_client_id": "Gmail OAuth Client ID is missing in extension options.",
+    "errors.extension_gmail_auth": "Gmail OAuth permission is required.",
+    "errors.extension_gmail_fetch_failed": "Could not load the email from the Gmail API.",
+    "errors.extension_gmail_message_id": "Could not find the Gmail message ID.",
     "errors.auth_google_disabled":
       "Google sign-in is not enabled. Turn on Google OAuth in Administration → Integrations.",
     "errors.auth_google_failed": "Could not sign in with Google.",
@@ -3138,12 +3248,3 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
   ru,
 };
 
-export function interpolate(
-  value: string,
-  params?: Record<string, string | number>,
-): string {
-  if (!params) return value;
-  return value.replace(/\{(\w+)\}/g, (_, key: string) =>
-    params[key] == null ? `{${key}}` : String(params[key]),
-  );
-}

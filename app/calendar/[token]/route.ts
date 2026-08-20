@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { buildCalendarIcs } from "@/app/lib/calendar/ics";
 import { loadCalendarFeedByToken } from "@/app/lib/calendar/repository";
 import { normalizeCalendarFeedToken } from "@/app/lib/calendar/token";
+import { requestClientIp } from "@/app/lib/security/client-ip";
+import { consumeRateLimit } from "@/app/lib/security/rate-limit";
 
 export const dynamic = "force-dynamic";
 
@@ -11,12 +13,24 @@ function icsResponse(body: string): NextResponse {
     headers: {
       "Content-Type": "text/calendar; charset=utf-8",
       "Content-Disposition": 'inline; filename="routine.ics"',
-      "Cache-Control": "public, max-age=300",
+      "Cache-Control": "private, no-store",
     },
   });
 }
 
-async function calendarFeedResponse(tokenParam: string) {
+async function calendarFeedResponse(request: Request, tokenParam: string) {
+  const limited = consumeRateLimit(
+    `calendar:${requestClientIp(request)}`,
+    60,
+    15 * 60 * 1000,
+  );
+  if (!limited.ok) {
+    return new NextResponse("Too many requests", {
+      status: 429,
+      headers: { "Retry-After": String(limited.retryAfterSec) },
+    });
+  }
+
   const token = normalizeCalendarFeedToken(tokenParam);
   if (!token) {
     return new NextResponse("Not found", { status: 404 });
@@ -36,19 +50,19 @@ async function calendarFeedResponse(tokenParam: string) {
 }
 
 export async function GET(
-  _request: Request,
+  request: Request,
   context: { params: Promise<{ token: string }> },
 ) {
   const { token } = await context.params;
-  return calendarFeedResponse(token);
+  return calendarFeedResponse(request, token);
 }
 
 export async function HEAD(
-  _request: Request,
+  request: Request,
   context: { params: Promise<{ token: string }> },
 ) {
   const { token } = await context.params;
-  const response = await calendarFeedResponse(token);
+  const response = await calendarFeedResponse(request, token);
   return new NextResponse(null, {
     status: response.status,
     headers: response.headers,

@@ -18,6 +18,7 @@ import {
   resolveLanguageCode,
   type UiLanguageOption,
 } from "@/app/lib/i18n/language";
+import { getCurrentUser } from "@/app/lib/auth/get-current-user";
 import { createClient } from "@/app/lib/supabase/server";
 import { isSupabaseConfigured } from "@/app/lib/supabase/env";
 
@@ -30,6 +31,7 @@ type TranslateFn = (
 export type ServerTranslations = {
   languageCode: LanguageCode;
   overlay: Record<string, string>;
+  table: Record<string, string>;
   t: TranslateFn;
 };
 
@@ -74,11 +76,9 @@ export async function getRequestLanguageCode(): Promise<LanguageCode> {
 
   if (isSupabaseConfigured()) {
     try {
-      const supabase = await createClient();
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      const user = await getCurrentUser();
       if (user) {
+        const supabase = await createClient();
         const { data } = await supabase
           .from("users")
           .select("language_code")
@@ -102,6 +102,7 @@ export const getServerTranslations = cache(async function getServerTranslations(
   return {
     languageCode,
     overlay,
+    table,
     t(key, fallback, params) {
       const fromOverlay = overlay[key]?.trim();
       return interpolate(fromOverlay || table[key] || fallback, params);

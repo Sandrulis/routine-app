@@ -67,6 +67,7 @@ export const ru: Record<string, string> = {
   "auth.signup.terms_required":
     "Чтобы зарегистрироваться, примите условия.",
   "auth.signup.success": "Аккаунт создан. Добро пожаловать в Routine.",
+  "auth.signup.check_email": "Проверьте почту, чтобы подтвердить аккаунт.",
   "auth.forgot.title": "Забыли пароль",
   "auth.forgot.subtitle":
     "Введите адрес электронной почты, и мы отправим ссылку для сброса пароля.",
@@ -93,6 +94,23 @@ export const ru: Record<string, string> = {
     "Вход через Microsoft не включён. Включите Microsoft OAuth в Администрирование → Интеграции.",
   "auth.login.remember": "Запомнить меня",
   "auth.open_app": "Открыть приложение",
+  "auth.update_password.title": "Новый пароль",
+  "auth.update_password.subtitle": "Выберите новый пароль для аккаунта.",
+  "auth.update_password.submit": "Сохранить пароль",
+  "auth.update_password.success": "Пароль обновлён.",
+  "auth.mfa.title": "Двухфакторная аутентификация",
+  "auth.mfa.subtitle":
+    "Для панели администрирования нужен TOTP-код (Authenticator).",
+  "auth.mfa.required": "Чтобы открыть администрирование, сначала включите MFA.",
+  "auth.mfa.verify_session":
+    "Введите код Authenticator, чтобы подтвердить эту сессию.",
+  "auth.mfa.secret": "Секрет",
+  "auth.mfa.code": "Код",
+  "auth.mfa.enroll": "Включить MFA",
+  "auth.mfa.verify": "Подтвердить",
+  "auth.mfa.unenroll": "Выключить MFA",
+  "auth.mfa.enabled": "Двухфакторная аутентификация включена.",
+  "auth.mfa.qr_alt": "QR-код MFA",
   "legal.common.updated_at": "19.08.26",
   "legal.nav.updated_at": "Обновлено {date}",
   "legal.toc.label": "Содержание",
@@ -247,6 +265,8 @@ export const ru: Record<string, string> = {
   "nav.modules": "Модули",
   "nav.storage.used": "Место файлов",
   "nav.storage.hint": "Файлы, загруженные в дереве и подзадачах",
+  "nav.storage.hint.server": "Сервер: {size}",
+  "nav.storage.hint.cloud": "Cloud: {size}",
   "admin.panel.title": "Панель администрирования",
   "admin.page.subtitle":
     "Системные настройки. Доступно только администраторам.",
@@ -285,7 +305,7 @@ export const ru: Record<string, string> = {
     "Интеграция будет отключена, и пользователи больше не увидят вход через Google.",
   "integrations.google_oauth.redirects.title": "Redirect URI",
   "integrations.google_oauth.redirects.hint":
-    "Этот URI используется для проверки настройки и входа/регистрации через Google.",
+    "Первый URI — для входа/регистрации, второй — для подключения Google Drive команды. В Google Cloud также включите Drive API.",
   "integrations.google_oauth.aria.enabled": "Интеграция Google OAuth включена",
   "integrations.google_oauth.feedback.configured": "Интеграция Google OAuth настроена.",
   "integrations.google_oauth.feedback.credentials_saved": "Данные Google OAuth сохранены.",
@@ -930,7 +950,7 @@ export const ru: Record<string, string> = {
   "google_drive.menu_description":
     "Отправляйте загруженные файлы в Google Drive команды",
   "google_drive.page.subtitle":
-    "Подключите Google-аккаунт команды, чтобы загруженные файлы попадали и на Drive.",
+    "Подключите Google-аккаунт команды. По умолчанию файлы хранятся на Drive; по желанию также на сервере Routine.",
   "google_drive.connect.title": "Аккаунт Google",
   "google_drive.connect.description":
     "Доступ только к файлам, которые создаёт Routine (Drive scope: drive.file).",
@@ -938,7 +958,7 @@ export const ru: Record<string, string> = {
   "google_drive.status.connected": "Подключено",
   "google_drive.status.disconnected": "Не подключено",
   "google_drive.not_configured":
-    "В системе не заданы Google Drive OAuth Client ID и Secret (.env).",
+    "Интеграция Google OAuth не настроена (Администрирование → Интеграции).",
   "google_drive.configure_owner_only":
     "Интеграцию может менять только владелец команды или участник с правом править данные команды.",
   "google_drive.disconnect": "Отключить аккаунт Google",
@@ -953,6 +973,9 @@ export const ru: Record<string, string> = {
     "Например Routine или Команда/Файлы. Папка создаётся, если её ещё нет.",
   "google_drive.upload.enabled":
     "Загружать файлы в Google Drive, когда их добавляют в Routine",
+  "google_drive.storage.drive_primary": "Хранить файлы в Google Drive",
+  "google_drive.storage.drive_primary_hint":
+    "Включено по умолчанию: Routine хранит только ссылку. Если снять галочку, содержимое файла также сохраняется на сервере Routine.",
   "google_drive.feedback.connected": "Аккаунт Google подключён.",
   "google_drive.feedback.disconnected": "Аккаунт Google отключён.",
   "google_drive.feedback.saved": "Настройки Google Drive сохранены.",
@@ -1067,6 +1090,9 @@ export const ru: Record<string, string> = {
   "files.upload.rejected":
     "Недопустимый тип файла. Разрешены: {types}",
   "files.upload.allowed_types": "Разрешённые типы файлов: {types}",
+  "files.upload.progress_title": "Загрузка файла",
+  "files.upload.progress_count": "{current} из {total}",
+  "files.upload.progress_percent": "{percent}%",
   "files.detail.loading": "Загрузка файла",
   "files.detail.missing": "Файл не найден",
   "files.detail.missing_description": "Этот файл больше недоступен.",
@@ -1077,6 +1103,12 @@ export const ru: Record<string, string> = {
   "files.detail.preview_unavailable":
     "Этот тип файла нельзя показать в браузере.",
   "files.detail.download": "Скачать",
+  "files.preview.progress_title": "Открытие файла",
+  "files.preview.progress_hint": "Загрузка предпросмотра…",
+  "files.download.progress_title": "Скачивание файла",
+  "files.download.progress_hint": "Подготовка скачивания…",
+  "files.download.failed": "Не удалось скачать файл.",
+  "files.save.failed": "Не удалось сохранить файл. Попробуйте ещё раз.",
   "files.edit.title": "Переименовать файл",
   "files.edit.description": "Измените название файла.",
   "files.fields.name_placeholder": "Название файла",
@@ -1467,6 +1499,28 @@ export const ru: Record<string, string> = {
   "errors.slogan_required": "Введите слоган хотя бы на одном языке.",
   "errors.settings_save_failed": "Не удалось сохранить настройки.",
   "errors.auth_required": "Требуется авторизованная сессия.",
+  "errors.auth_invalid": "Неверный e-mail или пароль.",
+  "errors.auth_rate_limited": "Слишком много попыток. Попробуйте позже.",
+  "errors.auth_signup_failed": "Не удалось создать аккаунт.",
+  "errors.mfa_invalid": "Не удалось настроить MFA.",
+  "errors.file_type_mismatch": "Содержимое файла не соответствует типу.",
+  "errors.extension_not_subtask": "Выбранная запись не является подзадачей.",
+  "errors.extension_subtask_unavailable": "Подзадача недоступна (удалена или в архиве).",
+  "errors.extension_file_type": "Тип файла не разрешён.",
+  "errors.extension_file_empty": "Файл пуст.",
+  "errors.extension_file_too_large": "Файл превышает лимит 25 МБ.",
+  "errors.extension_file_needs_drive":
+    "Большой файл: включите интеграцию Google Drive для команды.",
+  "errors.extension_upload_failed": "Не удалось прикрепить файл.",
+  "errors.extension_nothing_attached": "Ничего не было прикреплено.",
+  "errors.extension_search_failed": "Не удалось найти подзадачи.",
+  "errors.extension_uploads_disabled": "Загрузка файлов отключена.",
+  "errors.extension_invalid_body": "Некорректный запрос.",
+  "errors.extension_task_required": "Выберите подзадачу.",
+  "errors.extension_gmail_client_id": "В настройках расширения отсутствует Gmail OAuth Client ID.",
+  "errors.extension_gmail_auth": "Требуется разрешение Gmail OAuth.",
+  "errors.extension_gmail_fetch_failed": "Не удалось загрузить письмо через Gmail API.",
+  "errors.extension_gmail_message_id": "Не найден ID сообщения Gmail.",
   "errors.auth_google_disabled":
     "Вход через Google не включён. Включите Google OAuth в Администрирование → Интеграции.",
   "errors.auth_google_failed": "Не удалось войти через Google.",

@@ -1,3 +1,4 @@
+import { logError } from "@/app/lib/security/log-error";
 import { SITE_INTEGRATION_KEYS } from "@/app/lib/integrations/keys";
 import {
   getSimpleIntegrationCredentials,
@@ -49,7 +50,7 @@ export async function sendResendEmail(input: {
 
   if (!response.ok) {
     const body = await response.text().catch(() => "");
-    console.error("Resend send failed:", response.status, body);
+    logError("Resend send failed", `${response.status} ${body}`);
     return { ok: false as const, error: "errors.integrations_resend_send_failed" };
   }
 

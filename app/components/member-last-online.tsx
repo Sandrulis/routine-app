@@ -1,23 +1,19 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { memo } from "react";
 import { Tooltip } from "@/app/components/tooltip";
+import { useNow } from "@/app/components/now-provider";
 import { useTranslations } from "@/app/components/translations-provider";
 import { getLastOnlineDisplay } from "@/app/lib/last-online";
 
-export function MemberLastOnline({
+export const MemberLastOnline = memo(function MemberLastOnline({
   lastOnlineAt,
 }: {
   lastOnlineAt: string | null;
 }) {
   const { t } = useTranslations();
-  const [now, setNow] = useState(() => Date.now());
+  const now = useNow();
   const display = getLastOnlineDisplay(lastOnlineAt, now);
-
-  useEffect(() => {
-    const timer = window.setInterval(() => setNow(Date.now()), 15_000);
-    return () => window.clearInterval(timer);
-  }, []);
 
   if (display.kind === "unknown") return null;
 
@@ -48,4 +44,4 @@ export function MemberLastOnline({
       </span>
     </Tooltip>
   );
-}
+});

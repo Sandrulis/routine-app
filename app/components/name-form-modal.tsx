@@ -35,6 +35,7 @@ export function NameFormModal({
   onCreate,
   blocking = false,
   rankLabel = null,
+  nameSuffix = null,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -53,6 +54,8 @@ export function NameFormModal({
   onCreate: (input: NameFormInput) => void;
   blocking?: boolean;
   rankLabel?: string | null;
+  /** Locked suffix shown after the name input (e.g. `.pdf`). */
+  nameSuffix?: string | null;
 }) {
   const { t } = useTranslations();
   const { showFeedback } = useFeedbackToast();
@@ -159,8 +162,20 @@ export function NameFormModal({
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!trimmedName) return;
+    const rawSuffix = nameSuffix?.trim() ?? "";
+    let fullName = trimmedName;
+    if (rawSuffix) {
+      const suffix = rawSuffix.startsWith(".") ? rawSuffix : `.${rawSuffix}`;
+      const suffixExt = suffix.slice(1).toLowerCase();
+      let base = trimmedName;
+      while (base.toLowerCase().endsWith(`.${suffixExt}`)) {
+        base = base.slice(0, -(suffixExt.length + 1));
+      }
+      if (!base.trim()) base = trimmedName;
+      fullName = `${base.trim()}${suffix}`;
+    }
     onCreate({
-      name: trimmedName,
+      name: fullName,
       description: trimmedDetails,
       ...(showAppearance
         ? showIcons
@@ -250,14 +265,33 @@ export function NameFormModal({
             <label htmlFor="name-form-title" className="text-sm font-semibold text-zinc-700">
               {nameLabel}
             </label>
-            <input
-              id="name-form-title"
-              value={name}
-              onChange={(event) => setName(event.target.value)}
-              className="mt-2 min-h-11 w-full rounded-2xl border border-zinc-200 bg-zinc-50 px-4 text-sm text-zinc-900 outline-none transition placeholder:text-zinc-400 focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-100"
-              placeholder={namePlaceholder}
-              autoFocus
-            />
+            {nameSuffix ? (
+              <div className="mt-2 flex min-h-11 items-stretch overflow-hidden rounded-2xl border border-zinc-200 bg-zinc-50 transition focus-within:border-blue-400 focus-within:bg-white focus-within:ring-4 focus-within:ring-blue-100">
+                <input
+                  id="name-form-title"
+                  value={name}
+                  onChange={(event) => setName(event.target.value)}
+                  className="min-w-0 flex-1 bg-transparent px-4 text-sm text-zinc-900 outline-none placeholder:text-zinc-400"
+                  placeholder={namePlaceholder}
+                  autoFocus
+                />
+                <span
+                  className="inline-flex shrink-0 items-center border-l border-zinc-200 bg-zinc-100 px-3 text-sm text-zinc-500"
+                  aria-hidden="true"
+                >
+                  {nameSuffix.startsWith(".") ? nameSuffix : `.${nameSuffix}`}
+                </span>
+              </div>
+            ) : (
+              <input
+                id="name-form-title"
+                value={name}
+                onChange={(event) => setName(event.target.value)}
+                className="mt-2 min-h-11 w-full rounded-2xl border border-zinc-200 bg-zinc-50 px-4 text-sm text-zinc-900 outline-none transition placeholder:text-zinc-400 focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-100"
+                placeholder={namePlaceholder}
+                autoFocus
+              />
+            )}
           </div>
         )}
 

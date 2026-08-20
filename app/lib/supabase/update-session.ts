@@ -10,6 +10,24 @@ import { getSupabasePublicEnv } from "@/app/lib/supabase/env";
 
 const AUTH_PAGES = new Set(["/login", "/signup", "/forgot-password"]);
 
+/** App shell routes that require an authenticated Supabase session. */
+function isProtectedAppPath(pathname: string) {
+  return (
+    pathname === "/dashboard" ||
+    pathname.startsWith("/dashboard/") ||
+    pathname === "/lists" ||
+    pathname.startsWith("/lists/") ||
+    pathname === "/team" ||
+    pathname.startsWith("/team/") ||
+    pathname === "/templates" ||
+    pathname.startsWith("/templates/") ||
+    pathname === "/admin" ||
+    pathname.startsWith("/admin/") ||
+    pathname.startsWith("/settings/") ||
+    pathname === "/update-password"
+  );
+}
+
 function applyNoStoreHeaders(response: NextResponse) {
   response.headers.set(
     "Cache-Control",
@@ -22,6 +40,15 @@ function applyNoStoreHeaders(response: NextResponse) {
 function redirectToDashboard(request: NextRequest) {
   const url = request.nextUrl.clone();
   url.pathname = "/dashboard";
+  url.search = "";
+  const response = NextResponse.redirect(url);
+  applyNoStoreHeaders(response);
+  return response;
+}
+
+function redirectToLogin(request: NextRequest) {
+  const url = request.nextUrl.clone();
+  url.pathname = "/login";
   url.search = "";
   const response = NextResponse.redirect(url);
   applyNoStoreHeaders(response);
@@ -81,7 +108,16 @@ export async function updateSession(request: NextRequest) {
   if (user && (pathname === "/" || AUTH_PAGES.has(pathname))) {
     return redirectToDashboard(request);
   }
+  if (!user && isProtectedAppPath(pathname)) {
+    return redirectToLogin(request);
+  }
 
   applyNoStoreHeaders(supabaseResponse);
+  if (!isProtectedAppPath(pathname) && !AUTH_PAGES.has(pathname) && pathname !== "/update-password") {
+    supabaseResponse.headers.set(
+      "Cache-Control",
+      "private, max-age=0, must-revalidate",
+    );
+  }
   return supabaseResponse;
 }

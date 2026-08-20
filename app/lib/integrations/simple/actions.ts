@@ -47,7 +47,7 @@ export async function saveSimpleIntegrationCredentialsAction(
   key: string,
   input: SimpleIntegrationCredentialsInput,
 ): Promise<ActionResult> {
-  await requireAdmin();
+  await requireAdmin({ action: "integrations.simple.save", target: key });
   const parsed = parseKey(key);
   if (!parsed) {
     return { ok: false, error: "errors.integrations_save_failed" };
@@ -61,7 +61,7 @@ export async function setSimpleIntegrationEnabledAction(
   key: string,
   enabled: boolean,
 ): Promise<ActionResult> {
-  await requireAdmin();
+  await requireAdmin({ action: "integrations.simple.toggle", target: key });
   const parsed = parseKey(key);
   if (!parsed) {
     return { ok: false, error: "errors.integrations_save_failed" };
@@ -74,7 +74,7 @@ export async function setSimpleIntegrationEnabledAction(
 export async function resetSimpleIntegrationAction(
   key: string,
 ): Promise<ActionResult> {
-  await requireAdmin();
+  await requireAdmin({ action: "integrations.simple.reset", target: key });
   const parsed = parseKey(key);
   if (!parsed) {
     return { ok: false, error: "errors.integrations_reset_failed" };

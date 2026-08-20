@@ -15,6 +15,8 @@ import {
   useRememberMe,
 } from "@/app/components/remember-me-checkbox";
 import { useTranslations } from "@/app/components/translations-provider";
+import { signInWithPasswordAction } from "@/app/lib/auth/actions";
+import { getSafeRedirectPath } from "@/app/lib/security/safe-redirect-path";
 
 export function LoginForm({
   googleSignInEnabled = false,
@@ -49,15 +51,30 @@ export function LoginForm({
     }
   }, [searchParams, showFeedback, t]);
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     clearFeedback();
     setPending(true);
+    const next = getSafeRedirectPath(searchParams.get("next"));
+    const result = await signInWithPasswordAction({
+      email,
+      password,
+      next,
+    });
+    setPending(false);
+    if (!result.ok) {
+      showFeedback({
+        type: "error",
+        text: t(result.error, "E-pasts vai parole nav pareiza."),
+      });
+      return;
+    }
     showFeedback({
       type: "success",
       text: t("auth.login.success", "Veiksmīgi ienāci."),
     });
-    router.push("/dashboard");
+    router.push(result.next);
+    router.refresh();
   }
 
   return (

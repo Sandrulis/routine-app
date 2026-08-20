@@ -22,6 +22,8 @@ import {
   MICROSOFT_OAUTH_OAUTH_COOKIE,
   parseMicrosoftOAuthConfigureState,
 } from "@/app/lib/integrations/microsoft-oauth/oauth";
+import { requestClientIp } from "@/app/lib/security/client-ip";
+import { consumeRateLimit } from "@/app/lib/security/rate-limit";
 import { createClient } from "@/app/lib/supabase/server";
 
 function redirectToIntegrationsPage(origin: string, query: Record<string, string>) {
@@ -61,7 +63,10 @@ async function handleLogin(request: Request, origin: string, code: string) {
     return clearOAuthCookie(oauthSignInErrorRedirect(origin, errorPage, "microsoft"));
   }
 
-  const profile = await fetchMicrosoftOAuthUserInfo(tokens.access_token);
+  const profile = await fetchMicrosoftOAuthUserInfo(
+    tokens.access_token,
+    tokens.id_token,
+  );
   const response = await completeOAuthSignIn(request, {
     origin,
     next: loginState.next,
@@ -77,6 +82,18 @@ async function handleLogin(request: Request, origin: string, code: string) {
 }
 
 export async function GET(request: Request) {
+  const limited = consumeRateLimit(
+    `oauth-microsoft:${requestClientIp(request)}`,
+    40,
+    15 * 60 * 1000,
+  );
+  if (!limited.ok) {
+    return new NextResponse("Too many requests", {
+      status: 429,
+      headers: { "Retry-After": String(limited.retryAfterSec) },
+    });
+  }
+
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
   const stateParam = searchParams.get("state");
@@ -143,7 +160,10 @@ export async function GET(request: Request) {
     );
   }
 
-  const account = await fetchMicrosoftOAuthUserInfo(tokens.access_token);
+  const account = await fetchMicrosoftOAuthUserInfo(
+    tokens.access_token,
+    tokens.id_token,
+  );
   const saved = await markMicrosoftOAuthConfigured({
     accountEmail: account.email,
     configuredBy: cookieState.adminUserId,

@@ -4,10 +4,12 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState, type FormEve
 import {
   AppModal,
   appModalSplitPanelMaxWidthClassName,
-  appModalWidePanelMaxWidthClassName,
 } from "@/app/components/app-modal";
 import { ConfirmModal } from "@/app/components/confirm-modal";
-import { FilePreview } from "@/app/components/file-preview";
+import {
+  FileUploadOverlay,
+  type FileUploadProgressState,
+} from "@/app/components/file-upload-overlay";
 import { ListBadge } from "@/app/components/list-badge";
 import { NameFormModal } from "@/app/components/name-form-modal";
 import { StatusControl, useStatusLabels } from "@/app/components/status-control";
@@ -21,9 +23,18 @@ import { useFeedbackToast } from "@/app/components/feedback-toast-provider";
 import { useDisplayPreferences } from "@/app/components/display-preferences-provider";
 import { useTranslations } from "@/app/components/translations-provider";
 import { mimeFromName } from "@/app/lib/list-files";
+import {
+  fileBaseName,
+  fileExtensionFromName,
+  renameKeepingExtension,
+} from "@/app/lib/file-types";
+import { useFileViewer } from "@/app/components/file-viewer-provider";
+import { batchUploadPercent } from "@/app/lib/google-drive/queue-upload";
 import { FRONTEND_MODULE_KEYS } from "@/app/lib/frontend-modules/keys";
 import { useFrontendModules } from "@/app/lib/frontend-modules/context";
 import { useLists } from "@/app/lib/lists-store";
+import { ensureTaskFileContent } from "@/app/lib/file-content";
+import { useTaskActivities } from "@/app/lib/task-activities-cache";
 import { useTeam } from "@/app/lib/team-store";
 import { useIsAdmin } from "@/app/lib/users/use-is-admin";
 import {
@@ -32,7 +43,6 @@ import {
 } from "@/app/lib/list-access";
 import {
   createTaskFileId,
-  readTaskFileContent,
   sameIds,
   taskFilePreviewUrl,
   type TaskActivity,
@@ -180,6 +190,7 @@ export function SubtaskDetailModal({
   const { t } = useTranslations();
   const { formatDate } = useDisplayPreferences();
   const { showFeedback } = useFeedbackToast();
+  const { openFile, openTaskFile } = useFileViewer();
   const {
     lists,
     tasks,
@@ -188,7 +199,6 @@ export function SubtaskDetailModal({
     addTaskFile,
     renameTaskFile,
     removeTaskFile,
-    taskActivities,
     taskFiles,
   } = useLists();
   const { members, currentUser, roles } = useTeam();
@@ -220,14 +230,8 @@ export function SubtaskDetailModal({
     id: string;
     name: string;
   } | null>(null);
-  const [fileToView, setFileToView] = useState<{
-    id: string;
-    name: string;
-    mimeType: string;
-    size: number;
-    content: string | null;
-    revokeOnClose: boolean;
-  } | null>(null);
+  const [uploadProgress, setUploadProgress] =
+    useState<FileUploadProgressState | null>(null);
 
   const isCreate = forceCreate || (Boolean(createFor) && !taskId && !createdTaskId);
   const activeTaskId = forceCreate ? null : (taskId ?? createdTaskId);
@@ -251,9 +255,10 @@ export function SubtaskDetailModal({
   }, [task]);
 
   const deleted = Boolean(task && isTaskDeleted(task));
-  const activities = task ? taskActivities(task.id) : [];
+  const activities = useTaskActivities(task?.id);
   const files = task ? taskFiles(task.id) : [];
   const createdAt =
+    task?.createdAt ??
     activities.find((item) => item.kind === "created")?.at ??
     activities.reduce<string | null>(
       (oldest, item) =>
@@ -342,12 +347,6 @@ export function SubtaskDetailModal({
     setForceCreate(false);
     setFileToDelete(null);
     setFileToRename(null);
-    setFileToView((current) => {
-      if (current?.revokeOnClose && current.content) {
-        URL.revokeObjectURL(current.content);
-      }
-      return null;
-    });
     setPendingFiles((current) => {
       for (const item of current) {
         if (item.previewUrl) URL.revokeObjectURL(item.previewUrl);
@@ -384,11 +383,46 @@ export function SubtaskDetailModal({
   async function handleAddAttachments(selected: File[]) {
     if (!fileUploadsEnabled) return;
     if (isCreate ? !access.canCreateTasks : !access.canEditTasks) return;
+    if (uploadProgress) return;
     if (task) {
       let storedWithoutPreview = false;
-      for (const file of selected) {
-        const record = await addTaskFile(task.id, file);
-        if (record && file.size > 0 && !record.hasContent) storedWithoutPreview = true;
+      const total = selected.length;
+      try {
+        for (let index = 0; index < selected.length; index += 1) {
+          const file = selected[index];
+          const updateProgress = (filePercent: number) => {
+            setUploadProgress({
+              fileName: file.name.trim() || "file",
+              current: index + 1,
+              total,
+              percent: batchUploadPercent(index, total, filePercent),
+            });
+          };
+          updateProgress(0);
+          const record = await addTaskFile(task.id, file, {
+            onProgress: updateProgress,
+          });
+          if (!record) {
+            showFeedback({
+              type: "error",
+              text: t(
+                "files.save.failed",
+                "Neizdevās saglabāt failu. Mēģini vēlreiz.",
+              ),
+            });
+            break;
+          }
+          if (
+            file.size > 0 &&
+            !record.hasContent &&
+            !record.googleDriveFileId
+          ) {
+            storedWithoutPreview = true;
+          }
+          updateProgress(100);
+        }
+      } finally {
+        setUploadProgress(null);
       }
       if (storedWithoutPreview) {
         showFeedback({
@@ -431,56 +465,93 @@ export function SubtaskDetailModal({
     setFileToRename({ id: fileId, name });
   }
 
+  async function requestDownloadAttachment(fileId: string) {
+    const {
+      downloadUrlAsFile,
+      fetchGoogleDriveContentBlob,
+      triggerBrowserDownload,
+    } = await import("@/app/lib/google-drive/content-url");
+
+    const pending = pendingFiles.find((item) => item.id === fileId);
+    if (pending) {
+      const url = URL.createObjectURL(pending.file);
+      triggerBrowserDownload(url, pending.name, true);
+      return;
+    }
+
+    const stored = files.find((file) => file.id === fileId);
+    if (!stored) return;
+
+    async function downloadFromDrive() {
+      const blob = await fetchGoogleDriveContentBlob("task", stored!.id);
+      if (!blob) return false;
+      const url = URL.createObjectURL(blob);
+      triggerBrowserDownload(url, stored!.name, true);
+      return true;
+    }
+
+    // Drive-primary: prefer Drive ID over any stale local cache.
+    if (stored.googleDriveFileId) {
+      if (await downloadFromDrive()) return;
+      showFeedback({
+        type: "error",
+        text: t("files.download.failed", "Neizdevās lejupielādēt failu."),
+      });
+      return;
+    }
+
+    const local = await ensureTaskFileContent(stored.id);
+    if (local) {
+      try {
+        await downloadUrlAsFile(local, stored.name);
+        return;
+      } catch (error) {
+        console.error("Local file download failed", error);
+      }
+    }
+
+    // Client may lack googleDriveFileId while DB still has it.
+    if (await downloadFromDrive()) return;
+
+    showFeedback({
+      type: "error",
+      text: t("files.download.failed", "Neizdevās lejupielādēt failu."),
+    });
+  }
+
   function requestViewAttachment(fileId: string) {
     const pending = pendingFiles.find((item) => item.id === fileId);
     if (pending) {
-      const content =
-        pending.previewUrl ?? URL.createObjectURL(pending.file);
-      setFileToView({
+      openFile({
+        kind: "local",
         id: pending.id,
         name: pending.name,
         mimeType: pending.file.type || mimeFromName(pending.name),
         size: pending.file.size,
-        content,
-        revokeOnClose: !pending.previewUrl,
+        contentUrl: pending.previewUrl ?? URL.createObjectURL(pending.file),
+        revokeContentOnClose: !pending.previewUrl,
       });
       return;
     }
 
     const stored = files.find((file) => file.id === fileId);
     if (!stored) return;
-    setFileToView({
-      id: stored.id,
-      name: stored.name,
-      mimeType: stored.mimeType,
-      size: stored.size,
-      content: readTaskFileContent(stored.id) ?? taskFilePreviewUrl(stored),
-      revokeOnClose: false,
-    });
-  }
-
-  function closeViewAttachment() {
-    setFileToView((current) => {
-      if (current?.revokeOnClose && current.content) {
-        URL.revokeObjectURL(current.content);
-      }
-      return null;
-    });
+    openTaskFile(stored);
   }
 
   function confirmRenameAttachment(name: string) {
     if (!fileToRename) return;
-    const trimmed = name.trim();
-    if (!trimmed) return;
+    const nextName = renameKeepingExtension(fileToRename.name, name);
+    if (!nextName) return;
     const pending = pendingFiles.find((item) => item.id === fileToRename.id);
     if (pending) {
       setPendingFiles((current) =>
         current.map((item) =>
-          item.id === fileToRename.id ? { ...item, name: trimmed } : item,
+          item.id === fileToRename.id ? { ...item, name: nextName } : item,
         ),
       );
     } else {
-      renameTaskFile(fileToRename.id, trimmed);
+      renameTaskFile(fileToRename.id, nextName);
     }
     showFeedback({
       type: "success",
@@ -633,8 +704,7 @@ export function SubtaskDetailModal({
       dirty={dirty}
       blocking={
         fileToDelete !== null ||
-        fileToRename !== null ||
-        fileToView !== null
+        fileToRename !== null
       }
       panelMaxWidthClassName={appModalSplitPanelMaxWidthClassName}
       headerMeta={
@@ -862,11 +932,17 @@ export function SubtaskDetailModal({
                   previewUrl: item.previewUrl,
                 })),
               ]}
-              disabled={isCreate ? !access.canCreateTasks : !access.canEditTasks}
+              disabled={
+                Boolean(uploadProgress) ||
+                (isCreate ? !access.canCreateTasks : !access.canEditTasks)
+              }
               onAdd={(selected) => {
                 void handleAddAttachments(selected);
               }}
               onView={requestViewAttachment}
+              onDownload={(fileId) => {
+                void requestDownloadAttachment(fileId);
+              }}
               onRename={requestRenameAttachment}
               onRemove={requestRemoveAttachment}
             />
@@ -972,32 +1048,22 @@ export function SubtaskDetailModal({
       )}
       submitLabel={t("actions.save", "Saglabāt")}
       showDescription={false}
+      nameSuffix={
+        fileToRename
+          ? (() => {
+              const extension = fileExtensionFromName(fileToRename.name);
+              return extension ? `.${extension}` : null;
+            })()
+          : null
+      }
       initialValue={
         fileToRename
-          ? { name: fileToRename.name, description: "" }
+          ? { name: fileBaseName(fileToRename.name), description: "" }
           : null
       }
       onCreate={(input) => confirmRenameAttachment(input.name)}
     />
-    <AppModal
-      open={fileToView !== null}
-      onOpenChange={(open) => {
-        if (!open) closeViewAttachment();
-      }}
-      title={fileToView?.name ?? t("actions.view", "Apskatīt")}
-      panelMaxWidthClassName={appModalWidePanelMaxWidthClassName}
-    >
-      {fileToView ? (
-        <FilePreview
-          file={{
-            name: fileToView.name,
-            mimeType: fileToView.mimeType,
-            size: fileToView.size,
-          }}
-          content={fileToView.content}
-        />
-      ) : null}
-    </AppModal>
+    <FileUploadOverlay progress={uploadProgress} />
     </>
   );
 }

@@ -2,6 +2,7 @@
 
 import type { ReactNode } from "react";
 import { AppShell } from "@/app/components/app-shell";
+import { FileViewerProvider } from "@/app/components/file-viewer-provider";
 import { FileTypesProvider } from "@/app/lib/file-types-context";
 import { FrontendModulesProvider } from "@/app/lib/frontend-modules/context";
 import { ListsProvider } from "@/app/lib/lists-store";
@@ -33,7 +34,9 @@ export function AppProviders({
             <FileTypesProvider extensions={fileTypeExtensions}>
               <TemplatesProvider>
                 <ListsProvider>
-                  <AppShell>{children}</AppShell>
+                  <FileViewerProvider>
+                    <AppShell>{children}</AppShell>
+                  </FileViewerProvider>
                 </ListsProvider>
               </TemplatesProvider>
             </FileTypesProvider>

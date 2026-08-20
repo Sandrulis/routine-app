@@ -42,7 +42,7 @@ function CrumbMark({ icon, muted }: { icon?: ReactNode; muted: boolean }) {
 export function PageBreadcrumb() {
   const pathname = usePathname();
   const { t } = useTranslations();
-  const { lists, tasks, isReady: listsReady } = useLists();
+  const { lists, tasks, allTaskFiles, isReady: listsReady } = useLists();
   const { files, isReady: filesReady } = useListFiles();
   const { members, isReady: teamReady } = useTeam();
   const { templates, isReady: templatesReady } = useTemplates();
@@ -112,6 +112,22 @@ export function PageBreadcrumb() {
             />
           ),
         });
+
+        if (parts[4] === "files" && parts[5]) {
+          const taskFile =
+            allTaskFiles.find((item) => item.id === parts[5]) ?? null;
+          items.push({
+            href: `/lists/${parts[1]}/tasks/${parts[3]}/files/${parts[5]}`,
+            label: listsReady
+              ? (taskFile?.name ?? t("files.detail.missing", "Fails nav atrasts"))
+              : loadingLabel,
+            icon: taskFile ? (
+              <FileIcon name={taskFile.name} className="text-[11px]" />
+            ) : (
+              <CrumbIcon className="fas fa-file" />
+            ),
+          });
+        }
       }
 
       if (parts[2] === "files" && parts[3]) {
@@ -254,7 +270,7 @@ export function PageBreadcrumb() {
         icon: <CrumbIcon className="fas fa-house" />,
       },
     ];
-  }, [files, filesReady, lists, listsReady, loadingLabel, members, pathname, t, tasks, teamReady, templates, templatesReady]);
+  }, [allTaskFiles, files, filesReady, lists, listsReady, loadingLabel, members, pathname, t, tasks, teamReady, templates, templatesReady]);
 
   return (
     <header className="sticky top-0 z-20 border-b border-zinc-200 bg-white/95 py-2.5 pr-4 pl-[var(--app-content-inset-left)] backdrop-blur-sm md:pr-6">

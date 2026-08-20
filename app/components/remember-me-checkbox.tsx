@@ -30,7 +30,7 @@ export function RememberMeCheckbox({
 }
 
 export function useRememberMe() {
-  const [remember, setRemember] = useState(true);
+  const [remember, setRemember] = useState(false);
 
   useEffect(() => {
     setRemember(readRememberSessionPreference());

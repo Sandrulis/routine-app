@@ -10,7 +10,7 @@ import {
   type ReactNode,
 } from "react";
 import type { User } from "@supabase/supabase-js";
-import { importLocalWorkIfNeeded, readStoredCurrentTeamId } from "@/app/lib/db/import-local-work";
+import { hasCompletedLocalImport, importLocalWorkIfNeeded, readStoredCurrentTeamId } from "@/app/lib/db/import-local-work";
 import {
   deleteTeamRow,
   deleteTeamRoleRow,
@@ -74,7 +74,11 @@ type TeamContextValue = {
   currentTeam: WorkTeam | null;
   roles: TeamRole[];
   inviteMember: (input: InviteMemberInput) => Promise<TeamMember>;
-  refreshTeams: () => Promise<void>;
+  refreshTeams: () => Promise<{
+    teams: WorkTeam[];
+    membersByTeam: MembersByTeam;
+    rolesByTeam: RolesByTeam;
+  }>;
   addTeam: (input: AddTeamInput) => WorkTeam;
   updateTeam: (teamId: string, input: AddTeamInput) => void;
   deleteTeam: (teamId: string) => boolean;
@@ -146,7 +150,9 @@ export function TeamProvider({ children }: { children: ReactNode }) {
 
     void (async () => {
       try {
-        await importLocalWorkIfNeeded(userId, owner);
+        if (!hasCompletedLocalImport(userId)) {
+          await importLocalWorkIfNeeded(userId, owner);
+        }
         const { teams: nextTeams, membersByTeam: nextMembers, rolesByTeam: nextRoles } =
           await fetchUserTeams();
         if (cancelled) return;
@@ -201,6 +207,7 @@ export function TeamProvider({ children }: { children: ReactNode }) {
       });
     }
     window.dispatchEvent(new Event(TEAM_CHANGE_EVENT));
+    return { teams: nextTeams, membersByTeam: nextMembers, rolesByTeam: nextRoles };
   }, [authUser]);
 
   const inviteMember = useCallback(
@@ -226,9 +233,8 @@ export function TeamProvider({ children }: { children: ReactNode }) {
         throw new Error(result.error);
       }
 
-      await refreshTeams();
-
-      const refreshedMember = (await fetchUserTeams()).membersByTeam[currentTeamId]?.find(
+      const refreshed = await refreshTeams();
+      const refreshedMember = refreshed.membersByTeam[currentTeamId]?.find(
         (member) => member.id === result.data.memberId,
       );
 
@@ -247,27 +253,7 @@ export function TeamProvider({ children }: { children: ReactNode }) {
     const userId = authUser.id;
 
     function touchCurrentUser() {
-      const seenAt = new Date().toISOString();
-      let shouldPersist = false;
-
-      setMembersByTeam((current) => {
-        const list = current[teamId] ?? [];
-        const self = list.find(
-          (member) => member.userId === userId || member.id === userId,
-        );
-        if (!self?.userId && self?.id !== userId) return current;
-        shouldPersist = true;
-        return {
-          ...current,
-          [teamId]: list.map((member) =>
-            member.id === self.id ? { ...member, lastOnlineAt: seenAt } : member,
-          ),
-        };
-      });
-
-      if (!shouldPersist) return;
-
-      void touchMemberOnline(teamId, userId, seenAt).catch((error) => {
+      void touchMemberOnline(teamId, userId, new Date().toISOString()).catch((error) => {
         if (
           !navigator.onLine ||
           document.visibilityState !== "visible" ||
@@ -286,7 +272,7 @@ export function TeamProvider({ children }: { children: ReactNode }) {
     }
 
     touchCurrentUser();
-    const timer = window.setInterval(touchCurrentUser, 20_000);
+    const timer = window.setInterval(touchCurrentUser, 90_000);
     return () => window.clearInterval(timer);
   }, [authUser?.id, currentTeamId, isReady]);
 

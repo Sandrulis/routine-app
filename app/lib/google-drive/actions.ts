@@ -70,7 +70,7 @@ export async function getTeamGoogleDriveStatusAction(
   const status = await fetchGoogleDriveStatus(
     trimmed,
     user.id,
-    isGoogleDriveOAuthConfigured(),
+    await isGoogleDriveOAuthConfigured(),
   );
   return { ok: true, data: status };
 }
@@ -86,7 +86,7 @@ export async function startGoogleDriveOAuthAction(
   const trimmed = teamId.trim();
   const allowed = await assertCanConfigureGoogleDrive(trimmed, user.id);
   if (!allowed.ok) return allowed;
-  if (!isGoogleDriveOAuthConfigured()) {
+  if (!(await isGoogleDriveOAuthConfigured())) {
     return { ok: false, error: "errors.google_drive_not_configured" };
   }
   const oauthOrigin = resolveOAuthOrigin(origin);
@@ -95,7 +95,7 @@ export async function startGoogleDriveOAuthAction(
   }
   const state = createGoogleDriveOAuthState(trimmed);
   const serialized = serializeGoogleDriveOAuthState(state);
-  const url = buildGoogleDriveAuthorizeUrl(oauthOrigin, serialized);
+  const url = await buildGoogleDriveAuthorizeUrl(oauthOrigin, serialized);
   if (!url) {
     return { ok: false, error: "errors.google_drive_not_configured" };
   }
@@ -111,8 +111,9 @@ export async function startGoogleDriveOAuthAction(
 export async function saveGoogleDriveSettingsAction(input: {
   teamId: string;
   isEnabled: boolean;
+  storeOnServer: boolean;
   folderPath: string;
-}): Promise<ActionResult<{ folderPath: string }>> {
+}): Promise<ActionResult<{ folderPath: string; storeOnServer: boolean }>> {
   const modules = await requireGoogleDriveModules();
   if (!modules.ok) return modules;
   const user = await getCurrentUser();
@@ -122,10 +123,14 @@ export async function saveGoogleDriveSettingsAction(input: {
   const result = await saveGoogleDriveSettings({
     teamId: input.teamId.trim(),
     isEnabled: input.isEnabled,
+    storeOnServer: input.storeOnServer,
     folderPath: sanitizeDriveFolderPath(input.folderPath),
   });
   if (!result.ok) return result;
-  return { ok: true, data: { folderPath: result.folderPath } };
+  return {
+    ok: true,
+    data: { folderPath: result.folderPath, storeOnServer: result.storeOnServer },
+  };
 }
 
 export async function disconnectGoogleDriveAction(

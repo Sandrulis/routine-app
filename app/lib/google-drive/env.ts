@@ -1,3 +1,5 @@
+import { getGoogleOAuthCredentials } from "@/app/lib/integrations/google-oauth/repository";
+
 export function getGoogleDriveOAuthEnv() {
   const clientId = process.env.GOOGLE_DRIVE_CLIENT_ID?.trim() ?? "";
   const clientSecret = process.env.GOOGLE_DRIVE_CLIENT_SECRET?.trim() ?? "";
@@ -8,8 +10,15 @@ export function getGoogleDriveOAuthEnv() {
   return { clientId, clientSecret };
 }
 
-export function isGoogleDriveOAuthConfigured() {
-  return getGoogleDriveOAuthEnv() !== null;
+/** Prefer admin-configured Google OAuth credentials, then .env fallback. */
+export async function getGoogleDriveOAuthCredentials() {
+  const fromIntegrations = await getGoogleOAuthCredentials();
+  if (fromIntegrations) return fromIntegrations;
+  return getGoogleDriveOAuthEnv();
+}
+
+export async function isGoogleDriveOAuthConfigured() {
+  return (await getGoogleDriveOAuthCredentials()) !== null;
 }
 
 export const GOOGLE_DRIVE_SCOPES = [

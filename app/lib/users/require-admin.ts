@@ -2,8 +2,25 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/app/lib/supabase/server";
 import { isSupabaseConfigured } from "@/app/lib/supabase/env";
 import { ensureCurrentUserProfile } from "@/app/lib/users/ensure-profile";
+import { logAdminAudit } from "@/app/lib/users/admin-audit";
 
-export async function requireAdmin() {
+type MfaGate = "ok" | "enroll" | "verify";
+
+async function getMfaGate(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+): Promise<MfaGate> {
+  const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+  if (aal?.currentLevel === "aal2") return "ok";
+
+  const { data: factors } = await supabase.auth.mfa.listFactors();
+  const verified = (factors?.totp ?? []).filter(
+    (factor: { status: string }) => factor.status === "verified",
+  );
+  if (verified.length === 0) return "enroll";
+  return "verify";
+}
+
+async function requireAdminUser() {
   if (!isSupabaseConfigured()) {
     redirect("/login");
   }
@@ -25,14 +42,41 @@ export async function requireAdmin() {
     .eq("id", user.id)
     .maybeSingle();
 
-  if (profile?.is_admin === true) {
-    return user;
+  const isAdmin =
+    profile?.is_admin === true ||
+    (await supabase.rpc("current_user_is_admin")).data === true;
+
+  if (!isAdmin) {
+    redirect("/dashboard");
   }
 
-  const { data } = await supabase.rpc("current_user_is_admin");
-  if (data === true) {
-    return user;
-  }
+  return { user, supabase };
+}
 
-  redirect("/dashboard");
+export async function requireAdminLayout() {
+  const { supabase } = await requireAdminUser();
+  const gate = await getMfaGate(supabase);
+  if (gate === "enroll") {
+    redirect("/settings/profile?mfa=required");
+  }
+  return { needsMfaVerify: gate === "verify" };
+}
+
+export async function requireAdmin(audit?: { action: string; target?: string }) {
+  const { user, supabase } = await requireAdminUser();
+  const gate = await getMfaGate(supabase);
+  if (gate === "enroll") {
+    redirect("/settings/profile?mfa=required");
+  }
+  if (gate === "verify") {
+    redirect("/admin");
+  }
+  if (audit) {
+    await logAdminAudit({
+      actorId: user.id,
+      action: audit.action,
+      target: audit.target,
+    });
+  }
+  return user;
 }

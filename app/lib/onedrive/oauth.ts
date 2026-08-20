@@ -123,7 +123,7 @@ export async function fetchOneDriveAccountEmail(accessToken: string) {
     | { mail?: string; userPrincipalName?: string }
     | null;
   if (!response.ok) return "";
-  return (data?.mail || data?.userPrincipalName || "").trim();
+  return (data?.mail || "").trim();
 }
 
 export { ONEDRIVE_OAUTH_COOKIE };

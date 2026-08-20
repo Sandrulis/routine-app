@@ -1,16 +1,13 @@
 "use client";
 
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState, type CSSProperties, type MouseEvent, type ReactNode } from "react";
 import { DragHandle } from "@/app/components/drag-handle";
-import { ListFormModal } from "@/app/components/list-form-modal";
-import { ListStatusesModal } from "@/app/components/list-statuses-modal";
-import { TaskStatusesModal } from "@/app/components/task-statuses-modal";
-import { ListAutomationsModal } from "@/app/components/list-automations-modal";
 import { LoadingState } from "@/app/components/loading-state";
 import { NameFormModal } from "@/app/components/name-form-modal";
-import { ParentCreateFlow, type ParentCreateContext } from "@/app/components/parent-create-flow";
+import type { ParentCreateContext } from "@/app/components/parent-create-flow";
 import { ConfirmModal } from "@/app/components/confirm-modal";
 import {
   CreateItemMenu,
@@ -26,9 +23,7 @@ import {
   useNavTreeDrag,
   type NavTreeSortableHandle,
 } from "@/app/components/nav-tree-dnd";
-import { SubtaskDetailModal } from "@/app/components/subtask-detail-modal";
-import { TeamInviteModal } from "@/app/components/team-invite-modal";
-import { TeamRolesModal } from "@/app/components/team-roles-modal";
+import { useFileViewer } from "@/app/components/file-viewer-provider";
 import { OverflowTooltip, Tooltip } from "@/app/components/tooltip";
 import { useFeedbackToast } from "@/app/components/feedback-toast-provider";
 import { translateActionError } from "@/app/lib/i18n/action-errors";
@@ -53,6 +48,7 @@ import {
 } from "@/app/lib/lists";
 import { StatusTreeDot } from "@/app/components/status-control";
 import { useFileTypes } from "@/app/lib/file-types-context";
+import { fileBaseName, fileExtensionFromName } from "@/app/lib/file-types";
 import { FRONTEND_MODULE_KEYS } from "@/app/lib/frontend-modules/keys";
 import { useFrontendModules } from "@/app/lib/frontend-modules/context";
 import { useLists } from "@/app/lib/lists-store";
@@ -64,7 +60,7 @@ import {
   renameStoredListFile,
   placeStoredListFile,
   reorderStoredListFiles,
-  sumFileBytes,
+  sumFileStorageBuckets,
   type ListFile,
 } from "@/app/lib/list-files";
 import { useListFiles } from "@/app/lib/use-list-files";
@@ -89,6 +85,47 @@ import {
   hasTeamNavPermission,
   memberDisplayName,
 } from "@/app/lib/team";
+
+const ListFormModal = dynamic(() =>
+  import("@/app/components/list-form-modal").then((mod) => ({
+    default: mod.ListFormModal,
+  })),
+);
+const ListStatusesModal = dynamic(() =>
+  import("@/app/components/list-statuses-modal").then((mod) => ({
+    default: mod.ListStatusesModal,
+  })),
+);
+const TaskStatusesModal = dynamic(() =>
+  import("@/app/components/task-statuses-modal").then((mod) => ({
+    default: mod.TaskStatusesModal,
+  })),
+);
+const ListAutomationsModal = dynamic(() =>
+  import("@/app/components/list-automations-modal").then((mod) => ({
+    default: mod.ListAutomationsModal,
+  })),
+);
+const ParentCreateFlow = dynamic(() =>
+  import("@/app/components/parent-create-flow").then((mod) => ({
+    default: mod.ParentCreateFlow,
+  })),
+);
+const SubtaskDetailModal = dynamic(() =>
+  import("@/app/components/subtask-detail-modal").then((mod) => ({
+    default: mod.SubtaskDetailModal,
+  })),
+);
+const TeamInviteModal = dynamic(() =>
+  import("@/app/components/team-invite-modal").then((mod) => ({
+    default: mod.TeamInviteModal,
+  })),
+);
+const TeamRolesModal = dynamic(() =>
+  import("@/app/components/team-roles-modal").then((mod) => ({
+    default: mod.TeamRolesModal,
+  })),
+);
 
 const NAV_TREE_STORAGE_KEY = "routine-app-nav-trees";
 
@@ -138,7 +175,7 @@ function TreeName({
   ) : null;
 
   const name = href ? (
-    <Link href={href} className="block min-w-0 truncate">
+    <Link href={href} prefetch={false} className="block min-w-0 truncate">
       <span className="truncate">{label}</span>
     </Link>
   ) : onToggle ? (
@@ -228,6 +265,7 @@ function NavTreeSection({
   moreOpen = false,
   swapOnHover = false,
   leaf = false,
+  onActivate,
   status,
   isPrivate = false,
   dragHandle,
@@ -245,6 +283,8 @@ function NavTreeSection({
   listAppearance?: { icon: string | null; color: string };
   swapOnHover?: boolean;
   leaf?: boolean;
+  /** Prefer over href for leaves that open a modal / download. */
+  onActivate?: () => void;
   status?: WorkTaskStatus;
   isPrivate?: boolean;
   label: string;
@@ -281,7 +321,8 @@ function NavTreeSection({
     ? listColorById(listAppearance.color)
     : null;
 
-  const rowLink = Boolean(href && leaf);
+  const rowLink = Boolean(href && leaf && !onActivate);
+  const rowActivate = Boolean(leaf && onActivate);
 
   return (
     <div className={`overflow-visible${dragHandle?.isDragging ? " opacity-70" : ""}`}>
@@ -294,8 +335,17 @@ function NavTreeSection({
           {rowLink && href ? (
             <Link
               href={href}
+              prefetch={false}
               className="absolute inset-0 z-0 rounded-md"
               aria-label={label}
+            />
+          ) : null}
+          {rowActivate && onActivate ? (
+            <button
+              type="button"
+              className="absolute inset-0 z-0 rounded-md"
+              aria-label={label}
+              onClick={onActivate}
             />
           ) : null}
           {dragHandle ? (
@@ -464,6 +514,7 @@ export function AppNav() {
   const fileUploadsEnabled = isModuleEnabled(FRONTEND_MODULE_KEYS.fileUpload);
   const { statuses } = useTaskStatuses();
   const { getFileIconDisplay } = useFileTypes();
+  const { openListFile } = useFileViewer();
   const [inviteOpen, setInviteOpen] = useState(false);
   const [createListOpen, setCreateListOpen] = useState(false);
   const [parentCreate, setParentCreate] = useState<ParentCreateContext | null>(
@@ -626,10 +677,32 @@ export function AppNav() {
     pathname === "/team" ||
     pathname.startsWith("/team/") ||
     pathname.startsWith("/templates");
-  const storageUsedLabel = useMemo(
-    () => formatFileSize(sumFileBytes(storedFiles) + sumFileBytes(allTaskFiles)),
-    [allTaskFiles, storedFiles],
-  );
+  const storageUsage = useMemo(() => {
+    return sumFileStorageBuckets([...storedFiles, ...allTaskFiles]);
+  }, [allTaskFiles, storedFiles]);
+  const storageUsedLabel = formatFileSize(storageUsage.totalBytes);
+  const storageTooltip = useMemo(() => {
+    const lines: string[] = [];
+    if (storageUsage.serverBytes > 0) {
+      lines.push(
+        t("nav.storage.hint.server", "Serveris: {size}", {
+          size: formatFileSize(storageUsage.serverBytes),
+        }),
+      );
+    }
+    if (storageUsage.cloudBytes > 0) {
+      lines.push(
+        t("nav.storage.hint.cloud", "Cloud: {size}", {
+          size: formatFileSize(storageUsage.cloudBytes),
+        }),
+      );
+    }
+    if (lines.length > 0) return lines.join("\n");
+    return t(
+      "nav.storage.hint",
+      "Kokā un apakšuzdevumos augšupielādētie faili",
+    );
+  }, [storageUsage.cloudBytes, storageUsage.serverBytes, t]);
   const activeTaskIds = useMemo(() => {
     const ids = new Set<string>();
     const parts = pathname.split("/");
@@ -726,7 +799,6 @@ export function AppNav() {
   }
 
   function renderFileRow(listId: string, file: ListFile, canReorder: boolean) {
-    const href = filePageHref(listId, file.id);
     const fileIcon = getFileIconDisplay(file.name);
     const data: NavTreeItemData = {
       kind: "file",
@@ -737,11 +809,11 @@ export function AppNav() {
       <NavTreeSortableItem key={file.id} id={file.id} data={data} disabled={!canReorder}>
         {(handle) => (
           <NavTreeSection
-            href={href}
             icon={fileIcon.icon}
             iconColor={fileIcon.color}
             iconClassName=""
             leaf
+            onActivate={() => openListFile(file)}
             itemId={file.id}
             label={file.name}
             expanded={false}
@@ -1085,13 +1157,20 @@ export function AppNav() {
                   <Link
                     key={member.id}
                     href={href}
+                    prefetch={false}
                     className={rowClassName(pathname === href)}
                   >
                     <UserAvatar member={member} size="xs" />
                     <OverflowTooltip label={memberDisplayName(member)} className="min-w-0 flex-1">
                       <span className="block min-w-0 truncate">{memberDisplayName(member)}</span>
                     </OverflowTooltip>
-                    <MemberLastOnline lastOnlineAt={member.lastOnlineAt} />
+                    <MemberLastOnline
+                      lastOnlineAt={
+                        member.id === currentUser.id || member.userId === currentUser.id
+                          ? new Date().toISOString()
+                          : member.lastOnlineAt
+                      }
+                    />
                   </Link>
                 );
               })
@@ -1111,13 +1190,7 @@ export function AppNav() {
 
         <div className="shrink-0 space-y-0.5 border-t border-zinc-100 px-2 py-2">
           {currentTeam && fileUploadsEnabled ? (
-            <Tooltip
-              label={t(
-                "nav.storage.hint",
-                "Kokā un apakšuzdevumos augšupielādētie faili",
-              )}
-              className="block"
-            >
+            <Tooltip label={storageTooltip} className="block">
               <div className="flex min-h-8 items-center gap-2 rounded-md px-1.5 text-[13px] text-zinc-500">
                 <span className="inline-flex size-5 shrink-0 items-center justify-center text-zinc-400">
                   <i className="fas fa-hard-drive text-[12px]" aria-hidden="true" />
@@ -1416,7 +1489,7 @@ export function AppNav() {
               : null;
           setItemMenu(null);
           if (id === "view") {
-            if (file) router.push(filePageHref(file.listId, file.id));
+            if (file) openListFile(file);
             return;
           }
           if (id === "edit") {
@@ -1527,10 +1600,18 @@ export function AppNav() {
           submitLabel={t("actions.save", "Saglabāt")}
           showAppearance={false}
           showDescription={editTarget?.kind !== "file"}
+          nameSuffix={
+            editTarget?.kind === "file"
+              ? (() => {
+                  const extension = fileExtensionFromName(editTarget.file.name);
+                  return extension ? `.${extension}` : null;
+                })()
+              : null
+          }
           initialValue={
             editTarget?.kind === "file"
               ? {
-                  name: editTarget.file.name,
+                  name: fileBaseName(editTarget.file.name),
                   description: "",
                 }
               : editTarget

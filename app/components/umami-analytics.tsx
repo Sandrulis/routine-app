@@ -6,11 +6,16 @@ import { useCookieConsent } from "@/app/components/cookie-consent-provider";
 type UmamiAnalyticsProps = {
   websiteId: string;
   scriptSrc: string;
+  integrity?: string;
 };
 
 const SCRIPT_ATTR = "data-routine-umami";
 
-export function UmamiAnalytics({ websiteId, scriptSrc }: UmamiAnalyticsProps) {
+export function UmamiAnalytics({
+  websiteId,
+  scriptSrc,
+  integrity,
+}: UmamiAnalyticsProps) {
   const { isReady, isAllowed } = useCookieConsent();
   const loadedRef = useRef(false);
 
@@ -28,9 +33,16 @@ export function UmamiAnalytics({ websiteId, scriptSrc }: UmamiAnalyticsProps) {
     script.src = scriptSrc;
     script.setAttribute("data-website-id", websiteId);
     script.setAttribute(SCRIPT_ATTR, "1");
+    const sri =
+      integrity?.trim() ||
+      process.env.NEXT_PUBLIC_UMAMI_SCRIPT_INTEGRITY?.trim();
+    if (sri) {
+      script.integrity = sri;
+      script.crossOrigin = "anonymous";
+    }
     document.head.appendChild(script);
     loadedRef.current = true;
-  }, [isReady, isAllowed, websiteId, scriptSrc]);
+  }, [isReady, isAllowed, websiteId, scriptSrc, integrity]);
 
   return null;
 }

@@ -22,6 +22,8 @@ import {
   GOOGLE_OAUTH_OAUTH_COOKIE,
   parseGoogleOAuthConfigureState,
 } from "@/app/lib/integrations/google-oauth/oauth";
+import { requestClientIp } from "@/app/lib/security/client-ip";
+import { consumeRateLimit } from "@/app/lib/security/rate-limit";
 import { createClient } from "@/app/lib/supabase/server";
 
 function redirectToIntegrationsPage(origin: string, query: Record<string, string>) {
@@ -77,6 +79,18 @@ async function handleLogin(request: Request, origin: string, code: string) {
 }
 
 export async function GET(request: Request) {
+  const limited = consumeRateLimit(
+    `oauth-google:${requestClientIp(request)}`,
+    40,
+    15 * 60 * 1000,
+  );
+  if (!limited.ok) {
+    return new NextResponse("Too many requests", {
+      status: 429,
+      headers: { "Retry-After": String(limited.retryAfterSec) },
+    });
+  }
+
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
   const stateParam = searchParams.get("state");

@@ -1,8 +1,10 @@
 "use client";
 
+import { Suspense } from "react";
 import { SectionPage } from "@/app/components/section-page";
 import { LoadingState } from "@/app/components/loading-state";
 import { ProfileDisplayPreferencesForm } from "@/app/components/profile-display-preferences-form";
+import { MfaSettingsCard } from "@/app/components/mfa-settings-card";
 import { TeamLeaveSection } from "@/app/components/team-leave-section";
 import { UserAvatar } from "@/app/components/user-avatar";
 import { useTranslations } from "@/app/components/translations-provider";
@@ -69,6 +71,10 @@ export function ProfileSettingsView({
           systemDefaults={systemDefaults}
           initialUserPreferences={initialUserPreferences}
         />
+
+        <Suspense>
+          <MfaSettingsCard />
+        </Suspense>
 
         {selfMember ? <TeamLeaveSection member={selfMember} redirectTo="/" /> : null}
       </div>
