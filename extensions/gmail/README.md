@@ -36,9 +36,11 @@ Bez API tu zaudē uzticamus pielikumus (bieži “klusi” neielādējas).
 ## Lietošana
 
 1. Atver e-pastu Gmailā (pilns skats)
-2. Routine poga → **saraksts** → (mape, ja ir) → **uzdevums** → **apakšuzdevums** → **Pievienot**
-   - Ceļš redzams augšā; **Atpakaļ** atgriež iepriekšējā solī.
-3. E-pasts + pielikumi nāk caur Gmail API; limīts **25 MB** uz failu
+2. Nospied **Routine** pogu e-pasta skatā (josla virs ziņas / blakus temata) vai peldošo pogu
+3. Izvēlies **saraksts** → (mape) → **uzdevums** → **apakšuzdevums**
+   - Breadcrumb ir klikšķināms; rāda tikai neatvērtus (neslēgtus) ierakstus
+4. Apakšā atzīmē pielikumus (pēc noklusējuma visi) → **Pievienot**
+5. Pēc pievienošanas rādās tikai rezultāta ziņa
 
 ## API (Routine)
 

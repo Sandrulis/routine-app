@@ -5,6 +5,7 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "@/app/components/translations-provider";
 import { FileIcon } from "@/app/components/file-icon";
+import { buildEmailPreviewDocument } from "@/app/lib/email-file-preview";
 import {
   decodeDataUrlText,
   isTextFile,
@@ -62,39 +63,118 @@ function usePreviewText(content: string | null, enabled: boolean) {
   return { text, ready };
 }
 
-/** Chrome blocks `data:` in iframes; CSP needs `blob:` in frame-src. */
-function useEmbeddableUrl(content: string | null, preferBlob: boolean) {
+/** Chrome blocks `data:` in iframes; CSP needs `blob:`. Sandbox blocks the PDF viewer. */
+function dataUrlToObjectUrl(dataUrl: string, fallbackMime: string): string | null {
+  try {
+    const comma = dataUrl.indexOf(",");
+    if (comma < 0) return null;
+    const meta = dataUrl.slice(5, comma); // after "data:"
+    const payload = dataUrl.slice(comma + 1);
+    const mime = meta.split(";")[0]?.trim() || fallbackMime;
+    const bytes = meta.includes(";base64")
+      ? Uint8Array.from(atob(payload), (char) => char.charCodeAt(0))
+      : new TextEncoder().encode(decodeURIComponent(payload));
+    return URL.createObjectURL(new Blob([bytes], { type: mime || fallbackMime }));
+  } catch {
+    return null;
+  }
+}
+
+function useEmbeddableUrl(
+  content: string | null,
+  preferBlob: boolean,
+  mimeType: string,
+) {
   const [url, setUrl] = useState<string | null>(null);
+  const [failed, setFailed] = useState(false);
 
   useEffect(() => {
     if (!content) {
       setUrl(null);
+      setFailed(false);
       return;
     }
-    if (!preferBlob || !content.startsWith("data:")) {
+    if (!preferBlob) {
       setUrl(content);
+      setFailed(false);
       return;
+    }
+    if (content.startsWith("blob:")) {
+      setUrl(content);
+      setFailed(false);
+      return;
+    }
+    if (content.startsWith("data:")) {
+      const objectUrl = dataUrlToObjectUrl(content, mimeType);
+      if (!objectUrl) {
+        setUrl(null);
+        setFailed(true);
+        return;
+      }
+      setUrl(objectUrl);
+      setFailed(false);
+      return () => {
+        URL.revokeObjectURL(objectUrl);
+      };
     }
 
     let objectUrl: string | null = null;
     let cancelled = false;
-
+    setFailed(false);
     void fetch(content)
-      .then((response) => response.blob())
+      .then((response) => {
+        if (!response.ok) throw new Error("embed fetch failed");
+        return response.blob();
+      })
       .then((blob) => {
         if (cancelled) return;
-        objectUrl = URL.createObjectURL(blob);
+        const typed =
+          mimeType && (!blob.type || blob.type === "application/octet-stream")
+            ? new Blob([blob], { type: mimeType })
+            : blob;
+        objectUrl = URL.createObjectURL(typed);
         setUrl(objectUrl);
       })
       .catch(() => {
-        if (!cancelled) setUrl(content);
+        if (!cancelled) {
+          setUrl(null);
+          setFailed(true);
+        }
       });
 
     return () => {
       cancelled = true;
       if (objectUrl) URL.revokeObjectURL(objectUrl);
     };
-  }, [content, preferBlob]);
+  }, [content, preferBlob, mimeType]);
+
+  return { url, failed };
+}
+
+/** Render email export / HTML-in-txt as a sandboxed HTML document. */
+function useEmailPreviewUrl(text: string | null, enabled: boolean) {
+  const [url, setUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!enabled || !text) {
+      setUrl(null);
+      return;
+    }
+
+    const doc = buildEmailPreviewDocument(text);
+    if (!doc) {
+      setUrl(null);
+      return;
+    }
+
+    const objectUrl = URL.createObjectURL(
+      new Blob([doc], { type: "text/html;charset=utf-8" }),
+    );
+    setUrl(objectUrl);
+    return () => {
+      URL.revokeObjectURL(objectUrl);
+    };
+  }, [text, enabled]);
 
   return url;
 }
@@ -110,11 +190,21 @@ export function FilePreview({
   const isPdf =
     file.mimeType === "application/pdf" ||
     file.name.toLowerCase().endsWith(".pdf");
-  const wantText = isTextFile(file);
-  const embedUrl = useEmbeddableUrl(content, isPdf);
+  const wantText = isTextFile(file) && !isPdf;
+  const { url: embedUrl, failed: embedFailed } = useEmbeddableUrl(
+    content,
+    isPdf,
+    isPdf ? "application/pdf" : file.mimeType,
+  );
   const { text: previewText, ready: textReady } = usePreviewText(
     content,
-    Boolean(content) && wantText && !isPdf,
+    Boolean(content) && wantText,
+  );
+  const emailPreviewDoc =
+    wantText && previewText ? buildEmailPreviewDocument(previewText) : null;
+  const emailPreviewUrl = useEmailPreviewUrl(
+    previewText,
+    Boolean(emailPreviewDoc),
   );
 
   if (!content) {
@@ -149,6 +239,19 @@ export function FilePreview({
   }
 
   if (isPdf) {
+    if (embedFailed) {
+      return (
+        <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-zinc-200 bg-white px-6 py-16 text-center">
+          <FileIcon name={file.name} className="text-3xl" />
+          <p className="text-sm text-zinc-500">
+            {t(
+              "files.detail.preview_unavailable",
+              "Šo faila veidu nevar parādīt pārlūkā.",
+            )}
+          </p>
+        </div>
+      );
+    }
     if (!embedUrl) {
       return (
         <div className="flex min-h-[50vh] items-center justify-center rounded-2xl border border-zinc-200 bg-white">
@@ -160,9 +263,8 @@ export function FilePreview({
     }
     return (
       <iframe
-        src={embedUrl}
+        src={`${embedUrl}#navpanes=0`}
         title={file.name}
-        sandbox=""
         className="min-h-[70vh] w-full rounded-2xl border border-zinc-200 bg-white"
       />
     );
@@ -194,6 +296,25 @@ export function FilePreview({
             {t("files.detail.loading", "Ielādē failu")}
           </p>
         </div>
+      );
+    }
+    if (emailPreviewDoc) {
+      if (!emailPreviewUrl) {
+        return (
+          <div className="flex min-h-[50vh] items-center justify-center rounded-2xl border border-zinc-200 bg-white">
+            <p className="text-sm text-zinc-400">
+              {t("files.detail.loading", "Ielādē failu")}
+            </p>
+          </div>
+        );
+      }
+      return (
+        <iframe
+          src={emailPreviewUrl}
+          title={file.name}
+          sandbox=""
+          className="min-h-[70vh] w-full rounded-2xl border border-zinc-200 bg-white"
+        />
       );
     }
     if (previewText !== null) {

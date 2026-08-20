@@ -59,7 +59,7 @@ Route group `app/(marketing)/` - bez sānjoslas. Galvene `SiteHeader` (sistēmas
 | `/terms` | Lietošanas noteikumi |
 | `/cookies` | Sīkdatņu politika + iestatījumu poga |
 
-Auth: e-pasta Ienākt / Reģistrēties / paroles atjaunošana iet caur Supabase (`signInWithPassword`, `signUp`, `resetPasswordForEmail`) ar IP+e-pasta rate limit. **Turpināt ar Google** / **Turpināt ar Microsoft** iet caur admin **Integrācijas** OAuth (`/auth/google-oauth/callback`, `/auth/microsoft-oauth/callback`), nevis Supabase Google provider - pēc profila no Google/Microsoft tiek izveidots vai atrasts Supabase Auth lietotājs un sesija. Microsoft pieprasa verificētu e-pastu (OIDC / `id_token`, bez `userPrincipalName`). Pogas rādās tikai ja attiecīgā integrācija ir konfigurēta un **Aktīva**. **Atcerēties mani** pēc noklusējuma izslēgts: bez ķeksīša sesija līdz pārlūka aizvēršanai; ar ķeksi 30 dienas (`httpOnly: false`, lai browser Supabase klients lasītu cookie; production HTTPS `Secure`). Ielogotam `proxy` `/`, `/login`, `/signup` un `/forgot-password` novirza uz `/dashboard`; neautentificēts lietotājs no aizsargātiem app ceļiem uz `/login`; landing `app/(marketing)/page.tsx` arī `redirect("/dashboard")`, ja ir sesija. Iziet ved uz `/`. Publiskajā galvenē ielogotam rādās **Atvērt lietotni**. MFA (TOTP) ir opcija `/settings/profile`; `is_admin` pie `/admin` apstiprina sesiju ar modāli (`MfaVerifyModal`), kamēr AAL nav `aal2`.
+Auth: e-pasta Ienākt / Reģistrēties / paroles atjaunošana iet caur Supabase (`signInWithPassword`, `signUp`, `resetPasswordForEmail`) ar IP+e-pasta rate limit. **Turpināt ar Google** / **Turpināt ar Microsoft** iet caur admin **Integrācijas** OAuth (`/auth/google-oauth/callback`, `/auth/microsoft-oauth/callback`), nevis Supabase Google provider - pēc profila no Google/Microsoft tiek izveidots vai atrasts Supabase Auth lietotājs un sesija. Microsoft pieprasa verificētu e-pastu (OIDC / `id_token`, bez `userPrincipalName`). Pogas rādās tikai ja attiecīgā integrācija ir konfigurēta un **Aktīva**. **Atcerēties mani** pēc noklusējuma izslēgts: bez ķeksīša sesija līdz pārlūka aizvēršanai; ar ķeksi 30 dienas (`httpOnly: false`, lai browser Supabase klients lasītu cookie; production HTTPS `Secure`). Ielogotam `proxy` `/`, `/login`, `/signup` un `/forgot-password` novirza uz `/dashboard`; neautentificēts lietotājs no aizsargātiem app ceļiem uz `/login`; landing `app/(marketing)/page.tsx` arī `redirect("/dashboard")`, ja ir sesija. Iziet ved uz `/`. Publiskajā galvenē ielogotam rādās **Atvērt lietotni**. MFA (TOTP) ir opcija `/settings/profile` visiem; ja faktoram ir `verified` un sesija nav `aal2`, lietotne rāda `MfaVerifyModal` pirms app čaulas. `is_admin` pie `/admin` bez MFA tiek novirzīts enroll (`?mfa=required`); ar MFA, bet bez AAL2 - admin modālis.
 
 Legal teksti: `app/lib/legal/documents.ts`. UI: `LegalDocumentView` ar **Saturs** sānjoslu (`sticky` zem galvenes): klikšķis ritina uz sadaļu, josla paliek redzama visā dokumentā.
 
@@ -93,7 +93,7 @@ Ielāde: `LoadingState` (`app/components/loading-state.tsx`, `fas fa-circle-notc
 
 ## Administrācijas panelis
 
-`/admin` — satura joslā ar **kategoriju izvēlni** (`admin-submenu.tsx`): Cilvēki, Katalogs, Sistēma; hover (vai pieskāriens) atver dropdown ar sadaļām. Aktīvā kategorija ir izcelta, aktuālā lapa dropdownā ar ķeksīti. Ikona pie paziņojumiem rādās tikai ielogotam lietotājam ar `public.users.is_admin = true`. `/admin` novirza uz `/admin/users`. Pirms paneļa: TOTP MFA (ja nav ieslēgta — `/settings/profile?mfa=required`; ja sesija nav AAL2 — `MfaVerifyModal` uz vietas). Mutācijas raksta `admin_audit_events`.
+`/admin` — satura joslā ar **kategoriju izvēlni** (`admin-submenu.tsx`): Cilvēki, Katalogs, Sistēma; hover (vai pieskāriens) atver dropdown ar sadaļām. Aktīvā kategorija ir izcelta, aktuālā lapa dropdownā ar ķeksīti. Ikona pie paziņojumiem rādās tikai ielogotam lietotājam ar `public.users.is_admin = true`. `/admin` novirza uz `/admin/users`. Pirms paneļa: TOTP MFA (ja nav ieslēgta — `/settings/profile?mfa=required`; ja sesija nav AAL2 — `MfaVerifyModal` uz vietas). Ielogošanās MFA (visiem, kam TOTP ir ieslēgts) jau ir `aal2`, tāpēc admin parasti vairs neprasa otru kodu. Mutācijas raksta `admin_audit_events`.
 
 | Ceļš | Saturs |
 |---|---|
@@ -188,7 +188,7 @@ Komandai kolonnas `payment_plan_id` / `payment_plan_until` / `payment_plan_paid`
 | Apskatīt failu | `FilePreview` ligzdotā `AppModal` |
 | Vēsture | Labā kolonna, `taskActivities`; katrs ieraksts caur `formatTaskActivityText` (`app/lib/format-task-activity-text.ts`). Logošana centralizēta: `updateTask` → `buildTaskUpdateActivityEvents` (`app/lib/build-task-activity-events.ts`); atsevišķi `moveSubtask`, failu dzēšana/pārsaukšana, `reorderTasks`. Fiksē statusu, datumu (no → uz), piesaistīto pievienošanu/noņemšanu, nosaukumu, aprakstu, kontrolsaraksta punktus, pārvietošanu pie cita uzdevuma, paslēpšanu/atjaunošanu, failus un kārtību. Statusu nosaukumi no kataloga (`labelFor`); laiks `RelativeTime`. **Nav** komentāra ievades (`addTaskComment` UI nav); vecie `kind=comment` ieraksti vēsturē paliek |
 
-Failu metadati: `TaskFile` / `ListFile` (`size`, `hasContent`, `googleDriveFileId`, …). Saturs Postgres `content` (data URL, līdz `MAX_STORED_FILE_BYTES`, 1.5 MB) vai tikai Drive (`google_drive_file_id`, `store_on_server = false`). Atļautie paplašinājumi: `file_type_extensions` (sākumā pdf, dwg, Office + attēli + txt/html + zip/rar; `071`/`072`/`075`); `app/lib/file-types.ts` + `FileTypesProvider`. Ikona/krāsa: `FileIcon`. Progress: `FileUploadOverlay`. Klikšķis: `FileViewerProvider` — bildes/PDF/txt modālī (`isBrowserPreviewableFile`), pārējie lejupielādējas; kamēr notiek ielāde/lejupielāde, rādās overlay ar spinneri un faila nosaukumu.
+Failu metadati: `TaskFile` / `ListFile` (`size`, `hasContent`, `googleDriveFileId`, …). Saturs Postgres `content` (data URL, līdz `MAX_STORED_FILE_BYTES`, 1.5 MB) vai tikai Drive (`google_drive_file_id`, `store_on_server = false`). Atļautie paplašinājumi: `file_type_extensions` (sākumā pdf, dwg, Office + attēli + txt/html + zip/rar; `071`/`072`/`075`); `app/lib/file-types.ts` + `FileTypesProvider`. Ikona/krāsa: `FileIcon`. Progress: `FileUploadOverlay`. Klikšķis: `FileViewerProvider` — bildes/PDF/txt modālī (`isBrowserPreviewableFile`), pārējie lejupielādējas; kamēr notiek ielāde/lejupielāde, rādās overlay ar spinneri un faila nosaukumu. PDF: `blob:` iframe bez `sandbox` un `#navpanes=0`. E-pasta `.txt`/`.html`: `buildEmailPreviewDocument`. Apakšuzdevuma kartītēs `formatFileSize`.
 
 ## Saraksti un uzdevumi
 
@@ -289,7 +289,7 @@ app/
     invite/[token]/               # Komandas uzaicinājuma landing (accept/reject)
     privacy/ terms/ cookies/
   (app)/
-    layout.tsx                    # AppProviders + sānjosla; enabled frontend module keys
+    layout.tsx                    # AppProviders + sānjosla; MFA vārteja (AAL2); enabled frontend module keys
     dashboard/page.tsx            # Sākums: Mani uzdevumi + saraksti
     lists/                        # Kopsavilkums, 3 logi, uzdevums, fails
     team/ settings/ projects/ templates/
@@ -308,8 +308,8 @@ app/
     remember-me-checkbox.tsx      # Atcerēties mani (noklusējums izslēgts; 30 dienas ar ķeksi)
     forgot-password-form.tsx      # Aizmirsi paroli
     update-password-form.tsx      # Jauna parole pēc e-pasta saites
-    mfa-settings-card.tsx         # TOTP enroll/verify/unenroll profilā
-    mfa-verify-modal.tsx          # Admin sesijas TOTP apstiprinājums
+    mfa-settings-card.tsx         # TOTP enroll/verify/unenroll profilā (visiem)
+    mfa-verify-modal.tsx          # TOTP pie ielogošanās un admin sesijas
     legal-document-view.tsx       # Legal lapas + fiksēta satura TOC
     cookie-consent-provider.tsx   # Piekrišanas stāvoklis
     cookie-consent-dialog.tsx     # Popup un iestatījumi
@@ -436,13 +436,13 @@ app/
     i18n/                          # language, server overlay + table klientam
     site-admin/                   # Admin CRUD repository, tipi
     supabase/                     # env, browser/server/admin klienti, session refresh
-    auth/                         # actions (login/signup/reset), AuthSessionProvider, getCurrentUser, OAuth, remember-session
+    auth/                         # actions (login/signup/reset), MFA gate, AuthSessionProvider, getCurrentUser, OAuth, remember-session
     integrations/                 # Google/Microsoft OAuth (site_integrations)
     users/ensure-profile.ts       # public.users rinda pēc OAuth
     users/display-name.ts         # vārda sadalījums/apvienošana (first + last → name)
     users/display-preferences.ts  # efektīvās UI datumu preferences
     users/actions.ts              # personīgā info + display preferences server actions
-    users/require-admin.ts        # /admin + MFA vārteja + audit
+    users/require-admin.ts        # /admin + MFA enroll vārteja + audit
     users/admin-audit.ts          # admin_audit_events
     users/use-is-admin.tsx        # is_admin RPC + profils klientā
     security/                     # rate-limit, secret-box, file-bytes, log-error, hash-token
@@ -547,7 +547,7 @@ Kad `module_onedrive` un `module_file_upload` ir ieslēgti, komandas `...` rāda
 
 ## Chrome extension (Gmail)
 
-Mapē `extensions/gmail` — unpacked Chrome MV3. Gmailā peldoša logo poga → modālis → saraksts / mape / uzdevums / apakšuzdevums. E-pasts un pielikumi caur **Gmail API** (`gmail.readonly`, OAuth Client ID opcijās); limīts 25 MB (`GOOGLE_DRIVE_UPLOAD_MAX_BYTES`). Lielākiem failiem bez DB `content` vajag komandas Google Drive. API: `GET /api/extension/session`, `GET /api/extension/browse`, `GET /api/extension/subtasks`, `POST /api/extension/attach-email`. Sk. `extensions/gmail/README.md`. Failu tipi `txt` / `html`: `072`; `zip` / `rar`: `075`.
+Mapē `extensions/gmail` — unpacked Chrome MV3. Gmailā inline logo poga → modālis → saraksts / mape / uzdevums → apakšuzdevums. E-pasts un atzīmētie pielikumi caur **Gmail API** (`gmail.readonly`, OAuth Client ID opcijās); limīts 25 MB (`GOOGLE_DRIVE_UPLOAD_MAX_BYTES`). Pielikumi uz serveri kā JSON base64 (`POST /api/extension/attach-email`); `proxy` neapstrādā `/api/extension/`. UI valoda no sesijas (`languageCode` + `strings`). Overlay ar progresu. Lielākiem failiem bez DB `content` vajag komandas Google Drive. API: `GET /api/extension/session`, `GET /api/extension/browse`, `GET /api/extension/subtasks`, `POST /api/extension/attach-email`. Sk. `extensions/gmail/README.md`. Failu tipi `txt` / `html`: `072`; `zip` / `rar`: `075`.
 
 ## Dati
 

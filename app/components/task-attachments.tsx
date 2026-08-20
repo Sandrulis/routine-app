@@ -12,11 +12,13 @@ import { OverflowTooltip, Tooltip } from "@/app/components/tooltip";
 import { useFeedbackToast } from "@/app/components/feedback-toast-provider";
 import { useTranslations } from "@/app/components/translations-provider";
 import { useFileTypes } from "@/app/lib/file-types-context";
+import { formatFileSize } from "@/app/lib/list-files";
 
 export type AttachmentItem = {
   id: string;
   name: string;
   mimeType: string;
+  size?: number;
   previewUrl?: string | null;
 };
 
@@ -220,12 +222,17 @@ export function TaskAttachments({
                           />
                         </span>
                       </span>
-                      <span className="mt-2 flex min-w-0 pr-6">
-                        <OverflowTooltip label={file.name} className="min-w-0 flex-1">
+                      <span className="mt-2 block min-w-0 pr-6">
+                        <OverflowTooltip label={file.name} className="min-w-0">
                           <span className="block min-w-0 truncate text-[12px] text-zinc-600">
                             {file.name}
                           </span>
                         </OverflowTooltip>
+                        {typeof file.size === "number" && file.size >= 0 ? (
+                          <span className="mt-0.5 block text-[11px] text-zinc-400">
+                            {formatFileSize(file.size)}
+                          </span>
+                        ) : null}
                       </span>
                     </button>
                     <Tooltip label={t("actions.delete", "Dzēst")} align="end">

@@ -8,11 +8,23 @@ const EMPTY: TaskActivity[] = [];
 const cache = new Map<string, TaskActivity[]>();
 const listeners = new Map<string, Set<() => void>>();
 const inflight = new Map<string, Promise<void>>();
+const pendingEmits = new Set<string>();
+let emitScheduled = false;
 
 function emit(taskId: string) {
-  const set = listeners.get(taskId);
-  if (!set) return;
-  for (const listener of set) listener();
+  pendingEmits.add(taskId);
+  if (emitScheduled) return;
+  emitScheduled = true;
+  queueMicrotask(() => {
+    emitScheduled = false;
+    const ids = [...pendingEmits];
+    pendingEmits.clear();
+    for (const id of ids) {
+      const set = listeners.get(id);
+      if (!set) continue;
+      for (const listener of set) listener();
+    }
+  });
 }
 
 export function subscribeTaskActivities(taskId: string, listener: () => void) {

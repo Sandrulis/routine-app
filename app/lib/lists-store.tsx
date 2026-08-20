@@ -821,6 +821,7 @@ export function ListsProvider({ children }: { children: ReactNode }) {
         >
       >,
     ) => {
+      let activitiesToPersist: TaskActivity[] = [];
       setTasks((current) => {
         const existing = current.find((task) => task.id === taskId);
         if (!existing) {
@@ -867,9 +868,7 @@ export function ListsProvider({ children }: { children: ReactNode }) {
           patch,
         );
         if (nextEvents.length > 0) {
-          for (const event of nextEvents) {
-            persistActivity(event);
-          }
+          activitiesToPersist = nextEvents;
 
           const notify = assignmentNotifyRef.current;
           const taskNotifications = buildTaskUpdateNotifications({
@@ -1024,6 +1023,9 @@ export function ListsProvider({ children }: { children: ReactNode }) {
             : task,
         );
       });
+      for (const event of activitiesToPersist) {
+        persistActivity(event);
+      }
     },
     [persistActivity, waitForTaskRow],
   );
@@ -1167,18 +1169,23 @@ export function ListsProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const removeTaskFile = useCallback((fileId: string) => {
+    let removed: TaskFile | undefined;
     setFiles((current) => {
       const file = current.find((item) => item.id === fileId);
-      if (file) {
-        const activity = buildFileRemovedActivity(
-          file.taskId,
-          assignmentNotifyRef.current.actorId,
-          file.name,
-        );
-        persistActivity(activity, "Failed to save file removal activity");
-      }
+      if (!file) return current;
+      removed = file;
       return current.filter((item) => item.id !== fileId);
     });
+    if (removed) {
+      persistActivity(
+        buildFileRemovedActivity(
+          removed.taskId,
+          assignmentNotifyRef.current.actorId,
+          removed.name,
+        ),
+        "Failed to save file removal activity",
+      );
+    }
     cacheTaskFileContent(fileId, null);
     void deleteTaskFileRow(fileId).catch((error) => {
       console.error("Failed to delete task file", error);
@@ -1189,19 +1196,16 @@ export function ListsProvider({ children }: { children: ReactNode }) {
     let trimmed = name.trim();
     if (!trimmed) return;
     let hasDriveFile = false;
+    let renamedFrom: string | null = null;
+    let renamedTaskId: string | null = null;
     setFiles((current) => {
       const file = current.find((item) => item.id === fileId);
       if (!file) return current;
       trimmed = renameKeepingExtension(file.name, trimmed);
       if (file.googleDriveFileId) hasDriveFile = true;
       if (file.name !== trimmed) {
-        const activity = buildFileRenamedActivity(
-          file.taskId,
-          assignmentNotifyRef.current.actorId,
-          file.name,
-          trimmed,
-        );
-        persistActivity(activity, "Failed to save file rename activity");
+        renamedFrom = file.name;
+        renamedTaskId = file.taskId;
       }
       return current.map((item) =>
         item.id === fileId
@@ -1209,6 +1213,17 @@ export function ListsProvider({ children }: { children: ReactNode }) {
           : item,
       );
     });
+    if (renamedFrom && renamedTaskId) {
+      persistActivity(
+        buildFileRenamedActivity(
+          renamedTaskId,
+          assignmentNotifyRef.current.actorId,
+          renamedFrom,
+          trimmed,
+        ),
+        "Failed to save file rename activity",
+      );
+    }
     void updateTaskFileName(fileId, trimmed, mimeFromName(trimmed)).catch((error) => {
       console.error("Failed to rename task file", error);
     });
@@ -1232,6 +1247,7 @@ export function ListsProvider({ children }: { children: ReactNode }) {
   );
 
   const moveSubtask = useCallback((taskId: string, parentId: string) => {
+    let movedActivity: TaskActivity | null = null;
     setTasks((current) => {
       const existing = current.find((task) => task.id === taskId);
       if (!existing || existing.kind !== "subtask" || existing.parentId === parentId) {
@@ -1248,7 +1264,7 @@ export function ListsProvider({ children }: { children: ReactNode }) {
         existing.parentId,
         parentId,
       );
-      persistActivity(activity, "Failed to save move activity");
+      movedActivity = activity;
       const notify = assignmentNotifyRef.current;
       const moveNotifications = notificationsFromTaskActivities({
         actorId: notify.actorId,
@@ -1274,6 +1290,9 @@ export function ListsProvider({ children }: { children: ReactNode }) {
         task.id === taskId ? { ...task, parentId, sortOrder } : task,
       );
     });
+    if (movedActivity) {
+      persistActivity(movedActivity, "Failed to save move activity");
+    }
   }, [persistActivity]);
 
   const moveWorkItem = useCallback(
@@ -1353,6 +1372,7 @@ export function ListsProvider({ children }: { children: ReactNode }) {
   );
 
   const reorderTasks = useCallback((orderedIds: string[]) => {
+    let activitiesToPersist: TaskActivity[] = [];
     setTasks((current) => {
       const orderBefore = new Map(
         current
@@ -1378,13 +1398,12 @@ export function ListsProvider({ children }: { children: ReactNode }) {
           );
         }
       }
-      if (nextEvents.length > 0) {
-        for (const event of nextEvents) {
-          persistActivity(event, "Failed to save reorder activity");
-        }
-      }
+      activitiesToPersist = nextEvents;
       return next;
     });
+    for (const event of activitiesToPersist) {
+      persistActivity(event, "Failed to save reorder activity");
+    }
     void updateTaskSortOrders(orderedIds).catch((error) => {
       console.error("Failed to reorder tasks", error);
     });

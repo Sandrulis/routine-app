@@ -5,9 +5,11 @@ import { useSearchParams } from "next/navigation";
 import { useFeedbackToast } from "@/app/components/feedback-toast-provider";
 import { useTranslations } from "@/app/components/translations-provider";
 import { createClient } from "@/app/lib/supabase/client";
+import { useIsAdmin } from "@/app/lib/users/use-is-admin";
 
 export function MfaSettingsCard() {
   const { t } = useTranslations();
+  const { isAdmin } = useIsAdmin();
   const searchParams = useSearchParams();
   const { showFeedback } = useFeedbackToast();
   const [factorId, setFactorId] = useState<string | null>(null);
@@ -114,9 +116,17 @@ export function MfaSettingsCard() {
       <p className="text-sm text-zinc-500">
         {t(
           "auth.mfa.subtitle",
-          "Administrācijas panelim nepieciešams TOTP kods (Authenticator).",
+          "Papildu solis pie ielogošanās ar Authenticator lietotni (TOTP).",
         )}
       </p>
+      {isAdmin ? (
+        <p className="text-sm text-zinc-500">
+          {t(
+            "auth.mfa.admin_note",
+            "Administrācijas panelim MFA ir obligāta.",
+          )}
+        </p>
+      ) : null}
       {reason === "required" ? (
         <p className="text-sm text-amber-700">
           {t(

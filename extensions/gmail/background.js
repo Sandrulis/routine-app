@@ -105,6 +105,30 @@ function base64UrlToBytes(value) {
   return bytes;
 }
 
+function bytesToBase64(bytes) {
+  let binary = "";
+  const chunk = 0x8000;
+  for (let i = 0; i < bytes.length; i += chunk) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + chunk));
+  }
+  return btoa(binary);
+}
+
+function postAttachProgress(tabId, payload) {
+  if (tabId == null) return;
+  try {
+    const sent = chrome.tabs.sendMessage(tabId, {
+      type: "routine.attachProgress",
+      ...payload,
+    });
+    if (sent && typeof sent.catch === "function") {
+      sent.catch(() => {});
+    }
+  } catch {
+    // Tab closed or content script not ready.
+  }
+}
+
 async function getGmailClientId() {
   const stored = await chrome.storage.sync.get(["gmailClientId"]);
   return String(stored.gmailClientId || "").trim();
@@ -177,16 +201,22 @@ function walkParts(part, out) {
   if (Array.isArray(part.parts)) {
     for (const child of part.parts) walkParts(child, out);
   }
-  const filename = part.filename?.trim();
   const attachmentId = part.body?.attachmentId;
-  if (filename && attachmentId) {
-    out.push({
-      filename,
-      mimeType: part.mimeType || "application/octet-stream",
-      attachmentId,
-      size: Number(part.body.size) || 0,
-    });
+  if (!attachmentId) return;
+  const mime = String(part.mimeType || "").toLowerCase();
+  if (mime.startsWith("multipart/")) return;
+  const filename = part.filename?.trim();
+  // Large inline bodies get attachmentId without a filename — skip those.
+  if (!filename) {
+    if (mime.startsWith("text/")) return;
+    if (mime !== "application/pdf") return;
   }
+  out.push({
+    filename: filename || "attachment.pdf",
+    mimeType: part.mimeType || "application/octet-stream",
+    attachmentId,
+    size: Number(part.body.size) || 0,
+  });
 }
 
 function headerValue(headers, name) {
@@ -223,26 +253,60 @@ function extractBodyText(payload) {
   walk(payload);
   if (texts.length) return texts.join("\n\n");
   // fallback: html stripped lightly
-  function walkHtml(part) {
+  const html = extractBodyHtml(payload);
+  if (!html) return "";
+  return html
+    .replace(/<style[\s\S]*?<\/style>/gi, " ")
+    .replace(/<script[\s\S]*?<\/script>/gi, " ")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function textLooksLikeHtml(value) {
+  const t = String(value || "").trim().toLowerCase();
+  if (!t) return false;
+  if (t.includes("<!doctype html") || t.includes("<html")) return true;
+  if (t.includes("<head") && t.includes("<body")) return true;
+  return t.includes("<table") && (t.includes("<style") || t.includes("cellpadding"));
+}
+
+function extractBodyHtml(payload) {
+  if (!payload) return "";
+  let plainHtmlFallback = "";
+  function walk(part) {
     if (!part) return "";
     if (Array.isArray(part.parts)) {
+      // Prefer explicit text/html parts; walk depth-first.
       for (const child of part.parts) {
-        const html = walkHtml(child);
+        const html = walk(child);
         if (html) return html;
       }
       return "";
     }
-    if (String(part.mimeType || "").toLowerCase() === "text/html") {
-      return decodeBodyData(part)
-        .replace(/<style[\s\S]*?<\/style>/gi, " ")
-        .replace(/<script[\s\S]*?<\/script>/gi, " ")
-        .replace(/<[^>]+>/g, " ")
-        .replace(/\s+/g, " ")
-        .trim();
+    const mime = String(part.mimeType || "").toLowerCase();
+    const decoded = decodeBodyData(part).trim();
+    if (mime === "text/html" && decoded) return decoded;
+    // Some senders put full HTML in text/plain
+    if (mime === "text/plain" && textLooksLikeHtml(decoded) && !plainHtmlFallback) {
+      plainHtmlFallback = decoded;
     }
     return "";
   }
-  return walkHtml(payload);
+  return walk(payload) || plainHtmlFallback;
+}
+
+function guessMimeFromName(name, fallback) {
+  const lower = String(name || "").toLowerCase();
+  if (lower.endsWith(".pdf")) return "application/pdf";
+  if (lower.endsWith(".png")) return "image/png";
+  if (lower.endsWith(".jpg") || lower.endsWith(".jpeg")) return "image/jpeg";
+  if (lower.endsWith(".gif")) return "image/gif";
+  if (lower.endsWith(".webp")) return "image/webp";
+  if (lower.endsWith(".txt")) return "text/plain";
+  if (lower.endsWith(".html") || lower.endsWith(".htm")) return "text/html";
+  if (lower.endsWith(".zip")) return "application/zip";
+  return fallback || "application/octet-stream";
 }
 
 async function gmailGet(path, token) {
@@ -311,10 +375,70 @@ async function resolveGmailMessage(messageId, threadId, token) {
   throw lastError || new Error("errors.extension_gmail_not_found");
 }
 
-async function fetchGmailMessageBundle(messageId, threadId, interactive) {
+async function listGmailAttachments(messageId, threadId, interactive) {
   const token = await getGmailAccessToken(interactive);
   if (!token) throw new Error("errors.extension_gmail_auth");
 
+  const message = await resolveGmailMessage(messageId, threadId, token);
+  const parts = [];
+  walkParts(message.payload, parts);
+  return {
+    gmailMessageId: message.id || messageId,
+    attachments: parts.map((part) => ({
+      attachmentId: String(part.attachmentId),
+      name: part.filename.replace(/[<>:"/\\|?*]/g, "_").slice(0, 180) || "attachment.bin",
+      mimeType: part.mimeType || "application/octet-stream",
+      size: part.size,
+      tooLarge: part.size > EXTENSION_UPLOAD_MAX_BYTES,
+    })),
+  };
+}
+
+function sanitizeAttachmentName(name, mimeType) {
+  let next = String(name || "")
+    .replace(/[<>:"/\\|?*]/g, "_")
+    .slice(0, 180) || "attachment.bin";
+  const mime = guessMimeFromName(next, mimeType);
+  if (mime === "application/pdf" && !next.toLowerCase().endsWith(".pdf")) {
+    next = `${next}.pdf`;
+  }
+  return { name: next, mimeType: mime };
+}
+
+async function downloadGmailAttachment(messageId, attachmentId, token, inlineData) {
+  try {
+    const att = await gmailGet(
+      `users/me/messages/${encodeURIComponent(messageId)}/attachments/${encodeURIComponent(attachmentId)}`,
+      token,
+    );
+    if (att?.data) {
+      const bytes = base64UrlToBytes(att.data);
+      if (bytes.length > 0 && bytes.length <= EXTENSION_UPLOAD_MAX_BYTES) return bytes;
+    }
+  } catch {
+    // Some small parts only have inline body.data.
+  }
+  const inline = inlineData?.get(attachmentId);
+  if (!inline) return null;
+  const bytes = base64UrlToBytes(inline);
+  if (bytes.length <= 0 || bytes.length > EXTENSION_UPLOAD_MAX_BYTES) return null;
+  return bytes;
+}
+
+async function fetchGmailMessageBundle(
+  messageId,
+  threadId,
+  interactive,
+  selectedAttachments = null,
+  onProgress = null,
+) {
+  const token = await getGmailAccessToken(interactive);
+  if (!token) throw new Error("errors.extension_gmail_auth");
+
+  onProgress?.({
+    key: "extension.gmail.progress_email",
+    percent: 8,
+  });
   const message = await resolveGmailMessage(messageId, threadId, token);
   const resolvedId = message.id || messageId;
   const headers = message.payload?.headers || [];
@@ -324,32 +448,87 @@ async function fetchGmailMessageBundle(messageId, threadId, interactive) {
     to: headerValue(headers, "To"),
     date: headerValue(headers, "Date"),
     body: extractBodyText(message.payload),
+    bodyHtml: extractBodyHtml(message.payload),
     permalink: `https://mail.google.com/mail/u/0/#all/${resolvedId}`,
   };
+  onProgress?.({
+    key: "extension.gmail.progress_email",
+    percent: 16,
+  });
 
-  const parts = [];
-  walkParts(message.payload, parts);
-  const attachments = [];
-  for (const part of parts) {
-    if (part.size > EXTENSION_UPLOAD_MAX_BYTES) continue;
-    const att = await gmailGet(
-      `users/me/messages/${encodeURIComponent(resolvedId)}/attachments/${encodeURIComponent(part.attachmentId)}`,
-      token,
-    );
-    if (!att?.data) continue;
-    const bytes = base64UrlToBytes(att.data);
-    if (bytes.length <= 0 || bytes.length > EXTENSION_UPLOAD_MAX_BYTES) continue;
-    attachments.push({
-      name: part.filename.replace(/[<>:"/\\|?*]/g, "_").slice(0, 180) || "attachment.bin",
-      mimeType: part.mimeType || "application/octet-stream",
-      bytes,
-    });
+  const inlineData = new Map();
+  function collectInline(part) {
+    if (!part) return;
+    if (Array.isArray(part.parts)) {
+      for (const child of part.parts) collectInline(child);
+    }
+    if (part.body?.attachmentId && part.body?.data) {
+      inlineData.set(String(part.body.attachmentId), part.body.data);
+    }
+  }
+  collectInline(message.payload);
+
+  let toDownload = [];
+  if (selectedAttachments == null) {
+    const parts = [];
+    walkParts(message.payload, parts);
+    toDownload = parts
+      .filter((part) => !(part.size > 0 && part.size > EXTENSION_UPLOAD_MAX_BYTES))
+      .map((part) => ({
+        attachmentId: String(part.attachmentId),
+        name: part.filename,
+        mimeType: part.mimeType,
+      }));
+  } else if (Array.isArray(selectedAttachments)) {
+    toDownload = selectedAttachments
+      .map((item) => ({
+        attachmentId: String(item?.attachmentId || ""),
+        name: String(item?.name || "attachment"),
+        mimeType: String(item?.mimeType || ""),
+      }))
+      .filter((item) => item.attachmentId);
   }
 
-  return { email, attachments };
+  const attachments = [];
+  const skipped = [];
+  for (let index = 0; index < toDownload.length; index += 1) {
+    const item = toDownload[index];
+    const meta = sanitizeAttachmentName(item.name, item.mimeType);
+    onProgress?.({
+      key: "extension.gmail.progress_download",
+      params: {
+        name: meta.name,
+        current: index + 1,
+        total: toDownload.length,
+      },
+      percent: 16 + Math.round(((index + 1) / Math.max(toDownload.length, 1)) * 54),
+    });
+    try {
+      const bytes = await downloadGmailAttachment(
+        resolvedId,
+        item.attachmentId,
+        token,
+        inlineData,
+      );
+      if (!bytes) {
+        skipped.push({ name: meta.name, reason: "errors.extension_gmail_fetch_failed" });
+        continue;
+      }
+      attachments.push({
+        attachmentId: item.attachmentId,
+        name: meta.name,
+        mimeType: meta.mimeType,
+        bytes,
+      });
+    } catch {
+      skipped.push({ name: meta.name, reason: "errors.extension_gmail_fetch_failed" });
+    }
+  }
+
+  return { email, attachments, skipped };
 }
 
-chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   (async () => {
     try {
       if (message?.type === "routine.getSession") {
@@ -377,25 +556,78 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
         sendResponse({ ok: true });
         return;
       }
+      if (message?.type === "routine.listAttachments") {
+        const gmailMessageId = String(message.gmailMessageId || "").trim();
+        const gmailThreadId = String(message.gmailThreadId || "").trim();
+        if (!gmailMessageId && !gmailThreadId) {
+          sendResponse({
+            ok: false,
+            error: "errors.extension_gmail_message_id",
+          });
+          return;
+        }
+        try {
+          const listed = await listGmailAttachments(
+            gmailMessageId,
+            gmailThreadId,
+            true,
+          );
+          sendResponse({
+            ok: true,
+            data: {
+              ok: true,
+              gmailMessageId: listed.gmailMessageId,
+              attachments: listed.attachments,
+            },
+          });
+        } catch (error) {
+          sendResponse({
+            ok: false,
+            error:
+              error instanceof Error
+                ? error.message
+                : "errors.extension_gmail_fetch_failed",
+          });
+        }
+        return;
+      }
       if (message?.type === "routine.attachEmail") {
         const gmailMessageId = String(message.gmailMessageId || "").trim();
         const gmailThreadId = String(message.gmailThreadId || "").trim();
+        const selectedAttachments =
+          message.selectedAttachments === null ||
+          message.selectedAttachments === undefined
+            ? null
+            : Array.isArray(message.selectedAttachments)
+              ? message.selectedAttachments
+              : Array.isArray(message.selectedAttachmentIds)
+                ? message.selectedAttachmentIds.map((id) => ({
+                    attachmentId: String(id),
+                    name: "attachment",
+                    mimeType: "",
+                  }))
+                : null;
         let email = {
           subject: String(message.email?.subject || ""),
           from: String(message.email?.from || ""),
           to: String(message.email?.to || ""),
           date: String(message.email?.date || ""),
           body: String(message.email?.body || ""),
+          bodyHtml: String(message.email?.bodyHtml || ""),
           permalink: String(message.email?.permalink || ""),
         };
         let attachmentFiles = [];
+        let skippedDownloads = [];
 
+        const tabId = sender.tab?.id;
         if (gmailMessageId || gmailThreadId) {
           try {
             const bundle = await fetchGmailMessageBundle(
               gmailMessageId,
               gmailThreadId,
               true,
+              selectedAttachments,
+              (progress) => postAttachProgress(tabId, progress),
             );
             email = {
               subject: bundle.email.subject || email.subject,
@@ -403,9 +635,11 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
               to: bundle.email.to || email.to,
               date: bundle.email.date || email.date,
               body: bundle.email.body || email.body,
+              bodyHtml: bundle.email.bodyHtml || email.bodyHtml,
               permalink: bundle.email.permalink || email.permalink,
             };
             attachmentFiles = bundle.attachments;
+            skippedDownloads = Array.isArray(bundle.skipped) ? bundle.skipped : [];
           } catch (error) {
             sendResponse({
               ok: false,
@@ -424,26 +658,36 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
           return;
         }
 
-        const form = new FormData();
-        form.set("taskId", String(message.taskId || ""));
-        form.set("subject", email.subject);
-        form.set("from", email.from);
-        form.set("to", email.to);
-        form.set("date", email.date);
-        form.set("body", email.body);
-        form.set("permalink", email.permalink);
-
-        for (const attachment of attachmentFiles) {
-          const blob = new Blob([attachment.bytes], {
-            type: attachment.mimeType || "application/octet-stream",
-          });
-          form.append("attachment", blob, attachment.name || "attachment.bin");
-        }
+        postAttachProgress(tabId, {
+          key: "extension.gmail.progress_upload",
+          params: { count: 1 + attachmentFiles.length },
+          percent: 78,
+        });
 
         const result = await apiFetch("/api/extension/attach-email", {
           method: "POST",
-          body: form,
+          body: JSON.stringify({
+            taskId: String(message.taskId || ""),
+            subject: email.subject,
+            from: email.from,
+            to: email.to,
+            date: email.date,
+            body: email.body,
+            bodyHtml: email.bodyHtml || "",
+            permalink: email.permalink,
+            attachments: attachmentFiles.map((attachment) => ({
+              name: attachment.name || "attachment.bin",
+              mimeType: attachment.mimeType || "application/octet-stream",
+              data: bytesToBase64(attachment.bytes),
+            })),
+          }),
         });
+        if (result?.data && Array.isArray(skippedDownloads) && skippedDownloads.length) {
+          result.data.skipped = [
+            ...(Array.isArray(result.data.skipped) ? result.data.skipped : []),
+            ...skippedDownloads,
+          ];
+        }
         sendResponse(result);
         return;
       }

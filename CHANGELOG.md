@@ -6,12 +6,15 @@
 
 ## v0.2.0
 
+- Gmail paplašinājums: atzīmētie pielikumi kā JSON (ne tukšs FormData), progresa josla, i18n lv/en/ru, e-pasts kā `.txt` ar HTML priekšskatījumu
+- PDF priekšskatījums: blob iframe bez sandbox un bez sānjoslas; kļūda, nevis mūžīgs loading
+- Apakšuzdevuma pielikumu kartītēs un Faili logā rāda faila izmēru
 - Apakšuzdevuma pielikumu kartīte: apgrieztam nosaukumam tooltip ar pilnu vārdu un paplašinājumu; X augšējā labajā stūrī dzēš caur apstiprinājumu
 - `.txt` priekšskatījums modālī (kā bildes un PDF), arī no Drive `blob:` satura
 - Atļautie failu tipi: arī `zip` un `rar` (`075`)
 - Gmail Chrome extension: failu saglabāšana kā in-app (`has_content` + Drive); backfill `076`; izvēle saraksts → mape → uzdevums → apakšuzdevums (`GET /api/extension/browse`)
 - Drošība: īsta e-pasta pieteikšanās/reģistrācija/paroles atjaunošana, rate limit, šifrēti integrāciju tokeni (`enc:v1:`), Drive/OneDrive saraksta pieeja, kalendāra ICS bez aprakstiem un ar token hash (`073`/`074`)
-- MFA: parastajam lietotājam opcija profilā; adminam TOTP pie `/admin` kā modālis (bez novirzes uz profilu katru sesiju)
+- MFA: profilā pēc izvēles visiem; ja ieslēgta, pie ielogošanās TOTP modālis; adminam obligāta `/admin` (bez novirzes uz profilu katru sesiju)
 - Auth: **Atcerēties mani** pēc noklusējuma izslēgts; Microsoft login tikai ar verificētu e-pastu; uzaicinājuma `token` nav SELECT authenticated
 - Gmail Chrome extension: Gmail API pielikumiem (OAuth), failu limīts līdz 25 MB ar Drive lieliem failiem; `txt`/`html` (`072`)
 - Gmail Chrome extension MVP (`extensions/gmail`): logo Gmailā, e-pasta pievienošana apakšuzdevumam; API `/api/extension/*`

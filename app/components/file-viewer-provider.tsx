@@ -112,49 +112,53 @@ function FileBusyOverlay({ busy }: { busy: BusyState | null }) {
 async function resolveContent(
   input: FileViewerOpenInput,
 ): Promise<{ content: string | null; revokeOnClose: boolean }> {
-  if (input.contentUrl) {
-    return {
-      content: input.contentUrl,
-      revokeOnClose: Boolean(input.revokeContentOnClose),
-    };
-  }
+  try {
+    if (input.contentUrl) {
+      return {
+        content: input.contentUrl,
+        revokeOnClose: Boolean(input.revokeContentOnClose),
+      };
+    }
 
-  if (input.kind === "list") {
-    if (input.hasContent) {
-      const local = await ensureListFileContent(input.id);
+    if (input.kind === "list") {
+      if (input.hasContent) {
+        const local = await ensureListFileContent(input.id);
+        if (local) return { content: local, revokeOnClose: false };
+      }
+      if (input.googleDriveFileId) {
+        const url = await fetchGoogleDriveContentAsObjectUrl("list", input.id);
+        return { content: url, revokeOnClose: Boolean(url) };
+      }
+      return { content: null, revokeOnClose: false };
+    }
+
+    if (input.kind === "task") {
+      const local = await ensureTaskFileContent(input.id);
       if (local) return { content: local, revokeOnClose: false };
+      if (input.hasContent) {
+        const preview = taskFilePreviewUrl({
+          id: input.id,
+          taskId: "",
+          name: input.name,
+          mimeType: input.mimeType,
+          size: input.size,
+          hasContent: true,
+          googleDriveFileId: input.googleDriveFileId ?? null,
+          createdAt: "",
+        });
+        if (preview) return { content: preview, revokeOnClose: false };
+      }
+      if (input.googleDriveFileId) {
+        const url = await fetchGoogleDriveContentAsObjectUrl("task", input.id);
+        return { content: url, revokeOnClose: Boolean(url) };
+      }
+      return { content: null, revokeOnClose: false };
     }
-    if (input.googleDriveFileId) {
-      const url = await fetchGoogleDriveContentAsObjectUrl("list", input.id);
-      return { content: url, revokeOnClose: Boolean(url) };
-    }
+
+    return { content: null, revokeOnClose: false };
+  } catch {
     return { content: null, revokeOnClose: false };
   }
-
-  if (input.kind === "task") {
-    const local = await ensureTaskFileContent(input.id);
-    if (local) return { content: local, revokeOnClose: false };
-    if (input.hasContent) {
-      const preview = taskFilePreviewUrl({
-        id: input.id,
-        taskId: "",
-        name: input.name,
-        mimeType: input.mimeType,
-        size: input.size,
-        hasContent: true,
-        googleDriveFileId: input.googleDriveFileId ?? null,
-        createdAt: "",
-      });
-      if (preview) return { content: preview, revokeOnClose: false };
-    }
-    if (input.googleDriveFileId) {
-      const url = await fetchGoogleDriveContentAsObjectUrl("task", input.id);
-      return { content: url, revokeOnClose: Boolean(url) };
-    }
-    return { content: null, revokeOnClose: false };
-  }
-
-  return { content: null, revokeOnClose: false };
 }
 
 async function downloadResolved(input: FileViewerOpenInput): Promise<boolean> {
@@ -220,6 +224,14 @@ export function FileViewerProvider({ children }: { children: ReactNode }) {
               content: resolved.content,
               loading: false,
               revokeOnClose: resolved.revokeOnClose,
+            });
+          })
+          .catch(() => {
+            setPreview({
+              file: input,
+              content: null,
+              loading: false,
+              revokeOnClose: false,
             });
           })
           .finally(() => {

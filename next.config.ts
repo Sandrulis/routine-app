@@ -57,6 +57,10 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: projectRoot,
   },
+  experimental: {
+    // Gmail extension sends attachments as base64 (~4/3 of 25 MB + email HTML).
+    proxyClientMaxBodySize: "40mb",
+  },
   async headers() {
     return [
       {

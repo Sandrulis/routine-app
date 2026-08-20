@@ -490,14 +490,9 @@ export function SubtaskDetailModal({
       return true;
     }
 
-    // Drive-primary: prefer Drive ID over any stale local cache.
+    // Drive-primary: prefer Drive when ID is known, then fall back to DB content.
     if (stored.googleDriveFileId) {
       if (await downloadFromDrive()) return;
-      showFeedback({
-        type: "error",
-        text: t("files.download.failed", "Neizdevās lejupielādēt failu."),
-      });
-      return;
     }
 
     const local = await ensureTaskFileContent(stored.id);
@@ -511,7 +506,7 @@ export function SubtaskDetailModal({
     }
 
     // Client may lack googleDriveFileId while DB still has it.
-    if (await downloadFromDrive()) return;
+    if (!stored.googleDriveFileId && (await downloadFromDrive())) return;
 
     showFeedback({
       type: "error",
@@ -923,12 +918,14 @@ export function SubtaskDetailModal({
                   id: file.id,
                   name: file.name,
                   mimeType: file.mimeType,
+                  size: file.size,
                   previewUrl: taskFilePreviewUrl(file),
                 })),
                 ...pendingFiles.map((item) => ({
                   id: item.id,
                   name: item.name,
                   mimeType: item.file.type || mimeFromName(item.name),
+                  size: item.file.size,
                   previewUrl: item.previewUrl,
                 })),
               ]}

@@ -1,0 +1,113 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
+import { messages } from "@/app/lib/i18n/messages";
+import {
+  DEFAULT_LANGUAGE,
+  isLanguageCode,
+  type LanguageCode,
+} from "@/app/lib/i18n/language";
+
+/** UI + error keys the Gmail extension needs from the app catalog. */
+export const EXTENSION_I18N_KEYS = [
+  "actions.add",
+  "actions.save",
+  "actions.close",
+  "errors.file_type_mismatch",
+  "errors.extension_not_subtask",
+  "errors.extension_subtask_unavailable",
+  "errors.extension_file_type",
+  "errors.extension_file_empty",
+  "errors.extension_file_too_large",
+  "errors.extension_file_needs_drive",
+  "errors.extension_upload_failed",
+  "errors.extension_nothing_attached",
+  "errors.extension_search_failed",
+  "errors.extension_uploads_disabled",
+  "errors.extension_invalid_body",
+  "errors.extension_task_required",
+  "errors.extension_list_required",
+  "errors.extension_gmail_client_id",
+  "errors.extension_gmail_auth",
+  "errors.extension_gmail_fetch_failed",
+  "errors.extension_gmail_message_id",
+  "errors.extension_gmail_forbidden",
+  "errors.extension_gmail_not_found",
+  "errors.extension_auth_required",
+  "errors.extension_unknown",
+  "extension.gmail.title",
+  "extension.gmail.back",
+  "extension.gmail.waiting",
+  "extension.gmail.processing",
+  "extension.gmail.step_lists",
+  "extension.gmail.step_items",
+  "extension.gmail.step_items_folder",
+  "extension.gmail.step_subtasks",
+  "extension.gmail.attachments",
+  "extension.gmail.uncheck_all",
+  "extension.gmail.check_all",
+  "extension.gmail.email_always",
+  "extension.gmail.too_large",
+  "extension.gmail.empty",
+  "extension.gmail.load_lists",
+  "extension.gmail.load_lists_failed",
+  "extension.gmail.loading",
+  "extension.gmail.load_failed",
+  "extension.gmail.no_tasks_in_folder",
+  "extension.gmail.no_items",
+  "extension.gmail.open_folder",
+  "extension.gmail.empty_folder",
+  "extension.gmail.choose_subtask",
+  "extension.gmail.load_subtasks",
+  "extension.gmail.load_subtasks_failed",
+  "extension.gmail.no_subtasks",
+  "extension.gmail.email_label",
+  "extension.gmail.open_email",
+  "extension.gmail.checking_session",
+  "extension.gmail.open_login",
+  "extension.gmail.add_to_routine",
+  "extension.gmail.loading_gmail",
+  "extension.gmail.progress_email",
+  "extension.gmail.progress_download",
+  "extension.gmail.progress_upload",
+  "extension.gmail.attach_failed",
+  "extension.gmail.attached_one",
+  "extension.gmail.attached_many",
+  "extension.gmail.skipped",
+  "extension.gmail.skipped_named",
+  "extension.gmail.options.app_url",
+  "extension.gmail.options.client_id",
+  "extension.gmail.options.redirect",
+  "extension.gmail.options.connect",
+  "extension.gmail.options.hint",
+  "extension.gmail.options.saved",
+  "extension.gmail.options.invalid_url",
+  "extension.gmail.options.need_client_id",
+  "extension.gmail.options.connecting",
+  "extension.gmail.options.connected",
+  "extension.gmail.options.connect_failed",
+  "extension.gmail.options.missing_client_id",
+] as const;
+
+export async function resolveExtensionLanguageCode(
+  supabase: SupabaseClient | null,
+  userId: string | null,
+): Promise<LanguageCode | null> {
+  if (!supabase || !userId) return null;
+  const { data } = await supabase
+    .from("users")
+    .select("language_code")
+    .eq("id", userId)
+    .maybeSingle();
+  return isLanguageCode(data?.language_code) ? data.language_code : null;
+}
+
+export function getExtensionStrings(
+  languageCode: LanguageCode,
+): Record<string, string> {
+  const table = messages[languageCode] ?? messages[DEFAULT_LANGUAGE];
+  const fallback = messages[DEFAULT_LANGUAGE];
+  const strings: Record<string, string> = {};
+  for (const key of EXTENSION_I18N_KEYS) {
+    strings[key] = table[key] || fallback[key] || "";
+  }
+  return strings;
+}

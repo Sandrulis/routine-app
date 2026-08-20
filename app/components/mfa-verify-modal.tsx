@@ -5,9 +5,18 @@ import { useRouter } from "next/navigation";
 import { AppModal } from "@/app/components/app-modal";
 import { useFeedbackToast } from "@/app/components/feedback-toast-provider";
 import { useTranslations } from "@/app/components/translations-provider";
+import { getSafeRedirectPath } from "@/app/lib/security/safe-redirect-path";
 import { createClient } from "@/app/lib/supabase/client";
 
-export function MfaVerifyModal({ open }: { open: boolean }) {
+export function MfaVerifyModal({
+  open,
+  mode = "admin",
+  nextPath,
+}: {
+  open: boolean;
+  mode?: "admin" | "login";
+  nextPath?: string;
+}) {
   const { t } = useTranslations();
   const router = useRouter();
   const { showFeedback } = useFeedbackToast();
@@ -29,10 +38,17 @@ export function MfaVerifyModal({ open }: { open: boolean }) {
     })();
   }, [open]);
 
-  const dirty = code.trim().length > 0;
   const canConfirm = !pending && Boolean(factorId) && code.trim().length >= 6;
+  const isLogin = mode === "login";
 
-  function leaveAdmin() {
+  async function leave() {
+    if (isLogin) {
+      const supabase = createClient();
+      await supabase.auth.signOut();
+      router.push("/login");
+      router.refresh();
+      return;
+    }
     router.push("/dashboard");
   }
 
@@ -47,7 +63,7 @@ export function MfaVerifyModal({ open }: { open: boolean }) {
       setPending(false);
       showFeedback({
         type: "error",
-        text: t("errors.mfa_invalid", "MFA iestatīšana neizdevās."),
+        text: t("errors.mfa_code_invalid", "Nepareizs kods. Mēģini vēlreiz."),
       });
       return;
     }
@@ -61,11 +77,20 @@ export function MfaVerifyModal({ open }: { open: boolean }) {
     if (verified.error) {
       showFeedback({
         type: "error",
-        text: t("errors.mfa_invalid", "MFA iestatīšana neizdevās."),
+        text: t("errors.mfa_code_invalid", "Nepareizs kods. Mēģini vēlreiz."),
       });
       return;
     }
 
+    if (isLogin) {
+      showFeedback({
+        type: "success",
+        text: t("auth.login.success", "Veiksmīgi ienāci."),
+      });
+      if (nextPath) {
+        router.push(getSafeRedirectPath(nextPath));
+      }
+    }
     router.refresh();
   }
 
@@ -73,29 +98,38 @@ export function MfaVerifyModal({ open }: { open: boolean }) {
     <AppModal
       open={open}
       onOpenChange={(nextOpen) => {
-        if (!nextOpen) leaveAdmin();
+        if (!nextOpen) void leave();
       }}
       title={t("auth.mfa.title", "Divfaktoru autentifikācija")}
-      description={t(
-        "auth.mfa.subtitle",
-        "Administrācijas panelim nepieciešams TOTP kods (Authenticator).",
-      )}
-      dirty={dirty}
-      blocking={pending}
+      description={
+        isLogin
+          ? t(
+              "auth.mfa.verify_login",
+              "Ievadi Authenticator kodu, lai pabeigtu ielogošanos.",
+            )
+          : t(
+              "auth.mfa.subtitle_admin",
+              "Administrācijas panelim nepieciešams TOTP kods (Authenticator).",
+            )
+      }
+      dirty={false}
+      blocking={pending || isLogin}
     >
       <form onSubmit={handleSubmit} className="space-y-4">
-        <p className="text-sm text-amber-700">
-          {t(
-            "auth.mfa.verify_session",
-            "Ievadi Authenticator kodu, lai apstiprinātu šo sesiju.",
-          )}
-        </p>
-        <label className="block" htmlFor="admin-mfa-code">
+        {isLogin ? null : (
+          <p className="text-sm text-amber-700">
+            {t(
+              "auth.mfa.verify_session",
+              "Ievadi Authenticator kodu, lai apstiprinātu šo sesiju.",
+            )}
+          </p>
+        )}
+        <label className="block" htmlFor="mfa-verify-code">
           <span className="text-sm font-semibold text-zinc-700">
             {t("auth.mfa.code", "Kods")}
           </span>
           <input
-            id="admin-mfa-code"
+            id="mfa-verify-code"
             value={code}
             onChange={(event) => setCode(event.target.value)}
             inputMode="numeric"
@@ -108,10 +142,12 @@ export function MfaVerifyModal({ open }: { open: boolean }) {
           <button
             type="button"
             disabled={pending}
-            onClick={leaveAdmin}
+            onClick={() => void leave()}
             className="inline-flex min-h-10 items-center justify-center rounded-2xl bg-zinc-100 px-4 text-sm font-semibold text-zinc-700 transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {t("actions.cancel", "Atcelt")}
+            {isLogin
+              ? t("user_menu.sign_out", "Iziet")
+              : t("actions.cancel", "Atcelt")}
           </button>
           <button
             type="submit"

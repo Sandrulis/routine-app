@@ -69,10 +69,12 @@ export function LoginForm({
       });
       return;
     }
-    showFeedback({
-      type: "success",
-      text: t("auth.login.success", "Veiksmīgi ienāci."),
-    });
+    if (!result.needsMfa) {
+      showFeedback({
+        type: "success",
+        text: t("auth.login.success", "Veiksmīgi ienāci."),
+      });
+    }
     router.push(result.next);
     router.refresh();
   }

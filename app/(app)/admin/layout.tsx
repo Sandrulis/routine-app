@@ -11,7 +11,7 @@ export default async function AdminLayout({ children }: { children: ReactNode })
   if (needsMfaVerify) {
     return (
       <AdminPanelShell>
-        <MfaVerifyModal open />
+        <MfaVerifyModal open mode="admin" />
       </AdminPanelShell>
     );
   }

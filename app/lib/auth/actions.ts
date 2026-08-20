@@ -6,12 +6,13 @@ import { consumeRateLimit } from "@/app/lib/security/rate-limit";
 import { getSafeRedirectPath } from "@/app/lib/security/safe-redirect-path";
 import { logError } from "@/app/lib/security/log-error";
 import { isSupabaseConfigured } from "@/app/lib/supabase/env";
+import { getMfaGate } from "@/app/lib/auth/mfa";
 import { ensureCurrentUserProfile } from "@/app/lib/users/ensure-profile";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 type AuthResult =
-  | { ok: true; next: string; needsEmail?: boolean }
+  | { ok: true; next: string; needsEmail?: boolean; needsMfa?: boolean }
   | { ok: false; error: string };
 
 function siteOrigin() {
@@ -67,7 +68,12 @@ export async function signInWithPasswordAction(input: {
     return { ok: false, error: "errors.auth_invalid" };
   }
   await ensureCurrentUserProfile(supabase);
-  return { ok: true, next: getSafeRedirectPath(input.next) };
+  const gate = await getMfaGate(supabase);
+  return {
+    ok: true,
+    next: getSafeRedirectPath(input.next),
+    needsMfa: gate === "verify",
+  };
 }
 
 export async function signUpWithPasswordAction(input: {

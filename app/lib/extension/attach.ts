@@ -12,6 +12,7 @@ import {
   createTaskFileId,
   type TaskFile,
 } from "@/app/lib/task-activity";
+import { textLooksLikeHtml } from "@/app/lib/email-file-preview";
 import { GOOGLE_DRIVE_UPLOAD_MAX_BYTES } from "@/app/lib/google-drive/env";
 import { uploadTeamFileToGoogleDrive } from "@/app/lib/google-drive/uploader";
 import type { User, SupabaseClient } from "@supabase/supabase-js";
@@ -48,6 +49,43 @@ function sanitizeFileBase(name: string): string {
   return cleaned || "email";
 }
 
+export function buildEmailFile(input: {
+  subject: string;
+  from: string;
+  to?: string;
+  date?: string;
+  body: string;
+  bodyHtml?: string;
+  permalink?: string;
+}): { name: string; mimeType: string; bytes: Uint8Array } {
+  const subject = input.subject.trim() || "(bez temata)";
+  const base = sanitizeFileBase(subject);
+  const encoder = new TextEncoder();
+  const plainBody = input.body.trim();
+  const htmlBody =
+    input.bodyHtml?.trim() ||
+    (textLooksLikeHtml(plainBody) ? plainBody : "");
+  // Always store as .txt; FilePreview renders HTML-in-txt as the email.
+  const body = htmlBody || plainBody || "(tukšs saturs)";
+
+  const lines = [
+    `Subject: ${subject}`,
+    `From: ${input.from.trim() || "(nezināms)"}`,
+    input.to?.trim() ? `To: ${input.to.trim()}` : null,
+    input.date?.trim() ? `Date: ${input.date.trim()}` : null,
+    input.permalink?.trim() ? `URL: ${input.permalink.trim()}` : null,
+    "",
+    body,
+  ].filter((line): line is string => line !== null);
+
+  return {
+    name: `${base}.txt`,
+    mimeType: "text/plain",
+    bytes: encoder.encode(lines.join("\n")),
+  };
+}
+
+/** @deprecated use buildEmailFile */
 export function buildEmailTextFile(input: {
   subject: string;
   from: string;
@@ -56,24 +94,7 @@ export function buildEmailTextFile(input: {
   body: string;
   permalink?: string;
 }): { name: string; mimeType: string; bytes: Uint8Array } {
-  const subject = input.subject.trim() || "(bez temata)";
-  const lines = [
-    `Subject: ${subject}`,
-    `From: ${input.from.trim() || "(nezināms)"}`,
-    input.to?.trim() ? `To: ${input.to.trim()}` : null,
-    input.date?.trim() ? `Date: ${input.date.trim()}` : null,
-    input.permalink?.trim() ? `URL: ${input.permalink.trim()}` : null,
-    "",
-    input.body.trim() || "(tukšs saturs)",
-  ].filter((line): line is string => line !== null);
-
-  const text = lines.join("\n");
-  const encoder = new TextEncoder();
-  return {
-    name: `${sanitizeFileBase(subject)}.txt`,
-    mimeType: "text/plain",
-    bytes: encoder.encode(text),
-  };
+  return buildEmailFile(input);
 }
 
 export async function loadFileTypeCatalog(
@@ -157,7 +178,10 @@ export async function searchExtensionSubtasks(
   }));
 }
 
-/** Same folder chain as in-app `googleDrivePathForTaskFile` (list → ancestors → subtask). */
+/**
+ * Same folder chain as in-app `googleDrivePathForTaskFile`:
+ * list → non-subtask ancestors (root→leaf) → subtask.
+ */
 async function drivePathPartsForSubtask(
   supabase: SupabaseClient,
   task: {
@@ -175,26 +199,31 @@ async function drivePathPartsForSubtask(
 
   const parts: string[] = [(list?.name as string | undefined)?.trim() || "list"];
 
-  const titlesById = new Map<string, string>();
+  type Ancestor = { id: string; title: string; kind: string; parent_id: string | null };
+  const ancestors: Ancestor[] = [];
   let parentId = task.parent_id;
   const guard = new Set<string>();
   while (parentId && !guard.has(parentId)) {
     guard.add(parentId);
     const { data: parent } = await supabase
       .from("work_tasks")
-      .select("id, title, parent_id")
+      .select("id, title, kind, parent_id")
       .eq("id", parentId)
       .maybeSingle();
     if (!parent) break;
-    titlesById.set(parent.id as string, String(parent.title || "").trim());
+    ancestors.push({
+      id: parent.id as string,
+      title: String(parent.title || "").trim(),
+      kind: String(parent.kind || ""),
+      parent_id: (parent.parent_id as string | null) ?? null,
+    });
     parentId = (parent.parent_id as string | null) ?? null;
   }
 
-  // Ancestors root → leaf (excluding the subtask itself).
-  const chain = [...guard].reverse();
-  for (const id of chain) {
-    const title = titlesById.get(id);
-    if (title) parts.push(title);
+  // Walked leaf→root; reverse to root→leaf. Skip nested subtasks (match getTaskAncestors).
+  for (const ancestor of ancestors.reverse()) {
+    if (ancestor.kind === "subtask") continue;
+    if (ancestor.title) parts.push(ancestor.title);
   }
 
   const selfTitle = task.title.trim();
@@ -256,8 +285,8 @@ export async function attachFilesToSubtask(input: {
     }
 
     const mimeType =
-      file.mimeType.trim() ||
       mimeFromFileName(name, input.catalog) ||
+      file.mimeType.trim() ||
       "application/octet-stream";
     if (
       !mimeMatchesBytes(name, mimeType, file.bytes) ||
@@ -271,8 +300,9 @@ export async function attachFilesToSubtask(input: {
     }
 
     // Mirror in-app addTaskFile: Drive first, then optional server content.
+    // Extension always keeps a DB copy for small files so preview/download work
+    // even when the team is Drive-only (store_on_server=false) or Drive fetch fails.
     let googleDriveFileId: string | null = null;
-    let storeOnServer = true;
     try {
       const driveResult = await uploadTeamFileToGoogleDrive({
         teamId,
@@ -283,14 +313,12 @@ export async function attachFilesToSubtask(input: {
       });
       if (driveResult.ok && !driveResult.skipped) {
         googleDriveFileId = driveResult.driveFileId;
-        storeOnServer = driveResult.storeOnServer === true;
       }
     } catch (error) {
       logError("extension Drive upload failed", error);
     }
 
-    const canStoreContent =
-      storeOnServer && file.bytes.length <= MAX_STORED_FILE_BYTES;
+    const canStoreContent = file.bytes.length <= MAX_STORED_FILE_BYTES;
     if (!canStoreContent && !googleDriveFileId) {
       skipped.push({
         name,

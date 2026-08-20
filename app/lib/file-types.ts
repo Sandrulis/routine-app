@@ -170,13 +170,14 @@ export function renameKeepingExtension(
   return base || original;
 }
 
-/** Images, PDF and plain text can open in the in-app preview modal. */
+/** Images, PDF, HTML and plain text can open in the in-app preview modal. */
 export function isBrowserPreviewableFile(name: string, mimeType = ""): boolean {
   const mime = mimeType.trim().toLowerCase();
   if (
     mime.startsWith("image/") ||
     mime === "application/pdf" ||
-    mime === "text/plain"
+    mime === "text/plain" ||
+    mime === "text/html"
   ) {
     return true;
   }
@@ -189,7 +190,9 @@ export function isBrowserPreviewableFile(name: string, mimeType = ""): boolean {
     extension === "gif" ||
     extension === "webp" ||
     extension === "svg" ||
-    extension === "txt"
+    extension === "txt" ||
+    extension === "html" ||
+    extension === "htm"
   );
 }
 

@@ -1,24 +1,9 @@
 import { redirect } from "next/navigation";
+import { getMfaGate } from "@/app/lib/auth/mfa";
 import { createClient } from "@/app/lib/supabase/server";
 import { isSupabaseConfigured } from "@/app/lib/supabase/env";
 import { ensureCurrentUserProfile } from "@/app/lib/users/ensure-profile";
 import { logAdminAudit } from "@/app/lib/users/admin-audit";
-
-type MfaGate = "ok" | "enroll" | "verify";
-
-async function getMfaGate(
-  supabase: Awaited<ReturnType<typeof createClient>>,
-): Promise<MfaGate> {
-  const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
-  if (aal?.currentLevel === "aal2") return "ok";
-
-  const { data: factors } = await supabase.auth.mfa.listFactors();
-  const verified = (factors?.totp ?? []).filter(
-    (factor: { status: string }) => factor.status === "verified",
-  );
-  if (verified.length === 0) return "enroll";
-  return "verify";
-}
 
 async function requireAdminUser() {
   if (!isSupabaseConfigured()) {

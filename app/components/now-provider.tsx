@@ -23,6 +23,5 @@ export function NowProvider({ children }: { children: ReactNode }) {
 }
 
 export function useNow() {
-  const now = useContext(NowContext);
-  return now || Date.now();
+  return useContext(NowContext);
 }

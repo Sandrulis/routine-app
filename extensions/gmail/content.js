@@ -1,7 +1,28 @@
-const ERROR_LV = {
-  "errors.auth_required": "Ielogojies Routine (tajā pašā pārlūkā) un mēģini vēlreiz.",
+(() => {
+  if (typeof globalThis.__routineGmailCleanup === "function") {
+    try {
+      globalThis.__routineGmailCleanup();
+    } catch {
+      // previous content script leftover
+    }
+  } else {
+    document.getElementById("routine-gmail-root")?.remove();
+    for (const btn of document.querySelectorAll("[data-routine-gmail-inline]")) {
+      btn.remove();
+    }
+  }
+
+  const FALLBACK_STRINGS = {
+  "actions.add": "Pievienot",
+  "actions.save": "Saglabāt",
+  "actions.close": "Aizvērt",
+  "errors.auth_required":
+    "Ielogojies Routine (tajā pašā pārlūkā) un mēģini vēlreiz.",
+  "errors.extension_auth_required":
+    "Ielogojies Routine (tajā pašā pārlūkā) un mēģini vēlreiz.",
   "errors.extension_not_subtask": "Izvēlētais ieraksts nav apakšuzdevums.",
   "errors.extension_subtask_unavailable": "Apakšuzdevums nav pieejams.",
+  "errors.file_type_mismatch": "Pielikuma tips nesakrīt ar saturu.",
   "errors.extension_file_type": "Daži pielikumi nav atļauti (tips).",
   "errors.extension_file_empty": "Tukšs fails.",
   "errors.extension_file_too_large": "Fails pārsniedz 25 MB limitu.",
@@ -23,13 +44,88 @@ const ERROR_LV = {
     "Gmail API liegts: ieslēdz Gmail API Google Cloud projektā un atkārtoti Savienot Gmail (scope gmail.readonly).",
   "errors.extension_gmail_not_found":
     "Gmail neatradā ziņu — atver e-pastu pilnā skatā un mēģini vēlreiz.",
-  "errors.extension_gmail_message_id": "Neatrada Gmail ziņas ID — atver e-pastu pilnā skatā.",
+  "errors.extension_gmail_message_id":
+    "Neatrada Gmail ziņas ID — atver e-pastu pilnā skatā.",
+  "errors.extension_unknown": "Nezināma kļūda.",
+  "extension.gmail.title": "Pievienot apakšuzdevumam",
+  "extension.gmail.back": "Atpakaļ",
+  "extension.gmail.waiting": "Gaida…",
+  "extension.gmail.processing": "Apstrādā…",
+  "extension.gmail.step_lists": "1. Izvēlies sarakstu",
+  "extension.gmail.step_items": "2. Izvēlies mapi vai uzdevumu",
+  "extension.gmail.step_items_folder": "2. Izvēlies mapi vai uzdevumu mapē",
+  "extension.gmail.step_subtasks": "3. Izvēlies apakšuzdevumu",
+  "extension.gmail.attachments": "Pielikumi",
+  "extension.gmail.uncheck_all": "Noņemt visus",
+  "extension.gmail.check_all": "Atzīmēt visus",
+  "extension.gmail.email_always": "E-pasta saturs (.txt) tiek pievienots vienmēr.",
+  "extension.gmail.too_large": "{size} — pārāk liels (>25 MB)",
+  "extension.gmail.empty": "Šeit nav ierakstu",
+  "extension.gmail.load_lists": "Ielādē sarakstus…",
+  "extension.gmail.load_lists_failed": "Neizdevās ielādēt sarakstus",
+  "extension.gmail.loading": "Ielādē…",
+  "extension.gmail.load_failed": "Neizdevās ielādēt",
+  "extension.gmail.no_tasks_in_folder": "Šajā mapē nav atvērtu uzdevumu",
+  "extension.gmail.no_items": "Sarakstā nav mapju vai atvērtu uzdevumu",
+  "extension.gmail.open_folder": "Atvērt mapi",
+  "extension.gmail.empty_folder": "Tukša mape",
+  "extension.gmail.choose_subtask": "Izvēlēties apakšuzdevumu",
+  "extension.gmail.load_subtasks": "Ielādē apakšuzdevumus…",
+  "extension.gmail.load_subtasks_failed": "Neizdevās ielādēt apakšuzdevumus",
+  "extension.gmail.no_subtasks": "Nav atvērtu apakšuzdevumu",
+  "extension.gmail.email_label": "E-pasts: {subject}",
+  "extension.gmail.open_email": "Atver e-pastu Gmailā, tad pievieno.",
+  "extension.gmail.checking_session": "Pārbauda Routine sesiju…",
+  "extension.gmail.open_login": "Atvērt Routine login",
+  "extension.gmail.add_to_routine": "Pievienot Routine",
+  "extension.gmail.loading_gmail": "Ielādē e-pastu un pielikumus no Gmail…",
+  "extension.gmail.progress_email": "Ielādē e-pastu no Gmail…",
+  "extension.gmail.progress_download": "Lejupielādē {name} ({current}/{total})",
+  "extension.gmail.progress_upload": "Saglabā Routine ({count})…",
+  "extension.gmail.attach_failed": "Neizdevās pievienot.",
+  "extension.gmail.attached_one": "Veiksmīgi! Pievienots «{name}».",
+  "extension.gmail.attached_many": "Veiksmīgi! Pievienoti {count} faili.",
+  "extension.gmail.skipped": "Izlaisti {count}.",
+  "extension.gmail.skipped_named": "Izlaisti {count}: {names}.",
 };
 
-function tError(key) {
-  if (!key) return "Nezināma kļūda.";
-  return ERROR_LV[key] || key;
+let languageCode = "lv";
+let strings = { ...FALLBACK_STRINGS };
+
+function interpolate(value, params) {
+  if (!params) return value;
+  return String(value).replace(/\{(\w+)\}/g, (_, key) =>
+    params[key] == null ? `{${key}}` : String(params[key]),
+  );
 }
+
+function t(key, params) {
+  const raw = strings[key] || FALLBACK_STRINGS[key] || key;
+  return interpolate(raw, params);
+}
+
+function applySessionI18n(data) {
+  const code = data?.languageCode;
+  if (code === "en" || code === "lv" || code === "ru") languageCode = code;
+  if (data?.strings && typeof data.strings === "object") {
+    strings = { ...FALLBACK_STRINGS, ...data.strings };
+  }
+}
+
+function tError(key) {
+  if (!key) return t("errors.extension_unknown");
+  if (key === "errors.auth_required") return t("errors.extension_auth_required");
+  return t(key);
+}
+
+const INLINE_BTN_ATTR = "data-routine-gmail-inline";
+
+const ICONS = {
+  list: `<svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path fill="currentColor" d="M2 3h12v1.5H2V3zm0 4.25h12V8.75H2V7.25zm0 4.25h12V13.5H2v-2z"/></svg>`,
+  folder: `<svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path fill="currentColor" d="M1.5 3.5A1.5 1.5 0 0 1 3 2h3.2l1.2 1.5H13A1.5 1.5 0 0 1 14.5 5v7A1.5 1.5 0 0 1 13 13.5H3A1.5 1.5 0 0 1 1.5 12V3.5z"/></svg>`,
+  task: `<svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path fill="currentColor" d="M3 2.5h10A1.5 1.5 0 0 1 14.5 4v8A1.5 1.5 0 0 1 13 13.5H3A1.5 1.5 0 0 1 1.5 12V4A1.5 1.5 0 0 1 3 2.5zm1.2 3.2 1.6 1.6 3.8-3.8.9.9-4.7 4.7-2.5-2.5.9-.9z"/></svg>`,
+  subtask: `<svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><circle cx="8" cy="8" r="2.4" fill="currentColor"/></svg>`,
+};
 
 function send(type, payload = {}) {
   return chrome.runtime.sendMessage({ type, ...payload });
@@ -47,6 +143,13 @@ function firstMatch(root, selectors) {
   return null;
 }
 
+function formatBytes(size) {
+  const n = Number(size) || 0;
+  if (n < 1024) return `${n} B`;
+  if (n < 1024 * 1024) return `${Math.round(n / 102.4) / 10} KB`;
+  return `${Math.round(n / (1024 * 102.4)) / 10} MB`;
+}
+
 function findOpenMessageRoot() {
   const candidates = [
     ...document.querySelectorAll('div[role="main"] div[data-message-id]'),
@@ -62,7 +165,6 @@ function findOpenMessageRoot() {
 function getGmailIds() {
   const root = findOpenMessageRoot() || document;
 
-  // Prefer legacy IDs — these match Gmail API message/thread ids.
   const messageId =
     firstMatch(root, ["[data-legacy-message-id]"])
       ?.getAttribute("data-legacy-message-id")
@@ -81,7 +183,6 @@ function getGmailIds() {
       ?.trim() ||
     "";
 
-  // URL hash is usually a thread id in modern Gmail (FMfcgz…).
   if (!threadId) {
     const hash = location.hash || "";
     const hashMatch = hash.match(/\/([a-zA-Z0-9_-]{10,})(?:\?|$)/);
@@ -122,44 +223,61 @@ function scrapeEmailFallback() {
 }
 
 function ensureUi() {
-  if (document.getElementById("routine-gmail-root")) return;
+  const existing = document.getElementById("routine-gmail-root");
+  if (existing?.dataset?.routineUi === "5") {
+    existing.querySelector("#routine-gmail-fab")?.remove();
+    return;
+  }
+  existing?.remove();
 
   const root = document.createElement("div");
   root.id = "routine-gmail-root";
+  root.dataset.routineUi = "5";
   root.innerHTML = `
-    <button type="button" id="routine-gmail-fab" aria-label="Routine" title="Pievienot Routine">
-      <img id="routine-gmail-fab-img" alt="" />
-      <span id="routine-gmail-fab-fallback">R</span>
-    </button>
     <div id="routine-gmail-modal" hidden>
       <div class="routine-gmail-backdrop" data-close="1"></div>
       <div class="routine-gmail-panel" role="dialog" aria-modal="true">
         <header>
-          <strong id="routine-gmail-title">Pievienot apakšuzdevumam</strong>
-          <button type="button" class="routine-gmail-x" data-close="1" aria-label="Aizvērt">×</button>
+          <strong id="routine-gmail-title"></strong>
+          <button type="button" class="routine-gmail-x" data-close="1" aria-label="">×</button>
         </header>
-        <p id="routine-gmail-meta" class="routine-gmail-meta"></p>
         <div id="routine-gmail-feedback" class="routine-gmail-feedback" hidden role="status" aria-live="polite"></div>
-        <div id="routine-gmail-crumbs" class="routine-gmail-crumbs" hidden></div>
-        <p id="routine-gmail-step" class="routine-gmail-label">1. Izvēlies sarakstu</p>
-        <ul id="routine-gmail-results"></ul>
-        <footer>
-          <button type="button" id="routine-gmail-back" class="routine-gmail-back" hidden>Atpakaļ</button>
-          <button type="button" id="routine-gmail-attach" disabled>
-            <span class="routine-gmail-btn-label">Pievienot</span>
-          </button>
-        </footer>
+        <div id="routine-gmail-picker" class="routine-gmail-picker">
+          <p id="routine-gmail-meta" class="routine-gmail-meta"></p>
+          <div id="routine-gmail-crumbs" class="routine-gmail-crumbs" hidden></div>
+          <p id="routine-gmail-step" class="routine-gmail-label"></p>
+          <ul id="routine-gmail-results"></ul>
+          <section id="routine-gmail-attachments" class="routine-gmail-attachments" hidden>
+            <div class="routine-gmail-attachments-head">
+              <p class="routine-gmail-label" id="routine-gmail-att-label"></p>
+              <button type="button" id="routine-gmail-att-toggle" class="routine-gmail-link-btn"></button>
+            </div>
+            <ul id="routine-gmail-attach-list"></ul>
+            <p class="routine-gmail-hint" id="routine-gmail-att-hint"></p>
+          </section>
+          <footer>
+            <button type="button" id="routine-gmail-back" class="routine-gmail-back" hidden></button>
+            <button type="button" id="routine-gmail-attach" disabled>
+              <span class="routine-gmail-btn-label"></span>
+            </button>
+          </footer>
+        </div>
         <div id="routine-gmail-busy" class="routine-gmail-busy" hidden>
           <div class="routine-gmail-spinner" aria-hidden="true"></div>
-          <p id="routine-gmail-busy-text" class="routine-gmail-busy-text">Apstrādā…</p>
+          <p id="routine-gmail-busy-text" class="routine-gmail-busy-text"></p>
+          <div id="routine-gmail-progress" class="routine-gmail-progress" hidden>
+            <div id="routine-gmail-progress-bar" class="routine-gmail-progress-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"></div>
+          </div>
+          <p id="routine-gmail-progress-count" class="routine-gmail-progress-count" hidden></p>
         </div>
       </div>
     </div>
   `;
   document.documentElement.appendChild(root);
 
-  const fab = root.querySelector("#routine-gmail-fab");
   const modal = root.querySelector("#routine-gmail-modal");
+  const panel = root.querySelector(".routine-gmail-panel");
+  const picker = root.querySelector("#routine-gmail-picker");
   const results = root.querySelector("#routine-gmail-results");
   const attachBtn = root.querySelector("#routine-gmail-attach");
   const attachLabel = root.querySelector(".routine-gmail-btn-label");
@@ -170,7 +288,13 @@ function ensureUi() {
   const stepEl = root.querySelector("#routine-gmail-step");
   const busyEl = root.querySelector("#routine-gmail-busy");
   const busyText = root.querySelector("#routine-gmail-busy-text");
+  const progressWrap = root.querySelector("#routine-gmail-progress");
+  const progressBar = root.querySelector("#routine-gmail-progress-bar");
+  const progressCount = root.querySelector("#routine-gmail-progress-count");
   const closeBtn = root.querySelector(".routine-gmail-x");
+  const attachmentsSection = root.querySelector("#routine-gmail-attachments");
+  const attachList = root.querySelector("#routine-gmail-attach-list");
+  const attToggleBtn = root.querySelector("#routine-gmail-att-toggle");
 
   /** @type {{ type: 'lists' } | { type: 'items', listId: string, listName: string, parentId: string | null, trail: {id:string,title:string,kind:string}[] } | { type: 'subtasks', listId: string, listName: string, parentId: string, parentTitle: string, trail: {id:string,title:string,kind:string}[] }} */
   let view = { type: "lists" };
@@ -178,12 +302,38 @@ function ensureUi() {
   let session = null;
   let isBusy = false;
   let closeTimer = null;
+  /** @type {{ attachmentId: string, name: string, mimeType?: string, size: number, tooLarge?: boolean }[]} */
+  let attachmentOptions = [];
+  let listedGmailMessageId = "";
+
+  function applyStaticLabels() {
+    const titleEl = root.querySelector("#routine-gmail-title");
+    if (titleEl) titleEl.textContent = t("extension.gmail.title");
+    closeBtn.setAttribute("aria-label", t("actions.close"));
+    closeBtn.title = t("actions.close");
+    backBtn.textContent = t("extension.gmail.back");
+    if (!isBusy) attachLabel.textContent = t("actions.add");
+    const attLabel = root.querySelector("#routine-gmail-att-label");
+    if (attLabel) attLabel.textContent = t("extension.gmail.attachments");
+    const attHint = root.querySelector("#routine-gmail-att-hint");
+    if (attHint) attHint.textContent = t("extension.gmail.email_always");
+    panel.setAttribute("lang", languageCode);
+    for (const btn of document.querySelectorAll(`[${INLINE_BTN_ATTR}="1"]`)) {
+      btn.title = t("extension.gmail.add_to_routine");
+      btn.setAttribute("aria-label", t("extension.gmail.add_to_routine"));
+    }
+  }
 
   function clearCloseTimer() {
     if (closeTimer) {
       clearTimeout(closeTimer);
       closeTimer = null;
     }
+  }
+
+  function setResultMode(active) {
+    panel.classList.toggle("is-result", active);
+    picker.hidden = active;
   }
 
   function setFeedback(text, variant) {
@@ -198,17 +348,38 @@ function ensureUi() {
     feedback.className = `routine-gmail-feedback is-${variant || "info"}`;
   }
 
-  function setBusy(busy, text) {
+  function setBusy(busy, text, percent) {
     isBusy = busy;
     busyEl.hidden = !busy;
-    busyText.textContent = text || "Apstrādā…";
+    busyText.textContent = text || t("extension.gmail.processing");
+    const hasPercent = busy && typeof percent === "number" && Number.isFinite(percent);
+    progressWrap.hidden = !hasPercent;
+    progressCount.hidden = !hasPercent;
+    if (hasPercent) {
+      const pct = Math.max(0, Math.min(100, Math.round(percent)));
+      progressBar.style.width = `${pct}%`;
+      progressBar.setAttribute("aria-valuenow", String(pct));
+      progressCount.textContent = `${pct}%`;
+    } else {
+      progressBar.style.width = "0%";
+      progressBar.setAttribute("aria-valuenow", "0");
+      progressCount.textContent = "";
+    }
     closeBtn.disabled = busy;
     backBtn.disabled = busy;
+    attToggleBtn.disabled = busy;
     attachBtn.disabled = busy || !selectedId;
-    attachLabel.textContent = busy ? "Gaida…" : "Pievienot";
+    attachLabel.textContent = busy ? t("extension.gmail.waiting") : t("actions.add");
     modal.classList.toggle("is-busy", busy);
+    panel.classList.toggle("is-busy", busy);
     for (const row of results.querySelectorAll("li")) {
       row.classList.toggle("is-disabled", busy);
+    }
+    for (const input of attachList.querySelectorAll("input")) {
+      input.disabled = busy || input.dataset.tooLarge === "1";
+    }
+    for (const crumb of crumbsEl.querySelectorAll("button")) {
+      crumb.disabled = busy;
     }
   }
 
@@ -220,7 +391,94 @@ function ensureUi() {
     crumbsEl.hidden = true;
     crumbsEl.innerHTML = "";
     backBtn.hidden = true;
-    stepEl.textContent = "1. Izvēlies sarakstu";
+    stepEl.textContent = t("extension.gmail.step_lists");
+  }
+
+  function resetAttachmentsUi() {
+    attachmentOptions = [];
+    listedGmailMessageId = "";
+    attachList.innerHTML = "";
+    attachmentsSection.hidden = true;
+    attToggleBtn.textContent = t("extension.gmail.uncheck_all");
+  }
+
+  function selectedAttachments() {
+    return [...attachList.querySelectorAll('input[type="checkbox"]')]
+      .map((input, index) => ({ input, item: attachmentOptions[index] }))
+      .filter(({ input, item }) => Boolean(item) && input.checked && !item.tooLarge)
+      .map(({ item }) => ({
+        attachmentId: String(item.attachmentId || ""),
+        name: String(item.name || "attachment"),
+        mimeType: String(item.mimeType || ""),
+      }))
+      .filter((item) => item.attachmentId);
+  }
+
+  function updateAttToggleLabel() {
+    const boxes = [...attachList.querySelectorAll('input[type="checkbox"]:not(:disabled)')];
+    if (!boxes.length) {
+      attToggleBtn.hidden = true;
+      return;
+    }
+    attToggleBtn.hidden = false;
+    const allOn = boxes.every((box) => box.checked);
+    attToggleBtn.textContent = allOn
+      ? t("extension.gmail.uncheck_all")
+      : t("extension.gmail.check_all");
+  }
+
+  function renderAttachments(items) {
+    attachmentOptions = items || [];
+    attachList.innerHTML = "";
+    if (!attachmentOptions.length) {
+      attachmentsSection.hidden = true;
+      return;
+    }
+    attachmentsSection.hidden = false;
+    attachmentOptions.forEach((item, index) => {
+      const li = document.createElement("li");
+      const id = `routine-att-${index}`;
+      const tooLarge = Boolean(item.tooLarge);
+      li.innerHTML = `
+        <label class="routine-gmail-att-row" for="${id}">
+          <input type="checkbox" id="${id}" />
+          <span class="routine-gmail-att-meta">
+            <span class="routine-gmail-att-name"></span>
+            <span class="routine-gmail-att-size"></span>
+          </span>
+        </label>
+      `;
+      const input = li.querySelector("input");
+      input.dataset.attachmentId = item.attachmentId;
+      input.value = item.attachmentId;
+      input.checked = !tooLarge;
+      input.disabled = tooLarge;
+      if (tooLarge) input.dataset.tooLarge = "1";
+      li.querySelector(".routine-gmail-att-name").textContent = item.name;
+      li.querySelector(".routine-gmail-att-size").textContent = tooLarge
+        ? t("extension.gmail.too_large", { size: formatBytes(item.size) })
+        : formatBytes(item.size);
+      input.addEventListener("change", updateAttToggleLabel);
+      attachList.appendChild(li);
+    });
+    updateAttToggleLabel();
+  }
+
+  async function loadAttachmentsList() {
+    resetAttachmentsUi();
+    const { messageId, threadId } = getGmailIds();
+    if (!messageId && !threadId) return;
+    try {
+      const result = await send("routine.listAttachments", {
+        gmailMessageId: messageId,
+        gmailThreadId: threadId,
+      });
+      if (!result?.ok) return;
+      listedGmailMessageId = String(result.data?.gmailMessageId || "");
+      renderAttachments(result.data?.attachments || []);
+    } catch {
+      // keep picker usable without attachments list
+    }
   }
 
   function closeModal() {
@@ -229,57 +487,151 @@ function ensureUi() {
     modal.hidden = true;
     setFeedback("");
     setBusy(false);
+    setResultMode(false);
     resetPicker();
+    resetAttachmentsUi();
+    for (const el of panel.querySelectorAll(".routine-gmail-login-link")) {
+      el.remove();
+    }
+  }
+
+  async function navigateCrumb(index) {
+    if (isBusy || view.type === "lists") return;
+    // 0 = list root
+    if (index <= 0) {
+      view = {
+        type: "items",
+        listId: view.listId,
+        listName: view.listName,
+        parentId: null,
+        trail: [],
+      };
+      await loadItems();
+      return;
+    }
+    const trail = view.trail.slice(0, index);
+    const last = trail[trail.length - 1];
+    if (!last) {
+      await navigateCrumb(0);
+      return;
+    }
+    if (last.kind === "task") {
+      view = {
+        type: "subtasks",
+        listId: view.listId,
+        listName: view.listName,
+        parentId: last.id,
+        parentTitle: last.title,
+        trail,
+      };
+      await loadSubtasks();
+      return;
+    }
+    view = {
+      type: "items",
+      listId: view.listId,
+      listName: view.listName,
+      parentId: last.id,
+      trail,
+    };
+    await loadItems();
   }
 
   function renderCrumbs() {
+    crumbsEl.innerHTML = "";
     if (view.type === "lists") {
       crumbsEl.hidden = true;
-      crumbsEl.innerHTML = "";
       backBtn.hidden = true;
       return;
     }
     crumbsEl.hidden = false;
     backBtn.hidden = false;
-    // trail already includes folders and the selected task (on subtasks step)
-    const parts = [view.listName, ...view.trail.map((item) => item.title)];
-    crumbsEl.textContent = parts.filter(Boolean).join(" / ");
+
+    const crumbs = [
+      { title: view.listName, index: 0 },
+      ...view.trail.map((item, i) => ({ title: item.title, index: i + 1 })),
+    ];
+
+    crumbs.forEach((crumb, i) => {
+      if (i > 0) {
+        const sep = document.createElement("span");
+        sep.className = "routine-gmail-crumb-sep";
+        sep.textContent = "/";
+        crumbsEl.appendChild(sep);
+      }
+      const isLast = i === crumbs.length - 1;
+      if (isLast) {
+        const span = document.createElement("span");
+        span.className = "routine-gmail-crumb-current";
+        span.textContent = crumb.title;
+        crumbsEl.appendChild(span);
+      } else {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "routine-gmail-crumb-btn";
+        btn.textContent = crumb.title;
+        btn.addEventListener("click", () => {
+          void navigateCrumb(crumb.index);
+        });
+        crumbsEl.appendChild(btn);
+      }
+    });
   }
 
   function setStepLabel() {
-    if (view.type === "lists") stepEl.textContent = "1. Izvēlies sarakstu";
+    if (view.type === "lists") stepEl.textContent = t("extension.gmail.step_lists");
     else if (view.type === "items") {
       stepEl.textContent = view.trail.some((item) => item.kind === "folder")
-        ? "2. Izvēlies mapi vai uzdevumu mapē"
-        : "2. Izvēlies mapi vai uzdevumu";
-    } else stepEl.textContent = "3. Izvēlies apakšuzdevumu";
+        ? t("extension.gmail.step_items_folder")
+        : t("extension.gmail.step_items");
+    } else stepEl.textContent = t("extension.gmail.step_subtasks");
   }
 
   function emptyRow(text) {
     results.innerHTML = `<li class="routine-gmail-empty">${text}</li>`;
   }
 
-  function kindPrefix(kind) {
-    if (kind === "folder") return "[mape] ";
-    if (kind === "task") return "[uzdevums] ";
-    if (kind === "subtask") return "";
-    if (kind === "list") return "";
+  function kindIcon(kind) {
+    if (kind === "folder") return ICONS.folder;
+    if (kind === "task") return ICONS.task;
+    if (kind === "subtask") return ICONS.subtask;
+    if (kind === "list") return ICONS.list;
     return "";
+  }
+
+  function applyLogoTo(img, fallback, logoUrl) {
+    if (!img) return;
+    if (logoUrl) {
+      img.src = logoUrl;
+      img.classList.remove("is-hidden");
+      img.hidden = false;
+      if (fallback) {
+        fallback.classList.add("is-hidden");
+        fallback.hidden = true;
+      }
+    } else {
+      img.removeAttribute("src");
+      img.classList.add("is-hidden");
+      img.hidden = true;
+      if (fallback) {
+        fallback.classList.remove("is-hidden");
+        fallback.hidden = false;
+      }
+    }
   }
 
   async function refreshSession() {
     const result = await send("routine.getSession");
     session = result?.data || null;
-    const img = root.querySelector("#routine-gmail-fab-img");
-    const fallback = root.querySelector("#routine-gmail-fab-fallback");
+    applySessionI18n(session);
+    applyStaticLabels();
     const logoUrl = session?.logoUrl;
-    if (logoUrl) {
-      img.src = logoUrl;
-      img.hidden = false;
-      fallback.hidden = true;
-    } else {
-      img.hidden = true;
-      fallback.hidden = false;
+    for (const btn of document.querySelectorAll(`[${INLINE_BTN_ATTR}="1"]`)) {
+      applyLogoTo(
+        btn.querySelector(".routine-gmail-inline-img"),
+        btn.querySelector(".routine-gmail-inline-fallback"),
+        logoUrl,
+      );
     }
     return result;
   }
@@ -289,14 +641,21 @@ function ensureUi() {
     selectedId = null;
     attachBtn.disabled = true;
     if (!rows.length) {
-      emptyRow("Šeit nav ierakstu");
+      emptyRow(t("extension.gmail.empty"));
       return;
     }
     for (const row of rows) {
       const li = document.createElement("li");
       li.tabIndex = 0;
-      li.innerHTML = `<span class="title"></span><span class="path"></span>`;
-      li.querySelector(".title").textContent = `${kindPrefix(row.kind)}${row.title}`;
+      li.innerHTML = `
+        <span class="routine-gmail-row-main">
+          <span class="routine-gmail-row-icon"></span>
+          <span class="title"></span>
+        </span>
+        <span class="path"></span>
+      `;
+      li.querySelector(".routine-gmail-row-icon").innerHTML = kindIcon(row.kind);
+      li.querySelector(".title").textContent = row.title;
       li.querySelector(".path").textContent = row.hint || "";
       li.addEventListener("click", () => {
         if (isBusy) return;
@@ -312,11 +671,12 @@ function ensureUi() {
     attachBtn.disabled = true;
     renderCrumbs();
     setStepLabel();
-    setFeedback("Ielādē sarakstus…", "info");
+    setBusy(true, t("extension.gmail.load_lists"));
     const result = await send("routine.browse", { step: "lists" });
+    setBusy(false);
     if (!result?.ok || !result.data?.ok) {
       setFeedback(tError(result?.data?.error || result?.error), "error");
-      emptyRow("Neizdevās ielādēt sarakstus");
+      emptyRow(t("extension.gmail.load_lists_failed"));
       return;
     }
     setFeedback("");
@@ -348,15 +708,16 @@ function ensureUi() {
     attachBtn.disabled = true;
     renderCrumbs();
     setStepLabel();
-    setFeedback("Ielādē…", "info");
+    setBusy(true, t("extension.gmail.loading"));
     const result = await send("routine.browse", {
       step: "items",
       listId: view.listId,
       parentId: view.parentId || "",
     });
+    setBusy(false);
     if (!result?.ok || !result.data?.ok) {
       setFeedback(tError(result?.data?.error || result?.error), "error");
-      emptyRow("Neizdevās ielādēt");
+      emptyRow(t("extension.gmail.load_failed"));
       return;
     }
     setFeedback("");
@@ -364,8 +725,8 @@ function ensureUi() {
     if (!items.length) {
       emptyRow(
         view.parentId
-          ? "Šajā mapē nav uzdevumu"
-          : "Sarakstā nav mapju vai uzdevumu",
+          ? t("extension.gmail.no_tasks_in_folder")
+          : t("extension.gmail.no_items"),
       );
       return;
     }
@@ -377,11 +738,9 @@ function ensureUi() {
         hint:
           item.kind === "folder"
             ? item.hasChildren
-              ? "Mape — atvērt"
-              : "Tukša mape"
-            : item.hasSubtasks
-              ? "Uzdevums — izvēlēties apakšuzdevumu"
-              : "Uzdevums bez apakšuzdevumiem",
+              ? t("extension.gmail.open_folder")
+              : t("extension.gmail.empty_folder")
+            : t("extension.gmail.choose_subtask"),
         raw: item,
       })),
       async (row) => {
@@ -397,7 +756,6 @@ function ensureUi() {
           await loadItems();
           return;
         }
-        // task → subtasks step
         view = {
           type: "subtasks",
           listId: view.listId,
@@ -417,20 +775,21 @@ function ensureUi() {
     attachBtn.disabled = true;
     renderCrumbs();
     setStepLabel();
-    setFeedback("Ielādē apakšuzdevumus…", "info");
+    setBusy(true, t("extension.gmail.load_subtasks"));
     const result = await send("routine.browse", {
       step: "subtasks",
       parentId: view.parentId,
     });
+    setBusy(false);
     if (!result?.ok || !result.data?.ok) {
       setFeedback(tError(result?.data?.error || result?.error), "error");
-      emptyRow("Neizdevās ielādēt apakšuzdevumus");
+      emptyRow(t("extension.gmail.load_subtasks_failed"));
       return;
     }
     setFeedback("");
     const subtasks = result.data.subtasks || [];
     if (!subtasks.length) {
-      emptyRow("Šim uzdevumam nav apakšuzdevumu");
+      emptyRow(t("extension.gmail.no_subtasks"));
       return;
     }
     renderSelectable(
@@ -438,7 +797,7 @@ function ensureUi() {
         id: item.id,
         title: item.title,
         kind: "subtask",
-        hint: "Apakšuzdevums",
+        hint: "",
         raw: item,
       })),
       (row, li) => {
@@ -454,19 +813,14 @@ function ensureUi() {
   async function goBack() {
     if (isBusy) return;
     if (view.type === "subtasks") {
-      const trail = view.trail.slice(0, -1);
-      const parent = trail[trail.length - 1] || null;
+      const folders = view.trail.filter((t) => t.kind === "folder");
       view = {
         type: "items",
         listId: view.listId,
         listName: view.listName,
-        parentId: parent && parent.kind === "folder" ? parent.id : null,
-        trail: parent && parent.kind === "folder" ? trail : trail.filter((t) => t.kind === "folder"),
+        parentId: folders.length ? folders[folders.length - 1].id : null,
+        trail: folders,
       };
-      // If we came from a task inside a folder, trail after removing task should be folders only
-      const folders = view.trail.filter((t) => t.kind === "folder");
-      view.trail = folders;
-      view.parentId = folders.length ? folders[folders.length - 1].id : null;
       await loadItems();
       return;
     }
@@ -487,31 +841,102 @@ function ensureUi() {
     }
   }
 
-  fab.addEventListener("click", async () => {
+  async function openModal() {
     clearCloseTimer();
     modal.hidden = false;
     setBusy(false);
     setFeedback("");
+    setResultMode(false);
     resetPicker();
+    resetAttachmentsUi();
+    for (const el of panel.querySelectorAll(".routine-gmail-login-link")) {
+      el.remove();
+    }
     const email = scrapeEmailFallback();
-    meta.textContent = email.subject
-      ? `E-pasts: ${email.subject}`
-      : "Atver e-pastu Gmailā, tad pievieno.";
-    setBusy(true, "Pārbauda Routine sesiju…");
+    setBusy(true, t("extension.gmail.checking_session"));
     const sessionResult = await refreshSession();
+    meta.textContent = email.subject
+      ? t("extension.gmail.email_label", { subject: email.subject })
+      : t("extension.gmail.open_email");
     setBusy(false);
     if (!sessionResult?.data?.authenticated) {
       const appBase = sessionResult?.appBase || "http://localhost:3120";
-      setFeedback(tError("errors.auth_required"), "error");
-      results.innerHTML = `<li class="routine-gmail-empty"><a href="${appBase}/login" target="_blank" rel="noreferrer">Atvērt Routine login</a></li>`;
+      setResultMode(true);
+      setFeedback(tError("errors.extension_auth_required"), "error");
+      feedback.insertAdjacentHTML(
+        "afterend",
+        `<p class="routine-gmail-login-link"><a href="${appBase}/login" target="_blank" rel="noreferrer">${t("extension.gmail.open_login")}</a></p>`,
+      );
       return;
     }
     if (sessionResult.data.fileUploadEnabled === false) {
+      setResultMode(true);
       setFeedback(tError("errors.extension_uploads_disabled"), "error");
       return;
     }
-    await loadLists();
-  });
+    await Promise.all([loadAttachmentsList(), loadLists()]);
+  }
+
+  function makeInlineButton() {
+    const btn = document.createElement("div");
+    btn.setAttribute(INLINE_BTN_ATTR, "1");
+    btn.className = "routine-gmail-inline";
+    btn.setAttribute("role", "button");
+    btn.tabIndex = 0;
+    btn.title = t("extension.gmail.add_to_routine");
+    btn.setAttribute("aria-label", t("extension.gmail.add_to_routine"));
+    btn.innerHTML = `
+      <img class="routine-gmail-inline-img is-hidden" alt="" />
+      <span class="routine-gmail-inline-fallback">R</span>
+      <span class="routine-gmail-inline-label">Routine</span>
+    `;
+    applyLogoTo(
+      btn.querySelector(".routine-gmail-inline-img"),
+      btn.querySelector(".routine-gmail-inline-fallback"),
+      session?.logoUrl,
+    );
+    const open = (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      void openModal();
+    };
+    btn.addEventListener("click", open);
+    btn.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" || event.key === " ") open(event);
+    });
+    return btn;
+  }
+
+  function injectInlineButtons() {
+    // Remove old left-side message bars from previous versions.
+    for (const bar of document.querySelectorAll(".routine-gmail-inline-bar")) {
+      bar.remove();
+    }
+
+    const hosts = [];
+
+    // Reply / Forward row and message action toolbars
+    for (const toolbar of document.querySelectorAll("div.amn, div.gH.bAk, div.ade")) {
+      if (!(toolbar instanceof HTMLElement)) continue;
+      if (toolbar.closest('[aria-hidden="true"]')) continue;
+      if (toolbar.getClientRects().length === 0) continue;
+      if (toolbar.querySelector(`[${INLINE_BTN_ATTR}="1"]`)) continue;
+      hosts.push(toolbar);
+    }
+
+    // Subject / title row
+    for (const subject of document.querySelectorAll("h2.hP, h2[data-thread-perm-id]")) {
+      const wrap = subject.parentElement;
+      if (!(wrap instanceof HTMLElement)) continue;
+      if (wrap.querySelector(`[${INLINE_BTN_ATTR}="1"]`)) continue;
+      if (wrap.getClientRects().length === 0) continue;
+      hosts.push(wrap);
+    }
+
+    for (const host of hosts) {
+      host.appendChild(makeInlineButton());
+    }
+  }
 
   root.addEventListener("click", (event) => {
     const target = event.target;
@@ -525,6 +950,15 @@ function ensureUi() {
     void goBack();
   });
 
+  attToggleBtn.addEventListener("click", () => {
+    if (isBusy) return;
+    const boxes = [...attachList.querySelectorAll('input[type="checkbox"]:not(:disabled)')];
+    if (!boxes.length) return;
+    const allOn = boxes.every((box) => box.checked);
+    for (const box of boxes) box.checked = !allOn;
+    updateAttToggleLabel();
+  });
+
   attachBtn.addEventListener("click", async () => {
     if (!selectedId || isBusy) return;
     const { messageId, threadId } = getGmailIds();
@@ -535,21 +969,25 @@ function ensureUi() {
 
     clearCloseTimer();
     setFeedback("");
-    setBusy(true, "Ielādē e-pastu un pielikumus no Gmail…");
     const email = scrapeEmailFallback();
+    const selected =
+      attachmentOptions.length > 0 ? selectedAttachments() : null;
+    setBusy(true, t("extension.gmail.loading_gmail"), 4);
 
     let result;
     try {
       result = await send("routine.attachEmail", {
         taskId: selectedId,
-        gmailMessageId: messageId,
+        gmailMessageId: listedGmailMessageId || messageId,
         gmailThreadId: threadId,
         email,
+        selectedAttachments: selected,
       });
     } catch (error) {
       setBusy(false);
+      setResultMode(true);
       setFeedback(
-        error instanceof Error ? error.message : "Neizdevās pievienot.",
+        error instanceof Error ? error.message : t("extension.gmail.attach_failed"),
         "error",
       );
       return;
@@ -558,8 +996,8 @@ function ensureUi() {
     setBusy(false);
 
     if (!result?.ok || !result.data?.ok) {
+      setResultMode(true);
       setFeedback(tError(result?.data?.error || result?.error), "error");
-      attachBtn.disabled = !selectedId;
       return;
     }
 
@@ -570,28 +1008,90 @@ function ensureUi() {
 
     let msg =
       attachedCount === 1 && attached[0]?.name
-        ? `Veiksmīgi! Pievienots «${attached[0].name}».`
-        : `Veiksmīgi! Pievienoti ${attachedCount} faili.`;
+        ? t("extension.gmail.attached_one", { name: attached[0].name })
+        : t("extension.gmail.attached_many", { count: attachedCount });
     if (skippedCount > 0) {
       const names = skipped
         .map((item) => item.name)
         .filter(Boolean)
         .slice(0, 3)
         .join(", ");
-      msg += ` Izlaisti ${skippedCount}${names ? `: ${names}` : ""}.`;
+      msg += ` ${
+        names
+          ? t("extension.gmail.skipped_named", { count: skippedCount, names })
+          : t("extension.gmail.skipped", { count: skippedCount })
+      }`;
     }
 
+    setResultMode(true);
     setFeedback(msg, skippedCount > 0 && attachedCount > 0 ? "info" : "success");
     closeTimer = setTimeout(() => {
       closeModal();
     }, skippedCount > 0 ? 4500 : 2800);
   });
 
+  function onAttachProgress(message) {
+    if (message?.type !== "routine.attachProgress") return;
+    if (!isBusy) return;
+    const key = typeof message.key === "string" ? message.key : "";
+    if (!key.startsWith("extension.gmail.progress_")) return;
+    setBusy(true, t(key, message.params), message.percent);
+  }
+  if (globalThis.__routineGmailOnMessage) {
+    chrome.runtime.onMessage.removeListener(globalThis.__routineGmailOnMessage);
+  }
+  globalThis.__routineGmailOnMessage = onAttachProgress;
+  chrome.runtime.onMessage.addListener(onAttachProgress);
+
+  applyStaticLabels();
   refreshSession().catch(() => undefined);
+  injectInlineButtons();
+  root._routineInjectInline = injectInlineButtons;
 }
 
 ensureUi();
+
+let injectScheduled = false;
+function scheduleInlineInject() {
+  if (injectScheduled) return;
+  injectScheduled = true;
+  requestAnimationFrame(() => {
+    injectScheduled = false;
+    const root = document.getElementById("routine-gmail-root");
+    if (!root) {
+      ensureUi();
+      return;
+    }
+    if (typeof root._routineInjectInline === "function") {
+      root._routineInjectInline();
+    }
+  });
+}
+
 const observer = new MutationObserver(() => {
   if (!document.getElementById("routine-gmail-root")) ensureUi();
+  scheduleInlineInject();
 });
 observer.observe(document.documentElement, { childList: true, subtree: true });
+
+// Hash changes in Gmail often open/close threads without full reload.
+function onHashChange() {
+  scheduleInlineInject();
+}
+window.addEventListener("hashchange", onHashChange);
+const injectTimer = setInterval(scheduleInlineInject, 2500);
+
+globalThis.__routineGmailCleanup = () => {
+  observer.disconnect();
+  window.removeEventListener("hashchange", onHashChange);
+  clearInterval(injectTimer);
+  if (globalThis.__routineGmailOnMessage) {
+    chrome.runtime.onMessage.removeListener(globalThis.__routineGmailOnMessage);
+    globalThis.__routineGmailOnMessage = null;
+  }
+  document.getElementById("routine-gmail-root")?.remove();
+  for (const btn of document.querySelectorAll("[data-routine-gmail-inline]")) {
+    btn.remove();
+  }
+};
+})();

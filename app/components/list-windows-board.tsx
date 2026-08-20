@@ -52,6 +52,7 @@ import { useTranslations } from "@/app/components/translations-provider";
 import {
   addStoredListFile,
   childListFiles,
+  formatFileSize,
   nextItemSortOrder,
   type ListFile,
 } from "@/app/lib/list-files";
@@ -382,8 +383,13 @@ function FilesWindow({
                   name={entry.file.name}
                   className="w-4 text-center text-[13px]"
                 />
-                <span className="truncate text-sm font-medium text-zinc-900">
-                  {entry.file.name}
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-sm font-medium text-zinc-900">
+                    {entry.file.name}
+                  </span>
+                  <span className="mt-0.5 block truncate text-[11px] text-zinc-400">
+                    {formatFileSize(entry.file.size)}
+                  </span>
                 </span>
               </button>
             </div>
@@ -406,7 +412,8 @@ function FilesWindow({
                   {entry.file.name}
                 </span>
                 <span className="mt-0.5 block truncate text-[11px] text-zinc-400">
-                  {entry.task.title}
+                  {formatFileSize(entry.file.size)}
+                  {entry.task.title ? ` - ${entry.task.title}` : ""}
                 </span>
               </span>
               <i

@@ -5,6 +5,8 @@ type QueryPage = {
   error: unknown;
 };
 
+/** PostgREST pages are untyped; callers treat rows as their table shape. */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function fetchAllRows<T = any>(
   queryPage: (from: number, to: number) => PromiseLike<QueryPage>,
 ): Promise<T[]> {
@@ -23,6 +25,8 @@ export async function fetchAllRows<T = any>(
   return rows;
 }
 
+/** PostgREST IN() chunks are untyped; callers treat rows as their table shape. */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function fetchInChunks<T = any>(
   ids: string[],
   queryChunk: (chunk: string[]) => PromiseLike<QueryPage>,
