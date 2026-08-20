@@ -157,6 +157,51 @@ export async function searchExtensionSubtasks(
   }));
 }
 
+/** Same folder chain as in-app `googleDrivePathForTaskFile` (list → ancestors → subtask). */
+async function drivePathPartsForSubtask(
+  supabase: SupabaseClient,
+  task: {
+    id: string;
+    title: string;
+    list_id: string;
+    parent_id: string | null;
+  },
+): Promise<string[]> {
+  const { data: list } = await supabase
+    .from("work_lists")
+    .select("name")
+    .eq("id", task.list_id)
+    .maybeSingle();
+
+  const parts: string[] = [(list?.name as string | undefined)?.trim() || "list"];
+
+  const titlesById = new Map<string, string>();
+  let parentId = task.parent_id;
+  const guard = new Set<string>();
+  while (parentId && !guard.has(parentId)) {
+    guard.add(parentId);
+    const { data: parent } = await supabase
+      .from("work_tasks")
+      .select("id, title, parent_id")
+      .eq("id", parentId)
+      .maybeSingle();
+    if (!parent) break;
+    titlesById.set(parent.id as string, String(parent.title || "").trim());
+    parentId = (parent.parent_id as string | null) ?? null;
+  }
+
+  // Ancestors root → leaf (excluding the subtask itself).
+  const chain = [...guard].reverse();
+  for (const id of chain) {
+    const title = titlesById.get(id);
+    if (title) parts.push(title);
+  }
+
+  const selfTitle = task.title.trim();
+  if (selfTitle) parts.push(selfTitle);
+  return parts;
+}
+
 export async function attachFilesToSubtask(input: {
   supabase: SupabaseClient;
   user: User;
@@ -170,7 +215,7 @@ export async function attachFilesToSubtask(input: {
 } | { ok: false; error: string; status: number }> {
   const { data: task, error: taskError } = await input.supabase
     .from("work_tasks")
-    .select("id, team_id, kind, deleted_at, archived_at")
+    .select("id, team_id, list_id, parent_id, title, kind, deleted_at, archived_at")
     .eq("id", input.taskId)
     .maybeSingle();
 
@@ -185,6 +230,13 @@ export async function attachFilesToSubtask(input: {
   }
 
   const teamId = task.team_id as string;
+  const pathParts = await drivePathPartsForSubtask(input.supabase, {
+    id: task.id as string,
+    title: String(task.title || ""),
+    list_id: task.list_id as string,
+    parent_id: (task.parent_id as string | null) ?? null,
+  });
+
   const attached: { id: string; name: string }[] = [];
   const skipped: { name: string; reason: string }[] = [];
 
@@ -218,6 +270,7 @@ export async function attachFilesToSubtask(input: {
       continue;
     }
 
+    // Mirror in-app addTaskFile: Drive first, then optional server content.
     let googleDriveFileId: string | null = null;
     let storeOnServer = true;
     try {
@@ -226,7 +279,7 @@ export async function attachFilesToSubtask(input: {
         fileName: name,
         mimeType,
         bytes: file.bytes,
-        pathParts: ["Gmail"],
+        pathParts,
       });
       if (driveResult.ok && !driveResult.skipped) {
         googleDriveFileId = driveResult.driveFileId;
@@ -263,6 +316,7 @@ export async function attachFilesToSubtask(input: {
       createdAt,
     };
 
+    // Same columns as insertTaskFile() in work-data.ts (incl. has_content).
     const { error: insertError } = await input.supabase.from("task_files").insert({
       id: record.id,
       team_id: teamId,
@@ -272,9 +326,11 @@ export async function attachFilesToSubtask(input: {
       size: record.size,
       content,
       google_drive_file_id: record.googleDriveFileId,
+      has_content: Boolean(content),
       created_at: record.createdAt,
     });
     if (insertError) {
+      logError("extension task_files insert failed", insertError);
       skipped.push({ name, reason: "errors.extension_upload_failed" });
       continue;
     }
@@ -285,7 +341,7 @@ export async function attachFilesToSubtask(input: {
       kind: "file",
       fileName: record.name,
     });
-    await input.supabase.from("task_activities").insert({
+    const { error: activityError } = await input.supabase.from("task_activities").insert({
       id: activity.id,
       team_id: teamId,
       task_id: activity.taskId,
@@ -294,6 +350,9 @@ export async function attachFilesToSubtask(input: {
       file_name: activity.fileName ?? null,
       created_at: activity.at,
     });
+    if (activityError) {
+      logError("extension task_activities insert failed", activityError);
+    }
 
     attached.push({ id: record.id, name: record.name });
   }

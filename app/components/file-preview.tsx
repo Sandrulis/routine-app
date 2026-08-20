@@ -16,6 +16,52 @@ export type FilePreviewSource = {
   size: number;
 };
 
+/** Decode data: or blob:/http(s) content as UTF-8 text for `.txt` preview. */
+function usePreviewText(content: string | null, enabled: boolean) {
+  const [text, setText] = useState<string | null>(null);
+  const [ready, setReady] = useState(!enabled);
+
+  useEffect(() => {
+    if (!enabled || !content) {
+      setText(null);
+      setReady(true);
+      return;
+    }
+
+    if (content.startsWith("data:")) {
+      setText(decodeDataUrlText(content));
+      setReady(true);
+      return;
+    }
+
+    let cancelled = false;
+    setReady(false);
+    void fetch(content)
+      .then((response) => {
+        if (!response.ok) throw new Error("text preview fetch failed");
+        return response.text();
+      })
+      .then((value) => {
+        if (!cancelled) {
+          setText(value);
+          setReady(true);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setText(null);
+          setReady(true);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [content, enabled]);
+
+  return { text, ready };
+}
+
 /** Chrome blocks `data:` in iframes; CSP needs `blob:` in frame-src. */
 function useEmbeddableUrl(content: string | null, preferBlob: boolean) {
   const [url, setUrl] = useState<string | null>(null);
@@ -64,7 +110,12 @@ export function FilePreview({
   const isPdf =
     file.mimeType === "application/pdf" ||
     file.name.toLowerCase().endsWith(".pdf");
+  const wantText = isTextFile(file);
   const embedUrl = useEmbeddableUrl(content, isPdf);
+  const { text: previewText, ready: textReady } = usePreviewText(
+    content,
+    Boolean(content) && wantText && !isPdf,
+  );
 
   if (!content) {
     return (
@@ -135,12 +186,20 @@ export function FilePreview({
     );
   }
 
-  if (isTextFile(file)) {
-    const text = decodeDataUrlText(content);
-    if (text !== null) {
+  if (wantText) {
+    if (!textReady) {
       return (
-        <pre className="max-h-[50vh] overflow-auto rounded-2xl border border-zinc-200 bg-white p-4 text-[13px] leading-6 text-zinc-800 whitespace-pre-wrap">
-          {text}
+        <div className="flex min-h-[50vh] items-center justify-center rounded-2xl border border-zinc-200 bg-white">
+          <p className="text-sm text-zinc-400">
+            {t("files.detail.loading", "Ielādē failu")}
+          </p>
+        </div>
+      );
+    }
+    if (previewText !== null) {
+      return (
+        <pre className="max-h-[70vh] overflow-auto rounded-2xl border border-zinc-200 bg-white p-4 text-[13px] leading-6 text-zinc-800 whitespace-pre-wrap">
+          {previewText}
         </pre>
       );
     }

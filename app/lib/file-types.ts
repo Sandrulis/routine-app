@@ -94,6 +94,20 @@ export const DEFAULT_FILE_TYPE_EXTENSIONS: FileTypeExtensionSummary[] = [
     color: "#ea580c",
     sortOrder: 12,
   },
+  {
+    extension: "zip",
+    mimeType: "application/zip",
+    icon: "fas fa-file-zipper",
+    color: "#a855f7",
+    sortOrder: 13,
+  },
+  {
+    extension: "rar",
+    mimeType: "application/vnd.rar",
+    icon: "fas fa-file-zipper",
+    color: "#9333ea",
+    sortOrder: 14,
+  },
 ];
 
 const EXTENSION_RE = /^[a-z0-9]+$/;
@@ -156,10 +170,16 @@ export function renameKeepingExtension(
   return base || original;
 }
 
-/** Images and PDF can open in the in-app preview modal. */
+/** Images, PDF and plain text can open in the in-app preview modal. */
 export function isBrowserPreviewableFile(name: string, mimeType = ""): boolean {
   const mime = mimeType.trim().toLowerCase();
-  if (mime.startsWith("image/") || mime === "application/pdf") return true;
+  if (
+    mime.startsWith("image/") ||
+    mime === "application/pdf" ||
+    mime === "text/plain"
+  ) {
+    return true;
+  }
   const extension = fileExtensionFromName(name);
   return (
     extension === "pdf" ||
@@ -168,7 +188,8 @@ export function isBrowserPreviewableFile(name: string, mimeType = ""): boolean {
     extension === "jpeg" ||
     extension === "gif" ||
     extension === "webp" ||
-    extension === "svg"
+    extension === "svg" ||
+    extension === "txt"
   );
 }
 

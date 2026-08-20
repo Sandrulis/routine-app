@@ -1517,6 +1517,7 @@ export const ru: Record<string, string> = {
   "errors.extension_uploads_disabled": "Загрузка файлов отключена.",
   "errors.extension_invalid_body": "Некорректный запрос.",
   "errors.extension_task_required": "Выберите подзадачу.",
+  "errors.extension_list_required": "Выберите список.",
   "errors.extension_gmail_client_id": "В настройках расширения отсутствует Gmail OAuth Client ID.",
   "errors.extension_gmail_auth": "Требуется разрешение Gmail OAuth.",
   "errors.extension_gmail_fetch_failed": "Не удалось загрузить письмо через Gmail API.",

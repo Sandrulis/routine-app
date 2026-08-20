@@ -6,6 +6,10 @@
 
 ## v0.2.0
 
+- Apakšuzdevuma pielikumu kartīte: apgrieztam nosaukumam tooltip ar pilnu vārdu un paplašinājumu; X augšējā labajā stūrī dzēš caur apstiprinājumu
+- `.txt` priekšskatījums modālī (kā bildes un PDF), arī no Drive `blob:` satura
+- Atļautie failu tipi: arī `zip` un `rar` (`075`)
+- Gmail Chrome extension: failu saglabāšana kā in-app (`has_content` + Drive); backfill `076`; izvēle saraksts → mape → uzdevums → apakšuzdevums (`GET /api/extension/browse`)
 - Drošība: īsta e-pasta pieteikšanās/reģistrācija/paroles atjaunošana, rate limit, šifrēti integrāciju tokeni (`enc:v1:`), Drive/OneDrive saraksta pieeja, kalendāra ICS bez aprakstiem un ar token hash (`073`/`074`)
 - MFA: parastajam lietotājam opcija profilā; adminam TOTP pie `/admin` kā modālis (bez novirzes uz profilu katru sesiju)
 - Auth: **Atcerēties mani** pēc noklusējuma izslēgts; Microsoft login tikai ar verificētu e-pastu; uzaicinājuma `token` nav SELECT authenticated
@@ -19,7 +23,7 @@
 - Atļautie failu tipi: arī attēli (png, jpg, jpeg, gif, webp) — seed `071` + noklusējums `file-types.ts`
 - Apakšuzdevumu pielikumu `...` izvēlnē **Lejupielādēt**; Drive-first lejupielāde; DB ieraksts tiek sagaidīts pirms fails ir pieejams
 - Faila pārsaukšana sinhronizē nosaukumu arī Google Drive (`POST /api/google-drive/rename`); paplašinājumu pārsaukt nevar (fiksēts sufikss formā)
-- Klikšķis uz failu: bildes/PDF → priekšskatījuma modālis; Excel u.c. → lejupielāde (`FileViewerProvider`); uzreiz overlay ar spinneri (Atver / Lejupielādē), kamēr saturs ielādējas
+- Klikšķis uz failu: bildes/PDF/txt → priekšskatījuma modālis; Excel u.c. → lejupielāde (`FileViewerProvider`); uzreiz overlay ar spinneri (Atver / Lejupielādē), kamēr saturs ielādējas
 - PDF priekšskatījums: CSP `frame-src` atļauj `blob:`; `data:` PDF pārvērš uz blob iframe
 - Apakšuzdevumiem ar pielikumiem `fa-paperclip` aiz nosaukuma: tabula un mapes **Saraksts** skatā
 - Mapes **Faili** logs rāda arī apakšuzdevumu pielikumus no mapes apakškoka; klikšķis caur `FileViewerProvider`

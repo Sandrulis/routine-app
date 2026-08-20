@@ -36,11 +36,13 @@ Bez API tu zaudē uzticamus pielikumus (bieži “klusi” neielādējas).
 ## Lietošana
 
 1. Atver e-pastu Gmailā (pilns skats)
-2. Routine poga → izvēlies apakšuzdevumu → **Pievienot**
+2. Routine poga → **saraksts** → (mape, ja ir) → **uzdevums** → **apakšuzdevums** → **Pievienot**
+   - Ceļš redzams augšā; **Atpakaļ** atgriež iepriekšējā solī.
 3. E-pasts + pielikumi nāk caur Gmail API; limīts **25 MB** uz failu
 
 ## API (Routine)
 
 - `GET /api/extension/session`
+- `GET /api/extension/browse`
 - `GET /api/extension/subtasks?q=`
 - `POST /api/extension/attach-email`

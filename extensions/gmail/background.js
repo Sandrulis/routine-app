@@ -363,6 +363,15 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
         sendResponse(result);
         return;
       }
+      if (message?.type === "routine.browse") {
+        const step = encodeURIComponent(String(message.step || "lists"));
+        const params = new URLSearchParams({ step });
+        if (message.listId) params.set("listId", String(message.listId));
+        if (message.parentId) params.set("parentId", String(message.parentId));
+        const result = await apiFetch(`/api/extension/browse?${params}`);
+        sendResponse(result);
+        return;
+      }
       if (message?.type === "routine.connectGmail") {
         await getGmailAccessToken(true);
         sendResponse({ ok: true });

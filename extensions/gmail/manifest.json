@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Routine - Gmail",
   "description": "Pievieno Gmail e-pastu Routine apakšuzdevumam.",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "permissions": ["storage", "cookies", "identity"],
   "host_permissions": [
     "http://localhost:3120/*",

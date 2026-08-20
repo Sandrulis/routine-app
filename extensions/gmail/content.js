@@ -13,6 +13,7 @@ const ERROR_LV = {
   "errors.extension_uploads_disabled": "Failu augšupielāde Routine ir izslēgta.",
   "errors.extension_invalid_body": "Nederīgs pieprasījums.",
   "errors.extension_task_required": "Izvēlies apakšuzdevumu.",
+  "errors.extension_list_required": "Izvēlies sarakstu.",
   "errors.extension_gmail_client_id":
     "Iestati Gmail OAuth Client ID paplašinājuma opcijās.",
   "errors.extension_gmail_auth":
@@ -138,13 +139,20 @@ function ensureUi() {
           <button type="button" class="routine-gmail-x" data-close="1" aria-label="Aizvērt">×</button>
         </header>
         <p id="routine-gmail-meta" class="routine-gmail-meta"></p>
-        <p id="routine-gmail-status" class="routine-gmail-status"></p>
-        <label class="routine-gmail-label" for="routine-gmail-search">Meklēt apakšuzdevumu</label>
-        <input id="routine-gmail-search" type="search" placeholder="Nosaukums…" autocomplete="off" />
+        <div id="routine-gmail-feedback" class="routine-gmail-feedback" hidden role="status" aria-live="polite"></div>
+        <div id="routine-gmail-crumbs" class="routine-gmail-crumbs" hidden></div>
+        <p id="routine-gmail-step" class="routine-gmail-label">1. Izvēlies sarakstu</p>
         <ul id="routine-gmail-results"></ul>
         <footer>
-          <button type="button" id="routine-gmail-attach" disabled>Pievienot</button>
+          <button type="button" id="routine-gmail-back" class="routine-gmail-back" hidden>Atpakaļ</button>
+          <button type="button" id="routine-gmail-attach" disabled>
+            <span class="routine-gmail-btn-label">Pievienot</span>
+          </button>
         </footer>
+        <div id="routine-gmail-busy" class="routine-gmail-busy" hidden>
+          <div class="routine-gmail-spinner" aria-hidden="true"></div>
+          <p id="routine-gmail-busy-text" class="routine-gmail-busy-text">Apstrādā…</p>
+        </div>
       </div>
     </div>
   `;
@@ -152,28 +160,111 @@ function ensureUi() {
 
   const fab = root.querySelector("#routine-gmail-fab");
   const modal = root.querySelector("#routine-gmail-modal");
-  const search = root.querySelector("#routine-gmail-search");
   const results = root.querySelector("#routine-gmail-results");
   const attachBtn = root.querySelector("#routine-gmail-attach");
-  const status = root.querySelector("#routine-gmail-status");
+  const attachLabel = root.querySelector(".routine-gmail-btn-label");
+  const backBtn = root.querySelector("#routine-gmail-back");
+  const feedback = root.querySelector("#routine-gmail-feedback");
   const meta = root.querySelector("#routine-gmail-meta");
+  const crumbsEl = root.querySelector("#routine-gmail-crumbs");
+  const stepEl = root.querySelector("#routine-gmail-step");
+  const busyEl = root.querySelector("#routine-gmail-busy");
+  const busyText = root.querySelector("#routine-gmail-busy-text");
+  const closeBtn = root.querySelector(".routine-gmail-x");
 
+  /** @type {{ type: 'lists' } | { type: 'items', listId: string, listName: string, parentId: string | null, trail: {id:string,title:string,kind:string}[] } | { type: 'subtasks', listId: string, listName: string, parentId: string, parentTitle: string, trail: {id:string,title:string,kind:string}[] }} */
+  let view = { type: "lists" };
   let selectedId = null;
-  let searchTimer = null;
   let session = null;
+  let isBusy = false;
+  let closeTimer = null;
 
-  function setStatus(text, isError = false) {
-    status.textContent = text || "";
-    status.classList.toggle("is-error", Boolean(isError && text));
+  function clearCloseTimer() {
+    if (closeTimer) {
+      clearTimeout(closeTimer);
+      closeTimer = null;
+    }
   }
 
-  function closeModal() {
-    modal.hidden = true;
+  function setFeedback(text, variant) {
+    if (!text) {
+      feedback.hidden = true;
+      feedback.textContent = "";
+      feedback.className = "routine-gmail-feedback";
+      return;
+    }
+    feedback.hidden = false;
+    feedback.textContent = text;
+    feedback.className = `routine-gmail-feedback is-${variant || "info"}`;
+  }
+
+  function setBusy(busy, text) {
+    isBusy = busy;
+    busyEl.hidden = !busy;
+    busyText.textContent = text || "Apstrādā…";
+    closeBtn.disabled = busy;
+    backBtn.disabled = busy;
+    attachBtn.disabled = busy || !selectedId;
+    attachLabel.textContent = busy ? "Gaida…" : "Pievienot";
+    modal.classList.toggle("is-busy", busy);
+    for (const row of results.querySelectorAll("li")) {
+      row.classList.toggle("is-disabled", busy);
+    }
+  }
+
+  function resetPicker() {
+    view = { type: "lists" };
     selectedId = null;
     attachBtn.disabled = true;
     results.innerHTML = "";
-    search.value = "";
-    setStatus("");
+    crumbsEl.hidden = true;
+    crumbsEl.innerHTML = "";
+    backBtn.hidden = true;
+    stepEl.textContent = "1. Izvēlies sarakstu";
+  }
+
+  function closeModal() {
+    if (isBusy) return;
+    clearCloseTimer();
+    modal.hidden = true;
+    setFeedback("");
+    setBusy(false);
+    resetPicker();
+  }
+
+  function renderCrumbs() {
+    if (view.type === "lists") {
+      crumbsEl.hidden = true;
+      crumbsEl.innerHTML = "";
+      backBtn.hidden = true;
+      return;
+    }
+    crumbsEl.hidden = false;
+    backBtn.hidden = false;
+    // trail already includes folders and the selected task (on subtasks step)
+    const parts = [view.listName, ...view.trail.map((item) => item.title)];
+    crumbsEl.textContent = parts.filter(Boolean).join(" / ");
+  }
+
+  function setStepLabel() {
+    if (view.type === "lists") stepEl.textContent = "1. Izvēlies sarakstu";
+    else if (view.type === "items") {
+      stepEl.textContent = view.trail.some((item) => item.kind === "folder")
+        ? "2. Izvēlies mapi vai uzdevumu mapē"
+        : "2. Izvēlies mapi vai uzdevumu";
+    } else stepEl.textContent = "3. Izvēlies apakšuzdevumu";
+  }
+
+  function emptyRow(text) {
+    results.innerHTML = `<li class="routine-gmail-empty">${text}</li>`;
+  }
+
+  function kindPrefix(kind) {
+    if (kind === "folder") return "[mape] ";
+    if (kind === "task") return "[uzdevums] ";
+    if (kind === "subtask") return "";
+    if (kind === "list") return "";
+    return "";
   }
 
   async function refreshSession() {
@@ -193,108 +284,307 @@ function ensureUi() {
     return result;
   }
 
-  function renderResults(subtasks) {
+  function renderSelectable(rows, onPick) {
     results.innerHTML = "";
     selectedId = null;
     attachBtn.disabled = true;
-    if (!subtasks?.length) {
-      results.innerHTML = `<li class="routine-gmail-empty">Nav rezultātu</li>`;
+    if (!rows.length) {
+      emptyRow("Šeit nav ierakstu");
       return;
     }
-    for (const item of subtasks) {
+    for (const row of rows) {
       const li = document.createElement("li");
       li.tabIndex = 0;
-      li.dataset.id = item.id;
-      const path = [item.teamName, item.listName, item.parentTitle]
-        .filter(Boolean)
-        .join(" / ");
       li.innerHTML = `<span class="title"></span><span class="path"></span>`;
-      li.querySelector(".title").textContent = item.title;
-      li.querySelector(".path").textContent = path;
+      li.querySelector(".title").textContent = `${kindPrefix(row.kind)}${row.title}`;
+      li.querySelector(".path").textContent = row.hint || "";
       li.addEventListener("click", () => {
-        selectedId = item.id;
-        for (const row of results.querySelectorAll("li")) {
-          row.classList.toggle("is-selected", row === li);
-        }
-        attachBtn.disabled = false;
+        if (isBusy) return;
+        onPick(row, li);
       });
       results.appendChild(li);
     }
   }
 
-  async function runSearch(query) {
-    setStatus("Meklē…");
-    const result = await send("routine.searchSubtasks", { query });
+  async function loadLists() {
+    view = { type: "lists" };
+    selectedId = null;
+    attachBtn.disabled = true;
+    renderCrumbs();
+    setStepLabel();
+    setFeedback("Ielādē sarakstus…", "info");
+    const result = await send("routine.browse", { step: "lists" });
     if (!result?.ok || !result.data?.ok) {
-      setStatus(tError(result?.data?.error || result?.error), true);
-      renderResults([]);
+      setFeedback(tError(result?.data?.error || result?.error), "error");
+      emptyRow("Neizdevās ielādēt sarakstus");
       return;
     }
-    setStatus("");
-    renderResults(result.data.subtasks || []);
+    setFeedback("");
+    const lists = result.data.lists || [];
+    renderSelectable(
+      lists.map((item) => ({
+        id: item.id,
+        title: item.name,
+        kind: "list",
+        hint: item.teamName || "",
+        raw: item,
+      })),
+      async (row) => {
+        view = {
+          type: "items",
+          listId: row.id,
+          listName: row.title,
+          parentId: null,
+          trail: [],
+        };
+        await loadItems();
+      },
+    );
+  }
+
+  async function loadItems() {
+    if (view.type !== "items") return;
+    selectedId = null;
+    attachBtn.disabled = true;
+    renderCrumbs();
+    setStepLabel();
+    setFeedback("Ielādē…", "info");
+    const result = await send("routine.browse", {
+      step: "items",
+      listId: view.listId,
+      parentId: view.parentId || "",
+    });
+    if (!result?.ok || !result.data?.ok) {
+      setFeedback(tError(result?.data?.error || result?.error), "error");
+      emptyRow("Neizdevās ielādēt");
+      return;
+    }
+    setFeedback("");
+    const items = result.data.items || [];
+    if (!items.length) {
+      emptyRow(
+        view.parentId
+          ? "Šajā mapē nav uzdevumu"
+          : "Sarakstā nav mapju vai uzdevumu",
+      );
+      return;
+    }
+    renderSelectable(
+      items.map((item) => ({
+        id: item.id,
+        title: item.title,
+        kind: item.kind,
+        hint:
+          item.kind === "folder"
+            ? item.hasChildren
+              ? "Mape — atvērt"
+              : "Tukša mape"
+            : item.hasSubtasks
+              ? "Uzdevums — izvēlēties apakšuzdevumu"
+              : "Uzdevums bez apakšuzdevumiem",
+        raw: item,
+      })),
+      async (row) => {
+        const item = row.raw;
+        if (item.kind === "folder") {
+          view = {
+            type: "items",
+            listId: view.listId,
+            listName: view.listName,
+            parentId: item.id,
+            trail: [...view.trail, { id: item.id, title: item.title, kind: "folder" }],
+          };
+          await loadItems();
+          return;
+        }
+        // task → subtasks step
+        view = {
+          type: "subtasks",
+          listId: view.listId,
+          listName: view.listName,
+          parentId: item.id,
+          parentTitle: item.title,
+          trail: [...view.trail, { id: item.id, title: item.title, kind: "task" }],
+        };
+        await loadSubtasks();
+      },
+    );
+  }
+
+  async function loadSubtasks() {
+    if (view.type !== "subtasks") return;
+    selectedId = null;
+    attachBtn.disabled = true;
+    renderCrumbs();
+    setStepLabel();
+    setFeedback("Ielādē apakšuzdevumus…", "info");
+    const result = await send("routine.browse", {
+      step: "subtasks",
+      parentId: view.parentId,
+    });
+    if (!result?.ok || !result.data?.ok) {
+      setFeedback(tError(result?.data?.error || result?.error), "error");
+      emptyRow("Neizdevās ielādēt apakšuzdevumus");
+      return;
+    }
+    setFeedback("");
+    const subtasks = result.data.subtasks || [];
+    if (!subtasks.length) {
+      emptyRow("Šim uzdevumam nav apakšuzdevumu");
+      return;
+    }
+    renderSelectable(
+      subtasks.map((item) => ({
+        id: item.id,
+        title: item.title,
+        kind: "subtask",
+        hint: "Apakšuzdevums",
+        raw: item,
+      })),
+      (row, li) => {
+        selectedId = row.id;
+        for (const node of results.querySelectorAll("li")) {
+          node.classList.toggle("is-selected", node === li);
+        }
+        attachBtn.disabled = false;
+      },
+    );
+  }
+
+  async function goBack() {
+    if (isBusy) return;
+    if (view.type === "subtasks") {
+      const trail = view.trail.slice(0, -1);
+      const parent = trail[trail.length - 1] || null;
+      view = {
+        type: "items",
+        listId: view.listId,
+        listName: view.listName,
+        parentId: parent && parent.kind === "folder" ? parent.id : null,
+        trail: parent && parent.kind === "folder" ? trail : trail.filter((t) => t.kind === "folder"),
+      };
+      // If we came from a task inside a folder, trail after removing task should be folders only
+      const folders = view.trail.filter((t) => t.kind === "folder");
+      view.trail = folders;
+      view.parentId = folders.length ? folders[folders.length - 1].id : null;
+      await loadItems();
+      return;
+    }
+    if (view.type === "items") {
+      if (view.trail.length > 0) {
+        const trail = view.trail.slice(0, -1);
+        view = {
+          type: "items",
+          listId: view.listId,
+          listName: view.listName,
+          parentId: trail.length ? trail[trail.length - 1].id : null,
+          trail,
+        };
+        await loadItems();
+        return;
+      }
+      await loadLists();
+    }
   }
 
   fab.addEventListener("click", async () => {
+    clearCloseTimer();
     modal.hidden = false;
+    setBusy(false);
+    setFeedback("");
+    resetPicker();
     const email = scrapeEmailFallback();
     meta.textContent = email.subject
       ? `E-pasts: ${email.subject}`
       : "Atver e-pastu Gmailā, tad pievieno.";
-    setStatus("Pārbauda sesiju…");
+    setBusy(true, "Pārbauda Routine sesiju…");
     const sessionResult = await refreshSession();
+    setBusy(false);
     if (!sessionResult?.data?.authenticated) {
       const appBase = sessionResult?.appBase || "http://localhost:3120";
-      setStatus(tError("errors.auth_required"), true);
+      setFeedback(tError("errors.auth_required"), "error");
       results.innerHTML = `<li class="routine-gmail-empty"><a href="${appBase}/login" target="_blank" rel="noreferrer">Atvērt Routine login</a></li>`;
       return;
     }
     if (sessionResult.data.fileUploadEnabled === false) {
-      setStatus(tError("errors.extension_uploads_disabled"), true);
+      setFeedback(tError("errors.extension_uploads_disabled"), "error");
       return;
     }
-    setStatus("");
-    await runSearch("");
-    search.focus();
+    await loadLists();
   });
 
   root.addEventListener("click", (event) => {
     const target = event.target;
-    if (target?.dataset?.close) closeModal();
+    if (target?.dataset?.close) {
+      if (isBusy) return;
+      closeModal();
+    }
   });
 
-  search.addEventListener("input", () => {
-    clearTimeout(searchTimer);
-    searchTimer = setTimeout(() => runSearch(search.value), 250);
+  backBtn.addEventListener("click", () => {
+    void goBack();
   });
 
   attachBtn.addEventListener("click", async () => {
-    if (!selectedId) return;
+    if (!selectedId || isBusy) return;
     const { messageId, threadId } = getGmailIds();
     if (!messageId && !threadId) {
-      setStatus(tError("errors.extension_gmail_message_id"), true);
+      setFeedback(tError("errors.extension_gmail_message_id"), "error");
       return;
     }
 
-    attachBtn.disabled = true;
-    setStatus("Ielādē e-pastu un pielikumus no Gmail API…");
+    clearCloseTimer();
+    setFeedback("");
+    setBusy(true, "Ielādē e-pastu un pielikumus no Gmail…");
     const email = scrapeEmailFallback();
-    const result = await send("routine.attachEmail", {
-      taskId: selectedId,
-      gmailMessageId: messageId,
-      gmailThreadId: threadId,
-      email,
-    });
-    if (!result?.ok || !result.data?.ok) {
-      setStatus(tError(result?.data?.error || result?.error), true);
-      attachBtn.disabled = false;
+
+    let result;
+    try {
+      result = await send("routine.attachEmail", {
+        taskId: selectedId,
+        gmailMessageId: messageId,
+        gmailThreadId: threadId,
+        email,
+      });
+    } catch (error) {
+      setBusy(false);
+      setFeedback(
+        error instanceof Error ? error.message : "Neizdevās pievienot.",
+        "error",
+      );
       return;
     }
-    const attachedCount = result.data.attached?.length || 0;
-    const skippedCount = result.data.skipped?.length || 0;
-    let msg = `Pievienots: ${attachedCount}`;
-    if (skippedCount) msg += ` (izlaisti: ${skippedCount})`;
-    setStatus(msg, false);
-    setTimeout(closeModal, 1200);
+
+    setBusy(false);
+
+    if (!result?.ok || !result.data?.ok) {
+      setFeedback(tError(result?.data?.error || result?.error), "error");
+      attachBtn.disabled = !selectedId;
+      return;
+    }
+
+    const attached = result.data.attached || [];
+    const skipped = result.data.skipped || [];
+    const attachedCount = attached.length;
+    const skippedCount = skipped.length;
+
+    let msg =
+      attachedCount === 1 && attached[0]?.name
+        ? `Veiksmīgi! Pievienots «${attached[0].name}».`
+        : `Veiksmīgi! Pievienoti ${attachedCount} faili.`;
+    if (skippedCount > 0) {
+      const names = skipped
+        .map((item) => item.name)
+        .filter(Boolean)
+        .slice(0, 3)
+        .join(", ");
+      msg += ` Izlaisti ${skippedCount}${names ? `: ${names}` : ""}.`;
+    }
+
+    setFeedback(msg, skippedCount > 0 && attachedCount > 0 ? "info" : "success");
+    closeTimer = setTimeout(() => {
+      closeModal();
+    }, skippedCount > 0 ? 4500 : 2800);
   });
 
   refreshSession().catch(() => undefined);

@@ -9,6 +9,8 @@ const MAGIC: MagicMatch[] = [
   { mime: "image/webp", bytes: [[0x52, 0x49, 0x46, 0x46]] },
   { mime: "application/pdf", bytes: [[0x25, 0x50, 0x44, 0x46]] },
   { mime: "application/zip", bytes: [[0x50, 0x4b, 0x03, 0x04], [0x50, 0x4b, 0x05, 0x06]] },
+  // RAR 1.5+ / RAR 5 signature "Rar!"
+  { mime: "application/vnd.rar", bytes: [[0x52, 0x61, 0x72, 0x21, 0x1a, 0x07]] },
 ];
 
 function startsWith(bytes: Uint8Array, signature: number[]) {
@@ -78,6 +80,20 @@ export function mimeMatchesBytes(name: string, claimedMime: string, bytes: Uint8
   }
   if (claimed === "application/pdf") {
     return sniffed === "application/pdf";
+  }
+  if (
+    claimed === "application/zip" ||
+    claimed === "application/x-zip-compressed" ||
+    fileExtensionOf(name) === "zip"
+  ) {
+    return sniffed === "application/zip" || bytes.length === 0;
+  }
+  if (
+    claimed === "application/vnd.rar" ||
+    claimed === "application/x-rar-compressed" ||
+    fileExtensionOf(name) === "rar"
+  ) {
+    return sniffed === "application/vnd.rar" || bytes.length === 0;
   }
   if (fileExtensionOf(name) === "pdf") {
     return sniffed === "application/pdf" || bytes.length === 0;

@@ -8,7 +8,7 @@ import {
   createMenuAnchorFromEvent,
   type CreateMenuAnchor,
 } from "@/app/components/create-item-menu";
-import { Tooltip } from "@/app/components/tooltip";
+import { OverflowTooltip, Tooltip } from "@/app/components/tooltip";
 import { useFeedbackToast } from "@/app/components/feedback-toast-provider";
 import { useTranslations } from "@/app/components/translations-provider";
 import { useFileTypes } from "@/app/lib/file-types-context";
@@ -220,10 +220,29 @@ export function TaskAttachments({
                           />
                         </span>
                       </span>
-                      <span className="mt-2 block truncate pr-6 text-[12px] text-zinc-600">
-                        {file.name}
+                      <span className="mt-2 flex min-w-0 pr-6">
+                        <OverflowTooltip label={file.name} className="min-w-0 flex-1">
+                          <span className="block min-w-0 truncate text-[12px] text-zinc-600">
+                            {file.name}
+                          </span>
+                        </OverflowTooltip>
                       </span>
                     </button>
+                    <Tooltip label={t("actions.delete", "Dzēst")} align="end">
+                      <button
+                        type="button"
+                        aria-label={t("actions.delete", "Dzēst")}
+                        disabled={disabled}
+                        onClick={(event) => {
+                          event.preventDefault();
+                          event.stopPropagation();
+                          onRemove(file.id);
+                        }}
+                        className="absolute top-2 right-2 z-10 inline-flex size-6 items-center justify-center rounded-full bg-white text-zinc-500 shadow-sm transition hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        <i className="fas fa-times text-[11px]" aria-hidden="true" />
+                      </button>
+                    </Tooltip>
                     <Tooltip label={t("nav.more", "Vairāk")} align="end">
                       <button
                         type="button"
