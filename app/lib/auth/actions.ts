@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/app/lib/supabase/server";
+import { getCurrentUser } from "@/app/lib/auth/get-current-user";
 import { getClientIp } from "@/app/lib/security/client-ip";
 import { consumeRateLimit } from "@/app/lib/security/rate-limit";
 import { getSafeRedirectPath } from "@/app/lib/security/safe-redirect-path";
@@ -150,13 +151,11 @@ export async function updatePasswordAction(input: {
   if (!limited.ok) {
     return { ok: false, error: "errors.auth_rate_limited" };
   }
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
   if (!user) {
     return { ok: false, error: "errors.auth_required" };
   }
+  const supabase = await createClient();
   const { error } = await supabase.auth.updateUser({ password: input.password });
   if (error) {
     logError("updatePassword failed", error.message);
