@@ -83,9 +83,14 @@ export const ru: Record<string, string> = {
   "auth.google.signing_in": "Вход...",
   "auth.google.failed": "Не удалось войти через Google.",
   "auth.google.not_configured":
-    "Google не настроен. Добавьте ключи Supabase в .env.local.",
+    "Google не настроен. Настройте Google OAuth в Администрирование → Интеграции.",
   "auth.google.not_enabled":
-    "Google не включён в проекте Supabase. Authentication → Providers → Google → Enable.",
+    "Вход через Google не включён. Включите Google OAuth в Администрирование → Интеграции.",
+  "auth.microsoft.continue": "Продолжить с Microsoft",
+  "auth.microsoft.signing_in": "Вход...",
+  "auth.microsoft.failed": "Не удалось войти через Microsoft.",
+  "auth.microsoft.not_enabled":
+    "Вход через Microsoft не включён. Включите Microsoft OAuth в Администрирование → Интеграции.",
   "auth.login.remember": "Запомнить меня",
   "auth.open_app": "Открыть приложение",
   "legal.common.updated_at": "19.08.26",
@@ -228,7 +233,7 @@ export const ru: Record<string, string> = {
     "Запоминают ваш выбор в интерфейсе, например порядок окон списка.",
   "cookie_consent.category.analytics.title": "Статистические файлы cookie",
   "cookie_consent.category.analytics.description":
-    "Позволяют анонимно измерять использование. Сейчас статистические инструменты не применяются.",
+    "Позволяют анонимно измерять использование (Umami), если администратор включил интеграцию.",
   "cookie_consent.category.marketing.title": "Маркетинговые файлы cookie",
   "cookie_consent.category.marketing.description":
     "Позволяют показывать персонализированное содержание. Сейчас маркетинговые файлы cookie не используются.",
@@ -236,6 +241,8 @@ export const ru: Record<string, string> = {
   "nav.lists": "Списки",
   "nav.team": "Команда",
   "nav.templates": "Шаблоны",
+  "nav.google_drive": "Интеграция Google Drive",
+  "nav.onedrive": "Интеграция OneDrive",
   "nav.settings": "Настройки",
   "nav.modules": "Модули",
   "nav.storage.used": "Место файлов",
@@ -255,6 +262,137 @@ export const ru: Record<string, string> = {
   "admin.nav.languages": "Языки",
   "admin.nav.translations": "Переводы",
   "admin.nav.payment_plans": "Тарифные планы",
+  "admin.nav.integrations": "Интеграции",
+  "integrations.enabled_label": "Активна",
+  "integrations.enabled.requires_configured":
+    "Сначала завершите настройку, чтобы включить интеграцию.",
+  "integrations.status.configured": "Настроена",
+  "integrations.status.not_configured": "Не настроена",
+  "integrations.feedback.status_saved": "Статус интеграции сохранён.",
+  "integrations.google_oauth.title": "Google OAuth",
+  "integrations.google_oauth.description":
+    "Настройте вход через Google на страницах входа и регистрации.",
+  "integrations.google_oauth.client_id": "Client ID",
+  "integrations.google_oauth.client_secret": "Client Secret",
+  "integrations.google_oauth.client_secret_placeholder": "Google OAuth Client Secret",
+  "integrations.google_oauth.client_secret_placeholder_saved":
+    "Сохранено — оставьте пустым, если не меняете",
+  "integrations.google_oauth.configure": "Настроить через Google",
+  "integrations.google_oauth.reconfigure": "Перенастроить через Google",
+  "integrations.google_oauth.reset": "Сбросить настройку",
+  "integrations.google_oauth.reset.confirm_title": "Сбросить настройку Google OAuth?",
+  "integrations.google_oauth.reset.confirm_description":
+    "Интеграция будет отключена, и пользователи больше не увидят вход через Google.",
+  "integrations.google_oauth.redirects.title": "Redirect URI",
+  "integrations.google_oauth.redirects.hint":
+    "Этот URI используется для проверки настройки и входа/регистрации через Google.",
+  "integrations.google_oauth.aria.enabled": "Интеграция Google OAuth включена",
+  "integrations.google_oauth.feedback.configured": "Интеграция Google OAuth настроена.",
+  "integrations.google_oauth.feedback.credentials_saved": "Данные Google OAuth сохранены.",
+  "integrations.google_oauth.feedback.client_id_required": "Введите Google OAuth Client ID.",
+  "integrations.google_oauth.feedback.client_secret_required":
+    "Введите Google OAuth Client Secret.",
+  "integrations.google_oauth.feedback.reset": "Настройка Google OAuth сброшена.",
+  "integrations.microsoft_oauth.title": "Microsoft OAuth",
+  "integrations.microsoft_oauth.description":
+    "Настройте приложение Microsoft Azure, чтобы пользователи могли входить, а команды — использовать OneDrive.",
+  "integrations.microsoft_oauth.client_id": "Application (client) ID",
+  "integrations.microsoft_oauth.client_secret": "Client Secret",
+  "integrations.microsoft_oauth.client_secret_placeholder": "Microsoft Client Secret",
+  "integrations.microsoft_oauth.client_secret_placeholder_saved":
+    "Сохранено — оставьте пустым, если не меняете",
+  "integrations.microsoft_oauth.configure": "Настроить через Microsoft",
+  "integrations.microsoft_oauth.reconfigure": "Перенастроить через Microsoft",
+  "integrations.microsoft_oauth.reset": "Сбросить настройку",
+  "integrations.microsoft_oauth.reset.confirm_title": "Сбросить настройку Microsoft OAuth?",
+  "integrations.microsoft_oauth.reset.confirm_description":
+    "Интеграция будет отключена, вход через Microsoft исчезнет, и модуль OneDrive больше не будет доступен.",
+  "integrations.microsoft_oauth.redirects.title": "Redirect URI",
+  "integrations.microsoft_oauth.redirects.hint":
+    "Первый URI используется для настройки и входа/регистрации, второй — для OneDrive команды. В Azure app также добавьте разрешение Files.ReadWrite.",
+  "integrations.microsoft_oauth.aria.enabled": "Интеграция Microsoft OAuth включена",
+  "integrations.microsoft_oauth.feedback.configured": "Интеграция Microsoft OAuth настроена.",
+  "integrations.microsoft_oauth.feedback.credentials_saved": "Данные Microsoft OAuth сохранены.",
+  "integrations.microsoft_oauth.feedback.client_id_required":
+    "Введите Microsoft Application (client) ID.",
+  "integrations.microsoft_oauth.feedback.client_secret_required":
+    "Введите Microsoft Client Secret.",
+  "integrations.microsoft_oauth.feedback.reset": "Настройка Microsoft OAuth сброшена.",
+  "integrations.resend.title": "Resend",
+  "integrations.resend.description":
+    "Транзакционные письма через Resend API (From-адрес + API Key).",
+  "integrations.resend.from_email": "From e-mail",
+  "integrations.resend.api_key": "API Key",
+  "integrations.resend.api_key_placeholder": "re_…",
+  "integrations.resend.api_key_placeholder_saved":
+    "Сохранено — оставьте пустым, если не меняете",
+  "integrations.resend.hint":
+    "Когда интеграция активна, система может отправлять транзакционные письма через Resend API.",
+  "integrations.resend.reset": "Сбросить настройку",
+  "integrations.resend.reset.confirm_title": "Сбросить настройку Resend?",
+  "integrations.resend.reset.confirm_description":
+    "API-ключ будет удалён, а отправка писем через Resend отключена.",
+  "integrations.resend.aria.enabled": "Интеграция Resend включена",
+  "integrations.resend.feedback.credentials_saved": "Данные Resend сохранены.",
+  "integrations.resend.feedback.reset": "Настройка Resend сброшена.",
+  "integrations.umami.title": "Umami",
+  "integrations.umami.description":
+    "Анонимная статистика страниц. В активном состоянии скрипт загружается в head после согласия на аналитику.",
+  "integrations.umami.website_id": "Website ID",
+  "integrations.umami.script_url": "Script URL",
+  "integrations.umami.script_url_placeholder_saved":
+    "Сохранено — оставьте пустым, если не меняете",
+  "integrations.umami.hint":
+    "Когда интеграция активна и пользователь согласился на статистические cookie, скрипт Umami загружается в head страницы.",
+  "integrations.umami.reset": "Сбросить настройку",
+  "integrations.umami.reset.confirm_title": "Сбросить настройку Umami?",
+  "integrations.umami.reset.confirm_description":
+    "Website ID будет удалён, и скрипт Umami больше не будет загружаться.",
+  "integrations.umami.aria.enabled": "Интеграция Umami включена",
+  "integrations.umami.feedback.credentials_saved": "Данные Umami сохранены.",
+  "integrations.umami.feedback.reset": "Настройка Umami сброшена.",
+  "integrations.sentry.title": "Sentry",
+  "integrations.sentry.description":
+    "Учёт ошибок и исключений в браузере через sentry.io.",
+  "integrations.sentry.environment": "Environment",
+  "integrations.sentry.dsn": "DSN",
+  "integrations.sentry.dsn_placeholder_saved":
+    "Сохранено — оставьте пустым, если не меняете",
+  "integrations.sentry.hint":
+    "Когда интеграция активна, в браузере инициализируется учёт ошибок Sentry.",
+  "integrations.sentry.reset": "Сбросить настройку",
+  "integrations.sentry.reset.confirm_title": "Сбросить настройку Sentry?",
+  "integrations.sentry.reset.confirm_description":
+    "DSN будет удалён, и учёт ошибок Sentry будет отключён.",
+  "integrations.sentry.aria.enabled": "Интеграция Sentry включена",
+  "integrations.sentry.feedback.credentials_saved": "Данные Sentry сохранены.",
+  "integrations.sentry.feedback.reset": "Настройка Sentry сброшена.",
+  "errors.integrations_save_failed": "Не удалось сохранить настройки интеграции.",
+  "errors.integrations_configure_failed": "Не удалось завершить настройку Google OAuth.",
+  "errors.integrations_reset_failed": "Не удалось сбросить настройку Google OAuth.",
+  "errors.integrations_not_configured": "Сначала завершите настройку интеграции.",
+  "errors.integrations_credentials_missing":
+    "Отсутствует Google OAuth Client ID или Secret. Сохраните данные перед настройкой.",
+  "errors.integrations_client_id_required": "Введите Google OAuth Client ID.",
+  "errors.integrations_forbidden": "Нет прав настраивать интеграции.",
+  "errors.integrations_microsoft_configure_failed":
+    "Не удалось завершить настройку Microsoft OAuth.",
+  "errors.integrations_microsoft_reset_failed":
+    "Не удалось сбросить настройку Microsoft OAuth.",
+  "errors.integrations_microsoft_not_configured":
+    "Сначала завершите настройку Microsoft OAuth.",
+  "errors.integrations_microsoft_credentials_missing":
+    "Отсутствует Microsoft Client ID или Secret. Сохраните данные перед настройкой.",
+  "errors.integrations_microsoft_client_id_required":
+    "Введите Microsoft Application (client) ID.",
+  "errors.integrations_resend_from_required": "Введите Resend From e-mail адрес.",
+  "errors.integrations_resend_api_key_required": "Введите Resend API Key.",
+  "errors.integrations_resend_not_enabled": "Интеграция Resend не включена.",
+  "errors.integrations_resend_send_failed": "Не удалось отправить e-mail через Resend.",
+  "errors.integrations_umami_website_id_required": "Введите Umami Website ID.",
+  "errors.integrations_umami_script_required": "Введите Umami Script URL.",
+  "errors.integrations_sentry_environment_required": "Введите Sentry Environment.",
+  "errors.integrations_sentry_dsn_required": "Введите Sentry DSN.",
   "site_payment_plans.page.subtitle":
     "Включите тарифные планы и назначьте frontend-модули каждому плану",
   "site_payment_plans.enable.section": "Тарифные планы",
@@ -319,6 +457,10 @@ export const ru: Record<string, string> = {
   "frontend_modules.table.key": "Ключ",
   "frontend_modules.table.empty": "Нет модулей.",
   "frontend_modules.aria.enabled": "{key} включён",
+  "frontend_modules.google_drive.toggle_locked":
+    "Сначала настройте и включите интеграцию Google OAuth (Администрирование → Интеграции).",
+  "frontend_modules.onedrive.toggle_locked":
+    "Сначала настройте и включите интеграцию Microsoft OAuth (Администрирование → Интеграции).",
   "frontend_modules.delete.confirm_title": "Удалить модуль?",
   "frontend_modules.delete.confirm_description":
     "Модуль {key} будет удалён безвозвратно.",
@@ -785,6 +927,64 @@ export const ru: Record<string, string> = {
     "Работа со статусом, сроком и подзадачами",
   "templates.menu_description":
     "Подготовьте списки задач, чтобы потом добавить их в папку",
+  "google_drive.menu_description":
+    "Отправляйте загруженные файлы в Google Drive команды",
+  "google_drive.page.subtitle":
+    "Подключите Google-аккаунт команды, чтобы загруженные файлы попадали и на Drive.",
+  "google_drive.connect.title": "Аккаунт Google",
+  "google_drive.connect.description":
+    "Доступ только к файлам, которые создаёт Routine (Drive scope: drive.file).",
+  "google_drive.connect.button": "Войти через Google",
+  "google_drive.status.connected": "Подключено",
+  "google_drive.status.disconnected": "Не подключено",
+  "google_drive.not_configured":
+    "В системе не заданы Google Drive OAuth Client ID и Secret (.env).",
+  "google_drive.configure_owner_only":
+    "Интеграцию может менять только владелец команды или участник с правом править данные команды.",
+  "google_drive.disconnect": "Отключить аккаунт Google",
+  "google_drive.disconnect.title": "Отключить аккаунт Google?",
+  "google_drive.disconnect.description":
+    "Новые файлы больше не будут отправляться на Drive. Существующие файлы на Drive останутся.",
+  "google_drive.folder.title": "Папка Drive",
+  "google_drive.folder.description":
+    "Файлы попадают в эту папку с сохранением структуры списков и папок.",
+  "google_drive.folder.path": "Путь к папке Drive",
+  "google_drive.folder.hint":
+    "Например Routine или Команда/Файлы. Папка создаётся, если её ещё нет.",
+  "google_drive.upload.enabled":
+    "Загружать файлы в Google Drive, когда их добавляют в Routine",
+  "google_drive.feedback.connected": "Аккаунт Google подключён.",
+  "google_drive.feedback.disconnected": "Аккаунт Google отключён.",
+  "google_drive.feedback.saved": "Настройки Google Drive сохранены.",
+  "onedrive.menu_description":
+    "Отправляйте загруженные файлы в OneDrive команды",
+  "onedrive.page.subtitle":
+    "Подключите Microsoft-аккаунт команды, чтобы загруженные файлы попадали и на OneDrive.",
+  "onedrive.connect.title": "Аккаунт Microsoft",
+  "onedrive.connect.description":
+    "Доступ к файлам, которые создаёт Routine в OneDrive команды (scope: Files.ReadWrite).",
+  "onedrive.connect.button": "Войти через Microsoft",
+  "onedrive.status.connected": "Подключено",
+  "onedrive.status.disconnected": "Не подключено",
+  "onedrive.not_configured":
+    "В системе не настроен Microsoft OAuth (Администрирование → Интеграции).",
+  "onedrive.configure_owner_only":
+    "Интеграцию может менять только владелец команды или участник с правом править данные команды.",
+  "onedrive.disconnect": "Отключить аккаунт Microsoft",
+  "onedrive.disconnect.title": "Отключить аккаунт Microsoft?",
+  "onedrive.disconnect.description":
+    "Новые файлы больше не будут отправляться на OneDrive. Существующие файлы на OneDrive останутся.",
+  "onedrive.folder.title": "Папка OneDrive",
+  "onedrive.folder.description":
+    "Файлы попадают в эту папку с сохранением структуры списков и папок.",
+  "onedrive.folder.path": "Путь к папке OneDrive",
+  "onedrive.folder.hint":
+    "Например Routine или Команда/Файлы. Папка создаётся, если её ещё нет.",
+  "onedrive.upload.enabled":
+    "Загружать файлы в OneDrive, когда их добавляют в Routine",
+  "onedrive.feedback.connected": "Аккаунт Microsoft подключён.",
+  "onedrive.feedback.disconnected": "Аккаунт Microsoft отключён.",
+  "onedrive.feedback.saved": "Настройки OneDrive сохранены.",
   "templates.page.subtitle":
     "Заранее заданные списки задач и подзадач, которые команда потом может добавить в папку.",
   "templates.empty": "Шаблонов пока нет.",
@@ -1137,6 +1337,32 @@ export const ru: Record<string, string> = {
   "user_menu.heading": "Аккаунт",
   "user_menu.notifications": "Настройки уведомлений",
   "user_menu.notifications_hint": "Выберите, какие оповещения получать",
+  "user_menu.calendar_hint": "Задачи в Apple или Google Календаре",
+  "calendar.integration.title": "Интеграция календаря",
+  "calendar.integration.description":
+    "Показывайте в календаре назначенные вам задачи со сроком.",
+  "calendar.integration.enable": "Показывать задачи в календаре",
+  "calendar.integration.enable_hint":
+    "Только задачи, где вы назначены и указан срок.",
+  "calendar.integration.choose": "Какой календарь",
+  "calendar.provider.apple": "Apple Calendar",
+  "calendar.provider.apple.hint": "Подписка по ссылке webcal или .ics.",
+  "calendar.provider.google": "Google Calendar",
+  "calendar.provider.google.hint": "Подписка на тот же .ics поток по URL.",
+  "calendar.integration.apple_link": "Ссылка Apple .ics",
+  "calendar.integration.google_link": "Ссылка Google .ics",
+  "calendar.integration.apple_help":
+    "Календарь → Файл → Новая подписка на календарь или откройте ссылку, чтобы добавить в Календарь macOS.",
+  "calendar.integration.google_help":
+    "Google Calendar → Другие календари → плюс → По URL. Google обновляет поток раз в несколько часов. Локальный http:// localhost Google не подпишет.",
+  "calendar.integration.open_apple": "Открыть в Календаре",
+  "calendar.integration.open_google": "Добавить в Google Calendar",
+  "calendar.integration.link_copied": "Ссылка календаря скопирована.",
+  "calendar.integration.regenerate": "Создать новую ссылку",
+  "calendar.integration.regenerate_title": "Создать новую ссылку календаря?",
+  "calendar.integration.regenerate_description":
+    "Старая ссылка перестанет работать. В календаре нужно подписаться заново.",
+  "calendar.integration.regenerated": "Новая ссылка календаря готова.",
   "user_menu.settings": "Личные настройки",
   "user_menu.settings_hint": "Профиль и отображение дат",
   "user_menu.password": "Сменить пароль",
@@ -1181,6 +1407,7 @@ export const ru: Record<string, string> = {
   "actions.archive": "Архивировать",
   "actions.unarchive": "Убрать из архива",
   "actions.deleting": "Удаление…",
+  "actions.copy": "Копировать",
   "actions.copying": "Копирование…",
   "actions.move": "Переместить",
   "actions.cancel": "Отмена",
@@ -1240,6 +1467,12 @@ export const ru: Record<string, string> = {
   "errors.slogan_required": "Введите слоган хотя бы на одном языке.",
   "errors.settings_save_failed": "Не удалось сохранить настройки.",
   "errors.auth_required": "Требуется авторизованная сессия.",
+  "errors.auth_google_disabled":
+    "Вход через Google не включён. Включите Google OAuth в Администрирование → Интеграции.",
+  "errors.auth_google_failed": "Не удалось войти через Google.",
+  "errors.auth_microsoft_disabled":
+    "Вход через Microsoft не включён. Включите Microsoft OAuth в Администрирование → Интеграции.",
+  "errors.auth_microsoft_failed": "Не удалось войти через Microsoft.",
   "errors.team_invite_forbidden": "Нет прав приглашать участников.",
   "errors.team_invite_already_member": "Этот e-mail уже участник команды.",
   "errors.team_invite_already_pending": "Приглашение для этого e-mail уже ожидает ответа.",
@@ -1248,6 +1481,9 @@ export const ru: Record<string, string> = {
   "errors.team_invite_email_not_configured":
     "Нельзя отправить e-mail новому адресу без SUPABASE_SERVICE_ROLE_KEY в .env.local. Существующие пользователи получат уведомление в приложении.",
   "errors.clipboard_failed": "Не удалось скопировать ссылку.",
+  "errors.calendar_load_failed": "Не удалось загрузить интеграцию календаря.",
+  "errors.calendar_save_failed": "Не удалось сохранить интеграцию календаря.",
+  "errors.calendar_provider_required": "Выберите календарь.",
   "errors.team_invite_not_found": "Приглашение не найдено или больше не действует.",
   "errors.team_invite_accept_failed": "Не удалось принять приглашение.",
   "errors.team_invite_reject_failed": "Не удалось отклонить приглашение.",
@@ -1300,6 +1536,30 @@ export const ru: Record<string, string> = {
   "errors.frontend_module_status_save_failed":
     "Не удалось сохранить статус модуля.",
   "errors.frontend_module_delete_failed": "Не удалось удалить модуль.",
+  "errors.frontend_module_google_oauth_required":
+    "Модуль Google Drive можно включить только после настройки и включения интеграции Google OAuth.",
+  "errors.frontend_module_microsoft_oauth_required":
+    "Модуль OneDrive можно включить только после настройки и включения интеграции Microsoft OAuth.",
+  "errors.google_drive_forbidden": "Нет прав настраивать Google Drive.",
+  "errors.google_drive_module_disabled":
+    "Модуль Google Drive или загрузки файлов выключен.",
+  "errors.google_drive_not_configured":
+    "Google Drive OAuth не настроен на сервере.",
+  "errors.google_drive_connect_failed": "Не удалось подключить Google Drive.",
+  "errors.google_drive_save_failed": "Не удалось сохранить настройки Google Drive.",
+  "errors.google_drive_disconnect_failed": "Не удалось отключить аккаунт Google.",
+  "errors.google_drive_upload_failed": "Не удалось загрузить файл в Google Drive.",
+  "errors.google_drive_file_too_large": "Файл слишком большой для загрузки в Google Drive.",
+  "errors.onedrive_forbidden": "Нет прав настраивать OneDrive.",
+  "errors.onedrive_module_disabled":
+    "Модуль OneDrive или загрузки файлов выключен.",
+  "errors.onedrive_not_configured":
+    "OneDrive OAuth не настроен на сервере.",
+  "errors.onedrive_connect_failed": "Не удалось подключить OneDrive.",
+  "errors.onedrive_save_failed": "Не удалось сохранить настройки OneDrive.",
+  "errors.onedrive_disconnect_failed": "Не удалось отключить аккаунт Microsoft.",
+  "errors.onedrive_upload_failed": "Не удалось загрузить файл в OneDrive.",
+  "errors.onedrive_file_too_large": "Файл слишком большой для загрузки в OneDrive.",
   "errors.payment_plan_key_required": "Введите ключ плана.",
   "errors.payment_plan_key_invalid":
     "Ключ может содержать только строчные буквы, цифры, точки, дефисы, подчёркивания и двоеточия.",

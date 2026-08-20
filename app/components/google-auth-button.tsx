@@ -4,8 +4,11 @@ import { useState } from "react";
 import { authSecondaryButtonClassName } from "@/app/components/auth-form-styles";
 import { useFeedbackToast } from "@/app/components/feedback-toast-provider";
 import { useTranslations } from "@/app/components/translations-provider";
-import { signInWithGoogle } from "@/app/lib/auth/sign-in-with-google";
+import { startGoogleSignInAction } from "@/app/lib/integrations/google-oauth/actions";
+import { startMicrosoftSignInAction } from "@/app/lib/integrations/microsoft-oauth/actions";
 import { writeRememberSessionPreference } from "@/app/lib/auth/remember-session";
+import { translateActionError } from "@/app/lib/i18n/action-errors";
+import type { OAuthLoginErrorPage } from "@/app/lib/auth/oauth-login-state";
 
 function GoogleIcon() {
   return (
@@ -30,6 +33,17 @@ function GoogleIcon() {
   );
 }
 
+function MicrosoftIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 23 23" aria-hidden="true">
+      <path fill="#F25022" d="M1 1h10v10H1z" />
+      <path fill="#00A4EF" d="M12 1h10v10H12z" />
+      <path fill="#7FBA00" d="M1 12h10v10H1z" />
+      <path fill="#FFB900" d="M12 12h10v10H12z" />
+    </svg>
+  );
+}
+
 export function AuthDivider() {
   const { t } = useTranslations();
 
@@ -44,17 +58,21 @@ export function AuthDivider() {
   );
 }
 
+type OAuthButtonProps = {
+  disabled?: boolean;
+  returnPath?: string;
+  rememberMe?: boolean;
+  errorPage?: OAuthLoginErrorPage;
+  onBeforeSignIn?: () => boolean;
+};
+
 export function GoogleAuthButton({
   disabled = false,
   returnPath = "/dashboard",
   rememberMe = true,
+  errorPage = "login",
   onBeforeSignIn,
-}: {
-  disabled?: boolean;
-  returnPath?: string;
-  rememberMe?: boolean;
-  onBeforeSignIn?: () => boolean;
-}) {
+}: OAuthButtonProps) {
   const { t } = useTranslations();
   const { showFeedback, clearFeedback } = useFeedbackToast();
   const [pending, setPending] = useState(false);
@@ -68,43 +86,21 @@ export function GoogleAuthButton({
     setPending(true);
     writeRememberSessionPreference(rememberMe);
 
-    const { error } = await signInWithGoogle(returnPath);
+    const result = await startGoogleSignInAction({
+      origin: window.location.origin,
+      returnPath,
+      errorPage,
+    });
 
-    if (!error) {
+    if (result.ok) {
+      window.location.href = result.data.url;
       return;
     }
 
     setPending(false);
-
-    if (error.message === "supabase_not_configured") {
-      showFeedback({
-        type: "error",
-        text: t(
-          "auth.google.not_configured",
-          "Google nav iestatīts. Pievieno Supabase atslēgas .env.local.",
-        ),
-      });
-      return;
-    }
-
-    const message = error.message.toLowerCase();
-    if (
-      message.includes("provider is not enabled") ||
-      message.includes("unsupported provider")
-    ) {
-      showFeedback({
-        type: "error",
-        text: t(
-          "auth.google.not_enabled",
-          "Google nav ieslēgts Supabase projektā. Authentication → Providers → Google → Enable.",
-        ),
-      });
-      return;
-    }
-
     showFeedback({
       type: "error",
-      text: t("auth.google.failed", "Neizdevās pieslēgties ar Google."),
+      text: translateActionError(t, result.error),
     });
   }
 
@@ -119,6 +115,59 @@ export function GoogleAuthButton({
       {pending
         ? t("auth.google.signing_in", "Pieslēdzas...")
         : t("auth.google.continue", "Turpināt ar Google")}
+    </button>
+  );
+}
+
+export function MicrosoftAuthButton({
+  disabled = false,
+  returnPath = "/dashboard",
+  rememberMe = true,
+  errorPage = "login",
+  onBeforeSignIn,
+}: OAuthButtonProps) {
+  const { t } = useTranslations();
+  const { showFeedback, clearFeedback } = useFeedbackToast();
+  const [pending, setPending] = useState(false);
+
+  async function handleClick() {
+    if (onBeforeSignIn && !onBeforeSignIn()) {
+      return;
+    }
+
+    clearFeedback();
+    setPending(true);
+    writeRememberSessionPreference(rememberMe);
+
+    const result = await startMicrosoftSignInAction({
+      origin: window.location.origin,
+      returnPath,
+      errorPage,
+    });
+
+    if (result.ok) {
+      window.location.href = result.data.url;
+      return;
+    }
+
+    setPending(false);
+    showFeedback({
+      type: "error",
+      text: translateActionError(t, result.error),
+    });
+  }
+
+  return (
+    <button
+      type="button"
+      disabled={disabled || pending}
+      onClick={() => void handleClick()}
+      className={authSecondaryButtonClassName}
+    >
+      <MicrosoftIcon />
+      {pending
+        ? t("auth.microsoft.signing_in", "Pieslēdzas...")
+        : t("auth.microsoft.continue", "Turpināt ar Microsoft")}
     </button>
   );
 }

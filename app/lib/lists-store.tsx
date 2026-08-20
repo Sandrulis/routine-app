@@ -45,6 +45,9 @@ import { useAuthSession } from "@/app/lib/auth/use-auth-session";
 import { memberIdsNotifiedForAssignees } from "@/app/lib/assignees";
 import { FRONTEND_MODULE_KEYS } from "@/app/lib/frontend-modules/keys";
 import { useFrontendModules } from "@/app/lib/frontend-modules/context";
+import { googleDrivePathForTaskFile } from "@/app/lib/google-drive/path";
+import { queueGoogleDriveUpload } from "@/app/lib/google-drive/queue-upload";
+import { queueOneDriveUpload } from "@/app/lib/onedrive/queue-upload";
 import { useTeam } from "@/app/lib/team-store";
 import {
   appendNotifications,
@@ -290,16 +293,24 @@ export function ListsProvider({ children }: { children: ReactNode }) {
   const checklistsEnabled = isModuleEnabled(FRONTEND_MODULE_KEYS.checklist);
   const automationsEnabled = isModuleEnabled(FRONTEND_MODULE_KEYS.automations);
   const templatesEnabled = isModuleEnabled(FRONTEND_MODULE_KEYS.templates);
+  const googleDriveEnabled =
+    fileUploadsEnabled && isModuleEnabled(FRONTEND_MODULE_KEYS.googleDrive);
+  const onedriveEnabled =
+    fileUploadsEnabled && isModuleEnabled(FRONTEND_MODULE_KEYS.onedrive);
   const privateListsEnabledRef = useRef(privateListsEnabled);
   const fileUploadsEnabledRef = useRef(fileUploadsEnabled);
   const checklistsEnabledRef = useRef(checklistsEnabled);
   const automationsEnabledRef = useRef(automationsEnabled);
   const templatesEnabledRef = useRef(templatesEnabled);
+  const googleDriveEnabledRef = useRef(googleDriveEnabled);
+  const onedriveEnabledRef = useRef(onedriveEnabled);
   privateListsEnabledRef.current = privateListsEnabled;
   fileUploadsEnabledRef.current = fileUploadsEnabled;
   checklistsEnabledRef.current = checklistsEnabled;
   automationsEnabledRef.current = automationsEnabled;
   templatesEnabledRef.current = templatesEnabled;
+  googleDriveEnabledRef.current = googleDriveEnabled;
+  onedriveEnabledRef.current = onedriveEnabled;
   const userId = authUser?.id ?? null;
   const teamId = currentTeam?.id ?? null;
   const scopeKey = `${userId ?? "anon"}:${teamId ?? ""}`;
@@ -1073,6 +1084,28 @@ export function ListsProvider({ children }: { children: ReactNode }) {
             notify.members,
           ),
         );
+      }
+      if (googleDriveEnabledRef.current) {
+        queueGoogleDriveUpload({
+          teamId: assignmentNotifyRef.current.teamId,
+          file,
+          pathParts: googleDrivePathForTaskFile({
+            lists: listsRef.current,
+            tasks: tasksRef.current,
+            taskId,
+          }),
+        });
+      }
+      if (onedriveEnabledRef.current) {
+        queueOneDriveUpload({
+          teamId: assignmentNotifyRef.current.teamId,
+          file,
+          pathParts: googleDrivePathForTaskFile({
+            lists: listsRef.current,
+            tasks: tasksRef.current,
+            taskId,
+          }),
+        });
       }
     }
     return record;

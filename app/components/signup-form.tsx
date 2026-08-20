@@ -1,24 +1,31 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useState, type FormEvent } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useState, type FormEvent } from "react";
 import {
   authCardClassName,
   authInputClassName,
   authPrimaryButtonClassName,
 } from "@/app/components/auth-form-styles";
 import { useFeedbackToast } from "@/app/components/feedback-toast-provider";
-import { AuthDivider, GoogleAuthButton } from "@/app/components/google-auth-button";
+import { AuthDivider, GoogleAuthButton, MicrosoftAuthButton } from "@/app/components/google-auth-button";
 import {
   RememberMeCheckbox,
   useRememberMe,
 } from "@/app/components/remember-me-checkbox";
 import { useTranslations } from "@/app/components/translations-provider";
 
-export function SignupForm() {
+export function SignupForm({
+  googleSignInEnabled = false,
+  microsoftSignInEnabled = false,
+}: {
+  googleSignInEnabled?: boolean;
+  microsoftSignInEnabled?: boolean;
+}) {
   const { t } = useTranslations();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { showFeedback, clearFeedback } = useFeedbackToast();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -27,6 +34,23 @@ export function SignupForm() {
   const [accepted, setAccepted] = useState(false);
   const [pending, setPending] = useState(false);
   const { remember, updateRemember } = useRememberMe();
+
+  useEffect(() => {
+    const error = searchParams.get("error");
+    if (error === "google") {
+      showFeedback({
+        type: "error",
+        text: t("auth.google.failed", "Neizdevās pieslēgties ar Google."),
+      });
+      return;
+    }
+    if (error === "microsoft") {
+      showFeedback({
+        type: "error",
+        text: t("auth.microsoft.failed", "Neizdevās pieslēgties ar Microsoft."),
+      });
+    }
+  }, [searchParams, showFeedback, t]);
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -172,25 +196,55 @@ export function SignupForm() {
         {t("auth.signup.title", "Reģistrēties")}
       </button>
 
-      <AuthDivider />
-      <GoogleAuthButton
-        disabled={pending}
-        rememberMe={remember}
-        onBeforeSignIn={() => {
-          if (accepted) {
-            return true;
-          }
+      {googleSignInEnabled || microsoftSignInEnabled ? (
+        <>
+          <AuthDivider />
+          <div className="space-y-2">
+            {googleSignInEnabled ? (
+              <GoogleAuthButton
+                disabled={pending}
+                rememberMe={remember}
+                errorPage="signup"
+                onBeforeSignIn={() => {
+                  if (accepted) {
+                    return true;
+                  }
 
-          showFeedback({
-            type: "error",
-            text: t(
-              "auth.signup.terms_required",
-              "Lai reģistrētos, piekrīti noteikumiem.",
-            ),
-          });
-          return false;
-        }}
-      />
+                  showFeedback({
+                    type: "error",
+                    text: t(
+                      "auth.signup.terms_required",
+                      "Lai reģistrētos, piekrīti noteikumiem.",
+                    ),
+                  });
+                  return false;
+                }}
+              />
+            ) : null}
+            {microsoftSignInEnabled ? (
+              <MicrosoftAuthButton
+                disabled={pending}
+                rememberMe={remember}
+                errorPage="signup"
+                onBeforeSignIn={() => {
+                  if (accepted) {
+                    return true;
+                  }
+
+                  showFeedback({
+                    type: "error",
+                    text: t(
+                      "auth.signup.terms_required",
+                      "Lai reģistrētos, piekrīti noteikumiem.",
+                    ),
+                  });
+                  return false;
+                }}
+              />
+            ) : null}
+          </div>
+        </>
+      ) : null}
 
       <p className="text-center text-sm text-zinc-500">
         {t("auth.signup.has_account", "Jau ir konts?")}{" "}

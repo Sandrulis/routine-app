@@ -22,7 +22,7 @@
 | Saraksts | `/lists` visu uzdevumu kopsavilkums; chevron izver koku |
 | Saraksts (bērns) | `/lists/[listId]` projekta logi: Uzdevumi | Faili augšā, Saraksts pilnā platumā |
 | Uzdevums | `/lists/[listId]/tasks/[taskId]` apakšuzdevumu tabula; ikona `fas fa-list-check` |
-| Komanda | `/team` biedri ar pēdējo tiešsaistes zīmi; pending ar resend / kopēt linku / noņemt; pats biedrs var **Pamest komandu**; `...` → lomas un šabloni (šabloni, ja `module_templates`) |
+| Komanda | `/team` biedri ar pēdējo tiešsaistes zīmi; pending ar resend / kopēt linku / noņemt; pats biedrs var **Pamest komandu**; `...` → lomas, šabloni (ja `module_templates`) un Google Drive (ja `module_google_drive` + `module_file_upload`) |
 | Failu vieta | koka + apakšuzdevumu failu `size` summa (`formatFileSize`); tooltip ar hint; rādās tikai ja `module_file_upload`
 | Lietotājs | avatars, **Personīgā informācija** (modālis: vārds, uzvārds), **Personīgie uzstādījumi** (`/settings/profile`), parole, iziet (ved uz `/`) |
 
@@ -35,7 +35,7 @@ Uzvedība:
 - Uzdevuma rindā `fas fa-list-check`; hover laikā ikonas vietā chevron.
 - Apakšuzdevuma rindā krāsains aplītis; hover neaizstāj ar chevron.
 - Saraksta `+` atver izveides formu, ja loma ļauj veidot sarakstus un saraksta pieeja ir **pilna labošana**. Mapes `+` — mape, uzdevumu saraksts, **Pievienot šablonu** vai faila augšupielāde. Uzdevuma `+` atver apakšuzdevuma modāli (tikai `full_edit`).
-- Komandas `...`: **Komandas lomas**, **Šabloni** (`/templates`) — šabloni tikai ja `module_templates` ir ieslēgts.
+- Komandas `...`: **Komandas lomas**, **Šabloni** (`/templates`) — šabloni tikai ja `module_templates` ir ieslēgts; **Google Drive Integrācija** (`/team/google-drive`) — tikai ja `module_google_drive` un `module_file_upload` ir ieslēgti.
 - Saraksta `...` ar `canEditList`: **Labot**, **Statusi** (`ListStatusesModal`), **Automatizācijas** (`ListAutomationsModal`, tikai ja `module_automations`), **Dzēst**.
 - Uzdevuma/mapes `...` ar `canEditTasks`: **Labot**, **Arhivēt** (`fas fa-folder-open`), **Dzēst**. Arhivēšana (`setWorkItemArchived`) uzliek `archived_at` visam apakškokam; arhivētie pazūd no koka un aktīvā saraksta.
 - Faila rinda atver `/lists/[listId]/files/[fileId]`; ikona un krāsa no `file_type_extensions` (`FileIcon` / `useFileTypes`).
@@ -58,7 +58,7 @@ Route group `app/(marketing)/` - bez sānjoslas. Galvene `SiteHeader` (sistēmas
 | `/terms` | Lietošanas noteikumi |
 | `/cookies` | Sīkdatņu politika + iestatījumu poga |
 
-Auth: e-pasta Ienākt / Reģistrēties joprojām frontend (toast + `/dashboard`). **Turpināt ar Google** ir īsts Supabase OAuth (sk. Google OAuth). **Atcerēties mani** pēc noklusējuma ieslēgts: sesijas sīkdatne 30 dienas; bez ķeksīša - līdz pārlūka aizvēršanai. Ielogotam `proxy` `/`, `/login`, `/signup` un `/forgot-password` novirza uz `/dashboard`; landing `app/(marketing)/page.tsx` arī `redirect("/dashboard")`, ja ir sesija. Iziet ved uz `/`. Publiskajā galvenē ielogotam rādās **Atvērt lietotni**.
+Auth: e-pasta Ienākt / Reģistrēties joprojām frontend (toast + `/dashboard`). **Turpināt ar Google** / **Turpināt ar Microsoft** iet caur admin **Integrācijas** OAuth (`/auth/google-oauth/callback`, `/auth/microsoft-oauth/callback`), nevis Supabase Google provider - pēc profila no Google/Microsoft tiek izveidots vai atrasts Supabase Auth lietotājs un sesija. Pogas rādās tikai ja attiecīgā integrācija ir konfigurēta un **Aktīva**. **Atcerēties mani** pēc noklusējuma ieslēgts: sesijas sīkdatne 30 dienas; bez ķeksīša - līdz pārlūka aizvēršanai. Ielogotam `proxy` `/`, `/login`, `/signup` un `/forgot-password` novirza uz `/dashboard`; landing `app/(marketing)/page.tsx` arī `redirect("/dashboard")`, ja ir sesija. Iziet ved uz `/`. Publiskajā galvenē ielogotam rādās **Atvērt lietotni**.
 
 Legal teksti: `app/lib/legal/documents.ts`. UI: `LegalDocumentView` ar **Saturs** sānjoslu (`sticky` zem galvenes): klikšķis ritina uz sadaļu, josla paliek redzama visā dokumentā.
 
@@ -82,10 +82,11 @@ Legal teksti: `app/lib/legal/documents.ts`. UI: `LegalDocumentView` ar **Saturs*
 | Fails | `/lists/[listId]/files/[fileId]` | `FileDetailPage` — priekšskatījums, lejupielāde, pārsaukšana, dzēšana |
 | Apakšuzdevums | uzdevuma ceļš vai saraksta skats + modālis | `SubtaskDetailModal` — lauki kreisajā, Check List pirms pielikumiem, vēsture labajā |
 | Šabloni | `/templates`, `/templates/[templateId]` | `TemplatesPage` / `TemplateDetailPage` + `TemplateTreeEditor` — mapes, uzdevumi, apakšuzdevumi, DnD; mapes `+` → Pievienot šablonu; `requireFrontendModule(module_templates)`
+| Google Drive | `/team/google-drive` | Komandas OAuth pieslēgums, mapes ceļš un slēdzis auto-upload; `requireFrontendModules(module_google_drive, module_file_upload)`
 | Personīgie uzstādījumi | `/settings/profile` | lasāms profila kopsavilkums + datumu/laika preferences (nedēļas sākums, formāts, atdalītājs, 12/24 h); vārdu/uzvārdu labo lietotāja izvēlnē |
 | Administrācija | `/admin` | kategoriju izvēlne ar hover dropdown (Cilvēki, Katalogs, Sistēma); tikai `is_admin` |
 
-Ceļa josla: `app/components/page-breadcrumb.tsx`. Labajā malā `AdminPanelButton` (`fas fa-users-cog`, tikai `is_admin`), `NotificationsMenu` (zvaniņš) un valodas kods, ja aktīvas valodas > 1.
+Ceļa josla: `app/components/page-breadcrumb.tsx`. Katram posmam ikona pēc tipa (`workItemIcon` mapei/uzdevumam/apakšuzdevumam, `ListBadge` sarakstam, `FileIcon` failam) - arī vecākiem posmiem, ne tikai aktuālajam. Labajā malā `AdminPanelButton` (`fas fa-users-cog`, tikai `is_admin`), `NotificationsMenu` (zvaniņš) un valodas kods, ja aktīvas valodas > 1.
 
 Ielāde: `LoadingState` (`app/components/loading-state.tsx`, `fas fa-circle-notch fa-spin`) lapās, sānjoslā, paziņojumos un admin čaulā, kamēr store `isReady` vai fetch nav pabeigts. Tukšs stāvoklis rādās tikai pēc ielādes.
 
@@ -104,13 +105,14 @@ Ielāde: `LoadingState` (`app/components/loading-state.tsx`, `fas fa-circle-notc
 | `/admin/translations` | `site_translations` + `messages.ts` atslēgas: meklēšana, pievienot, labot, dzēst (koda atslēgas dzēst nevar) |
 | `/admin/modules` | `site_frontend_modules`: atslēga, ieslēgts/izslēgts, dzēšana (`AdminFrontendModulesForm`) |
 | `/admin/payment-plans` | `site_payment_plans` katalogs: ieslēgums, izmēģinājums, Early Bird limīts, cenas, frontend moduļi plānā (`AdminPaymentPlansForm`) |
+| `/admin/integrations` | `site_integrations`: Google/Microsoft OAuth (login/signup); Resend, Umami, Sentry; Client ID/Secret, OAuth pārbaude vai Saglabāt, **Aktīva** slēdzis; sakļaujamas kartiņas (`AdminIntegrationsPage`) |
 | `/admin/settings` | `site_settings`: sistēmas nosaukums, slogans, logotips/favicon (data URL) vai iniciāļu avatārs ar `logo_color`, nedēļas sākums, datuma formāts/atdalītājs, 12/24 h; hinti zem laukiem |
 
 - Servera vārti: `requireAdmin()` layoutā un `admin/actions.ts`
 - Klienta pārbaude: `useIsAdmin()` caur RPC `current_user_is_admin()` (ikona)
 - Lietotāju saraksts caur ielogotā admin sesiju (RLS `008_admin_list_access.sql`); jauna lietotāja izveide ar service role
 - Valodas, tulkojumi, uzstādījumi caur to pašu sesiju (RLS `010_site_admin_session_access.sql`); `site_*` SELECT arī `anon`
-- Migrācijas: `003` admin RPC, `006` valodas/tulkojumi/uzstādījumi, `007` RU, `008` admin list access, `009` `users` aktivitātes lauki, `010` site admin session RLS, `011` `users.language_code`, `012`/`016`/`018` statusi, `017`/`020`/`021` lomas, `013`/`014`/`019` privāti saraksti, `022`/`023` sarakstu pieeju līmeņi, `024` `work_tasks.deleted_at`, `025` kataloga statusa check, `027`/`028`/`030` saraksta statusi, `029` `work_tasks.checklists`, `031` `team_status_labels`, `032` failu `size` backfill, `033`/`035` display preferences, `034` `file_type_extensions`, `036`/`037` sistēmas logotips/favicon un `logo_color`, `038` `work_tasks.archived_at`, `039` `work_templates` / `work_template_items`, `040` šablona `kind: folder` un ligzdots koks, `041` `work_list_automations` (trigger + action uz sarakstu), `044`–`049` komandas uzaicinājumi (tabula, RPC accept/reject, paziņojumi, self-leave, explicit accept, reject fix), `050` `set_current_user_name` (lietotājs maina savu vārdu), `051_team_permissions_extended` (komandu lomu pieejas UI + efektīvais list access), `051_task_activities_extended` un `052_task_activities_reordered` (apakšuzdevumu vēsture), `053` `user_notification_preferences`, `054` paplašināti `app_notifications.kind`, `055` `work_task_statuses` + uzdevuma statusu layout lauki, `056` šablona assignee/checklist, `057` šablona custom statusi, `058` `site_frontend_modules` (`module_templates`, `module_automations`), `059` `module_private_list` + RPC `publish_all_private_work_lists`, `060` `module_file_upload`, `061` `module_checklist`, `062` `site_payment_plans` + `site_payment_plan_modules` + `teams` plāna kolonnas, `063` `touch_current_member_online`
+- Migrācijas: `003` admin RPC, `006` valodas/tulkojumi/uzstādījumi, `007` RU, `008` admin list access, `009` `users` aktivitātes lauki, `010` site admin session RLS, `011` `users.language_code`, `012`/`016`/`018` statusi, `017`/`020`/`021` lomas, `013`/`014`/`019` privāti saraksti, `022`/`023` sarakstu pieeju līmeņi, `024` `work_tasks.deleted_at`, `025` kataloga statusa check, `027`/`028`/`030` saraksta statusi, `029` `work_tasks.checklists`, `031` `team_status_labels`, `032` failu `size` backfill, `033`/`035` display preferences, `034` `file_type_extensions`, `036`/`037` sistēmas logotips/favicon un `logo_color`, `038` `work_tasks.archived_at`, `039` `work_templates` / `work_template_items`, `040` šablona `kind: folder` un ligzdots koks, `041` `work_list_automations` (trigger + action uz sarakstu), `044`–`049` komandas uzaicinājumi (tabula, RPC accept/reject, paziņojumi, self-leave, explicit accept, reject fix), `050` `set_current_user_name` (lietotājs maina savu vārdu), `051_team_permissions_extended` (komandu lomu pieejas UI + efektīvais list access), `051_task_activities_extended` un `052_task_activities_reordered` (apakšuzdevumu vēsture), `053` `user_notification_preferences`, `054` paplašināti `app_notifications.kind`, `055` `work_task_statuses` + uzdevuma statusu layout lauki, `056` šablona assignee/checklist, `057` šablona custom statusi, `058` `site_frontend_modules` (`module_templates`, `module_automations`), `059` `module_private_list` + RPC `publish_all_private_work_lists`, `060` `module_file_upload`, `061` `module_checklist`, `062` `site_payment_plans` + `site_payment_plan_modules` + `teams` plāna kolonnas, `063` `touch_current_member_online`, `064` `module_google_drive` + `team_google_drive_integrations`, `065` `user_calendar_integrations` + `module_calendar` / `module_calendar_apple` / `module_calendar_google`, `066` `module_onedrive` + `team_onedrive_integrations`, `067`/`068` `site_integrations` (`google_oauth`, `microsoft_oauth`)
 
 ## Frontend moduļi
 
@@ -120,11 +122,18 @@ Globāli feature flagi tabulā `public.site_frontend_modules` (`module_key` + `i
 |---|---|---|
 | `module_private_list` | `ListFormModal` rāda **Privāts saraksts** slēdzi un biedru/lomu izvēli | Slēdzis pazūd; visi `work_lists.is_private` kļūst `false` (RPC `publish_all_private_work_lists`); UI tos rāda kā publiskus |
 | `module_file_upload` | Augšupielāde kokā, apakšuzdevumos, mapes **Faili** logs, sānjoslas **Failu vieta** | Nav upload; esošie faili kokā un apakšuzdevumā slēpti; Failu logs izņemts no window order; Failu vieta pazūd; faila URL redirect |
+| `module_google_drive` | Komandas `...` → **Google Drive Integrācija**; `/team/google-drive`; pēc faila pievienošanas kopija uz Drive, ja komanda ir pieslēgusi kontu. Admin slēdzis ieslēdzams tikai ja Google OAuth integrācija ir konfigurēta un ieslēgta | Izvēlnes opcijas nav; maršruts redirect uz `/dashboard`; Drive sync nenotiek. Prasa arī `module_file_upload` |
+| `module_onedrive` | Komandas `...` → **OneDrive Integrācija**; `/team/onedrive`; pēc faila pievienošanas kopija uz OneDrive, ja komanda ir pieslēgusi kontu. Admin slēdzis ieslēdzams tikai ja Microsoft OAuth integrācija ir konfigurēta un ieslēgta | Izvēlnes opcijas nav; maršruts redirect uz `/dashboard`; OneDrive sync nenotiek. Prasa arī `module_file_upload` |
 | `module_checklist` | Check List lietojams; slēgto statusu bloķē nepabeigti punkti | Sadaļa vienmēr sakļauta (`forceCollapsed`); slēgto statusu **nebloķē** |
 | `module_automations` | Saraksta `...` → **Automatizācijas**; `lists-store` izpilda statusa/čeklistes/apakšuzdevumu noteikumus | Izvēlnes opcijas nav; esošie noteikumi **neizpildās** |
 | `module_templates` | Komandas `...` → **Šabloni**; `/templates` pieejams; mapes `+` var pielietot šablonu | Šablonus nevar atvērt/veidot; pat ja automatizācijas ir ieslēgtas, **Mapes izveide → šablons** (`folder_created`) nerādās `ListAutomationsModal` un neizpildās `parent-create-flow` |
+| `module_calendar` | Lietotāja dropup rāda **Kalendāra integrāciju**, ja ieslēgts arī Apple vai Google apakšmodulis | Izvēlnes opcijas nav; `.ics` plūsma paliek tukša |
+| `module_calendar_apple` | Izvēlē Apple Calendar un `webcal://…ics` abonēšana | Apple karte UI nav |
+| `module_calendar_google` | Izvēlē Google Calendar; tas pats HTTPS `.ics` (Google “From URL” / `calendar.google.com?cid=`) | Google karte UI nav |
 
-Lib: `app/lib/frontend-modules/` (`keys.ts`, `repository.ts`, `context.tsx`, `access.ts`). Zināmo atslēgu etiķetes UI atkārtoti izmanto `lists.private.label`, `team.access.actions.files_upload`, `subtasks.checklist.title`, `nav.templates`, `lists.automations.title`.
+Lib: `app/lib/frontend-modules/` (`keys.ts`, `repository.ts`, `context.tsx`, `access.ts`). Zināmo atslēgu etiķetes UI atkārtoti izmanto `lists.private.label`, `team.access.actions.files_upload`, `nav.google_drive`, `subtasks.checklist.title`, `nav.templates`, `lists.automations.title`, `calendar.integration.title`, `calendar.provider.apple`, `calendar.provider.google`.
+
+Plūsma: `GET /calendar/{token}.ics` (`app/calendar/[token]/route.ts`). Apple: `webcal://`. Google Calendar **neizmanto** Calendar API OAuth — oficiāli abonē HTTPS iCalendar URL (`From URL` vai `calendar.google.com/calendar/r?cid=`). Google atjauno plūsmu lēni (stundas). Token ir noslēpums; ICS lasa service role.
 
 ## Maksas plāni
 
@@ -161,7 +170,7 @@ Komandai kolonnas `payment_plan_id` / `payment_plan_until` / `payment_plan_paid`
 
 ## Apakšuzdevuma modālis
 
-`app/components/subtask-detail-modal.tsx` + `AppModal` (`dirty` no nosaukuma, apraksta, datumiem, atbildīgajiem — **statuss un čeklisti dirty neskaita**). Statusa maiņa esošam apakšuzdevumam `updateTask` uzreiz. Čeklisti esošam uzdevumam persistējas uzreiz (tekstam debounce). Saglabāt **neaizver** modāli un nepāriet uz citu lapu; aizver X / ESC / Atcelt. Pēc jauna apakšuzdevuma izveides paliek edit mode. Poga **Pievienot jaunu** (tikai plus + tooltip `actions.add_new`) rādās, kad ir nosaukums un Saglabāt nav aktīvs; klikšķis atver tukšu formu tajā pašā modālī. `headerMeta` rāda `izveidots {date}` no aktivitātes `kind === "created"` (`useDisplayPreferences().formatDate`); jaunam nesaglabātam apakšuzdevumam datums nav. `headerSubtitle` rāda `TaskLocationPath` (`getSubtaskLocationSegments` / `getParentTaskLocationSegments`) — saraksts un mapes līdz vecākam uzdevumam. Atverams arī no saraksta loga un `/lists` kopsavilkuma, bez navigācijas. Divkolonnu izkārtojums: kreisā kolonna nosaka augstumu; vēsture labajā ir `absolute` pret kreiso un ritinās iekšēji (`ScrollableHistoryList` — fade + chevron, kad ir overflow).
+`app/components/subtask-detail-modal.tsx` + `AppModal` (`dirty` no nosaukuma, apraksta, datumiem, atbildīgajiem — **statuss un čeklisti dirty neskaita**). Statusa maiņa esošam apakšuzdevumam `updateTask` uzreiz. Čeklisti esošam uzdevumam persistējas uzreiz (tekstam debounce). Saglabāt **neaizver** modāli un nepāriet uz citu lapu; aizver X / ESC / Atcelt. Pēc jauna apakšuzdevuma izveides paliek edit mode. Poga **Pievienot jaunu** (tikai plus + tooltip `actions.add_new`) rādās, kad ir nosaukums un Saglabāt nav aktīvs; klikšķis atver tukšu formu tajā pašā modālī. `headerMeta` rāda `izveidots {date}` no aktivitātes `kind === "created"` (`useDisplayPreferences().formatDate`); jaunam nesaglabātam apakšuzdevumam datums nav. `headerSubtitle` rāda `TaskLocationPath` (`getSubtaskLocationSegments` / `getParentTaskLocationSegments`) — saraksts un mapes līdz vecākam uzdevumam, katram posmam tipa ikona. Atverams arī no saraksta loga un `/lists` kopsavilkuma, bez navigācijas. Divkolonnu izkārtojums: kreisā kolonna nosaka augstumu; vēsture labajā ir `absolute` pret kreiso un ritinās iekšēji (`ScrollableHistoryList` — fade + chevron, kad ir overflow).
 
 | Lauks | Uzvedība |
 |---|---|
@@ -170,7 +179,7 @@ Komandai kolonnas `payment_plan_id` / `payment_plan_until` / `payment_plan_paid`
 | Sākums / Termiņš | `DateCell` — klikšķis atver pārlūka datuma izvēli (`showPicker`); zem datuma relatīvais hints caur `taskDateRelativeHint` (`app/lib/task-date-display.ts`) pēc statusa grupas: **sākums** — `not_started` rāda atlicis/kavē līdz startam, `active` tikai kavējumu; **termiņš** — `not_started`/`active` atlicis vai kavē, `closed` tikai kavējumu; `disabled`, ja nav `canEditTasks` |
 | Statuss | `StatusControl` — krāsaina poga; nākamais (`fa-angle-right`) un Check. Tabulā bez hover tikai nosaukums, hover rāda `>` / Check / pārvietot / dzēst (bez animācijas). Klikšķis uz nosaukuma atver picker. `comment` līmenī statusu drīkst mainīt izpildītājs. Ja ir čeklista punkti, zem pogas zaļa progresa josla; slēgto grupu un Check tikai pie 100% |
 | Projekts, atbildīgie | Saraksta badge, `AssigneeCell` (izvēlne `createPortal` uz `document.body`, lai netiktu nogriezta tabulā) |
-| Check List | `TaskChecklists` — pirms pielikumiem; vairāki saraksti ar nosaukumu; nākamais tukšais punkts parādās pēc teksta; atzīmēšana ar ķeksīti. Tukšs sākumā sakļauts (izvēršams); ar vismaz vienu sarakstu atvērts. `forceCollapsed` ja `module_checklist` izslēgts. Struktūru labo `canEditTasks`; punktus atzīmē arī `canChangeStatus` |
+| Check List | `TaskChecklists` — pirms pielikumiem; unikāls React `key` (`checklists-…`, atsevišķi no `attachments-…`); vairāki saraksti ar nosaukumu; nākamais tukšais punkts parādās pēc teksta; atzīmēšana ar ķeksīti. Tukšs sākumā sakļauts (izvēršams); ar vismaz vienu sarakstu atvērts. `forceCollapsed` ja `module_checklist` izslēgts. Struktūru labo `canEditTasks`; punktus atzīmē arī `canChangeStatus` |
 | Pielikumi | `TaskAttachments` — tikai ja `module_file_upload`; drag-and-drop vai **pārlūko**; zem zonas `files.upload.allowed_types`; `accept` no kataloga; kartītes ar ikonu/krāsu; `disabled` bez `edit` / `full_edit`. Tukšs sākumā sakļauts (izvēršams); ar failiem atvērts |
 | Faila `...` | `CreateItemMenu`: Apskatīt, Pārsaukt, Dzēst. Klikšķis uz kartītes arī atver apskati. Izvēlne ar `data-app-modal-ignore-backdrop`, lai neaizvērtu apakšuzdevuma modāli |
 | Dzēst failu | Tikai `ConfirmModal` (`files.delete.*`) |
@@ -191,10 +200,10 @@ Hierarhija: **Saraksts → mape / uzdevumu saraksts / fails → apakšuzdevumi t
 - Arhīvs (`archived_at`, atšķirīgs no apakšuzdevumu `deleted_at`): `setWorkItemArchived` arhivē uzdevumu vai mapi ar visiem pēcnācējiem; noņemšana no arhīva atjauno arī senčus, lai vienums atkal būtu kokā. Aktīvais koks un `getListTasks` slēpj arhivētos; `archivedListTasks` rāda arhīva saknes. UI: `WorkItemArchiveButton` (`fa-folder-open` aktīvam, `fa-folder` arhivētam); saraksta lapā `fas fa-archive` pārslēdz kopsavilkumu
 - Saraksta faili kokā: `app/lib/list-files.ts` — augšupielāde tikai `file_type_extensions` katalogā
 - Jauns/labot sarakstu: `ListFormModal` — izskats, **noklusējuma pieeja**; slēdzis **Pielāgot katrai lomai** parāda lomu līmeņus un paslēpj globālo izvēli; **Privāts saraksts** slēdzis (un biedru izvēle) tikai ja `module_private_list` ir ieslēgts
-- Apakšuzdevumu tabula (`SubtaskTable` + `GroupedSubtaskTables`): viena tabula ar `groupByStatus` galvenēm iekšā; pie Pievienot arhīva poga (`IconActionButton` `variant="delete"`, aktīva paliek sarkanīga) rāda aktīvos **un** arhivētos; pabeigšana fade-out vietā; miskaste aiz Check (`deleted_at`, nav statusa katalogā); klikšķis uz dzēstā atjauno; zem nosaukuma `TaskLocationPath` (`getSubtaskLocationSegments`; saraksta nosaukums tikai, ja tabulā ir vairāki `listId`); **Pārvietot** (`fa-exchange-alt`) atver `MoveSubtaskModal` — mērķiem mapē vai citā sarakstā PATH zem nosaukuma (`MoveSubtaskDestinationButton`, bez saitēm); tas pats masveida joslā; slēgtajiem/dzēstajiem **rindai** viegls fons (`fadeHexColor` 0.88; dzēstajiem `#ef4444`); statusa pogai atsevišķi blāvs fons; zem statusa `RelativeTime` un, ja ir čeklista punkti, zaļa progresa josla; jaunam uzdevumam `statusChangedAt` = izveides laiks; `reorderable={false}` (Sākums) slēpj kārtību, bet statusu joprojām var vilkt
+- Apakšuzdevumu tabula (`SubtaskTable` + `GroupedSubtaskTables`): viena tabula ar `groupByStatus` galvenēm iekšā; pie Pievienot arhīva poga (`IconActionButton` `variant="delete"`, aktīva paliek sarkanīga) rāda aktīvos **un** arhivētos; pabeigšana fade-out vietā; miskaste aiz Check (`deleted_at`, nav statusa katalogā); klikšķis uz dzēstā atjauno; zem nosaukuma `TaskLocationPath` (`getSubtaskLocationSegments`; saraksta nosaukums tikai, ja tabulā ir vairāki `listId`; pie katra posma tipa ikona); **Pārvietot** (`fa-exchange-alt`) atver `MoveSubtaskModal` — mērķiem mapē vai citā sarakstā PATH zem nosaukuma (`MoveSubtaskDestinationButton`, bez saitēm); tas pats masveida joslā; slēgtajiem/dzēstajiem **rindai** viegls fons (`fadeHexColor` 0.88; dzēstajiem `#ef4444`); statusa pogai atsevišķi blāvs fons; zem statusa `RelativeTime` un, ja ir čeklista punkti, zaļa progresa josla; jaunam uzdevumam `statusChangedAt` = izveides laiks; `reorderable={false}` (Sākums) slēpj kārtību, bet statusu joprojām var vilkt
 - Vilkšana: `app/components/task-drop-line.tsx` (`TaskDropLine`, `dropHintFromEvent`, `frozenSortingStrategy`, `groupedStatusCollisionDetection`). Vilkšanas laikā saraksts neslīd; drop ir bieza zila līnija. Starp statusu grupām vilkšana **tikai maina statusu**, nesamaina vietām ar cita grupas pēdējo uzdevumu
 - Kopsavilkums (`ListSummary` Sākumā un `/lists`): sadalītie uzdevumi un apakšuzdevumi pēc `statusesByPriorityDesc` / `compareTasksByStatusPriority` (`app/lib/list-statuses.ts`) - pretēji picker (slēgts → aktīvs → nav sākts). Slēgtie paliek ārpus aktīvā saraksta
-- Projekta **Saraksts** logs: uzdevumu kartītes `repeat(auto-fit, minmax(min(100%, 16rem), 1fr))` tādā pašā statusa secībā. Mape rāda nested uzdevumus un to apakšuzdevumus (`OverviewSubtaskList`); grupēšana pēc statusa; aplītis hover rāda check + tooltip `status.complete_ask` (pabeidz / atver atpakaļ); arhīva poga kartītē parāda pabeigtos, progresa josla paliek. Klikšķis uz apakšuzdevuma atver `SubtaskDetailModal` uz vietas. Apakšuzdevuma aplītis un nosaukums ir statusa krāsā. Logs **Uzdevumi** paliek vilktā `sortOrder` secībā
+- Projekta **Saraksts** logs: uzdevumu kartītes `repeat(auto-fit, minmax(min(100%, 16rem), 1fr))` tādā pašā statusa secībā. Mape rāda nested uzdevumus un to apakšuzdevumus (`OverviewSubtaskList`); grupēšana pēc statusa; aplītis hover rāda check + tooltip `status.complete_ask` (pabeidz / atver atpakaļ); arhīva poga kartītē parāda pabeigtos, progresa josla paliek. Klikšķis uz apakšuzdevuma iet caur `ListWindowsBoard` `onOpenSubtask` → vienu `SubtaskDetailModal` lapā (`TaskDetailPage`). Apakšuzdevuma aplītis un nosaukums ir statusa krāsā. Logs **Uzdevumi** paliek vilktā `sortOrder` secībā; tā arhīva poga (`handleTasksArchiveChange`) sinhronizē arhīvu visām Saraksts loga kartītēm (`overviewArchiveById`), bet katru kartīti var pārslēgt atsevišķi
 
 ## Sarakstu pieejas
 
@@ -290,16 +299,18 @@ app/
     site-footer.tsx               # Publiskā kājene
     landing-page.tsx              # Landing saturs
     landing-app-preview.tsx       # Hero dashboard vizuālis
-    login-form.tsx                # Ienākt + Google + Atcerēties mani
-    signup-form.tsx               # Reģistrēties + Google + Atcerēties mani
-    google-auth-button.tsx        # Turpināt ar Google
+    login-form.tsx                # Ienākt + Google/Microsoft + Atcerēties mani
+    signup-form.tsx               # Reģistrēties + Google/Microsoft + Atcerēties mani
+    google-auth-button.tsx        # Turpināt ar Google / Microsoft
+    admin-integrations-page.tsx   # /admin/integrations: Google + Microsoft OAuth
     remember-me-checkbox.tsx      # Atcerēties mani (30 dienas)
     forgot-password-form.tsx      # Aizmirsi paroli
     legal-document-view.tsx       # Legal lapas + fiksēta satura TOC
     cookie-consent-provider.tsx   # Piekrišanas stāvoklis
     cookie-consent-dialog.tsx     # Popup un iestatījumi
     app-nav.tsx                   # Sānjosla
-    user-menu.tsx                 # Lietotāja drop-up: personīgā info, uzstādījumi, paziņojumu prefs, parole, iziet
+    user-menu.tsx                 # Lietotāja drop-up: personīgā info, uzstādījumi, paziņojumu prefs, kalendārs, parole, iziet
+    calendar-integration-modal.tsx # Apple/Google .ics abonēšana
     personal-info-modal.tsx       # Vārda un uzvārda rediģēšana
     notification-settings-modal.tsx # In-app paziņojumu veidu slēdži (grupēts, auto-save)
     change-password-modal.tsx     # Paroles maiņa (email login)
@@ -318,20 +329,20 @@ app/
     list-detail-page.tsx          # Saraksta kopsavilkums + arhīva skats
     list-form-modal.tsx           # Jauns/labot sarakstu + pieejas; privāts slēdzis pēc `module_private_list`
     list-summary.tsx              # Uzdevumu kartītes ar statusu grupām + arhīva ikona
-    list-windows-board.tsx        # Uzdevumi | Faili (ja `module_file_upload`) + Saraksts, DnD, mapes čeks
+    list-windows-board.tsx        # Uzdevumi | Faili (ja `module_file_upload`) + Saraksts, DnD; `onOpenSubtask` → lapas modalim
     templates-page.tsx            # Komandas šablonu saraksts
     template-detail-page.tsx      # Šablona nosaukums + apraksts + koks; auto-save
     template-tree-editor.tsx      # Šablona koks: mapes/uzdevumi/apakšuzdevumi, assignee, checklist, statusi, DnD
     template-task-statuses-modal.tsx # Šablona uzdevuma custom apakšuzdevumu statusi
     parent-create-flow.tsx        # Mapes/saraksta +: mape, uzdevums, šablons (ja `module_templates`), fails
-    task-detail-page.tsx          # Apakšuzdevumu tabula
+    task-detail-page.tsx          # Mape/uzdevums/apakšuzdevums; viens `SubtaskDetailModal` (URL + board)
     grouped-subtask-tables.tsx    # Viena tabula ar statusu grupām
     subtask-table.tsx             # Tabula, DateCell, AssigneeCell portal, arhīvs, rindas fons, PATH
-    task-location-path.tsx        # Saraksta/mapes ceļš zem nosaukuma (saites vai teksts)
+    task-location-path.tsx        # Saraksta/mapes/uzdevuma ceļš ar tipa ikonu zem nosaukuma (saites vai teksts)
     task-drop-line.tsx            # Zila drop līnija, frozen sort, grupu collision
     move-subtask-modal.tsx        # Apakšuzdevuma pārvietošana pie cita uzdevuma
     move-subtask-destination-button.tsx # Pārvietošanas mērķis ar PATH zem nosaukuma
-    subtask-detail-modal.tsx      # Apakšuzdevuma modālis; vēsture ritināma pret kreiso kolonnu
+    subtask-detail-modal.tsx      # Apakšuzdevuma modālis; unikāli checklist/attachments key; vēsture
     task-checklists.tsx           # Check List pirms pielikumiem; tukšs sakļauts; forceCollapsed
     status-control.tsx            # Statusa poga, picker, čeklista josla
     relative-time.tsx             # Relatīvais laiks (min / h / d / m)
@@ -378,6 +389,8 @@ app/
     list-statuses.ts              # Saraksta statusu tipi un kataloga merge
     list-automations.ts           # Automatizāciju tipi, mapRow, activeFolderCreatedTemplateAutomations
     frontend-modules/             # keys, repository, context, requireFrontendModule
+    calendar/                     # ICS plūsma, token, user calendar integration
+    google-drive/                 # OAuth, status, Drive upload, team settings actions
     payment-plans/                # helpers + repository (katalogs, cenas, trial, Early Bird)
     task-date-display.ts          # Sākuma/termiņa relatīvais hints pēc statusa grupas (DateCell)
     nav-tree-move.ts              # Koka drop: mape / ārā / secība / grupas beigas
@@ -416,7 +429,8 @@ app/
     i18n/                          # language, server overlay no site_translations
     site-admin/                   # Admin CRUD repository, tipi
     supabase/                     # env, browser/server/admin klienti, session refresh
-    auth/                         # Google OAuth, remember-session (30 dienas), getCurrentUser
+    auth/                         # OAuth login state/session, remember-session, getCurrentUser
+    integrations/                 # Google/Microsoft OAuth (site_integrations)
     users/ensure-profile.ts       # public.users rinda pēc OAuth
     users/display-name.ts         # vārda sadalījums/apvienošana (first + last → name)
     users/display-preferences.ts  # efektīvās UI datumu preferences
@@ -424,7 +438,11 @@ app/
     users/require-admin.ts        # /admin servera pārbaude
     users/use-is-admin.tsx        # is_admin RPC + profils klientā
     security/safe-redirect-path.ts
-app/auth/callback/route.ts        # OAuth code → session; Set-Cookie uz redirect
+app/auth/callback/route.ts        # E-pasta magic link / PKCE code → session
+app/auth/google-oauth/callback/route.ts # Google login + admin konfigurācija
+app/auth/microsoft-oauth/callback/route.ts # Microsoft login + admin konfigurācija
+app/auth/google-drive/callback/route.ts # Drive OAuth code → team refresh token
+app/auth/onedrive/callback/route.ts # OneDrive OAuth code → team refresh token
 proxy.ts                          # Sesijas refresh + ielogota novirzīšana no / un /login
 scripts/                          # audit-check.mjs, apply-migrations.mjs, test-supabase.mjs
 supabase/migrations/              # 001–059: shēma, admin, work data, uzaicinājumi, frontend moduļi, …
@@ -478,17 +496,38 @@ Lietotne lasa sarakstus, uzdevumus, komandas, todo, paziņojumus un failus no Po
 
 ## Google OAuth
 
-Login un signup rāda **Turpināt ar Google**. Client ID un Secret **nav** `.env` — tos ievada Supabase Dashboard → Authentication → Providers → Google.
+Admin **Integrācijas** (`/admin/integrations`): Client ID/Secret glabājas `site_integrations` (`google_oauth`); OAuth pārbaude un login/signup iet caur `/auth/google-oauth/callback`; **Aktīva** slēdzis vienmēr redzams (pirms konfigurācijas izslēgts un bloķēts; pēc — ieslēdz/izslēdz login bez credentials dzēšanas). Fallback env: `GOOGLE_OAUTH_CLIENT_ID`, `GOOGLE_OAUTH_CLIENT_SECRET`.
+
+Login/signup **neizmanto** Supabase Authentication → Providers → Google. Pēc Google profila (`openid email profile`) aplikācija ar service role izveido vai atrod Supabase Auth lietotāju un iestata sesiju (`generateLink` + `verifyOtp`).
 
 1. Google Cloud → APIs & Services → Credentials → **OAuth 2.0 Client ID** (Web application)
 2. Authorized JavaScript origins: `http://localhost:3120`
-3. Authorized redirect URI: `https://ozaoaaqmknoxtwywzara.supabase.co/auth/v1/callback`
-4. Supabase → Authentication → Providers → Google → Enable, ielīmē Client ID un Client Secret
-5. Supabase → Authentication → URL Configuration:
-   - Site URL: `http://localhost:3120`
-   - Redirect URLs: `http://localhost:3120/auth/callback`
+3. Authorized redirect URI: `http://localhost:3120/auth/google-oauth/callback`
+4. Admin → Integrācijas → ielīmē Client ID/Secret → **Konfigurēt ar Google** → ieslēdz **Aktīva**
 
-Aplikācijas callback: `/auth/callback` (`app/auth/callback/route.ts`). `redirectTo` ņem `window.location.origin`. Pēc Google pieslēgšanās `ensure_user_profile` izveido `public.users` rindu. Pirmais reģistrētais saņem `is_admin = true`, pārējie `false`. Sesijas sīkdatnes ir **obligātās** (ePrivacy izņēmums autentifikācijai). **Atcerēties mani** (noklusējums) glabā sesiju **30 dienas**; bez ķeksīša sesija dzēšas, aizverot pārlūku. Ielogotam lietotājam `/`, `/login` un `/signup` ved uz `/dashboard`.
+Sesijas sīkdatnes ir **obligātās** (ePrivacy izņēmums autentifikācijai). **Atcerēties mani** (noklusējums) glabā sesiju **30 dienas**; bez ķeksīša sesija dzēšas, aizverot pārlūku. Ielogotam lietotājam `/`, `/login` un `/signup` ved uz `/dashboard`. `/auth/callback` paliek e-pasta magic link / PKCE plūsmām (uzaicinājumi u.tml.), nevis Google login.
+
+## Microsoft OAuth
+
+Admin **Integrācijas**: `microsoft_oauth` Client ID/Secret; **Aktīva** (tāpat kā Google: redzams vienmēr, ieslēdzams pēc konfigurācijas) rāda **Turpināt ar Microsoft** login/signup un ļauj ieslēgt `module_onedrive`. Login iet caur `/auth/microsoft-oauth/callback` (tā pati plūsma kā Google: profils → Supabase lietotājs → sesija). Komandas OneDrive pieslēgšanai atsevišķi `/auth/onedrive/callback` ar `Files.ReadWrite`. Fallback env: `ONEDRIVE_CLIENT_ID`, `ONEDRIVE_CLIENT_SECRET`.
+
+## Resend / Umami / Sentry
+
+Admin **Integrācijas** kartiņas (`resend`, `umami`, `sentry`) - Saglabāt credentials → **Aktīva**.
+
+| Integrācija | Lauki | Kad aktīva |
+|---|---|---|
+| **Resend** | From e-pasts + API Key | `sendResendEmail()` (`app/lib/integrations/resend/client.ts`); fallback env `RESEND_FROM_EMAIL`, `RESEND_API_KEY` |
+| **Umami** | Website ID + Script URL (noklusējums `https://cloud.umami.is/script.js`) | Klienta `UmamiAnalytics` ielādē skriptu `document.head` pēc **analytics** cookie piekrišanas; env `UMAMI_WEBSITE_ID`, `UMAMI_SCRIPT_URL` |
+| **Sentry** | Environment (opcionāli) + DSN | Klienta `SentryInit` (`@sentry/browser`); env `SENTRY_ENVIRONMENT`, `SENTRY_DSN` |
+
+## Google Drive (komandas faili)
+
+Kad `module_google_drive` un `module_file_upload` ir ieslēgti, komandas `...` rāda **Google Drive Integrācija**. Lapa `/team/google-drive`: pieslēgt Google kontu (`drive.file`), mapes ceļš un slēdzis sūtīt jaunos failus uz Drive. Konfigurēt var īpašnieks / `team.settings.edit`. Refresh token glabājas `team_google_drive_integrations` (tikai service role). OAuth env: `GOOGLE_DRIVE_CLIENT_ID`, `GOOGLE_DRIVE_CLIENT_SECRET`. Redirect URI: `/auth/google-drive/callback`. Google Cloud projektā jāieslēdz Drive API. Pēc faila pievienošanas kokā vai apakšuzdevumā klients sūta `POST /api/google-drive/upload`.
+
+## OneDrive (komandas faili)
+
+Kad `module_onedrive` un `module_file_upload` ir ieslēgti, komandas `...` rāda **OneDrive Integrācija**. Lapa `/team/onedrive`: pieslēgt Microsoft kontu (`Files.ReadWrite`), mapes ceļš un slēdzis sūtīt jaunos failus uz OneDrive. `module_onedrive` admin slēdzis ieslēdzams tikai ja **Microsoft OAuth** ir konfigurēts un ieslēgts (`/admin/integrations`). Credentials glabājas `site_integrations` (`microsoft_oauth`); fallback env: `ONEDRIVE_CLIENT_ID`, `ONEDRIVE_CLIENT_SECRET`. Redirect URI login/konfigurācijai: `/auth/microsoft-oauth/callback`; komandas pieslēgšanai: `/auth/onedrive/callback`. Refresh token: `team_onedrive_integrations`. Pēc faila pievienošanas klients sūta `POST /api/onedrive/upload`.
 
 ## Dati
 
@@ -510,6 +549,7 @@ RLS (`005_work_data.sql`): `authenticated` drīkst SELECT/INSERT/UPDATE/DELETE t
 | `site_settings` | Sistēmas nosaukums, slogans, `logo_url` / `favicon_url` (data URL), `logo_color`, datumu/laika noklusējums (`week_start_day`, `date_format`, `date_separator`, `time_format`); `payment_plans_enabled`, `trial_plan_id`, `trial_days`, `early_bird_limit` (`062`) |
 | `site_payment_plans` | Maksas plānu katalogs (nosaukumi visās valodās, cenas, Early Bird cenas) |
 | `site_payment_plan_modules` | Frontend moduļi katrā plānā |
+| `site_integrations` | Sistēmas integrācijas (`google_oauth`, `microsoft_oauth`, `resend`, `umami`, `sentry`): credentials, konfigurēts/ieslēgts (`067`–`069`); RLS deny authenticated |
 | `list_statuses` | Komandas statusi vienam sarakstam (`lsts-…`) |
 | `team_status_labels` | Komandas overlay sistēmas statusu nosaukumiem |
 | `work_lists` | Saraksti (`kind`, `is_private`, `default_access_level`, `created_by`) |
@@ -524,6 +564,8 @@ RLS (`005_work_data.sql`): `authenticated` drīkst SELECT/INSERT/UPDATE/DELETE t
 | `task_activities` | Apakšuzdevumu vēsture (`kind`: izveide, statuss, assignee_added/removed, datumi, title, description, checklist, moved, hidden, restored, faili, reordered, comment); diff lauki `from_date_value`, `from_parent_id`, `previous_text`, `metadata` jsonb (`051`–`052`) |
 | `task_files` | Apakšuzdevumu pielikumi + saturs |
 | `list_files` | Saraksta faili kokā + saturs |
+| `team_google_drive_integrations` | Komandas Drive OAuth tokeni un mapes ceļš (`064`); RLS deny authenticated |
+| `team_onedrive_integrations` | Komandas OneDrive OAuth tokeni un mapes ceļš (`066`); RLS deny authenticated |
 | `app_notifications` | In-app paziņojumi (`assigned`, `unassigned`, `comment`, `file`, `status_changed`, `task_updated`, `due`, `team_invite`, `team_invite_rejected`); `recipient_id` mērķa biedrs; uzaicinājumam `target_user_id`, `invitation_id` (`054`) |
 | `user_notification_preferences` | Lietotāja in-app paziņojumu slēdži (`user_id`, `kind`, `enabled`; trūkstoša rinda = ieslēgts) (`053`) |
 | `team_todos` | Komandas kanban (`TeamTodoBoard`), nav Sākuma lapa |

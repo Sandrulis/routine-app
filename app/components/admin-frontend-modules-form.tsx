@@ -11,8 +11,12 @@ import { ConfirmModal } from "@/app/components/confirm-modal";
 import { useFeedbackToast } from "@/app/components/feedback-toast-provider";
 import { IconActionButton } from "@/app/components/icon-action-button";
 import { ToggleSwitch } from "@/app/components/toggle-switch";
+import { Tooltip } from "@/app/components/tooltip";
 import { useTranslations } from "@/app/components/translations-provider";
-import { knownFrontendModuleLabel } from "@/app/lib/frontend-modules/keys";
+import {
+  FRONTEND_MODULE_KEYS,
+  knownFrontendModuleLabel,
+} from "@/app/lib/frontend-modules/keys";
 import type { FrontendModuleSummary } from "@/app/lib/frontend-modules/types";
 import { translateActionError } from "@/app/lib/i18n/action-errors";
 
@@ -27,8 +31,12 @@ function sortModules(modules: FrontendModuleSummary[]) {
 
 export function AdminFrontendModulesForm({
   initialModules,
+  googleOAuthEnabled = false,
+  microsoftOAuthEnabled = false,
 }: {
   initialModules: FrontendModuleSummary[];
+  googleOAuthEnabled?: boolean;
+  microsoftOAuthEnabled?: boolean;
 }) {
   const router = useRouter();
   const { showFeedback, clearFeedback } = useFeedbackToast();
@@ -51,6 +59,35 @@ export function AdminFrontendModulesForm({
     if (known) return t(known.key, known.fallback);
     const translated = t(`frontend_modules.label.${key}`, "").trim();
     return translated || null;
+  }
+
+  function toggleLockedReason(module: FrontendModuleSummary): string | null {
+    if (
+      module.moduleKey === FRONTEND_MODULE_KEYS.googleDrive &&
+      !googleOAuthEnabled
+    ) {
+      return t(
+        "frontend_modules.google_drive.toggle_locked",
+        "Vispirms konfigurē un ieslēdz Google OAuth integrāciju (Administrācija → Integrācijas).",
+      );
+    }
+    if (
+      module.moduleKey === FRONTEND_MODULE_KEYS.onedrive &&
+      !microsoftOAuthEnabled
+    ) {
+      return t(
+        "frontend_modules.onedrive.toggle_locked",
+        "Vispirms konfigurē un ieslēdz Microsoft OAuth integrāciju (Administrācija → Integrācijas).",
+      );
+    }
+    return null;
+  }
+
+  function isToggleDisabled(module: FrontendModuleSummary, isRowBusy: boolean) {
+    const locked = toggleLockedReason(module);
+    // OAuth gate blocks enabling only; already-on modules can still be turned off.
+    if (locked && !module.isEnabled) return true;
+    return isRowBusy || isBusy;
   }
 
   function handleCreate(event: React.FormEvent<HTMLFormElement>) {
@@ -94,6 +131,18 @@ export function AdminFrontendModulesForm({
     nextEnabled: boolean,
   ) {
     clearFeedback();
+
+    if (nextEnabled && toggleLockedReason(module)) {
+      const errorKey =
+        module.moduleKey === FRONTEND_MODULE_KEYS.onedrive
+          ? "errors.frontend_module_microsoft_oauth_required"
+          : "errors.frontend_module_google_oauth_required";
+      showFeedback({
+        type: "error",
+        text: translateActionError(t, errorKey),
+      });
+      return;
+    }
 
     const previousModules = modules;
     setModules((current) =>
@@ -235,6 +284,22 @@ export function AdminFrontendModulesForm({
                   const isRowBusy =
                     pendingKey === `enabled:${module.moduleKey}` ||
                     pendingKey === `delete:${module.moduleKey}`;
+                  const lockedReason = toggleLockedReason(module);
+                  const toggleDisabled = isToggleDisabled(module, isRowBusy);
+                  const toggle = (
+                    <ToggleSwitch
+                      checked={module.isEnabled}
+                      disabled={toggleDisabled}
+                      label={t(
+                        "frontend_modules.aria.enabled",
+                        "{key} ieslēgts",
+                        { key: module.moduleKey },
+                      )}
+                      onChange={(nextEnabled) =>
+                        handleEnabledToggle(module, nextEnabled)
+                      }
+                    />
+                  );
 
                   return (
                     <tr key={module.id}>
@@ -250,18 +315,13 @@ export function AdminFrontendModulesForm({
                       </td>
                       <td className="px-5 py-4 text-right">
                         <div className="inline-flex items-center justify-end gap-3">
-                          <ToggleSwitch
-                            checked={module.isEnabled}
-                            disabled={isRowBusy || isBusy}
-                            label={t(
-                              "frontend_modules.aria.enabled",
-                              "{key} ieslēgts",
-                              { key: module.moduleKey },
-                            )}
-                            onChange={(nextEnabled) =>
-                              handleEnabledToggle(module, nextEnabled)
-                            }
-                          />
+                          {lockedReason && !module.isEnabled ? (
+                            <Tooltip label={lockedReason} align="end">
+                              {toggle}
+                            </Tooltip>
+                          ) : (
+                            toggle
+                          )}
                           <IconActionButton
                             label={t("actions.delete", "Dzēst")}
                             icon="fas fa-trash"

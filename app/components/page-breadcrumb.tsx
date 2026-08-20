@@ -10,7 +10,7 @@ import { NotificationsMenu } from "@/app/components/notifications-menu";
 import { useTranslations } from "@/app/components/translations-provider";
 import { UserAvatar } from "@/app/components/user-avatar";
 import { FileIcon } from "@/app/components/file-icon";
-import { getTaskAncestors, isWorkFolder, isWorkSubtask } from "@/app/lib/lists";
+import { getTaskAncestors, workItemIcon } from "@/app/lib/lists";
 import { useLists } from "@/app/lib/lists-store";
 import { useListFiles } from "@/app/lib/use-list-files";
 import { useTeam } from "@/app/lib/team-store";
@@ -24,6 +24,19 @@ type Crumb = {
 
 function CrumbIcon({ className }: { className: string }) {
   return <i className={`${className} text-[11px]`} aria-hidden="true" />;
+}
+
+function CrumbMark({ icon, muted }: { icon?: ReactNode; muted: boolean }) {
+  if (!icon) return null;
+  return (
+    <span
+      className={`inline-flex size-5 shrink-0 items-center justify-center ${
+        muted ? "text-zinc-400" : "text-zinc-500"
+      }`}
+    >
+      {icon}
+    </span>
+  );
 }
 
 export function PageBreadcrumb() {
@@ -83,13 +96,7 @@ export function PageBreadcrumb() {
             items.push({
               href: `/lists/${parts[1]}/tasks/${ancestor.id}`,
               label: ancestor.title,
-              icon: (
-                <CrumbIcon
-                  className={
-                    ancestor.kind === "folder" ? "far fa-folder" : "fas fa-list-check"
-                  }
-                />
-              ),
+              icon: <CrumbIcon className={workItemIcon(ancestor)} />,
             });
           }
         }
@@ -101,13 +108,7 @@ export function PageBreadcrumb() {
               : loadingLabel,
           icon: (
             <CrumbIcon
-              className={
-                task && isWorkSubtask(task)
-                  ? "far fa-circle"
-                  : task && isWorkFolder(task)
-                    ? "far fa-folder"
-                    : "fas fa-list-check"
-              }
+              className={task ? workItemIcon(task) : "fas fa-list-check"}
             />
           ),
         });
@@ -122,25 +123,13 @@ export function PageBreadcrumb() {
               items.push({
                 href: `/lists/${parts[1]}/tasks/${ancestor.id}`,
                 label: ancestor.title,
-                icon: (
-                  <CrumbIcon
-                    className={
-                      ancestor.kind === "folder" ? "far fa-folder" : "fas fa-list-check"
-                    }
-                  />
-                ),
+                icon: <CrumbIcon className={workItemIcon(ancestor)} />,
               });
             }
             items.push({
               href: `/lists/${parts[1]}/tasks/${parent.id}`,
               label: parent.title,
-              icon: (
-                <CrumbIcon
-                  className={
-                    isWorkFolder(parent) ? "far fa-folder" : "fas fa-list-check"
-                  }
-                />
-              ),
+              icon: <CrumbIcon className={workItemIcon(parent)} />,
             });
           }
         }
@@ -166,6 +155,14 @@ export function PageBreadcrumb() {
         label: t("nav.team", "Komanda"),
         icon: <CrumbIcon className="fas fa-users" />,
       });
+      if (parts[1] === "google-drive") {
+        items.push({
+          href: "/team/google-drive",
+          label: t("nav.google_drive", "Google Drive Integrācija"),
+          icon: <CrumbIcon className="fab fa-google-drive" />,
+        });
+        return items;
+      }
       if (parts[1]) {
         const member = members.find((item) => item.id === parts[1]);
         items.push({
@@ -196,6 +193,7 @@ export function PageBreadcrumb() {
           label: templatesReady
             ? (template?.name ?? t("templates.detail.missing", "Šablons nav atrasts"))
             : loadingLabel,
+          icon: <CrumbIcon className="fas fa-copy" />,
         });
       }
       return items;
@@ -229,6 +227,7 @@ export function PageBreadcrumb() {
         translations: t("admin.nav.translations", "Tulkojumi"),
         modules: t("nav.modules", "Moduļi"),
         "payment-plans": t("admin.nav.payment_plans", "Maksas plāni"),
+        integrations: t("admin.nav.integrations", "Integrācijas"),
         settings: t("nav.settings", "Uzstādījumi"),
       };
       const sectionLabel = section ? (sectionLabels[section] ?? null) : null;
@@ -276,22 +275,22 @@ export function PageBreadcrumb() {
                   ) : null}
                   {isCurrent ? (
                     <span className="flex min-w-0 items-center gap-1.5 font-semibold text-zinc-900">
-                      {crumb.icon ? (
-                        <span className="inline-flex size-5 shrink-0 items-center justify-center text-zinc-500">
-                          {crumb.icon}
-                        </span>
-                      ) : null}
+                      <CrumbMark icon={crumb.icon} muted={false} />
                       <span className="truncate">{crumb.label}</span>
                     </span>
                   ) : crumb.href ? (
                     <Link
                       href={crumb.href}
-                      className="truncate text-zinc-400 transition hover:text-zinc-700"
+                      className="flex min-w-0 items-center gap-1.5 text-zinc-400 transition hover:text-zinc-700"
                     >
-                      {crumb.label}
+                      <CrumbMark icon={crumb.icon} muted />
+                      <span className="truncate">{crumb.label}</span>
                     </Link>
                   ) : (
-                    <span className="truncate text-zinc-400">{crumb.label}</span>
+                    <span className="flex min-w-0 items-center gap-1.5 text-zinc-400">
+                      <CrumbMark icon={crumb.icon} muted />
+                      <span className="truncate">{crumb.label}</span>
+                    </span>
                   )}
                 </li>
               );

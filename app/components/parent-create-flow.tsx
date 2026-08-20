@@ -15,6 +15,9 @@ import {
 } from "@/app/lib/list-files";
 import { FRONTEND_MODULE_KEYS } from "@/app/lib/frontend-modules/keys";
 import { useFrontendModules } from "@/app/lib/frontend-modules/context";
+import { googleDrivePathForListFile } from "@/app/lib/google-drive/path";
+import { queueGoogleDriveUpload } from "@/app/lib/google-drive/queue-upload";
+import { queueOneDriveUpload } from "@/app/lib/onedrive/queue-upload";
 import { useLists } from "@/app/lib/lists-store";
 import { activeFolderCreatedTemplateAutomations } from "@/app/lib/list-automations";
 import { useTemplates } from "@/app/lib/templates-store";
@@ -49,13 +52,17 @@ export function ParentCreateFlow({
   const { t } = useTranslations();
   const router = useRouter();
   const { showFeedback } = useFeedbackToast();
-  const { addTask, applyTemplate, listTasks, childTasks, listAutomations } = useLists();
+  const { addTask, applyTemplate, listTasks, childTasks, listAutomations, lists, tasks } = useLists();
   const { templates, templateItems, isReady: templatesReady } = useTemplates();
   const { files } = useListFiles();
-  const { currentUser, roles } = useTeam();
+  const { currentTeam, currentUser, roles } = useTeam();
   const { isAdmin } = useIsAdmin();
   const { isEnabled: isModuleEnabled } = useFrontendModules();
   const fileUploadsEnabled = isModuleEnabled(FRONTEND_MODULE_KEYS.fileUpload);
+  const googleDriveEnabled =
+    fileUploadsEnabled && isModuleEnabled(FRONTEND_MODULE_KEYS.googleDrive);
+  const onedriveEnabled =
+    fileUploadsEnabled && isModuleEnabled(FRONTEND_MODULE_KEYS.onedrive);
   const canApplyTemplate =
     hasTeamNavPermission(currentUser, roles, isAdmin, "templates") &&
     canManageTemplates(currentUser, roles, isAdmin) &&
@@ -149,6 +156,30 @@ export function ParentCreateFlow({
       nextOrder += 1;
       created.push(stored);
       if (!stored.hasContent && file.size > 0) skippedContent = true;
+      if (googleDriveEnabled) {
+        queueGoogleDriveUpload({
+          teamId: currentTeam?.id,
+          file,
+          pathParts: googleDrivePathForListFile({
+            lists,
+            tasks,
+            listId: current.listId,
+            parentId: current.parentId,
+          }),
+        });
+      }
+      if (onedriveEnabled) {
+        queueOneDriveUpload({
+          teamId: currentTeam?.id,
+          file,
+          pathParts: googleDrivePathForListFile({
+            lists,
+            tasks,
+            listId: current.listId,
+            parentId: current.parentId,
+          }),
+        });
+      }
     }
 
     showFeedback({

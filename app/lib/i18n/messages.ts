@@ -89,9 +89,14 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
     "auth.google.signing_in": "Pieslēdzas...",
     "auth.google.failed": "Neizdevās pieslēgties ar Google.",
     "auth.google.not_configured":
-      "Google nav iestatīts. Pievieno Supabase atslēgas .env.local.",
+      "Google nav iestatīts. Konfigurē Google OAuth Administrācija → Integrācijas.",
     "auth.google.not_enabled":
-      "Google nav ieslēgts Supabase projektā. Authentication → Providers → Google → Enable.",
+      "Google pieslēgšanās nav ieslēgta. Ieslēdz Google OAuth Administrācija → Integrācijas.",
+    "auth.microsoft.continue": "Turpināt ar Microsoft",
+    "auth.microsoft.signing_in": "Pieslēdzas...",
+    "auth.microsoft.failed": "Neizdevās pieslēgties ar Microsoft.",
+    "auth.microsoft.not_enabled":
+      "Microsoft pieslēgšanās nav ieslēgta. Ieslēdz Microsoft OAuth Administrācija → Integrācijas.",
     "auth.login.remember": "Atcerēties mani",
     "auth.open_app": "Atvērt lietotni",
     "legal.common.updated_at": "19.08.26",
@@ -234,7 +239,7 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
       "Atceras tavas izvēles saskarnē, piemēram, saraksta logu kārtību.",
     "cookie_consent.category.analytics.title": "Statistikas sīkdatnes",
     "cookie_consent.category.analytics.description":
-      "Ļauj anonīmi mērīt lietojumu. Šobrīd netiek izmantots neviens statistikas rīks.",
+      "Ļauj anonīmi mērīt lietojumu (Umami), ja administrators to ir ieslēdzis.",
     "cookie_consent.category.marketing.title": "Mārketinga sīkdatnes",
     "cookie_consent.category.marketing.description":
       "Ļauj rādīt personalizētu saturu. Šobrīd netiek izmantota neviena mārketinga sīkdatne.",
@@ -242,6 +247,8 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
     "nav.lists": "Saraksts",
     "nav.team": "Komanda",
     "nav.templates": "Šabloni",
+    "nav.google_drive": "Google Drive Integrācija",
+    "nav.onedrive": "OneDrive Integrācija",
     "nav.settings": "Uzstādījumi",
     "nav.modules": "Moduļi",
     "nav.storage.used": "Failu vieta",
@@ -261,6 +268,141 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
     "admin.nav.languages": "Valodas",
     "admin.nav.translations": "Tulkojumi",
     "admin.nav.payment_plans": "Maksas plāni",
+    "admin.nav.integrations": "Integrācijas",
+    "integrations.enabled_label": "Aktīva",
+    "integrations.enabled.requires_configured":
+      "Vispirms pabeidz konfigurāciju, lai ieslēgtu integrāciju.",
+    "integrations.status.configured": "Konfigurēta",
+    "integrations.status.not_configured": "Nav konfigurēta",
+    "integrations.feedback.status_saved": "Integrācijas statuss saglabāts.",
+    "integrations.google_oauth.title": "Google OAuth",
+    "integrations.google_oauth.description":
+      "Konfigurē Google pieslēgšanos login un reģistrācijas lapā.",
+    "integrations.google_oauth.client_id": "Client ID",
+    "integrations.google_oauth.client_secret": "Client Secret",
+    "integrations.google_oauth.client_secret_placeholder": "Google OAuth Client Secret",
+    "integrations.google_oauth.client_secret_placeholder_saved":
+      "Saglabāts — atstāj tukšu, ja nemaina",
+    "integrations.google_oauth.configure": "Konfigurēt ar Google",
+    "integrations.google_oauth.reconfigure": "Pārkonfigurēt ar Google",
+    "integrations.google_oauth.reset": "Notīrīt konfigurāciju",
+    "integrations.google_oauth.reset.confirm_title":
+      "Notīrīt Google OAuth konfigurāciju?",
+    "integrations.google_oauth.reset.confirm_description":
+      "Integrācija tiks izslēgta un lietotāji vairs neredzēs Google pieslēgšanos.",
+    "integrations.google_oauth.redirects.title": "Redirect URI",
+    "integrations.google_oauth.redirects.hint":
+      "Šo URI izmanto konfigurācijas pārbaudei un login/signup ar Google.",
+    "integrations.google_oauth.aria.enabled": "Google OAuth integrācija ieslēgta",
+    "integrations.google_oauth.feedback.configured": "Google OAuth integrācija konfigurēta.",
+    "integrations.google_oauth.feedback.credentials_saved": "Google OAuth dati saglabāti.",
+    "integrations.google_oauth.feedback.client_id_required": "Ievadi Google OAuth Client ID.",
+    "integrations.google_oauth.feedback.client_secret_required":
+      "Ievadi Google OAuth Client Secret.",
+    "integrations.google_oauth.feedback.reset": "Google OAuth konfigurācija notīrīta.",
+    "integrations.microsoft_oauth.title": "Microsoft OAuth",
+    "integrations.microsoft_oauth.description":
+      "Konfigurē Microsoft Azure lietotni, lai lietotāji varētu ienākt un komandas izmantot OneDrive.",
+    "integrations.microsoft_oauth.client_id": "Application (client) ID",
+    "integrations.microsoft_oauth.client_secret": "Client Secret",
+    "integrations.microsoft_oauth.client_secret_placeholder": "Microsoft Client Secret",
+    "integrations.microsoft_oauth.client_secret_placeholder_saved":
+      "Saglabāts — atstāj tukšu, ja nemaina",
+    "integrations.microsoft_oauth.configure": "Konfigurēt ar Microsoft",
+    "integrations.microsoft_oauth.reconfigure": "Pārkonfigurēt ar Microsoft",
+    "integrations.microsoft_oauth.reset": "Notīrīt konfigurāciju",
+    "integrations.microsoft_oauth.reset.confirm_title":
+      "Notīrīt Microsoft OAuth konfigurāciju?",
+    "integrations.microsoft_oauth.reset.confirm_description":
+      "Integrācija tiks izslēgta, lietotāji vairs neredzēs Microsoft pieslēgšanos un OneDrive modulis vairs nebūs pieejams.",
+    "integrations.microsoft_oauth.redirects.title": "Redirect URI",
+    "integrations.microsoft_oauth.redirects.hint":
+      "Pirmo URI izmanto konfigurācijai un login/signup, otro — komandas OneDrive. Azure appā pievieno arī Files.ReadWrite atļauju.",
+    "integrations.microsoft_oauth.aria.enabled": "Microsoft OAuth integrācija ieslēgta",
+    "integrations.microsoft_oauth.feedback.configured":
+      "Microsoft OAuth integrācija konfigurēta.",
+    "integrations.microsoft_oauth.feedback.credentials_saved":
+      "Microsoft OAuth dati saglabāti.",
+    "integrations.microsoft_oauth.feedback.client_id_required":
+      "Ievadi Microsoft Application (client) ID.",
+    "integrations.microsoft_oauth.feedback.client_secret_required":
+      "Ievadi Microsoft Client Secret.",
+    "integrations.microsoft_oauth.feedback.reset": "Microsoft OAuth konfigurācija notīrīta.",
+    "integrations.resend.title": "Resend",
+    "integrations.resend.description":
+      "Transakciju e-pasti caur Resend API (From adrese + API Key).",
+    "integrations.resend.from_email": "From e-pasts",
+    "integrations.resend.api_key": "API Key",
+    "integrations.resend.api_key_placeholder": "re_…",
+    "integrations.resend.api_key_placeholder_saved":
+      "Saglabāts — atstāj tukšu, ja nemaina",
+    "integrations.resend.hint":
+      "Kad integrācija ir aktīva, sistēma var sūtīt transakciju e-pastus caur Resend API.",
+    "integrations.resend.reset": "Notīrīt konfigurāciju",
+    "integrations.resend.reset.confirm_title": "Notīrīt Resend konfigurāciju?",
+    "integrations.resend.reset.confirm_description":
+      "API atslēga tiks dzēsta un e-pastu sūtīšana caur Resend tiks izslēgta.",
+    "integrations.resend.aria.enabled": "Resend integrācija ieslēgta",
+    "integrations.resend.feedback.credentials_saved": "Resend dati saglabāti.",
+    "integrations.resend.feedback.reset": "Resend konfigurācija notīrīta.",
+    "integrations.umami.title": "Umami",
+    "integrations.umami.description":
+      "Anonīma lapu statistika. Aktīvam skripts tiek ielādēts head daļā pēc statistikas piekrišanas.",
+    "integrations.umami.website_id": "Website ID",
+    "integrations.umami.script_url": "Script URL",
+    "integrations.umami.script_url_placeholder_saved":
+      "Saglabāts — atstāj tukšu, ja nemaina",
+    "integrations.umami.hint":
+      "Kad integrācija ir aktīva un lietotājs piekrīt statistikas sīkdatnēm, Umami skripts tiek ielādēts lapas head daļā.",
+    "integrations.umami.reset": "Notīrīt konfigurāciju",
+    "integrations.umami.reset.confirm_title": "Notīrīt Umami konfigurāciju?",
+    "integrations.umami.reset.confirm_description":
+      "Website ID tiks dzēsts un Umami skripts vairs netiks ielādēts.",
+    "integrations.umami.aria.enabled": "Umami integrācija ieslēgta",
+    "integrations.umami.feedback.credentials_saved": "Umami dati saglabāti.",
+    "integrations.umami.feedback.reset": "Umami konfigurācija notīrīta.",
+    "integrations.sentry.title": "Sentry",
+    "integrations.sentry.description":
+      "Kļūdu un izņēmumu uzskaite pārlūkā caur sentry.io.",
+    "integrations.sentry.environment": "Environment",
+    "integrations.sentry.dsn": "DSN",
+    "integrations.sentry.dsn_placeholder_saved":
+      "Saglabāts — atstāj tukšu, ja nemaina",
+    "integrations.sentry.hint":
+      "Kad integrācija ir aktīva, pārlūkā inicializējas Sentry kļūdu uzskaite.",
+    "integrations.sentry.reset": "Notīrīt konfigurāciju",
+    "integrations.sentry.reset.confirm_title": "Notīrīt Sentry konfigurāciju?",
+    "integrations.sentry.reset.confirm_description":
+      "DSN tiks dzēsts un Sentry kļūdu uzskaite tiks izslēgta.",
+    "integrations.sentry.aria.enabled": "Sentry integrācija ieslēgta",
+    "integrations.sentry.feedback.credentials_saved": "Sentry dati saglabāti.",
+    "integrations.sentry.feedback.reset": "Sentry konfigurācija notīrīta.",
+    "errors.integrations_save_failed": "Neizdevās saglabāt integrācijas iestatījumus.",
+    "errors.integrations_configure_failed": "Neizdevās pabeigt Google OAuth konfigurāciju.",
+    "errors.integrations_reset_failed": "Neizdevās notīrīt Google OAuth konfigurāciju.",
+    "errors.integrations_not_configured": "Vispirms pabeidz integrācijas konfigurāciju.",
+    "errors.integrations_credentials_missing":
+      "Nav Google OAuth Client ID vai Secret. Saglabā datus pirms konfigurācijas.",
+    "errors.integrations_client_id_required": "Ievadi Google OAuth Client ID.",
+    "errors.integrations_forbidden": "Nav tiesību konfigurēt integrācijas.",
+    "errors.integrations_microsoft_configure_failed":
+      "Neizdevās pabeigt Microsoft OAuth konfigurāciju.",
+    "errors.integrations_microsoft_reset_failed":
+      "Neizdevās notīrīt Microsoft OAuth konfigurāciju.",
+    "errors.integrations_microsoft_not_configured":
+      "Vispirms pabeidz Microsoft OAuth konfigurāciju.",
+    "errors.integrations_microsoft_credentials_missing":
+      "Nav Microsoft Client ID vai Secret. Saglabā datus pirms konfigurācijas.",
+    "errors.integrations_microsoft_client_id_required":
+      "Ievadi Microsoft Application (client) ID.",
+    "errors.integrations_resend_from_required": "Ievadi Resend From e-pasta adresi.",
+    "errors.integrations_resend_api_key_required": "Ievadi Resend API Key.",
+    "errors.integrations_resend_not_enabled": "Resend integrācija nav ieslēgta.",
+    "errors.integrations_resend_send_failed": "Neizdevās nosūtīt e-pastu caur Resend.",
+    "errors.integrations_umami_website_id_required": "Ievadi Umami Website ID.",
+    "errors.integrations_umami_script_required": "Ievadi Umami Script URL.",
+    "errors.integrations_sentry_environment_required": "Ievadi Sentry Environment.",
+    "errors.integrations_sentry_dsn_required": "Ievadi Sentry DSN.",
     "site_payment_plans.page.subtitle":
       "Ieslēdz maksas plānus un piešķir frontend moduļus katram plānam",
     "site_payment_plans.enable.section": "Maksas plāni",
@@ -325,6 +467,10 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
     "frontend_modules.table.key": "Atslēga",
     "frontend_modules.table.empty": "Nav moduļu.",
     "frontend_modules.aria.enabled": "{key} ieslēgts",
+    "frontend_modules.google_drive.toggle_locked":
+      "Vispirms konfigurē un ieslēdz Google OAuth integrāciju (Administrācija → Integrācijas).",
+    "frontend_modules.onedrive.toggle_locked":
+      "Vispirms konfigurē un ieslēdz Microsoft OAuth integrāciju (Administrācija → Integrācijas).",
     "frontend_modules.delete.confirm_title": "Dzēst moduli?",
     "frontend_modules.delete.confirm_description":
       "Modulis {key} tiks neatgriezeniski dzēsts.",
@@ -786,6 +932,64 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
       "Darāmais darbs ar statusu, termiņu un apakšuzdevumiem",
     "templates.menu_description":
       "Sagatavo uzdevumu sarakstus, ko pēc tam pievieno mapē",
+    "google_drive.menu_description":
+      "Sūti augšupielādētos failus uz komandas Google Drive",
+    "google_drive.page.subtitle":
+      "Pieslēdz komandas Google kontu, lai augšupielādētie faili nonāktu arī Drive mapē.",
+    "google_drive.connect.title": "Google konts",
+    "google_drive.connect.description":
+      "Piekļuve tikai failiem, ko izveido Routine (Drive scope: drive.file).",
+    "google_drive.connect.button": "Pierakstīties ar Google",
+    "google_drive.status.connected": "Savienots",
+    "google_drive.status.disconnected": "Nav savienots",
+    "google_drive.not_configured":
+      "Sistēmā nav iestatīts Google Drive OAuth Client ID un Secret (.env).",
+    "google_drive.configure_owner_only":
+      "Integrāciju var mainīt tikai komandas īpašnieks vai lietotājs ar tiesībām labot komandas datus.",
+    "google_drive.disconnect": "Atvienot Google kontu",
+    "google_drive.disconnect.title": "Atvienot Google kontu?",
+    "google_drive.disconnect.description":
+      "Jauni faili vairs netiks sūtīti uz Drive. Esošie Drive faili paliek.",
+    "google_drive.folder.title": "Drive mape",
+    "google_drive.folder.description":
+      "Faili nonāk šajā mapē, saglabājot saraksta un mapju struktūru.",
+    "google_drive.folder.path": "Mapes ceļš Drive",
+    "google_drive.folder.hint":
+      "Piemēram Routine vai Komanda/Faili. Mape tiek izveidota, ja tās vēl nav.",
+    "google_drive.upload.enabled":
+      "Augšupielādēt failus uz Google Drive, kad tos pievieno Routine",
+    "google_drive.feedback.connected": "Google konts pieslēgts.",
+    "google_drive.feedback.disconnected": "Google konts atvienots.",
+    "google_drive.feedback.saved": "Google Drive iestatījumi saglabāti.",
+    "onedrive.menu_description":
+      "Sūti augšupielādētos failus uz komandas OneDrive",
+    "onedrive.page.subtitle":
+      "Pieslēdz komandas Microsoft kontu, lai augšupielādētie faili nonāktu arī OneDrive mapē.",
+    "onedrive.connect.title": "Microsoft konts",
+    "onedrive.connect.description":
+      "Piekļuve failiem, ko Routine izveido komandas OneDrive (scope: Files.ReadWrite).",
+    "onedrive.connect.button": "Pierakstīties ar Microsoft",
+    "onedrive.status.connected": "Savienots",
+    "onedrive.status.disconnected": "Nav savienots",
+    "onedrive.not_configured":
+      "Sistēmā nav iestatīts Microsoft OAuth (Administrācija → Integrācijas).",
+    "onedrive.configure_owner_only":
+      "Integrāciju var mainīt tikai komandas īpašnieks vai lietotājs ar tiesībām labot komandas datus.",
+    "onedrive.disconnect": "Atvienot Microsoft kontu",
+    "onedrive.disconnect.title": "Atvienot Microsoft kontu?",
+    "onedrive.disconnect.description":
+      "Jauni faili vairs netiks sūtīti uz OneDrive. Esošie faili paliek.",
+    "onedrive.folder.title": "OneDrive mape",
+    "onedrive.folder.description":
+      "Faili nonāk šajā mapē, saglabājot saraksta un mapju struktūru.",
+    "onedrive.folder.path": "Mapes ceļš OneDrive",
+    "onedrive.folder.hint":
+      "Piemēram Routine vai Komanda/Faili. Mape tiek izveidota, ja tās vēl nav.",
+    "onedrive.upload.enabled":
+      "Augšupielādēt failus uz OneDrive, kad tos pievieno Routine",
+    "onedrive.feedback.connected": "Microsoft konts pieslēgts.",
+    "onedrive.feedback.disconnected": "Microsoft konts atvienots.",
+    "onedrive.feedback.saved": "OneDrive iestatījumi saglabāti.",
     "templates.page.subtitle":
       "Iepriekš definēti uzdevumu un apakšuzdevumu saraksti, ko pēc tam pievieno mapē.",
     "templates.empty": "Vēl nav šablonu.",
@@ -1133,6 +1337,32 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
     "user_menu.heading": "Konts",
     "user_menu.notifications": "Paziņojumu uzstādījumi",
     "user_menu.notifications_hint": "Izvēlies, par ko saņemt brīdinājumus",
+    "user_menu.calendar_hint": "Uzdevumi Apple vai Google kalendārā",
+    "calendar.integration.title": "Kalendāra integrācija",
+    "calendar.integration.description":
+      "Parādi savā kalendārā piesaistītos uzdevumus, kuriem ir termiņš.",
+    "calendar.integration.enable": "Rādīt uzdevumus kalendārā",
+    "calendar.integration.enable_hint":
+      "Tikai uzdevumi, kuros esi piesaistīts un kuriem ir termiņš.",
+    "calendar.integration.choose": "Kurš kalendārs",
+    "calendar.provider.apple": "Apple Calendar",
+    "calendar.provider.apple.hint": "Abonē ar webcal vai .ics linku.",
+    "calendar.provider.google": "Google Calendar",
+    "calendar.provider.google.hint": "Abonē to pašu .ics plūsmu no URL.",
+    "calendar.integration.apple_link": "Apple .ics links",
+    "calendar.integration.google_link": "Google .ics links",
+    "calendar.integration.apple_help":
+      "Kalendārs → Fails → Jauna kalendāra abonēšana, vai atver linku, lai pievienotu macOS Kalendāram.",
+    "calendar.integration.google_help":
+      "Google Calendar → Citi kalendāri → plus → No URL. Google atjauno plūsmu ik pēc dažām stundām. Vietējam http:// localhost Google neabonēs.",
+    "calendar.integration.open_apple": "Atvērt Kalendārā",
+    "calendar.integration.open_google": "Pievienot Google Calendar",
+    "calendar.integration.link_copied": "Kalendāra links nokopēts.",
+    "calendar.integration.regenerate": "Izveidot jaunu linku",
+    "calendar.integration.regenerate_title": "Izveidot jaunu kalendāra linku?",
+    "calendar.integration.regenerate_description":
+      "Vecais links pārstās darboties. Kalendārā būs jāabonē jaunais.",
+    "calendar.integration.regenerated": "Jauns kalendāra links ir gatavs.",
     "user_menu.settings": "Personīgie uzstādījumi",
     "user_menu.settings_hint": "Profils un datumu attēlojums",
     "user_menu.password": "Mainīt paroli",
@@ -1176,6 +1406,7 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
     "actions.archive": "Arhivēt",
     "actions.unarchive": "Noņemt no arhīva",
     "actions.deleting": "Dzēš…",
+    "actions.copy": "Kopēt",
     "actions.copying": "Kopē…",
     "actions.move": "Pārvietot",
     "actions.cancel": "Atcelt",
@@ -1235,6 +1466,12 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
     "errors.slogan_required": "Ievadi sistēmas sloganu vismaz vienā valodā.",
     "errors.settings_save_failed": "Neizdevās saglabāt uzstādījumus.",
     "errors.auth_required": "Nepieciešama autentificēta sesija.",
+    "errors.auth_google_disabled":
+      "Google pieslēgšanās nav ieslēgta. Ieslēdz Google OAuth Administrācija → Integrācijas.",
+    "errors.auth_google_failed": "Neizdevās pieslēgties ar Google.",
+    "errors.auth_microsoft_disabled":
+      "Microsoft pieslēgšanās nav ieslēgta. Ieslēdz Microsoft OAuth Administrācija → Integrācijas.",
+    "errors.auth_microsoft_failed": "Neizdevās pieslēgties ar Microsoft.",
     "errors.team_invite_forbidden": "Nav tiesību uzaicināt biedrus.",
     "errors.team_invite_already_member": "Šis e-pasts jau ir komandas biedrs.",
     "errors.team_invite_already_pending": "Uzaicinājums šim e-pastam jau gaida apstiprinājumu.",
@@ -1243,6 +1480,9 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
     "errors.team_invite_email_not_configured":
       "Jaunam e-pastam nevar nosūtīt uzaicinājumu — serverī trūkst SUPABASE_SERVICE_ROLE_KEY (.env.local). Esošam lietotājam pietiek ar paziņojumu lietotnē.",
     "errors.clipboard_failed": "Neizdevās nokopēt linku.",
+    "errors.calendar_load_failed": "Neizdevās ielādēt kalendāra integrāciju.",
+    "errors.calendar_save_failed": "Neizdevās saglabāt kalendāra integrāciju.",
+    "errors.calendar_provider_required": "Izvēlies kalendāru.",
     "errors.team_invite_not_found": "Uzaicinājums nav atrasts vai vairs nav spēkā.",
     "errors.team_invite_accept_failed": "Neizdevās apstiprināt uzaicinājumu.",
     "errors.team_invite_reject_failed": "Neizdevās noraidīt uzaicinājumu.",
@@ -1295,6 +1535,30 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
     "errors.frontend_module_status_save_failed":
       "Neizdevās saglabāt moduļa statusu.",
     "errors.frontend_module_delete_failed": "Neizdevās dzēst moduli.",
+    "errors.frontend_module_google_oauth_required":
+      "Google Drive moduli var ieslēgt tikai pēc Google OAuth integrācijas konfigurācijas un ieslēgšanas.",
+    "errors.frontend_module_microsoft_oauth_required":
+      "OneDrive moduli var ieslēgt tikai pēc Microsoft OAuth integrācijas konfigurācijas un ieslēgšanas.",
+    "errors.google_drive_forbidden": "Nav tiesību konfigurēt Google Drive.",
+    "errors.google_drive_module_disabled":
+      "Google Drive vai failu augšupielādes modulis nav ieslēgts.",
+    "errors.google_drive_not_configured":
+      "Google Drive OAuth nav konfigurēts serverī.",
+    "errors.google_drive_connect_failed": "Neizdevās pieslēgt Google Drive.",
+    "errors.google_drive_save_failed": "Neizdevās saglabāt Google Drive iestatījumus.",
+    "errors.google_drive_disconnect_failed": "Neizdevās atvienot Google kontu.",
+    "errors.google_drive_upload_failed": "Neizdevās augšupielādēt failu uz Google Drive.",
+    "errors.google_drive_file_too_large": "Fails ir pārāk liels Google Drive augšupielādei.",
+    "errors.onedrive_forbidden": "Nav tiesību konfigurēt OneDrive.",
+    "errors.onedrive_module_disabled":
+      "OneDrive vai failu augšupielādes modulis nav ieslēgts.",
+    "errors.onedrive_not_configured":
+      "OneDrive OAuth nav konfigurēts serverī.",
+    "errors.onedrive_connect_failed": "Neizdevās pieslēgt OneDrive.",
+    "errors.onedrive_save_failed": "Neizdevās saglabāt OneDrive iestatījumus.",
+    "errors.onedrive_disconnect_failed": "Neizdevās atvienot Microsoft kontu.",
+    "errors.onedrive_upload_failed": "Neizdevās augšupielādēt failu uz OneDrive.",
+    "errors.onedrive_file_too_large": "Fails ir pārāk liels OneDrive augšupielādei.",
     "errors.payment_plan_key_required": "Ievadi plāna atslēgu.",
     "errors.payment_plan_key_invalid":
       "Atslēgai jābūt formātā ar mazajiem burtiem, cipariem, punktiem, svītrām, apakšsvītrām un kolu.",
@@ -1401,9 +1665,14 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
     "auth.google.signing_in": "Signing in...",
     "auth.google.failed": "Could not sign in with Google.",
     "auth.google.not_configured":
-      "Google is not set up. Add Supabase keys to .env.local.",
+      "Google is not set up. Configure Google OAuth in Administration → Integrations.",
     "auth.google.not_enabled":
-      "Google is not enabled in the Supabase project. Authentication → Providers → Google → Enable.",
+      "Google sign-in is not enabled. Turn on Google OAuth in Administration → Integrations.",
+    "auth.microsoft.continue": "Continue with Microsoft",
+    "auth.microsoft.signing_in": "Signing in...",
+    "auth.microsoft.failed": "Could not sign in with Microsoft.",
+    "auth.microsoft.not_enabled":
+      "Microsoft sign-in is not enabled. Turn on Microsoft OAuth in Administration → Integrations.",
     "auth.login.remember": "Remember me",
     "auth.open_app": "Open app",
     "legal.common.updated_at": "19.08.26",
@@ -1546,7 +1815,7 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
       "Remember your interface choices, such as list window order.",
     "cookie_consent.category.analytics.title": "Analytics cookies",
     "cookie_consent.category.analytics.description":
-      "Allow anonymous usage measurement. No analytics tool is used yet.",
+      "Allow anonymous usage measurement (Umami) when enabled by an administrator.",
     "cookie_consent.category.marketing.title": "Marketing cookies",
     "cookie_consent.category.marketing.description":
       "Allow personalized content. No marketing cookie is used yet.",
@@ -1554,6 +1823,8 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
     "nav.lists": "Lists",
     "nav.team": "Team",
     "nav.templates": "Templates",
+    "nav.google_drive": "Google Drive Integration",
+    "nav.onedrive": "OneDrive Integration",
     "nav.settings": "Settings",
     "nav.modules": "Modules",
     "nav.storage.used": "File storage",
@@ -1572,6 +1843,138 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
     "admin.nav.languages": "Languages",
     "admin.nav.translations": "Translations",
     "admin.nav.payment_plans": "Payment plans",
+    "admin.nav.integrations": "Integrations",
+    "integrations.enabled_label": "Active",
+    "integrations.enabled.requires_configured":
+      "Finish configuration first to enable the integration.",
+    "integrations.status.configured": "Configured",
+    "integrations.status.not_configured": "Not configured",
+    "integrations.feedback.status_saved": "Integration status saved.",
+    "integrations.google_oauth.title": "Google OAuth",
+    "integrations.google_oauth.description":
+      "Configure Google sign-in on the login and signup pages.",
+    "integrations.google_oauth.client_id": "Client ID",
+    "integrations.google_oauth.client_secret": "Client Secret",
+    "integrations.google_oauth.client_secret_placeholder": "Google OAuth Client Secret",
+    "integrations.google_oauth.client_secret_placeholder_saved":
+      "Saved — leave blank to keep unchanged",
+    "integrations.google_oauth.configure": "Configure with Google",
+    "integrations.google_oauth.reconfigure": "Reconfigure with Google",
+    "integrations.google_oauth.reset": "Clear configuration",
+    "integrations.google_oauth.reset.confirm_title": "Clear Google OAuth configuration?",
+    "integrations.google_oauth.reset.confirm_description":
+      "The integration will be disabled and users will no longer see Google sign-in.",
+    "integrations.google_oauth.redirects.title": "Redirect URI",
+    "integrations.google_oauth.redirects.hint":
+      "This URI is used for configuration verification and Google login/signup.",
+    "integrations.google_oauth.aria.enabled": "Google OAuth integration enabled",
+    "integrations.google_oauth.feedback.configured": "Google OAuth integration configured.",
+    "integrations.google_oauth.feedback.credentials_saved": "Google OAuth credentials saved.",
+    "integrations.google_oauth.feedback.client_id_required": "Enter the Google OAuth Client ID.",
+    "integrations.google_oauth.feedback.client_secret_required":
+      "Enter the Google OAuth Client Secret.",
+    "integrations.google_oauth.feedback.reset": "Google OAuth configuration cleared.",
+    "integrations.microsoft_oauth.title": "Microsoft OAuth",
+    "integrations.microsoft_oauth.description":
+      "Configure a Microsoft Azure app so users can sign in and teams can use OneDrive.",
+    "integrations.microsoft_oauth.client_id": "Application (client) ID",
+    "integrations.microsoft_oauth.client_secret": "Client Secret",
+    "integrations.microsoft_oauth.client_secret_placeholder": "Microsoft Client Secret",
+    "integrations.microsoft_oauth.client_secret_placeholder_saved":
+      "Saved — leave blank to keep unchanged",
+    "integrations.microsoft_oauth.configure": "Configure with Microsoft",
+    "integrations.microsoft_oauth.reconfigure": "Reconfigure with Microsoft",
+    "integrations.microsoft_oauth.reset": "Clear configuration",
+    "integrations.microsoft_oauth.reset.confirm_title": "Clear Microsoft OAuth configuration?",
+    "integrations.microsoft_oauth.reset.confirm_description":
+      "The integration will be disabled, users will no longer see Microsoft sign-in, and the OneDrive module will no longer be available.",
+    "integrations.microsoft_oauth.redirects.title": "Redirect URI",
+    "integrations.microsoft_oauth.redirects.hint":
+      "The first URI is used for configuration and login/signup; the second for team OneDrive. Also add the Files.ReadWrite permission in the Azure app.",
+    "integrations.microsoft_oauth.aria.enabled": "Microsoft OAuth integration enabled",
+    "integrations.microsoft_oauth.feedback.configured": "Microsoft OAuth integration configured.",
+    "integrations.microsoft_oauth.feedback.credentials_saved":
+      "Microsoft OAuth credentials saved.",
+    "integrations.microsoft_oauth.feedback.client_id_required":
+      "Enter the Microsoft Application (client) ID.",
+    "integrations.microsoft_oauth.feedback.client_secret_required":
+      "Enter the Microsoft Client Secret.",
+    "integrations.microsoft_oauth.feedback.reset": "Microsoft OAuth configuration cleared.",
+    "integrations.resend.title": "Resend",
+    "integrations.resend.description":
+      "Transactional email via the Resend API (From address + API Key).",
+    "integrations.resend.from_email": "From email",
+    "integrations.resend.api_key": "API Key",
+    "integrations.resend.api_key_placeholder": "re_…",
+    "integrations.resend.api_key_placeholder_saved":
+      "Saved — leave blank to keep unchanged",
+    "integrations.resend.hint":
+      "When the integration is active, the system can send transactional email through the Resend API.",
+    "integrations.resend.reset": "Clear configuration",
+    "integrations.resend.reset.confirm_title": "Clear Resend configuration?",
+    "integrations.resend.reset.confirm_description":
+      "The API key will be deleted and Resend email sending will be turned off.",
+    "integrations.resend.aria.enabled": "Resend integration enabled",
+    "integrations.resend.feedback.credentials_saved": "Resend credentials saved.",
+    "integrations.resend.feedback.reset": "Resend configuration cleared.",
+    "integrations.umami.title": "Umami",
+    "integrations.umami.description":
+      "Anonymous page analytics. When active, the script loads in the page head after analytics consent.",
+    "integrations.umami.website_id": "Website ID",
+    "integrations.umami.script_url": "Script URL",
+    "integrations.umami.script_url_placeholder_saved":
+      "Saved — leave blank to keep unchanged",
+    "integrations.umami.hint":
+      "When the integration is active and the user consents to analytics cookies, the Umami script is loaded in the page head.",
+    "integrations.umami.reset": "Clear configuration",
+    "integrations.umami.reset.confirm_title": "Clear Umami configuration?",
+    "integrations.umami.reset.confirm_description":
+      "The Website ID will be deleted and the Umami script will no longer load.",
+    "integrations.umami.aria.enabled": "Umami integration enabled",
+    "integrations.umami.feedback.credentials_saved": "Umami credentials saved.",
+    "integrations.umami.feedback.reset": "Umami configuration cleared.",
+    "integrations.sentry.title": "Sentry",
+    "integrations.sentry.description":
+      "Browser error and exception tracking via sentry.io.",
+    "integrations.sentry.environment": "Environment",
+    "integrations.sentry.dsn": "DSN",
+    "integrations.sentry.dsn_placeholder_saved":
+      "Saved — leave blank to keep unchanged",
+    "integrations.sentry.hint":
+      "When the integration is active, Sentry error tracking is initialized in the browser.",
+    "integrations.sentry.reset": "Clear configuration",
+    "integrations.sentry.reset.confirm_title": "Clear Sentry configuration?",
+    "integrations.sentry.reset.confirm_description":
+      "The DSN will be deleted and Sentry error tracking will be turned off.",
+    "integrations.sentry.aria.enabled": "Sentry integration enabled",
+    "integrations.sentry.feedback.credentials_saved": "Sentry credentials saved.",
+    "integrations.sentry.feedback.reset": "Sentry configuration cleared.",
+    "errors.integrations_save_failed": "Could not save integration settings.",
+    "errors.integrations_configure_failed": "Could not complete Google OAuth configuration.",
+    "errors.integrations_reset_failed": "Could not clear Google OAuth configuration.",
+    "errors.integrations_not_configured": "Complete the integration configuration first.",
+    "errors.integrations_credentials_missing":
+      "Google OAuth Client ID or Secret is missing. Save credentials before configuring.",
+    "errors.integrations_client_id_required": "Enter the Google OAuth Client ID.",
+    "errors.integrations_forbidden": "You do not have permission to configure integrations.",
+    "errors.integrations_microsoft_configure_failed":
+      "Could not complete Microsoft OAuth configuration.",
+    "errors.integrations_microsoft_reset_failed":
+      "Could not clear Microsoft OAuth configuration.",
+    "errors.integrations_microsoft_not_configured":
+      "Complete Microsoft OAuth configuration first.",
+    "errors.integrations_microsoft_credentials_missing":
+      "Microsoft Client ID or Secret is missing. Save credentials before configuring.",
+    "errors.integrations_microsoft_client_id_required":
+      "Enter the Microsoft Application (client) ID.",
+    "errors.integrations_resend_from_required": "Enter the Resend From email address.",
+    "errors.integrations_resend_api_key_required": "Enter the Resend API Key.",
+    "errors.integrations_resend_not_enabled": "Resend integration is not enabled.",
+    "errors.integrations_resend_send_failed": "Could not send email through Resend.",
+    "errors.integrations_umami_website_id_required": "Enter the Umami Website ID.",
+    "errors.integrations_umami_script_required": "Enter the Umami Script URL.",
+    "errors.integrations_sentry_environment_required": "Enter the Sentry Environment.",
+    "errors.integrations_sentry_dsn_required": "Enter the Sentry DSN.",
     "site_payment_plans.page.subtitle":
       "Enable payment plans and assign frontend modules to each plan",
     "site_payment_plans.enable.section": "Payment plans",
@@ -1636,6 +2039,10 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
     "frontend_modules.table.key": "Key",
     "frontend_modules.table.empty": "No modules yet.",
     "frontend_modules.aria.enabled": "{key} enabled",
+    "frontend_modules.google_drive.toggle_locked":
+      "First configure and enable the Google OAuth integration (Administration → Integrations).",
+    "frontend_modules.onedrive.toggle_locked":
+      "First configure and enable the Microsoft OAuth integration (Administration → Integrations).",
     "frontend_modules.delete.confirm_title": "Delete module?",
     "frontend_modules.delete.confirm_description":
       "Module {key} will be permanently deleted.",
@@ -2091,6 +2498,64 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
     "create.task_list.description": "Work with status, due date and subtasks",
     "templates.menu_description":
       "Prepare task lists to add into a folder later",
+    "google_drive.menu_description":
+      "Send uploaded files to the team Google Drive",
+    "google_drive.page.subtitle":
+      "Connect a team Google account so uploaded files are also stored in Drive.",
+    "google_drive.connect.title": "Google account",
+    "google_drive.connect.description":
+      "Access is limited to files created by Routine (Drive scope: drive.file).",
+    "google_drive.connect.button": "Sign in with Google",
+    "google_drive.status.connected": "Connected",
+    "google_drive.status.disconnected": "Not connected",
+    "google_drive.not_configured":
+      "Google Drive OAuth Client ID and Secret are not set in the server environment.",
+    "google_drive.configure_owner_only":
+      "Only the team owner or a member who can edit team settings can change this integration.",
+    "google_drive.disconnect": "Disconnect Google account",
+    "google_drive.disconnect.title": "Disconnect Google account?",
+    "google_drive.disconnect.description":
+      "New files will no longer be sent to Drive. Existing Drive files stay.",
+    "google_drive.folder.title": "Drive folder",
+    "google_drive.folder.description":
+      "Files go into this folder, keeping the list and folder structure.",
+    "google_drive.folder.path": "Drive folder path",
+    "google_drive.folder.hint":
+      "For example Routine or Team/Files. The folder is created if it does not exist yet.",
+    "google_drive.upload.enabled":
+      "Upload files to Google Drive when they are added in Routine",
+    "google_drive.feedback.connected": "Google account connected.",
+    "google_drive.feedback.disconnected": "Google account disconnected.",
+    "google_drive.feedback.saved": "Google Drive settings saved.",
+    "onedrive.menu_description":
+      "Send uploaded files to the team OneDrive",
+    "onedrive.page.subtitle":
+      "Connect a team Microsoft account so uploaded files are also stored in OneDrive.",
+    "onedrive.connect.title": "Microsoft account",
+    "onedrive.connect.description":
+      "Access to files Routine creates in the team OneDrive (scope: Files.ReadWrite).",
+    "onedrive.connect.button": "Sign in with Microsoft",
+    "onedrive.status.connected": "Connected",
+    "onedrive.status.disconnected": "Not connected",
+    "onedrive.not_configured":
+      "Microsoft OAuth is not configured (Administration → Integrations).",
+    "onedrive.configure_owner_only":
+      "Only the team owner or a member who can edit team settings can change this integration.",
+    "onedrive.disconnect": "Disconnect Microsoft account",
+    "onedrive.disconnect.title": "Disconnect Microsoft account?",
+    "onedrive.disconnect.description":
+      "New files will no longer be sent to OneDrive. Existing OneDrive files stay.",
+    "onedrive.folder.title": "OneDrive folder",
+    "onedrive.folder.description":
+      "Files go into this folder, keeping the list and folder structure.",
+    "onedrive.folder.path": "OneDrive folder path",
+    "onedrive.folder.hint":
+      "For example Routine or Team/Files. The folder is created if it does not exist yet.",
+    "onedrive.upload.enabled":
+      "Upload files to OneDrive when they are added in Routine",
+    "onedrive.feedback.connected": "Microsoft account connected.",
+    "onedrive.feedback.disconnected": "Microsoft account disconnected.",
+    "onedrive.feedback.saved": "OneDrive settings saved.",
     "templates.page.subtitle":
       "Predefined task lists and subtask lists that the team can later add into a folder.",
     "templates.empty": "No templates yet.",
@@ -2428,6 +2893,32 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
     "user_menu.heading": "Account",
     "user_menu.notifications": "Notification settings",
     "user_menu.notifications_hint": "Choose which alerts you receive",
+    "user_menu.calendar_hint": "Tasks in Apple or Google Calendar",
+    "calendar.integration.title": "Calendar integration",
+    "calendar.integration.description":
+      "Show assigned tasks that have a due date in your calendar.",
+    "calendar.integration.enable": "Show tasks in the calendar",
+    "calendar.integration.enable_hint":
+      "Only tasks you are assigned to that have a due date.",
+    "calendar.integration.choose": "Which calendar",
+    "calendar.provider.apple": "Apple Calendar",
+    "calendar.provider.apple.hint": "Subscribe with a webcal or .ics link.",
+    "calendar.provider.google": "Google Calendar",
+    "calendar.provider.google.hint": "Subscribe to the same .ics feed from URL.",
+    "calendar.integration.apple_link": "Apple .ics link",
+    "calendar.integration.google_link": "Google .ics link",
+    "calendar.integration.apple_help":
+      "Calendar → File → New Calendar Subscription, or open the link to add it in macOS Calendar.",
+    "calendar.integration.google_help":
+      "Google Calendar → Other calendars → plus → From URL. Google refreshes the feed every few hours. It will not subscribe to a local http:// localhost URL.",
+    "calendar.integration.open_apple": "Open in Calendar",
+    "calendar.integration.open_google": "Add to Google Calendar",
+    "calendar.integration.link_copied": "Calendar link copied.",
+    "calendar.integration.regenerate": "Create a new link",
+    "calendar.integration.regenerate_title": "Create a new calendar link?",
+    "calendar.integration.regenerate_description":
+      "The old link will stop working. You will need to subscribe again in the calendar.",
+    "calendar.integration.regenerated": "A new calendar link is ready.",
     "user_menu.settings": "Personal settings",
     "user_menu.settings_hint": "Profile and date display",
     "user_menu.password": "Change password",
@@ -2471,6 +2962,7 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
     "actions.archive": "Archive",
     "actions.unarchive": "Unarchive",
     "actions.deleting": "Deleting…",
+    "actions.copy": "Copy",
     "actions.copying": "Copying…",
     "actions.move": "Move",
     "actions.cancel": "Cancel",
@@ -2530,6 +3022,12 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
     "errors.slogan_required": "Enter a slogan in at least one language.",
     "errors.settings_save_failed": "Could not save settings.",
     "errors.auth_required": "An authenticated session is required.",
+    "errors.auth_google_disabled":
+      "Google sign-in is not enabled. Turn on Google OAuth in Administration → Integrations.",
+    "errors.auth_google_failed": "Could not sign in with Google.",
+    "errors.auth_microsoft_disabled":
+      "Microsoft sign-in is not enabled. Turn on Microsoft OAuth in Administration → Integrations.",
+    "errors.auth_microsoft_failed": "Could not sign in with Microsoft.",
     "errors.team_invite_forbidden": "You do not have permission to invite members.",
     "errors.team_invite_already_member": "This email is already a team member.",
     "errors.team_invite_already_pending": "An invitation for this email is already pending.",
@@ -2538,6 +3036,9 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
     "errors.team_invite_email_not_configured":
       "Cannot email a new address without SUPABASE_SERVICE_ROLE_KEY in .env.local. Existing users still receive an in-app notification.",
     "errors.clipboard_failed": "Could not copy the link.",
+    "errors.calendar_load_failed": "Could not load calendar integration.",
+    "errors.calendar_save_failed": "Could not save calendar integration.",
+    "errors.calendar_provider_required": "Choose a calendar.",
     "errors.team_invite_not_found": "Invitation not found or no longer valid.",
     "errors.team_invite_accept_failed": "Could not accept the invitation.",
     "errors.team_invite_reject_failed": "Could not decline the invitation.",
@@ -2589,6 +3090,30 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
     "errors.frontend_module_not_found": "Module not found.",
     "errors.frontend_module_status_save_failed": "Could not save the module status.",
     "errors.frontend_module_delete_failed": "Could not delete the module.",
+    "errors.frontend_module_google_oauth_required":
+      "Enable Google Drive only after the Google OAuth integration is configured and turned on.",
+    "errors.frontend_module_microsoft_oauth_required":
+      "Enable OneDrive only after the Microsoft OAuth integration is configured and turned on.",
+    "errors.google_drive_forbidden": "You do not have permission to configure Google Drive.",
+    "errors.google_drive_module_disabled":
+      "The Google Drive or file upload module is not enabled.",
+    "errors.google_drive_not_configured":
+      "Google Drive OAuth is not configured on the server.",
+    "errors.google_drive_connect_failed": "Could not connect Google Drive.",
+    "errors.google_drive_save_failed": "Could not save Google Drive settings.",
+    "errors.google_drive_disconnect_failed": "Could not disconnect the Google account.",
+    "errors.google_drive_upload_failed": "Could not upload the file to Google Drive.",
+    "errors.google_drive_file_too_large": "The file is too large for Google Drive upload.",
+    "errors.onedrive_forbidden": "You do not have permission to configure OneDrive.",
+    "errors.onedrive_module_disabled":
+      "The OneDrive or file upload module is not enabled.",
+    "errors.onedrive_not_configured":
+      "OneDrive OAuth is not configured on the server.",
+    "errors.onedrive_connect_failed": "Could not connect OneDrive.",
+    "errors.onedrive_save_failed": "Could not save OneDrive settings.",
+    "errors.onedrive_disconnect_failed": "Could not disconnect the Microsoft account.",
+    "errors.onedrive_upload_failed": "Could not upload the file to OneDrive.",
+    "errors.onedrive_file_too_large": "The file is too large for OneDrive upload.",
     "errors.payment_plan_key_required": "Enter a plan key.",
     "errors.payment_plan_key_invalid":
       "The key must use lowercase letters, digits, dots, hyphens, underscores and colons.",

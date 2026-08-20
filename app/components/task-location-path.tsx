@@ -6,8 +6,32 @@ import { useTranslations } from "@/app/components/translations-provider";
 import type { TaskLocationSegment } from "@/app/lib/lists";
 
 const segmentClassName =
-  "max-w-[9rem] truncate text-zinc-500 sm:max-w-[12rem]";
+  "inline-flex min-w-0 max-w-[9rem] items-center gap-1 text-zinc-500 sm:max-w-[12rem]";
 const linkClassName = `${segmentClassName} underline-offset-2 transition hover:text-blue-700 hover:underline`;
+
+function segmentIconClass(type: TaskLocationSegment["type"]): string {
+  if (type === "list") return "fas fa-list-ul";
+  if (type === "folder") return "far fa-folder";
+  return "fas fa-list-check";
+}
+
+function SegmentLabel({
+  type,
+  label,
+}: {
+  type: TaskLocationSegment["type"];
+  label: string;
+}) {
+  return (
+    <>
+      <i
+        className={`${segmentIconClass(type)} shrink-0 text-[9px] text-zinc-400`}
+        aria-hidden="true"
+      />
+      <span className="truncate">{label}</span>
+    </>
+  );
+}
 
 export function TaskLocationPath({
   segments,
@@ -66,11 +90,11 @@ export function TaskLocationPath({
                 className={linkClassName}
                 title={segment.label}
               >
-                {segment.label}
+                <SegmentLabel type={segment.type} label={segment.label} />
               </Link>
             ) : (
               <span className={segmentClassName} title={segment.label}>
-                {segment.label}
+                <SegmentLabel type={segment.type} label={segment.label} />
               </span>
             )}
           </Fragment>

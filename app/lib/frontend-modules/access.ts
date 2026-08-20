@@ -6,3 +6,9 @@ export async function requireFrontendModule(moduleKey: string) {
     redirect("/dashboard");
   }
 }
+
+export async function requireFrontendModules(moduleKeys: string[]) {
+  for (const moduleKey of moduleKeys) {
+    await requireFrontendModule(moduleKey);
+  }
+}

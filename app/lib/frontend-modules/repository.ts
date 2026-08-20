@@ -7,6 +7,8 @@ import type {
   FrontendModuleInput,
   FrontendModuleSummary,
 } from "@/app/lib/frontend-modules/types";
+import { isGoogleSignInEnabled } from "@/app/lib/integrations/google-oauth/repository";
+import { isMicrosoftOAuthEnabled } from "@/app/lib/integrations/microsoft-oauth/repository";
 
 export type { FrontendModuleSummary } from "@/app/lib/frontend-modules/types";
 
@@ -168,6 +170,22 @@ export async function updateFrontendModuleEnabled(
 
   if (!isSupabaseConfigured()) {
     return { ok: false, error: "errors.db_not_configured" };
+  }
+
+  if (
+    isEnabled &&
+    normalizedKey === FRONTEND_MODULE_KEYS.googleDrive &&
+    !(await isGoogleSignInEnabled())
+  ) {
+    return { ok: false, error: "errors.frontend_module_google_oauth_required" };
+  }
+
+  if (
+    isEnabled &&
+    normalizedKey === FRONTEND_MODULE_KEYS.onedrive &&
+    !(await isMicrosoftOAuthEnabled())
+  ) {
+    return { ok: false, error: "errors.frontend_module_microsoft_oauth_required" };
   }
 
   const supabase = await createUserServerClient();

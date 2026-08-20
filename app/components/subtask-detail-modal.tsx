@@ -829,23 +829,25 @@ export function SubtaskDetailModal({
               </div>
             </div>
 
-            <TaskChecklists
-              key={task?.id ?? "create"}
-              checklists={draft.checklists}
-              forceCollapsed={!checklistsEnabled}
-              disabled={
-                deleted ||
-                (isCreate ? !access.canCreateTasks : !access.canEditTasks && !access.canChangeStatus)
-              }
-              structureLocked={
-                isCreate ? !access.canCreateTasks : !access.canEditTasks
-              }
-              onChange={commitChecklists}
-            />
+            {checklistsEnabled || draft.checklists.length > 0 ? (
+              <TaskChecklists
+                key={`checklists-${task?.id ?? "create"}`}
+                checklists={draft.checklists}
+                forceCollapsed={!checklistsEnabled}
+                disabled={
+                  deleted ||
+                  (isCreate ? !access.canCreateTasks : !access.canEditTasks && !access.canChangeStatus)
+                }
+                structureLocked={
+                  isCreate ? !access.canCreateTasks : !access.canEditTasks
+                }
+                onChange={commitChecklists}
+              />
+            ) : null}
 
             {fileUploadsEnabled ? (
             <TaskAttachments
-              key={task?.id ?? "create"}
+              key={`attachments-${task?.id ?? "create"}`}
               files={[
                 ...files.map((file) => ({
                   id: file.id,

@@ -40,7 +40,6 @@ import {
   useTaskStatuses,
 } from "@/app/lib/task-statuses";
 import { OptionalTooltip, Tooltip } from "@/app/components/tooltip";
-import { SubtaskDetailModal } from "@/app/components/subtask-detail-modal";
 import { LoadingState } from "@/app/components/loading-state";
 import { FileIcon } from "@/app/components/file-icon";
 import { useFeedbackToast } from "@/app/components/feedback-toast-provider";
@@ -77,6 +76,9 @@ import {
 } from "@/app/lib/lists";
 import { FRONTEND_MODULE_KEYS } from "@/app/lib/frontend-modules/keys";
 import { useFrontendModules } from "@/app/lib/frontend-modules/context";
+import { googleDrivePathForListFile } from "@/app/lib/google-drive/path";
+import { queueGoogleDriveUpload } from "@/app/lib/google-drive/queue-upload";
+import { queueOneDriveUpload } from "@/app/lib/onedrive/queue-upload";
 import { useLists } from "@/app/lib/lists-store";
 import { useListFiles } from "@/app/lib/use-list-files";
 import { useTeam } from "@/app/lib/team-store";
@@ -672,19 +674,19 @@ function OverviewItem({
   listId,
   task,
   nested = false,
-  archiveOpen: archiveOpenProp,
+  archiveOpen = false,
+  onArchiveOpenChange,
   onOpenSubtask,
 }: {
   listId: string;
   task: WorkTask;
   nested?: boolean;
   archiveOpen?: boolean;
+  onArchiveOpenChange?: (next: boolean) => void;
   onOpenSubtask: (task: WorkTask) => void;
 }) {
   const { t } = useTranslations();
   const { tasks: allTasks, childTasks, subtasks } = useLists();
-  const [localArchiveOpen, setLocalArchiveOpen] = useState(false);
-  const archiveOpen = nested ? Boolean(archiveOpenProp) : localArchiveOpen;
   const { statuses } = useTaskStatuses(listId);
   const folder = isWorkFolder(task);
   const nestedAll = folder
@@ -747,7 +749,7 @@ function OverviewItem({
         {nested ? null : (
           <ArchiveToggle
             pressed={archiveOpen}
-            onPressedChange={setLocalArchiveOpen}
+            onPressedChange={(next) => onArchiveOpenChange?.(next)}
           />
         )}
       </div>
@@ -794,10 +796,14 @@ function OverviewWindow({
   listId,
   tasks,
   onOpenSubtask,
+  overviewArchiveById,
+  onOverviewArchiveChange,
 }: {
   listId: string;
   tasks: WorkTask[];
   onOpenSubtask: (task: WorkTask) => void;
+  overviewArchiveById: Record<string, boolean>;
+  onOverviewArchiveChange: (taskId: string, next: boolean) => void;
 }) {
   const { t } = useTranslations();
   const { statuses } = useTaskStatuses(listId);
@@ -822,6 +828,8 @@ function OverviewWindow({
           <OverviewItem
             listId={listId}
             task={task}
+            archiveOpen={overviewArchiveById[task.id] ?? false}
+            onArchiveOpenChange={(next) => onOverviewArchiveChange(task.id, next)}
             onOpenSubtask={onOpenSubtask}
           />
         </li>
@@ -834,19 +842,25 @@ export function ListWindowsBoard({
   listId,
   tasks,
   parentId = null,
+  onOpenSubtask,
 }: {
   listId: string;
   tasks: WorkTask[];
   parentId?: string | null;
+  onOpenSubtask: (task: WorkTask) => void;
 }) {
   const { t } = useTranslations();
   const { showFeedback } = useFeedbackToast();
   const { accept, filterAllowedFiles, extensionsLabel } = useFileTypes();
   const { lists } = useLists();
-  const { currentUser, roles } = useTeam();
+  const { currentTeam, currentUser, roles } = useTeam();
   const { isAdmin } = useIsAdmin();
   const { isEnabled: isModuleEnabled } = useFrontendModules();
   const fileUploadsEnabled = isModuleEnabled(FRONTEND_MODULE_KEYS.fileUpload);
+  const googleDriveEnabled =
+    fileUploadsEnabled && isModuleEnabled(FRONTEND_MODULE_KEYS.googleDrive);
+  const onedriveEnabled =
+    fileUploadsEnabled && isModuleEnabled(FRONTEND_MODULE_KEYS.onedrive);
   const list = lists.find((item) => item.id === listId) ?? null;
   const windowOrderKey = parentId ?? listId;
   const canUploadFiles = Boolean(
@@ -858,7 +872,9 @@ export function ListWindowsBoard({
   );
   const [order, setOrder] = useState<ListWindowId[]>(DEFAULT_LIST_WINDOW_ORDER);
   const [tasksArchiveOpen, setTasksArchiveOpen] = useState(false);
-  const [openedSubtaskId, setOpenedSubtaskId] = useState<string | null>(null);
+  const [overviewArchiveById, setOverviewArchiveById] = useState<
+    Record<string, boolean>
+  >({});
   const allFilesHook = useListFiles();
   const allFiles = allFilesHook.files;
   const filesReady = allFilesHook.isReady;
@@ -871,6 +887,21 @@ export function ListWindowsBoard({
   useEffect(() => {
     setOrder(readListWindowOrder(windowOrderKey));
   }, [windowOrderKey]);
+
+  function handleTasksArchiveChange(next: boolean) {
+    setTasksArchiveOpen(next);
+    setOverviewArchiveById((current) => {
+      const updated = { ...current };
+      for (const task of tasks) {
+        updated[task.id] = next;
+      }
+      return updated;
+    });
+  }
+
+  function handleOverviewArchiveChange(taskId: string, next: boolean) {
+    setOverviewArchiveById((current) => ({ ...current, [taskId]: next }));
+  }
 
   async function handleUpload(event: ChangeEvent<HTMLInputElement>) {
     if (!canUploadFiles) return;
@@ -896,6 +927,30 @@ export function ListWindowsBoard({
       const stored = await addStoredListFile(listId, file, parentId, nextOrder);
       if (!stored) continue;
       nextOrder += 1;
+      if (googleDriveEnabled) {
+        queueGoogleDriveUpload({
+          teamId: currentTeam?.id,
+          file,
+          pathParts: googleDrivePathForListFile({
+            lists,
+            tasks,
+            listId,
+            parentId,
+          }),
+        });
+      }
+      if (onedriveEnabled) {
+        queueOneDriveUpload({
+          teamId: currentTeam?.id,
+          file,
+          pathParts: googleDrivePathForListFile({
+            lists,
+            tasks,
+            listId,
+            parentId,
+          }),
+        });
+      }
     }
   }
 
@@ -923,7 +978,7 @@ export function ListWindowsBoard({
         action={
           <ArchiveToggle
             pressed={tasksArchiveOpen}
-            onPressedChange={setTasksArchiveOpen}
+            onPressedChange={handleTasksArchiveChange}
           />
         }
       >
@@ -977,7 +1032,9 @@ export function ListWindowsBoard({
         <OverviewWindow
           listId={listId}
           tasks={tasks}
-          onOpenSubtask={(task) => setOpenedSubtaskId(task.id)}
+          onOpenSubtask={onOpenSubtask}
+          overviewArchiveById={overviewArchiveById}
+          onOverviewArchiveChange={handleOverviewArchiveChange}
         />
       </WindowCard>
     ),
@@ -1011,13 +1068,6 @@ export function ListWindowsBoard({
         </div>
       </SortableContext>
     </DndContext>
-    <SubtaskDetailModal
-      taskId={openedSubtaskId}
-      open={openedSubtaskId !== null}
-      onOpenChange={(open) => {
-        if (!open) setOpenedSubtaskId(null);
-      }}
-    />
     </>
   );
 }

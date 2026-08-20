@@ -230,22 +230,16 @@ export function TaskChecklists({
 
   return (
     <section>
-      {forceCollapsed ? (
-        <div className="inline-flex items-center gap-2 text-sm font-medium text-zinc-700">
-          {chevron}
-          {title}
-        </div>
-      ) : (
-        <button
-          type="button"
-          onClick={() => setExpanded((current) => !current)}
-          className="inline-flex items-center gap-2 text-sm font-medium text-zinc-700"
-          aria-expanded={isExpanded}
-        >
-          {chevron}
-          {title}
-        </button>
-      )}
+      <button
+        type="button"
+        disabled={forceCollapsed}
+        onClick={() => setExpanded((current) => !current)}
+        className="inline-flex items-center gap-2 text-sm font-medium text-zinc-700 disabled:cursor-default disabled:opacity-80"
+        aria-expanded={isExpanded}
+      >
+        {chevron}
+        {title}
+      </button>
 
       {isExpanded ? (
         <div className="mt-3 space-y-3">

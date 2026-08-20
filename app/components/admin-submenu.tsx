@@ -83,6 +83,12 @@ const GROUPS = [
         fallback: "Maksas plāni",
       },
       {
+        href: "/admin/integrations",
+        icon: "fas fa-plug",
+        labelKey: "admin.nav.integrations",
+        fallback: "Integrācijas",
+      },
+      {
         href: "/admin/settings",
         icon: "fas fa-sliders",
         labelKey: "nav.settings",

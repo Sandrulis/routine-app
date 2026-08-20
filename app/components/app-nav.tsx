@@ -573,6 +573,14 @@ export function AppNav() {
   const canSeeTemplates =
     hasTeamNavPermission(currentUser, roles, isAdmin, "templates") &&
     isModuleEnabled(FRONTEND_MODULE_KEYS.templates);
+  const canSeeGoogleDrive =
+    canSeeTeam &&
+    isModuleEnabled(FRONTEND_MODULE_KEYS.googleDrive) &&
+    isModuleEnabled(FRONTEND_MODULE_KEYS.fileUpload);
+  const canSeeOneDrive =
+    canSeeTeam &&
+    isModuleEnabled(FRONTEND_MODULE_KEYS.onedrive) &&
+    isModuleEnabled(FRONTEND_MODULE_KEYS.fileUpload);
   const canManageListStatuses = hasTeamActionPermission(
     currentUser,
     roles,
@@ -586,7 +594,7 @@ export function AppNav() {
       isAdmin,
       "lists.automations.manage",
     ) && isModuleEnabled(FRONTEND_MODULE_KEYS.automations);
-  const showTeamMenu = canManageRoles || canSeeTemplates;
+  const showTeamMenu = canManageRoles || canSeeTemplates || canSeeGoogleDrive || canSeeOneDrive;
 
   function accessForListId(listId: string) {
     return accessForList(lists.find((item) => item.id === listId));
@@ -614,7 +622,10 @@ export function AppNav() {
   }
 
   const isHome = pathname === "/dashboard";
-  const isTeam = pathname === "/team" || pathname.startsWith("/templates");
+  const isTeam =
+    pathname === "/team" ||
+    pathname.startsWith("/team/") ||
+    pathname.startsWith("/templates");
   const storageUsedLabel = useMemo(
     () => formatFileSize(sumFileBytes(storedFiles) + sumFileBytes(allTaskFiles)),
     [allTaskFiles, storedFiles],
@@ -1207,12 +1218,40 @@ export function AppNav() {
                 },
               ]
             : []),
+          ...(canSeeGoogleDrive
+            ? [
+                {
+                  id: "google-drive",
+                  icon: "fab fa-google-drive",
+                  title: t("nav.google_drive", "Google Drive Integrācija"),
+                  description: t(
+                    "google_drive.menu_description",
+                    "Sūti augšupielādētos failus uz komandas Google Drive",
+                  ),
+                },
+              ]
+            : []),
+          ...(canSeeOneDrive
+            ? [
+                {
+                  id: "onedrive",
+                  icon: "fab fa-microsoft",
+                  title: t("nav.onedrive", "OneDrive Integrācija"),
+                  description: t(
+                    "onedrive.menu_description",
+                    "Sūti augšupielādētos failus uz komandas OneDrive",
+                  ),
+                },
+              ]
+            : []),
         ]}
         onClose={() => setTeamMenuAnchor(null)}
         onSelect={(id) => {
           setTeamMenuAnchor(null);
           if (id === "roles") setRolesModalOpen(true);
           if (id === "templates") router.push("/templates");
+          if (id === "google-drive") router.push("/team/google-drive");
+          if (id === "onedrive") router.push("/team/onedrive");
         }}
       />
 

@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { CalendarIntegrationModal } from "@/app/components/calendar-integration-modal";
 import { ChangePasswordModal } from "@/app/components/change-password-modal";
 import { NotificationSettingsModal } from "@/app/components/notification-settings-modal";
 import { PersonalInfoModal } from "@/app/components/personal-info-modal";
@@ -14,6 +15,8 @@ import { useAuthSession } from "@/app/lib/auth/use-auth-session";
 import { createClient } from "@/app/lib/supabase/client";
 import { isSupabaseConfigured } from "@/app/lib/supabase/env";
 import { useTeam } from "@/app/lib/team-store";
+import { isCalendarIntegrationVisible } from "@/app/lib/frontend-modules/keys";
+import { useFrontendModules } from "@/app/lib/frontend-modules/context";
 import { teamRankLabel, type TeamMember } from "@/app/lib/team";
 
 export function UserMenu({ user }: { user: TeamMember }) {
@@ -29,6 +32,9 @@ export function UserMenu({ user }: { user: TeamMember }) {
   const [passwordOpen, setPasswordOpen] = useState(false);
   const [personalInfoOpen, setPersonalInfoOpen] = useState(false);
   const [notificationSettingsOpen, setNotificationSettingsOpen] = useState(false);
+  const [calendarIntegrationOpen, setCalendarIntegrationOpen] = useState(false);
+  const { isEnabled } = useFrontendModules();
+  const calendarVisible = isCalendarIntegrationVisible(isEnabled);
 
   useEffect(() => {
     if (!open) return;
@@ -166,6 +172,34 @@ export function UserMenu({ user }: { user: TeamMember }) {
               </span>
             </span>
           </button>
+          {calendarVisible ? (
+            <button
+              type="button"
+              role="menuitem"
+              onClick={() =>
+                closeAnd(() => {
+                  setCalendarIntegrationOpen(true);
+                })
+              }
+              className="flex w-full items-start gap-3 px-3 py-2 text-left transition hover:bg-zinc-100"
+            >
+              <i
+                className="fas fa-calendar-days mt-0.5 w-4 text-center text-[13px] text-zinc-500"
+                aria-hidden="true"
+              />
+              <span className="min-w-0">
+                <span className="block text-[13px] font-medium text-zinc-900">
+                  {t("calendar.integration.title", "Kalendāra integrācija")}
+                </span>
+                <span className="mt-0.5 block text-[12px] text-zinc-400">
+                  {t(
+                    "user_menu.calendar_hint",
+                    "Uzdevumi Apple vai Google kalendārā",
+                  )}
+                </span>
+              </span>
+            </button>
+          ) : null}
           {canChangePassword ? (
             <button
               type="button"
@@ -243,6 +277,13 @@ export function UserMenu({ user }: { user: TeamMember }) {
         open={notificationSettingsOpen}
         onOpenChange={setNotificationSettingsOpen}
       />
+
+      {calendarVisible ? (
+        <CalendarIntegrationModal
+          open={calendarIntegrationOpen}
+          onOpenChange={setCalendarIntegrationOpen}
+        />
+      ) : null}
 
       {canChangePassword ? (
         <ChangePasswordModal

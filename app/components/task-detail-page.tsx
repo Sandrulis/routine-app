@@ -37,6 +37,7 @@ export function TaskDetailPage({
     null,
   );
   const [createSubtaskOpen, setCreateSubtaskOpen] = useState(false);
+  const [boardSubtaskId, setBoardSubtaskId] = useState<string | null>(null);
   const [archiveOpen, setArchiveOpen] = useState(false);
   const list = lists.find((item) => item.id === listId) ?? null;
   const listAccess = list
@@ -141,6 +142,7 @@ export function TaskDetailPage({
           listId={list.id}
           parentId={parent.id}
           tasks={nested}
+          onOpenSubtask={(task) => setBoardSubtaskId(task.id)}
         />
       ) : (
         <div className="overflow-hidden rounded-xl border border-zinc-200 bg-white px-3 py-3">
@@ -156,16 +158,23 @@ export function TaskDetailPage({
       )}
 
       <SubtaskDetailModal
-        taskId={isSubtask ? opened.id : null}
+        taskId={
+          isSubtask
+            ? opened.id
+            : createSubtaskOpen
+              ? null
+              : boardSubtaskId
+        }
         createFor={
           createSubtaskOpen
             ? { listId: list.id, parentId: parent.id }
             : null
         }
-        open={isSubtask || createSubtaskOpen}
+        open={isSubtask || createSubtaskOpen || boardSubtaskId !== null}
         onOpenChange={(open) => {
           if (!open) {
             setCreateSubtaskOpen(false);
+            setBoardSubtaskId(null);
             if (isSubtask) {
               router.push(`/lists/${list.id}/tasks/${parent.id}`);
             }

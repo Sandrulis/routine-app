@@ -4,6 +4,17 @@
 
 - (none)
 
+## v0.1.18
+
+- Ceļa joslā un uzdevuma PATH pirms katra posma rāda tipa ikonu: saraksts, mape, uzdevums, apakšuzdevums vai fails
+- Projekta skatā Uzdevumi bloka arhīva poga vienlaikus pārslēdz arhīvu visām Saraksts bloka kartītēm; katru kartīti joprojām var mainīt atsevišķi
+- `module_google_drive`: komandas `...` → Google Drive Integrācija; pieslēgts konts sūta jaunos failus uz Drive
+- `module_onedrive`: komandas `...` → OneDrive Integrācija; pieslēgts konts sūta jaunos failus uz OneDrive
+- Admin **Integrācijas** (`/admin/integrations`): Google/Microsoft OAuth (login/signup caur pašu OAuth, ne Supabase Google provider), Resend, Umami, Sentry; sakļaujamas kartiņas; **Aktīva** slēdzis vienmēr redzams (pirms konfigurācijas bloķēts)
+- Admin moduļi: `module_google_drive` / `module_onedrive` slēdzis bloķēts, kamēr attiecīgā OAuth integrācija nav konfigurēta un ieslēgta (tooltip)
+- Kalendāra integrācija: lietotāja dropup, `module_calendar` + Apple/Google, `.ics` plūsma piesaistītajiem uzdevumiem ar termiņu
+- Labojums: apakšuzdevuma modālī vairs nedublējas Check List (`TaskChecklists` / `TaskAttachments` unikāli React `key`; mapes skatā viens `SubtaskDetailModal` caur `onOpenSubtask`)
+
 ## v0.1.17
 
 **Admin apakšizvēlne**
