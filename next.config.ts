@@ -31,6 +31,8 @@ const connectSrc = [
   "https://graph.microsoft.com",
   "https://*.sentry.io",
   "https://*.ingest.sentry.io",
+  "https://*.ingest.de.sentry.io",
+  "https://*.ingest.us.sentry.io",
   umamiHost,
   "https://*.umami.is",
 ]

@@ -21,9 +21,11 @@ import { getSafeRedirectPath } from "@/app/lib/security/safe-redirect-path";
 export function LoginForm({
   googleSignInEnabled = false,
   microsoftSignInEnabled = false,
+  emailPasswordEnabled = false,
 }: {
   googleSignInEnabled?: boolean;
   microsoftSignInEnabled?: boolean;
+  emailPasswordEnabled?: boolean;
 }) {
   const { t } = useTranslations();
   const router = useRouter();
@@ -33,6 +35,7 @@ export function LoginForm({
   const [password, setPassword] = useState("");
   const [pending, setPending] = useState(false);
   const { remember, updateRemember } = useRememberMe();
+  const oauthEnabled = googleSignInEnabled || microsoftSignInEnabled;
 
   useEffect(() => {
     const error = searchParams.get("error");
@@ -53,6 +56,7 @@ export function LoginForm({
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (!emailPasswordEnabled) return;
     clearFeedback();
     setPending(true);
     const next = getSafeRedirectPath(searchParams.get("next"));
@@ -79,6 +83,25 @@ export function LoginForm({
     router.refresh();
   }
 
+  const oauthButtons = oauthEnabled ? (
+    <div className="space-y-2">
+      {googleSignInEnabled ? (
+        <GoogleAuthButton
+          disabled={pending}
+          rememberMe={remember}
+          errorPage="login"
+        />
+      ) : null}
+      {microsoftSignInEnabled ? (
+        <MicrosoftAuthButton
+          disabled={pending}
+          rememberMe={remember}
+          errorPage="login"
+        />
+      ) : null}
+    </div>
+  ) : null;
+
   return (
     <form onSubmit={handleSubmit} className={`${authCardClassName} space-y-4`}>
       <div>
@@ -90,85 +113,84 @@ export function LoginForm({
         </p>
       </div>
 
-      <label className="block">
-        <span className="text-sm font-semibold text-zinc-700">
-          {t("common.email", "E-pasts")}
-        </span>
-        <input
-          required
-          type="email"
-          autoComplete="email"
-          value={email}
-          onChange={(event) => setEmail(event.target.value)}
-          placeholder={t("auth.fields.email_placeholder", "vards@uznemums.lv")}
-          className={authInputClassName}
-        />
-      </label>
-
-      <label className="block">
-        <span className="text-sm font-semibold text-zinc-700">
-          {t("auth.fields.password", "Parole")}
-        </span>
-        <input
-          required
-          type="password"
-          autoComplete="current-password"
-          value={password}
-          onChange={(event) => setPassword(event.target.value)}
-          className={authInputClassName}
-        />
-      </label>
-
-      <RememberMeCheckbox checked={remember} onChange={updateRemember} />
-
-      <div className="flex justify-end">
-        <Link
-          href="/forgot-password"
-          className="text-sm font-medium text-zinc-500 transition hover:text-zinc-900"
-        >
-          {t("auth.login.forgot", "Aizmirsi paroli?")}
-        </Link>
-      </div>
-
-      <button
-        type="submit"
-        disabled={pending}
-        className={authPrimaryButtonClassName}
-      >
-        {t("auth.login.title", "Ienākt")}
-      </button>
-
-      {googleSignInEnabled || microsoftSignInEnabled ? (
+      {emailPasswordEnabled ? (
         <>
-          <AuthDivider />
-          <div className="space-y-2">
-            {googleSignInEnabled ? (
-              <GoogleAuthButton
-                disabled={pending}
-                rememberMe={remember}
-                errorPage="login"
-              />
-            ) : null}
-            {microsoftSignInEnabled ? (
-              <MicrosoftAuthButton
-                disabled={pending}
-                rememberMe={remember}
-                errorPage="login"
-              />
-            ) : null}
-          </div>
+          <label className="block">
+            <span className="text-sm font-semibold text-zinc-700">
+              {t("common.email", "E-pasts")}
+            </span>
+            <input
+              required
+              type="email"
+              autoComplete="email"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              placeholder={t("auth.fields.email_placeholder", "vards@uznemums.lv")}
+              className={authInputClassName}
+            />
+          </label>
+
+          <label className="block">
+            <span className="text-sm font-semibold text-zinc-700">
+              {t("auth.fields.password", "Parole")}
+            </span>
+            <input
+              required
+              type="password"
+              autoComplete="current-password"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              className={authInputClassName}
+            />
+          </label>
         </>
       ) : null}
 
-      <p className="text-center text-sm text-zinc-500">
-        {t("auth.login.no_account", "Nav konta?")}{" "}
-        <Link
-          href="/signup"
-          className="font-semibold text-zinc-900 underline decoration-zinc-300 underline-offset-2"
-        >
-          {t("auth.signup.title", "Reģistrēties")}
-        </Link>
-      </p>
+      {!emailPasswordEnabled && !oauthEnabled ? (
+        <p className="text-sm text-zinc-500">
+          {t(
+            "auth.email.unavailable",
+            "Ienākšana un reģistrācija ar e-pastu ir pieejama, kad Resend integrācija ir konfigurēta un aktīva.",
+          )}
+        </p>
+      ) : null}
+
+      {emailPasswordEnabled ? (
+        <>
+          <RememberMeCheckbox checked={remember} onChange={updateRemember} />
+          <div className="flex justify-end">
+            <Link
+              href="/forgot-password"
+              className="text-sm font-medium text-zinc-500 transition hover:text-zinc-900"
+            >
+              {t("auth.login.forgot", "Aizmirsi paroli?")}
+            </Link>
+          </div>
+
+          <button
+            type="submit"
+            disabled={pending}
+            className={authPrimaryButtonClassName}
+          >
+            {t("auth.login.title", "Ienākt")}
+          </button>
+        </>
+      ) : null}
+
+      {emailPasswordEnabled && oauthEnabled ? <AuthDivider /> : null}
+      {oauthButtons}
+
+      {emailPasswordEnabled ? (
+        <p className="text-center text-sm text-zinc-500">
+          {t("auth.login.no_account", "Nav konta?")}{" "}
+          <Link
+            href="/signup"
+            className="font-semibold text-zinc-900 underline decoration-zinc-300 underline-offset-2"
+          >
+            {t("auth.signup.title", "Reģistrēties")}
+          </Link>
+        </p>
+      ) : null}
     </form>
   );
 }

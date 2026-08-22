@@ -1,17 +1,18 @@
 "use client";
 
-import { memo, useState } from "react";
+import { memo, useMemo, useState } from "react";
 import { GroupedSubtaskTables } from "@/app/components/grouped-subtask-tables";
 import { UserAvatar } from "@/app/components/user-avatar";
 import { OptionalTooltip } from "@/app/components/tooltip";
 import { useDisplayPreferences } from "@/app/components/display-preferences-provider";
 import { useTranslations } from "@/app/components/translations-provider";
 import { compareTasksByStatusPriority } from "@/app/lib/list-statuses";
-import { formatTaskLocationPath, getTaskAncestors, isTaskActiveInLists, isTaskDeleted, isWorkFolder, workItemIcon, type WorkTask } from "@/app/lib/lists";
+import { formatTaskLocationPath, getTaskAncestors, isTaskActiveInLists, isTaskDeleted, isWorkFolder, workItemIcon, workProgressById, type WorkProgress, type WorkTask } from "@/app/lib/lists";
 import { useLists } from "@/app/lib/lists-store";
 import { useTaskStatuses } from "@/app/lib/task-statuses";
 import { useTeam } from "@/app/lib/team-store";
 import { WorkItemArchiveButton } from "@/app/components/work-item-archive-button";
+import { WorkProgressBar, WorkProgressLabel } from "@/app/components/work-progress";
 
 function dateRange(
   task: WorkTask,
@@ -39,6 +40,7 @@ const TaskSummarySection = memo(function TaskSummarySection({
   defaultExpanded,
   nested = false,
   archivedView = false,
+  progress,
   onOpenTask,
 }: {
   listId: string;
@@ -47,6 +49,7 @@ const TaskSummarySection = memo(function TaskSummarySection({
   defaultExpanded: boolean;
   nested?: boolean;
   archivedView?: boolean;
+  progress: Map<string, WorkProgress>;
   onOpenTask: (task: WorkTask) => void;
 }) {
   const { t } = useTranslations();
@@ -77,6 +80,7 @@ const TaskSummarySection = memo(function TaskSummarySection({
     .sort((left, right) =>
       compareTasksByStatusPriority(left, right, statuses),
     );
+  const itemProgress = progress.get(task.id);
   const range = dateRange(task, [...nestedItems, ...children], formatDate);
   const assignees = members.filter((member) =>
     [task, ...nestedItems, ...children].some((item) =>
@@ -140,6 +144,7 @@ const TaskSummarySection = memo(function TaskSummarySection({
           <WorkItemArchiveButton task={task} />
         </div>
         <div className="flex shrink-0 items-center gap-2">
+          {itemProgress ? <WorkProgressLabel progress={itemProgress} /> : null}
           {assignees.length > 0 ? (
             <span className="flex items-center -space-x-1.5">
               {assignees.map((member) => (
@@ -159,9 +164,18 @@ const TaskSummarySection = memo(function TaskSummarySection({
           ) : null}
         </div>
       </header>
+      {itemProgress ? (
+        <div className={expanded ? "px-3" : "px-3 pb-2"}>
+          <WorkProgressBar progress={itemProgress} />
+        </div>
+      ) : null}
 
       {expanded ? (
-        <div className="space-y-4 border-t border-zinc-100 px-3 py-3">
+        <div
+          className={`space-y-4 px-3 py-3 ${
+            itemProgress ? "" : "border-t border-zinc-100"
+          }`}
+        >
           {nestedItems.length > 0 ? (
             <div className="space-y-3">
               {nestedItems.map((child) => (
@@ -173,6 +187,7 @@ const TaskSummarySection = memo(function TaskSummarySection({
                   defaultExpanded
                   nested
                   archivedView={archivedView}
+                  progress={progress}
                   onOpenTask={onOpenTask}
                 />
               ))}
@@ -194,7 +209,8 @@ const TaskSummarySection = memo(function TaskSummarySection({
           ) : (
             <GroupedSubtaskTables
               listId={listId}
-              tasks={visibleChildren}
+              tasks={children.filter((item) => !isTaskDeleted(item))}
+              includeClosed={archivedView}
               onOpenTask={onOpenTask}
             />
           )}
@@ -218,7 +234,12 @@ export function ListSummary({
   onOpenTask: (task: WorkTask) => void;
 }) {
   const { t } = useTranslations();
+  const { tasks: allTasks } = useLists();
   const { statuses } = useTaskStatuses(listId);
+  const progressById = useMemo(
+    () => workProgressById(allTasks, statuses),
+    [allTasks, statuses],
+  );
   const orderedTasks = tasks
     .slice()
     .sort((left, right) =>
@@ -245,6 +266,7 @@ export function ListSummary({
           task={task}
           defaultExpanded={index === 0}
           archivedView={archivedView}
+          progress={progressById}
           onOpenTask={onOpenTask}
         />
       ))}

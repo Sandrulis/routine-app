@@ -60,11 +60,14 @@ import {
   statusesByPriorityDesc,
 } from "@/app/lib/list-statuses";
 import {
+  emptyWorkProgress,
   fadeHexColor,
   getSubtaskLocationSegments,
   isClosedTaskStatus,
   isTaskActiveInLists,
   isTaskDeleted,
+  workProgressById,
+  workProgressFromItems,
   type TaskLocationSegment,
   type WorkTask,
 } from "@/app/lib/lists";
@@ -73,6 +76,7 @@ import {
   useTaskStatuses,
 } from "@/app/lib/task-statuses";
 import { checklistProgress, taskHasIncompleteChecklists } from "@/app/lib/task-checklists";
+import { WorkProgressLabel } from "@/app/components/work-progress";
 
 export { statusClassName };
 
@@ -542,6 +546,15 @@ export function SubtaskTable({
     selectableIds.length > 0 &&
     selectableIds.every((id) => selectedIdSet.has(id));
   const someSelectableSelected = selectedTasks.length > 0;
+  const progress = useMemo(() => {
+    if (parentTaskId) {
+      return (
+        workProgressById(allTasks, statuses).get(parentTaskId) ??
+        emptyWorkProgress()
+      );
+    }
+    return workProgressFromItems(tasks, statuses);
+  }, [allTasks, parentTaskId, statuses, tasks]);
 
   useEffect(() => {
     const visible = new Set(selectableIds);
@@ -802,7 +815,10 @@ export function SubtaskTable({
                 ) : null}
               </th>
               <th className="px-2 py-1.5 font-medium">
-                {t("tasks.fields.title", "Nosaukums")}
+                <span className="inline-flex items-center gap-2">
+                  {t("tasks.fields.title", "Nosaukums")}
+                  <WorkProgressLabel progress={progress} />
+                </span>
               </th>
               <th className="px-3 py-1.5 font-medium">
                 {t("todo.fields.assignee", "Atbildīgais")}

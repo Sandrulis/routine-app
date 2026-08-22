@@ -7,11 +7,16 @@ import { DisplayPreferencesProvider } from "@/app/components/display-preferences
 import { FeedbackToastProvider } from "@/app/components/feedback-toast-provider";
 import { NowProvider } from "@/app/components/now-provider";
 import { TranslationsProvider } from "@/app/components/translations-provider";
+import { SentryInit } from "@/app/components/sentry-init";
+import { UmamiAnalytics } from "@/app/components/umami-analytics";
+import { getSentryPublicConfig } from "@/app/lib/integrations/sentry/config";
+import { getUmamiPublicConfig } from "@/app/lib/integrations/umami/config";
 import { getActiveUiLanguages, getServerTranslations } from "@/app/lib/i18n/server";
 import { documentTitleTemplate, resolveSystemName } from "@/app/lib/document-title";
 import { brandImageMime, siteHeadIconUrl } from "@/app/lib/site-admin/branding";
 import { getSiteSettings } from "@/app/lib/site-admin/repository";
 import { getEffectiveDisplayPreferences } from "@/app/lib/users/display-preferences";
+import Script from "next/script";
 import "./fontawesome.css";
 import "./globals.css";
 
@@ -63,12 +68,16 @@ export default async function RootLayout({
     effectiveDisplayPreferences,
     settings,
     user,
+    umami,
+    sentry,
   ] = await Promise.all([
     getServerTranslations(),
     getActiveUiLanguages(),
     getEffectiveDisplayPreferences(),
     getSiteSettings(),
     getCurrentUser(),
+    getUmamiPublicConfig(),
+    getSentryPublicConfig(),
   ]);
   const headIcon = siteHeadIconUrl(
     settings.logoUrl,
@@ -87,6 +96,24 @@ export default async function RootLayout({
         ) : null}
       </head>
       <body className="min-h-dvh">
+        {umami ? (
+          <Script
+            id="umami-analytics"
+            src={umami.scriptSrc}
+            strategy="beforeInteractive"
+            data-website-id={umami.websiteId}
+            data-auto-track="false"
+            {...(umami.integrity
+              ? {
+                  integrity: umami.integrity,
+                  crossOrigin: "anonymous" as const,
+                }
+              : {})}
+          />
+        ) : null}
+        {sentry ? (
+          <SentryInit dsn={sentry.dsn} environment={sentry.environment} />
+        ) : null}
         <AuthSessionProvider initialUser={user}>
           <NowProvider>
             <TranslationsProvider
@@ -97,7 +124,10 @@ export default async function RootLayout({
             >
               <DisplayPreferencesProvider preferences={effectiveDisplayPreferences}>
                 <FeedbackToastProvider>
-                  <CookieConsentProvider>{children}</CookieConsentProvider>
+                  <CookieConsentProvider>
+                    {children}
+                    {umami ? <UmamiAnalytics /> : null}
+                  </CookieConsentProvider>
                 </FeedbackToastProvider>
               </DisplayPreferencesProvider>
             </TranslationsProvider>

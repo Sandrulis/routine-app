@@ -12,7 +12,7 @@ import { ParentCreateFlow, type ParentCreateContext } from "@/app/components/par
 import { SectionPage } from "@/app/components/section-page";
 import { SubtaskDetailModal } from "@/app/components/subtask-detail-modal";
 import { useTranslations } from "@/app/components/translations-provider";
-import { isWorkFolder, isWorkItemArchived, isWorkSubtask } from "@/app/lib/lists";
+import { isWorkFolder, isWorkItemArchived, isWorkSubtask, workProgressById } from "@/app/lib/lists";
 import { useLists } from "@/app/lib/lists-store";
 import { useTeam } from "@/app/lib/team-store";
 import { useIsAdmin } from "@/app/lib/users/use-is-admin";
@@ -20,6 +20,8 @@ import {
   resolveEffectiveListAccess,
 } from "@/app/lib/list-access";
 import { WorkItemArchiveButton } from "@/app/components/work-item-archive-button";
+import { WorkProgressLabel } from "@/app/components/work-progress";
+import { useTaskStatuses } from "@/app/lib/task-statuses";
 
 const ListWindowsBoard = dynamic(
   () =>
@@ -41,6 +43,7 @@ export function TaskDetailPage({
   const { lists, tasks, childTasks, subtasks, isReady } = useLists();
   const { currentUser, roles } = useTeam();
   const { isAdmin } = useIsAdmin();
+  const { statuses } = useTaskStatuses(listId);
   const [parentCreate, setParentCreate] = useState<ParentCreateContext | null>(
     null,
   );
@@ -60,6 +63,9 @@ export function TaskDetailPage({
     : opened;
   const children = parent ? subtasks(parent.id) : [];
   const nested = parent ? childTasks(parent.id) : [];
+  const progress = parent
+    ? workProgressById(tasks, statuses).get(parent.id)
+    : undefined;
 
   if (!isReady) {
     return (
@@ -96,6 +102,12 @@ export function TaskDetailPage({
       title={
         <span className="inline-flex items-center gap-2">
           <span>{parent.title}</span>
+          {progress ? (
+            <WorkProgressLabel
+              progress={progress}
+              className="text-sm font-medium tabular-nums text-zinc-400"
+            />
+          ) : null}
           {!isSubtask ? <WorkItemArchiveButton task={parent} /> : null}
         </span>
       }

@@ -67,6 +67,8 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
     "auth.login.forgot": "Aizmirsi paroli?",
     "auth.login.no_account": "Nav konta?",
     "auth.login.success": "Veiksmīgi ienāci.",
+    "auth.email.unavailable":
+      "Ienākšana un reģistrācija ar e-pastu ir pieejama, kad Resend integrācija ir konfigurēta un aktīva.",
     "auth.signup.title": "Reģistrēties",
     "auth.signup.subtitle": "Izveido kontu un sāc darbu ar komandu.",
     "auth.signup.has_account": "Jau ir konts?",
@@ -1089,6 +1091,7 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
     "lists.windows.overview": "Saraksts",
     "lists.windows.drag": "Pārvietot logu",
     "lists.windows.progress": "{done}/{total}",
+    "lists.progress.completed": "Izpildīti {done} no {total}",
     "lists.windows.files_empty": "Šajā sarakstā vēl nav failu.",
     "lists.windows.files_add": "Pievienot failu",
     "lists.windows.files_add_description":
@@ -1508,6 +1511,8 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
     "errors.auth_invalid": "E-pasts vai parole nav pareiza.",
     "errors.auth_rate_limited": "Pārāk daudz mēģinājumu. Mēģini vēlāk.",
     "errors.auth_signup_failed": "Neizdevās izveidot kontu.",
+    "errors.auth_email_disabled":
+      "Ienākšana ar e-pastu nav pieejama, kamēr Resend integrācija nav konfigurēta un ieslēgta.",
     "errors.mfa_invalid": "MFA iestatīšana neizdevās.",
     "errors.mfa_code_invalid": "Nepareizs kods. Mēģini vēlreiz.",
     "errors.file_type_mismatch": "Faila saturs nesakrīt ar tipu.",
@@ -1766,6 +1771,8 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
     "auth.login.forgot": "Forgot password?",
     "auth.login.no_account": "No account?",
     "auth.login.success": "Signed in successfully.",
+    "auth.email.unavailable":
+      "Email and password sign-in is available once the Resend integration is configured and active.",
     "auth.signup.title": "Sign up",
     "auth.signup.subtitle": "Create an account and start working with your team.",
     "auth.signup.has_account": "Already have an account?",
@@ -2776,6 +2783,7 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
     "lists.windows.overview": "List",
     "lists.windows.drag": "Move window",
     "lists.windows.progress": "{done}/{total}",
+    "lists.progress.completed": "Completed {done} of {total}",
     "lists.windows.files_empty": "This list has no files yet.",
     "lists.windows.files_add": "Add file",
     "lists.windows.files_add_description":
@@ -3187,6 +3195,8 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
     "errors.auth_invalid": "Email or password is incorrect.",
     "errors.auth_rate_limited": "Too many attempts. Try again later.",
     "errors.auth_signup_failed": "Could not create the account.",
+    "errors.auth_email_disabled":
+      "Email sign-in is unavailable until the Resend integration is configured and enabled.",
     "errors.mfa_invalid": "Could not set up MFA.",
     "errors.mfa_code_invalid": "Incorrect code. Try again.",
     "errors.file_type_mismatch": "File contents do not match the file type.",

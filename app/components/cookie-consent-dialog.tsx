@@ -35,7 +35,7 @@ const OPTIONAL_CATEGORY_META: Record<
     titleFallback: "Statistikas sīkdatnes",
     descriptionKey: "cookie_consent.category.analytics.description",
     descriptionFallback:
-      "Ļauj anonīmi mērīt lietojumu. Šobrīd netiek izmantots neviens statistikas rīks.",
+      "Ļauj anonīmi mērīt lietojumu (Umami), ja administrators to ir ieslēdzis.",
   },
   marketing: {
     titleKey: "cookie_consent.category.marketing.title",

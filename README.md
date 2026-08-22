@@ -2,7 +2,7 @@
 
 Komandas darba rīks ar publisku landing lapu un sānjoslas lietotni. Gaišs Next.js frontend.
 
-**Current version:** `0.2.0`
+**Current version:** `0.2.2`
 
 ## Palaist
 
@@ -15,18 +15,18 @@ Atver [http://localhost:3120](http://localhost:3120).
 
 ## Kas iekšā
 
-- **Landing** — `/` ar dashboard vizuāli, pārdošanas blokiem, Ienākt / Reģistrēties un sīkdatņu popup; ielogotam uzreiz `/dashboard`
-- **Auth** — `/login`, `/signup`, `/forgot-password`, `/update-password`; e-pasts un parole caur Supabase; **Turpināt ar Google** / **Turpināt ar Microsoft** (ja admin ieslēdzis OAuth); **Atcerēties mani** pēc noklusējuma izslēgts (30 dienas tikai ar ķeksi); ielogotam `/` ved uz dashboard
+- **Landing** — `/` ar dashboard vizuāli, pārdošanas blokiem, Ienākt (un Reģistrēties, ja Resend aktīvs) un sīkdatņu popup; ielogotam uzreiz `/dashboard`
+- **Auth** — `/login`, `/signup`, `/forgot-password`, `/update-password`; e-pasts un parole tikai ja **Resend** ir konfigurēts un aktīvs (bez tā nav Reģistrēties joslā, signup saites loginā un Atcerēties mani; `/signup` uz `/login`); **Turpināt ar Google** / **Turpināt ar Microsoft** (ja admin ieslēdzis OAuth); **Atcerēties mani** pēc noklusējuma izslēgts (30 dienas tikai ar ķeksi); ielogotam `/` ved uz dashboard
 - **MFA** — profilā pēc izvēles visiem; ja ieslēgta, pie ielogošanās TOTP modālis; sistēmas adminam MFA obligāta `/admin`
 - **Legal** — `/privacy`, `/terms`, `/cookies` ar fiksētu satura sānjoslu; kājene arī lietotnē
-- **Sānjosla** — Sākums ved uz `/dashboard` (Mani uzdevumi, ja ir piesaistīti, tad darbs pa sarakstiem); sadalītie uzdevumi un apakšuzdevumi pēc statusa pretēji picker (aktīvākie vispirms, TO DO beigās); kokā var ievilkt mapē, iznest ārā vai nomest zem pēdējās mapes; uzdevuma/mapes `...` → **Arhivēt**; apgrieztiem nosaukumiem overflow tooltip
-- **Trīs skati** — Saraksts (kopsavilkums + arhīva poga labajā malā), projekts (Uzdevumi | Faili augšā, Saraksts zem tiem ar mapēm un arhīvu; Uzdevumi bloka arhīvs pārslēdz visas Saraksts kartītes), uzdevums (apakšuzdevumu tabula)
+- **Sānjosla** — Sākums ved uz `/dashboard` (Mani uzdevumi, ja ir piesaistīti, tad darbs pa sarakstiem); sadalītie uzdevumi un apakšuzdevumi pēc statusa pretēji picker (aktīvākie vispirms, TO DO beigās); kokā var ievilkt mapē, iznest ārā vai nomest zem pēdējās mapes; uzdevuma/mapes `...` → **Arhivēt**; rindas fona aizpildījums rāda progresu (pabeigtie + esošie); apgrieztiem nosaukumiem overflow tooltip
+- **Trīs skati** — Saraksts (kopsavilkums ar `done/total` un vienu joslu; mape summē uzdevumus), projekts (Uzdevumi | Faili augšā, Saraksts zem tiem ar mapēm, progresu un arhīvu; Uzdevumi bloka arhīvs pārslēdz visas Saraksts kartītes), uzdevums (apakšuzdevumu tabula ar progresu virsrakstā)
 - Sānjoslas koks rāda sarakstus, uzdevumus un apakšuzdevumus; apakšuzdevumu aplītis un Saraksta loga teksts ir statusa krāsā
 - Saraksta `...` → **Statusi** — sistēmas statusi visiem sarakstiem un komandas statusi tikai šim sarakstam; **Automatizācijas** (ja ieslēgts modulis) — piem. jaunai mapei automātiski pielietot šablonu
 - **Komanda** — biedru uzaicināšana (e-pasts jaunam lietotājam, in-app paziņojums reģistrētam); apstiprinājums/noraidījums paziņojumos vai `/invite/{token}`; pending biedri `/team`, bet ne sānjoslā; resend, kopēt linku, noņemt; biedrs var pats pamest komandu (ne īpašnieks); bez komandas — dashboard ar jaunas komandas pogu un paziņojumu hintu; lomas ar pieejām; `...` → **Šabloni** (`/templates`, ja ieslēgts modulis), **Google Drive Integrācija** (ja `module_google_drive` + failu augšupielāde; noklusējumā faili uz Drive, pēc izvēles arī Routine serverī), **OneDrive** (ja ieslēgts) — assignee, checklist, custom apakšuzdevumu statusi, automātiska saglabāšana
 - **Sarakstu pieejas** — sākumā noklusējuma līmenis visiem; pēc izvēles pielāgo katrai lomai (pilna labošana, labot, komentēt, tikai skatīt); privātu sarakstu (tikai izvēlētajiem biedriem/lomām) var ieslēgt, ja aktīvs privāto sarakstu modulis
 - **Komandu lomas un pieejas** — katrai lomai definē sadaļu redzamību un darbības (saraksti, uzdevumi, šabloni, faili, komandas pārvaldība); divkolonnu izkārtojums, toggle automātiski saglabā
-- **Admin** — `/admin` `is_admin` lietotājiem; joslā trīs kategorijas (**Cilvēki**, **Katalogs**, **Sistēma**) ar hover dropdown (lietotāji, komandas, lomas, statusi, failu tipi, valodas, tulkojumi, **moduļi**, **maksas plāni**, **integrācijas**, uzstādījumi); `/admin/integrations` — Google/Microsoft OAuth, Resend, Umami, Sentry; `/admin/modules` ieslēdz/izslēdz privātos sarakstus, failu augšupielādi, Check List, automatizācijas un šablonus; `/admin/payment-plans` — plānu katalogs, cenas, izmēģinājums un Early Bird; `/admin/settings`: nosaukums, slogans, logotips/favicon vai iniciāļu avatārs, datumu/laika noklusējums; pārlūka cilne `Sākums | Routine` (no `generateMetadata`, nevis klienta pārrakstīšanas)
+- **Admin** — `/admin` `is_admin` lietotājiem; joslā trīs kategorijas (**Cilvēki**, **Katalogs**, **Sistēma**) ar hover dropdown (lietotāji, komandas, lomas, statusi, failu tipi, valodas, tulkojumi, **moduļi**, **maksas plāni**, **integrācijas**, uzstādījumi); `/admin/integrations` — Google/Microsoft OAuth, Resend, Umami, Sentry; aktīvs Umami ielādē skriptu `<head>` (pageview pēc statistikas piekrišanas); aktīvs Sentry ķer klienta kļūdas; `/admin/modules` ieslēdz/izslēdz privātos sarakstus, failu augšupielādi, Check List, automatizācijas un šablonus; `/admin/payment-plans` — plānu katalogs, cenas, izmēģinājums un Early Bird; `/admin/settings`: nosaukums, slogans, logotips/favicon vai iniciāļu avatārs, datumu/laika noklusējums; pārlūka cilne `Sākums | Routine` (no `generateMetadata`, nevis klienta pārrakstīšanas)
 - **Personīgā informācija** — lietotāja izvēlnē modālis vārda un uzvārda maiņai (sinhronizē profilu visās komandās)
 - **Paziņojumu uzstādījumi** — lietotāja izvēlnē vai zvaniņa paneļa settings pogā; grupēts modālis (Uzdevumi / Atgādinājumi / Komanda) ar ikonām; toggle automātiski saglabā
 - **Kalendāra integrācija** — lietotāja izvēlnē (ja `module_calendar` + Apple vai Google); `.ics` abonēšana piesaistītajiem uzdevumiem ar termiņu (bez apraksta teksta)

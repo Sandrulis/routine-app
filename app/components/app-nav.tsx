@@ -41,12 +41,15 @@ import {
   isTaskActiveInLists,
   listColorById,
   listInitials,
+  listProgress,
   workItemIcon,
+  workProgressById,
   type WorkList,
   type WorkTask,
   type WorkTaskStatus,
 } from "@/app/lib/lists";
 import { StatusTreeDot } from "@/app/components/status-control";
+import { WorkProgressFill } from "@/app/components/work-progress";
 import { useFileTypes } from "@/app/lib/file-types-context";
 import { fileBaseName, fileExtensionFromName } from "@/app/lib/file-types";
 import { FRONTEND_MODULE_KEYS } from "@/app/lib/frontend-modules/keys";
@@ -193,7 +196,7 @@ function TreeName({
   );
 
   return (
-    <span className="flex min-w-0 flex-1 items-center gap-1.5">
+    <span className="relative z-10 flex min-w-0 flex-1 items-center gap-1.5">
       <OverflowTooltip
         label={label}
         extraLabel={description}
@@ -273,6 +276,8 @@ function NavTreeSection({
   rowStyle,
   itemId,
   highlighted = false,
+  progressPercent,
+  progressColor,
   children,
 }: {
   href?: string;
@@ -306,6 +311,8 @@ function NavTreeSection({
   rowStyle?: CSSProperties;
   itemId?: string;
   highlighted?: boolean;
+  progressPercent?: number;
+  progressColor?: string;
   children?: ReactNode;
 }) {
   const { t } = useTranslations();
@@ -332,6 +339,9 @@ function NavTreeSection({
           style={rowStyle}
           className={`${rowClassName(isParentActive, nestHighlight)} relative`}
         >
+          {typeof progressPercent === "number" ? (
+            <WorkProgressFill percent={progressPercent} color={progressColor} />
+          ) : null}
           {rowLink && href ? (
             <Link
               href={href}
@@ -413,17 +423,19 @@ function NavTreeSection({
               </button>
             </Tooltip>
           ) : status ? (
-            <StatusTreeDot status={status} />
+            <span className="relative z-10">
+              <StatusTreeDot status={status} />
+            </span>
           ) : iconToneClassName && icon ? (
             <span
-              className={`pointer-events-none inline-flex size-5 shrink-0 items-center justify-center rounded-[2.5px] text-[10px] ${iconToneClassName}`}
+              className={`pointer-events-none relative z-10 inline-flex size-5 shrink-0 items-center justify-center rounded-[2.5px] text-[10px] ${iconToneClassName}`}
               aria-hidden="true"
             >
               <i className={icon} />
             </span>
           ) : icon ? (
             <i
-              className={`${icon} pointer-events-none w-4 text-center text-[12px] ${iconClassName ?? (iconColor ? "" : "text-zinc-400")}`}
+              className={`${icon} pointer-events-none relative z-10 w-4 text-center text-[12px] ${iconClassName ?? (iconColor ? "" : "text-zinc-400")}`}
               style={iconColor ? { color: iconColor } : undefined}
               aria-hidden="true"
             />
@@ -513,6 +525,20 @@ export function AppNav() {
   const { isEnabled: isModuleEnabled } = useFrontendModules();
   const fileUploadsEnabled = isModuleEnabled(FRONTEND_MODULE_KEYS.fileUpload);
   const { statuses } = useTaskStatuses();
+  const progressById = useMemo(
+    () => workProgressById(tasks, statuses),
+    [statuses, tasks],
+  );
+  const listProgressPercentById = useMemo(() => {
+    const next = new Map<string, number>();
+    for (const list of lists) {
+      next.set(
+        list.id,
+        listProgress(list.id, tasks, statuses, progressById).percent,
+      );
+    }
+    return next;
+  }, [lists, progressById, statuses, tasks]);
   const { getFileIconDisplay } = useFileTypes();
   const { openListFile } = useFileViewer();
   const [inviteOpen, setInviteOpen] = useState(false);
@@ -904,6 +930,10 @@ export function AppNav() {
           const task = entry.task;
           const href = `/lists/${listId}/tasks/${task.id}`;
           const folder = isWorkFolder(task);
+          const taskProgressValue = progressById.get(task.id);
+          const listTone = listColorById(
+            lists.find((item) => item.id === listId)?.color,
+          );
           const data: NavTreeItemData = {
             kind: isWorkSubtask(task) ? "subtask" : folder ? "folder" : "task",
             listId,
@@ -946,6 +976,8 @@ export function AppNav() {
                   setRowRef={handle.setNodeRef}
                   rowStyle={handle.style}
                   dragHandle={canReorder ? handle : null}
+                  progressPercent={taskProgressValue?.percent}
+                  progressColor={listTone.bg}
                   moreOpen={itemMenu?.kind === "task" && itemMenu.id === task.id}
                   onMore={
                     listAccess.canEditTasks
@@ -1081,6 +1113,8 @@ export function AppNav() {
                   rowStyle={handle.style}
                   dragHandle={canDrag ? handle : null}
                   highlighted={isOver}
+                  progressPercent={listProgressPercentById.get(list.id)}
+                  progressColor={listColorById(list.color).bg}
                   moreOpen={itemMenu?.kind === "list" && itemMenu.id === list.id}
                   onMore={
                     listAccess.canEditList || listAccess.canDeleteList

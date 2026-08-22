@@ -9,6 +9,10 @@ export async function isResendEnabled() {
   return isSimpleIntegrationEnabled(SITE_INTEGRATION_KEYS.resend);
 }
 
+export async function isEmailPasswordAuthEnabled() {
+  return (await getResendCredentials()) !== null;
+}
+
 export async function getResendCredentials() {
   const enabled = await isResendEnabled();
   if (!enabled) return null;

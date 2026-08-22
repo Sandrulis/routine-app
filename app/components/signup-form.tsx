@@ -21,9 +21,11 @@ import { getSafeRedirectPath } from "@/app/lib/security/safe-redirect-path";
 export function SignupForm({
   googleSignInEnabled = false,
   microsoftSignInEnabled = false,
+  emailPasswordEnabled = false,
 }: {
   googleSignInEnabled?: boolean;
   microsoftSignInEnabled?: boolean;
+  emailPasswordEnabled?: boolean;
 }) {
   const { t } = useTranslations();
   const router = useRouter();
@@ -36,6 +38,7 @@ export function SignupForm({
   const [accepted, setAccepted] = useState(false);
   const [pending, setPending] = useState(false);
   const { remember, updateRemember } = useRememberMe();
+  const oauthEnabled = googleSignInEnabled || microsoftSignInEnabled;
 
   useEffect(() => {
     const error = searchParams.get("error");
@@ -56,6 +59,7 @@ export function SignupForm({
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (!emailPasswordEnabled) return;
     clearFeedback();
 
     if (password.length < 8) {
@@ -119,6 +123,39 @@ export function SignupForm({
     router.refresh();
   }
 
+  function requireTermsAccepted() {
+    if (accepted) return true;
+    showFeedback({
+      type: "error",
+      text: t(
+        "auth.signup.terms_required",
+        "Lai reģistrētos, piekrīti noteikumiem.",
+      ),
+    });
+    return false;
+  }
+
+  const oauthButtons = oauthEnabled ? (
+    <div className="space-y-2">
+      {googleSignInEnabled ? (
+        <GoogleAuthButton
+          disabled={pending}
+          rememberMe={remember}
+          errorPage="signup"
+          onBeforeSignIn={requireTermsAccepted}
+        />
+      ) : null}
+      {microsoftSignInEnabled ? (
+        <MicrosoftAuthButton
+          disabled={pending}
+          rememberMe={remember}
+          errorPage="signup"
+          onBeforeSignIn={requireTermsAccepted}
+        />
+      ) : null}
+    </div>
+  ) : null;
+
   return (
     <form onSubmit={handleSubmit} className={`${authCardClassName} space-y-4`}>
       <div>
@@ -130,149 +167,119 @@ export function SignupForm({
         </p>
       </div>
 
-      <label className="block">
-        <span className="text-sm font-semibold text-zinc-700">
-          {t("common.name", "Vārds")}
-        </span>
-        <input
-          required
-          type="text"
-          autoComplete="name"
-          value={name}
-          onChange={(event) => setName(event.target.value)}
-          placeholder={t("auth.fields.name_placeholder", "Vārds un uzvārds")}
-          className={authInputClassName}
-        />
-      </label>
-
-      <label className="block">
-        <span className="text-sm font-semibold text-zinc-700">
-          {t("common.email", "E-pasts")}
-        </span>
-        <input
-          required
-          type="email"
-          autoComplete="email"
-          value={email}
-          onChange={(event) => setEmail(event.target.value)}
-          placeholder={t("auth.fields.email_placeholder", "vards@uznemums.lv")}
-          className={authInputClassName}
-        />
-      </label>
-
-      <label className="block">
-        <span className="text-sm font-semibold text-zinc-700">
-          {t("auth.fields.password", "Parole")}
-        </span>
-        <input
-          required
-          type="password"
-          autoComplete="new-password"
-          value={password}
-          onChange={(event) => setPassword(event.target.value)}
-          className={authInputClassName}
-        />
-      </label>
-
-      <label className="block">
-        <span className="text-sm font-semibold text-zinc-700">
-          {t("auth.fields.password_confirm", "Atkārtot paroli")}
-        </span>
-        <input
-          required
-          type="password"
-          autoComplete="new-password"
-          value={confirmPassword}
-          onChange={(event) => setConfirmPassword(event.target.value)}
-          className={authInputClassName}
-        />
-      </label>
-
-      <label className="flex items-start gap-3 text-sm text-zinc-600">
-        <input
-          type="checkbox"
-          checked={accepted}
-          onChange={(event) => setAccepted(event.target.checked)}
-          className="mt-1 size-4 rounded border-zinc-300"
-        />
-        <span>
-          {t("auth.signup.accept_prefix", "Piekrītu")}{" "}
-          <Link
-            href="/terms"
-            className="font-semibold text-zinc-900 underline decoration-zinc-300 underline-offset-2"
-          >
-            {t("legal.terms.title", "Lietošanas noteikumiem")}
-          </Link>{" "}
-          {t("auth.signup.accept_and", "un")}{" "}
-          <Link
-            href="/privacy"
-            className="font-semibold text-zinc-900 underline decoration-zinc-300 underline-offset-2"
-          >
-            {t("legal.privacy.title", "Privātuma politikai")}
-          </Link>
-          .
-        </span>
-      </label>
-
-      <RememberMeCheckbox checked={remember} onChange={updateRemember} />
-
-      <button
-        type="submit"
-        disabled={pending}
-        className={authPrimaryButtonClassName}
-      >
-        {t("auth.signup.title", "Reģistrēties")}
-      </button>
-
-      {googleSignInEnabled || microsoftSignInEnabled ? (
+      {emailPasswordEnabled ? (
         <>
-          <AuthDivider />
-          <div className="space-y-2">
-            {googleSignInEnabled ? (
-              <GoogleAuthButton
-                disabled={pending}
-                rememberMe={remember}
-                errorPage="signup"
-                onBeforeSignIn={() => {
-                  if (accepted) {
-                    return true;
-                  }
+          <label className="block">
+            <span className="text-sm font-semibold text-zinc-700">
+              {t("common.name", "Vārds")}
+            </span>
+            <input
+              required
+              type="text"
+              autoComplete="name"
+              value={name}
+              onChange={(event) => setName(event.target.value)}
+              placeholder={t("auth.fields.name_placeholder", "Vārds un uzvārds")}
+              className={authInputClassName}
+            />
+          </label>
 
-                  showFeedback({
-                    type: "error",
-                    text: t(
-                      "auth.signup.terms_required",
-                      "Lai reģistrētos, piekrīti noteikumiem.",
-                    ),
-                  });
-                  return false;
-                }}
-              />
-            ) : null}
-            {microsoftSignInEnabled ? (
-              <MicrosoftAuthButton
-                disabled={pending}
-                rememberMe={remember}
-                errorPage="signup"
-                onBeforeSignIn={() => {
-                  if (accepted) {
-                    return true;
-                  }
+          <label className="block">
+            <span className="text-sm font-semibold text-zinc-700">
+              {t("common.email", "E-pasts")}
+            </span>
+            <input
+              required
+              type="email"
+              autoComplete="email"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              placeholder={t("auth.fields.email_placeholder", "vards@uznemums.lv")}
+              className={authInputClassName}
+            />
+          </label>
 
-                  showFeedback({
-                    type: "error",
-                    text: t(
-                      "auth.signup.terms_required",
-                      "Lai reģistrētos, piekrīti noteikumiem.",
-                    ),
-                  });
-                  return false;
-                }}
-              />
-            ) : null}
-          </div>
+          <label className="block">
+            <span className="text-sm font-semibold text-zinc-700">
+              {t("auth.fields.password", "Parole")}
+            </span>
+            <input
+              required
+              type="password"
+              autoComplete="new-password"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              className={authInputClassName}
+            />
+          </label>
+
+          <label className="block">
+            <span className="text-sm font-semibold text-zinc-700">
+              {t("auth.fields.password_confirm", "Atkārtot paroli")}
+            </span>
+            <input
+              required
+              type="password"
+              autoComplete="new-password"
+              value={confirmPassword}
+              onChange={(event) => setConfirmPassword(event.target.value)}
+              className={authInputClassName}
+            />
+          </label>
         </>
       ) : null}
+
+      {!emailPasswordEnabled && !oauthEnabled ? (
+        <p className="text-sm text-zinc-500">
+          {t(
+            "auth.email.unavailable",
+            "Ienākšana un reģistrācija ar e-pastu ir pieejama, kad Resend integrācija ir konfigurēta un aktīva.",
+          )}
+        </p>
+      ) : (
+        <>
+          <label className="flex items-start gap-3 text-sm text-zinc-600">
+            <input
+              type="checkbox"
+              checked={accepted}
+              onChange={(event) => setAccepted(event.target.checked)}
+              className="mt-1 size-4 rounded border-zinc-300"
+            />
+            <span>
+              {t("auth.signup.accept_prefix", "Piekrītu")}{" "}
+              <Link
+                href="/terms"
+                className="font-semibold text-zinc-900 underline decoration-zinc-300 underline-offset-2"
+              >
+                {t("legal.terms.title", "Lietošanas noteikumiem")}
+              </Link>{" "}
+              {t("auth.signup.accept_and", "un")}{" "}
+              <Link
+                href="/privacy"
+                className="font-semibold text-zinc-900 underline decoration-zinc-300 underline-offset-2"
+              >
+                {t("legal.privacy.title", "Privātuma politikai")}
+              </Link>
+              .
+            </span>
+          </label>
+
+          <RememberMeCheckbox checked={remember} onChange={updateRemember} />
+        </>
+      )}
+
+      {emailPasswordEnabled ? (
+        <button
+          type="submit"
+          disabled={pending}
+          className={authPrimaryButtonClassName}
+        >
+          {t("auth.signup.title", "Reģistrēties")}
+        </button>
+      ) : null}
+
+      {emailPasswordEnabled && oauthEnabled ? <AuthDivider /> : null}
+      {oauthButtons}
 
       <p className="text-center text-sm text-zinc-500">
         {t("auth.signup.has_account", "Jau ir konts?")}{" "}

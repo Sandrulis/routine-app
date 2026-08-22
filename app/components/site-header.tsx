@@ -14,10 +14,12 @@ export function SiteHeader({
   logoUrl = null,
   logoColor = DEFAULT_SITE_LOGO_COLOR,
   systemName = null,
+  signupEnabled = false,
 }: {
   logoUrl?: string | null;
   logoColor?: string | null;
   systemName?: string | null;
+  signupEnabled?: boolean;
 }) {
   const pathname = usePathname();
   const { t } = useTranslations();
@@ -70,12 +72,14 @@ export function SiteHeader({
                 >
                   {t("auth.login.title", "Ienākt")}
                 </Link>
-                <Link
-                  href="/signup"
-                  className="rounded-lg bg-zinc-900 px-3 py-2 text-sm font-semibold text-white transition hover:bg-zinc-700"
-                >
-                  {t("auth.signup.title", "Reģistrēties")}
-                </Link>
+                {signupEnabled ? (
+                  <Link
+                    href="/signup"
+                    className="rounded-lg bg-zinc-900 px-3 py-2 text-sm font-semibold text-white transition hover:bg-zinc-700"
+                  >
+                    {t("auth.signup.title", "Reģistrēties")}
+                  </Link>
+                ) : null}
               </>
             )}
           </div>

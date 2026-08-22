@@ -11,20 +11,23 @@ import { ParentCreateFlow, type ParentCreateContext } from "@/app/components/par
 import { SectionPage } from "@/app/components/section-page";
 import { SubtaskDetailModal } from "@/app/components/subtask-detail-modal";
 import { useTranslations } from "@/app/components/translations-provider";
-import { isWorkSubtask } from "@/app/lib/lists";
+import { isWorkSubtask, listProgress } from "@/app/lib/lists";
 import { useLists } from "@/app/lib/lists-store";
 import { useTeam } from "@/app/lib/team-store";
 import { useIsAdmin } from "@/app/lib/users/use-is-admin";
 import {
   resolveEffectiveListAccess,
 } from "@/app/lib/list-access";
+import { WorkProgressLabel } from "@/app/components/work-progress";
+import { useTaskStatuses } from "@/app/lib/task-statuses";
 
 export function ListDetailPage({ listId }: { listId: string }) {
   const { t } = useTranslations();
   const router = useRouter();
-  const { lists, listTasks, archivedListTasks, isReady } = useLists();
+  const { lists, listTasks, archivedListTasks, tasks: allTasks, isReady } = useLists();
   const { currentUser, roles } = useTeam();
   const { isAdmin } = useIsAdmin();
+  const { statuses } = useTaskStatuses(listId);
   const [parentCreate, setParentCreate] = useState<ParentCreateContext | null>(
     null,
   );
@@ -35,6 +38,7 @@ export function ListDetailPage({ listId }: { listId: string }) {
   const listAccess = list
     ? resolveEffectiveListAccess(list, currentUser, roles, isAdmin)
     : resolveEffectiveListAccess(null, currentUser, roles, isAdmin);
+  const progress = listProgress(listId, allTasks, statuses);
 
   if (!isReady) {
     return (
@@ -71,6 +75,10 @@ export function ListDetailPage({ listId }: { listId: string }) {
       title={
         <span className="inline-flex items-center gap-2">
           <span>{list.name}</span>
+          <WorkProgressLabel
+            progress={progress}
+            className="text-sm font-medium tabular-nums text-zinc-400"
+          />
           {list.isPrivate ? (
             <span
               className="inline-flex h-5 min-w-5 items-center justify-center rounded-md bg-amber-400 px-1.5 text-[11px] text-zinc-900"

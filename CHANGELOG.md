@@ -4,6 +4,19 @@
 
 - (none)
 
+## v0.2.2
+
+- Umami: skripts HTML `<head>` (`next/script` `beforeInteractive`); pageview pēc statistikas sīkdatņu piekrišanas
+- Sentry: `SentryInit` root layoutā; CSP `connect-src` atļauj arī `*.ingest.de.sentry.io` un `*.ingest.us.sentry.io`
+- Resend From jābūt verificētam domēnam (ne `@gmail.com`), citādi sūtīšana neizdosies
+- Sarakstu/komandu ielāde atkārto vaicājumu pie `PGRST303` (JWT `iat` nākotnē pret PostgREST pulksteni)
+
+## v0.2.1
+
+- Saraksta, mapes un uzdevuma UI rāda progresu (`done/total` + josla); sānjoslas kokā rindas fona aizpildījums; skaita arī pabeigtos un arhivētos
+- E-pasta login/signup/paroles atjaunošana tikai ja Resend ir konfigurēts un aktīvs; bez tā nav Reģistrēties joslā, signup saites un Atcerēties mani loginā
+- Paroles maiņas server action izmanto `getCurrentUser`, lai CI auth-guard smoke ietu cauri
+
 ## v0.2.0
 
 - Gmail paplašinājums: atzīmētie pielikumi kā JSON (ne tukšs FormData), progresa josla, i18n lv/en/ru, e-pasts kā `.txt` ar HTML priekšskatījumu

@@ -57,6 +57,8 @@ export const ru: Record<string, string> = {
   "auth.login.forgot": "Забыли пароль?",
   "auth.login.no_account": "Нет аккаунта?",
   "auth.login.success": "Вы успешно вошли.",
+  "auth.email.unavailable":
+    "Вход и регистрация по e-mail доступны, когда интеграция Resend настроена и включена.",
   "auth.signup.title": "Регистрация",
   "auth.signup.subtitle": "Создайте аккаунт и начните работу с командой.",
   "auth.signup.has_account": "Уже есть аккаунт?",
@@ -1083,6 +1085,7 @@ export const ru: Record<string, string> = {
   "lists.windows.overview": "Список",
   "lists.windows.drag": "Переместить окно",
   "lists.windows.progress": "{done}/{total}",
+  "lists.progress.completed": "Выполнено {done} из {total}",
   "lists.windows.files_empty": "В этом списке пока нет файлов.",
   "lists.windows.files_add": "Добавить файл",
   "lists.windows.files_add_description":
@@ -1507,6 +1510,8 @@ export const ru: Record<string, string> = {
   "errors.auth_invalid": "Неверный e-mail или пароль.",
   "errors.auth_rate_limited": "Слишком много попыток. Попробуйте позже.",
   "errors.auth_signup_failed": "Не удалось создать аккаунт.",
+  "errors.auth_email_disabled":
+    "Вход по e-mail недоступен, пока интеграция Resend не настроена и не включена.",
   "errors.mfa_invalid": "Не удалось настроить MFA.",
   "errors.mfa_code_invalid": "Неверный код. Попробуйте ещё раз.",
   "errors.file_type_mismatch": "Содержимое файла не соответствует типу.",

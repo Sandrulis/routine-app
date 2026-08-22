@@ -39,6 +39,7 @@ import {
   useSystemTaskStatuses,
   useTaskStatuses,
 } from "@/app/lib/task-statuses";
+import { WorkProgressBar, WorkProgressLabel } from "@/app/components/work-progress";
 import { OptionalTooltip, Tooltip } from "@/app/components/tooltip";
 import { LoadingState } from "@/app/components/loading-state";
 import {
@@ -77,6 +78,8 @@ import {
   isTaskDeleted,
   isWorkFolder,
   taskProgress,
+  workProgressById,
+  type WorkProgress,
   type WorkTask,
   type WorkTaskStatus,
 } from "@/app/lib/lists";
@@ -199,11 +202,13 @@ function TasksWindowItem({
   task,
   nested = false,
   archiveOpen,
+  progressById,
 }: {
   listId: string;
   task: WorkTask;
   nested?: boolean;
   archiveOpen: boolean;
+  progressById: Map<string, WorkProgress>;
 }) {
   const { t } = useTranslations();
   const { tasks: allTasks, childTasks, subtasks } = useLists();
@@ -223,6 +228,7 @@ function TasksWindowItem({
         isListedInWindow(item, statuses, archiveOpen),
       ).length;
   const closed = isClosedTaskStatus(task.status, statuses);
+  const progress = progressById.get(task.id);
 
   return (
     <div>
@@ -234,7 +240,7 @@ function TasksWindowItem({
           className={`${folder ? "far fa-folder" : "fas fa-list-check"} mt-0.5 text-[12px] text-zinc-400`}
           aria-hidden="true"
         />
-        <span className="min-w-0">
+        <span className="min-w-0 flex-1">
           <OptionalTooltip label={task.description} className="max-w-full">
             <span
               className={`block truncate text-sm font-medium ${
@@ -244,13 +250,15 @@ function TasksWindowItem({
               {task.title}
             </span>
           </OptionalTooltip>
-          <span className="mt-0.5 block text-[12px] text-zinc-400">
+          <span className="mt-0.5 flex items-center gap-2 text-[12px] text-zinc-400">
             {folder
               ? t("lists.task_count", "{count} uzdevumi", { count: childCount })
               : t("tasks.subtask_count", "{count} apakšuzdevumi", {
                   count: childCount,
                 })}
+            {progress ? <WorkProgressLabel progress={progress} /> : null}
           </span>
+          {progress ? <WorkProgressBar progress={progress} className="mt-1.5" /> : null}
         </span>
       </Link>
       {nestedItems.length > 0 ? (
@@ -262,6 +270,7 @@ function TasksWindowItem({
                 task={child}
                 nested
                 archiveOpen={archiveOpen}
+                progressById={progressById}
               />
             </li>
           ))}
@@ -283,6 +292,12 @@ function TasksWindow({
   contextId: string;
 }) {
   const { t } = useTranslations();
+  const { tasks: allTasks } = useLists();
+  const { statuses } = useTaskStatuses(listId);
+  const progressById = useMemo(
+    () => workProgressById(allTasks, statuses),
+    [allTasks, statuses],
+  );
 
   if (tasks.length === 0) {
     return (
@@ -325,6 +340,7 @@ function TasksWindow({
                     listId={listId}
                     task={task}
                     archiveOpen={archiveOpen}
+                    progressById={progressById}
                   />
                 </div>
               </div>
@@ -752,6 +768,7 @@ function OverviewItem({
   archiveOpen = false,
   onArchiveOpenChange,
   onOpenSubtask,
+  progressById,
 }: {
   listId: string;
   task: WorkTask;
@@ -759,6 +776,7 @@ function OverviewItem({
   archiveOpen?: boolean;
   onArchiveOpenChange?: (next: boolean) => void;
   onOpenSubtask: (task: WorkTask) => void;
+  progressById: Map<string, WorkProgress>;
 }) {
   const { t } = useTranslations();
   const { tasks: allTasks, childTasks, subtasks } = useLists();
@@ -782,7 +800,7 @@ function OverviewItem({
     .sort((left, right) =>
       compareTasksByStatusPriority(left, right, statuses),
     );
-  const progress = taskProgress(task, children);
+  const progress = progressById.get(task.id) ?? taskProgress(task, children, statuses);
   const closed = isClosedTaskStatus(task.status, statuses);
 
   return (
@@ -815,12 +833,7 @@ function OverviewItem({
             </span>
           </OptionalTooltip>
         </Link>
-        <span className="shrink-0 text-[11px] tabular-nums text-zinc-400">
-          {t("lists.windows.progress", "{done}/{total}", {
-            done: progress.done,
-            total: progress.total,
-          })}
-        </span>
+        <WorkProgressLabel progress={progress} />
         {nested ? null : (
           <ArchiveToggle
             pressed={archiveOpen}
@@ -829,12 +842,7 @@ function OverviewItem({
         )}
       </div>
       <Link href={`/lists/${listId}/tasks/${task.id}`} className="mt-2 block">
-        <div className="h-1.5 overflow-hidden rounded-full bg-zinc-200">
-          <div
-            className="h-full rounded-full bg-emerald-500"
-            style={{ width: `${progress.percent}%` }}
-          />
-        </div>
+        <WorkProgressBar progress={progress} />
       </Link>
       {folder ? (
         nestedItems.length > 0 ? (
@@ -847,6 +855,7 @@ function OverviewItem({
                   nested
                   archiveOpen={archiveOpen}
                   onOpenSubtask={onOpenSubtask}
+                  progressById={progressById}
                 />
               </li>
             ))}
@@ -881,7 +890,12 @@ function OverviewWindow({
   onOverviewArchiveChange: (taskId: string, next: boolean) => void;
 }) {
   const { t } = useTranslations();
+  const { tasks: allTasks } = useLists();
   const { statuses } = useTaskStatuses(listId);
+  const progressById = useMemo(
+    () => workProgressById(allTasks, statuses),
+    [allTasks, statuses],
+  );
   const orderedTasks = tasks
     .slice()
     .sort((left, right) =>
@@ -906,6 +920,7 @@ function OverviewWindow({
             archiveOpen={overviewArchiveById[task.id] ?? false}
             onArchiveOpenChange={(next) => onOverviewArchiveChange(task.id, next)}
             onOpenSubtask={onOpenSubtask}
+            progressById={progressById}
           />
         </li>
       ))}

@@ -882,17 +882,168 @@ export function getParentTaskLocationPath(
   ]);
 }
 
-export function taskProgress(task: WorkTask, children: WorkTask[]) {
-  const visible = children.filter((child) => !isTaskDeleted(child));
-  if (visible.length === 0) {
-    const percent = isClosedTaskStatus(task.status) ? 100 : 0;
-    return { done: percent === 100 ? 1 : 0, total: 0, percent };
-  }
+export type WorkProgressCatalog = { id: string; groupKey: string }[];
 
-  const done = visible.filter((child) => isClosedTaskStatus(child.status)).length;
+export type WorkProgress = {
+  done: number;
+  total: number;
+  percent: number;
+};
+
+export function emptyWorkProgress(): WorkProgress {
+  return { done: 0, total: 0, percent: 0 };
+}
+
+function workProgressFromCounts(done: number, total: number): WorkProgress {
   return {
     done,
-    total: visible.length,
-    percent: Math.round((done / visible.length) * 100),
+    total,
+    percent: total <= 0 ? 0 : Math.round((done / total) * 100),
   };
+}
+
+export function sumWorkProgress(
+  left: WorkProgress,
+  right: WorkProgress,
+): WorkProgress {
+  return workProgressFromCounts(left.done + right.done, left.total + right.total);
+}
+
+function isProgressCountable(task: Pick<WorkTask, "deletedAt">) {
+  return !isTaskDeleted(task);
+}
+
+export function workProgressFromItems(
+  items: WorkTask[],
+  catalog?: WorkProgressCatalog,
+): WorkProgress {
+  const visible = items.filter(isProgressCountable);
+  if (visible.length === 0) return emptyWorkProgress();
+  const done = visible.filter((item) =>
+    isClosedTaskStatus(item.status, catalog),
+  ).length;
+  return workProgressFromCounts(done, visible.length);
+}
+
+function progressChildTasks(tasks: WorkTask[], parentId: string): WorkTask[] {
+  return tasks.filter(
+    (task) =>
+      task.parentId === parentId &&
+      task.kind !== "subtask" &&
+      isProgressCountable(task),
+  );
+}
+
+function progressSubtasks(tasks: WorkTask[], parentId: string): WorkTask[] {
+  return tasks.filter(
+    (task) =>
+      task.parentId === parentId &&
+      task.kind === "subtask" &&
+      isProgressCountable(task),
+  );
+}
+
+function progressListRoots(tasks: WorkTask[], listId: string): WorkTask[] {
+  return tasks.filter(
+    (task) =>
+      task.listId === listId &&
+      task.parentId === null &&
+      task.kind !== "subtask" &&
+      isProgressCountable(task),
+  );
+}
+
+function progressDescendantTasks(tasks: WorkTask[], parentId: string): WorkTask[] {
+  const result: WorkTask[] = [];
+  for (const child of progressChildTasks(tasks, parentId)) {
+    if (child.kind === "task") result.push(child);
+    result.push(...progressDescendantTasks(tasks, child.id));
+  }
+  return result;
+}
+
+export function taskProgress(
+  task: WorkTask,
+  children: WorkTask[],
+  catalog?: WorkProgressCatalog,
+): WorkProgress {
+  const counted = workProgressFromItems(children, catalog);
+  if (counted.total > 0) return counted;
+  const closed = isClosedTaskStatus(task.status, catalog);
+  return { done: closed ? 1 : 0, total: 0, percent: closed ? 100 : 0 };
+}
+
+export function workProgressById(
+  allTasks: WorkTask[],
+  catalog?: WorkProgressCatalog,
+): Map<string, WorkProgress> {
+  const map = new Map<string, WorkProgress>();
+  const visiting = new Set<string>();
+
+  function compute(task: WorkTask): WorkProgress {
+    const cached = map.get(task.id);
+    if (cached) return cached;
+    if (visiting.has(task.id)) return emptyWorkProgress();
+    visiting.add(task.id);
+
+    let result: WorkProgress;
+    if (!isProgressCountable(task)) {
+      result = emptyWorkProgress();
+    } else if (isWorkSubtask(task)) {
+      const closed = isClosedTaskStatus(task.status, catalog);
+      result = {
+        done: closed ? 1 : 0,
+        total: 1,
+        percent: closed ? 100 : 0,
+      };
+    } else if (isWorkFolder(task)) {
+      const children = progressChildTasks(allTasks, task.id);
+      result = children.reduce(
+        (acc, child) => sumWorkProgress(acc, compute(child)),
+        emptyWorkProgress(),
+      );
+      if (result.total === 0) {
+        result = workProgressFromItems(
+          progressDescendantTasks(allTasks, task.id),
+          catalog,
+        );
+      }
+    } else {
+      result = taskProgress(task, progressSubtasks(allTasks, task.id), catalog);
+    }
+
+    visiting.delete(task.id);
+    map.set(task.id, result);
+    return result;
+  }
+
+  for (const task of allTasks) {
+    compute(task);
+  }
+  return map;
+}
+
+export function listProgress(
+  listId: string,
+  allTasks: WorkTask[],
+  catalog?: WorkProgressCatalog,
+  progressById?: Map<string, WorkProgress>,
+): WorkProgress {
+  const byId = progressById ?? workProgressById(allTasks, catalog);
+  const roots = progressListRoots(allTasks, listId);
+  const summed = roots.reduce(
+    (acc, task) =>
+      sumWorkProgress(acc, byId.get(task.id) ?? emptyWorkProgress()),
+    emptyWorkProgress(),
+  );
+  if (summed.total > 0) return summed;
+  return workProgressFromItems(
+    allTasks.filter(
+      (task) =>
+        task.listId === listId &&
+        task.kind === "task" &&
+        isProgressCountable(task),
+    ),
+    catalog,
+  );
 }

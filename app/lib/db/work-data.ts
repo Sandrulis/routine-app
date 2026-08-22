@@ -82,7 +82,38 @@ export function formatSupabaseError(error: unknown): string {
   return parts.join(" | ") || String(error);
 }
 
+/** PostgREST PGRST303: token `iat` is slightly ahead of the API clock. */
+export function isJwtClockSkewError(error: unknown): boolean {
+  const message = formatSupabaseError(error).toLowerCase();
+  return (
+    message.includes("pgrst303") ||
+    message.includes("issued at future")
+  );
+}
+
+function sleep(ms: number) {
+  return new Promise<void>((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}
+
+async function withJwtClockSkewRetry<T>(run: () => Promise<T>): Promise<T> {
+  const delaysMs = [0, 400, 1000, 2000];
+  let lastError: unknown;
+  for (const delayMs of delaysMs) {
+    if (delayMs > 0) await sleep(delayMs);
+    try {
+      return await run();
+    } catch (error) {
+      lastError = error;
+      if (!isJwtClockSkewError(error)) throw error;
+    }
+  }
+  throw lastError;
+}
+
 export function isUnauthenticatedDbError(error: unknown): boolean {
+  if (isJwtClockSkewError(error)) return false;
   const message = formatSupabaseError(error).toLowerCase();
   return (
     message.includes("permission denied") ||
@@ -173,6 +204,7 @@ export async function fetchUserTeams(): Promise<{
   membersByTeam: MembersByTeam;
   rolesByTeam: RolesByTeam;
 }> {
+  return withJwtClockSkewRetry(async () => {
   const supabase = db();
   const { data: teamRows, error: teamError } = await supabase
     .from("teams")
@@ -212,6 +244,7 @@ export async function fetchUserTeams(): Promise<{
     membersByTeam,
     rolesByTeam,
   };
+  });
 }
 
 function roleFromRow(row: {
@@ -414,6 +447,7 @@ export async function fetchTaskActivities(
 }
 
 export async function fetchTeamWorkspace(teamId: string): Promise<TeamWorkspace> {
+  return withJwtClockSkewRetry(async () => {
   const supabase = db();
   const {
     data: { session },
@@ -656,6 +690,7 @@ export async function fetchTeamWorkspace(teamId: string): Promise<TeamWorkspace>
     listAutomations: listAutomations.map(mapListAutomationRow),
     teamStatusLabels: parseTeamStatusLabels(teamStatusLabelRows),
   };
+  });
 }
 
 export async function insertList(

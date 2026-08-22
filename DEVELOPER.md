@@ -26,7 +26,7 @@
 | Failu vieta | koka + apakšuzdevumu failu `size` summa (`sumFileStorageBuckets` / `formatFileSize`); tooltipā **Serveris** / **Cloud** (tikai ja > 0); rādās tikai ja `module_file_upload` |
 | Lietotājs | avatars, **Personīgā informācija** (modālis: vārds, uzvārds), **Personīgie uzstādījumi** (`/settings/profile`), parole, iziet (ved uz `/`) |
 
-Koks: **Saraksts → mape (`kind: "folder"`) vai uzdevumu saraksts (`kind: "task"`) vai fails → apakšuzdevumi (`kind: "subtask"`)**. Apakšuzdevuma rinda rāda `StatusTreeDot` (fons un apmale = statusa krāsa: `todo` pelēks, `in_progress` oranžs, `done` zaļš).
+Koks: **Saraksts → mape (`kind: "folder"`) vai uzdevumu saraksts (`kind: "task"`) vai fails → apakšuzdevumi (`kind: "subtask"`)**. Apakšuzdevuma rinda rāda `StatusTreeDot` (fons un apmale = statusa krāsa: `todo` pelēks, `in_progress` oranžs, `done` zaļš). Saraksta, mapes, uzdevuma un apakšuzdevuma rindai `WorkProgressFill` - fona aizpildījums pēc `workProgressById` / `listProgress` (pabeigtie un arhivētie kopā ar aktīvajiem).
 
 Uzvedība:
 
@@ -59,7 +59,7 @@ Route group `app/(marketing)/` - bez sānjoslas. Galvene `SiteHeader` (sistēmas
 | `/terms` | Lietošanas noteikumi |
 | `/cookies` | Sīkdatņu politika + iestatījumu poga |
 
-Auth: e-pasta Ienākt / Reģistrēties / paroles atjaunošana iet caur Supabase (`signInWithPassword`, `signUp`, `resetPasswordForEmail`) ar IP+e-pasta rate limit. **Turpināt ar Google** / **Turpināt ar Microsoft** iet caur admin **Integrācijas** OAuth (`/auth/google-oauth/callback`, `/auth/microsoft-oauth/callback`), nevis Supabase Google provider - pēc profila no Google/Microsoft tiek izveidots vai atrasts Supabase Auth lietotājs un sesija. Microsoft pieprasa verificētu e-pastu (OIDC / `id_token`, bez `userPrincipalName`). Pogas rādās tikai ja attiecīgā integrācija ir konfigurēta un **Aktīva**. **Atcerēties mani** pēc noklusējuma izslēgts: bez ķeksīša sesija līdz pārlūka aizvēršanai; ar ķeksi 30 dienas (`httpOnly: false`, lai browser Supabase klients lasītu cookie; production HTTPS `Secure`). Ielogotam `proxy` `/`, `/login`, `/signup` un `/forgot-password` novirza uz `/dashboard`; neautentificēts lietotājs no aizsargātiem app ceļiem uz `/login`; landing `app/(marketing)/page.tsx` arī `redirect("/dashboard")`, ja ir sesija. Iziet ved uz `/`. Publiskajā galvenē ielogotam rādās **Atvērt lietotni**. MFA (TOTP) ir opcija `/settings/profile` visiem; ja faktoram ir `verified` un sesija nav `aal2`, lietotne rāda `MfaVerifyModal` pirms app čaulas. `is_admin` pie `/admin` bez MFA tiek novirzīts enroll (`?mfa=required`); ar MFA, bet bez AAL2 - admin modālis.
+Auth: e-pasta Ienākt / Reģistrēties / paroles atjaunošana iet caur Supabase (`signInWithPassword`, `signUp`, `resetPasswordForEmail`) ar IP+e-pasta rate limit **un tikai ja Resend ir konfigurēts un aktīvs** (`isEmailPasswordAuthEnabled` = From + API Key + `is_enabled`). Bez Resend: e-pasta lauki nav, galvenē nav Reģistrēties, loginā nav signup saites un Atcerēties mani, `/signup` `redirect("/login")`; server actions atgriež `errors.auth_email_disabled`. **Turpināt ar Google** / **Turpināt ar Microsoft** paliek neatkarīgi (admin **Integrācijas** OAuth, `/auth/google-oauth/callback`, `/auth/microsoft-oauth/callback`), nevis Supabase Google provider - pēc profila no Google/Microsoft tiek izveidots vai atrasts Supabase Auth lietotājs un sesija. Microsoft pieprasa verificētu e-pastu (OIDC / `id_token`, bez `userPrincipalName`). Pogas rādās tikai ja attiecīgā integrācija ir konfigurēta un **Aktīva**. **Atcerēties mani** rādās tikai ar e-pasta formu; pēc noklusējuma izslēgts: bez ķeksīša sesija līdz pārlūka aizvēršanai; ar ķeksi 30 dienas (`httpOnly: false`, lai browser Supabase klients lasītu cookie; production HTTPS `Secure`). Ielogotam `proxy` `/`, `/login`, `/signup` un `/forgot-password` novirza uz `/dashboard`; neautentificēts lietotājs no aizsargātiem app ceļiem uz `/login`; landing `app/(marketing)/page.tsx` arī `redirect("/dashboard")`, ja ir sesija. Iziet ved uz `/`. Publiskajā galvenē ielogotam rādās **Atvērt lietotni**. MFA (TOTP) ir opcija `/settings/profile` visiem; ja faktoram ir `verified` un sesija nav `aal2`, lietotne rāda `MfaVerifyModal` pirms app čaulas. `is_admin` pie `/admin` bez MFA tiek novirzīts enroll (`?mfa=required`); ar MFA, bet bez AAL2 - admin modālis. Paroles maiņa (`updatePasswordAction`) prasa `getCurrentUser` (CI `actions.ts` auth-guard).
 
 Legal teksti: `app/lib/legal/documents.ts`. UI: `LegalDocumentView` ar **Saturs** sānjoslu (`sticky` zem galvenes): klikšķis ritina uz sadaļu, josla paliek redzama visā dokumentā.
 
@@ -69,6 +69,8 @@ Legal teksti: `app/lib/legal/documents.ts`. UI: `LegalDocumentView` ar **Saturs*
 
 - Cookie: `routine-app-cookie-consent` (versija 1, 180 dienas)
 - Kategorijas: `necessary`, `preferences`, `analytics`, `marketing`
+- `analytics` piekrišana: Umami `umami.track()` (`UmamiAnalytics`); skripts HTML ir arī bez piekrišanas (`data-auto-track="false"`)
+- Sentry nav sīkdatņu kategorija: ielādējas, kad integrācija ir aktīva
 - `routine-app-list-window-order` raksta tikai ar `preferences` piekrišanu
 - Pieslēgšanās sesija un `routine-app-remember-session` ir **obligātās** sīkdatnes (`app/lib/auth/remember-session.ts`); 30 dienas, ja Atcerēties mani
 
@@ -77,9 +79,9 @@ Legal teksti: `app/lib/legal/documents.ts`. UI: `LegalDocumentView` ar **Saturs*
 | Klikšķis | Lapa | UI |
 |---|---|---|
 | Sākums | `/dashboard` | `DashboardHomePage` — Mani uzdevumi tikai tad, ja ir piesaistīti (bez slēgtiem); tad atdalītājs un sarakstu kopsavilkums; grupēšana pēc statusa pretēji picker; apakšuzdevuma klikšķis atver modāli |
-| Saraksts | `/lists` | `ListsOverviewPage` — kartītes ar uzdevumiem un apakšuzdevumiem pēc statusa prioritātes; klikšķis atver `SubtaskDetailModal` uz vietas |
-| Projekts (saraksts) | `/lists/[listId]` | `ListDetailPage` + `ListSummary` — kopsavilkums; labajā malā arhīva poga (`fas fa-archive`) rāda tikai arhivētos uzdevumus/mapes; aiz nosaukuma `WorkItemArchiveButton` (`fa-folder-open` / `fa-folder`) |
-| Uzdevums | `/lists/[listId]/tasks/[taskId]` | Mape: `ListWindowsBoard` (Faili logs + apakšuzdevumu pielikumi no apakškoka; Sarakstā paperclip pie pielikumiem). Uzdevums: `GroupedSubtaskTables` / `SubtaskTable` — viena tabula ar statusu galvenēm, apakšuzdevumu arhīvs, pārvietošana, mīkstā dzēšana; aiz nosaukuma paperclip ja ir pielikumi; aiz nosaukuma arhivēšanas ikona |
+| Saraksts | `/lists` | `ListsOverviewPage` — kartītes ar uzdevumiem, apakšuzdevumiem un progresu; klikšķis atver `SubtaskDetailModal` uz vietas |
+| Projekts (saraksts) | `/lists/[listId]` | `ListDetailPage` + `ListSummary` — kopsavilkums ar `done/total` un vienu joslu (`work-progress.tsx`); labajā malā arhīva poga (`fas fa-archive`) rāda tikai arhivētos uzdevumus/mapes; aiz nosaukuma `WorkItemArchiveButton` (`fa-folder-open` / `fa-folder`) |
+| Uzdevums | `/lists/[listId]/tasks/[taskId]` | Mape: `ListWindowsBoard` (Uzdevumi/Saraksts ar progresu; Faili logs + apakšuzdevumu pielikumi no apakškoka; Sarakstā paperclip pie pielikumiem). Uzdevums: `GroupedSubtaskTables` / `SubtaskTable` — viena tabula ar statusu galvenēm un `done/total` pie nosaukuma, apakšuzdevumu arhīvs, pārvietošana, mīkstā dzēšana; aiz nosaukuma paperclip ja ir pielikumi; aiz nosaukuma arhivēšanas ikona |
 | Fails | `/lists/[listId]/files/[fileId]` | `FileDetailPage` — priekšskatījums, lejupielāde, pārsaukšana, dzēšana |
 | Apakšuzdevums | uzdevuma ceļš vai saraksta skats + modālis | `SubtaskDetailModal` — lauki kreisajā, Check List pirms pielikumiem, vēsture labajā |
 | Šabloni | `/templates`, `/templates/[templateId]` | `TemplatesPage` / `TemplateDetailPage` + `TemplateTreeEditor` — mapes, uzdevumi, apakšuzdevumi, DnD; mapes `+` → Pievienot šablonu; `requireFrontendModule(module_templates)`
@@ -88,6 +90,8 @@ Legal teksti: `app/lib/legal/documents.ts`. UI: `LegalDocumentView` ar **Saturs*
 | Administrācija | `/admin` | kategoriju izvēlne ar hover dropdown (Cilvēki, Katalogs, Sistēma); tikai `is_admin` |
 
 Ceļa josla: `app/components/page-breadcrumb.tsx`. Katram posmam ikona pēc tipa (`workItemIcon` mapei/uzdevumam/apakšuzdevumam, `ListBadge` sarakstam, `FileIcon` failam) - arī vecākiem posmiem, ne tikai aktuālajam. Labajā malā `AdminPanelButton` (`fas fa-users-cog`, tikai `is_admin`), `NotificationsMenu` (zvaniņš) un valodas kods, ja aktīvas valodas > 1.
+
+Progress (`app/lib/lists.ts` + `work-progress.tsx`): uzdevums = slēgto apakšuzdevumu skaits / visi nedzēstie (arī arhivētie); mape = bērnu progresu summa; saraksts = sakņu summa. UI: `WorkProgressLabel` (`done/total`), `WorkProgressBar` (viena josla zem kartītes), `WorkProgressFill` sānjoslā. Dzēstie neskaitās.
 
 Ielāde: `LoadingState` (`app/components/loading-state.tsx`, `fas fa-circle-notch fa-spin`) lapās, sānjoslā, paziņojumos un admin čaulā, kamēr store `isReady` vai fetch nav pabeigts. Tukšs stāvoklis rādās tikai pēc ielādes.
 
@@ -195,7 +199,7 @@ Failu metadati: `TaskFile` / `ListFile` (`size`, `hasContent`, `googleDriveFileI
 Hierarhija: **Saraksts → mape / uzdevumu saraksts / fails → apakšuzdevumi tikai zem uzdevumu saraksta**.
 
 - Tipi: `app/lib/lists.ts` (`WorkTaskKind`: `folder` \| `task` \| `subtask`)
-- Stāvoklis: `app/lib/lists-store.tsx` — `fetchTeamWorkspace` čaula (saraksti, uzdevumi, metadati, statusi; **bez** `content`, aktivitātēm, notifs, todos); `ListsDataContext` + `ListsActionsContext`. Failu saturs: `ensureTaskFileContent` / `ensureListFileContent`. Aktivitātes: `useTaskActivities` pēc atvērta uzdevuma. Pieslēgtam lietotājam bez komandas tukšs koks. `addTask` optimistiski atjauno UI; DB inserti rindā pēc `parent_id` (`pendingTaskInsertsRef`). Apakšuzdevumu izmaiņas ieraksta `task_activities` caur `buildTaskUpdateActivityEvents` (`updateTask`) un atsevišķās funkcijās (`moveSubtask`, failu operācijas, `reorderTasks`)
+- Stāvoklis: `app/lib/lists-store.tsx` — `fetchTeamWorkspace` čaula (saraksti, uzdevumi, metadati, statusi; **bez** `content`, aktivitātēm, notifs, todos); `PGRST303` / `JWT issued at future` atkārto 0.4s / 1s / 2s (`withJwtClockSkewRetry` `work-data.ts`); `ListsDataContext` + `ListsActionsContext`. Failu saturs: `ensureTaskFileContent` / `ensureListFileContent`. Aktivitātes: `useTaskActivities` pēc atvērta uzdevuma. Pieslēgtam lietotājam bez komandas tukšs koks. `addTask` optimistiski atjauno UI; DB inserti rindā pēc `parent_id` (`pendingTaskInsertsRef`). Apakšuzdevumu izmaiņas ieraksta `task_activities` caur `buildTaskUpdateActivityEvents` (`updateTask`) un atsevišķās funkcijās (`moveSubtask`, failu operācijas, `reorderTasks`)
 - Šabloni (`work_templates` / `work_template_items`): `TemplatesProvider` lādē tikai `/templates` vai `ensureLoaded()` (create-flow, automatizācijas). `kind` `folder` | `task` | `subtask` (`040`); redaktors `TemplateTreeEditor` + `template-tree-move.ts`. Uzdevumam assignee, checklist un custom apakšuzdevumu statusi (`056`–`057`); `TemplateDetailPage` automātiski saglabā. `applyTemplate` rekursīvi izveido koku. Tukšās rindas tikai UI (`prepareTemplateEditorItems`); DB `sanitizeTemplateItems`. Tiešsaistes touch: `touchMemberOnline` (90 s, bez lokāla members rewrite)
 - Automatizācijas (`work_list_automations`, `041`): saraksta līmeņa noteikumi ar `trigger_kind` + `action_kind`. UI: `ListAutomationsModal` no saraksta `...` (tikai `module_automations`). Izpilde `lists-store` `updateTask` (statuss, čeklistes, visi apakšuzdevumi) palaižas tikai ja automatizāciju modulis ir ieslēgts. Pāris `folder_created` → `apply_template`: rādās un izpildās (`parent-create-flow.tsx` pēc tiešas mapes izveides) tikai ja **abi** `module_automations` un `module_templates` ir ieslēgti — **netrigerējas** manuālā šablona pielietošanā vai rekursīvā mapju veidošanā no šablona. CRUD: `lists-store` `addListAutomation` / `updateListAutomation` / `deleteListAutomation`; helperi `app/lib/list-automations.ts`. DB insert secība: skat. `pendingTaskInsertsRef` pie `addTask`
 - Arhīvs (`archived_at`, atšķirīgs no apakšuzdevumu `deleted_at`): `setWorkItemArchived` arhivē uzdevumu vai mapi ar visiem pēcnācējiem; noņemšana no arhīva atjauno arī senčus, lai vienums atkal būtu kokā. Aktīvais koks un `getListTasks` slēpj arhivētos; `archivedListTasks` rāda arhīva saknes. UI: `WorkItemArchiveButton` (`fa-folder-open` aktīvam, `fa-folder` arhivētam); saraksta lapā `fas fa-archive` pārslēdz kopsavilkumu
@@ -281,7 +285,7 @@ Aktīvais lietotājs raksta `last_online_at` DB ik pēc 90 s (`touchMemberOnline
 
 ```
 app/
-  layout.tsx                      # Root: AuthSessionProvider, NowProvider, i18n tabula, toast, cookie consent
+  layout.tsx                      # Root: i18n, cookie consent, Umami Script + SentryInit, ja integrācijas aktīvas
   fontawesome.css                 # FA solid/regular/brands (ne `all.min.css`)
   (marketing)/
     page.tsx                      # Landing; ielogotam redirect /dashboard
@@ -297,22 +301,25 @@ app/
 
   globals.css                     # Zinc light theme; `--radius-*` uz pusi
   components/
-    site-header.tsx               # Publiskā galvene; sistēmas logo/iniciāļi; ielogotam Atvērt lietotni
+    site-header.tsx               # Publiskā galvene; sistēmas logo/iniciāļi; ielogotam Atvērt lietotni; Reģistrēties tikai ar Resend
     site-footer.tsx               # Publiskā kājene
     landing-page.tsx              # Landing saturs
     landing-app-preview.tsx       # Hero dashboard vizuālis
-    login-form.tsx                # Ienākt + Google/Microsoft + Atcerēties mani
-    signup-form.tsx               # Reģistrēties + Google/Microsoft + Atcerēties mani
+    login-form.tsx                # Ienākt; e-pasts/Atcerēties/signup saite tikai ar Resend; Google/Microsoft
+    signup-form.tsx               # Reģistrēties + Google/Microsoft + Atcerēties mani (lapa redirect, ja nav Resend)
     google-auth-button.tsx        # Turpināt ar Google / Microsoft
     admin-integrations-page.tsx   # /admin/integrations: Google + Microsoft OAuth
     remember-me-checkbox.tsx      # Atcerēties mani (noklusējums izslēgts; 30 dienas ar ķeksi)
-    forgot-password-form.tsx      # Aizmirsi paroli
+    forgot-password-form.tsx      # Aizmirsi paroli (forma tikai ar Resend)
+    work-progress.tsx             # done/total, josla, sānjoslas fona aizpildījums
     update-password-form.tsx      # Jauna parole pēc e-pasta saites
     mfa-settings-card.tsx         # TOTP enroll/verify/unenroll profilā (visiem)
     mfa-verify-modal.tsx          # TOTP pie ielogošanās un admin sesijas
     legal-document-view.tsx       # Legal lapas + fiksēta satura TOC
     cookie-consent-provider.tsx   # Piekrišanas stāvoklis
     cookie-consent-dialog.tsx     # Popup un iestatījumi
+    umami-analytics.tsx           # Pageview pēc analytics piekrišanas (`data-auto-track=false`)
+    sentry-init.tsx               # @sentry/browser, kad DSN aktīvs
     app-nav.tsx                   # Sānjosla
     user-menu.tsx                 # Lietotāja drop-up: personīgā info, uzstādījumi, paziņojumu prefs, kalendārs, parole, iziet
     calendar-integration-modal.tsx # Apple/Google .ics abonēšana
@@ -333,8 +340,8 @@ app/
     lists-overview-page.tsx       # Saraksta kopsavilkums
     list-detail-page.tsx          # Saraksta kopsavilkums + arhīva skats
     list-form-modal.tsx           # Jauns/labot sarakstu + pieejas; privāts slēdzis pēc `module_private_list`
-    list-summary.tsx              # Uzdevumu kartītes ar statusu grupām + arhīva ikona
-    list-windows-board.tsx        # Uzdevumi | Faili (list + descendant task_files) + Saraksts (paperclip), DnD; `onOpenSubtask` → lapas modalim
+    list-summary.tsx              # Uzdevumu kartītes ar progresu, statusu grupām + arhīva ikona
+    list-windows-board.tsx        # Uzdevumi | Faili + Saraksts ar progresu, paperclip, DnD; `onOpenSubtask` → lapas modalim
     templates-page.tsx            # Komandas šablonu saraksts
     template-detail-page.tsx      # Šablona nosaukums + apraksts + koks; auto-save
     template-tree-editor.tsx      # Šablona koks: mapes/uzdevumi/apakšuzdevumi, assignee, checklist, statusi, DnD
@@ -389,7 +396,7 @@ app/
     document-title-server.ts      # DB nosaukumi dinamiskajam generateMetadata
     page-metadata.ts              # translatedPageMetadata / resolvedPageMetadata helperi
     legal/documents.ts            # Privacy / terms / cookies teksti
-    lists.ts                      # Sarakstu/uzdevumu tipi, krāsas, location PATH helperi
+    lists.ts                      # Sarakstu/uzdevumu tipi, krāsas, location PATH, `workProgressById` / `listProgress`
     task-checklists.ts            # Čeklistu tipi, progress, incomplete helper
     list-statuses.ts              # Saraksta statusu tipi un kataloga merge
     list-automations.ts           # Automatizāciju tipi, mapRow, activeFolderCreatedTemplateAutomations
@@ -423,7 +430,7 @@ app/
     task-notifications.ts         # Kam sūtīt paziņojumus par uzdevumu notikumiem
     use-notifications.ts          # Paziņojumi no Postgres
     team-todo.ts                  # Todo tipi
-    db/work-data.ts               # Komandas darba CRUD; čaulas fetch; RPC reorder/assignees
+    db/work-data.ts               # Komandas darba CRUD; čaulas fetch; PGRST303 retry; RPC reorder/assignees
     db/fetch-all-rows.ts          # PostgREST lapošana (1000 rindu)
     db/import-local-work.ts       # Vienreizējs localStorage → DB imports
     clear-legacy-demo-storage.ts  # Veco dummy localStorage atslēgu tīrīšana
@@ -436,7 +443,7 @@ app/
     i18n/                          # language, server overlay + table klientam
     site-admin/                   # Admin CRUD repository, tipi
     supabase/                     # env, browser/server/admin klienti, session refresh
-    auth/                         # actions (login/signup/reset), MFA gate, AuthSessionProvider, getCurrentUser, OAuth, remember-session
+    auth/                         # actions (login/signup/reset + Resend vārti + getCurrentUser paroles maiņai), MFA gate, AuthSessionProvider, getCurrentUser, OAuth, remember-session
     integrations/                 # Google/Microsoft OAuth (site_integrations)
     users/ensure-profile.ts       # public.users rinda pēc OAuth
     users/display-name.ts         # vārda sadalījums/apvienošana (first + last → name)
@@ -533,9 +540,9 @@ Admin **Integrācijas** kartiņas (`resend`, `umami`, `sentry`) - Saglabāt cred
 
 | Integrācija | Lauki | Kad aktīva |
 |---|---|---|
-| **Resend** | From e-pasts + API Key | `sendResendEmail()` (`app/lib/integrations/resend/client.ts`); fallback env `RESEND_FROM_EMAIL`, `RESEND_API_KEY` |
-| **Umami** | Website ID + Script URL (noklusējums `https://cloud.umami.is/script.js`) | Klienta `UmamiAnalytics` ielādē skriptu `document.head` pēc **analytics** cookie piekrišanas; env `UMAMI_WEBSITE_ID`, `UMAMI_SCRIPT_URL` |
-| **Sentry** | Environment (opcionāli) + DSN | Klienta `SentryInit` (`@sentry/browser`); env `SENTRY_ENVIRONMENT`, `SENTRY_DSN` |
+| **Resend** | From e-pasts + API Key | `sendResendEmail()`; e-pasta login/signup/forgot (`isEmailPasswordAuthEnabled`); From jābūt verificētam Resend domēnam (ne `@gmail.com`); fallback env `RESEND_FROM_EMAIL`, `RESEND_API_KEY` |
+| **Umami** | Website ID + Script URL (noklusējums `https://cloud.umami.is/script.js`) | Root `layout.tsx`: `next/script` `beforeInteractive` HTML `<head>` (`data-auto-track="false"`); `UmamiAnalytics` sūta pageview pēc **analytics** piekrišanas; env `UMAMI_WEBSITE_ID`, `UMAMI_SCRIPT_URL` |
+| **Sentry** | Environment (opcionāli) + DSN | Root `layout.tsx` `SentryInit` (`@sentry/browser`, klienta kļūdas); CSP `connect-src` `*.sentry.io`, `*.ingest.sentry.io`, `*.ingest.de.sentry.io`, `*.ingest.us.sentry.io`; env `SENTRY_ENVIRONMENT`, `SENTRY_DSN` |
 
 ## Google Drive (komandas faili)
 
@@ -551,7 +558,7 @@ Mapē `extensions/gmail` — unpacked Chrome MV3. Gmailā inline logo poga → m
 
 ## Dati
 
-Darba dati dzīvo **Postgres**, ne pārlūkā un ne sīkdatnēs. Komandas biedri redz kopīgos sarakstus, mapes, uzdevumus un apakšuzdevumus. CRUD: `app/lib/db/work-data.ts`; sākuma ielāde `fetchTeamWorkspace` (čaula, lapota ar `fetchAllRows`, bez `content`/aktivitātēm). Failu saturs pēc atvēršanas; aktivitātes `fetchTaskActivities(taskId)`. Pārkārtošana un assignees: RPC (`073`). Vecie `localStorage` dati (ja tādi bija pirms `005`) vienreiz tiek importēti ar `importLocalWorkIfNeeded` (karogs `routine-app-db-import-v1:{userId}`; ja karogs ir, importu izlaiž).
+Darba dati dzīvo **Postgres**, ne pārlūkā un ne sīkdatnēs. Komandas biedri redz kopīgos sarakstus, mapes, uzdevumus un apakšuzdevumus. CRUD: `app/lib/db/work-data.ts`; sākuma ielāde `fetchTeamWorkspace` / `fetchUserTeams` (čaula, lapota ar `fetchAllRows`, bez `content`/aktivitātēm; `PGRST303` clock-skew retry). Failu saturs pēc atvēršanas; aktivitātes `fetchTaskActivities(taskId)`. Pārkārtošana un assignees: RPC (`073`). Vecie `localStorage` dati (ja tādi bija pirms `005`) vienreiz tiek importēti ar `importLocalWorkIfNeeded` (karogs `routine-app-db-import-v1:{userId}`; ja karogs ir, importu izlaiž).
 
 `public.users` ir konta profils + `is_admin` + `language_code` + nullable display preferences (`week_start_day`, `date_format`, `date_separator`, `time_format`; `null` = sistēmas noklusējums no `site_settings`). Vārds glabājas vienā `name` kolonnā; lietotājs to maina ar **Personīgā informācija** modāli (`PersonalInfoModal` → `saveUserPersonalInfoAction` → RPC `set_current_user_name`, kas atjaunina arī visus `team_members` ar `user_id = auth.uid()`; pēc tam `auth.updateUser` ar `given_name` / `family_name`). Komandas biedra loma ir `team_members.role` / `role_id` (katalogs `team_roles`). Uzaicināts biedrs sākumā ir bez `user_id` un paliek ārpus komandas datiem, kamēr neapstiprina uzaicinājumu (paziņojumos vai `/invite/{token}`). Esošam reģistrētam lietotājam nosūta in-app `team_invite` paziņojumu; automātiska piesaiste pēc e-pasta (`users_link_team_members`) netiek veikta, kamēr uzaicinājums ir `pending`.
 

@@ -9,6 +9,7 @@ import { logError } from "@/app/lib/security/log-error";
 import { isSupabaseConfigured } from "@/app/lib/supabase/env";
 import { getMfaGate } from "@/app/lib/auth/mfa";
 import { ensureCurrentUserProfile } from "@/app/lib/users/ensure-profile";
+import { isEmailPasswordAuthEnabled } from "@/app/lib/integrations/resend/client";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -30,6 +31,11 @@ function siteOrigin() {
 
 function normalizeEmail(email: string) {
   return email.trim().toLowerCase();
+}
+
+async function requireEmailPasswordAuth(): Promise<AuthResult | null> {
+  if (await isEmailPasswordAuthEnabled()) return null;
+  return { ok: false, error: "errors.auth_email_disabled" };
 }
 
 async function guardAuth(kind: string, email: string): Promise<AuthResult | null> {
@@ -54,6 +60,8 @@ export async function signInWithPasswordAction(input: {
   password: string;
   next?: string;
 }): Promise<AuthResult> {
+  const emailAuth = await requireEmailPasswordAuth();
+  if (emailAuth) return emailAuth;
   const email = normalizeEmail(input.email);
   const password = input.password;
   if (!EMAIL_RE.test(email) || password.length < 1) {
@@ -83,6 +91,8 @@ export async function signUpWithPasswordAction(input: {
   password: string;
   next?: string;
 }): Promise<AuthResult> {
+  const emailAuth = await requireEmailPasswordAuth();
+  if (emailAuth) return emailAuth;
   const email = normalizeEmail(input.email);
   const password = input.password;
   const name = input.name.trim();
@@ -119,6 +129,8 @@ export async function signUpWithPasswordAction(input: {
 export async function requestPasswordResetAction(input: {
   email: string;
 }): Promise<AuthResult> {
+  const emailAuth = await requireEmailPasswordAuth();
+  if (emailAuth) return emailAuth;
   const email = normalizeEmail(input.email);
   if (!EMAIL_RE.test(email)) {
     return { ok: true, next: "/login" };

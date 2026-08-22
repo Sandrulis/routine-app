@@ -11,7 +11,11 @@ import { useFeedbackToast } from "@/app/components/feedback-toast-provider";
 import { useTranslations } from "@/app/components/translations-provider";
 import { requestPasswordResetAction } from "@/app/lib/auth/actions";
 
-export function ForgotPasswordForm() {
+export function ForgotPasswordForm({
+  emailPasswordEnabled = false,
+}: {
+  emailPasswordEnabled?: boolean;
+}) {
   const { t } = useTranslations();
   const { showFeedback, clearFeedback } = useFeedbackToast();
   const [email, setEmail] = useState("");
@@ -19,6 +23,7 @@ export function ForgotPasswordForm() {
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (!emailPasswordEnabled) return;
     clearFeedback();
     setPending(true);
     await requestPasswordResetAction({ email });
@@ -39,35 +44,44 @@ export function ForgotPasswordForm() {
           {t("auth.forgot.title", "Aizmirsi paroli")}
         </h1>
         <p className="mt-1 text-sm text-zinc-500">
-          {t(
-            "auth.forgot.subtitle",
-            "Ievadi e-pastu, un nosūtīsim paroles atjaunošanas saiti.",
-          )}
+          {emailPasswordEnabled
+            ? t(
+                "auth.forgot.subtitle",
+                "Ievadi e-pastu, un nosūtīsim paroles atjaunošanas saiti.",
+              )
+            : t(
+                "auth.email.unavailable",
+                "Ienākšana un reģistrācija ar e-pastu ir pieejama, kad Resend integrācija ir konfigurēta un aktīva.",
+              )}
         </p>
       </div>
 
-      <label className="block">
-        <span className="text-sm font-semibold text-zinc-700">
-          {t("common.email", "E-pasts")}
-        </span>
-        <input
-          required
-          type="email"
-          autoComplete="email"
-          value={email}
-          onChange={(event) => setEmail(event.target.value)}
-          placeholder={t("auth.fields.email_placeholder", "vards@uznemums.lv")}
-          className={authInputClassName}
-        />
-      </label>
+      {emailPasswordEnabled ? (
+        <>
+          <label className="block">
+            <span className="text-sm font-semibold text-zinc-700">
+              {t("common.email", "E-pasts")}
+            </span>
+            <input
+              required
+              type="email"
+              autoComplete="email"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              placeholder={t("auth.fields.email_placeholder", "vards@uznemums.lv")}
+              className={authInputClassName}
+            />
+          </label>
 
-      <button
-        type="submit"
-        disabled={pending}
-        className={authPrimaryButtonClassName}
-      >
-        {t("auth.forgot.submit", "Nosūtīt saiti")}
-      </button>
+          <button
+            type="submit"
+            disabled={pending}
+            className={authPrimaryButtonClassName}
+          >
+            {t("auth.forgot.submit", "Nosūtīt saiti")}
+          </button>
+        </>
+      ) : null}
 
       <p className="text-center text-sm text-zinc-500">
         <Link
