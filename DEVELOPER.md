@@ -63,6 +63,30 @@ Auth: e-pasta Ienākt / Reģistrēties / paroles atjaunošana iet caur Supabase 
 
 Legal teksti: `app/lib/legal/documents.ts`. UI: `LegalDocumentView` ar **Saturs** sānjoslu (`sticky` zem galvenes): klikšķis ritina uz sadaļu, josla paliek redzama visā dokumentā.
 
+## Google Search Console
+
+Indeksējamās lapas: `/`, `/privacy`, `/terms`, `/cookies`, `/login`, `/signup`. Pārējais (dashboard, saraksti, komanda, admin, iestatījumi, uzaicinājumi, paroles atjaunošana, `/api/`, `/auth/`, kalendārs) ir `noindex` + `robots.txt` `Disallow` + `X-Robots-Tag: noindex, nofollow`.
+
+| Ko GSC vajag | Kur tas ir |
+|---|---|
+| Kanoniskais hosts | `NEXT_PUBLIC_SITE_URL` (https, bez trailing slash, viens hosts - `www` vai bez) |
+| `robots.txt` | `/robots.txt` (`app/robots.ts`) |
+| Sitemap | `/sitemap.xml` (`app/sitemap.ts`) |
+| HTML tag verifikācija | `GOOGLE_SITE_VERIFICATION` (meta `google-site-verification`; drīkst ielīmēt arī visu meta tagu) |
+| Canonical / OG URL | `canonicalMetadata()` + root `metadataBase` |
+| JSON-LD | landing `LandingJsonLd` (Organization, WebSite, SoftwareApplication) |
+
+1. Produkcijā iestati `NEXT_PUBLIC_SITE_URL=https://tavs-domens` (tas pats hosts, ko pievieno GSC).
+2. Search Console → pievieno **URL prefix** īpašumu ar to pašu URL (vai Domain īpašumu caur DNS).
+3. Ownership → **HTML tag**: ielīmē `content` vērtību (vai visu meta rindu) env `GOOGLE_SITE_VERIFICATION` un redeplojo.
+4. Pēc deploy atver `https://tavs-domens/robots.txt` un `https://tavs-domens/sitemap.xml` - sitemap rādītajiem URL jāsākas ar to pašu origin.
+5. GSC → Sitemaps → pievieno `https://tavs-domens/sitemap.xml`.
+6. URL Inspection uz `/` - jābūt `index, follow` un canonical uz to pašu origin. Dashboard URL - `noindex`.
+
+Neiesniedz GSC uzaicinājumu, paroles vai API ceļus. Ja Resend nav aktīvs, `/signup` novirza uz `/login` - tas GSC ir normāli.
+
+URL ceļos vārdus atdala ar defisi (`/forgot-password`, `/admin/file-types`), ne pasvītru: Google defisi uzskata par vārdu atdalītāju.
+
 ## Sīkdatņu piekrišana
 
 `CookieConsentProvider` root layoutā. Popup, kamēr nav lēmuma; iestatījumus var atvērt kājenē vai `/cookies`.
@@ -285,10 +309,12 @@ Aktīvais lietotājs raksta `last_online_at` DB ik pēc 90 s (`touchMemberOnline
 
 ```
 app/
-  layout.tsx                      # Root: i18n, cookie consent, Umami Script + SentryInit, ja integrācijas aktīvas
+  layout.tsx                      # Root: i18n, cookie consent, Umami/Sentry, SEO metadata
+  robots.ts                       # /robots.txt — publiskās lapas, bloķē app/API
+  sitemap.ts                      # /sitemap.xml — landing, legal, login, signup
   fontawesome.css                 # FA solid/regular/brands (ne `all.min.css`)
   (marketing)/
-    page.tsx                      # Landing; ielogotam redirect /dashboard
+    page.tsx                      # Landing; ielogotam redirect /dashboard; JSON-LD
     login/ signup/ forgot-password/ update-password/
     invite/[token]/               # Komandas uzaicinājuma landing (accept/reject)
     privacy/ terms/ cookies/
@@ -304,6 +330,7 @@ app/
     site-header.tsx               # Publiskā galvene; sistēmas logo/iniciāļi; ielogotam Atvērt lietotni; Reģistrēties tikai ar Resend
     site-footer.tsx               # Publiskā kājene
     landing-page.tsx              # Landing saturs
+    landing-json-ld.tsx           # schema.org Organization / WebSite / SoftwareApplication
     landing-app-preview.tsx       # Hero dashboard vizuālis
     login-form.tsx                # Ienākt; e-pasts/Atcerēties/signup saite tikai ar Resend; Google/Microsoft
     signup-form.tsx               # Reģistrēties + Google/Microsoft + Atcerēties mani (lapa redirect, ja nav Resend)
@@ -395,6 +422,7 @@ app/
     document-title.ts             # Pārlūka cilnes formāts `lapa | sistēma`
     document-title-server.ts      # DB nosaukumi dinamiskajam generateMetadata
     page-metadata.ts              # translatedPageMetadata / resolvedPageMetadata helperi
+    seo/                          # site URL, robots/sitemap ceļi, canonical / noindex
     legal/documents.ts            # Privacy / terms / cookies teksti
     lists.ts                      # Sarakstu/uzdevumu tipi, krāsas, location PATH, `workProgressById` / `listProgress`
     task-checklists.ts            # Čeklistu tipi, progress, incomplete helper
@@ -503,7 +531,9 @@ Kopē `.env.example` uz `.env.local`. URL ir tikai projekta hosts (`https://PROJ
 | `SUPABASE_SERVICE_ROLE_KEY` | Settings → API → `service_role` (secret) — **obligāts** jaunu e-pastu uzaicinājumiem; reģistrētam lietotājam pietiek ar in-app paziņojumu. Šo atslēgu nedrīkst commitot; rotācija nozīmē arī `INTEGRATION_SECRETS_KEY` pārskatīšanu, ja noslēpumi ir šifrēti ar atvasinātu atslēgu. |
 | `INTEGRATION_SECRETS_KEY` | Aplikācijas slāņa AES atslēga (`enc:v1:`) Drive/OneDrive/OAuth/Resend noslēpumiem. Ģenerē ar `openssl rand -base64 32`. Bez tās atslēga tiek atvasināta no service role (tikai izstrādei). |
 | `CHROME_EXTENSION_IDS` | Production CORS allowlist paplašinājumam (komatu atdalīti ID). Bez saraksta production `chrome-extension://` izcelsmes tiek noraidītas. |
+| `NEXT_PUBLIC_SITE_URL` | Publiskais origin (`https://domens`, bez `/` beigās). Canonical, sitemap, robots, HSTS, auth saites. |
 | `UMAMI_SCRIPT_INTEGRITY` | Neobligāts SRI (`sha384-...`) Umami skriptam. |
+| `GOOGLE_SITE_VERIFICATION` | Google Search Console HTML tag `content` (meta `google-site-verification`; drīkst ielīmēt arī visu tagu). |
 | `SUPABASE_DB_PASSWORD` | Settings → Database → Database password |
 | `SUPABASE_DB_REGION` | Connection string reģions (šim projektam `eu-west-2`) |
 | `DATABASE_URL` | Optional: pilns pooler URI, ja parole/hosts neiet cauri |
@@ -542,7 +572,16 @@ Admin **Integrācijas** kartiņas (`resend`, `umami`, `sentry`) - Saglabāt cred
 |---|---|---|
 | **Resend** | From e-pasts + API Key | `sendResendEmail()`; e-pasta login/signup/forgot (`isEmailPasswordAuthEnabled`); From jābūt verificētam Resend domēnam (ne `@gmail.com`); fallback env `RESEND_FROM_EMAIL`, `RESEND_API_KEY` |
 | **Umami** | Website ID + Script URL (noklusējums `https://cloud.umami.is/script.js`) | Root `layout.tsx`: `next/script` `beforeInteractive` HTML `<head>` (`data-auto-track="false"`); `UmamiAnalytics` sūta pageview pēc **analytics** piekrišanas; env `UMAMI_WEBSITE_ID`, `UMAMI_SCRIPT_URL` |
-| **Sentry** | Environment (opcionāli) + DSN | Root `layout.tsx` `SentryInit` (`@sentry/browser`, klienta kļūdas); CSP `connect-src` `*.sentry.io`, `*.ingest.sentry.io`, `*.ingest.de.sentry.io`, `*.ingest.us.sentry.io`; env `SENTRY_ENVIRONMENT`, `SENTRY_DSN` |
+| **Sentry** | Environment (opcionāli) + DSN | Root `layout.tsx` `SentryInit` (`@sentry/browser`, **tikai klienta** kļūdas); CSP `connect-src` `*.sentry.io`, `*.ingest.sentry.io`, `*.ingest.de.sentry.io`, `*.ingest.us.sentry.io`; env `SENTRY_ENVIRONMENT`, `SENTRY_DSN` |
+
+Sentry nav HTML/DNS verifikācija kā Search Console. Pārbaude ir pirmais events sentry.io:
+
+1. sentry.io → jauns **Browser JavaScript** projekts → Client Keys (DSN).
+2. Admin **Integrācijas** → Sentry: Environment (`production` / `development`, tukšs = `production`) + DSN → **Saglabāt** → **Aktīva**.
+3. Pārlādē lapu (Sentry ielādējas bez sīkdatņu piekrišanas).
+4. DevTools → Network → `ingest`: pēc kļūdas `POST` uz `*.ingest.sentry.io` (200).
+5. Konsolē: `setTimeout(() => { throw new Error("Routine Sentry test"); }, 0);`
+6. sentry.io **Issues** pēc ~1 minūtes rāda `Routine Sentry test` ar to pašu Environment.
 
 ## Google Drive (komandas faili)
 

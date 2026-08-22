@@ -1,6 +1,7 @@
 import { dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { NextConfig } from "next";
+import { robotsNoIndexHeaderSources } from "./app/lib/seo/site-url";
 
 const projectRoot = dirname(fileURLToPath(import.meta.url));
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "";
@@ -86,6 +87,10 @@ const nextConfig: NextConfig = {
             : []),
         ],
       },
+      ...robotsNoIndexHeaderSources().map((source) => ({
+        source,
+        headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }],
+      })),
     ];
   },
 };

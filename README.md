@@ -2,7 +2,7 @@
 
 Komandas darba rīks ar publisku landing lapu un sānjoslas lietotni. Gaišs Next.js frontend.
 
-**Current version:** `0.2.2`
+**Current version:** `0.2.3`
 
 ## Palaist
 
@@ -16,6 +16,7 @@ Atver [http://localhost:3120](http://localhost:3120).
 ## Kas iekšā
 
 - **Landing** — `/` ar dashboard vizuāli, pārdošanas blokiem, Ienākt (un Reģistrēties, ja Resend aktīvs) un sīkdatņu popup; ielogotam uzreiz `/dashboard`
+- **SEO / Search Console** — `/robots.txt` un `/sitemap.xml`; kanoniskie URL no `NEXT_PUBLIC_SITE_URL`; privātās lapas `noindex`; HTML tag verifikācija ar `GOOGLE_SITE_VERIFICATION`
 - **Auth** — `/login`, `/signup`, `/forgot-password`, `/update-password`; e-pasts un parole tikai ja **Resend** ir konfigurēts un aktīvs (bez tā nav Reģistrēties joslā, signup saites loginā un Atcerēties mani; `/signup` uz `/login`); **Turpināt ar Google** / **Turpināt ar Microsoft** (ja admin ieslēdzis OAuth); **Atcerēties mani** pēc noklusējuma izslēgts (30 dienas tikai ar ķeksi); ielogotam `/` ved uz dashboard
 - **MFA** — profilā pēc izvēles visiem; ja ieslēgta, pie ielogošanās TOTP modālis; sistēmas adminam MFA obligāta `/admin`
 - **Legal** — `/privacy`, `/terms`, `/cookies` ar fiksētu satura sānjoslu; kājene arī lietotnē

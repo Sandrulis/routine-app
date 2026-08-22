@@ -2,15 +2,17 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { LoginForm } from "@/app/components/login-form";
 import { getServerTranslations } from "@/app/lib/i18n/server";
+import { canonicalMetadata } from "@/app/lib/seo/metadata";
 import { isGoogleSignInEnabled } from "@/app/lib/integrations/google-oauth/repository";
 import { isMicrosoftOAuthEnabled } from "@/app/lib/integrations/microsoft-oauth/repository";
 import { isEmailPasswordAuthEnabled } from "@/app/lib/integrations/resend/client";
 
 export async function generateMetadata(): Promise<Metadata> {
   const { t } = await getServerTranslations();
-  return {
+  return canonicalMetadata("/login", {
     title: t("auth.login.title", "Ienākt"),
-  };
+    description: t("auth.login.subtitle", "Pieslēdzies savam Routine kontam."),
+  });
 }
 
 export default async function LoginPage() {

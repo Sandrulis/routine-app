@@ -16,6 +16,11 @@ import { documentTitleTemplate, resolveSystemName } from "@/app/lib/document-tit
 import { brandImageMime, siteHeadIconUrl } from "@/app/lib/site-admin/branding";
 import { getSiteSettings } from "@/app/lib/site-admin/repository";
 import { getEffectiveDisplayPreferences } from "@/app/lib/users/display-preferences";
+import {
+  getGoogleSiteVerification,
+  getPublicSiteUrl,
+} from "@/app/lib/seo/site-url";
+import { INDEX_ROBOTS } from "@/app/lib/seo/metadata";
 import Script from "next/script";
 import "./fontawesome.css";
 import "./globals.css";
@@ -43,12 +48,35 @@ export async function generateMetadata(): Promise<Metadata> {
     settings.logoColor,
   );
 
+  const googleVerification = getGoogleSiteVerification();
+  const siteUrl = getPublicSiteUrl();
+  const ogLocale =
+    languageCode === "en" ? "en_US" : languageCode === "ru" ? "ru_RU" : "lv_LV";
+
   return {
+    metadataBase: new URL(siteUrl),
     title: {
       default: systemName,
       template: documentTitleTemplate(systemName),
     },
     description: slogan,
+    applicationName: systemName,
+    robots: INDEX_ROBOTS,
+    ...(googleVerification ? { verification: { google: googleVerification } } : {}),
+    openGraph: {
+      type: "website",
+      locale: ogLocale,
+      siteName: systemName,
+      title: systemName,
+      description: slogan,
+      url: siteUrl,
+      ...(settings.logoUrl ? { images: [{ url: settings.logoUrl }] } : {}),
+    },
+    twitter: {
+      card: "summary",
+      title: systemName,
+      description: slogan,
+    },
     icons: {
       icon: [{ url: headIcon, type: brandImageMime(headIcon) }],
       shortcut: headIcon,

@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import type { Metadata } from "next";
 import { AppProviders } from "@/app/components/app-providers";
 import { MfaVerifyModal } from "@/app/components/mfa-verify-modal";
 import { getMfaGate } from "@/app/lib/auth/mfa";
@@ -10,6 +11,11 @@ import {
 import { isSupabaseConfigured } from "@/app/lib/supabase/env";
 import { createClient } from "@/app/lib/supabase/server";
 import { ensureCurrentUserProfile } from "@/app/lib/users/ensure-profile";
+import { NO_INDEX_ROBOTS } from "@/app/lib/seo/metadata";
+
+export const metadata: Metadata = {
+  robots: NO_INDEX_ROBOTS,
+};
 
 export default async function AppLayout({ children }: { children: ReactNode }) {
   await ensureCurrentUserProfile();

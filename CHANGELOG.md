@@ -4,6 +4,12 @@
 
 - (none)
 
+## v0.2.3
+
+- Google Search Console: `robots.txt`, `sitemap.xml`, kanoniskie URL, `noindex` privātajām lapām, HTML tag verifikācija (`GOOGLE_SITE_VERIFICATION`)
+- Publiskajām lapām unikāli title/description un landing JSON-LD; URL ceļos defise, ne pasvītra
+- Sentry pārbaude dokumentēta: DSN + Aktīva, tad pirmais klienta events sentry.io
+
 ## v0.2.2
 
 - Umami: skripts HTML `<head>` (`next/script` `beforeInteractive`); pageview pēc statistikas sīkdatņu piekrišanas
