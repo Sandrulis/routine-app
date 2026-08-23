@@ -103,18 +103,59 @@ async function readStoredSession() {
   return { appBase, session };
 }
 
+/** Keep refresh_token when a cookie/session update only has a short-lived access_token. */
+function mergeSessionPreserveRefresh(primary, secondary) {
+  if (!primary) return secondary || null;
+  if (!secondary) return primary;
+  return {
+    ...secondary,
+    ...primary,
+    refresh_token: primary.refresh_token || secondary.refresh_token,
+  };
+}
+
+function pickBestSession(cookieSession, storedSession) {
+  if (!cookieSession) return storedSession || null;
+  if (!storedSession) return cookieSession;
+  const cookieExpired = sessionExpired(cookieSession);
+  const storedExpired = sessionExpired(storedSession);
+  if (!cookieExpired && storedExpired) {
+    return mergeSessionPreserveRefresh(cookieSession, storedSession);
+  }
+  if (!storedExpired && cookieExpired) {
+    return mergeSessionPreserveRefresh(storedSession, cookieSession);
+  }
+  if (cookieSession.refresh_token && !storedSession.refresh_token) {
+    return mergeSessionPreserveRefresh(cookieSession, storedSession);
+  }
+  if (storedSession.refresh_token && !cookieSession.refresh_token) {
+    return mergeSessionPreserveRefresh(storedSession, cookieSession);
+  }
+  const cookieAt = Number(cookieSession.expires_at) || 0;
+  const storedAt = Number(storedSession.expires_at) || 0;
+  return cookieAt >= storedAt
+    ? mergeSessionPreserveRefresh(cookieSession, storedSession)
+    : mergeSessionPreserveRefresh(storedSession, cookieSession);
+}
+
 async function writeStoredSession(appBase, session) {
   const origin = parseOrigin(appBase);
   if (!origin || !session?.access_token) return;
+  const existing = await readStoredSession();
+  const previous =
+    existing && parseOrigin(existing.appBase) === origin
+      ? existing.session
+      : null;
+  const merged = mergeSessionPreserveRefresh(session, previous);
   await chrome.storage.local.set({
     [STORED_SESSION_KEY]: {
       appBase: origin,
       session: {
-        access_token: session.access_token,
-        refresh_token: session.refresh_token,
-        expires_at: session.expires_at,
-        expires_in: session.expires_in,
-        token_type: session.token_type,
+        access_token: merged.access_token,
+        refresh_token: merged.refresh_token,
+        expires_at: merged.expires_at,
+        expires_in: merged.expires_in,
+        token_type: merged.token_type,
       },
     },
   });
@@ -408,20 +449,42 @@ function jwtStillValid(session) {
 }
 
 async function getAccessToken(appBase) {
-  let { session } = await readSessionFromCookies(appBase);
-  if (!session) {
-    const stored = await readStoredSession();
-    if (stored && parseOrigin(stored.appBase) === parseOrigin(appBase)) {
-      session = stored.session;
-    }
-  }
+  const origin = parseOrigin(appBase);
+  const { session: cookieSession } = await readSessionFromCookies(appBase);
+  const stored = await readStoredSession();
+  const storedSession =
+    stored && parseOrigin(stored.appBase) === origin ? stored.session : null;
+
+  let session = pickBestSession(cookieSession, storedSession);
   if (!session) return null;
+
   if (!sessionExpired(session)) {
     await rememberSession(appBase, session);
     return session.access_token;
   }
+
   const refreshed = await refreshSession(appBase, session);
   if (refreshed?.access_token) return refreshed.access_token;
+
+  // Cookie may have been expired without refresh_token — try the other copy.
+  const other =
+    session === cookieSession
+      ? storedSession
+      : session === storedSession
+        ? cookieSession
+        : storedSession && storedSession.refresh_token !== session.refresh_token
+          ? storedSession
+          : cookieSession && cookieSession.refresh_token !== session.refresh_token
+            ? cookieSession
+            : null;
+  if (
+    other?.refresh_token &&
+    other.refresh_token !== session.refresh_token
+  ) {
+    const alt = await refreshSession(appBase, other);
+    if (alt?.access_token) return alt.access_token;
+  }
+
   if (jwtStillValid(session)) {
     await rememberSession(appBase, session);
     return session.access_token;
@@ -924,8 +987,12 @@ if (chrome.alarms) {
   chrome.alarms.onAlarm.addListener((alarm) => {
     if (alarm.name !== "routine.refreshSession") return;
     void (async () => {
-      const stored = await chrome.storage.sync.get(["appBaseUrl"]);
-      const appBase = parseOrigin(stored.appBaseUrl);
+      const storedSync = await chrome.storage.sync.get(["appBaseUrl"]);
+      const local = await readStoredSession();
+      const appBase =
+        parseOrigin(storedSync.appBaseUrl) ||
+        parseOrigin(local?.appBase) ||
+        "";
       if (!appBase) return;
       await getAccessToken(appBase);
     })();

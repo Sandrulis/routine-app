@@ -1577,4 +1577,7 @@ export const it: Record<string, string> = {
   "errors.files_forward_too_large": "The file is too large to send by email (max 25 MB).",
   "errors.files_forward_subject_required": "Enter an email subject.",
   "errors.files_forward_reply_to_missing": "Your account does not have a valid email address for Reply-To.",
+  "subtasks.history.file_forwarded": "File “{name}” forwarded to {email}. Subject: {subject}",
+  "files.forward.send_again": "Send again",
+  "subtasks.history.file_forwarded_bounced": "The email was not delivered. Check the address and send again.",
 };

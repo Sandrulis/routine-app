@@ -17,6 +17,7 @@ export type TaskActivityKind =
   | "file"
   | "file_removed"
   | "file_renamed"
+  | "file_forwarded"
   | "title"
   | "description"
   | "moved"

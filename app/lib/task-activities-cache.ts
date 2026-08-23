@@ -57,6 +57,24 @@ export function appendTaskActivity(activity: TaskActivity) {
   setTaskActivities(activity.taskId, [...current, activity]);
 }
 
+export function patchTaskActivities(activities: TaskActivity[]) {
+  const byTask = new Map<string, TaskActivity[]>();
+  for (const activity of activities) {
+    const list = byTask.get(activity.taskId) ?? [];
+    list.push(activity);
+    byTask.set(activity.taskId, list);
+  }
+  for (const [taskId, updates] of byTask) {
+    const current = cache.get(taskId);
+    if (!current) continue;
+    const byId = new Map(updates.map((item) => [item.id, item]));
+    setTaskActivities(
+      taskId,
+      current.map((item) => byId.get(item.id) ?? item),
+    );
+  }
+}
+
 export function clearTaskActivities(taskIds: string[]) {
   for (const taskId of taskIds) {
     cache.delete(taskId);

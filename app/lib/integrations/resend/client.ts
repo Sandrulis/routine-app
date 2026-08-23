@@ -66,7 +66,12 @@ export async function sendResendEmail(input: {
    */
   replyTo?: string | null;
   attachments?: ResendAttachment[];
-}) {
+  /** Resend tags (e.g. activity_id) for webhook correlation. */
+  tags?: Record<string, string>;
+}): Promise<
+  | { ok: true; id?: string }
+  | { ok: false; error: string }
+> {
   const credentials = await getResendCredentials();
   if (!credentials) {
     return { ok: false as const, error: "errors.integrations_resend_not_enabled" };
@@ -82,6 +87,12 @@ export async function sendResendEmail(input: {
       ? credentials.replyToEmail
       : input.replyTo?.trim() || undefined;
 
+  const tags = input.tags
+    ? Object.entries(input.tags)
+        .filter(([name, value]) => name.trim() && value.trim())
+        .map(([name, value]) => ({ name: name.trim(), value: value.trim() }))
+    : [];
+
   try {
     const response = await fetch("https://api.resend.com/emails", {
       method: "POST",
@@ -96,6 +107,7 @@ export async function sendResendEmail(input: {
         subject: input.subject,
         html: input.html,
         text: input.text,
+        ...(tags.length > 0 ? { tags } : {}),
         ...(input.attachments && input.attachments.length > 0
           ? {
               attachments: input.attachments.map((item) => ({
@@ -117,7 +129,13 @@ export async function sendResendEmail(input: {
       };
     }
 
-    return { ok: true as const };
+    const payload = (await response.json().catch(() => null)) as {
+      id?: string;
+    } | null;
+    return {
+      ok: true as const,
+      id: typeof payload?.id === "string" ? payload.id : undefined,
+    };
   } catch (error) {
     logError(
       "Resend send failed",

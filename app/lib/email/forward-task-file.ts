@@ -2,6 +2,7 @@
 
 import { getCurrentUser } from "@/app/lib/auth/get-current-user";
 import { buildSimpleEmailHtml } from "@/app/lib/email/build-email-html";
+import { refreshTaskForwardDeliveryStatuses } from "@/app/lib/email/resend-delivery";
 import {
   isResendEnabled,
   sendResendEmail,
@@ -11,12 +12,15 @@ import { downloadTeamGoogleDriveFile } from "@/app/lib/google-drive/uploader";
 import { assertListAccess } from "@/app/lib/lists/assert-list-access";
 import { logError } from "@/app/lib/security/log-error";
 import { getSiteSettings } from "@/app/lib/site-admin/repository";
-import type { ActionResult } from "@/app/lib/site-admin/types";
 import { createAdminClient } from "@/app/lib/supabase/admin";
 import {
   isSupabaseAdminConfigured,
   isSupabaseConfigured,
 } from "@/app/lib/supabase/env";
+import {
+  createActivity,
+  type TaskActivity,
+} from "@/app/lib/task-activity";
 
 /** Resend allows ~40MB total; keep headroom for HTML + base64 overhead. */
 const MAX_ATTACHMENT_BYTES = 25 * 1024 * 1024;
@@ -33,7 +37,6 @@ function dataUrlToBase64(content: string): { base64: string; mimeType?: string }
   if (match) {
     return { mimeType: match[1]?.trim() || undefined, base64: match[2] };
   }
-  // Already raw base64
   if (/^[A-Za-z0-9+/=\s]+$/.test(trimmed) && trimmed.length > 16) {
     return { base64: trimmed.replace(/\s+/g, "") };
   }
@@ -45,7 +48,14 @@ function bufferToBase64(bytes: Uint8Array): string {
 }
 
 async function loadStoredTaskFileAttachment(fileId: string): Promise<
-  | { ok: true; filename: string; mimeType: string; contentBase64: string }
+  | {
+      ok: true;
+      filename: string;
+      mimeType: string;
+      contentBase64: string;
+      teamId: string;
+      taskId: string;
+    }
   | { ok: false; error: string }
 > {
   if (!isSupabaseAdminConfigured()) {
@@ -59,7 +69,7 @@ async function loadStoredTaskFileAttachment(fileId: string): Promise<
     .eq("id", fileId)
     .maybeSingle();
 
-  if (error || !data?.task_id) {
+  if (error || !data?.task_id || !data.team_id) {
     return { ok: false, error: "errors.files_forward_missing" };
   }
 
@@ -85,6 +95,8 @@ async function loadStoredTaskFileAttachment(fileId: string): Promise<
     return { ok: false, error: "errors.files_forward_too_large" };
   }
 
+  const teamId = String(data.team_id);
+  const taskId = String(data.task_id);
   const driveFileId =
     typeof data.google_drive_file_id === "string"
       ? data.google_drive_file_id.trim()
@@ -93,7 +105,7 @@ async function loadStoredTaskFileAttachment(fileId: string): Promise<
   if (driveFileId) {
     try {
       const downloaded = await downloadTeamGoogleDriveFile({
-        teamId: String(data.team_id),
+        teamId,
         driveFileId,
       });
       if (downloaded.bytes.byteLength > MAX_ATTACHMENT_BYTES) {
@@ -104,10 +116,11 @@ async function loadStoredTaskFileAttachment(fileId: string): Promise<
         filename,
         mimeType: mimeType || downloaded.mimeType || "application/octet-stream",
         contentBase64: bufferToBase64(downloaded.bytes),
+        teamId,
+        taskId,
       };
     } catch (err) {
       logError("forwardTaskFile Drive download failed", err);
-      // Fall through to DB content
     }
   }
 
@@ -131,7 +144,129 @@ async function loadStoredTaskFileAttachment(fileId: string): Promise<
     filename,
     mimeType: parsed.mimeType || mimeType,
     contentBase64: parsed.base64,
+    teamId,
+    taskId,
   };
+}
+
+async function resolveForwardContext(input: {
+  userId: string;
+  fileId?: string;
+  taskId?: string;
+}): Promise<
+  | { ok: true; teamId: string; taskId: string; actorId: string }
+  | { ok: false; error: string }
+  | { ok: true; teamId: null; taskId: null; actorId: null }
+> {
+  if (!isSupabaseAdminConfigured()) {
+    return { ok: false, error: "errors.db_not_configured" };
+  }
+  const admin = createAdminClient();
+  let teamId = "";
+  let taskId = input.taskId?.trim() ?? "";
+
+  if (input.fileId?.trim()) {
+    const { data } = await admin
+      .from("task_files")
+      .select("team_id, task_id")
+      .eq("id", input.fileId.trim())
+      .maybeSingle();
+    if (data?.team_id && data.task_id) {
+      teamId = String(data.team_id);
+      taskId = String(data.task_id);
+    }
+  }
+
+  if (!teamId && taskId) {
+    const { data: task } = await admin
+      .from("work_tasks")
+      .select("team_id, list_id")
+      .eq("id", taskId)
+      .maybeSingle();
+    if (task?.team_id) {
+      teamId = String(task.team_id);
+    }
+    if (task?.list_id) {
+      const access = await assertListAccess(String(task.list_id), "view");
+      if (!access.ok) {
+        return { ok: false, error: access.error };
+      }
+    }
+  }
+
+  if (!teamId || !taskId) {
+    return { ok: true, teamId: null, taskId: null, actorId: null };
+  }
+
+  const { data: member } = await admin
+    .from("team_members")
+    .select("id")
+    .eq("team_id", teamId)
+    .eq("user_id", input.userId)
+    .not("user_id", "is", null)
+    .maybeSingle();
+
+  if (!member?.id) {
+    return { ok: true, teamId: null, taskId: null, actorId: null };
+  }
+
+  return {
+    ok: true,
+    teamId,
+    taskId,
+    actorId: String(member.id),
+  };
+}
+
+async function insertForwardActivity(input: {
+  teamId: string;
+  taskId: string;
+  actorId: string;
+  fileName: string;
+  fileId?: string;
+  to: string;
+  subject: string;
+  resendEmailId?: string;
+}): Promise<TaskActivity | null> {
+  const activity = createActivity({
+    actorId: input.actorId,
+    taskId: input.taskId,
+    kind: "file_forwarded",
+    fileName: input.fileName,
+    text: input.subject,
+    previousText: input.to,
+    metadata: {
+      to: input.to,
+      subject: input.subject,
+      deliveryStatus: "sent",
+      ...(input.fileId ? { fileId: input.fileId } : {}),
+      ...(input.resendEmailId ? { resendEmailId: input.resendEmailId } : {}),
+    },
+  });
+
+  try {
+    const admin = createAdminClient();
+    const { error } = await admin.from("task_activities").insert({
+      id: activity.id,
+      team_id: input.teamId,
+      task_id: activity.taskId,
+      actor_id: activity.actorId,
+      kind: activity.kind,
+      text: activity.text ?? null,
+      previous_text: activity.previousText ?? null,
+      file_name: activity.fileName ?? null,
+      metadata: activity.metadata ?? null,
+      created_at: activity.at,
+    });
+    if (error) {
+      logError("forwardTaskFile activity insert failed", error.message);
+      return null;
+    }
+    return activity;
+  } catch (error) {
+    logError("forwardTaskFile activity insert failed", error);
+    return null;
+  }
 }
 
 export async function forwardTaskFileAction(input: {
@@ -140,11 +275,16 @@ export async function forwardTaskFileAction(input: {
   body: string;
   /** Saved task_files row id. Prefer this over inline content. */
   fileId?: string;
+  /** Task id for history when forwarding a pending (unsaved) file. */
+  taskId?: string;
   /** Pending / local file (base64). Used when fileId is absent. */
   fileName?: string;
   mimeType?: string;
   contentBase64?: string;
-}): Promise<ActionResult> {
+}): Promise<
+  | { ok: true; activity: TaskActivity | null }
+  | { ok: false; error: string }
+> {
   const user = await getCurrentUser();
   if (!user) {
     return { ok: false, error: "errors.auth_required" };
@@ -177,6 +317,8 @@ export async function forwardTaskFileAction(input: {
     mimeType: string;
     contentBase64: string;
   };
+  let teamId = "";
+  let taskId = input.taskId?.trim() ?? "";
 
   const fileId = input.fileId?.trim() ?? "";
   if (fileId) {
@@ -187,6 +329,8 @@ export async function forwardTaskFileAction(input: {
       mimeType: loaded.mimeType,
       contentBase64: loaded.contentBase64,
     };
+    teamId = loaded.teamId;
+    taskId = loaded.taskId;
   } else {
     const fileName = input.fileName?.trim() || "file";
     const contentBase64 = input.contentBase64?.replace(/\s+/g, "") ?? "";
@@ -232,5 +376,68 @@ export async function forwardTaskFileAction(input: {
     return { ok: false, error: sent.error };
   }
 
-  return { ok: true };
+  const context = await resolveForwardContext({
+    userId: user.id,
+    fileId: fileId || undefined,
+    taskId: taskId || undefined,
+  });
+  if (!context.ok) {
+    return { ok: false, error: context.error };
+  }
+
+  let activity: TaskActivity | null = null;
+  if (context.teamId && context.taskId && context.actorId) {
+    activity = await insertForwardActivity({
+      teamId: context.teamId,
+      taskId: context.taskId,
+      actorId: context.actorId,
+      fileName: attachment.filename,
+      fileId: fileId || undefined,
+      to,
+      subject,
+      resendEmailId: sent.id,
+    });
+  }
+
+  return { ok: true, activity };
+}
+
+export async function refreshForwardDeliveryStatusesAction(
+  taskId: string,
+): Promise<{ ok: true; activities: TaskActivity[] } | { ok: false; error: string }> {
+  const user = await getCurrentUser();
+  if (!user) {
+    return { ok: false, error: "errors.auth_required" };
+  }
+  if (!isSupabaseConfigured()) {
+    return { ok: false, error: "errors.db_not_configured" };
+  }
+
+  const trimmed = taskId.trim();
+  if (!trimmed) {
+    return { ok: true, activities: [] };
+  }
+
+  if (!isSupabaseAdminConfigured()) {
+    return { ok: false, error: "errors.db_not_configured" };
+  }
+
+  const admin = createAdminClient();
+  const { data: task } = await admin
+    .from("work_tasks")
+    .select("list_id")
+    .eq("id", trimmed)
+    .maybeSingle();
+
+  if (!task?.list_id) {
+    return { ok: false, error: "errors.files_forward_missing" };
+  }
+
+  const access = await assertListAccess(String(task.list_id), "view");
+  if (!access.ok) {
+    return { ok: false, error: access.error };
+  }
+
+  const activities = await refreshTaskForwardDeliveryStatuses(trimmed);
+  return { ok: true, activities };
 }

@@ -38,9 +38,18 @@ import { ensureTaskFileContent } from "@/app/lib/file-content";
 import {
   forwardTaskFileAction,
   isResendEnabledAction,
+  refreshForwardDeliveryStatusesAction,
 } from "@/app/lib/email/forward-task-file";
+import {
+  isForwardDeliveryFailed,
+  parseForwardMetadata,
+} from "@/app/lib/email/resend-delivery";
 import { translateActionError } from "@/app/lib/i18n/action-errors";
-import { useTaskActivities } from "@/app/lib/task-activities-cache";
+import {
+  appendTaskActivity,
+  patchTaskActivities,
+  useTaskActivities,
+} from "@/app/lib/task-activities-cache";
 import { useTeam } from "@/app/lib/team-store";
 import { useIsAdmin } from "@/app/lib/users/use-is-admin";
 import {
@@ -251,6 +260,8 @@ export function SubtaskDetailModal({
     id: string;
     name: string;
     size?: number;
+    defaultTo?: string;
+    defaultSubject?: string;
   } | null>(null);
   const [resendEnabled, setResendEnabled] = useState(false);
   const [uploadProgress, setUploadProgress] =
@@ -399,6 +410,18 @@ export function SubtaskDetailModal({
     };
   }, [fileUploadsEnabled, open]);
 
+  useEffect(() => {
+    if (!open || !resendEnabled || !task?.id) return;
+    let cancelled = false;
+    void refreshForwardDeliveryStatusesAction(task.id).then((result) => {
+      if (cancelled || !result.ok || result.activities.length === 0) return;
+      patchTaskActivities(result.activities);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [open, resendEnabled, task?.id]);
+
   const statusLabel = useStatusLabels();
   const { labelFor, groupKeyFor } = useTaskStatuses(parentListId, task?.parentId ?? createFor?.parentId ?? null);
 
@@ -521,6 +544,45 @@ export function SubtaskDetailModal({
     });
   }
 
+  function requestForwardAgainFromHistory(item: TaskActivity) {
+    const meta = parseForwardMetadata(item.metadata);
+    const fileId =
+      typeof meta?.fileId === "string" && meta.fileId.trim()
+        ? meta.fileId.trim()
+        : "";
+    const fileName = item.fileName?.trim() || "";
+    const pending =
+      (fileId ? pendingFiles.find((entry) => entry.id === fileId) : null) ??
+      (fileName
+        ? pendingFiles.find((entry) => entry.name === fileName)
+        : null);
+    const stored =
+      (fileId ? files.find((file) => file.id === fileId) : null) ??
+      (fileName ? files.find((file) => file.name === fileName) : null);
+    const name = pending?.name ?? stored?.name ?? fileName;
+    const id = pending?.id ?? stored?.id;
+    if (!name || !id) {
+      showFeedback({
+        type: "error",
+        text: translateActionError(t, "errors.files_forward_missing"),
+      });
+      return;
+    }
+    setFileToForward({
+      id,
+      name,
+      size: pending?.file.size ?? stored?.size,
+      defaultTo:
+        (typeof meta?.to === "string" && meta.to.trim()) ||
+        item.previousText?.trim() ||
+        "",
+      defaultSubject:
+        (typeof meta?.subject === "string" && meta.subject.trim()) ||
+        item.text?.trim() ||
+        forwardSubject,
+    });
+  }
+
   async function confirmForwardAttachment(input: {
     to: string;
     subject: string;
@@ -537,6 +599,7 @@ export function SubtaskDetailModal({
         to: input.to,
         subject: input.subject,
         body: input.body,
+        taskId: task?.id,
         fileName: pending.name,
         mimeType: pending.file.type || mimeFromName(pending.name),
         contentBase64,
@@ -547,6 +610,7 @@ export function SubtaskDetailModal({
         subject: input.subject,
         body: input.body,
         fileId: stored.id,
+        taskId: task?.id,
       });
     } else {
       showFeedback({
@@ -562,6 +626,10 @@ export function SubtaskDetailModal({
         text: translateActionError(t, result.error),
       });
       throw new Error(result.error);
+    }
+
+    if (result.activity) {
+      appendTaskActivity(result.activity);
     }
 
     showFeedback({
@@ -1067,6 +1135,13 @@ export function SubtaskDetailModal({
               <ScrollableHistoryList>
                 {activities.map((item) => {
                   const actor = members.find((member) => member.id === item.actorId);
+                  const forwardMeta =
+                    item.kind === "file_forwarded"
+                      ? parseForwardMetadata(item.metadata)
+                      : null;
+                  const forwardFailed = isForwardDeliveryFailed(
+                    forwardMeta?.deliveryStatus,
+                  );
                   return (
                     <li key={item.id} className="flex gap-2">
                       {actor ? (
@@ -1080,9 +1155,32 @@ export function SubtaskDetailModal({
                         <p className="text-[12px] font-medium text-zinc-700">
                           {actor?.name ?? t("todo.fields.unassigned", "Nepiešķirts")}
                         </p>
-                        <p className="mt-0.5 whitespace-pre-wrap text-[13px] text-zinc-600">
+                        <p
+                          className={`mt-0.5 whitespace-pre-wrap text-[13px] ${
+                            forwardFailed ? "text-red-600" : "text-zinc-600"
+                          }`}
+                        >
                           {activityText(item)}
                         </p>
+                        {forwardFailed ? (
+                          <div className="mt-1 space-y-1">
+                            <p className="text-[12px] font-medium text-red-600">
+                              {t(
+                                "subtasks.history.file_forwarded_bounced",
+                                "E-pasts netika piegādāts. Pārbaudi adresi un nosūti vēlreiz.",
+                              )}
+                            </p>
+                            {resendEnabled ? (
+                              <button
+                                type="button"
+                                onClick={() => requestForwardAgainFromHistory(item)}
+                                className="text-[12px] font-semibold text-red-700 underline decoration-red-300 underline-offset-2 transition hover:text-red-800"
+                              >
+                                {t("files.forward.send_again", "Nosūtīt vēlreiz")}
+                              </button>
+                            ) : null}
+                          </div>
+                        ) : null}
                         <p className="mt-0.5">
                           <RelativeTime at={item.at} />
                         </p>
@@ -1176,7 +1274,8 @@ export function SubtaskDetailModal({
       }}
       fileName={fileToForward?.name ?? ""}
       fileSize={fileToForward?.size}
-      defaultSubject={forwardSubject}
+      defaultTo={fileToForward?.defaultTo ?? ""}
+      defaultSubject={fileToForward?.defaultSubject ?? forwardSubject}
       onSend={confirmForwardAttachment}
     />
     <FileUploadOverlay progress={uploadProgress} />

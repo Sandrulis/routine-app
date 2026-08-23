@@ -1282,6 +1282,7 @@ export const ru: Record<string, string> = {
   "files.forward.send": "Отправить",
   "files.forward.sending": "Отправка…",
   "files.forward.sent": "Файл отправлен.",
+  "files.forward.send_again": "Отправить снова",
   "files.save.failed": "Не удалось сохранить файл. Попробуйте ещё раз.",
   "files.edit.title": "Переименовать файл",
   "files.edit.description": "Измените название файла.",
@@ -1397,6 +1398,9 @@ export const ru: Record<string, string> = {
   "subtasks.history.file": "Прикреплён файл: {name}",
   "subtasks.history.file_removed": "Файл удалён: {name}",
   "subtasks.history.file_renamed": "Файл переименован: {from} → {to}",
+  "subtasks.history.file_forwarded": "Файл «{name}» переслан на {email}. Тема: {subject}",
+  "subtasks.history.file_forwarded_bounced":
+    "Письмо не доставлено. Проверьте адрес и отправьте снова.",
   "subtasks.history.checklist": "Чек-лист изменён.",
   "subtasks.history.checklist_added": "Добавлен чек-лист: {title}",
   "subtasks.history.checklist_removed": "Удалён чек-лист: {title}",

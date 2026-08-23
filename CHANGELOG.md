@@ -4,6 +4,15 @@
 
 - (none)
 
+## v0.2.12
+
+- Pārsūtītā faila vēsturē Resend piegādes statuss: bounce/failed sarkanā ar **Nosūtīt vēlreiz**; webhook `/api/webhooks/resend` + poll atverot apakšuzdevumu (`087`)
+
+## v0.2.11
+
+- Gmail spraudnis `0.4.3`: cookie bez `refresh_token` vairs nepārraksta lokālo ~30 dienu sesiju; alarm atjauno arī no `chrome.storage.local`
+- Pēc **Pārsūtīt failu** apakšuzdevuma vēsturē ieraksts ar faila nosaukumu, saņēmēja e-pastu un tēmu (`file_forwarded`, migrācija `086`)
+
 ## v0.2.10
 
 - Apakšuzdevuma pielikuma `…` → **Pārsūtīt failu** (ja Resend aktīvs): modālis ar e-pastu, tēmu (PATH `mape > uzdevums > apakšuzdevums`) un ziņojumu; From = Resend From, Reply-To = lietotāja e-pasts; maks. 25 MB
