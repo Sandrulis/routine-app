@@ -244,6 +244,7 @@ export function PageBreadcrumb() {
         modules: t("nav.modules", "Moduļi"),
         "payment-plans": t("admin.nav.payment_plans", "Maksas plāni"),
         integrations: t("admin.nav.integrations", "Integrācijas"),
+        "email-templates": t("admin.nav.email_templates", "E-pasta šabloni"),
         settings: t("nav.settings", "Uzstādījumi"),
       };
       const sectionLabel = section ? (sectionLabels[section] ?? null) : null;

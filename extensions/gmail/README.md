@@ -2,49 +2,40 @@
 
 Chrome paplašinājums: Gmailā rāda sistēmas logo, atver modāli un pievieno e-pastu + pielikumus pie Routine apakšuzdevuma.
 
-## Kas ir “DOM” vs Gmail API
-
-| | DOM (vecais MVP) | Gmail API (tagad) |
-|---|---|---|
-| Kā lasa e-pastu | No Gmail HTML lapas | Oficiāls Google API |
-| Pielikumi | Nestabili download linki | Pilni faili no API |
-| Risks | Gmail UI maiņa salauž | Stabils, prasa OAuth |
-
-Bez API tu zaudē uzticamus pielikumus (bieži “klusi” neielādējas).
+Nav jāievada Routine URL vai OAuth Client ID. Spraudnis pats atrod sesiju tajā pašā Chrome profilā uz `https://tasqin.com` vai `http://localhost:3120` un Gmail savieno caur sistēmas Google OAuth.
 
 ## Priekšnosacījumi
 
-1. `npm run dev` (vai production Routine)
-2. Ielogojies Routine tajā pašā Chrome profilā
-3. `module_file_upload` ieslēgts
-4. Lieliem failiem (> ~1.5 MB saturs DB): komandas **Google Drive** pieslēgts (līdz 25 MB)
-5. Google Cloud: ieslēgts **Gmail API** + OAuth Client ID
-
-## Gmail OAuth Client ID
-
-1. [Google Cloud Console](https://console.cloud.google.com/) → APIs → ieslēdz **Gmail API**
-2. Credentials → Create OAuth client → tips **Web application**
-3. Authorized redirect URIs: nokopē no paplašinājuma opcijām (`Redirect URI`)
-4. Ielīmē Client ID paplašinājuma opcijās → **Saglabāt** → **Savienot Gmail**
+1. Production: [https://tasqin.com](https://tasqin.com) vai [https://www.tasqin.com](https://www.tasqin.com) (`NEXT_PUBLIC_SITE_URL` = kanoniskais hosts). Local: `npm run dev`
+2. Administrācija → Moduļi: **Gmail spraudnis** ieslēgts
+3. Administrācija → Integrācijas: Google OAuth konfigurēts; Google Cloud: **Gmail API** + **Drive API**
+4. Google Cloud OAuth klientā trešais Redirect URI: `/auth/gmail-plugin/callback` (rādās Integrācijās)
+5. Komandai pieslēgts **Google Drive** (bez tā spraudnis rāda sarkanu brīdinājumu un nestrādā)
+6. `module_file_upload` ieslēgts
 
 ## Ielāde Chrome
 
 1. `chrome://extensions` → Developer mode → **Load unpacked** → `extensions/gmail`
 2. Pēc koda izmaiņām: **Reload** uz paplašinājuma kartītes
-3. Opcijās: Routine URL + Gmail Client ID → Savienot Gmail
+3. Popup: ienāc ar Google vai e-pastu/paroli (custom login). Ja Gmail nav savienots, nospied **Savienot Gmail** - tas saglabā savienojumu arī Routine
 
 ## Lietošana
 
 1. Atver e-pastu Gmailā (pilns skats)
-2. Nospied **Routine** pogu e-pasta skatā (josla virs ziņas / blakus temata) vai peldošo pogu
+2. Nospied **Routine** pogu e-pasta skatā
 3. Izvēlies **saraksts** → (mape) → **uzdevums** → **apakšuzdevums**
-   - Breadcrumb ir klikšķināms; rāda tikai neatvērtus (neslēgtus) ierakstus
-4. Apakšā atzīmē pielikumus (pēc noklusējuma visi) → **Pievienot**
-5. Pēc pievienošanas rādās tikai rezultāta ziņa
+4. Apakšā atzīmē pielikumus → **Pievienot**
+
+Popup rāda avataru, vārdu un uzvārdu, e-pastu, un ļauj pārslēgt komandas.
 
 ## API (Routine)
 
+- `GET /api/extension/config` (publisks)
 - `GET /api/extension/session`
+- `POST /api/extension/login`
+- `POST /api/extension/refresh`
+- `GET /api/extension/gmail-access`
 - `GET /api/extension/browse`
 - `GET /api/extension/subtasks?q=`
 - `POST /api/extension/attach-email`
+- `GET /auth/gmail-plugin/start` → Google OAuth → `/auth/gmail-plugin/done`

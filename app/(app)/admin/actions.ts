@@ -50,6 +50,8 @@ import {
   updateSiteLanguageName,
   updateSiteTranslation,
 } from "@/app/lib/site-admin/repository";
+import { saveEmailTemplateDrafts } from "@/app/lib/email/templates-server";
+import type { EmailTemplateDraft } from "@/app/lib/email/templates";
 import type {
   AdminTeamInput,
   AdminTeamMemberSummary,
@@ -186,6 +188,13 @@ export async function deleteSiteTranslationAction(key: string) {
 export async function saveSiteSettingsAction(input: SiteSettingsInput) {
   await requireAdmin({ action: "admin.settings.save" });
   const result = await saveSiteSettings(input);
+  if (result.ok) refreshAdmin();
+  return result;
+}
+
+export async function saveEmailTemplatesAction(drafts: EmailTemplateDraft[]) {
+  await requireAdmin({ action: "admin.email_templates.save" });
+  const result = await saveEmailTemplateDrafts(drafts);
   if (result.ok) refreshAdmin();
   return result;
 }

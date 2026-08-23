@@ -8,22 +8,8 @@
         font-family: ui-sans-serif, system-ui, sans-serif;
         margin: 0;
         padding: 14px;
-        width: 360px;
+        width: 340px;
         color: #0f172a;
-      }
-      label {
-        display: block;
-        font-size: 12px;
-        color: #475569;
-        margin-bottom: 6px;
-      }
-      input {
-        width: 100%;
-        box-sizing: border-box;
-        border: 1px solid #cbd5e1;
-        border-radius: 8px;
-        padding: 8px 10px;
-        margin-bottom: 10px;
       }
       button {
         border: 0;
@@ -40,58 +26,120 @@
         background: #e2e8f0;
         color: #0f172a;
       }
-      p,
-      code {
+      button:disabled {
+        cursor: not-allowed;
+        opacity: 0.6;
+      }
+      input,
+      select {
+        width: 100%;
+        box-sizing: border-box;
+        border: 1px solid #cbd5e1;
+        border-radius: 8px;
+        padding: 8px 10px;
+        margin-bottom: 8px;
+        font: inherit;
+      }
+      label {
+        display: block;
+        font-size: 12px;
+        color: #475569;
+        margin-bottom: 4px;
+      }
+      p {
         font-size: 12px;
         color: #64748b;
         margin: 8px 0 0;
       }
-      code {
-        display: block;
-        word-break: break-all;
-        background: #f8fafc;
-        border: 1px solid #e2e8f0;
-        border-radius: 8px;
-        padding: 8px;
-        color: #0f172a;
+      .warn {
+        color: #b91c1c;
+        font-weight: 600;
       }
-      #status {
-        margin-top: 8px;
-        min-height: 1em;
-      }
-      #status.ok {
+      .ok {
         color: #047857;
       }
-      #status.err {
+      .err {
         color: #b91c1c;
+      }
+      .account {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        margin-bottom: 12px;
+      }
+      .avatar {
+        width: 48px;
+        height: 48px;
+        border-radius: 999px;
+        object-fit: cover;
+        background: #0f766e;
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        flex-shrink: 0;
+      }
+      .avatar img {
+        width: 48px;
+        height: 48px;
+        border-radius: 999px;
+        object-fit: cover;
+        display: block;
+      }
+      .name {
+        font-weight: 700;
+        font-size: 14px;
+        line-height: 1.3;
+      }
+      .email {
+        font-size: 12px;
+        color: #64748b;
+        word-break: break-all;
+      }
+      #status {
+        min-height: 1em;
+        margin-top: 8px;
+      }
+      .hidden {
+        display: none !important;
       }
     </style>
   </head>
   <body>
-    <label for="appBaseUrl">Routine URL</label>
-    <input id="appBaseUrl" type="url" placeholder="http://localhost:3120" />
-
-    <label for="gmailClientId">Gmail OAuth Client ID</label>
-    <input
-      id="gmailClientId"
-      type="text"
-      placeholder="….apps.googleusercontent.com"
-    />
-
-    <p id="redirectHint">Redirect URI (ieliec Google Cloud OAuth klientā):</p>
-    <code id="redirectUri">…</code>
-
-    <div style="margin-top: 12px">
-      <button type="button" id="save">Saglabāt</button>
-      <button type="button" id="connectGmail" class="secondary">
-        Savienot Gmail
-      </button>
+    <p id="boot"></p>
+    <div id="login" class="hidden">
+      <p id="loginHint"></p>
+      <div id="googleWrap" class="hidden">
+        <button type="button" id="googleLogin"></button>
+      </div>
+      <div id="passwordWrap" class="hidden">
+        <label for="email" id="emailLabel"></label>
+        <input id="email" type="email" autocomplete="username" />
+        <label for="password" id="passwordLabel"></label>
+        <input id="password" type="password" autocomplete="current-password" />
+        <button type="button" id="passwordLogin"></button>
+      </div>
+    </div>
+    <div id="account" class="hidden">
+      <div class="account">
+        <div class="avatar" id="avatarFallback">R</div>
+        <div>
+          <div class="name" id="displayName"></div>
+          <div class="email" id="displayEmail"></div>
+        </div>
+      </div>
+      <label for="team" id="teamLabel"></label>
+      <select id="team"></select>
+      <p id="driveWarn" class="warn hidden"></p>
+      <p id="gmailStatus"></p>
+      <p id="pluginWarn" class="warn hidden"></p>
+      <div>
+        <button type="button" id="connectGmail" class="hidden"></button>
+        <button type="button" id="signOut" class="secondary"></button>
+      </div>
     </div>
     <p id="status"></p>
-    <p id="optionsHint">
-      Ielogojies Routine tajā pašā Chrome profilā. Pielikumi nāk caur Gmail API
-      (līdz 25 MB; lielākiem failiem vajag komandas Google Drive).
-    </p>
     <script src="options.js"></script>
   </body>
 </html>

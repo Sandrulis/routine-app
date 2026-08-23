@@ -20,6 +20,11 @@
     "Ielogojies Routine (tajā pašā pārlūkā) un mēģini vēlreiz.",
   "errors.extension_auth_required":
     "Ielogojies Routine (tajā pašā pārlūkā) un mēģini vēlreiz.",
+  "errors.extension_gmail_not_connected":
+    "Vispirms savieno Gmail spraudnī. Savienojums tiks saglabāts arī Routine.",
+  "errors.extension_plugin_disabled": "Gmail spraudnis sistēmā ir izslēgts.",
+  "errors.extension_team_drive_missing":
+    "Šai komandai nav pieslēgts Google Drive. Spraudnis nestrādās.",
   "errors.extension_not_subtask": "Izvēlētais ieraksts nav apakšuzdevums.",
   "errors.extension_subtask_unavailable": "Apakšuzdevums nav pieejams.",
   "errors.file_type_mismatch": "Pielikuma tips nesakrīt ar saturu.",
@@ -77,6 +82,7 @@
   "extension.gmail.open_email": "Atver e-pastu Gmailā, tad pievieno.",
   "extension.gmail.checking_session": "Pārbauda Routine sesiju…",
   "extension.gmail.open_login": "Atvērt Routine login",
+  "extension.gmail.connect_gmail": "Savienot Gmail",
   "extension.gmail.add_to_routine": "Pievienot Routine",
   "extension.gmail.loading_gmail": "Ielādē e-pastu un pielikumus no Gmail…",
   "extension.gmail.progress_email": "Ielādē e-pastu no Gmail…",
@@ -860,7 +866,7 @@ function ensureUi() {
       : t("extension.gmail.open_email");
     setBusy(false);
     if (!sessionResult?.data?.authenticated) {
-      const appBase = sessionResult?.appBase || "http://localhost:3120";
+      const appBase = sessionResult?.appBase || "https://tasqin.com";
       setResultMode(true);
       setFeedback(tError("errors.extension_auth_required"), "error");
       feedback.insertAdjacentHTML(
@@ -869,9 +875,34 @@ function ensureUi() {
       );
       return;
     }
-    if (sessionResult.data.fileUploadEnabled === false) {
+    const data = sessionResult.data;
+    if (data.gmailPluginEnabled === false) {
+      setResultMode(true);
+      setFeedback(tError("errors.extension_plugin_disabled"), "error");
+      return;
+    }
+    if (data.fileUploadEnabled === false) {
       setResultMode(true);
       setFeedback(tError("errors.extension_uploads_disabled"), "error");
+      return;
+    }
+    if (!data.gmailConnected) {
+      const appBase = sessionResult.appBase || "https://tasqin.com";
+      const path = data.connectGmailPath || "/auth/gmail-plugin/start";
+      setResultMode(true);
+      setFeedback(tError("errors.extension_gmail_not_connected"), "error");
+      feedback.insertAdjacentHTML(
+        "afterend",
+        `<p class="routine-gmail-login-link"><a href="${appBase}${path}" target="_blank" rel="noreferrer">${t("extension.gmail.connect_gmail")}</a></p>`,
+      );
+      return;
+    }
+    const teams = Array.isArray(data.teams) ? data.teams : [];
+    const team =
+      teams.find((item) => item.id === data.selectedTeamId) || teams[0] || null;
+    if (team && !team.googleDriveConnected) {
+      setResultMode(true);
+      setFeedback(tError("errors.extension_team_drive_missing"), "error");
       return;
     }
     await Promise.all([loadAttachmentsList(), loadLists()]);

@@ -1,3 +1,4 @@
+import { readEnv } from "@/app/lib/env/read-env";
 import { logError } from "@/app/lib/security/log-error";
 import {
   decryptSecret,
@@ -30,7 +31,7 @@ function definitionFor(key: SimpleSiteIntegrationKey): SimpleIntegrationDefiniti
 
 function readEnvValue(name: string | undefined) {
   if (!name) return "";
-  return process.env[name]?.trim() ?? "";
+  return readEnv(name);
 }
 
 async function fetchIntegrationRow(key: SimpleSiteIntegrationKey) {

@@ -80,7 +80,10 @@ export const getEnabledFrontendModuleKeys = cache(
       return new Set(KNOWN_FRONTEND_MODULE_KEYS);
     }
 
-    const supabase = await createUserServerClient();
+    // Public landing has no session; service role bypasses deny-anon RLS.
+    const supabase = isSupabaseAdminConfigured()
+      ? createAdminClient()
+      : await createUserServerClient();
     const { data, error } = await supabase
       .from("site_frontend_modules")
       .select("module_key, is_enabled");
@@ -174,7 +177,8 @@ export async function updateFrontendModuleEnabled(
 
   if (
     isEnabled &&
-    normalizedKey === FRONTEND_MODULE_KEYS.googleDrive &&
+    (normalizedKey === FRONTEND_MODULE_KEYS.googleDrive ||
+      normalizedKey === FRONTEND_MODULE_KEYS.gmailPlugin) &&
     !(await isGoogleSignInEnabled())
   ) {
     return { ok: false, error: "errors.frontend_module_google_oauth_required" };

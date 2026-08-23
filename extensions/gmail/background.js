@@ -1,23 +1,169 @@
-const DEFAULT_APP_BASE = "http://localhost:3120";
-const GMAIL_SCOPE = "https://www.googleapis.com/auth/gmail.readonly";
+const DEFAULT_APP_BASE = "https://tasqin.com";
+const APP_ORIGIN_CANDIDATES = [
+  "http://localhost:3120",
+  "http://127.0.0.1:3120",
+  "https://tasqin.com",
+  "https://www.tasqin.com",
+];
+const COOKIE_CHUNK = 3180;
+const AUTH_MAX_AGE_SEC = 30 * 24 * 60 * 60;
 const EXTENSION_UPLOAD_MAX_BYTES = 25 * 1024 * 1024;
 
-async function getAppBase() {
-  const stored = await chrome.storage.sync.get(["appBaseUrl"]);
-  const raw = String(stored.appBaseUrl || DEFAULT_APP_BASE).trim();
+function unique(items) {
+  return [...new Set(items.filter(Boolean))];
+}
+
+async function ensureOriginPermission(origin) {
+  const origins = [`${origin}/*`];
   try {
-    return new URL(raw).origin;
+    const already = await chrome.permissions.contains({ origins });
+    if (already) return true;
+    return await chrome.permissions.request({ origins });
   } catch {
-    return DEFAULT_APP_BASE;
+    return false;
   }
 }
 
-async function getAccessToken(appBase) {
+function parseOrigin(raw) {
+  try {
+    return new URL(String(raw || "").trim()).origin;
+  } catch {
+    return "";
+  }
+}
+
+async function originsFromAuthCookies() {
+  let cookies = [];
+  try {
+    cookies = await chrome.cookies.getAll({});
+  } catch {
+    cookies = [];
+  }
+  const origins = [];
+  for (const cookie of cookies) {
+    if (!/-auth-token/.test(cookie.name || "")) continue;
+    const host = String(cookie.domain || "").replace(/^\./, "");
+    if (!host) continue;
+    const protocol = cookie.secure ? "https" : "http";
+    if (host === "localhost" || host === "127.0.0.1") {
+      origins.push(`${protocol}://${host}:3120`);
+    } else {
+      origins.push(`${protocol}://${host}`);
+    }
+  }
+  return unique(origins);
+}
+
+async function probeConfig(origin) {
+  try {
+    await ensureOriginPermission(origin);
+    const response = await fetch(`${origin}/api/extension/config`, {
+      credentials: "omit",
+    });
+    if (!response.ok) return null;
+    const data = await response.json();
+    if (!data?.ok) return null;
+    return data;
+  } catch {
+    return null;
+  }
+}
+
+async function getAppBase() {
+  const stored = await chrome.storage.sync.get(["appBaseUrl"]);
+  const storedOrigin = parseOrigin(stored.appBaseUrl);
+  const cookieOrigins = await originsFromAuthCookies();
+  const candidates = unique([
+    ...cookieOrigins,
+    storedOrigin,
+    ...APP_ORIGIN_CANDIDATES,
+  ]);
+  for (const origin of candidates) {
+    const config = await probeConfig(origin);
+    if (!config) continue;
+    // Stay on the origin that answered. config.appOrigin is NEXT_PUBLIC_SITE_URL
+    // and must not steal a working local session.
+    await chrome.storage.sync.set({
+      appBaseUrl: origin,
+      authCookieName: config.authCookieName || "",
+    });
+    return origin;
+  }
+
+  try {
+    await chrome.permissions.request({
+      origins: ["https://*/*", "http://*/*"],
+    });
+  } catch {
+    // user dismissed
+  }
+  const extraOrigins = unique([
+    ...(await originsFromAuthCookies()),
+    ...APP_ORIGIN_CANDIDATES,
+  ]).filter((origin) => !candidates.includes(origin));
+  for (const origin of extraOrigins) {
+    const config = await probeConfig(origin);
+    if (!config) continue;
+    await chrome.storage.sync.set({
+      appBaseUrl: origin,
+      authCookieName: config.authCookieName || "",
+    });
+    return origin;
+  }
+
+  return storedOrigin || DEFAULT_APP_BASE;
+}
+
+function parseSessionValue(raw) {
+  const candidates = [raw];
+  try {
+    candidates.push(decodeURIComponent(raw));
+  } catch {
+    // ignore
+  }
+  for (const candidate of candidates) {
+    try {
+      let parsed = JSON.parse(candidate);
+      if (typeof parsed === "string") parsed = JSON.parse(parsed);
+      if (parsed && typeof parsed.access_token === "string") return parsed;
+    } catch {
+      // try next
+    }
+    try {
+      const decoded = atob(candidate.replace(/-/g, "+").replace(/_/g, "/"));
+      let parsed = JSON.parse(decoded);
+      if (typeof parsed === "string") parsed = JSON.parse(parsed);
+      if (parsed && typeof parsed.access_token === "string") return parsed;
+    } catch {
+      // ignore
+    }
+  }
+  return null;
+}
+
+function sessionExpired(session) {
+  if (!session?.access_token) return true;
+  const expiresAtMs = Number(session.expires_at)
+    ? Number(session.expires_at) * 1000
+    : 0;
+  if (expiresAtMs && expiresAtMs < Date.now() + 60_000) return true;
+  try {
+    const payload = JSON.parse(
+      atob(session.access_token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/")),
+    );
+    if (payload?.exp && payload.exp * 1000 < Date.now() + 60_000) return true;
+  } catch {
+    // ignore
+  }
+  return false;
+}
+
+async function readSessionFromCookies(appBase) {
   const cookies = await chrome.cookies.getAll({ url: appBase });
   const authCookies = cookies.filter((cookie) =>
     /-auth-token(\.\d+)?$/.test(cookie.name),
   );
-  if (authCookies.length === 0) return null;
+  if (authCookies.length === 0) return { session: null, cookieName: "" };
 
   const groups = new Map();
   for (const cookie of authCookies) {
@@ -29,37 +175,144 @@ async function getAccessToken(appBase) {
     groups.get(base).push({ index, value: cookie.value });
   }
 
-  for (const parts of groups.values()) {
+  for (const [cookieName, parts] of groups.entries()) {
     parts.sort((a, b) => a.index - b.index);
-    const raw = parts.map((part) => part.value).join("");
-    const candidates = [raw];
-    try {
-      candidates.push(decodeURIComponent(raw));
-    } catch {
-      // ignore
-    }
-    for (const candidate of candidates) {
+    const session = parseSessionValue(parts.map((part) => part.value).join(""));
+    if (session) return { session, cookieName };
+  }
+  return { session: null, cookieName: "" };
+}
+
+async function clearAuthCookies(appBase, cookieName) {
+  const cookies = await chrome.cookies.getAll({ url: appBase });
+  for (const cookie of cookies) {
+    const name = cookie.name || "";
+    if (
+      name === cookieName ||
+      name.startsWith(`${cookieName}.`) ||
+      /-auth-token(\.\d+)?$/.test(name) ||
+      name === "routine-app-remember-session"
+    ) {
       try {
-        let parsed = JSON.parse(candidate);
-        if (typeof parsed === "string") parsed = JSON.parse(parsed);
-        if (parsed && typeof parsed.access_token === "string") {
-          return parsed.access_token;
-        }
-      } catch {
-        // try next
-      }
-      try {
-        const decoded = atob(candidate.replace(/-/g, "+").replace(/_/g, "/"));
-        let parsed = JSON.parse(decoded);
-        if (typeof parsed === "string") parsed = JSON.parse(parsed);
-        if (parsed && typeof parsed.access_token === "string") {
-          return parsed.access_token;
-        }
+        await chrome.cookies.remove({ url: appBase, name });
       } catch {
         // ignore
       }
     }
   }
+}
+
+function cookieWriteBase(appBase, expires) {
+  return {
+    url: appBase,
+    path: "/",
+    expirationDate: expires,
+    httpOnly: true,
+    sameSite: "lax",
+    secure: String(appBase).startsWith("https:"),
+  };
+}
+
+async function setCookieSafe(details) {
+  try {
+    const written = await chrome.cookies.set(details);
+    if (written) return true;
+  } catch {
+    // Some Chrome builds reject httpOnly from extensions.
+  }
+  try {
+    const { httpOnly: _httpOnly, ...rest } = details;
+    return Boolean(await chrome.cookies.set(rest));
+  } catch {
+    return false;
+  }
+}
+
+async function writeAuthCookies(appBase, cookieName, session) {
+  if (!cookieName || !session?.access_token) return;
+  await clearAuthCookies(appBase, cookieName);
+  const encoded = encodeURIComponent(JSON.stringify(session));
+  const expires = Math.floor(Date.now() / 1000) + AUTH_MAX_AGE_SEC;
+  const chunks = [];
+  for (let offset = 0; offset < encoded.length; offset += COOKIE_CHUNK) {
+    chunks.push(encoded.slice(offset, offset + COOKIE_CHUNK));
+  }
+  const base = cookieWriteBase(appBase, expires);
+  if (chunks.length === 1) {
+    await setCookieSafe({
+      ...base,
+      name: cookieName,
+      value: chunks[0],
+    });
+  } else {
+    for (let index = 0; index < chunks.length; index += 1) {
+      await setCookieSafe({
+        ...base,
+        name: `${cookieName}.${index}`,
+        value: chunks[index],
+      });
+    }
+  }
+  await setCookieSafe({
+    ...base,
+    httpOnly: false,
+    name: "routine-app-remember-session",
+    value: "1",
+  });
+}
+
+async function refreshSession(appBase, session) {
+  if (!session?.refresh_token) return null;
+  try {
+    const response = await fetch(`${appBase}/api/extension/refresh`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ refresh_token: session.refresh_token }),
+    });
+    const data = await response.json().catch(() => null);
+    if (!response.ok || !data?.session?.access_token) return null;
+    const expiresIn = Number(data.session.expires_in) || 3600;
+    const expiresAt =
+      Number(data.session.expires_at) ||
+      Math.floor(Date.now() / 1000) + expiresIn;
+    const next = {
+      ...session,
+      ...data.session,
+      expires_in: expiresIn,
+      expires_at: expiresAt,
+    };
+    const cookieName =
+      data.authCookieName ||
+      (await chrome.storage.sync.get(["authCookieName"])).authCookieName ||
+      "";
+    if (cookieName) await writeAuthCookies(appBase, cookieName, next);
+    if (data.authCookieName) {
+      await chrome.storage.sync.set({ authCookieName: data.authCookieName });
+    }
+    return next;
+  } catch {
+    return null;
+  }
+}
+
+function jwtStillValid(session) {
+  try {
+    const payload = JSON.parse(
+      atob(session.access_token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/")),
+    );
+    return Boolean(payload?.exp && payload.exp * 1000 > Date.now() + 5000);
+  } catch {
+    return false;
+  }
+}
+
+async function getAccessToken(appBase) {
+  const { session } = await readSessionFromCookies(appBase);
+  if (!session) return null;
+  if (!sessionExpired(session)) return session.access_token;
+  const refreshed = await refreshSession(appBase, session);
+  if (refreshed?.access_token) return refreshed.access_token;
+  if (jwtStillValid(session)) return session.access_token;
   return null;
 }
 
@@ -129,9 +382,18 @@ function postAttachProgress(tabId, payload) {
   }
 }
 
-async function getGmailClientId() {
-  const stored = await chrome.storage.sync.get(["gmailClientId"]);
-  return String(stored.gmailClientId || "").trim();
+async function getGmailAccessToken() {
+  const cached = await getCachedGmailToken();
+  if (cached) return cached;
+  const result = await apiFetch("/api/extension/gmail-access");
+  const token = result?.data?.accessToken;
+  if (!result?.ok || !token) {
+    throw new Error(
+      result?.data?.error || result?.error || "errors.extension_gmail_not_connected",
+    );
+  }
+  await saveGmailToken(token, result.data.expiresIn);
+  return token;
 }
 
 async function getCachedGmailToken() {
@@ -151,49 +413,6 @@ async function saveGmailToken(accessToken, expiresInSec) {
     gmailAccessToken: accessToken,
     gmailTokenExpiresAt: expiresAt,
   });
-}
-
-async function getGmailAccessToken(interactive) {
-  const cached = await getCachedGmailToken();
-  if (cached) return cached;
-
-  const clientId = await getGmailClientId();
-  if (!clientId) {
-    throw new Error("errors.extension_gmail_client_id");
-  }
-
-  const redirectUri = chrome.identity.getRedirectURL("oauth2");
-  const authUrl = new URL("https://accounts.google.com/o/oauth2/v2/auth");
-  authUrl.searchParams.set("client_id", clientId);
-  authUrl.searchParams.set("response_type", "token");
-  authUrl.searchParams.set("redirect_uri", redirectUri);
-  authUrl.searchParams.set("scope", GMAIL_SCOPE);
-  authUrl.searchParams.set("include_granted_scopes", "true");
-  authUrl.searchParams.set("prompt", interactive ? "consent" : "none");
-
-  let responseUrl;
-  try {
-    responseUrl = await chrome.identity.launchWebAuthFlow({
-      url: authUrl.toString(),
-      interactive: Boolean(interactive),
-    });
-  } catch (error) {
-    if (!interactive) return null;
-    throw error;
-  }
-  if (!responseUrl) {
-    throw new Error("errors.extension_gmail_auth");
-  }
-
-  const hash = new URL(responseUrl).hash.replace(/^#/, "");
-  const params = new URLSearchParams(hash);
-  const accessToken = params.get("access_token");
-  const expiresIn = params.get("expires_in");
-  if (!accessToken) {
-    throw new Error("errors.extension_gmail_auth");
-  }
-  await saveGmailToken(accessToken, expiresIn);
-  return accessToken;
 }
 
 function walkParts(part, out) {
@@ -528,12 +747,113 @@ async function fetchGmailMessageBundle(
   return { email, attachments, skipped };
 }
 
+async function getSelectedTeamId(teams) {
+  const stored = await chrome.storage.sync.get(["selectedTeamId"]);
+  const selected = String(stored.selectedTeamId || "");
+  if (selected && teams.some((team) => team.id === selected)) return selected;
+  const withDrive = teams.find((team) => team.googleDriveConnected);
+  return withDrive?.id || teams[0]?.id || "";
+}
+
+async function sessionResponse() {
+  const result = await apiFetch("/api/extension/session");
+  if (result?.data) {
+    const teams = Array.isArray(result.data.teams) ? result.data.teams : [];
+    const selectedTeamId = await getSelectedTeamId(teams);
+    if (selectedTeamId) {
+      await chrome.storage.sync.set({ selectedTeamId });
+    }
+    result.data.selectedTeamId = selectedTeamId;
+  }
+  return result;
+}
+
+async function waitForTabMatch(tabId, test, timeoutMs = 180000) {
+  const started = Date.now();
+  while (Date.now() - started < timeoutMs) {
+    try {
+      const tab = await chrome.tabs.get(tabId);
+      if (test(String(tab.url || ""))) return true;
+    } catch {
+      return false;
+    }
+    await new Promise((resolve) => setTimeout(resolve, 800));
+  }
+  return false;
+}
+
+function scheduleSessionRefresh() {
+  if (!chrome.alarms) return;
+  void chrome.alarms.create("routine.refreshSession", { periodInMinutes: 45 });
+}
+
+scheduleSessionRefresh();
+if (chrome.alarms) {
+  chrome.alarms.onAlarm.addListener((alarm) => {
+    if (alarm.name !== "routine.refreshSession") return;
+    void (async () => {
+      const stored = await chrome.storage.sync.get(["appBaseUrl"]);
+      const appBase = parseOrigin(stored.appBaseUrl);
+      if (!appBase) return;
+      await getAccessToken(appBase);
+    })();
+  });
+}
+
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   (async () => {
     try {
       if (message?.type === "routine.getSession") {
-        const result = await apiFetch("/api/extension/session");
-        sendResponse(result);
+        sendResponse(await sessionResponse());
+        return;
+      }
+      if (message?.type === "routine.setTeam") {
+        const teamId = String(message.teamId || "").trim();
+        if (teamId) await chrome.storage.sync.set({ selectedTeamId: teamId });
+        sendResponse({ ok: true, teamId });
+        return;
+      }
+      if (message?.type === "routine.openLogin") {
+        const appBase = await getAppBase();
+        await chrome.tabs.create({ url: `${appBase}/login` });
+        sendResponse({ ok: true });
+        return;
+      }
+      if (message?.type === "routine.login") {
+        const appBase = await getAppBase();
+        await ensureOriginPermission(appBase);
+        const response = await fetch(`${appBase}/api/extension/login`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email: String(message.email || ""),
+            password: String(message.password || ""),
+            remember: true,
+          }),
+        });
+        const data = await response.json().catch(() => null);
+        if (!response.ok || !data?.ok || !data.session?.access_token) {
+          sendResponse({
+            ok: false,
+            error: data?.error || "extension.gmail.login_failed",
+            data,
+          });
+          return;
+        }
+        const cookieName = data.authCookieName || "";
+        if (cookieName) {
+          await writeAuthCookies(appBase, cookieName, data.session);
+          await chrome.storage.sync.set({ authCookieName: cookieName });
+        }
+        sendResponse({ ok: true });
+        return;
+      }
+      if (message?.type === "routine.logout") {
+        const appBase = await getAppBase();
+        const stored = await chrome.storage.sync.get(["authCookieName"]);
+        await clearAuthCookies(appBase, stored.authCookieName || "sb-auth-token");
+        await chrome.storage.local.remove(["gmailAccessToken", "gmailTokenExpiresAt"]);
+        sendResponse({ ok: true });
         return;
       }
       if (message?.type === "routine.searchSubtasks") {
@@ -547,13 +867,37 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         const params = new URLSearchParams({ step });
         if (message.listId) params.set("listId", String(message.listId));
         if (message.parentId) params.set("parentId", String(message.parentId));
+        const teamId =
+          message.teamId ||
+          (await chrome.storage.sync.get(["selectedTeamId"])).selectedTeamId;
+        if (teamId) params.set("teamId", String(teamId));
         const result = await apiFetch(`/api/extension/browse?${params}`);
         sendResponse(result);
         return;
       }
       if (message?.type === "routine.connectGmail") {
-        await getGmailAccessToken(true);
-        sendResponse({ ok: true });
+        const appBase = await getAppBase();
+        const session = await sessionResponse();
+        const path = session?.data?.connectGmailPath || "/auth/gmail-plugin/start";
+        const tab = await chrome.tabs.create({ url: `${appBase}${path}` });
+        const done = await waitForTabMatch(
+          tab.id,
+          (url) =>
+            url.includes("/auth/gmail-plugin/done") &&
+            (url.includes("connected=1") || url.includes("error=")),
+        );
+        if (!done) {
+          sendResponse({ ok: false, error: "errors.extension_gmail_auth" });
+          return;
+        }
+        await chrome.storage.local.remove(["gmailAccessToken", "gmailTokenExpiresAt"]);
+        const after = await sessionResponse();
+        sendResponse({
+          ok: Boolean(after?.data?.gmailConnected),
+          error: after?.data?.gmailConnected
+            ? undefined
+            : "errors.extension_gmail_auth",
+        });
         return;
       }
       if (message?.type === "routine.listAttachments") {
@@ -693,13 +1037,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       }
       if (message?.type === "routine.getAppBase") {
         sendResponse({ ok: true, appBase: await getAppBase() });
-        return;
-      }
-      if (message?.type === "routine.getRedirectUri") {
-        sendResponse({
-          ok: true,
-          redirectUri: chrome.identity.getRedirectURL("oauth2"),
-        });
         return;
       }
       sendResponse({ ok: false, error: "unknown_message" });

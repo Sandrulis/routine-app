@@ -1,35 +1,11 @@
 "use client";
 
+import { useMemo } from "react";
 import Link from "next/link";
 import { LandingAppPreview } from "@/app/components/landing-app-preview";
 import { useTranslations } from "@/app/components/translations-provider";
-
-const FEATURES = [
-  {
-    icon: "fas fa-list-ul",
-    titleKey: "landing.features.lists.title",
-    titleFallback: "Saraksti, kas atbilst tavam darbam",
-    descriptionKey: "landing.features.lists.description",
-    descriptionFallback:
-      "Projekti, klienti, mapes un faili vienā kokā. Katram uzdevumam ir statuss, termiņš un atbildīgais, nevis vēl viena izklājlapa.",
-  },
-  {
-    icon: "fas fa-users",
-    titleKey: "landing.features.team.title",
-    titleFallback: "Visa komanda redz to pašu",
-    descriptionKey: "landing.features.team.description",
-    descriptionFallback:
-      "Uzaicini biedrus, piešķir darbus un zini, kas ir tiešsaistē. Nav jāmeklē čatā, kur palika fails vai kurš ko sola.",
-  },
-  {
-    icon: "fas fa-table-columns",
-    titleKey: "landing.features.dashboard.title",
-    titleFallback: "Sākums ir dienas tāfele",
-    descriptionKey: "landing.features.dashboard.description",
-    descriptionFallback:
-      "Atverot Routine, redzi darāmo, procesā un gatavo. Vilc kartītes un turi fokusu uz to, kas jāpabeidz šodien.",
-  },
-] as const;
+import { useFrontendModules } from "@/app/lib/frontend-modules/context";
+import { resolveLandingPageContent } from "@/app/lib/landing/features";
 
 const STEPS = [
   {
@@ -57,6 +33,11 @@ const STEPS = [
 
 export function LandingPage() {
   const { t } = useTranslations();
+  const { isEnabled } = useFrontendModules();
+  const content = useMemo(
+    () => resolveLandingPageContent(isEnabled),
+    [isEnabled],
+  );
 
   return (
     <div>
@@ -114,10 +95,7 @@ export function LandingPage() {
                   {t("landing.hero.stat_together_title", "Cilvēki pie darba")}
                 </p>
                 <p className="mt-0.5 text-zinc-500">
-                  {t(
-                    "landing.hero.stat_together",
-                    "Atbildīgais, termiņš un fails paliek pie uzdevuma.",
-                  )}
+                  {t(content.heroTogether.key, content.heroTogether.fallback)}
                 </p>
               </div>
             </div>
@@ -139,19 +117,21 @@ export function LandingPage() {
             "Mazāk rīku, skaidrāka atbildība un darbs, ko var pabeigt, nevis tikai apspriest.",
           )}
         </p>
-        <div className="mt-8 grid gap-4 md:grid-cols-3">
-          {FEATURES.map((feature) => (
+        <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {content.features.map((feature) => (
             <article
-              key={feature.titleKey}
+              key={feature.id}
               className="rounded-3xl border border-zinc-200/80 bg-white p-6 shadow-sm"
             >
-              <span className="inline-flex size-10 items-center justify-center rounded-2xl bg-zinc-100 text-zinc-600">
-                <i className={`${feature.icon} text-sm`} aria-hidden="true" />
-              </span>
-              <h3 className="mt-4 text-base font-semibold text-zinc-900">
-                {t(feature.titleKey, feature.titleFallback)}
-              </h3>
-              <p className="mt-2 text-sm leading-6 text-zinc-500">
+              <div className="flex items-center gap-3">
+                <span className="inline-flex size-10 shrink-0 items-center justify-center rounded-2xl bg-zinc-100 text-zinc-600">
+                  <i className={`${feature.icon} text-sm`} aria-hidden="true" />
+                </span>
+                <h3 className="text-base font-semibold text-zinc-900">
+                  {t(feature.titleKey, feature.titleFallback)}
+                </h3>
+              </div>
+              <p className="mt-3 text-sm leading-6 text-zinc-500">
                 {t(feature.descriptionKey, feature.descriptionFallback)}
               </p>
             </article>

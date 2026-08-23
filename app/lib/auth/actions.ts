@@ -10,24 +10,16 @@ import { isSupabaseConfigured } from "@/app/lib/supabase/env";
 import { getMfaGate } from "@/app/lib/auth/mfa";
 import { ensureCurrentUserProfile } from "@/app/lib/users/ensure-profile";
 import { isEmailPasswordAuthEnabled } from "@/app/lib/integrations/resend/client";
+import {
+  registerWithEmailPassword,
+  requestPasswordResetEmail,
+} from "@/app/lib/auth/email-password";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 type AuthResult =
   | { ok: true; next: string; needsEmail?: boolean; needsMfa?: boolean }
   | { ok: false; error: string };
-
-function siteOrigin() {
-  const configured = process.env.NEXT_PUBLIC_SITE_URL?.trim();
-  if (configured) {
-    try {
-      return new URL(configured).origin;
-    } catch {
-      return configured.replace(/\/$/, "");
-    }
-  }
-  return "http://localhost:3120";
-}
 
 function normalizeEmail(email: string) {
   return email.trim().toLowerCase();
@@ -105,23 +97,14 @@ export async function signUpWithPasswordAction(input: {
   const blocked = await guardAuth("signup", email);
   if (blocked) return blocked;
 
-  const supabase = await createClient();
-  const origin = siteOrigin();
-  const { data, error } = await supabase.auth.signUp({
+  const result = await registerWithEmailPassword({
+    name,
     email,
     password,
-    options: {
-      data: { name, full_name: name },
-      emailRedirectTo: `${origin}/auth/callback?next=${encodeURIComponent(getSafeRedirectPath(input.next))}`,
-    },
+    next: input.next,
   });
-  if (error) {
-    logError("signUp failed", error.message);
-    return { ok: false, error: "errors.auth_signup_failed" };
-  }
-  if (data.session) {
-    await ensureCurrentUserProfile(supabase);
-    return { ok: true, next: getSafeRedirectPath(input.next) };
+  if (!result.ok) {
+    return { ok: false, error: result.error };
   }
   return { ok: true, next: "/login", needsEmail: true };
 }
@@ -138,13 +121,9 @@ export async function requestPasswordResetAction(input: {
   const blocked = await guardAuth("reset", email);
   if (blocked) return blocked;
 
-  const supabase = await createClient();
-  const origin = siteOrigin();
-  const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${origin}/auth/callback?next=${encodeURIComponent("/update-password")}`,
-  });
-  if (error) {
-    logError("resetPasswordForEmail failed", error.message);
+  const result = await requestPasswordResetEmail(email);
+  if (!result.ok) {
+    logError("requestPasswordResetEmail failed", result.error);
   }
   return { ok: true, next: "/login" };
 }

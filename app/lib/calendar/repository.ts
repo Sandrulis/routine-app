@@ -17,6 +17,7 @@ import type {
 import { sha256Hex } from "@/app/lib/security/hash-token";
 import { logError } from "@/app/lib/security/log-error";
 import { decryptSecret, persistSecret } from "@/app/lib/security/secret-box";
+import { getPublicSiteUrl } from "@/app/lib/seo/site-url";
 
 type IntegrationRow = {
   user_id: string;
@@ -272,7 +273,7 @@ async function loadAssignedDatedTasks(
     tasks.push(...((data ?? []) as TaskRow[]));
   }
 
-  const origin = siteOrigin();
+  const origin = getPublicSiteUrl();
   return tasks.map((task) => ({
     id: task.id,
     title: task.title,
@@ -283,14 +284,3 @@ async function loadAssignedDatedTasks(
   }));
 }
 
-function siteOrigin(): string {
-  const configured = process.env.NEXT_PUBLIC_SITE_URL?.trim();
-  if (configured) {
-    try {
-      return new URL(configured).origin;
-    } catch {
-      return configured.replace(/\/$/, "");
-    }
-  }
-  return "http://localhost:3120";
-}

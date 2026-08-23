@@ -123,6 +123,7 @@ export default function InviteTokenPage({
   }
 
   const loginHref = `/login?next=${encodeURIComponent(`/invite/${token}`)}`;
+  const signupHref = `/signup?next=${encodeURIComponent(`/invite/${token}`)}`;
 
   return (
     <div className="mx-auto max-w-lg px-4 py-16">
@@ -147,12 +148,20 @@ export default function InviteTokenPage({
                 { email: invite.email },
               )}
             </p>
-            <Link
-              href={loginHref}
-              className="inline-flex min-h-10 items-center justify-center rounded-2xl bg-blue-700 px-4 text-sm font-semibold text-white"
-            >
-              {t("auth.login.title", "Ienākt")}
-            </Link>
+            <div className="flex flex-wrap gap-2">
+              <Link
+                href={loginHref}
+                className="inline-flex min-h-10 items-center justify-center rounded-2xl bg-blue-700 px-4 text-sm font-semibold text-white"
+              >
+                {t("auth.login.title", "Ienākt")}
+              </Link>
+              <Link
+                href={signupHref}
+                className="inline-flex min-h-10 items-center justify-center rounded-2xl bg-zinc-100 px-4 text-sm font-semibold text-zinc-700"
+              >
+                {t("auth.signup.title", "Reģistrēties")}
+              </Link>
+            </div>
           </div>
         ) : (
           <div className="mt-6 flex flex-wrap gap-2">

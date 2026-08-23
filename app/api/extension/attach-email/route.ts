@@ -1,4 +1,3 @@
-import type { SupabaseClient } from "@supabase/supabase-js";
 import { getExtensionAuth } from "@/app/lib/extension/auth";
 import {
   attachFilesToSubtask,
@@ -9,7 +8,7 @@ import {
   extensionJson,
   extensionOptionsResponse,
 } from "@/app/lib/extension/cors";
-import { FRONTEND_MODULE_KEYS } from "@/app/lib/frontend-modules/keys";
+import { loadExtensionSessionFlags } from "@/app/lib/extension/session-payload";
 import { requestClientIp } from "@/app/lib/security/client-ip";
 import { consumeRateLimit } from "@/app/lib/security/rate-limit";
 
@@ -157,16 +156,6 @@ async function parseAttachEmailRequest(request: Request): Promise<AttachEmailInp
   }
 }
 
-async function isFileUploadEnabled(supabase: SupabaseClient) {
-  const { data, error } = await supabase
-    .from("site_frontend_modules")
-    .select("is_enabled")
-    .eq("module_key", FRONTEND_MODULE_KEYS.fileUpload)
-    .maybeSingle();
-  if (error || !data) return true;
-  return data.is_enabled === true;
-}
-
 export async function POST(request: Request) {
   const auth = await getExtensionAuth(request);
   if (!auth) {
@@ -190,8 +179,15 @@ export async function POST(request: Request) {
     );
   }
 
-  const filesEnabled = await isFileUploadEnabled(auth.supabase);
-  if (!filesEnabled) {
+  const flags = await loadExtensionSessionFlags(auth.supabase);
+  if (!flags.gmailPluginEnabled) {
+    return extensionJson(
+      request,
+      { ok: false, error: "errors.extension_plugin_disabled" },
+      { status: 403 },
+    );
+  }
+  if (!flags.fileUploadEnabled) {
     return extensionJson(
       request,
       { ok: false, error: "errors.extension_uploads_disabled" },

@@ -1,6 +1,8 @@
 "use client";
 
 import { useTranslations } from "@/app/components/translations-provider";
+import { FRONTEND_MODULE_KEYS } from "@/app/lib/frontend-modules/keys";
+import { useFrontendModules } from "@/app/lib/frontend-modules/context";
 
 function MiniAvatar({
   initials,
@@ -80,9 +82,13 @@ function TaskCard({
 
 export function LandingAppPreview() {
   const { t } = useTranslations();
+  const { isEnabled } = useFrontendModules();
   const todo = t("todo.columns.todo", "Darāms");
   const progress = t("todo.columns.in_progress", "Procesā");
   const done = t("todo.columns.done", "Gatavs");
+  const showTemplates = isEnabled(FRONTEND_MODULE_KEYS.templates);
+  const showFiles = isEnabled(FRONTEND_MODULE_KEYS.fileUpload);
+  const showChecklist = isEnabled(FRONTEND_MODULE_KEYS.checklist);
 
   return (
     <div className="landing-preview-frame relative" aria-hidden="true">
@@ -128,6 +134,22 @@ export function LandingAppPreview() {
               </span>
               {t("landing.preview.list_clients", "Klienti")}
             </div>
+            {showFiles ? (
+              <div className="mt-0.5 ml-9 flex items-center gap-1.5 px-1 py-0.5 text-[11px] text-zinc-500">
+                <span className="inline-flex size-4 items-center justify-center rounded-[2.5px] bg-zinc-100 text-[8px] text-zinc-600">
+                  <i className="fas fa-file" />
+                </span>
+                {t("landing.preview.file_brief", "Brīfs.pdf")}
+              </div>
+            ) : null}
+            {showTemplates ? (
+              <div className="mt-0.5 flex items-center gap-1.5 rounded-md px-1.5 py-1 text-[11px] text-zinc-600">
+                <span className="inline-flex size-4 items-center justify-center rounded-[2.5px] bg-zinc-100 text-[9px] text-zinc-600">
+                  <i className="fas fa-copy" />
+                </span>
+                {t("nav.templates", "Šabloni")}
+              </div>
+            ) : null}
             <div className="mt-0.5 flex items-center gap-1.5 rounded-md px-1.5 py-1 text-[11px] text-zinc-600">
               <span className="inline-flex size-4 items-center justify-center rounded-[2.5px] bg-violet-100 text-[9px] text-violet-700">
                 <i className="fas fa-users" />
@@ -224,30 +246,57 @@ export function LandingAppPreview() {
 
       <div className="landing-preview-float absolute -right-3 -bottom-6 hidden w-52 rounded-2xl border border-zinc-200 bg-white p-3 shadow-[0_16px_40px_rgba(24,24,27,0.12)] sm:block">
         <p className="text-[10px] font-semibold tracking-wide text-zinc-400 uppercase">
-          {t("landing.preview.subtasks", "Apakšuzdevumi")}
+          {showChecklist
+            ? t("subtasks.checklist.title", "Check List")
+            : t("landing.preview.subtasks", "Apakšuzdevumi")}
         </p>
         <p className="mt-1 truncate text-[12px] font-semibold text-zinc-900">
           {t("landing.preview.task_prototype", "Mājaslapas prototips")}
         </p>
         <div className="mt-2 space-y-1.5">
-          <div className="flex items-center justify-between gap-2 text-[11px]">
-            <span className="truncate text-zinc-600">
-              {t("landing.preview.subtask_design", "Dizaina sistēma")}
-            </span>
-            <StatusPill status="in_progress" label={progress} />
-          </div>
-          <div className="flex items-center justify-between gap-2 text-[11px]">
-            <span className="truncate text-zinc-600">
-              {t("landing.preview.subtask_hero", "Hero bloks")}
-            </span>
-            <StatusPill status="todo" label={todo} />
-          </div>
-          <div className="flex items-center justify-between gap-2 text-[11px]">
-            <span className="truncate text-zinc-600">
-              {t("landing.preview.subtask_copy", "Tekstu uzmetums")}
-            </span>
-            <StatusPill status="done" label={done} />
-          </div>
+          {showChecklist ? (
+            <>
+              <div className="flex items-center gap-1.5 text-[11px] text-zinc-600">
+                <i className="far fa-square text-[10px] text-zinc-400" aria-hidden="true" />
+                <span className="truncate">
+                  {t("landing.preview.checklist_wireframes", "Maketi")}
+                </span>
+              </div>
+              <div className="flex items-center gap-1.5 text-[11px] text-zinc-600">
+                <i className="fas fa-square-check text-[10px] text-emerald-500" aria-hidden="true" />
+                <span className="truncate">
+                  {t("landing.preview.checklist_copy", "Tekstu uzmetums")}
+                </span>
+              </div>
+              <div className="flex items-center gap-1.5 text-[11px] text-zinc-600">
+                <i className="far fa-square text-[10px] text-zinc-400" aria-hidden="true" />
+                <span className="truncate">
+                  {t("landing.preview.checklist_review", "Atsauksmes")}
+                </span>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="flex items-center justify-between gap-2 text-[11px]">
+                <span className="truncate text-zinc-600">
+                  {t("landing.preview.subtask_design", "Dizaina sistēma")}
+                </span>
+                <StatusPill status="in_progress" label={progress} />
+              </div>
+              <div className="flex items-center justify-between gap-2 text-[11px]">
+                <span className="truncate text-zinc-600">
+                  {t("landing.preview.subtask_hero", "Hero bloks")}
+                </span>
+                <StatusPill status="todo" label={todo} />
+              </div>
+              <div className="flex items-center justify-between gap-2 text-[11px]">
+                <span className="truncate text-zinc-600">
+                  {t("landing.preview.subtask_copy", "Tekstu uzmetums")}
+                </span>
+                <StatusPill status="done" label={done} />
+              </div>
+            </>
+          )}
         </div>
       </div>
     </div>

@@ -4,6 +4,15 @@
 
 - (none)
 
+## v0.2.4
+
+- Admin **E-pasta šabloni** (`/admin/email-templates`): HTML Resend e-pasti reģistrācijai, parolei, uzaicinājumam un sistēmas paziņojumiem (`lv` / `en` / `ru`)
+- Gmail Chrome spraudnis bez URL/Client ID: konts un komandas, custom login, Savienot Gmail sistēmā, sesijas refresh; `module_gmail_plugin` + `user_gmail_connections`
+- Signup bez Atcerēties mani; OAuth bez noteikumu ķeksīša
+- Landing rāda visus ieslēgtos frontend moduļus (privāti saraksti, šabloni, automatizācijas, faili, check list, kalendārs, Drive, OneDrive, Gmail); izslēgta moduļa fīča nav kartītēs, hero tekstā un preview; kartītē nosaukums blakus ikonai
+- Produkcijas login: env vērtībām noņem pēdiņas, pieņem `sb_secret_` service role atslēgu, `enc:v1:` noslēpumus atšifrē arī ar `SUPABASE_SERVICE_ROLE_KEY` fallback
+- Vercel Environment Variables un GSC/Sentry soļi `DEVELOPER.md`
+
 ## v0.2.3
 
 - Google Search Console: `robots.txt`, `sitemap.xml`, kanoniskie URL, `noindex` privātajām lapām, HTML tag verifikācija (`GOOGLE_SITE_VERIFICATION`)

@@ -63,7 +63,8 @@ export function AdminFrontendModulesForm({
 
   function toggleLockedReason(module: FrontendModuleSummary): string | null {
     if (
-      module.moduleKey === FRONTEND_MODULE_KEYS.googleDrive &&
+      (module.moduleKey === FRONTEND_MODULE_KEYS.googleDrive ||
+        module.moduleKey === FRONTEND_MODULE_KEYS.gmailPlugin) &&
       !googleOAuthEnabled
     ) {
       return t(

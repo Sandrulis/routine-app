@@ -1,6 +1,9 @@
+import { isLikelySupabaseServiceRoleKey, readEnv } from "@/app/lib/env/read-env";
+import { logError } from "@/app/lib/security/log-error";
+
 export function getSupabasePublicEnv() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim();
+  const url = readEnv("NEXT_PUBLIC_SUPABASE_URL");
+  const anonKey = readEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY");
 
   if (!url || !anonKey || url.includes("YOUR_")) {
     return null;
@@ -13,13 +16,21 @@ export function isSupabaseConfigured() {
   return getSupabasePublicEnv() !== null;
 }
 
+export function getSupabaseServiceRoleKey() {
+  return readEnv("SUPABASE_SERVICE_ROLE_KEY");
+}
+
+let loggedAdminMissing = false;
+
 export function isSupabaseAdminConfigured() {
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim() ?? "";
-  if (!isSupabaseConfigured() || !serviceKey) {
-    return false;
+  if (!isSupabaseConfigured()) return false;
+  const ok = isLikelySupabaseServiceRoleKey(getSupabaseServiceRoleKey());
+  if (!ok && !loggedAdminMissing) {
+    loggedAdminMissing = true;
+    logError(
+      "Supabase admin env",
+      "SUPABASE_SERVICE_ROLE_KEY missing, quoted, or not a service_role / sb_secret key — login methods stay hidden",
+    );
   }
-  if (/your_|placeholder|changeme|example/i.test(serviceKey)) {
-    return false;
-  }
-  return serviceKey.startsWith("eyJ") && serviceKey.length > 100;
+  return ok;
 }

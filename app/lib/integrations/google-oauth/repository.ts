@@ -1,3 +1,4 @@
+import { readEnv } from "@/app/lib/env/read-env";
 import { logError } from "@/app/lib/security/log-error";
 import {
   decryptSecret,
@@ -18,16 +19,19 @@ export const GOOGLE_OAUTH_ADMIN_PAGE_PATH = "/admin/integrations";
 export const GOOGLE_OAUTH_OAUTH_COOKIE = "routine-app-google-oauth-configure";
 export const GOOGLE_OAUTH_SCOPES = ["openid", "email", "profile"].join(" ");
 
-async function disableDependentGoogleDriveModule() {
+async function disableDependentGoogleModules() {
   if (!isSupabaseAdminConfigured()) return;
   const admin = createAdminClient();
   const { error } = await admin
     .from("site_frontend_modules")
     .update({ is_enabled: false })
-    .eq("module_key", FRONTEND_MODULE_KEYS.googleDrive)
+    .in("module_key", [
+      FRONTEND_MODULE_KEYS.googleDrive,
+      FRONTEND_MODULE_KEYS.gmailPlugin,
+    ])
     .eq("is_enabled", true);
   if (error) {
-    logError("disableDependentGoogleDriveModule failed", error.message);
+    logError("disableDependentGoogleModules failed", error.message);
   }
 }
 
@@ -41,8 +45,8 @@ type IntegrationRow = {
 };
 
 function readEnvCredentials() {
-  const clientId = process.env.GOOGLE_OAUTH_CLIENT_ID?.trim() ?? "";
-  const clientSecret = process.env.GOOGLE_OAUTH_CLIENT_SECRET?.trim() ?? "";
+  const clientId = readEnv("GOOGLE_OAUTH_CLIENT_ID");
+  const clientSecret = readEnv("GOOGLE_OAUTH_CLIENT_SECRET");
   if (!clientId || !clientSecret) return null;
   if (/your_|placeholder|changeme|example/i.test(clientId + clientSecret)) {
     return null;
@@ -51,7 +55,7 @@ function readEnvCredentials() {
 }
 
 function resolveSiteOrigin() {
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL?.trim();
+  const siteUrl = readEnv("NEXT_PUBLIC_SITE_URL");
   if (siteUrl) {
     try {
       return new URL(siteUrl).origin;
@@ -72,7 +76,11 @@ async function fetchIntegrationRow(): Promise<IntegrationRow | null> {
     )
     .eq("integration_key", SITE_INTEGRATION_KEYS.googleOAuth)
     .maybeSingle();
-  if (error || !data) return null;
+  if (error) {
+    logError("fetchGoogleOAuthIntegrationRow failed", error.message);
+    return null;
+  }
+  if (!data) return null;
   const row = data as IntegrationRow;
   if (row.client_secret && !isEncryptedSecret(row.client_secret)) {
     void admin
@@ -117,6 +125,12 @@ export function buildGoogleDriveCallbackUrl(origin?: string) {
   return `${base}/auth/google-drive/callback`;
 }
 
+export function buildGmailPluginCallbackUrl(origin?: string) {
+  const base = (origin?.trim() || resolveSiteOrigin()).replace(/\/$/, "");
+  if (!base) return "/auth/gmail-plugin/callback";
+  return `${base}/auth/gmail-plugin/callback`;
+}
+
 export async function fetchGoogleOAuthIntegrationStatus(
   origin = "",
 ): Promise<GoogleOAuthIntegrationStatus> {
@@ -138,6 +152,7 @@ export async function fetchGoogleOAuthIntegrationStatus(
     configuredAccountEmail: row?.configured_account_email?.trim() ?? "",
     callbackUrl: buildGoogleOAuthCallbackUrl(origin),
     googleDriveCallbackUrl: buildGoogleDriveCallbackUrl(origin),
+    gmailPluginCallbackUrl: buildGmailPluginCallbackUrl(origin),
   };
 }
 
@@ -230,7 +245,7 @@ export async function setGoogleOAuthEnabled(enabled: boolean) {
   }
 
   if (!enabled) {
-    await disableDependentGoogleDriveModule();
+    await disableDependentGoogleModules();
   }
 
   return { ok: true as const };
@@ -258,7 +273,7 @@ export async function resetGoogleOAuthConfiguration() {
     return { ok: false as const, error: "errors.integrations_reset_failed" };
   }
 
-  await disableDependentGoogleDriveModule();
+  await disableDependentGoogleModules();
 
   return { ok: true as const };
 }

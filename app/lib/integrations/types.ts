@@ -7,6 +7,7 @@ export type GoogleOAuthIntegrationStatus = {
   configuredAccountEmail: string;
   callbackUrl: string;
   googleDriveCallbackUrl: string;
+  gmailPluginCallbackUrl: string;
 };
 
 export type GoogleOAuthCredentialsInput = {

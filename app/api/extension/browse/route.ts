@@ -31,7 +31,8 @@ export async function GET(request: Request) {
 
   try {
     if (step === "lists") {
-      const lists = await listExtensionLists(auth.supabase);
+      const teamId = (url.searchParams.get("teamId") || "").trim();
+      const lists = await listExtensionLists(auth.supabase, teamId || null);
       return extensionJson(request, { ok: true, step: "lists", lists });
     }
 

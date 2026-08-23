@@ -1,5 +1,9 @@
 import { createClient } from "@supabase/supabase-js";
-import { isSupabaseAdminConfigured } from "@/app/lib/supabase/env";
+import {
+  getSupabasePublicEnv,
+  getSupabaseServiceRoleKey,
+  isSupabaseAdminConfigured,
+} from "@/app/lib/supabase/env";
 
 export function createAdminClient() {
   if (!isSupabaseAdminConfigured()) {
@@ -8,9 +12,17 @@ export function createAdminClient() {
     );
   }
 
+  const env = getSupabasePublicEnv();
+  const serviceKey = getSupabaseServiceRoleKey();
+  if (!env || !serviceKey) {
+    throw new Error(
+      "Supabase admin env is missing. Set SUPABASE_SERVICE_ROLE_KEY.",
+    );
+  }
+
   return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    env.url,
+    serviceKey,
     {
       auth: {
         autoRefreshToken: false,

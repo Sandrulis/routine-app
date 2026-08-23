@@ -10,10 +10,6 @@ import {
 } from "@/app/components/auth-form-styles";
 import { useFeedbackToast } from "@/app/components/feedback-toast-provider";
 import { AuthDivider, GoogleAuthButton, MicrosoftAuthButton } from "@/app/components/google-auth-button";
-import {
-  RememberMeCheckbox,
-  useRememberMe,
-} from "@/app/components/remember-me-checkbox";
 import { useTranslations } from "@/app/components/translations-provider";
 import { signUpWithPasswordAction } from "@/app/lib/auth/actions";
 import { getSafeRedirectPath } from "@/app/lib/security/safe-redirect-path";
@@ -37,7 +33,6 @@ export function SignupForm({
   const [confirmPassword, setConfirmPassword] = useState("");
   const [accepted, setAccepted] = useState(false);
   const [pending, setPending] = useState(false);
-  const { remember, updateRemember } = useRememberMe();
   const oauthEnabled = googleSignInEnabled || microsoftSignInEnabled;
 
   useEffect(() => {
@@ -123,34 +118,20 @@ export function SignupForm({
     router.refresh();
   }
 
-  function requireTermsAccepted() {
-    if (accepted) return true;
-    showFeedback({
-      type: "error",
-      text: t(
-        "auth.signup.terms_required",
-        "Lai reģistrētos, piekrīti noteikumiem.",
-      ),
-    });
-    return false;
-  }
-
   const oauthButtons = oauthEnabled ? (
     <div className="space-y-2">
       {googleSignInEnabled ? (
         <GoogleAuthButton
           disabled={pending}
-          rememberMe={remember}
+          rememberMe={false}
           errorPage="signup"
-          onBeforeSignIn={requireTermsAccepted}
         />
       ) : null}
       {microsoftSignInEnabled ? (
         <MicrosoftAuthButton
           disabled={pending}
-          rememberMe={remember}
+          rememberMe={false}
           errorPage="signup"
-          onBeforeSignIn={requireTermsAccepted}
         />
       ) : null}
     </div>
@@ -226,18 +207,7 @@ export function SignupForm({
               className={authInputClassName}
             />
           </label>
-        </>
-      ) : null}
 
-      {!emailPasswordEnabled && !oauthEnabled ? (
-        <p className="text-sm text-zinc-500">
-          {t(
-            "auth.email.unavailable",
-            "Ienākšana un reģistrācija ar e-pastu ir pieejama, kad Resend integrācija ir konfigurēta un aktīva.",
-          )}
-        </p>
-      ) : (
-        <>
           <label className="flex items-start gap-3 text-sm text-zinc-600">
             <input
               type="checkbox"
@@ -263,10 +233,17 @@ export function SignupForm({
               .
             </span>
           </label>
-
-          <RememberMeCheckbox checked={remember} onChange={updateRemember} />
         </>
-      )}
+      ) : null}
+
+      {!emailPasswordEnabled && !oauthEnabled ? (
+        <p className="text-sm text-zinc-500">
+          {t(
+            "auth.email.unavailable",
+            "Ienākšana un reģistrācija ar e-pastu ir pieejama, kad Resend integrācija ir konfigurēta un aktīva.",
+          )}
+        </p>
+      ) : null}
 
       {emailPasswordEnabled ? (
         <button

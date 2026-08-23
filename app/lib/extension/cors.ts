@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { isKnownSiteOrigin } from "@/app/lib/seo/known-site-origins";
 
 const EXTENSION_ORIGIN = /^chrome-extension:\/\//;
 
@@ -33,12 +34,7 @@ function allowOrigin(request: Request): string | null {
       // ignore
     }
   }
-  if (
-    origin === "http://localhost:3120" ||
-    origin.startsWith("http://127.0.0.1:3120")
-  ) {
-    return origin;
-  }
+  if (isKnownSiteOrigin(origin)) return origin;
   return null;
 }
 
@@ -51,6 +47,7 @@ export function extensionCorsHeaders(request: Request): HeadersInit {
   };
   if (origin) {
     headers["Access-Control-Allow-Origin"] = origin;
+    headers["Access-Control-Allow-Credentials"] = "true";
     headers["Vary"] = "Origin";
   }
   return headers;

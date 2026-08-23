@@ -213,5 +213,11 @@ export async function appendNotifications(
 
   if (filtered.length === 0) return;
   await insertNotifications(teamId, filtered);
-  window.dispatchEvent(new Event(NOTIFICATIONS_CHANGE_EVENT));
+  const { sendNotificationEmailsAction } = await import(
+    "@/app/lib/email/notification-emails"
+  );
+  void sendNotificationEmailsAction({ teamId, items: filtered });
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new Event(NOTIFICATIONS_CHANGE_EVENT));
+  }
 }

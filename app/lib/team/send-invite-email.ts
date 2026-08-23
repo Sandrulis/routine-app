@@ -1,25 +1,17 @@
-import type { SupabaseClient } from "@supabase/supabase-js";
 import { createAdminClient } from "@/app/lib/supabase/admin";
 import { isSupabaseAdminConfigured } from "@/app/lib/supabase/env";
-
-function siteOrigin(): string {
-  const configured = process.env.NEXT_PUBLIC_SITE_URL?.trim();
-  if (configured) {
-    try {
-      return new URL(configured).origin;
-    } catch {
-      return configured.replace(/\/$/, "");
-    }
-  }
-  return "http://localhost:3000";
-}
+import { getPublicSiteUrl } from "@/app/lib/seo/site-url";
+import { getResendCredentials } from "@/app/lib/integrations/resend/client";
+import { sendTeamInviteNotice } from "@/app/lib/email/send-auth-emails";
+import { findAuthUserByEmailExact } from "@/app/lib/auth/find-auth-user-by-email";
+import { logError } from "@/app/lib/security/log-error";
 
 export function teamInviteRedirectUrl(token: string): string {
-  return `${siteOrigin()}/auth/callback?next=${encodeURIComponent(`/invite/${token}`)}`;
+  return `${getPublicSiteUrl()}/auth/callback?next=${encodeURIComponent(`/invite/${token}`)}`;
 }
 
 export function teamInvitePublicUrl(token: string): string {
-  return `${siteOrigin()}/invite/${token}`;
+  return `${getPublicSiteUrl()}/invite/${token}`;
 }
 
 function isRateLimitError(message: string): boolean {
@@ -36,18 +28,14 @@ function isExistingAuthUserError(message: string): boolean {
 }
 
 export async function resolveAuthUserIdByEmail(
-  admin: SupabaseClient,
+  _admin: unknown,
   email: string,
 ): Promise<string | null> {
-  const { data, error } = await admin.auth.admin.generateLink({
-    type: "magiclink",
-    email,
-  });
-  if (error) return null;
-  return data.user?.id ?? null;
+  const found = await findAuthUserByEmailExact(email);
+  return found?.id ?? null;
 }
 
-export async function sendTeamInviteEmail(
+async function sendSupabaseInviteFallback(
   email: string,
   token: string,
 ): Promise<
@@ -75,7 +63,7 @@ export async function sendTeamInviteEmail(
     !isExistingAuthUserError(inviteResult.error.message) &&
     !isRateLimitError(inviteResult.error.message)
   ) {
-    console.error("inviteUserByEmail failed:", inviteResult.error.message);
+    logError("inviteUserByEmail failed", inviteResult.error.message);
     return { ok: false, error: "errors.team_invite_email_failed" };
   }
 
@@ -92,10 +80,40 @@ export async function sendTeamInviteEmail(
   }
 
   if (isRateLimitError(inviteResult.error.message) || isRateLimitError(otpResult.error.message)) {
-    console.warn("Team invite email rate limited for", email);
     return { ok: true, emailSent: false };
   }
 
-  console.error("signInWithOtp failed:", otpResult.error.message);
+  logError("signInWithOtp failed", otpResult.error.message);
   return { ok: false, error: "errors.team_invite_email_failed" };
+}
+
+export async function sendTeamInviteEmail(input: {
+  email: string;
+  token: string;
+  teamName: string;
+  inviterName: string;
+  recipientName?: string;
+  languageCode?: string | null;
+}): Promise<
+  { ok: true; emailSent: true } | { ok: true; emailSent: false } | { ok: false; error: string }
+> {
+  const email = input.email.trim().toLowerCase();
+  const inviteLink = teamInvitePublicUrl(input.token);
+
+  if (await getResendCredentials()) {
+    const sent = await sendTeamInviteNotice({
+      email,
+      inviteLink,
+      teamName: input.teamName,
+      inviterName: input.inviterName,
+      name: input.recipientName,
+      languageCode: input.languageCode,
+    });
+    if (!sent.ok) {
+      return { ok: false, error: sent.error };
+    }
+    return { ok: true, emailSent: true };
+  }
+
+  return sendSupabaseInviteFallback(email, input.token);
 }

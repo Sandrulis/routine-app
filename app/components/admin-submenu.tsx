@@ -89,6 +89,12 @@ const GROUPS = [
         fallback: "Integrācijas",
       },
       {
+        href: "/admin/email-templates",
+        icon: "fas fa-envelope-open-text",
+        labelKey: "admin.nav.email_templates",
+        fallback: "E-pasta šabloni",
+      },
+      {
         href: "/admin/settings",
         icon: "fas fa-sliders",
         labelKey: "nav.settings",

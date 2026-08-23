@@ -50,16 +50,17 @@ Route group `app/(marketing)/` - bez sānjoslas. Galvene `SiteHeader` (sistēmas
 
 | Ceļš | Saturs |
 |---|---|
-| `/` | Landing (`LandingPage` + `LandingAppPreview`); ielogotam `redirect("/dashboard")` |
+| `/` | Landing (`LandingPage` + `LandingAppPreview`); fīčas un hero no `resolveLandingPageContent` (ieslēgtie frontend moduļi); ielogotam `redirect("/dashboard")` |
 | `/login` | Ienākt (`LoginForm`) |
 | `/signup` | Reģistrēties (`SignupForm`) |
 | `/forgot-password` | Aizmirsi paroli (`ForgotPasswordForm`) |
+| `/auth/confirm` | E-pasta saites apstiprinājums (`token_hash` + `type`: signup / recovery) → sesija, tad `/dashboard` vai `/update-password` |
 | `/update-password` | Jauna parole pēc e-pasta saites (`UpdatePasswordForm`) |
 | `/privacy` | Privātuma politika |
 | `/terms` | Lietošanas noteikumi |
 | `/cookies` | Sīkdatņu politika + iestatījumu poga |
 
-Auth: e-pasta Ienākt / Reģistrēties / paroles atjaunošana iet caur Supabase (`signInWithPassword`, `signUp`, `resetPasswordForEmail`) ar IP+e-pasta rate limit **un tikai ja Resend ir konfigurēts un aktīvs** (`isEmailPasswordAuthEnabled` = From + API Key + `is_enabled`). Bez Resend: e-pasta lauki nav, galvenē nav Reģistrēties, loginā nav signup saites un Atcerēties mani, `/signup` `redirect("/login")`; server actions atgriež `errors.auth_email_disabled`. **Turpināt ar Google** / **Turpināt ar Microsoft** paliek neatkarīgi (admin **Integrācijas** OAuth, `/auth/google-oauth/callback`, `/auth/microsoft-oauth/callback`), nevis Supabase Google provider - pēc profila no Google/Microsoft tiek izveidots vai atrasts Supabase Auth lietotājs un sesija. Microsoft pieprasa verificētu e-pastu (OIDC / `id_token`, bez `userPrincipalName`). Pogas rādās tikai ja attiecīgā integrācija ir konfigurēta un **Aktīva**. **Atcerēties mani** rādās tikai ar e-pasta formu; pēc noklusējuma izslēgts: bez ķeksīša sesija līdz pārlūka aizvēršanai; ar ķeksi 30 dienas (`httpOnly: false`, lai browser Supabase klients lasītu cookie; production HTTPS `Secure`). Ielogotam `proxy` `/`, `/login`, `/signup` un `/forgot-password` novirza uz `/dashboard`; neautentificēts lietotājs no aizsargātiem app ceļiem uz `/login`; landing `app/(marketing)/page.tsx` arī `redirect("/dashboard")`, ja ir sesija. Iziet ved uz `/`. Publiskajā galvenē ielogotam rādās **Atvērt lietotni**. MFA (TOTP) ir opcija `/settings/profile` visiem; ja faktoram ir `verified` un sesija nav `aal2`, lietotne rāda `MfaVerifyModal` pirms app čaulas. `is_admin` pie `/admin` bez MFA tiek novirzīts enroll (`?mfa=required`); ar MFA, bet bez AAL2 - admin modālis. Paroles maiņa (`updatePasswordAction`) prasa `getCurrentUser` (CI `actions.ts` auth-guard).
+Auth: e-pasta Ienākt iet caur Supabase `signInWithPassword` ar IP+e-pasta rate limit **un tikai ja Resend ir konfigurēts un aktīvs** (`isEmailPasswordAuthEnabled` = From + API Key + `is_enabled`). Reģistrācija: `generateLink({ type: "signup" })` + HTML e-pasts no admin šablona `signup` (`sendSignupConfirmationEmail`); apstiprinājums `/auth/confirm?token_hash&type=signup` (`verifyOtp`). Paroles atjaunošana: `generateLink({ type: "recovery" })` + šablons `password_reset`; saite ved uz `/auth/confirm` ar `next=/update-password`. Esošam apstiprinātam e-pastam signup un nezināmam e-pastam reset joprojām rāda vispārīgu veiksmi (nav enumerācijas). Bez Resend: e-pasta lauki nav, galvenē nav Reģistrēties, loginā nav signup saites un Atcerēties mani, `/signup` `redirect("/login")`; server actions atgriež `errors.auth_email_disabled`. **Turpināt ar Google** / **Turpināt ar Microsoft** paliek neatkarīgi (admin **Integrācijas** OAuth, `/auth/google-oauth/callback`, `/auth/microsoft-oauth/callback`), nevis Supabase Google provider - pēc profila no Google/Microsoft tiek izveidots vai atrasts Supabase Auth lietotājs un sesija. Microsoft pieprasa verificētu e-pastu (OIDC / `id_token`, bez `userPrincipalName`). Pogas rādās tikai ja attiecīgā integrācija ir konfigurēta un **Aktīva**. Signupā OAuth **neprasa** noteikumu ķeksīti (tas paliek tikai e-pasta reģistrācijai). **Atcerēties mani** rādās tikai `/login` e-pasta formā; pēc noklusējuma izslēgts: bez ķeksīša sesija līdz pārlūka aizvēršanai; ar ķeksi 30 dienas (`httpOnly: false`, lai browser Supabase klients lasītu cookie; production HTTPS `Secure`). Ielogotam `proxy` `/`, `/login`, `/signup` un `/forgot-password` novirza uz `/dashboard`; neautentificēts lietotājs no aizsargātiem app ceļiem uz `/login`; landing `app/(marketing)/page.tsx` arī `redirect("/dashboard")`, ja ir sesija. Iziet ved uz `/`. Publiskajā galvenē ielogotam rādās **Atvērt lietotni**. MFA (TOTP) ir opcija `/settings/profile` visiem; ja faktoram ir `verified` un sesija nav `aal2`, lietotne rāda `MfaVerifyModal` pirms app čaulas. `is_admin` pie `/admin` bez MFA tiek novirzīts enroll (`?mfa=required`); ar MFA, bet bez AAL2 - admin modālis. Paroles maiņa (`updatePasswordAction`) prasa `getCurrentUser` (CI `actions.ts` auth-guard).
 
 Legal teksti: `app/lib/legal/documents.ts`. UI: `LegalDocumentView` ar **Saturs** sānjoslu (`sticky` zem galvenes): klikšķis ritina uz sadaļu, josla paliek redzama visā dokumentā.
 
@@ -76,11 +77,11 @@ Indeksējamās lapas: `/`, `/privacy`, `/terms`, `/cookies`, `/login`, `/signup`
 | Canonical / OG URL | `canonicalMetadata()` + root `metadataBase` |
 | JSON-LD | landing `LandingJsonLd` (Organization, WebSite, SoftwareApplication) |
 
-1. Produkcijā iestati `NEXT_PUBLIC_SITE_URL=https://tavs-domens` (tas pats hosts, ko pievieno GSC).
+1. Produkcijā iestati `NEXT_PUBLIC_SITE_URL` uz **vienu** kanonisko hostu (`https://tasqin.com` vai `https://www.tasqin.com`, bez trailing slash) - tas pats, ko pievieno GSC. Spraudnis zina abus (`KNOWN_SITE_ORIGINS`).
 2. Search Console → pievieno **URL prefix** īpašumu ar to pašu URL (vai Domain īpašumu caur DNS).
 3. Ownership → **HTML tag**: ielīmē `content` vērtību (vai visu meta rindu) env `GOOGLE_SITE_VERIFICATION` un redeplojo.
-4. Pēc deploy atver `https://tavs-domens/robots.txt` un `https://tavs-domens/sitemap.xml` - sitemap rādītajiem URL jāsākas ar to pašu origin.
-5. GSC → Sitemaps → pievieno `https://tavs-domens/sitemap.xml`.
+4. Pēc deploy atver `{NEXT_PUBLIC_SITE_URL}/robots.txt` un `{NEXT_PUBLIC_SITE_URL}/sitemap.xml` - sitemap rādītajiem URL jāsākas ar to pašu origin.
+5. GSC → Sitemaps → pievieno `{NEXT_PUBLIC_SITE_URL}/sitemap.xml`.
 6. URL Inspection uz `/` - jābūt `index, follow` un canonical uz to pašu origin. Dashboard URL - `noindex`.
 
 Neiesniedz GSC uzaicinājumu, paroles vai API ceļus. Ja Resend nav aktīvs, `/signup` novirza uz `/login` - tas GSC ir normāli.
@@ -121,7 +122,7 @@ Ielāde: `LoadingState` (`app/components/loading-state.tsx`, `fas fa-circle-notc
 
 ## Administrācijas panelis
 
-`/admin` — satura joslā ar **kategoriju izvēlni** (`admin-submenu.tsx`): Cilvēki, Katalogs, Sistēma; hover (vai pieskāriens) atver dropdown ar sadaļām. Aktīvā kategorija ir izcelta, aktuālā lapa dropdownā ar ķeksīti. Ikona pie paziņojumiem rādās tikai ielogotam lietotājam ar `public.users.is_admin = true`. `/admin` novirza uz `/admin/users`. Pirms paneļa: TOTP MFA (ja nav ieslēgta — `/settings/profile?mfa=required`; ja sesija nav AAL2 — `MfaVerifyModal` uz vietas). Ielogošanās MFA (visiem, kam TOTP ir ieslēgts) jau ir `aal2`, tāpēc admin parasti vairs neprasa otru kodu. Mutācijas raksta `admin_audit_events`.
+`/admin` — satura joslā ar **kategoriju izvēlni** (`admin-submenu.tsx`): Cilvēki, Katalogs, Sistēma; hover (vai pieskāriens) atver dropdown ar sadaļām (Sistēmā arī **E-pasta šabloni** pēc Integrācijām). Aktīvā kategorija ir izcelta, aktuālā lapa dropdownā ar ķeksīti. Ikona pie paziņojumiem rādās tikai ielogotam lietotājam ar `public.users.is_admin = true`. `/admin` novirza uz `/admin/users`. Pirms paneļa: TOTP MFA (ja nav ieslēgta — `/settings/profile?mfa=required`; ja sesija nav AAL2 — `MfaVerifyModal` uz vietas). Ielogošanās MFA (visiem, kam TOTP ir ieslēgts) jau ir `aal2`, tāpēc admin parasti vairs neprasa otru kodu. Mutācijas raksta `admin_audit_events`.
 
 | Ceļš | Saturs |
 |---|---|
@@ -135,23 +136,25 @@ Ielāde: `LoadingState` (`app/components/loading-state.tsx`, `fas fa-circle-notc
 | `/admin/modules` | `site_frontend_modules`: atslēga, ieslēgts/izslēgts, dzēšana (`AdminFrontendModulesForm`) |
 | `/admin/payment-plans` | `site_payment_plans` katalogs: ieslēgums, izmēģinājums, Early Bird limīts, cenas, frontend moduļi plānā (`AdminPaymentPlansForm`) |
 | `/admin/integrations` | `site_integrations`: Google/Microsoft OAuth (login/signup); Resend, Umami, Sentry; Client ID/Secret, OAuth pārbaude vai Saglabāt, **Aktīva** slēdzis; sakļaujamas kartiņas (`AdminIntegrationsPage`) |
+| `/admin/email-templates` | HTML e-pasta šabloni (`signup`, `password_reset`, `invite`, `notification`) visās sistēmas valodās: temats, teksts, pogas teksts, iframe priekšskatījums (`AdminEmailTemplatesForm`); saglabā `site_translations` |
 | `/admin/settings` | `site_settings`: sistēmas nosaukums, slogans, logotips/favicon (data URL) vai iniciāļu avatārs ar `logo_color`, nedēļas sākums, datuma formāts/atdalītājs, 12/24 h; hinti zem laukiem |
 
 - Servera vārti: `requireAdmin()` layoutā un `admin/actions.ts`
 - Klienta pārbaude: `useIsAdmin()` caur RPC `current_user_is_admin()` (ikona)
 - Lietotāju saraksts caur ielogotā admin sesiju (RLS `008_admin_list_access.sql`); jauna lietotāja izveide ar service role
 - Valodas, tulkojumi, uzstādījumi caur to pašu sesiju (RLS `010_site_admin_session_access.sql`); `site_*` SELECT arī `anon`
-- Migrācijas: `003` admin RPC, `006` valodas/tulkojumi/uzstādījumi, `007` RU, `008` admin list access, `009` `users` aktivitātes lauki, `010` site admin session RLS, `011` `users.language_code`, `012`/`016`/`018` statusi, `017`/`020`/`021` lomas, `013`/`014`/`019` privāti saraksti, `022`/`023` sarakstu pieeju līmeņi, `024` `work_tasks.deleted_at`, `025` kataloga statusa check, `027`/`028`/`030` saraksta statusi, `029` `work_tasks.checklists`, `031` `team_status_labels`, `032` failu `size` backfill, `033`/`035` display preferences, `034` `file_type_extensions`, `036`/`037` sistēmas logotips/favicon un `logo_color`, `038` `work_tasks.archived_at`, `039` `work_templates` / `work_template_items`, `040` šablona `kind: folder` un ligzdots koks, `041` `work_list_automations` (trigger + action uz sarakstu), `044`–`049` komandas uzaicinājumi (tabula, RPC accept/reject, paziņojumi, self-leave, explicit accept, reject fix), `050` `set_current_user_name` (lietotājs maina savu vārdu), `051_team_permissions_extended` (komandu lomu pieejas UI + efektīvais list access), `051_task_activities_extended` un `052_task_activities_reordered` (apakšuzdevumu vēsture), `053` `user_notification_preferences`, `054` paplašināti `app_notifications.kind`, `055` `work_task_statuses` + uzdevuma statusu layout lauki, `056` šablona assignee/checklist, `057` šablona custom statusi, `058` `site_frontend_modules` (`module_templates`, `module_automations`), `059` `module_private_list` + RPC `publish_all_private_work_lists`, `060` `module_file_upload`, `061` `module_checklist`, `062` `site_payment_plans` + `site_payment_plan_modules` + `teams` plāna kolonnas, `063` `touch_current_member_online`, `064` `module_google_drive` + `team_google_drive_integrations`, `065` `user_calendar_integrations` + `module_calendar` / `module_calendar_apple` / `module_calendar_google`, `066` `module_onedrive` + `team_onedrive_integrations`, `067`/`068`/`069` `site_integrations` (`google_oauth`, `microsoft_oauth`, Resend/Umami/Sentry), `070` Drive `store_on_server` + `google_drive_file_id` uz `list_files` / `task_files`, `071` attēlu paplašinājumi (`png`/`jpg`/`jpeg`/`gif`/`webp`) `file_type_extensions`, `072` `txt`/`html` failu tipi, `073_workspace_speed` (`has_content`, `team_id` indeksi, RPC reorder / `set_task_assignees` / `update_tasks_status`)
+- Migrācijas: `003` admin RPC, `006` valodas/tulkojumi/uzstādījumi, `007` RU, `008` admin list access, `009` `users` aktivitātes lauki, `010` site admin session RLS, `011` `users.language_code`, `012`/`016`/`018` statusi, `017`/`020`/`021` lomas, `013`/`014`/`019` privāti saraksti, `022`/`023` sarakstu pieeju līmeņi, `024` `work_tasks.deleted_at`, `025` kataloga statusa check, `027`/`028`/`030` saraksta statusi, `029` `work_tasks.checklists`, `031` `team_status_labels`, `032` failu `size` backfill, `033`/`035` display preferences, `034` `file_type_extensions`, `036`/`037` sistēmas logotips/favicon un `logo_color`, `038` `work_tasks.archived_at`, `039` `work_templates` / `work_template_items`, `040` šablona `kind: folder` un ligzdots koks, `041` `work_list_automations` (trigger + action uz sarakstu), `044`–`049` komandas uzaicinājumi (tabula, RPC accept/reject, paziņojumi, self-leave, explicit accept, reject fix), `050` `set_current_user_name` (lietotājs maina savu vārdu), `051_team_permissions_extended` (komandu lomu pieejas UI + efektīvais list access), `051_task_activities_extended` un `052_task_activities_reordered` (apakšuzdevumu vēsture), `053` `user_notification_preferences`, `054` paplašināti `app_notifications.kind`, `055` `work_task_statuses` + uzdevuma statusu layout lauki, `056` šablona assignee/checklist, `057` šablona custom statusi, `058` `site_frontend_modules` (`module_templates`, `module_automations`), `059` `module_private_list` + RPC `publish_all_private_work_lists`, `060` `module_file_upload`, `061` `module_checklist`, `062` `site_payment_plans` + `site_payment_plan_modules` + `teams` plāna kolonnas, `063` `touch_current_member_online`, `064` `module_google_drive` + `team_google_drive_integrations`, `065` `user_calendar_integrations` + `module_calendar` / `module_calendar_apple` / `module_calendar_google`, `066` `module_onedrive` + `team_onedrive_integrations`, `067`/`068`/`069` `site_integrations` (`google_oauth`, `microsoft_oauth`, Resend/Umami/Sentry), `070` Drive `store_on_server` + `google_drive_file_id` uz `list_files` / `task_files`, `071` attēlu paplašinājumi (`png`/`jpg`/`jpeg`/`gif`/`webp`) `file_type_extensions`, `072` `txt`/`html` failu tipi, `073_workspace_speed` (`has_content`, `team_id` indeksi, RPC reorder / `set_task_assignees` / `update_tasks_status`), `074` kalendāra tokenu šifrēšana, `075` zip/rar, `076` `has_content` backfill, `077_email_templates` (`find_auth_user_by_email` RPC + HTML šablonu seed `site_translations`), `078`/`079` `module_gmail_plugin` + `user_gmail_connections`
 
 ## Frontend moduļi
 
-Globāli feature flagi tabulā `public.site_frontend_modules` (`module_key` + `is_enabled` + `sort_order`). Admin UI: `/admin/modules` (`admin-frontend-modules-form.tsx`), tikai `is_admin`. App layout ielādē ieslēgtās atslēgas un iedod `FrontendModulesProvider` (`app/lib/frontend-modules/context.tsx`). Klients: `useFrontendModules().isEnabled(key)`. Serveris: `isFrontendModuleEnabled` / `requireFrontendModule` (izslēgtam šablonu maršrutam redirect uz `/dashboard`).
+Globāli feature flagi tabulā `public.site_frontend_modules` (`module_key` + `is_enabled` + `sort_order`). Admin UI: `/admin/modules` (`admin-frontend-modules-form.tsx`), tikai `is_admin`. App layout ielādē ieslēgtās atslēgas un iedod `FrontendModulesProvider` (`app/lib/frontend-modules/context.tsx`). Publiskā landing `(marketing)/layout.tsx` ielādē tās pašas atslēgas (`getEnabledFrontendModuleKeys` ar service role, jo anon RLS slēdz tabulu) un iedod to pašu provider. `resolveLandingPageContent` (`app/lib/landing/features.ts`) rāda tikai ieslēgto moduļu kartītes un pielāgo hero/preview tekstu; izslēgtie netiek pieminēti. Klients: `useFrontendModules().isEnabled(key)`. Serveris: `isFrontendModuleEnabled` / `requireFrontendModule` (izslēgtam šablonu maršrutam redirect uz `/dashboard`).
 
 | Atslēga | Ieslēgts | Izslēgts |
 |---|---|---|
 | `module_private_list` | `ListFormModal` rāda **Privāts saraksts** slēdzi un biedru/lomu izvēli | Slēdzis pazūd; visi `work_lists.is_private` kļūst `false` (RPC `publish_all_private_work_lists`); UI tos rāda kā publiskus |
 | `module_file_upload` | Augšupielāde kokā, apakšuzdevumos, mapes **Faili** logs, sānjoslas **Failu vieta** | Nav upload; esošie faili kokā un apakšuzdevumā slēpti; Failu logs izņemts no window order; Failu vieta pazūd; faila URL redirect |
 | `module_google_drive` | Komandas `...` → **Google Drive Integrācija**; `/team/google-drive`; faili uz Drive (noklusējumā bez servera `content`, opcionāli spoguļojums); admin slēdzis ieslēdzams tikai ja Google OAuth integrācija ir konfigurēta un ieslēgta | Izvēlnes opcijas nav; maršruts redirect uz `/dashboard`; Drive sync nenotiek. Prasa arī `module_file_upload` |
+| `module_gmail_plugin` | Gmail Chrome spraudnis (`extensions/gmail`): sesija, komandu pārslēgšana, e-pasta pievienošana. Admin slēdzis tikai ja Google OAuth ir ieslēgts. Gmail OAuth tokeni `user_gmail_connections` (service role). Redirect `/auth/gmail-plugin/callback` | Spraudnis rāda, ka modulis izslēgts |
 | `module_onedrive` | Komandas `...` → **OneDrive Integrācija**; `/team/onedrive`; pēc faila pievienošanas kopija uz OneDrive, ja komanda ir pieslēgusi kontu. Admin slēdzis ieslēdzams tikai ja Microsoft OAuth integrācija ir konfigurēta un ieslēgta | Izvēlnes opcijas nav; maršruts redirect uz `/dashboard`; OneDrive sync nenotiek. Prasa arī `module_file_upload` |
 | `module_checklist` | Check List lietojams; slēgto statusu bloķē nepabeigti punkti | Sadaļa vienmēr sakļauta (`forceCollapsed`); slēgto statusu **nebloķē** |
 | `module_automations` | Saraksta `...` → **Automatizācijas**; `lists-store` izpilda statusa/čeklistes/apakšuzdevumu noteikumus | Izvēlnes opcijas nav; esošie noteikumi **neizpildās** |
@@ -160,7 +163,7 @@ Globāli feature flagi tabulā `public.site_frontend_modules` (`module_key` + `i
 | `module_calendar_apple` | Izvēlē Apple Calendar un `webcal://…ics` abonēšana | Apple karte UI nav |
 | `module_calendar_google` | Izvēlē Google Calendar; tas pats HTTPS `.ics` (Google “From URL” / `calendar.google.com?cid=`) | Google karte UI nav |
 
-Lib: `app/lib/frontend-modules/` (`keys.ts`, `repository.ts`, `context.tsx`, `access.ts`). Zināmo atslēgu etiķetes UI atkārtoti izmanto `lists.private.label`, `team.access.actions.files_upload`, `nav.google_drive`, `subtasks.checklist.title`, `nav.templates`, `lists.automations.title`, `calendar.integration.title`, `calendar.provider.apple`, `calendar.provider.google`.
+Lib: `app/lib/frontend-modules/` (`keys.ts`, `repository.ts`, `context.tsx`, `access.ts`). Zināmo atslēgu etiķetes UI atkārtoti izmanto `lists.private.label`, `team.access.actions.files_upload`, `nav.google_drive`, `nav.gmail_plugin`, `subtasks.checklist.title`, `nav.templates`, `lists.automations.title`, `calendar.integration.title`, `calendar.provider.apple`, `calendar.provider.google`.
 
 Plūsma: `GET /calendar/{token}.ics` (`app/calendar/[token]/route.ts`). Apple: `webcal://`. Google Calendar **neizmanto** Calendar API OAuth — oficiāli abonē HTTPS iCalendar URL (`From URL` vai `calendar.google.com/calendar/r?cid=`). Google atjauno plūsmu lēni (stundas). Token hash DB (`feed_token_hash`); ICS `Cache-Control: private, no-store`, bez uzdevumu `description`. ICS lasa service role.
 
@@ -188,7 +191,7 @@ Komandai kolonnas `payment_plan_id` / `payment_plan_until` / `payment_plan_paid`
 - **Iesaistītie** saņem brīdinājumus par uzdevumu/apakšuzdevumu notikumiem: uzdevuma un (apakšuzdevumam) vecāka piesaistītie; lomas izvērstas uz biedriem (`task-notifications.ts` → `appendNotifications`). Jauns uzdevums/apakšuzdevums ar assignee (šablons, automatizācija) sūta `assigned` caur `notificationsForInitialAssignees` (`addTask` var uzreiz saņemt `assigneeIds` / `checklists`)
 - **`kind`:** `assigned`, `unassigned`, `comment`, `file`, `status_changed`, `task_updated`, `due` (tips gatavs; automātiska ģenerēšana vēl nav), `team_invite`, `team_invite_rejected`
 - Triggeri: `lists-store` (`updateTask`, `addTask`, komentārs, fails, pārvietošana), dashboard todo (`team-todo-board`), komandas uzaicinājums (`team/actions.ts`); **aktors pats netiek informēts**
-- **`appendNotifications`** pirms insert filtrē pēc `user_notification_preferences` (trūkstoša rinda = ieslēgts)
+- **`appendNotifications`** pirms insert filtrē pēc `user_notification_preferences` (trūkstoša rinda = ieslēgts); pēc insert `sendNotificationEmailsAction` sūta HTML e-pastu (šablons `notification`), izņemot `team_invite` (tam ir uzaicinājuma šablons). Resend izslēgts = tikai in-app
 - **Paziņojumu uzstādījumi** (`notification-settings-modal.tsx`) — grupēts modālis ar 3 sekcijām (Uzdevumi, Atgādinājumi, Komanda) un ikonām katram veidam; toggle automātiski saglabā serverī (bez Saglabāt pogas); pieejams no `user-menu.tsx` un zvaniņa paneļa (`notifications-menu.tsx` settings poga headerī)
 - **`team_invite`** — komandas uzaicinājums reģistrētam lietotājam (`target_user_id`); panelī **Apstiprināt** / **Noraidīt** (`accept_team_invitation` / `reject_team_invitation` RPC); servera pusē respektē preference
 - **`team_invite_rejected`** — uzaicinātājam pēc noraidījuma; `href` satur noraidītā e-pastu
@@ -281,9 +284,9 @@ Saraksta statusi: `ListStatusesModal` (`app/components/list-statuses-modal.tsx`)
 | Solis | Kas notiek |
 |---|---|
 | Uzaicināt (`inviteTeamMemberAction`) | `team_members` rinda ar `user_id = null`, `team_invitations` `pending`, unikāls `token` |
-| Jaunam e-pastam | Supabase `inviteUserByEmail` (nepieciešams `SUPABASE_SERVICE_ROLE_KEY` serverī) |
-| Reģistrētam lietotājam | In-app `team_invite` paziņojums (`target_user_id`); e-pasts mēģina OTP magic link — ne obligāts |
-| Apstiprināt | Paziņojumos, `/invite/{token}` vai RPC `accept_team_invitation` → `user_id` tiek iestatīts |
+| Jaunam e-pastam | Ja Resend aktīvs: HTML šablons `invite` ar `/invite/{token}` (nav `inviteUserByEmail`, lai nebūtu dubulta Supabase vēstule); jauns lietotājs reģistrējas pats. Bez Resend: `inviteUserByEmail` (nepieciešams `SUPABASE_SERVICE_ROLE_KEY`) |
+| Reģistrētam lietotājam | In-app `team_invite` paziņojums (`target_user_id`); HTML uzaicinājuma e-pasts, ja Resend aktīvs |
+| Apstiprināt | Paziņojumos, `/invite/{token}` (tur arī Reģistrēties) vai RPC `accept_team_invitation` → `user_id` tiek iestatīts |
 | Noraidīt | Paziņojumos vai `/invite/{token}` → RPC `reject_team_invitation`; pending `team_members` rinda dzēsta; uzaicinātājam `team_invite_rejected` |
 | Pending UI | `/team` un `/team/[id]`: resend, kopēt linku, noņemt; sānjoslā tikai apstiprinātie (`confirmedTeamMembers`) |
 
@@ -291,7 +294,7 @@ Saraksta statusi: `ListStatusesModal` (`app/components/list-statuses-modal.tsx`)
 
 **Pamest komandu:** apstiprināts biedrs (ne īpašnieks) var pats aiziet — `removeTeamMemberAction` self-leave, UI `TeamLeaveSection` (`/team`, `/settings/profile`).
 
-**E-pasts:** jaunam lietotājam bez service role uzaicinājums netiek izveidots; reģistrētam e-pasta kļūda neatceļ uzaicinājumu (paliek in-app). Supabase built-in e-pastam ir zems rate limits — fallback: kopēt `/invite/{token}` linku.
+**E-pasts:** ar Resend HTML uzaicinājums tiek izveidots bez Supabase Auth invite (jauns lietotājs iet `/signup` no uzaicinājuma lapas). Bez Resend jaunam e-pastam vajag service role; reģistrētam e-pasta kļūda neatceļ uzaicinājumu (paliek in-app). Fallback: kopēt `/invite/{token}` linku.
 
 - Attēlojums: `app/components/member-last-online.tsx`, loģika `app/lib/last-online.ts`
 
@@ -314,28 +317,31 @@ app/
   sitemap.ts                      # /sitemap.xml — landing, legal, login, signup
   fontawesome.css                 # FA solid/regular/brands (ne `all.min.css`)
   (marketing)/
+    layout.tsx                    # SiteHeader/Footer + FrontendModulesProvider (landing fīčas)
     page.tsx                      # Landing; ielogotam redirect /dashboard; JSON-LD
-    login/ signup/ forgot-password/ update-password/
-    invite/[token]/               # Komandas uzaicinājuma landing (accept/reject)
+    login/ signup/ forgot-password/ update-password/ auth/confirm/
+    invite/[token]/               # Komandas uzaicinājuma landing (accept/reject + Reģistrēties)
     privacy/ terms/ cookies/
   (app)/
     layout.tsx                    # AppProviders + sānjosla; MFA vārteja (AAL2); enabled frontend module keys
     dashboard/page.tsx            # Sākums: Mani uzdevumi + saraksti
     lists/                        # Kopsavilkums, 3 logi, uzdevums, fails
     team/ settings/ projects/ templates/
-    admin/                        # users, teams, roles, statuses, file-types, languages, translations, modules, payment-plans, settings
+    admin/                        # users, teams, roles, statuses, file-types, languages, translations, modules, payment-plans, integrations, email-templates, settings
 
   globals.css                     # Zinc light theme; `--radius-*` uz pusi
   components/
     site-header.tsx               # Publiskā galvene; sistēmas logo/iniciāļi; ielogotam Atvērt lietotni; Reģistrēties tikai ar Resend
     site-footer.tsx               # Publiskā kājene
-    landing-page.tsx              # Landing saturs
+    landing-page.tsx              # Landing saturs; fīču kartītes (nosaukums blakus ikonai) no resolveLandingPageContent
     landing-json-ld.tsx           # schema.org Organization / WebSite / SoftwareApplication
-    landing-app-preview.tsx       # Hero dashboard vizuālis
+    landing-app-preview.tsx       # Hero dashboard vizuālis (moduļu fīčas tikai ja ieslēgtas)
     login-form.tsx                # Ienākt; e-pasts/Atcerēties/signup saite tikai ar Resend; Google/Microsoft
-    signup-form.tsx               # Reģistrēties + Google/Microsoft + Atcerēties mani (lapa redirect, ja nav Resend)
+    signup-form.tsx               # Reģistrēties: noteikumi tikai e-pasta formai; Google/Microsoft bez ķeksīša
     google-auth-button.tsx        # Turpināt ar Google / Microsoft
-    admin-integrations-page.tsx   # /admin/integrations: Google + Microsoft OAuth
+    admin-integrations-page.tsx   # /admin/integrations: Google + Microsoft OAuth, Resend, Umami, Sentry
+    admin-email-templates-form.tsx # /admin/email-templates: HTML šabloni + priekšskatījums
+    auth-session-from-url.tsx     # /auth/confirm: verifyOtp no token_hash; hash redirect PKCE
     remember-me-checkbox.tsx      # Atcerēties mani (noklusējums izslēgts; 30 dienas ar ķeksi)
     forgot-password-form.tsx      # Aizmirsi paroli (forma tikai ar Resend)
     work-progress.tsx             # done/total, josla, sānjoslas fona aizpildījums
@@ -351,7 +357,7 @@ app/
     user-menu.tsx                 # Lietotāja drop-up: personīgā info, uzstādījumi, paziņojumu prefs, kalendārs, parole, iziet
     calendar-integration-modal.tsx # Apple/Google .ics abonēšana
     personal-info-modal.tsx       # Vārda un uzvārda rediģēšana
-    notification-settings-modal.tsx # In-app paziņojumu veidu slēdži (grupēts, auto-save)
+    notification-settings-modal.tsx # In-app (un e-pasta) paziņojumu veidu slēdži (grupēts, auto-save)
     change-password-modal.tsx     # Paroles maiņa (email login)
     profile-settings-view.tsx     # /settings/profile: profils + display preferences
     nav-tree-dnd.tsx              # Koka DnD: mapē / ārā / zem pēdējā, drop līnija
@@ -422,7 +428,10 @@ app/
     document-title.ts             # Pārlūka cilnes formāts `lapa | sistēma`
     document-title-server.ts      # DB nosaukumi dinamiskajam generateMetadata
     page-metadata.ts              # translatedPageMetadata / resolvedPageMetadata helperi
-    seo/                          # site URL, robots/sitemap ceļi, canonical / noindex
+    seo/                          # site URL, known origins, robots/sitemap ceļi, canonical / noindex
+    landing/features.ts           # Landing fīčas un hero teksts pēc frontend moduļiem
+    env/read-env.ts               # Env trim + pēdiņu noņemšana (Vercel paste)
+    extension/                    # CORS, cookie, sesija, Gmail OAuth/connection, i18n
     legal/documents.ts            # Privacy / terms / cookies teksti
     lists.ts                      # Sarakstu/uzdevumu tipi, krāsas, location PATH, `workProgressById` / `listProgress`
     task-checklists.ts            # Čeklistu tipi, progress, incomplete helper
@@ -449,13 +458,14 @@ app/
     team.ts                       # Biedru, lomu un WorkTeam tipi; canLeaveTeam, canInvite…
     team-store.tsx                # Komandas, biedri un lomas no Postgres
     team/actions.ts               # invite / accept / reject / resend / remove / leave
-    team/send-invite-email.ts     # Supabase invite + OTP fallback
+    team/send-invite-email.ts     # Resend HTML invite; bez Resend — Supabase invite / OTP fallback
     team-permissions.ts           # Nav + actions pieeju modelis
     last-online.ts                # min / h / d / m
     task-statuses.tsx             # Statusu katalogs + saraksta merge
-    notifications.ts              # Paziņojumu tipi un appendNotifications
+    notifications.ts              # Paziņojumu tipi, appendNotifications, e-pasta trigger
     notification-preferences.ts   # Lietotāja preference kinds un defaults
     task-notifications.ts         # Kam sūtīt paziņojumus par uzdevumu notikumiem
+    email/                        # HTML šabloni, build HTML, Resend sūtīšana (auth + paziņojumi)
     use-notifications.ts          # Paziņojumi no Postgres
     team-todo.ts                  # Todo tipi
     db/work-data.ts               # Komandas darba CRUD; čaulas fetch; PGRST303 retry; RPC reorder/assignees
@@ -471,7 +481,7 @@ app/
     i18n/                          # language, server overlay + table klientam
     site-admin/                   # Admin CRUD repository, tipi
     supabase/                     # env, browser/server/admin klienti, session refresh
-    auth/                         # actions (login/signup/reset + Resend vārti + getCurrentUser paroles maiņai), MFA gate, AuthSessionProvider, getCurrentUser, OAuth, remember-session
+    auth/                         # actions (generateLink + Resend HTML), email-password, auth-confirm-link, MFA, OAuth, remember-session
     integrations/                 # Google/Microsoft OAuth (site_integrations)
     users/ensure-profile.ts       # public.users rinda pēc OAuth
     users/display-name.ts         # vārda sadalījums/apvienošana (first + last → name)
@@ -481,6 +491,8 @@ app/
     users/admin-audit.ts          # admin_audit_events
     users/use-is-admin.tsx        # is_admin RPC + profils klientā
     security/                     # rate-limit, secret-box, file-bytes, log-error, hash-token
+app/auth/gmail-plugin/            # start / callback / done — Gmail spraudņa OAuth
+app/api/extension/                # config, session, login, refresh, gmail-access, browse, attach-email
 app/auth/callback/route.ts        # E-pasta magic link / PKCE code → session
 app/auth/google-oauth/callback/route.ts # Google login + admin konfigurācija
 app/auth/microsoft-oauth/callback/route.ts # Microsoft login + admin konfigurācija
@@ -488,7 +500,7 @@ app/auth/google-drive/callback/route.ts # Drive OAuth code → team refresh toke
 app/auth/onedrive/callback/route.ts # OneDrive OAuth code → team refresh token
 proxy.ts                          # Sesijas refresh + ielogota novirzīšana no / un /login
 scripts/                          # audit-check.mjs, apply-migrations.mjs, test-supabase.mjs
-supabase/migrations/              # 001–076: shēma, admin, work data, Drive, drošība, ielādes ātrums
+supabase/migrations/              # 001–079: shēma, admin, work data, Drive, drošība, ielādes ātrums, e-pasta šabloni, Gmail spraudnis
 .github/workflows/                # secret-scan.yml, security-audit.yml, security-smoke.yml
 .gitleaks.toml                    # default rules + i18n translation key allowlist
 .cursor/rules/                    # README bump, commits
@@ -528,10 +540,10 @@ Kopē `.env.example` uz `.env.local`. URL ir tikai projekta hosts (`https://PROJ
 |-----------|----------|
 | `NEXT_PUBLIC_SUPABASE_URL` | Settings → API → Project URL |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Settings → API → `anon` `public` |
-| `SUPABASE_SERVICE_ROLE_KEY` | Settings → API → `service_role` (secret) — **obligāts** jaunu e-pastu uzaicinājumiem; reģistrētam lietotājam pietiek ar in-app paziņojumu. Šo atslēgu nedrīkst commitot; rotācija nozīmē arī `INTEGRATION_SECRETS_KEY` pārskatīšanu, ja noslēpumi ir šifrēti ar atvasinātu atslēgu. |
-| `INTEGRATION_SECRETS_KEY` | Aplikācijas slāņa AES atslēga (`enc:v1:`) Drive/OneDrive/OAuth/Resend noslēpumiem. Ģenerē ar `openssl rand -base64 32`. Bez tās atslēga tiek atvasināta no service role (tikai izstrādei). |
+| `SUPABASE_SERVICE_ROLE_KEY` | Settings → API → `service_role` (secret) — `eyJ…` JWT vai jaunais `sb_secret_…`. Vajadzīgs, lai login lapa nolasītu `site_integrations` (Google/Resend pogas). **Ne** `anon` / `sb_publishable_`. Neliec pēdiņas. Rotācija nozīmē arī `INTEGRATION_SECRETS_KEY` pārskatīšanu, ja noslēpumi ir šifrēti ar atvasinātu atslēgu. |
+| `INTEGRATION_SECRETS_KEY` | Aplikācijas slāņa AES atslēga (`enc:v1:`) Drive/OneDrive/OAuth/Resend noslēpumiem. Ģenerē ar `openssl rand -base64 32`. Produkcijā **tā pati** vērtība kā lokāli, vai atstāj tukšu (atšifrēšana mēģina arī `SUPABASE_SERVICE_ROLE_KEY`). Jauna nejauša atslēga Vercel slēpj e-pasta login, kamēr noslēpumi paliek šifrēti ar veco. |
 | `CHROME_EXTENSION_IDS` | Production CORS allowlist paplašinājumam (komatu atdalīti ID). Bez saraksta production `chrome-extension://` izcelsmes tiek noraidītas. |
-| `NEXT_PUBLIC_SITE_URL` | Publiskais origin (`https://domens`, bez `/` beigās). Canonical, sitemap, robots, HSTS, auth saites. |
+| `NEXT_PUBLIC_SITE_URL` | Publiskais origin. Local: `http://localhost:3120`. Production: viens kanoniskais hosts (`https://tasqin.com` vai `https://www.tasqin.com`, bez `/` beigās). Canonical, sitemap, robots, HSTS, auth saites. Spraudnis zina abus (`KNOWN_SITE_ORIGINS`). |
 | `UMAMI_SCRIPT_INTEGRITY` | Neobligāts SRI (`sha384-...`) Umami skriptam. |
 | `GOOGLE_SITE_VERIFICATION` | Google Search Console HTML tag `content` (meta `google-site-verification`; drīkst ielīmēt arī visu tagu). |
 | `SUPABASE_DB_PASSWORD` | Settings → Database → Database password |
@@ -545,6 +557,28 @@ npm run db:migrate   # pending faili no supabase/migrations/
 
 Lietotne lasa sarakstus, uzdevumus, komandas, todo, paziņojumus un failus no Postgres (migrācija `005_work_data.sql` un tālākās). RLS: `is_team_member(team_id)` / `is_team_owner(team_id)`; saraksta darbībām papildus `work_list_has_access(list_id, min_level)` (`022`). Anon piekļuve liegta. Komandas biedri ar `team_members.user_id = auth.uid()` redz tos pašus datus, ja saraksts nav privāts vai viņiem ir viewer/lomas rinda. `public.users` paliek konta profils + `is_admin`; komandas loma ir `team_members.role` / `role_id` → `team_roles`. Migrācijas `001`–`004`: `is_admin`, pirmais reģistrētais ir admin, `current_user_is_admin()`, noņemts liekais `users.role` / `manager_id` un vecās neizmantotās project/task tabulas. `db:test` apstiprina API projektu, bet Postgres pieprasa pareizu datubāzes paroli (ne `anon` atslēgu).
 
+## Vercel
+
+Login/signup Google un e-pasta formas **pazūd**, ja serveris nevar nolasīt `site_integrations` ar service role (`isSupabaseAdminConfigured` + `createAdminClient`). Lokāli ieslēgti slēdži nepalīdz, ja Vercel env ir nepareizs.
+
+Settings → Environment Variables → **Production** (un Preview, ja lieto preview URL). Vērtības **bez** `"` / `'`. `NEXT_PUBLIC_*` ieliek pirms būves vai pēc tam **Redeploy**.
+
+| Name | Obligāts | Piezīme |
+|---|---|---|
+| `NEXT_PUBLIC_SITE_URL` | jā | `https://tasqin.com` (vai kanoniskais www), bez `/` |
+| `NEXT_PUBLIC_SUPABASE_URL` | jā | `https://PROJECT.supabase.co`, ne `/rest/v1/` |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | jā | API → `anon` `public` |
+| `SUPABASE_SERVICE_ROLE_KEY` | jā | API → `service_role` (`eyJ…` vai `sb_secret_…`). Ja ielikts `anon`, Google/Resend pogas nav. |
+| `INTEGRATION_SECRETS_KEY` | ieteicams | Tā pati kā `.env.local`, vai atstāj tukšu. **Neģenerē jaunu** Vercel, ja DB jau ir `enc:v1:` rindas. |
+| `GOOGLE_SITE_VERIFICATION` | GSC | HTML tag `content` |
+| `CHROME_EXTENSION_IDS` | Gmail spraudnis | komatu atdalīti extension ID |
+
+Neliec Vercel: `RESEND_*`, `SENTRY_DSN`, `UMAMI_WEBSITE_ID`, Google/Microsoft Client ID - tos iestati **Admin → Integrācijas** pēc pirmā deploy, tad **Aktīva**. `PORT`, `DATABASE_URL`, `SUPABASE_DB_PASSWORD` ir tikai lokālajām migrācijām.
+
+Pēc env saglabāšanas: Deployments → **Redeploy**. Vercel Function logs: `Supabase admin env` (trūkst service role) vai `decryptSecret failed` (nepareiza `INTEGRATION_SECRETS_KEY`). Google Cloud redirect URI jābūt arī `https://tasqin.com/auth/google-oauth/callback`.
+
+`readEnv()` (`app/lib/env/read-env.ts`) noņem wrapping quotes. `decryptSecret` mēģina `INTEGRATION_SECRETS_KEY`, tad `SUPABASE_SERVICE_ROLE_KEY`, tad dev fallback.
+
 ## Google OAuth
 
 Admin **Integrācijas** (`/admin/integrations`): Client ID/Secret glabājas `site_integrations` (`google_oauth`); OAuth pārbaude un login/signup iet caur `/auth/google-oauth/callback`; **Aktīva** slēdzis vienmēr redzams (pirms konfigurācijas izslēgts un bloķēts; pēc — ieslēdz/izslēdz login bez credentials dzēšanas). Fallback env: `GOOGLE_OAUTH_CLIENT_ID`, `GOOGLE_OAUTH_CLIENT_SECRET`.
@@ -552,11 +586,14 @@ Admin **Integrācijas** (`/admin/integrations`): Client ID/Secret glabājas `sit
 Login/signup **neizmanto** Supabase Authentication → Providers → Google. Pēc Google profila (`openid email profile`) aplikācija ar service role izveido vai atrod Supabase Auth lietotāju un iestata sesiju (`generateLink` + `verifyOtp`).
 
 1. Google Cloud → APIs & Services → Credentials → **OAuth 2.0 Client ID** (Web application)
-2. Authorized JavaScript origins: `http://localhost:3120`
-3. Authorized redirect URI: `http://localhost:3120/auth/google-oauth/callback`
+2. Authorized JavaScript origins: `http://localhost:3120`, `https://tasqin.com` un `https://www.tasqin.com`
+3. Authorized redirect URI (visi trīs, gan local, gan production):
+   - `/auth/google-oauth/callback`
+   - `/auth/google-drive/callback`
+   - `/auth/gmail-plugin/callback`
 4. Admin → Integrācijas → ielīmē Client ID/Secret → **Konfigurēt ar Google** → ieslēdz **Aktīva**
 
-Sesijas sīkdatnes ir **obligātās** (ePrivacy izņēmums autentifikācijai). **Atcerēties mani** pēc noklusējuma ir **izslēgts** (sesija līdz pārlūka aizvēršanai); ar ķeksīti sesija ilgst **30 dienas**. Production HTTPS uzliek `Secure`. Sīkdatnes paliek lasāmas klientam (`httpOnly: false`), jo pārlūka Supabase klients lasa `document.cookie` — pilns HttpOnly prasa pārcelt visus DB vaicājumus uz serveri. Ielogotam lietotājam `/`, `/login` un `/signup` ved uz `/dashboard`. `/auth/callback` paliek e-pasta magic link / PKCE plūsmām (uzaicinājumi u.tml.), nevis Google login.
+Sesijas sīkdatnes ir **obligātās** (ePrivacy izņēmums autentifikācijai). **Atcerēties mani** ir tikai loginā un pēc noklusējuma **izslēgts** (sesija līdz pārlūka aizvēršanai); ar ķeksīti sesija ilgst **30 dienas**. Production HTTPS uzliek `Secure`. Sīkdatnes paliek lasāmas klientam (`httpOnly: false`), jo pārlūka Supabase klients lasa `document.cookie` — pilns HttpOnly prasa pārcelt visus DB vaicājumus uz serveri. Ielogotam lietotājam `/`, `/login` un `/signup` ved uz `/dashboard`. Signup un paroles atjaunošanas saites apstiprina `/auth/confirm`. `/auth/callback` paliek PKCE / magic link plūsmām, nevis Google login.
 
 **Dublējumi un atslēgu rotācija:** Supabase Dashboard ieslēdz PITR (Point-in-Time Recovery) uz maksas plāniem. `service_role` un `INTEGRATION_SECRETS_KEY` rotē tikai pēc plāna: vispirms jauna atslēga env, tad reconnect Drive/OneDrive un atkārtota integrāciju saglabāšana, lai rindiņas tiek pāršifrētas. Vecu `pg_dump` ar plaintext tokeniem pēc H3 vairs nepietiek, ja atslēga paliek slepena.
 
@@ -570,9 +607,13 @@ Admin **Integrācijas** kartiņas (`resend`, `umami`, `sentry`) - Saglabāt cred
 
 | Integrācija | Lauki | Kad aktīva |
 |---|---|---|
-| **Resend** | From e-pasts + API Key | `sendResendEmail()`; e-pasta login/signup/forgot (`isEmailPasswordAuthEnabled`); From jābūt verificētam Resend domēnam (ne `@gmail.com`); fallback env `RESEND_FROM_EMAIL`, `RESEND_API_KEY` |
+| **Resend** | From e-pasts + API Key | `sendResendEmail()`; e-pasta login/signup/forgot (`isEmailPasswordAuthEnabled`); HTML šabloni `/admin/email-templates`; From jābūt verificētam Resend domēnam (ne `@gmail.com`); fallback env `RESEND_FROM_EMAIL`, `RESEND_API_KEY` |
 | **Umami** | Website ID + Script URL (noklusējums `https://cloud.umami.is/script.js`) | Root `layout.tsx`: `next/script` `beforeInteractive` HTML `<head>` (`data-auto-track="false"`); `UmamiAnalytics` sūta pageview pēc **analytics** piekrišanas; env `UMAMI_WEBSITE_ID`, `UMAMI_SCRIPT_URL` |
 | **Sentry** | Environment (opcionāli) + DSN | Root `layout.tsx` `SentryInit` (`@sentry/browser`, **tikai klienta** kļūdas); CSP `connect-src` `*.sentry.io`, `*.ingest.sentry.io`, `*.ingest.de.sentry.io`, `*.ingest.us.sentry.io`; env `SENTRY_ENVIRONMENT`, `SENTRY_DSN` |
+
+### E-pasta šabloni
+
+Admin **Sistēma → E-pasta šabloni** (`/admin/email-templates`). Četri `kind`: `signup`, `password_reset`, `invite`, `notification`. Katrā valodā (`lv` / `en` / `ru`) rediģē tematu, tekstu un pogas tekstu; placeholderi `{name}`, `{system}`, `{team}`, `{inviter}`, `{title}`, `{message}`, `{link}`. HTML ģenerē `build-email-html.ts` (tabulas layout + CTA). Seed un saglabāšana: `site_translations` (`email.template.{kind}.{subject|body|button}`); `app/lib/email/templates.ts` (tipi/fallback, client-safe), `templates-server.ts` (DB). Ja Resend nav aktīvs, forma rāda brīdinājumu ar saiti uz Integrācijām; sūtīšana notiek tikai ar aktīvu Resend.
 
 Sentry nav HTML/DNS verifikācija kā Search Console. Pārbaude ir pirmais events sentry.io:
 
@@ -593,7 +634,7 @@ Kad `module_onedrive` un `module_file_upload` ir ieslēgti, komandas `...` rāda
 
 ## Chrome extension (Gmail)
 
-Mapē `extensions/gmail` — unpacked Chrome MV3. Gmailā inline logo poga → modālis → saraksts / mape / uzdevums → apakšuzdevums. E-pasts un atzīmētie pielikumi caur **Gmail API** (`gmail.readonly`, OAuth Client ID opcijās); limīts 25 MB (`GOOGLE_DRIVE_UPLOAD_MAX_BYTES`). Pielikumi uz serveri kā JSON base64 (`POST /api/extension/attach-email`); `proxy` neapstrādā `/api/extension/`. UI valoda no sesijas (`languageCode` + `strings`). Overlay ar progresu. Lielākiem failiem bez DB `content` vajag komandas Google Drive. API: `GET /api/extension/session`, `GET /api/extension/browse`, `GET /api/extension/subtasks`, `POST /api/extension/attach-email`. Sk. `extensions/gmail/README.md`. Failu tipi `txt` / `html`: `072`; `zip` / `rar`: `075`.
+Mapē `extensions/gmail` — unpacked Chrome MV3. Popup: avatars, vārds/uzvārds, e-pasts, komandu pārslēgšana; bez URL/Client ID ievades. Zinātie origini (`KNOWN_SITE_ORIGINS`): `https://tasqin.com`, `https://www.tasqin.com`, `http://localhost:3120` (priekšroka originam, kurā ir sesijas cookie). Custom login (`POST /api/extension/login`) vai Google; publisks `GET /api/extension/config` (logo, valoda, vai e-pasts/Google ieslēgts). Ja Gmail nav savienots, **Savienot Gmail** (`/auth/gmail-plugin/start`) saglabā tokenus `user_gmail_connections` (service role, RLS deny) un atjaunina profilu. Komandai bez Google Drive — sarkans brīdinājums, spraudnis nestrādā. Gmailā inline logo poga → modālis → saraksts / mape / uzdevums → apakšuzdevums. E-pasts un pielikumi caur **Gmail API** (`gmail.readonly`, piekļuves tokens no `GET /api/extension/gmail-access`); limīts 25 MB. Sesijas access tokenu spraudnis atjauno ar `POST /api/extension/refresh` (tāpēc vairs “neizmet” pēc ~1 h). `proxy` neapstrādā `/api/extension/`. UI valoda no sesijas. Sk. `extensions/gmail/README.md`.
 
 ## Dati
 
@@ -632,6 +673,7 @@ RLS (`005_work_data.sql`): `authenticated` drīkst SELECT/INSERT/UPDATE/DELETE t
 | `list_files` | Saraksta faili kokā; `content` un/vai `google_drive_file_id` (`070`); `has_content` (`073`) |
 | `team_google_drive_integrations` | Komandas Drive OAuth tokeni, mapes ceļš, `store_on_server` (`064`, `070`); RLS deny authenticated |
 | `team_onedrive_integrations` | Komandas OneDrive OAuth tokeni un mapes ceļš (`066`); RLS deny authenticated |
+| `user_gmail_connections` | Lietotāja Gmail OAuth tokeni spraudnim (`078`); RLS deny authenticated (lasa service role) |
 | `app_notifications` | In-app paziņojumi (`assigned`, `unassigned`, `comment`, `file`, `status_changed`, `task_updated`, `due`, `team_invite`, `team_invite_rejected`); `recipient_id` mērķa biedrs; uzaicinājumam `target_user_id`, `invitation_id` (`054`) |
 | `user_notification_preferences` | Lietotāja in-app paziņojumu slēdži (`user_id`, `kind`, `enabled`; trūkstoša rinda = ieslēgts) (`053`) |
 | `team_todos` | Komandas kanban (`TeamTodoBoard`), nav Sākuma lapa |

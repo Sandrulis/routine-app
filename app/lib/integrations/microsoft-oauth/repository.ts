@@ -1,3 +1,4 @@
+import { readEnv } from "@/app/lib/env/read-env";
 import { logError } from "@/app/lib/security/log-error";
 import {
   decryptSecret,
@@ -47,8 +48,8 @@ type IntegrationRow = {
 };
 
 function readEnvCredentials() {
-  const clientId = process.env.ONEDRIVE_CLIENT_ID?.trim() ?? "";
-  const clientSecret = process.env.ONEDRIVE_CLIENT_SECRET?.trim() ?? "";
+  const clientId = readEnv("ONEDRIVE_CLIENT_ID");
+  const clientSecret = readEnv("ONEDRIVE_CLIENT_SECRET");
   if (!clientId || !clientSecret) return null;
   if (/your_|placeholder|changeme|example/i.test(clientId + clientSecret)) {
     return null;
@@ -57,7 +58,7 @@ function readEnvCredentials() {
 }
 
 function resolveSiteOrigin() {
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL?.trim();
+  const siteUrl = readEnv("NEXT_PUBLIC_SITE_URL");
   if (siteUrl) {
     try {
       return new URL(siteUrl).origin;
@@ -78,7 +79,11 @@ async function fetchIntegrationRow(): Promise<IntegrationRow | null> {
     )
     .eq("integration_key", SITE_INTEGRATION_KEYS.microsoftOAuth)
     .maybeSingle();
-  if (error || !data) return null;
+  if (error) {
+    logError("fetchMicrosoftOAuthIntegrationRow failed", error.message);
+    return null;
+  }
+  if (!data) return null;
   const row = data as IntegrationRow;
   if (row.client_secret && !isEncryptedSecret(row.client_secret)) {
     void admin

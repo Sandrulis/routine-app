@@ -4,6 +4,7 @@ export const FRONTEND_MODULE_KEYS = {
   privateList: "module_private_list",
   fileUpload: "module_file_upload",
   googleDrive: "module_google_drive",
+  gmailPlugin: "module_gmail_plugin",
   onedrive: "module_onedrive",
   checklist: "module_checklist",
   automations: "module_automations",
@@ -50,6 +51,9 @@ export function knownFrontendModuleLabel(
   }
   if (moduleKey === FRONTEND_MODULE_KEYS.googleDrive) {
     return { key: "nav.google_drive", fallback: "Google Drive Integrācija" };
+  }
+  if (moduleKey === FRONTEND_MODULE_KEYS.gmailPlugin) {
+    return { key: "nav.gmail_plugin", fallback: "Gmail spraudnis" };
   }
   if (moduleKey === FRONTEND_MODULE_KEYS.onedrive) {
     return { key: "nav.onedrive", fallback: "OneDrive Integrācija" };

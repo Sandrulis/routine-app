@@ -1,5 +1,12 @@
+import {
+  LOCAL_DEV_ORIGINS,
+  PRODUCTION_SITE_ORIGIN,
+} from "./known-site-origins";
+
+import { readEnv } from "../env/read-env";
+
 export function getPublicSiteUrl(): string {
-  const configured = process.env.NEXT_PUBLIC_SITE_URL?.trim();
+  const configured = readEnv("NEXT_PUBLIC_SITE_URL");
   if (configured) {
     try {
       return new URL(configured).origin;
@@ -7,12 +14,13 @@ export function getPublicSiteUrl(): string {
       return configured.replace(/\/$/, "");
     }
   }
-  return "http://localhost:3120";
+  if (process.env.NODE_ENV === "production") return PRODUCTION_SITE_ORIGIN;
+  return LOCAL_DEV_ORIGINS[0];
 }
 
 /** HTML tag `content` value for Google Search Console. Accepts a pasted meta tag. */
 export function getGoogleSiteVerification(): string | undefined {
-  const value = process.env.GOOGLE_SITE_VERIFICATION?.trim();
+  const value = readEnv("GOOGLE_SITE_VERIFICATION");
   if (!value) return undefined;
   const fromTag = value.match(/content\s*=\s*["']([^"']+)["']/i);
   if (fromTag?.[1]) return fromTag[1].trim();

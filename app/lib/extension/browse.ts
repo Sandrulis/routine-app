@@ -65,12 +65,18 @@ function isClosedStatus(status: string | null | undefined, closed: Set<string>) 
 
 export async function listExtensionLists(
   supabase: SupabaseClient,
+  teamId?: string | null,
 ): Promise<ExtensionBrowseList[]> {
-  const { data: lists, error } = await supabase
+  let query = supabase
     .from("work_lists")
     .select("id, name, team_id")
     .order("sort_order", { ascending: true })
     .order("name", { ascending: true });
+  const trimmedTeam = teamId?.trim() || "";
+  if (trimmedTeam) {
+    query = query.eq("team_id", trimmedTeam);
+  }
+  const { data: lists, error } = await query;
   if (error || !lists?.length) return [];
 
   const teamIds = [...new Set(lists.map((row) => row.team_id).filter(Boolean))];

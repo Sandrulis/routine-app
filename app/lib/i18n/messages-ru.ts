@@ -13,6 +13,8 @@ export const ru: Record<string, string> = {
   "landing.hero.stat_together_title": "Люди у задач",
   "landing.hero.stat_together":
     "Ответственный, срок и файл остаются при задаче.",
+  "landing.hero.stat_together_no_files":
+    "Ответственный и срок остаются при задаче.",
   "landing.preview.team": "Studio",
   "landing.preview.list_projects": "Проекты",
   "landing.preview.list_clients": "Клиенты",
@@ -25,18 +27,57 @@ export const ru: Record<string, string> = {
   "landing.preview.subtask_design": "Дизайн-система",
   "landing.preview.subtask_hero": "Hero-блок",
   "landing.preview.subtask_copy": "Черновик текстов",
+  "landing.preview.file_brief": "Бриф.pdf",
+  "landing.preview.checklist_wireframes": "Макеты",
+  "landing.preview.checklist_copy": "Черновик текстов",
+  "landing.preview.checklist_review": "Отзывы",
   "landing.features.title": "Почему команды остаются в Routine",
   "landing.features.subtitle":
     "Меньше инструментов, яснее ответственность и работа, которую можно закончить, а не только обсуждать.",
   "landing.features.lists.title": "Списки под ваш способ работы",
   "landing.features.lists.description":
     "Проекты, клиенты, папки и файлы в одном дереве. У каждой задачи есть статус, срок и ответственный — не ещё одна таблица.",
+  "landing.features.lists.description_no_files":
+    "Проекты, клиенты и папки в одном дереве. У каждой задачи есть статус, срок и ответственный — не ещё одна таблица.",
   "landing.features.team.title": "Вся команда видит одно и то же",
   "landing.features.team.description":
     "Приглашайте коллег, назначайте работу и видите, кто в сети. Больше не нужно искать в чате файл или обещание.",
+  "landing.features.team.description_no_files":
+    "Приглашайте коллег, назначайте работу и видите, кто в сети. Больше не нужно искать в чате обещание.",
   "landing.features.dashboard.title": "Главная — это доска на день",
   "landing.features.dashboard.description":
     "Откройте Routine и увидите, что нужно сделать, что в работе и что готово. Перетаскивайте карточки и держите фокус на том, что должно быть закончено сегодня.",
+  "landing.features.private_list.title": "Приватные списки",
+  "landing.features.private_list.description":
+    "Скройте список от остальной команды. Его видите только вы и выбранные участники или роли.",
+  "landing.features.templates.title": "Шаблоны",
+  "landing.features.templates.description":
+    "Сохраните повторяющуюся работу как шаблон и создайте новую папку с готовой структурой.",
+  "landing.features.automations.title": "Автоматизации",
+  "landing.features.automations.description":
+    "Когда статус меняется, назначьте ответственного или закройте работу. Меньше ручных переносов.",
+  "landing.features.files.title": "Файлы при задаче",
+  "landing.features.files.description":
+    "Прикрепляйте документы прямо к работе. Не нужно искать вложение в почте или общей папке.",
+  "landing.features.checklist.title": "Чек-листы",
+  "landing.features.checklist.description":
+    "Разбейте задачу на пункты, которые можно отмечать, не теряя контекст и срок.",
+  "landing.features.calendar.title": "Интеграция с календарём",
+  "landing.features.calendar.description_both":
+    "Сроки задач появляются в Apple Calendar и Google Calendar, чтобы день оставался в одном месте.",
+  "landing.features.calendar.description_apple":
+    "Сроки задач появляются в Apple Calendar, чтобы день оставался в одном месте.",
+  "landing.features.calendar.description_google":
+    "Сроки задач появляются в Google Calendar, чтобы день оставался в одном месте.",
+  "landing.features.google_drive.title": "Google Drive",
+  "landing.features.google_drive.description":
+    "Храните файлы в Google Drive и открывайте их из списка, не выходя из Routine.",
+  "landing.features.onedrive.title": "OneDrive",
+  "landing.features.onedrive.description":
+    "Храните файлы в OneDrive и открывайте их из списка, не выходя из Routine.",
+  "landing.features.gmail.title": "Плагин Gmail",
+  "landing.features.gmail.description":
+    "Из Gmail добавляйте письмо и вложения к задаче, чтобы переписка оставалась при работе.",
   "landing.how.title": "От регистрации до первой готовой задачи",
   "landing.how.subtitle":
     "Три шага. Команда может начать работать в тот же день.",
@@ -58,7 +99,7 @@ export const ru: Record<string, string> = {
   "auth.login.no_account": "Нет аккаунта?",
   "auth.login.success": "Вы успешно вошли.",
   "auth.email.unavailable":
-    "Вход и регистрация по e-mail доступны, когда интеграция Resend настроена и включена.",
+    "Ни один способ входа не включён. В Admin должна быть активна интеграция Resend (e-mail) или Google / Microsoft OAuth.",
   "auth.signup.title": "Регистрация",
   "auth.signup.subtitle": "Создайте аккаунт и начните работу с командой.",
   "auth.signup.has_account": "Уже есть аккаунт?",
@@ -70,6 +111,10 @@ export const ru: Record<string, string> = {
     "Чтобы зарегистрироваться, примите условия.",
   "auth.signup.success": "Аккаунт создан. Добро пожаловать в Routine.",
   "auth.signup.check_email": "Проверьте почту, чтобы подтвердить аккаунт.",
+  "auth.confirm.loading": "Завершаем подтверждение…",
+  "auth.confirm.failed_title": "Не удалось подтвердить",
+  "auth.confirm.failed":
+    "Срок ссылки истёк или она недействительна. Запросите новое письмо и откройте его в том же браузере.",
   "auth.forgot.title": "Забыли пароль",
   "auth.forgot.subtitle":
     "Введите адрес электронной почты, и мы отправим ссылку для сброса пароля.",
@@ -267,6 +312,7 @@ export const ru: Record<string, string> = {
   "nav.team": "Команда",
   "nav.templates": "Шаблоны",
   "nav.google_drive": "Интеграция Google Drive",
+  "nav.gmail_plugin": "Плагин Gmail",
   "nav.onedrive": "Интеграция OneDrive",
   "nav.settings": "Настройки",
   "nav.modules": "Модули",
@@ -290,6 +336,24 @@ export const ru: Record<string, string> = {
   "admin.nav.translations": "Переводы",
   "admin.nav.payment_plans": "Тарифные планы",
   "admin.nav.integrations": "Интеграции",
+  "admin.nav.email_templates": "Шаблоны писем",
+  "admin.email_templates.section": "Шаблоны писем",
+  "admin.email_templates.section_hint":
+    "HTML-письма на каждом языке системы. Параметры: {name}, {system}, {team}, {inviter}, {title}, {message}; для кнопки {link}.",
+  "admin.email_templates.kind.signup": "Подтверждение регистрации",
+  "admin.email_templates.kind.password_reset": "Забыли пароль",
+  "admin.email_templates.kind.invite": "Приглашение в команду",
+  "admin.email_templates.kind.notification": "Системное уведомление",
+  "admin.email_templates.language": "Язык",
+  "admin.email_templates.inactive": "Неактивен",
+  "admin.email_templates.field.subject": "Тема",
+  "admin.email_templates.field.body": "Текст",
+  "admin.email_templates.field.button": "Текст кнопки",
+  "admin.email_templates.save": "Сохранить шаблоны",
+  "admin.email_templates.saved": "Шаблоны писем сохранены.",
+  "admin.email_templates.preview": "Предпросмотр",
+  "admin.email_templates.resend_disabled":
+    "Resend выключен, поэтому письма не отправляются. Включите его в разделе Интеграции.",
   "integrations.enabled_label": "Активна",
   "integrations.enabled.requires_configured":
     "Сначала завершите настройку, чтобы включить интеграцию.",
@@ -312,7 +376,7 @@ export const ru: Record<string, string> = {
     "Интеграция будет отключена, и пользователи больше не увидят вход через Google.",
   "integrations.google_oauth.redirects.title": "Redirect URI",
   "integrations.google_oauth.redirects.hint":
-    "Первый URI — для входа/регистрации, второй — для подключения Google Drive команды. В Google Cloud также включите Drive API.",
+    "Первый URI — для входа/регистрации, второй — для Google Drive команды, третий — для плагина Gmail. В Google Cloud включите Drive API и Gmail API.",
   "integrations.google_oauth.aria.enabled": "Интеграция Google OAuth включена",
   "integrations.google_oauth.feedback.configured": "Интеграция Google OAuth настроена.",
   "integrations.google_oauth.feedback.credentials_saved": "Данные Google OAuth сохранены.",
@@ -1512,6 +1576,11 @@ export const ru: Record<string, string> = {
   "errors.auth_signup_failed": "Не удалось создать аккаунт.",
   "errors.auth_email_disabled":
     "Вход по e-mail недоступен, пока интеграция Resend не настроена и не включена.",
+  "errors.auth_email_send_failed": "Не удалось отправить письмо с подтверждением.",
+  "errors.auth_password_reset_failed":
+    "Не удалось отправить письмо для сброса пароля.",
+  "errors.email_templates_unknown": "Неизвестный шаблон письма.",
+  "errors.email_link_missing": "Ссылка в письме не найдена.",
   "errors.mfa_invalid": "Не удалось настроить MFA.",
   "errors.mfa_code_invalid": "Неверный код. Попробуйте ещё раз.",
   "errors.file_type_mismatch": "Содержимое файла не соответствует типу.",
@@ -1540,6 +1609,13 @@ export const ru: Record<string, string> = {
   "errors.extension_auth_required":
     "Войдите в Routine (в том же браузере) и попробуйте снова.",
   "errors.extension_unknown": "Неизвестная ошибка.",
+  "errors.extension_gmail_not_connected":
+    "Сначала подключите Gmail в плагине. Подключение сохранится и в Routine.",
+  "errors.extension_plugin_disabled": "Плагин Gmail в системе выключен.",
+  "errors.extension_team_drive_missing":
+    "У этой команды не подключён Google Drive. Плагин не будет работать.",
+  "errors.extension_login_mfa":
+    "У этого аккаунта включена MFA. Завершите вход на странице Routine и попробуйте снова.",
   "extension.gmail.title": "Добавить к подзадаче",
   "extension.gmail.back": "Назад",
   "extension.gmail.waiting": "Ожидание…",
@@ -1593,8 +1669,25 @@ export const ru: Record<string, string> = {
   "extension.gmail.options.connecting": "Открывается окно разрешения Google…",
   "extension.gmail.options.connected": "Gmail подключён.",
   "extension.gmail.options.connect_failed":
-    "Не удалось подключить Gmail. Проверьте Client ID и redirect URI.",
+    "Не удалось подключить Gmail. Проверьте Google OAuth и Gmail API.",
   "extension.gmail.options.missing_client_id": "Отсутствует Client ID.",
+  "extension.gmail.team.label": "Команда",
+  "extension.gmail.team.drive_missing":
+    "У этой команды не подключён Google Drive. Плагин не будет работать.",
+  "extension.gmail.connect_gmail": "Подключить Gmail",
+  "extension.gmail.connect_gmail_hint":
+    "Аккаунту с паролем нужно подключить Gmail здесь. Подключение сохранится и в Routine.",
+  "extension.gmail.gmail_connected": "Gmail подключён: {email}",
+  "extension.gmail.plugin_disabled":
+    "Плагин Gmail выключен. Включите его в Администрирование → Модули.",
+  "extension.gmail.login_failed": "Не удалось войти.",
+  "extension.gmail.checking_app": "Поиск Routine…",
+  "extension.gmail.done.title": "Gmail подключён",
+  "extension.gmail.done.body":
+    "Gmail подключён к Routine. Можно закрыть это окно и вернуться в плагин.",
+  "extension.gmail.done.error_title": "Не удалось подключить Gmail",
+  "extension.gmail.done.error_body":
+    "Попробуйте снова из плагина Gmail. Убедитесь, что Google OAuth и Gmail API включены.",
   "errors.auth_google_disabled":
     "Вход через Google не включён. Включите Google OAuth в Администрирование → Интеграции.",
   "errors.auth_google_failed": "Не удалось войти через Google.",

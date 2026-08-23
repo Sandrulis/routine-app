@@ -9,13 +9,22 @@ import {
   siteHeadIconUrl,
 } from "@/app/lib/site-admin/branding";
 import { getSiteSettings } from "@/app/lib/site-admin/repository";
-import { FRONTEND_MODULE_KEYS } from "@/app/lib/frontend-modules/keys";
 import { getRequestLanguageCode } from "@/app/lib/i18n/server";
 import { DEFAULT_LANGUAGE } from "@/app/lib/i18n/language";
 import {
   getExtensionStrings,
   resolveExtensionLanguageCode,
 } from "@/app/lib/extension/i18n";
+import {
+  loadExtensionSessionFlags,
+  loadExtensionUserSummary,
+  loadGmailConnectionSummary,
+  listExtensionTeams,
+} from "@/app/lib/extension/session-payload";
+import { GMAIL_PLUGIN_START_PATH } from "@/app/lib/extension/gmail-oauth";
+import { isEmailPasswordAuthEnabled } from "@/app/lib/integrations/resend/client";
+import { isGoogleSignInEnabled } from "@/app/lib/integrations/google-oauth/repository";
+import { FRONTEND_MODULE_KEYS } from "@/app/lib/frontend-modules/keys";
 
 export const runtime = "nodejs";
 
@@ -23,17 +32,7 @@ export function OPTIONS(request: Request) {
   return extensionOptionsResponse(request);
 }
 
-async function isFileUploadEnabled(supabase: SupabaseClient) {
-  const { data, error } = await supabase
-    .from("site_frontend_modules")
-    .select("is_enabled")
-    .eq("module_key", FRONTEND_MODULE_KEYS.fileUpload)
-    .maybeSingle();
-  if (error || !data) return true;
-  return data.is_enabled === true;
-}
-
-export async function GET(request: Request) {
+async function branding() {
   const settings = await getSiteSettings();
   const logoUrl = siteHeadIconUrl(
     settings.logoUrl,
@@ -41,48 +40,70 @@ export async function GET(request: Request) {
     settings.systemName,
     settings.logoColor || DEFAULT_SITE_LOGO_COLOR,
   );
+  return { systemName: settings.systemName, logoUrl, loginPath: "/login" };
+}
 
-  const auth = await getExtensionAuth(request);
-  const fromProfile = await resolveExtensionLanguageCode(
-    auth?.supabase ?? null,
-    auth?.user.id ?? null,
-  );
+async function sessionLanguage(
+  supabase: SupabaseClient | null,
+  userId: string | null,
+) {
+  const fromProfile = await resolveExtensionLanguageCode(supabase, userId);
   let fromRequest = DEFAULT_LANGUAGE;
   try {
     fromRequest = await getRequestLanguageCode();
   } catch {
     // Route may lack a cookie session; profile / default still apply.
   }
-  const languageCode = fromProfile ?? fromRequest;
+  return fromProfile ?? fromRequest;
+}
+
+export async function GET(request: Request) {
+  const brand = await branding();
+  const auth = await getExtensionAuth(request);
+  const languageCode = await sessionLanguage(
+    auth?.supabase ?? null,
+    auth?.user.id ?? null,
+  );
   const strings = getExtensionStrings(languageCode);
+  const [emailPasswordEnabled, googleSignInEnabled] = await Promise.all([
+    isEmailPasswordAuthEnabled(),
+    isGoogleSignInEnabled(),
+  ]);
+
+  const publicFlags = {
+    ...brand,
+    languageCode,
+    strings,
+    emailPasswordEnabled,
+    googleSignInEnabled,
+    connectGmailPath: GMAIL_PLUGIN_START_PATH,
+  };
 
   if (!auth) {
     return extensionJson(request, {
       ok: false,
       authenticated: false,
-      systemName: settings.systemName,
-      logoUrl,
-      loginPath: "/login",
-      languageCode,
-      strings,
+      ...publicFlags,
       error: "errors.extension_auth_required",
     });
   }
 
-  const fileUploadEnabled = await isFileUploadEnabled(auth.supabase);
+  const [flags, user, teams, gmail] = await Promise.all([
+    loadExtensionSessionFlags(auth.supabase),
+    loadExtensionUserSummary(auth.supabase, auth.user),
+    listExtensionTeams(auth.supabase, auth.user.id),
+    loadGmailConnectionSummary(auth.user.id),
+  ]);
 
   return extensionJson(request, {
     ok: true,
     authenticated: true,
-    systemName: settings.systemName,
-    logoUrl,
-    loginPath: "/login",
-    languageCode,
-    strings,
-    user: {
-      id: auth.user.id,
-      email: auth.user.email ?? null,
-    },
-    fileUploadEnabled,
+    ...publicFlags,
+    user,
+    teams,
+    ...gmail,
+    ...flags,
+    fileUploadEnabled: flags.fileUploadEnabled,
+    moduleKey: FRONTEND_MODULE_KEYS.gmailPlugin,
   });
 }

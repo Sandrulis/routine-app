@@ -3,6 +3,7 @@
 import { randomBytes } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { getCurrentUser } from "@/app/lib/auth/get-current-user";
+import { mapUserDisplay } from "@/app/lib/auth/map-user-display";
 import { createNotificationId } from "@/app/lib/notifications";
 import { getClientIp } from "@/app/lib/security/client-ip";
 import { consumeRateLimit } from "@/app/lib/security/rate-limit";
@@ -409,23 +410,25 @@ export async function inviteTeamMemberAction(input: {
   }
 
   let emailSent = false;
-  if (isSupabaseAdminConfigured()) {
-    const emailResult = await sendTeamInviteEmail(email, token);
-    if (!emailResult.ok) {
-      if (!targetUserId) {
-        await rollbackPendingInvite(supabase, invitationId, memberId);
-        return emailResult;
-      }
-      console.warn(
-        "Invite email failed but user exists in-app, keeping invitation:",
-        emailResult.error,
-      );
-    } else {
-      emailSent = emailResult.emailSent;
+  const inviterName = mapUserDisplay(user).name || user.email || "";
+  const emailResult = await sendTeamInviteEmail({
+    email,
+    token,
+    teamName: teamRow.name,
+    inviterName,
+    recipientName: pendingName || undefined,
+  });
+  if (!emailResult.ok) {
+    if (!targetUserId) {
+      await rollbackPendingInvite(supabase, invitationId, memberId);
+      return emailResult;
     }
-  } else if (!targetUserId) {
-    await rollbackPendingInvite(supabase, invitationId, memberId);
-    return { ok: false, error: "errors.team_invite_email_not_configured" };
+    console.warn(
+      "Invite email failed but user exists in-app, keeping invitation:",
+      emailResult.error,
+    );
+  } else {
+    emailSent = emailResult.emailSent;
   }
 
   revalidatePath("/", "layout");
@@ -613,24 +616,27 @@ export async function resendTeamInvitationAction(
   }
 
   let emailSent = false;
-  if (isSupabaseAdminConfigured()) {
-    const emailResult = await sendTeamInviteEmail(
-      invitation.email,
-      invitation.token,
-    );
-    if (!emailResult.ok) {
-      if (!targetUserId) {
-        return emailResult;
-      }
-      console.warn(
-        "Resend email failed but user exists in-app, continuing:",
-        emailResult.error,
-      );
-    } else {
-      emailSent = emailResult.emailSent;
+  const { data: teamRow } = await supabase
+    .from("teams")
+    .select("name")
+    .eq("id", member.team_id)
+    .maybeSingle();
+  const emailResult = await sendTeamInviteEmail({
+    email: invitation.email,
+    token: invitation.token,
+    teamName: teamRow?.name ?? "",
+    inviterName: mapUserDisplay(user).name || user.email || "",
+  });
+  if (!emailResult.ok) {
+    if (!targetUserId) {
+      return emailResult;
     }
-  } else if (!targetUserId) {
-    return { ok: false, error: "errors.team_invite_email_not_configured" };
+    console.warn(
+      "Resend email failed but user exists in-app, continuing:",
+      emailResult.error,
+    );
+  } else {
+    emailSent = emailResult.emailSent;
   }
 
   revalidatePath("/", "layout");

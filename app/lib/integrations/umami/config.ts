@@ -4,6 +4,7 @@ import {
   getSimpleIntegrationCredentials,
   isSimpleIntegrationEnabled,
 } from "@/app/lib/integrations/simple/repository";
+import { readEnv } from "@/app/lib/env/read-env";
 
 export type UmamiPublicConfig = {
   websiteId: string;
@@ -23,8 +24,8 @@ export async function getUmamiPublicConfig(): Promise<UmamiPublicConfig | null> 
   const scriptSrc =
     credentials?.clientSecret?.trim() || DEFAULT_UMAMI_SCRIPT_URL;
   const integrity =
-    process.env.UMAMI_SCRIPT_INTEGRITY?.trim() ||
-    process.env.NEXT_PUBLIC_UMAMI_SCRIPT_INTEGRITY?.trim() ||
+    readEnv("UMAMI_SCRIPT_INTEGRITY") ||
+    readEnv("NEXT_PUBLIC_UMAMI_SCRIPT_INTEGRITY") ||
     "";
   return { websiteId, scriptSrc, integrity: integrity || undefined };
 }

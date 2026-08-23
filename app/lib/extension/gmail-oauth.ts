@@ -1,0 +1,156 @@
+import { randomBytes } from "node:crypto";
+import { getGoogleOAuthCredentials } from "@/app/lib/integrations/google-oauth/repository";
+
+export const GMAIL_PLUGIN_START_PATH = "/auth/gmail-plugin/start";
+export const GMAIL_PLUGIN_CALLBACK_PATH = "/auth/gmail-plugin/callback";
+export const GMAIL_PLUGIN_DONE_PATH = "/auth/gmail-plugin/done";
+export const GMAIL_PLUGIN_OAUTH_COOKIE = "routine-app-gmail-plugin-oauth";
+export const GMAIL_PLUGIN_SCOPES = [
+  "openid",
+  "email",
+  "profile",
+  "https://www.googleapis.com/auth/gmail.readonly",
+].join(" ");
+
+export type GmailPluginOAuthState = {
+  userId: string;
+  nonce: string;
+};
+
+export function gmailPluginOAuthCookieOptions(maxAgeSeconds: number) {
+  return {
+    httpOnly: true,
+    sameSite: "lax" as const,
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+    maxAge: maxAgeSeconds,
+  };
+}
+
+export function createGmailPluginOAuthState(userId: string): GmailPluginOAuthState {
+  return {
+    userId,
+    nonce: randomBytes(16).toString("hex"),
+  };
+}
+
+export function serializeGmailPluginOAuthState(state: GmailPluginOAuthState) {
+  return `${encodeURIComponent(state.userId)}.${state.nonce}`;
+}
+
+export function parseGmailPluginOAuthState(
+  raw: string | null | undefined,
+): GmailPluginOAuthState | null {
+  if (!raw) return null;
+  const separator = raw.indexOf(".");
+  if (separator <= 0) return null;
+  const userId = decodeURIComponent(raw.slice(0, separator)).trim();
+  const nonce = raw.slice(separator + 1).trim();
+  if (!userId || !nonce) return null;
+  return { userId, nonce };
+}
+
+export function gmailPluginRedirectUri(origin: string) {
+  return `${origin.replace(/\/$/, "")}${GMAIL_PLUGIN_CALLBACK_PATH}`;
+}
+
+export function buildGmailPluginCallbackUrl(origin?: string) {
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL?.trim();
+  const base = (origin?.trim() || siteUrl || "").replace(/\/$/, "");
+  if (!base) return GMAIL_PLUGIN_CALLBACK_PATH;
+  return `${base}${GMAIL_PLUGIN_CALLBACK_PATH}`;
+}
+
+type TokenResponse = {
+  access_token?: string;
+  refresh_token?: string;
+  expires_in?: number;
+  token_type?: string;
+  error?: string;
+};
+
+async function postToken(body: URLSearchParams): Promise<TokenResponse | null> {
+  const response = await fetch("https://oauth2.googleapis.com/token", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body,
+  });
+  const data = (await response.json().catch(() => null)) as TokenResponse | null;
+  if (!response.ok || !data?.access_token) {
+    return null;
+  }
+  return data;
+}
+
+export async function buildGmailPluginAuthorizeUrl(origin: string, state: string) {
+  const credentials = await getGoogleOAuthCredentials();
+  if (!credentials) return null;
+  const params = new URLSearchParams({
+    client_id: credentials.clientId,
+    redirect_uri: gmailPluginRedirectUri(origin),
+    response_type: "code",
+    scope: GMAIL_PLUGIN_SCOPES,
+    access_type: "offline",
+    prompt: "consent",
+    include_granted_scopes: "true",
+    state,
+  });
+  return `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
+}
+
+export async function exchangeGmailPluginCode(origin: string, code: string) {
+  const credentials = await getGoogleOAuthCredentials();
+  if (!credentials) return null;
+  return postToken(
+    new URLSearchParams({
+      code,
+      client_id: credentials.clientId,
+      client_secret: credentials.clientSecret,
+      redirect_uri: gmailPluginRedirectUri(origin),
+      grant_type: "authorization_code",
+    }),
+  );
+}
+
+export async function refreshGmailPluginAccessToken(refreshToken: string) {
+  const credentials = await getGoogleOAuthCredentials();
+  if (!credentials) return null;
+  return postToken(
+    new URLSearchParams({
+      refresh_token: refreshToken,
+      client_id: credentials.clientId,
+      client_secret: credentials.clientSecret,
+      grant_type: "refresh_token",
+    }),
+  );
+}
+
+export async function fetchGmailPluginUserInfo(accessToken: string) {
+  const response = await fetch("https://www.googleapis.com/oauth2/v2/userinfo", {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+  const data = (await response.json().catch(() => null)) as {
+    email?: string;
+    name?: string;
+    given_name?: string;
+    family_name?: string;
+    picture?: string;
+    verified_email?: boolean;
+  } | null;
+  if (!response.ok || !data) {
+    return {
+      email: "",
+      name: "",
+      givenName: "",
+      familyName: "",
+      avatarUrl: "",
+    };
+  }
+  return {
+    email: data.email?.trim() ?? "",
+    name: data.name?.trim() ?? "",
+    givenName: data.given_name?.trim() ?? "",
+    familyName: data.family_name?.trim() ?? "",
+    avatarUrl: data.picture?.trim() ?? "",
+  };
+}

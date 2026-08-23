@@ -150,7 +150,7 @@ export function LoginForm({
         <p className="text-sm text-zinc-500">
           {t(
             "auth.email.unavailable",
-            "Ienākšana un reģistrācija ar e-pastu ir pieejama, kad Resend integrācija ir konfigurēta un aktīva.",
+            "Neviena ienākšanas metode nav ieslēgta. Adminā jābūt aktīvai Resend (e-pasts) vai Google / Microsoft OAuth integrācijai.",
           )}
         </p>
       ) : null}

@@ -22,6 +22,8 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
     "landing.hero.stat_together_title": "Cilvēki pie darba",
     "landing.hero.stat_together":
       "Atbildīgais, termiņš un fails paliek pie uzdevuma.",
+    "landing.hero.stat_together_no_files":
+      "Atbildīgais un termiņš paliek pie uzdevuma.",
     "landing.preview.team": "Studio",
     "landing.preview.list_projects": "Projekti",
     "landing.preview.list_clients": "Klienti",
@@ -34,18 +36,57 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
     "landing.preview.subtask_design": "Dizaina sistēma",
     "landing.preview.subtask_hero": "Hero bloks",
     "landing.preview.subtask_copy": "Tekstu uzmetums",
+    "landing.preview.file_brief": "Brīfs.pdf",
+    "landing.preview.checklist_wireframes": "Maketi",
+    "landing.preview.checklist_copy": "Tekstu uzmetums",
+    "landing.preview.checklist_review": "Atsauksmes",
     "landing.features.title": "Kāpēc komandas paliek Routine",
     "landing.features.subtitle":
       "Mazāk rīku, skaidrāka atbildība un darbs, ko var pabeigt, nevis tikai apspriest.",
     "landing.features.lists.title": "Saraksti, kas atbilst tavam darbam",
     "landing.features.lists.description":
       "Projekti, klienti, mapes un faili vienā kokā. Katram uzdevumam ir statuss, termiņš un atbildīgais, nevis vēl viena izklājlapa.",
+    "landing.features.lists.description_no_files":
+      "Projekti, klienti un mapes vienā kokā. Katram uzdevumam ir statuss, termiņš un atbildīgais, nevis vēl viena izklājlapa.",
     "landing.features.team.title": "Visa komanda redz to pašu",
     "landing.features.team.description":
       "Uzaicini biedrus, piešķir darbus un zini, kas ir tiešsaistē. Nav jāmeklē čatā, kur palika fails vai kurš ko sola.",
+    "landing.features.team.description_no_files":
+      "Uzaicini biedrus, piešķir darbus un zini, kas ir tiešsaistē. Nav jāmeklē čatā, kurš ko sola.",
     "landing.features.dashboard.title": "Sākums ir dienas tāfele",
     "landing.features.dashboard.description":
       "Atverot Routine, redzi darāmo, procesā un gatavo. Vilc kartītes un turi fokusu uz to, kas jāpabeidz šodien.",
+    "landing.features.private_list.title": "Privāti saraksti",
+    "landing.features.private_list.description":
+      "Paslēp sarakstu no pārējās komandas. Redz tikai tu un izvēlētie biedri vai lomas.",
+    "landing.features.templates.title": "Šabloni",
+    "landing.features.templates.description":
+      "Saglabā atkārtojamu darbu kā šablonu un izveido jaunu mapi ar gatavu struktūru.",
+    "landing.features.automations.title": "Automatizācijas",
+    "landing.features.automations.description":
+      "Kad statuss mainās, piešķir atbildīgo vai aizver darbu. Mazāk manuālas pārcelšanas.",
+    "landing.features.files.title": "Faili pie uzdevuma",
+    "landing.features.files.description":
+      "Pievieno dokumentus tieši pie darba. Nav jāmeklē pielikums e-pastā vai koplietotā mapē.",
+    "landing.features.checklist.title": "Check List",
+    "landing.features.checklist.description":
+      "Sadali uzdevumu punktos, ko var atzīmēt, nezaudējot kontekstu un termiņu.",
+    "landing.features.calendar.title": "Kalendāra integrācija",
+    "landing.features.calendar.description_both":
+      "Uzdevumu termiņi parādās Apple Calendar un Google Calendar, lai diena paliktu vienā vietā.",
+    "landing.features.calendar.description_apple":
+      "Uzdevumu termiņi parādās Apple Calendar, lai diena paliktu vienā vietā.",
+    "landing.features.calendar.description_google":
+      "Uzdevumu termiņi parādās Google Calendar, lai diena paliktu vienā vietā.",
+    "landing.features.google_drive.title": "Google Drive",
+    "landing.features.google_drive.description":
+      "Glabā failus Google Drive un atver tos no saraksta, neizejot no Routine.",
+    "landing.features.onedrive.title": "OneDrive",
+    "landing.features.onedrive.description":
+      "Glabā failus OneDrive un atver tos no saraksta, neizejot no Routine.",
+    "landing.features.gmail.title": "Gmail spraudnis",
+    "landing.features.gmail.description":
+      "No Gmail pievieno e-pastu un pielikumus pie uzdevuma, lai sarakste paliktu pie darba.",
     "landing.how.title":
       "No reģistrācijas līdz pirmajam pabeigtajam darbam",
     "landing.how.subtitle":
@@ -68,7 +109,7 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
     "auth.login.no_account": "Nav konta?",
     "auth.login.success": "Veiksmīgi ienāci.",
     "auth.email.unavailable":
-      "Ienākšana un reģistrācija ar e-pastu ir pieejama, kad Resend integrācija ir konfigurēta un aktīva.",
+      "Neviena ienākšanas metode nav ieslēgta. Adminā jābūt aktīvai Resend (e-pasts) vai Google / Microsoft OAuth integrācijai.",
     "auth.signup.title": "Reģistrēties",
     "auth.signup.subtitle": "Izveido kontu un sāc darbu ar komandu.",
     "auth.signup.has_account": "Jau ir konts?",
@@ -79,6 +120,10 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
     "auth.signup.terms_required": "Lai reģistrētos, piekrīti noteikumiem.",
     "auth.signup.success": "Konts izveidots. Laipni lūgts Routine.",
     "auth.signup.check_email": "Pārbaudi e-pastu, lai apstiprinātu kontu.",
+    "auth.confirm.loading": "Pabeidz apstiprināšanu…",
+    "auth.confirm.failed_title": "Apstiprināšana neizdevās",
+    "auth.confirm.failed":
+      "Saites derīgums ir beidzies vai tā nav derīga. Pieprasi jaunu e-pastu un atver to tajā pašā pārlūkā.",
     "auth.forgot.title": "Aizmirsi paroli",
     "auth.forgot.subtitle":
       "Ievadi e-pastu, un nosūtīsim paroles atjaunošanas saiti.",
@@ -275,6 +320,7 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
     "nav.team": "Komanda",
     "nav.templates": "Šabloni",
     "nav.google_drive": "Google Drive Integrācija",
+    "nav.gmail_plugin": "Gmail spraudnis",
     "nav.onedrive": "OneDrive Integrācija",
     "nav.settings": "Uzstādījumi",
     "nav.modules": "Moduļi",
@@ -298,6 +344,24 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
     "admin.nav.translations": "Tulkojumi",
     "admin.nav.payment_plans": "Maksas plāni",
     "admin.nav.integrations": "Integrācijas",
+    "admin.nav.email_templates": "E-pasta šabloni",
+    "admin.email_templates.section": "E-pasta šabloni",
+    "admin.email_templates.section_hint":
+      "HTML e-pasti katrā sistēmas valodā. Parametri: {name}, {system}, {team}, {inviter}, {title}, {message}; pogai {link}.",
+    "admin.email_templates.kind.signup": "Reģistrācijas apstiprinājums",
+    "admin.email_templates.kind.password_reset": "Aizmirsa paroli",
+    "admin.email_templates.kind.invite": "Komandas uzaicinājums",
+    "admin.email_templates.kind.notification": "Sistēmas paziņojums",
+    "admin.email_templates.language": "Valoda",
+    "admin.email_templates.inactive": "Neaktīva",
+    "admin.email_templates.field.subject": "Temats",
+    "admin.email_templates.field.body": "Saturs",
+    "admin.email_templates.field.button": "Pogas teksts",
+    "admin.email_templates.save": "Saglabāt šablonus",
+    "admin.email_templates.saved": "E-pasta šabloni saglabāti.",
+    "admin.email_templates.preview": "Priekšskatījums",
+    "admin.email_templates.resend_disabled":
+      "Resend ir izslēgts, tāpēc e-pasti netiek sūtīti. Ieslēdz to sadaļā Integrācijas.",
     "integrations.enabled_label": "Aktīva",
     "integrations.enabled.requires_configured":
       "Vispirms pabeidz konfigurāciju, lai ieslēgtu integrāciju.",
@@ -321,7 +385,7 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
       "Integrācija tiks izslēgta un lietotāji vairs neredzēs Google pieslēgšanos.",
     "integrations.google_oauth.redirects.title": "Redirect URI",
     "integrations.google_oauth.redirects.hint":
-      "Pirmo URI izmanto login/signup, otro — komandas Google Drive pieslēgšanai. Google Cloud projektā ieslēdz arī Drive API.",
+      "Pirmo URI izmanto login/signup, otro — komandas Google Drive, trešo — Gmail spraudnim. Google Cloud projektā ieslēdz Drive API un Gmail API.",
     "integrations.google_oauth.aria.enabled": "Google OAuth integrācija ieslēgta",
     "integrations.google_oauth.feedback.configured": "Google OAuth integrācija konfigurēta.",
     "integrations.google_oauth.feedback.credentials_saved": "Google OAuth dati saglabāti.",
@@ -1513,6 +1577,11 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
     "errors.auth_signup_failed": "Neizdevās izveidot kontu.",
     "errors.auth_email_disabled":
       "Ienākšana ar e-pastu nav pieejama, kamēr Resend integrācija nav konfigurēta un ieslēgta.",
+    "errors.auth_email_send_failed": "Neizdevās nosūtīt apstiprinājuma e-pastu.",
+    "errors.auth_password_reset_failed":
+      "Neizdevās nosūtīt paroles atjaunošanas e-pastu.",
+    "errors.email_templates_unknown": "Nezināms e-pasta šablons.",
+    "errors.email_link_missing": "E-pasta saite nav atrasta.",
     "errors.mfa_invalid": "MFA iestatīšana neizdevās.",
     "errors.mfa_code_invalid": "Nepareizs kods. Mēģini vēlreiz.",
     "errors.file_type_mismatch": "Faila saturs nesakrīt ar tipu.",
@@ -1541,6 +1610,13 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
     "errors.extension_auth_required":
       "Ielogojies Routine (tajā pašā pārlūkā) un mēģini vēlreiz.",
     "errors.extension_unknown": "Nezināma kļūda.",
+    "errors.extension_gmail_not_connected":
+      "Vispirms savieno Gmail spraudnī. Savienojums tiks saglabāts arī Routine.",
+    "errors.extension_plugin_disabled": "Gmail spraudnis sistēmā ir izslēgts.",
+    "errors.extension_team_drive_missing":
+      "Šai komandai nav pieslēgts Google Drive. Spraudnis nestrādās.",
+    "errors.extension_login_mfa":
+      "Šim kontam ir MFA. Pabeidz ienākšanu Routine lapā un mēģini vēlreiz.",
     "extension.gmail.title": "Pievienot apakšuzdevumam",
     "extension.gmail.back": "Atpakaļ",
     "extension.gmail.waiting": "Gaida…",
@@ -1594,8 +1670,25 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
     "extension.gmail.options.connecting": "Atveras Google atļauju logs…",
     "extension.gmail.options.connected": "Gmail savienots.",
     "extension.gmail.options.connect_failed":
-      "Neizdevās savienot Gmail. Pārbaudi Client ID un redirect URI.",
+      "Neizdevās savienot Gmail. Pārbaudi Google OAuth un Gmail API.",
     "extension.gmail.options.missing_client_id": "Trūkst Client ID.",
+    "extension.gmail.team.label": "Komanda",
+    "extension.gmail.team.drive_missing":
+      "Šai komandai nav pieslēgts Google Drive. Spraudnis nestrādās.",
+    "extension.gmail.connect_gmail": "Savienot Gmail",
+    "extension.gmail.connect_gmail_hint":
+      "Custom login kontam Gmail jāsavieno šeit. Savienojums tiks saglabāts arī Routine.",
+    "extension.gmail.gmail_connected": "Gmail savienots: {email}",
+    "extension.gmail.plugin_disabled":
+      "Gmail spraudnis sistēmā ir izslēgts. Ieslēdz to Administrācija → Moduļi.",
+    "extension.gmail.login_failed": "Neizdevās ienākt.",
+    "extension.gmail.checking_app": "Meklē Routine…",
+    "extension.gmail.done.title": "Gmail savienots",
+    "extension.gmail.done.body":
+      "Gmail ir pieslēgts Routine. Vari aizvērt šo logu un atgriezties spraudnī.",
+    "extension.gmail.done.error_title": "Neizdevās savienot Gmail",
+    "extension.gmail.done.error_body":
+      "Mēģini vēlreiz no Gmail spraudņa. Pārliecinies, ka Google OAuth un Gmail API ir ieslēgti.",
     "errors.auth_google_disabled":
       "Google pieslēgšanās nav ieslēgta. Ieslēdz Google OAuth Administrācija → Integrācijas.",
     "errors.auth_google_failed": "Neizdevās pieslēgties ar Google.",
@@ -1727,6 +1820,8 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
     "landing.hero.stat_together_title": "People on the work",
     "landing.hero.stat_together":
       "Owner, due date and file stay with the task.",
+    "landing.hero.stat_together_no_files":
+      "Owner and due date stay with the task.",
     "landing.preview.team": "Studio",
     "landing.preview.list_projects": "Projects",
     "landing.preview.list_clients": "Clients",
@@ -1739,18 +1834,57 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
     "landing.preview.subtask_design": "Design system",
     "landing.preview.subtask_hero": "Hero block",
     "landing.preview.subtask_copy": "Copy draft",
+    "landing.preview.file_brief": "Brief.pdf",
+    "landing.preview.checklist_wireframes": "Wireframes",
+    "landing.preview.checklist_copy": "Copy draft",
+    "landing.preview.checklist_review": "Feedback",
     "landing.features.title": "Why teams stay with Routine",
     "landing.features.subtitle":
       "Fewer tools, clearer ownership and work you can finish, not just discuss.",
     "landing.features.lists.title": "Lists that match how you work",
     "landing.features.lists.description":
       "Projects, clients, folders and files in one tree. Every task has a status, due date and owner, not another spreadsheet.",
+    "landing.features.lists.description_no_files":
+      "Projects, clients and folders in one tree. Every task has a status, due date and owner, not another spreadsheet.",
     "landing.features.team.title": "The whole team sees the same picture",
     "landing.features.team.description":
       "Invite teammates, assign work and see who is online. No more hunting chat for a file or a promise.",
+    "landing.features.team.description_no_files":
+      "Invite teammates, assign work and see who is online. No more hunting chat for a promise.",
     "landing.features.dashboard.title": "Home is your daily board",
     "landing.features.dashboard.description":
       "Open Routine and see to do, in progress and done. Drag cards and keep focus on what must ship today.",
+    "landing.features.private_list.title": "Private lists",
+    "landing.features.private_list.description":
+      "Hide a list from the rest of the team. Only you and selected members or roles can see it.",
+    "landing.features.templates.title": "Templates",
+    "landing.features.templates.description":
+      "Save repeating work as a template and create a new folder with the structure ready.",
+    "landing.features.automations.title": "Automations",
+    "landing.features.automations.description":
+      "When a status changes, assign an owner or close the work. Less manual moving around.",
+    "landing.features.files.title": "Files on the task",
+    "landing.features.files.description":
+      "Attach documents to the work itself. No hunting an attachment in email or a shared folder.",
+    "landing.features.checklist.title": "Checklists",
+    "landing.features.checklist.description":
+      "Break a task into checkable items without losing context or the due date.",
+    "landing.features.calendar.title": "Calendar integration",
+    "landing.features.calendar.description_both":
+      "Task due dates show up in Apple Calendar and Google Calendar, so the day stays in one place.",
+    "landing.features.calendar.description_apple":
+      "Task due dates show up in Apple Calendar, so the day stays in one place.",
+    "landing.features.calendar.description_google":
+      "Task due dates show up in Google Calendar, so the day stays in one place.",
+    "landing.features.google_drive.title": "Google Drive",
+    "landing.features.google_drive.description":
+      "Store files in Google Drive and open them from the list without leaving Routine.",
+    "landing.features.onedrive.title": "OneDrive",
+    "landing.features.onedrive.description":
+      "Store files in OneDrive and open them from the list without leaving Routine.",
+    "landing.features.gmail.title": "Gmail plugin",
+    "landing.features.gmail.description":
+      "Add an email and its attachments from Gmail to a task, so the thread stays with the work.",
     "landing.how.title": "From sign-up to the first finished task",
     "landing.how.subtitle":
       "Three steps. Your team can start working the same day.",
@@ -1772,7 +1906,7 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
     "auth.login.no_account": "No account?",
     "auth.login.success": "Signed in successfully.",
     "auth.email.unavailable":
-      "Email and password sign-in is available once the Resend integration is configured and active.",
+      "No sign-in method is enabled. Turn on Resend (email) or Google / Microsoft OAuth in Admin integrations.",
     "auth.signup.title": "Sign up",
     "auth.signup.subtitle": "Create an account and start working with your team.",
     "auth.signup.has_account": "Already have an account?",
@@ -1783,6 +1917,10 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
     "auth.signup.terms_required": "Please accept the terms to sign up.",
     "auth.signup.success": "Account created. Welcome to Routine.",
     "auth.signup.check_email": "Check your email to confirm the account.",
+    "auth.confirm.loading": "Finishing confirmation…",
+    "auth.confirm.failed_title": "Confirmation failed",
+    "auth.confirm.failed":
+      "This link has expired or is not valid. Request a new email and open it in the same browser.",
     "auth.forgot.title": "Forgot password",
     "auth.forgot.subtitle":
       "Enter your email and we will send a password reset link.",
@@ -1979,6 +2117,7 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
     "nav.team": "Team",
     "nav.templates": "Templates",
     "nav.google_drive": "Google Drive Integration",
+    "nav.gmail_plugin": "Gmail plugin",
     "nav.onedrive": "OneDrive Integration",
     "nav.settings": "Settings",
     "nav.modules": "Modules",
@@ -2001,6 +2140,24 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
     "admin.nav.translations": "Translations",
     "admin.nav.payment_plans": "Payment plans",
     "admin.nav.integrations": "Integrations",
+    "admin.nav.email_templates": "Email templates",
+    "admin.email_templates.section": "Email templates",
+    "admin.email_templates.section_hint":
+      "HTML emails in every system language. Parameters: {name}, {system}, {team}, {inviter}, {title}, {message}; the button uses {link}.",
+    "admin.email_templates.kind.signup": "Registration confirmation",
+    "admin.email_templates.kind.password_reset": "Forgot password",
+    "admin.email_templates.kind.invite": "Team invitation",
+    "admin.email_templates.kind.notification": "System notification",
+    "admin.email_templates.language": "Language",
+    "admin.email_templates.inactive": "Inactive",
+    "admin.email_templates.field.subject": "Subject",
+    "admin.email_templates.field.body": "Body",
+    "admin.email_templates.field.button": "Button label",
+    "admin.email_templates.save": "Save templates",
+    "admin.email_templates.saved": "Email templates saved.",
+    "admin.email_templates.preview": "Preview",
+    "admin.email_templates.resend_disabled":
+      "Resend is off, so emails are not sent. Enable it under Integrations.",
     "integrations.enabled_label": "Active",
     "integrations.enabled.requires_configured":
       "Finish configuration first to enable the integration.",
@@ -2023,7 +2180,7 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
       "The integration will be disabled and users will no longer see Google sign-in.",
     "integrations.google_oauth.redirects.title": "Redirect URI",
     "integrations.google_oauth.redirects.hint":
-      "The first URI is for login/signup; the second is for team Google Drive. Also enable the Drive API in Google Cloud.",
+      "The first URI is for login/signup, the second for team Google Drive, the third for the Gmail plugin. Also enable the Drive API and Gmail API in Google Cloud.",
     "integrations.google_oauth.aria.enabled": "Google OAuth integration enabled",
     "integrations.google_oauth.feedback.configured": "Google OAuth integration configured.",
     "integrations.google_oauth.feedback.credentials_saved": "Google OAuth credentials saved.",
@@ -3197,6 +3354,10 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
     "errors.auth_signup_failed": "Could not create the account.",
     "errors.auth_email_disabled":
       "Email sign-in is unavailable until the Resend integration is configured and enabled.",
+    "errors.auth_email_send_failed": "Could not send the confirmation email.",
+    "errors.auth_password_reset_failed": "Could not send the password reset email.",
+    "errors.email_templates_unknown": "Unknown email template.",
+    "errors.email_link_missing": "The email link is missing.",
     "errors.mfa_invalid": "Could not set up MFA.",
     "errors.mfa_code_invalid": "Incorrect code. Try again.",
     "errors.file_type_mismatch": "File contents do not match the file type.",
@@ -3225,6 +3386,13 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
     "errors.extension_auth_required":
       "Sign in to Routine (in the same browser) and try again.",
     "errors.extension_unknown": "Unknown error.",
+    "errors.extension_gmail_not_connected":
+      "Connect Gmail in the plugin first. The connection is also saved in Routine.",
+    "errors.extension_plugin_disabled": "The Gmail plugin is disabled in the system.",
+    "errors.extension_team_drive_missing":
+      "This team has no Google Drive connected. The plugin will not work.",
+    "errors.extension_login_mfa":
+      "This account has MFA. Finish signing in on the Routine page and try again.",
     "extension.gmail.title": "Add to subtask",
     "extension.gmail.back": "Back",
     "extension.gmail.waiting": "Waiting…",
@@ -3278,8 +3446,25 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
     "extension.gmail.options.connecting": "Google permission window is opening…",
     "extension.gmail.options.connected": "Gmail connected.",
     "extension.gmail.options.connect_failed":
-      "Could not connect Gmail. Check the Client ID and redirect URI.",
+      "Could not connect Gmail. Check Google OAuth and the Gmail API.",
     "extension.gmail.options.missing_client_id": "Client ID is missing.",
+    "extension.gmail.team.label": "Team",
+    "extension.gmail.team.drive_missing":
+      "This team has no Google Drive connected. The plugin will not work.",
+    "extension.gmail.connect_gmail": "Connect Gmail",
+    "extension.gmail.connect_gmail_hint":
+      "Custom-login accounts must connect Gmail here. The connection is also saved in Routine.",
+    "extension.gmail.gmail_connected": "Gmail connected: {email}",
+    "extension.gmail.plugin_disabled":
+      "The Gmail plugin is disabled. Turn it on in Administration → Modules.",
+    "extension.gmail.login_failed": "Could not sign in.",
+    "extension.gmail.checking_app": "Looking for Routine…",
+    "extension.gmail.done.title": "Gmail connected",
+    "extension.gmail.done.body":
+      "Gmail is connected to Routine. You can close this window and return to the plugin.",
+    "extension.gmail.done.error_title": "Could not connect Gmail",
+    "extension.gmail.done.error_body":
+      "Try again from the Gmail plugin. Make sure Google OAuth and the Gmail API are enabled.",
     "errors.auth_google_disabled":
       "Google sign-in is not enabled. Turn on Google OAuth in Administration → Integrations.",
     "errors.auth_google_failed": "Could not sign in with Google.",
