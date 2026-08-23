@@ -232,7 +232,10 @@ function getGmailIds() {
   const root = findOpenMessageRoot() || document;
 
   const messageId =
-    firstMatch(root, ["[data-legacy-message-id]"])
+    firstMatch(root, [
+      "[data-legacy-message-id]",
+      "[data-message-id][data-legacy-message-id]",
+    ])
       ?.getAttribute("data-legacy-message-id")
       ?.trim() ||
     [...document.querySelectorAll("[data-legacy-message-id]")]
@@ -241,11 +244,25 @@ function getGmailIds() {
     "";
 
   let threadId =
-    firstMatch(root, ["[data-legacy-thread-id]"])
+    firstMatch(root, [
+      "[data-legacy-thread-id]",
+      "h2[data-legacy-thread-id]",
+      "h2[data-thread-perm-id]",
+    ])
       ?.getAttribute("data-legacy-thread-id")
       ?.trim() ||
-    firstMatch(document, ["h2[data-legacy-thread-id], [data-legacy-thread-id]"])
+    firstMatch(root, ["h2[data-thread-perm-id]"])
+      ?.getAttribute("data-thread-perm-id")
+      ?.trim() ||
+    firstMatch(document, [
+      "h2[data-legacy-thread-id]",
+      "h2[data-thread-perm-id]",
+      "[data-legacy-thread-id]",
+    ])
       ?.getAttribute("data-legacy-thread-id")
+      ?.trim() ||
+    firstMatch(document, ["h2[data-thread-perm-id]"])
+      ?.getAttribute("data-thread-perm-id")
       ?.trim() ||
     "";
 
@@ -290,7 +307,7 @@ function scrapeEmailFallback() {
 
 function ensureUi() {
   const existing = document.getElementById("routine-gmail-root");
-  if (existing?.dataset?.routineUi === "5") {
+  if (existing?.dataset?.routineUi === "6") {
     existing.querySelector("#routine-gmail-fab")?.remove();
     return;
   }
@@ -298,7 +315,7 @@ function ensureUi() {
 
   const root = document.createElement("div");
   root.id = "routine-gmail-root";
-  root.dataset.routineUi = "5";
+  root.dataset.routineUi = "6";
   root.innerHTML = `
     <div id="routine-gmail-modal" hidden>
       <div class="routine-gmail-backdrop" data-close="1"></div>

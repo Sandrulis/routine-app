@@ -50,7 +50,7 @@ import {
   type WorkTask,
   type WorkTaskStatus,
 } from "@/app/lib/lists";
-import { StatusTreeDot } from "@/app/components/status-control";
+import { StatusPickerDropdown, StatusTreeDot } from "@/app/components/status-control";
 import { WorkProgressFill } from "@/app/components/work-progress";
 import { useFileTypes } from "@/app/lib/file-types-context";
 import { fileBaseName, fileExtensionFromName } from "@/app/lib/file-types";
@@ -75,6 +75,7 @@ import {
   resolveStatusCatalogs,
   sortTasksLikeNavTree,
 } from "@/app/lib/list-statuses";
+import { taskHasIncompleteChecklists } from "@/app/lib/task-checklists";
 import { useSystemTaskStatuses, useTaskStatuses } from "@/app/lib/task-statuses";
 import {
   navListRootDroppableId,
@@ -171,17 +172,20 @@ function TreeName({
   description,
   isPrivate = false,
   onToggle,
+  onActivate,
 }: {
   href?: string;
   label: string;
   description?: string;
   isPrivate?: boolean;
   onToggle?: () => void;
+  onActivate?: () => void;
 }) {
   const { t } = useTranslations();
   const privateBadge = isPrivate ? (
     <PrivateListBadge label={t("lists.private.label", "Privāts saraksts")} />
   ) : null;
+  const nameInteractive = Boolean(href || onToggle || onActivate);
 
   const name = href ? (
     <Link href={href} prefetch={false} className="block min-w-0 truncate">
@@ -195,6 +199,14 @@ function TreeName({
     >
       <span className="truncate">{label}</span>
     </button>
+  ) : onActivate ? (
+    <button
+      type="button"
+      onClick={onActivate}
+      className="block min-w-0 w-full truncate text-left"
+    >
+      <span className="truncate">{label}</span>
+    </button>
   ) : (
     <span className="block min-w-0 truncate">
       <span className="truncate">{label}</span>
@@ -202,14 +214,20 @@ function TreeName({
   );
 
   return (
-    <span className="relative z-10 flex min-w-0 flex-1 items-center gap-1.5">
+    <span
+      className={`relative z-10 flex min-h-8 min-w-0 flex-1 items-center gap-1.5 ${
+        nameInteractive ? "" : "pointer-events-none"
+      }`}
+    >
       <OverflowTooltip
         label={label}
         extraLabel={description}
-        className="min-w-0 flex-1"
+        className="min-w-0 flex-1 self-stretch"
       >
         <span
-          className={`block min-w-0 w-full ${href || onToggle ? "" : "pointer-events-none"}`}
+          className={`flex min-h-8 min-w-0 w-full items-center ${
+            nameInteractive ? "" : "pointer-events-none"
+          }`}
         >
           {name}
         </span>
@@ -275,6 +293,7 @@ function NavTreeSection({
   swapOnHover = false,
   leaf = false,
   onActivate,
+  onStatusClick,
   status,
   statusListId = null,
   statusParentTaskId = null,
@@ -298,6 +317,7 @@ function NavTreeSection({
   leaf?: boolean;
   /** Prefer over href for leaves that open a modal / download. */
   onActivate?: () => void;
+  onStatusClick?: (event: MouseEvent<HTMLButtonElement>) => void;
   status?: WorkTaskStatus;
   statusListId?: string | null;
   statusParentTaskId?: string | null;
@@ -433,13 +453,34 @@ function NavTreeSection({
               </button>
             </Tooltip>
           ) : status ? (
-            <span className="relative z-10">
-              <StatusTreeDot
-                status={status}
-                listId={statusListId}
-                parentTaskId={statusParentTaskId}
-              />
-            </span>
+            onStatusClick ? (
+              <Tooltip label={t("subtasks.table.status", "Statuss")}>
+                <button
+                  type="button"
+                  aria-label={t("subtasks.table.status", "Statuss")}
+                  className="relative z-10 inline-flex size-5 shrink-0 items-center justify-center"
+                  onClick={(event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    onStatusClick(event);
+                  }}
+                >
+                  <StatusTreeDot
+                    status={status}
+                    listId={statusListId}
+                    parentTaskId={statusParentTaskId}
+                  />
+                </button>
+              </Tooltip>
+            ) : (
+              <span className="pointer-events-none relative z-10">
+                <StatusTreeDot
+                  status={status}
+                  listId={statusListId}
+                  parentTaskId={statusParentTaskId}
+                />
+              </span>
+            )
           ) : iconToneClassName && icon ? (
             <span
               className={`pointer-events-none relative z-10 inline-flex size-5 shrink-0 items-center justify-center rounded-[2.5px] text-[10px] ${iconToneClassName}`}
@@ -456,11 +497,12 @@ function NavTreeSection({
           ) : null}
 
           <TreeName
-            href={rowLink ? undefined : href}
+            href={rowLink || rowActivate ? undefined : href}
             label={label}
             description={description}
             isPrivate={isPrivate}
-            onToggle={rowLink ? undefined : onToggle}
+            onToggle={rowLink || rowActivate ? undefined : onToggle}
+            onActivate={rowActivate ? onActivate : undefined}
           />
 
           {leaf ? null : listAppearance || swapOnHover ? null : (
@@ -539,6 +581,7 @@ export function AppNav() {
   const { isAdmin } = useIsAdmin();
   const { isEnabled: isModuleEnabled } = useFrontendModules();
   const fileUploadsEnabled = isModuleEnabled(FRONTEND_MODULE_KEYS.fileUpload);
+  const checklistsEnabled = isModuleEnabled(FRONTEND_MODULE_KEYS.checklist);
   const { statuses } = useTaskStatuses();
   const { statuses: systemStatuses } = useSystemTaskStatuses();
   const progressById = useMemo(
@@ -567,11 +610,16 @@ export function AppNav() {
     listId: string;
     parentId: string;
   } | null>(null);
+  const [openedSubtaskId, setOpenedSubtaskId] = useState<string | null>(null);
   const [trees, setTrees] = useState<Record<string, boolean>>({});
   const [itemMenu, setItemMenu] = useState<{
     kind: "list" | "task" | "file";
     id: string;
     anchor: CreateMenuAnchor;
+  } | null>(null);
+  const [statusPicker, setStatusPicker] = useState<{
+    taskId: string;
+    anchor: { top: number; left: number; bottom: number };
   } | null>(null);
   const [teamMenuAnchor, setTeamMenuAnchor] = useState<CreateMenuAnchor | null>(
     null,
@@ -782,6 +830,9 @@ export function AppNav() {
     itemMenu?.kind === "task"
       ? (tasks.find((item) => item.id === itemMenu.id) ?? null)
       : null;
+  const statusPickerTask = statusPicker
+    ? (tasks.find((item) => item.id === statusPicker.taskId) ?? null)
+    : null;
 
   function placeNavItem(
     listId: string,
@@ -981,7 +1032,34 @@ export function AppNav() {
             >
               {(handle) => (
                 <NavTreeSection
-                  href={href}
+                  href={isWorkSubtask(task) ? undefined : href}
+                  onActivate={
+                    isWorkSubtask(task)
+                      ? () => {
+                          setSubtaskCreate(null);
+                          setStatusPicker(null);
+                          setOpenedSubtaskId(task.id);
+                        }
+                      : undefined
+                  }
+                  onStatusClick={
+                    isWorkSubtask(task) && listAccess.canChangeStatus
+                      ? (event) => {
+                          const rect = event.currentTarget.getBoundingClientRect();
+                          setItemMenu(null);
+                          setOpenedSubtaskId(null);
+                          setSubtaskCreate(null);
+                          setStatusPicker({
+                            taskId: task.id,
+                            anchor: {
+                              top: rect.top,
+                              left: rect.left,
+                              bottom: rect.bottom,
+                            },
+                          });
+                        }
+                      : undefined
+                  }
                   icon={isWorkSubtask(task) ? undefined : workItemIcon(task)}
                   status={isWorkSubtask(task) ? task.status : undefined}
                   statusListId={isWorkSubtask(task) ? listId : null}
@@ -1006,7 +1084,9 @@ export function AppNav() {
                         : t("subtasks.add.title", "Jauns apakšuzdevums")
                   }
                   expanded={isExpanded(task.id, false)}
-                  isParentActive={activeTaskIds.has(task.id)}
+                  isParentActive={
+                    activeTaskIds.has(task.id) || openedSubtaskId === task.id
+                  }
                   onToggle={() => toggleTree(task.id, false)}
                   setRowRef={handle.setNodeRef}
                   rowStyle={handle.style}
@@ -1037,6 +1117,7 @@ export function AppNav() {
                             });
                             return;
                           }
+                          setOpenedSubtaskId(null);
                           setSubtaskCreate({ listId, parentId: task.id });
                         }
                   }
@@ -1334,11 +1415,14 @@ export function AppNav() {
       />
 
       <SubtaskDetailModal
-        taskId={null}
+        taskId={openedSubtaskId}
         createFor={subtaskCreate}
-        open={subtaskCreate !== null}
+        open={subtaskCreate !== null || openedSubtaskId !== null}
         onOpenChange={(open) => {
-          if (!open) setSubtaskCreate(null);
+          if (!open) {
+            setSubtaskCreate(null);
+            setOpenedSubtaskId(null);
+          }
         }}
         onCreated={(task) => {
           expandTree(task.parentId ?? task.listId);
@@ -1550,6 +1634,15 @@ export function AppNav() {
                       icon: "fas fa-pen",
                       title: t("actions.edit", "Labot"),
                     },
+                    ...(itemMenuTask && isWorkSubtask(itemMenuTask)
+                      ? [
+                          {
+                            id: "status",
+                            icon: "fas fa-circle-dot",
+                            title: t("subtasks.table.status", "Statuss"),
+                          },
+                        ]
+                      : []),
                     ...(itemMenuTask &&
                     itemMenuTask.kind === "task" &&
                     canManageListStatuses
@@ -1587,6 +1680,7 @@ export function AppNav() {
         onClose={() => setItemMenu(null)}
         onSelect={(id) => {
           if (!itemMenu) return;
+          const menu = itemMenu;
           const list =
             itemMenu.kind === "list"
               ? (lists.find((item) => item.id === itemMenu.id) ?? null)
@@ -1600,6 +1694,19 @@ export function AppNav() {
               ? (files.find((item) => item.id === itemMenu.id) ?? null)
               : null;
           setItemMenu(null);
+          if (id === "status") {
+            if (task && isWorkSubtask(task)) {
+              setStatusPicker({
+                taskId: task.id,
+                anchor: {
+                  top: menu.anchor.top,
+                  left: menu.anchor.right,
+                  bottom: menu.anchor.bottom,
+                },
+              });
+            }
+            return;
+          }
           if (id === "view") {
             if (file) openListFile(file);
             return;
@@ -1608,7 +1715,8 @@ export function AppNav() {
             if (list) setEditTarget({ kind: "list", list });
             if (task) {
               if (isWorkSubtask(task)) {
-                router.push(`/lists/${task.listId}/tasks/${task.id}`);
+                setSubtaskCreate(null);
+                setOpenedSubtaskId(task.id);
                 return;
               }
               setEditTarget({ kind: "task", task });
@@ -1638,6 +1746,26 @@ export function AppNav() {
             });
           }
         }}
+      />
+
+      <StatusPickerDropdown
+        open={statusPicker !== null && statusPickerTask !== null}
+        anchor={statusPicker?.anchor ?? null}
+        status={statusPickerTask?.status ?? "todo"}
+        listId={statusPickerTask?.listId ?? null}
+        parentTaskId={statusPickerTask?.parentId ?? null}
+        completeBlocked={
+          Boolean(
+            checklistsEnabled &&
+              statusPickerTask &&
+              taskHasIncompleteChecklists(statusPickerTask.checklists),
+          )
+        }
+        onSelect={(next) => {
+          if (!statusPickerTask) return;
+          updateTask(statusPickerTask.id, { status: next });
+        }}
+        onClose={() => setStatusPicker(null)}
       />
 
       {editTarget?.kind === "list" ? (

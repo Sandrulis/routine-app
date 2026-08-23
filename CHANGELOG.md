@@ -4,6 +4,11 @@
 
 - (none)
 
+## v0.2.19
+
+- Sānjoslas kokā apakšuzdevuma nosaukums un rinda atver detaļu modāli; statusa ikona atver statusa izvēlni
+- Gmail spraudnis `0.4.7`: pielikumu checkboxi paliek redzami zem apakšuzdevumu saraksta
+
 ## v0.2.18
 
 - Gmail spraudnis `0.4.6`: pēc Google ielogošanās sesija paliek spraudnī (`base64-` cookie un done lapas paziņojums)

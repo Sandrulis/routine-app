@@ -731,14 +731,15 @@ function walkParts(part, out) {
   if (!attachmentId) return;
   const mime = String(part.mimeType || "").toLowerCase();
   if (mime.startsWith("multipart/")) return;
-  const filename = part.filename?.trim();
-  // Large inline bodies get attachmentId without a filename — skip those.
-  if (!filename) {
-    if (mime.startsWith("text/")) return;
-    if (mime !== "application/pdf") return;
+  const filename = String(part.filename || "").trim();
+  // Skip large inline bodies (html/plain) that Gmail exposes as attachmentId.
+  if (!filename && (mime === "text/plain" || mime === "text/html" || mime.startsWith("text/"))) {
+    return;
   }
+  // Untitled cid images are inline, not user attachments.
+  if (!filename && mime.startsWith("image/")) return;
   out.push({
-    filename: filename || "attachment.pdf",
+    filename: filename || (mime === "application/pdf" ? "attachment.pdf" : "attachment.bin"),
     mimeType: part.mimeType || "application/octet-stream",
     attachmentId,
     size: Number(part.body.size) || 0,

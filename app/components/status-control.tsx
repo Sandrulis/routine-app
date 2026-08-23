@@ -545,3 +545,206 @@ export function StatusControl({
     </div>
   );
 }
+
+export type StatusPickerAnchor = {
+  top: number;
+  left: number;
+  bottom?: number;
+};
+
+export function StatusPickerDropdown({
+  open,
+  anchor,
+  status,
+  listId = null,
+  parentTaskId = null,
+  completeBlocked = false,
+  onSelect,
+  onClose,
+}: {
+  open: boolean;
+  anchor: StatusPickerAnchor | null;
+  status: WorkTaskStatus;
+  listId?: string | null;
+  parentTaskId?: string | null;
+  completeBlocked?: boolean;
+  onSelect: (next: WorkTaskStatus) => void;
+  onClose: () => void;
+}) {
+  const { t } = useTranslations();
+  const { labelFor, groupedStatuses, groupKeyFor } = useTaskStatuses(
+    listId,
+    parentTaskId,
+  );
+  const labels = useStatusLabels();
+  const panelRef = useRef<HTMLDivElement>(null);
+  const searchRef = useRef<HTMLInputElement>(null);
+  const [query, setQuery] = useState("");
+  const [mounted, setMounted] = useState(false);
+  const [position, setPosition] = useState<{ top: number; left: number } | null>(
+    null,
+  );
+
+  const groups = useMemo(() => {
+    const needle = query.trim().toLowerCase();
+    return groupedStatuses
+      .map((group) => ({
+        id: group.id,
+        statuses: group.statuses
+          .filter((row) =>
+            needle ? labelFor(row.id).toLowerCase().includes(needle) : true,
+          )
+          .map((row) => row.id as WorkTaskStatus),
+      }))
+      .filter((group) => group.statuses.length > 0);
+  }, [groupedStatuses, labelFor, query]);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useLayoutEffect(() => {
+    if (!open || !anchor || !panelRef.current) {
+      setPosition(null);
+      return;
+    }
+
+    const panel = panelRef.current.getBoundingClientRect();
+    const left = Math.min(
+      Math.max(12, anchor.left),
+      window.innerWidth - 12 - panel.width,
+    );
+    const below = (anchor.bottom ?? anchor.top) + 6;
+    const top =
+      below + panel.height > window.innerHeight - 12
+        ? Math.max(12, anchor.top - 6 - panel.height)
+        : below;
+    setPosition({ top, left });
+  }, [anchor, open, query]);
+
+  useEffect(() => {
+    if (!open) {
+      setQuery("");
+      return;
+    }
+
+    searchRef.current?.focus();
+
+    function handlePointer(event: MouseEvent) {
+      if (panelRef.current?.contains(event.target as Node)) return;
+      onClose();
+    }
+
+    function handleKey(event: KeyboardEvent) {
+      if (event.key !== "Escape") return;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      onClose();
+    }
+
+    document.addEventListener("mousedown", handlePointer);
+    window.addEventListener("keydown", handleKey, true);
+    return () => {
+      document.removeEventListener("mousedown", handlePointer);
+      window.removeEventListener("keydown", handleKey, true);
+    };
+  }, [onClose, open]);
+
+  const groupLabel = {
+    not_started: t("status.group.not_started", "Nav sākts"),
+    active: t("status.group.active", "Aktīvs"),
+    closed: t("status.group.closed", "Slēgts"),
+  };
+
+  if (!open || !anchor || !mounted) return null;
+
+  return createPortal(
+    <div
+      ref={panelRef}
+      data-app-modal-ignore-backdrop=""
+      role="listbox"
+      aria-label={t("subtasks.table.status", "Statuss")}
+      onMouseDown={(event) => event.stopPropagation()}
+      style={{
+        position: "fixed",
+        top: position?.top ?? 0,
+        left: position?.left ?? 0,
+        zIndex: 80,
+        opacity: position ? 1 : 0,
+      }}
+      className="flex max-h-[min(22rem,calc(100vh-1.5rem))] w-[17.5rem] flex-col overflow-hidden rounded-md bg-white shadow-[0_12px_40px_rgba(15,23,42,0.16)] ring-1 ring-zinc-200/80"
+    >
+      <div className="p-2">
+        <input
+          ref={searchRef}
+          type="search"
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") event.preventDefault();
+          }}
+          placeholder={t("lists.fields.icon_search", "Meklēt...")}
+          className="min-h-9 w-full rounded-md border border-zinc-200 bg-white px-3 text-[13px] text-zinc-900 outline-none placeholder:text-zinc-400 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
+        />
+      </div>
+      <div className="min-h-0 flex-1 overflow-y-auto pb-2 [scrollbar-width:thin]">
+        {groups.length === 0 ? (
+          <p className="px-3 py-6 text-center text-[13px] text-zinc-400">
+            {t("status.search.empty", "Nav atbilstošu statusu.")}
+          </p>
+        ) : (
+          groups.map((group, index) => (
+            <div
+              key={group.id}
+              className={index > 0 ? "mt-1 border-t border-zinc-100 pt-1" : ""}
+            >
+              <p className="px-3 py-1.5 text-[11px] font-medium text-zinc-400">
+                {groupLabel[group.id]}
+              </p>
+              {group.statuses.map((item) => {
+                const selected = item === status;
+                const optionBlocked =
+                  completeBlocked && groupKeyFor(item) === "closed" && !selected;
+                return (
+                  <button
+                    key={item}
+                    type="button"
+                    role="option"
+                    aria-selected={selected}
+                    disabled={optionBlocked}
+                    onClick={() => {
+                      if (optionBlocked) return;
+                      onSelect(item);
+                      onClose();
+                    }}
+                    className={`flex w-full items-center gap-2.5 px-3 py-1.5 text-left text-[13px] font-medium tracking-wide uppercase transition disabled:cursor-not-allowed disabled:opacity-40 ${
+                      selected
+                        ? "bg-zinc-100 text-zinc-900"
+                        : "text-zinc-700 hover:bg-zinc-50"
+                    }`}
+                  >
+                    <StatusIcon
+                      status={item}
+                      listId={listId}
+                      parentTaskId={parentTaskId}
+                    />
+                    <span className="min-w-0 flex-1 truncate">
+                      {labelFor(item) || labels[item]}
+                    </span>
+                    {selected ? (
+                      <i
+                        className="fas fa-check text-[11px] text-zinc-800"
+                        aria-hidden="true"
+                      />
+                    ) : null}
+                  </button>
+                );
+              })}
+            </div>
+          ))
+        )}
+      </div>
+    </div>,
+    document.body,
+  );
+}

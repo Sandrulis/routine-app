@@ -26,7 +26,9 @@ Nav jāievada Routine URL vai OAuth Client ID. Spraudnis vispirms prasa [https:/
 1. Atver e-pastu Gmailā (pilns skats)
 2. Nospied **Routine** pogu e-pasta skatā
 3. Izvēlies **saraksts** → (mape) → **uzdevums** → **apakšuzdevums**
-4. Apakšā atzīmē pielikumus → **Pievienot**
+4. Zem saraksta atzīmē pielikumus (checkbox) → **Pievienot**
+
+Ja pielikumi neredzami: Chrome → `chrome://extensions` → TASQIN - Gmail → **Reload**, tad Gmail cilnē **F5**.
 
 Apakšuzdevumu saraksts (3. solis) ir tajā pašā statusa secībā kā sānjosla un uzdevuma UI: aktīvie pirms “nav sākts”, slēgtie netiek rādīti.
 
