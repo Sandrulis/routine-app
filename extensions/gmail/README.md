@@ -19,7 +19,7 @@ Nav jāievada Routine URL vai OAuth Client ID. Spraudnis vispirms prasa [https:/
 
 1. `chrome://extensions` → Developer mode → **Load unpacked** → `extensions/gmail`
 2. Pēc koda izmaiņām: **Reload** uz paplašinājuma kartītes, tad **F5** Gmail cilnē (citādi vecais content script met `Extension context invalidated`)
-3. Popup: ienāc ar Google vai e-pastu/paroli (custom login). Login bez sesijas atver `https://www.tasqin.com/login`, ne `localhost` (arī ja lokālais serveris skrien). Ja Gmail nav savienots, nospied **Savienot Gmail** - tas saglabā savienojumu arī Routine
+3. Popup: ienāc ar Google vai e-pastu/paroli (custom login). **Turpināt ar Google** atver Google konta izvēli (`/auth/gmail-plugin/login`), ne vispārīgo `/login` lapu (tā ielogotam lietotājam aizmet uz dashboard un spraudnis paliek ārā). Pēc apstiprinājuma vari aizvērt cilni un atvērt spraudni - sesija ir `chrome.storage.local`. Login API un OAuth preferē production (`www` / `tasqin.com`), ne `localhost` (arī ja lokālais serveris skrien). Ja Gmail nav savienots, nospied **Savienot Gmail** - tas saglabā savienojumu arī Routine
 
 ## Lietošana
 
@@ -44,4 +44,5 @@ Popup ir balta kartīte: avatars, vārds un uzvārds, e-pasts, **Iziet** tikai k
 - `GET /api/extension/browse`
 - `GET /api/extension/subtasks?q=`
 - `POST /api/extension/attach-email`
+- `GET /auth/gmail-plugin/login` → Google OAuth (`/auth/google-oauth/callback`) → `/auth/gmail-plugin/done?logged_in=1`
 - `GET /auth/gmail-plugin/start` → Google OAuth (`/auth/google-oauth/callback`) → `/auth/gmail-plugin/done`

@@ -16,6 +16,14 @@ import {
 } from "@/app/lib/notifications";
 import type { TaskStatusSummary } from "@/app/lib/site-admin/types";
 import { createAdminClient } from "@/app/lib/supabase/admin";
+import {
+  CRON_DUE_HOUR,
+  CRON_START_HOUR,
+  CRON_USER_BATCH_LIMIT,
+  resolveTimeZone,
+  shiftUtcDate,
+  zonedDateHour,
+} from "@/app/lib/cron-jobs/timezone";
 
 const FALLBACK_STATUS_GROUP: Record<string, "not_started" | "active" | "closed"> =
   {
@@ -186,9 +194,13 @@ async function runJob(
       .is("deleted_at", null)
       .is("archived_at", null);
     if (jobKey === "subtask_start_reminder") {
-      query = query.not("start_date", "is", null).lte("start_date", today);
+      query = query
+        .not("start_date", "is", null)
+        .lte("start_date", shiftUtcDate(today, 1));
     } else {
-      query = query.eq("due_date", today);
+      query = query
+        .gte("due_date", shiftUtcDate(today, -1))
+        .lte("due_date", shiftUtcDate(today, 1));
     }
     return query.range(from, to);
   })) as SubtaskRow[];
@@ -370,57 +382,109 @@ async function runJob(
       ),
     ),
   ];
-  const preferenceRows = (await fetchInChunks(userIds, (chunk) =>
+  const [preferenceRows, userRows, settingsRow] = await Promise.all([
+    fetchInChunks(userIds, (chunk) =>
+      supabase
+        .from("user_notification_preferences")
+        .select("user_id, kind, enabled")
+        .eq("kind", kind)
+        .in("user_id", chunk),
+    ) as Promise<{ user_id: string; enabled: boolean }[]>,
+    fetchInChunks(userIds, (chunk) =>
+      supabase.from("users").select("id, timezone").in("id", chunk),
+    ) as Promise<{ id: string; timezone: string | null }[]>,
     supabase
-      .from("user_notification_preferences")
-      .select("user_id, kind, enabled")
-      .eq("kind", kind)
-      .in("user_id", chunk),
-  )) as { user_id: string; enabled: boolean }[];
+      .from("site_settings")
+      .select("timezone")
+      .eq("id", 1)
+      .maybeSingle()
+      .then((result) => result.data as { timezone?: string | null } | null),
+  ]);
   const preferenceDisabled = new Set(
     preferenceRows.filter((row) => row.enabled === false).map((row) => row.user_id),
   );
+  const siteTimeZone = resolveTimeZone(settingsRow?.timezone);
+  const timeZoneByUser = new Map(
+    userRows.map((row) => [row.id, resolveTimeZone(row.timezone || siteTimeZone)]),
+  );
 
   const hrefs = [...new Set(matching.map(subtaskHref))];
+  const since = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
   const existing = (await fetchInChunks(hrefs, (chunk) =>
     supabase
       .from("app_notifications")
-      .select("recipient_id, href")
+      .select("recipient_id, href, created_at")
       .eq("kind", kind)
       .in("href", chunk)
-      .gte("created_at", `${today}T00:00:00.000Z`),
-  )) as { recipient_id: string | null; href: string | null }[];
-  const alreadySent = new Set(
-    existing.map((row) => `${row.recipient_id ?? ""}:${row.href ?? ""}`),
-  );
+      .gte("created_at", since),
+  )) as {
+    recipient_id: string | null;
+    href: string | null;
+    created_at: string | null;
+  }[];
+  const existingByRecipientHref = new Map<string, string[]>();
+  for (const row of existing) {
+    const key = `${row.recipient_id ?? ""}:${row.href ?? ""}`;
+    const list = existingByRecipientHref.get(key) ?? [];
+    if (row.created_at) list.push(row.created_at);
+    existingByRecipientHref.set(key, list);
+  }
 
-  const now = new Date().toISOString();
-  const toInsertByTeam = new Map<string, AppNotification[]>();
+  const now = new Date();
+  const createdAt = now.toISOString();
+  const minHour =
+    jobKey === "subtask_start_reminder" ? CRON_START_HOUR : CRON_DUE_HOUR;
+  type PendingItem = { teamId: string; userId: string; item: AppNotification };
+  const pending: PendingItem[] = [];
+
   for (const task of matching) {
     const href = subtaskHref(task);
     const title = task.title.trim();
     if (!title) continue;
     for (const member of recipientsByTask.get(task.id) ?? []) {
       if (!member.user_id || preferenceDisabled.has(member.user_id)) continue;
+      const timeZone = timeZoneByUser.get(member.user_id) || siteTimeZone;
+      const local = zonedDateHour(now, timeZone);
+      if (local.hour < minHour) continue;
+      if (jobKey === "subtask_start_reminder") {
+        if (!task.start_date || task.start_date > local.date) continue;
+      } else if (task.due_date !== local.date) {
+        continue;
+      }
       const dedupeKey = `${member.id}:${href}`;
-      if (alreadySent.has(dedupeKey)) continue;
-      alreadySent.add(dedupeKey);
-      const item: AppNotification = {
-        id: createNotificationId(),
-        kind,
-        actorId: null,
-        recipientId: member.id,
-        targetUserId: member.user_id,
-        invitationId: null,
-        taskTitle: title,
-        href,
-        createdAt: now,
-        readAt: null,
-      };
-      const list = toInsertByTeam.get(task.team_id) ?? [];
-      list.push(item);
-      toInsertByTeam.set(task.team_id, list);
+      const alreadyToday = (existingByRecipientHref.get(dedupeKey) ?? []).some(
+        (created) => zonedDateHour(new Date(created), timeZone).date === local.date,
+      );
+      if (alreadyToday) continue;
+      pending.push({
+        teamId: task.team_id,
+        userId: member.user_id,
+        item: {
+          id: createNotificationId(),
+          kind,
+          actorId: null,
+          recipientId: member.id,
+          targetUserId: member.user_id,
+          invitationId: null,
+          taskTitle: title,
+          href,
+          createdAt,
+          readAt: null,
+        },
+      });
     }
+  }
+
+  const userIdsSorted = [...new Set(pending.map((row) => row.userId))].sort();
+  const batchUserIds = new Set(userIdsSorted.slice(0, CRON_USER_BATCH_LIMIT));
+  const batched = pending.filter((row) => batchUserIds.has(row.userId));
+  const remainingUsers = Math.max(0, userIdsSorted.length - batchUserIds.size);
+
+  const toInsertByTeam = new Map<string, AppNotification[]>();
+  for (const row of batched) {
+    const list = toInsertByTeam.get(row.teamId) ?? [];
+    list.push(row.item);
+    toInsertByTeam.set(row.teamId, list);
   }
 
   let notifiedCount = 0;
@@ -444,9 +508,13 @@ async function runJob(
     notifiedCount += items.length;
   }
 
+  const remainingNote =
+    remainingUsers > 0
+      ? ` ${remainingUsers} user(s) left for the next hourly run.`
+      : "";
   return {
     ok: true,
-    message: `Created ${notifiedCount} notification(s).`,
+    message: `Created ${notifiedCount} notification(s) for ${batchUserIds.size} user(s).${remainingNote}`,
     notifiedCount,
     scannedCount: candidates.length,
   };

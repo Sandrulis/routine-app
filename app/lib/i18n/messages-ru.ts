@@ -440,7 +440,7 @@ export const ru: Record<string, string> = {
   "admin.nav.email_templates": "Шаблоны писем",
   "admin.nav.cron_jobs": "Cron jobs",
   "admin.email_templates.section": "Шаблоны писем",
-  "admin.cron_jobs.page_hint": "Включите нужную задачу и скопируйте ссылку в cron-job.org. Рекомендуется запускать раз в день утром. Пока задача выключена, ссылка не ответит.",
+  "admin.cron_jobs.page_hint": "Включите задачу и скопируйте ссылку в cron-job.org. Запускайте раз в час. Напоминания о старте с 8:00, о сроке с 9:00 по часовому поясу пользователя. За запуск — до 1000 пользователей; остальные на следующий час. Пока задача выключена, ссылка не ответит.",
   "admin.cron_jobs.job.subtask_start_reminder.title": "Напоминание о старте подзадачи",
   "admin.cron_jobs.job.subtask_start_reminder.description": "Уведомляет назначенного человека или группу, что нужно начать подзадачу, если дата начала сегодня или уже прошла, а статус всё ещё «не начата».",
   "admin.cron_jobs.job.subtask_due_reminder.title": "Напоминание о сроке подзадачи",
@@ -1857,6 +1857,12 @@ export const ru: Record<string, string> = {
     "Плагин Gmail выключен. Включите его в Администрирование → Модули.",
   "extension.gmail.login_failed": "Не удалось войти.",
   "extension.gmail.checking_app": "Поиск {SYSTEM_NAME}…",
+  "extension.gmail.login_done.title": "Вход в {SYSTEM_NAME} выполнен",
+  "extension.gmail.login_done.body":
+    "Можно закрыть это окно и вернуться в плагин.",
+  "extension.gmail.login_done.error_title": "Не удалось войти",
+  "extension.gmail.login_done.error_body":
+    "Попробуйте снова из плагина Gmail.",
   "extension.gmail.done.title": "Gmail подключён",
   "extension.gmail.done.body":
     "Gmail подключён к {SYSTEM_NAME}. Можно закрыть это окно и вернуться в плагин.",

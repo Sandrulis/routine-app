@@ -203,9 +203,12 @@ async function getAppBase() {
   ]);
 
   async function adopt(origin, config) {
+    const canonical = parseOrigin(config.appOrigin);
     await chrome.storage.sync.set({
       appBaseUrl: origin,
       authCookieName: config.authCookieName || "",
+      loginPath: config.loginPath || "/login",
+      canonicalOrigin: canonical || origin,
     });
     return origin;
   }
@@ -472,19 +475,53 @@ async function resolveAccessToken(appBase, session, fallback) {
   return null;
 }
 
+async function importSessionFromKnownCookies(preferredOrigin) {
+  const origins = unique([
+    ...originsWithWwwFirst(preferredOrigin),
+    ...(await originsFromAuthCookies()),
+    ...APP_ORIGIN_CANDIDATES.filter((origin) => !isLocalOrigin(origin)),
+  ]);
+  for (const origin of expandOrigins(origins)) {
+    const { session } = await readSessionFromCookies(origin);
+    if (sessionUsable(session)) {
+      await rememberSession(origin, session);
+      return origin;
+    }
+  }
+  return "";
+}
+
 async function getAccessToken(appBase) {
   const origin = parseOrigin(appBase);
   const stored = await readStoredSession();
+  const storedOrigin = parseOrigin(stored?.appBase);
   const storedSession =
-    stored && parseOrigin(stored.appBase) === origin ? stored.session : null;
+    stored && storedOrigin === origin ? stored.session : null;
 
   const fromStored = await resolveAccessToken(appBase, storedSession, null);
   if (fromStored) return fromStored;
 
+  if (stored?.session && storedOrigin && storedOrigin !== origin) {
+    const fromStoredHost = await resolveAccessToken(
+      storedOrigin,
+      stored.session,
+      null,
+    );
+    if (fromStoredHost) return fromStoredHost;
+  }
+
   if (!(await pluginCookieImportAllowed())) return null;
-  const { session: cookieSession } = await readSessionFromCookies(appBase);
-  const bootstrapped = mergeSessionPreserveRefresh(cookieSession, storedSession);
-  return resolveAccessToken(appBase, bootstrapped, storedSession);
+  for (const candidate of originsWithWwwFirst(origin)) {
+    const { session: cookieSession } = await readSessionFromCookies(candidate);
+    const bootstrapped = mergeSessionPreserveRefresh(cookieSession, storedSession);
+    const token = await resolveAccessToken(
+      candidate,
+      bootstrapped,
+      storedSession,
+    );
+    if (token) return token;
+  }
+  return null;
 }
 
 async function apiFetch(path, options = {}) {
@@ -944,13 +981,23 @@ async function waitForTabMatch(tabId, test, timeoutMs = 180000) {
   while (Date.now() - started < timeoutMs) {
     try {
       const tab = await chrome.tabs.get(tabId);
-      if (test(String(tab.url || ""))) return true;
+      const url = String(tab.url || "");
+      if (test(url)) return url;
     } catch {
-      return false;
+      return "";
     }
     await new Promise((resolve) => setTimeout(resolve, 800));
   }
-  return false;
+  return "";
+}
+
+function isPluginLoginDoneUrl(url) {
+  if (!url.includes("/auth/gmail-plugin/done")) return false;
+  return (
+    url.includes("logged_in=1") ||
+    url.includes("connected=1") ||
+    url.includes("error=")
+  );
 }
 
 function scheduleSessionRefresh() {
@@ -1017,8 +1064,45 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       if (message?.type === "routine.openLogin") {
         await markPluginSignedIn();
         const appBase = await getAppBase();
-        await chrome.tabs.create({ url: `${appBase}/login` });
-        sendResponse({ ok: true });
+        const imported = await importSessionFromKnownCookies(appBase);
+        if (imported && (await getAccessToken(imported))) {
+          sendResponse({ ok: true });
+          return;
+        }
+        const stored = await chrome.storage.sync.get([
+          "loginPath",
+          "canonicalOrigin",
+        ]);
+        const wantGoogle = message.google === true;
+        const loginPath = wantGoogle
+          ? "/auth/gmail-plugin/login"
+          : stored.loginPath || "/login";
+        const tabOrigin =
+          parseOrigin(stored.canonicalOrigin) ||
+          parseOrigin(appBase) ||
+          DEFAULT_APP_BASE;
+        const tab = await chrome.tabs.create({
+          url: `${tabOrigin}${loginPath}`,
+        });
+        if (!String(loginPath).includes("/auth/gmail-plugin/login")) {
+          sendResponse({ ok: true });
+          return;
+        }
+        const doneUrl = await waitForTabMatch(tab.id, isPluginLoginDoneUrl);
+        if (!doneUrl || doneUrl.includes("error=")) {
+          sendResponse({
+            ok: false,
+            error: "extension.gmail.login_failed",
+          });
+          return;
+        }
+        const doneOrigin = parseOrigin(doneUrl) || tabOrigin;
+        await importSessionFromKnownCookies(doneOrigin);
+        const token = await getAccessToken(doneOrigin);
+        sendResponse({
+          ok: Boolean(token),
+          error: token ? undefined : "extension.gmail.login_failed",
+        });
         return;
       }
       if (message?.type === "routine.login") {
@@ -1078,13 +1162,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         const session = await sessionResponse();
         const path = session?.data?.connectGmailPath || "/auth/gmail-plugin/start";
         const tab = await chrome.tabs.create({ url: `${appBase}${path}` });
-        const done = await waitForTabMatch(
-          tab.id,
-          (url) =>
-            url.includes("/auth/gmail-plugin/done") &&
-            (url.includes("connected=1") || url.includes("error=")),
-        );
-        if (!done) {
+        const doneUrl = await waitForTabMatch(tab.id, isPluginLoginDoneUrl);
+        if (!doneUrl || doneUrl.includes("error=")) {
           sendResponse({ ok: false, error: "errors.extension_gmail_auth" });
           return;
         }

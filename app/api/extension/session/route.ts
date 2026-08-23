@@ -21,7 +21,10 @@ import {
   loadGmailConnectionSummary,
   listExtensionTeams,
 } from "@/app/lib/extension/session-payload";
-import { GMAIL_PLUGIN_START_PATH } from "@/app/lib/extension/gmail-oauth";
+import {
+  GMAIL_PLUGIN_LOGIN_PATH,
+  GMAIL_PLUGIN_START_PATH,
+} from "@/app/lib/extension/gmail-oauth";
 import { isEmailPasswordAuthEnabled } from "@/app/lib/integrations/resend/client";
 import { isGoogleSignInEnabled } from "@/app/lib/integrations/google-oauth/repository";
 import { FRONTEND_MODULE_KEYS } from "@/app/lib/frontend-modules/keys";
@@ -40,7 +43,11 @@ async function branding() {
     settings.systemName,
     settings.logoColor || DEFAULT_SITE_LOGO_COLOR,
   );
-  return { systemName: settings.systemName, logoUrl, loginPath: "/login" };
+  return {
+    systemName: settings.systemName,
+    logoUrl,
+    loginPath: "/login",
+  };
 }
 
 async function sessionLanguage(
@@ -76,6 +83,7 @@ export async function GET(request: Request) {
     strings,
     emailPasswordEnabled,
     googleSignInEnabled,
+    loginPath: googleSignInEnabled ? GMAIL_PLUGIN_LOGIN_PATH : "/login",
     connectGmailPath: GMAIL_PLUGIN_START_PATH,
   };
 

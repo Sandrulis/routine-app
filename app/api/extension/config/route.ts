@@ -4,7 +4,10 @@ import {
 } from "@/app/lib/extension/cors";
 import { supabaseAuthCookieName } from "@/app/lib/extension/cookie-name";
 import { getExtensionStrings } from "@/app/lib/extension/i18n";
-import { GMAIL_PLUGIN_START_PATH } from "@/app/lib/extension/gmail-oauth";
+import {
+  GMAIL_PLUGIN_LOGIN_PATH,
+  GMAIL_PLUGIN_START_PATH,
+} from "@/app/lib/extension/gmail-oauth";
 import { getPublicSiteUrl } from "@/app/lib/seo/site-url";
 import { getRequestLanguageCode } from "@/app/lib/i18n/server";
 import { DEFAULT_LANGUAGE } from "@/app/lib/i18n/language";
@@ -67,7 +70,7 @@ export async function GET(request: Request) {
     authCookieName: supabaseAuthCookieName(),
     systemName: settings.systemName,
     logoUrl,
-    loginPath: "/login",
+    loginPath: googleSignInEnabled ? GMAIL_PLUGIN_LOGIN_PATH : "/login",
     connectGmailPath: GMAIL_PLUGIN_START_PATH,
     languageCode,
     strings: getExtensionStrings(languageCode, settings.systemName),

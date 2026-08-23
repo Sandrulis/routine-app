@@ -448,7 +448,7 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "admin.nav.email_templates": "E-pasta šabloni",
     "admin.nav.cron_jobs": "Cron jobs",
     "admin.email_templates.section": "E-pasta šabloni",
-    "admin.cron_jobs.page_hint": "Ieslēdz vajadzīgo darbu un iekopē saiti cron-job.org. Ieteicams palaist reizi dienā no rīta. Kamēr darbs ir izslēgts, saite neatbildēs.",
+    "admin.cron_jobs.page_hint": "Ieslēdz darbu un iekopē saiti cron-job.org. Palaiž reizi stundā. Sākuma atgādinājumi no 8:00, termiņa no 9:00 lietotāja laika joslā. Katrā palaišanā līdz 1000 lietotājiem; pārējie nākamajā stundā. Kamēr darbs izslēgts, saite neatbild.",
     "admin.cron_jobs.job.subtask_start_reminder.title": "Apakšuzdevuma sākuma atgādinājums",
     "admin.cron_jobs.job.subtask_start_reminder.description": "Paziņo piesaistītajam lietotājam vai grupai, ka jāuzsāk apakšuzdevums, kura sākuma datums ir šodien vai jau pagājis un statuss vēl ir “nav sākts”.",
     "admin.cron_jobs.job.subtask_due_reminder.title": "Apakšuzdevuma termiņa atgādinājums",
@@ -1858,6 +1858,12 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
       "Gmail spraudnis sistēmā ir izslēgts. Ieslēdz to Administrācija → Moduļi.",
     "extension.gmail.login_failed": "Neizdevās ienākt.",
     "extension.gmail.checking_app": "Meklē {SYSTEM_NAME}…",
+    "extension.gmail.login_done.title": "Ienāci {SYSTEM_NAME}",
+    "extension.gmail.login_done.body":
+      "Vari aizvērt šo logu un atgriezties spraudnī.",
+    "extension.gmail.login_done.error_title": "Neizdevās ienākt",
+    "extension.gmail.login_done.error_body":
+      "Mēģini vēlreiz no Gmail spraudņa.",
     "extension.gmail.done.title": "Gmail savienots",
     "extension.gmail.done.body":
       "Gmail ir pieslēgts {SYSTEM_NAME}. Vari aizvērt šo logu un atgriezties spraudnī.",
@@ -2433,7 +2439,7 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "admin.nav.email_templates": "Email templates",
     "admin.nav.cron_jobs": "Cron jobs",
     "admin.email_templates.section": "Email templates",
-    "admin.cron_jobs.page_hint": "Enable a job and copy the URL into cron-job.org. Run it once a day in the morning. While disabled, the URL will not respond.",
+    "admin.cron_jobs.page_hint": "Enable a job and copy the URL into cron-job.org. Run it once an hour. Start reminders go out from 8:00 and due reminders from 9:00 in the user's time zone. Each run handles up to 1000 users; the rest wait until the next hour. While disabled, the URL will not respond.",
     "admin.cron_jobs.job.subtask_start_reminder.title": "Subtask start reminder",
     "admin.cron_jobs.job.subtask_start_reminder.description": "Notifies the assigned person or group that a subtask should be started when its start date is today or already passed and the status is still not started.",
     "admin.cron_jobs.job.subtask_due_reminder.title": "Subtask due reminder",
@@ -3823,6 +3829,12 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
       "The Gmail plugin is disabled. Turn it on in Administration → Modules.",
     "extension.gmail.login_failed": "Could not sign in.",
     "extension.gmail.checking_app": "Looking for {SYSTEM_NAME}…",
+    "extension.gmail.login_done.title": "Signed in to {SYSTEM_NAME}",
+    "extension.gmail.login_done.body":
+      "You can close this window and return to the plugin.",
+    "extension.gmail.login_done.error_title": "Could not sign in",
+    "extension.gmail.login_done.error_body":
+      "Try again from the Gmail plugin.",
     "extension.gmail.done.title": "Gmail connected",
     "extension.gmail.done.body":
       "Gmail is connected to {SYSTEM_NAME}. You can close this window and return to the plugin.",

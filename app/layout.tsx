@@ -4,6 +4,7 @@ import { AuthSessionProvider } from "@/app/lib/auth/auth-session-provider";
 import { getCurrentUser } from "@/app/lib/auth/get-current-user";
 import { CookieConsentProvider } from "@/app/components/cookie-consent-provider";
 import { DisplayPreferencesProvider } from "@/app/components/display-preferences-provider";
+import { TimezoneSync } from "@/app/components/timezone-sync";
 import { FeedbackToastProvider } from "@/app/components/feedback-toast-provider";
 import { NowProvider } from "@/app/components/now-provider";
 import { TranslationsProvider } from "@/app/components/translations-provider";
@@ -142,6 +143,7 @@ export default async function RootLayout({
           <SentryInit dsn={sentry.dsn} environment={sentry.environment} />
         ) : null}
         <AuthSessionProvider initialUser={user}>
+          <TimezoneSync />
           <NowProvider>
             <TranslationsProvider
               languageCode={languageCode}

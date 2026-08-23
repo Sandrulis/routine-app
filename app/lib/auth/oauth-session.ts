@@ -9,6 +9,7 @@ import {
   withAuthCookieOptions,
 } from "@/app/lib/auth/remember-session";
 import type { OAuthLoginErrorPage } from "@/app/lib/auth/oauth-login-state";
+import { GMAIL_PLUGIN_DONE_PATH } from "@/app/lib/extension/gmail-oauth";
 import { logError } from "@/app/lib/security/log-error";
 import { createAdminClient } from "@/app/lib/supabase/admin";
 import {
@@ -128,8 +129,15 @@ export function oauthSignInErrorRedirect(
   provider: "google" | "microsoft",
   errorCode?: string,
 ) {
+  const code = errorCode || provider;
+  if (errorPage === "plugin") {
+    const url = new URL(GMAIL_PLUGIN_DONE_PATH, origin);
+    url.searchParams.set("login", "1");
+    url.searchParams.set("error", code);
+    return NextResponse.redirect(url);
+  }
   const url = new URL(`/${errorPage}`, origin);
-  url.searchParams.set("error", errorCode || provider);
+  url.searchParams.set("error", code);
   return NextResponse.redirect(url);
 }
 

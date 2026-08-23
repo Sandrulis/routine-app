@@ -93,7 +93,7 @@ export function AdminCronJobsForm({
       <p className="text-sm text-zinc-600">
         {t(
           "admin.cron_jobs.page_hint",
-          "Ieslēdz vajadzīgo darbu un iekopē saiti cron-job.org. Ieteicams palaist reizi dienā no rīta. Kamēr darbs ir izslēgts, saite neatbildēs.",
+          "Ieslēdz darbu un iekopē saiti cron-job.org. Palaiž reizi stundā. Sākuma atgādinājumi no 8:00, termiņa no 9:00 lietotāja laika joslā. Katrā palaišanā līdz 1000 lietotājiem; pārējie nākamajā stundā. Kamēr darbs izslēgts, saite neatbild.",
         )}
       </p>
 

@@ -5,6 +5,7 @@ import {
 } from "@/app/lib/integrations/google-oauth/repository";
 
 export const GMAIL_PLUGIN_START_PATH = "/auth/gmail-plugin/start";
+export const GMAIL_PLUGIN_LOGIN_PATH = "/auth/gmail-plugin/login";
 export const GMAIL_PLUGIN_CALLBACK_PATH = "/auth/gmail-plugin/callback";
 export const GMAIL_PLUGIN_DONE_PATH = "/auth/gmail-plugin/done";
 export const GMAIL_PLUGIN_OAUTH_COOKIE = "routine-app-gmail-plugin-oauth";

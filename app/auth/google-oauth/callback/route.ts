@@ -110,7 +110,9 @@ export async function GET(request: Request) {
   if (loginCookie || loginUrl) {
     if (searchParams.get("error") === "access_denied") {
       const errorPage = loginCookie?.errorPage ?? loginUrl?.errorPage ?? "login";
-      return clearOAuthCookie(NextResponse.redirect(new URL(`/${errorPage}`, origin)));
+      return clearOAuthCookie(
+        oauthSignInErrorRedirect(origin, errorPage, "google"),
+      );
     }
     if (!code) {
       const errorPage = loginCookie?.errorPage ?? loginUrl?.errorPage ?? "login";

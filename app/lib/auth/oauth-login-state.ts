@@ -1,7 +1,7 @@
 import { randomBytes } from "node:crypto";
 import { getSafeRedirectPath } from "@/app/lib/security/safe-redirect-path";
 
-export type OAuthLoginErrorPage = "login" | "signup";
+export type OAuthLoginErrorPage = "login" | "signup" | "plugin";
 
 export type OAuthLoginState = {
   nonce: string;
@@ -39,7 +39,12 @@ export function parseOAuthLoginState(
   if (lastDot <= 0) return null;
   const nextRaw = remainder.slice(0, lastDot);
   const errorPage = remainder.slice(lastDot + 1).trim();
-  if (!nonce || (errorPage !== "login" && errorPage !== "signup")) return null;
+  if (
+    !nonce ||
+    (errorPage !== "login" && errorPage !== "signup" && errorPage !== "plugin")
+  ) {
+    return null;
+  }
   let next = "/dashboard";
   try {
     next = getSafeRedirectPath(decodeURIComponent(nextRaw));

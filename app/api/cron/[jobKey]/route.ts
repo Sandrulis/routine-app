@@ -8,6 +8,7 @@ import { isSupabaseAdminConfigured } from "@/app/lib/supabase/env";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+export const maxDuration = 60;
 
 async function handleCronRequest(
   request: Request,
@@ -15,8 +16,8 @@ async function handleCronRequest(
 ): Promise<NextResponse> {
   const limited = await consumeRateLimit(
     `cron:${requestClientIp(request)}`,
-    60,
-    15 * 60 * 1000,
+    30,
+    60 * 60 * 1000,
   );
   if (!limited.ok) {
     return NextResponse.json(

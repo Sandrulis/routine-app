@@ -4,6 +4,11 @@
 
 - (none)
 
+## v0.2.17
+
+- Cron jobs: palaiž reizi stundā, līdz 1000 lietotājiem katrā reizē; sākuma atgādinājums no 8:00 un termiņš no 9:00 lietotāja laika joslā (`091`)
+- Gmail spraudnis `0.4.5`: **Turpināt ar Google** atver Google OAuth (ne `/login` riņķi); pēc apstiprinājuma sesija paliek spraudnī
+
 ## v0.2.16
 
 - Security smoke: cron maršruts `/api/cron/[jobKey]` autentificējas ar darba tokenu, ne sesijas cookie

@@ -84,6 +84,8 @@
   "extension.gmail.open_email": "Atver e-pastu Gmailā, tad pievieno.",
   "extension.gmail.checking_session": "Pārbauda TASQIN sesiju…",
   "extension.gmail.open_login": "Atvērt TASQIN login",
+  "extension.gmail.login_failed": "Neizdevās ienākt.",
+  "extension.gmail.options.connecting": "Atveras Google atļauju logs…",
   "extension.gmail.connect_gmail": "Savienot Gmail",
   "extension.gmail.add_to_routine": "Pievienot TASQIN",
   "extension.gmail.loading_gmail": "Ielādē e-pastu un pielikumus no Gmail…",
@@ -958,12 +960,32 @@ function ensureUi() {
     }
     if (!sessionResult?.data?.authenticated) {
       const appBase = sessionResult?.appBase || "https://www.tasqin.com";
+      const loginPath =
+        sessionResult?.data?.loginPath || "/auth/gmail-plugin/login";
       setResultMode(true);
       setFeedback(tError("errors.extension_auth_required"), "error");
       feedback.insertAdjacentHTML(
         "afterend",
-        `<p class="routine-gmail-login-link"><a href="${appBase}/login" target="_blank" rel="noreferrer">${t("extension.gmail.open_login")}</a></p>`,
+        `<p class="routine-gmail-login-link"><a href="${appBase}${loginPath}" target="_blank" rel="noreferrer">${t("extension.gmail.open_login")}</a></p>`,
       );
+      panel
+        .querySelector(".routine-gmail-login-link a")
+        ?.addEventListener("click", (event) => {
+          event.preventDefault();
+          void (async () => {
+            setBusy(true, t("extension.gmail.options.connecting"));
+            const result = await send("routine.openLogin", { google: true });
+            setBusy(false);
+            if (result?.ok) {
+              await openModal();
+              return;
+            }
+            setFeedback(
+              tError(result?.error || "extension.gmail.login_failed"),
+              "error",
+            );
+          })();
+        });
       return;
     }
     const data = sessionResult.data;

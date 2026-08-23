@@ -190,8 +190,14 @@ function fitPopup() {
 }
 
 $("googleLogin").addEventListener("click", async () => {
+  setStatus(t("extension.gmail.options.connecting"));
+  const result = await send("routine.openLogin", { google: true });
+  if (!result?.ok) {
+    setStatus(t(result?.error || "extension.gmail.login_failed"), false);
+    return;
+  }
   setStatus("", true);
-  await send("routine.openLogin");
+  await refreshUi();
 });
 
 function updatePasswordToggle(visible) {

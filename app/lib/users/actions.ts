@@ -5,6 +5,7 @@ import { getCurrentUser } from "@/app/lib/auth/get-current-user";
 import { createClient } from "@/app/lib/supabase/server";
 import { isSupabaseConfigured } from "@/app/lib/supabase/env";
 import type { UserDisplayPreferences } from "@/app/lib/site-admin/display-preferences";
+import { isValidTimeZone } from "@/app/lib/cron-jobs/timezone";
 import { joinDisplayName } from "@/app/lib/users/display-name";
 
 export type SaveUserPersonalInfoInput = {
@@ -138,5 +139,29 @@ export async function saveNotificationPreferencesAction(
   }
 
   revalidatePath("/", "layout");
+  return { ok: true };
+}
+
+export async function saveCurrentUserTimezoneAction(
+  timeZone: string,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const user = await getCurrentUser();
+  if (!user) {
+    return { ok: false, error: "errors.auth_required" };
+  }
+  if (!isSupabaseConfigured()) {
+    return { ok: false, error: "errors.db_not_configured" };
+  }
+  if (!isValidTimeZone(timeZone)) {
+    return { ok: false, error: "errors.invalid_timezone" };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("set_current_user_timezone", {
+    p_timezone: timeZone,
+  });
+  if (error) {
+    return { ok: false, error: "errors.user_profile_failed" };
+  }
   return { ok: true };
 }
