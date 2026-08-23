@@ -265,31 +265,119 @@ async function getAppBase() {
   return DEFAULT_APP_BASE;
 }
 
+function fromBase64Url(value) {
+  const padded = String(value || "").replace(/-/g, "+").replace(/_/g, "/");
+  const pad = padded.length % 4 === 0 ? "" : "=".repeat(4 - (padded.length % 4));
+  return atob(padded + pad);
+}
+
+function sessionFromParsed(parsed) {
+  if (!parsed || typeof parsed !== "object") return null;
+  const nested =
+    parsed.currentSession && typeof parsed.currentSession === "object"
+      ? parsed.currentSession
+      : parsed;
+  const access = nested.access_token || nested.accessToken;
+  if (typeof access !== "string" || !access) return null;
+  return {
+    access_token: access,
+    refresh_token: nested.refresh_token || nested.refreshToken || "",
+    expires_at: nested.expires_at,
+    expires_in: nested.expires_in,
+    token_type: nested.token_type,
+  };
+}
+
 function parseSessionValue(raw) {
-  const candidates = [raw];
+  if (!raw) return null;
+  const text = String(raw);
+  const candidates = [text];
   try {
-    candidates.push(decodeURIComponent(raw));
+    candidates.push(decodeURIComponent(text));
   } catch {
     // ignore
   }
-  for (const candidate of candidates) {
+  const expanded = [];
+  for (const candidate of unique(candidates)) {
+    expanded.push(candidate);
+    if (candidate.startsWith("base64-")) {
+      expanded.push(candidate.slice("base64-".length));
+    }
+  }
+  for (const candidate of expanded) {
     try {
       let parsed = JSON.parse(candidate);
       if (typeof parsed === "string") parsed = JSON.parse(parsed);
-      if (parsed && typeof parsed.access_token === "string") return parsed;
+      const session = sessionFromParsed(parsed);
+      if (session) return session;
     } catch {
       // try next
     }
     try {
-      const decoded = atob(candidate.replace(/-/g, "+").replace(/_/g, "/"));
+      const decoded = fromBase64Url(candidate);
       let parsed = JSON.parse(decoded);
       if (typeof parsed === "string") parsed = JSON.parse(parsed);
-      if (parsed && typeof parsed.access_token === "string") return parsed;
+      const session = sessionFromParsed(parsed);
+      if (session) return session;
     } catch {
       // ignore
     }
   }
   return null;
+}
+
+function cookiesFromHeader(header) {
+  return String(header || "")
+    .split(";")
+    .map((part) => {
+      const trimmed = part.trim();
+      const separator = trimmed.indexOf("=");
+      if (separator < 0) return null;
+      let name = trimmed.slice(0, separator).trim();
+      let value = trimmed.slice(separator + 1).trim();
+      try {
+        name = decodeURIComponent(name);
+      } catch {
+        // keep raw
+      }
+      try {
+        value = decodeURIComponent(value);
+      } catch {
+        // keep raw
+      }
+      return name ? { name, value } : null;
+    })
+    .filter(Boolean);
+}
+
+function sessionFromAuthCookieList(cookies) {
+  const authCookies = cookies.filter((cookie) =>
+    /-auth-token(\.\d+)?$/.test(cookie.name || ""),
+  );
+  if (authCookies.length === 0) {
+    return { session: null, cookieName: "" };
+  }
+
+  const groups = new Map();
+  for (const cookie of authCookies) {
+    const match = /^(.*-auth-token)(?:\.(\d+))?$/.exec(cookie.name);
+    if (!match) continue;
+    const base = match[1];
+    const index = match[2] ? Number(match[2]) : 0;
+    if (!groups.has(base)) groups.set(base, []);
+    groups.get(base).push({ index, value: cookie.value || "" });
+  }
+
+  let fallback = { session: null, cookieName: "" };
+  for (const [cookieName, parts] of groups.entries()) {
+    parts.sort((a, b) => a.index - b.index);
+    const session = parseSessionValue(parts.map((part) => part.value).join(""));
+    if (sessionUsable(session)) return { session, cookieName };
+    if (session?.access_token && !fallback.session) {
+      fallback = { session, cookieName };
+    }
+  }
+  return fallback;
 }
 
 function sessionExpired(session) {
@@ -309,29 +397,40 @@ function sessionExpired(session) {
   return false;
 }
 
+async function listCookiesForOrigin(appBase) {
+  const origin = parseOrigin(appBase);
+  const collected = [];
+  const seen = new Set();
+  function add(cookie) {
+    if (!cookie?.name) return;
+    const key = `${cookie.domain || ""}|${cookie.name}|${cookie.partitionKey?.topLevelSite || ""}`;
+    if (seen.has(key)) return;
+    seen.add(key);
+    collected.push(cookie);
+  }
+  if (origin) {
+    try {
+      (await chrome.cookies.getAll({ url: origin })).forEach(add);
+    } catch {
+      // ignore
+    }
+  }
+  try {
+    const host = origin ? new URL(origin).hostname.replace(/^www\./, "") : "";
+    const all = await chrome.cookies.getAll({});
+    for (const cookie of all) {
+      if (!/-auth-token(\.\d+)?$/.test(cookie.name || "")) continue;
+      if (host && !String(cookie.domain || "").includes(host)) continue;
+      add(cookie);
+    }
+  } catch {
+    // ignore
+  }
+  return collected;
+}
+
 async function readSessionFromCookies(appBase) {
-  const cookies = await chrome.cookies.getAll({ url: appBase });
-  const authCookies = cookies.filter((cookie) =>
-    /-auth-token(\.\d+)?$/.test(cookie.name),
-  );
-  if (authCookies.length === 0) return { session: null, cookieName: "" };
-
-  const groups = new Map();
-  for (const cookie of authCookies) {
-    const match = /^(.*-auth-token)(?:\.(\d+))?$/.exec(cookie.name);
-    if (!match) continue;
-    const base = match[1];
-    const index = match[2] ? Number(match[2]) : 0;
-    if (!groups.has(base)) groups.set(base, []);
-    groups.get(base).push({ index, value: cookie.value });
-  }
-
-  for (const [cookieName, parts] of groups.entries()) {
-    parts.sort((a, b) => a.index - b.index);
-    const session = parseSessionValue(parts.map((part) => part.value).join(""));
-    if (session) return { session, cookieName };
-  }
-  return { session: null, cookieName: "" };
+  return sessionFromAuthCookieList(await listCookiesForOrigin(appBase));
 }
 
 async function clearAuthCookies(appBase, cookieName) {
@@ -1000,6 +1099,68 @@ function isPluginLoginDoneUrl(url) {
   );
 }
 
+async function captureSessionFromDone(url, cookieHeader) {
+  const origin = parseOrigin(url);
+  if (!origin) return "";
+  if (cookieHeader) {
+    const fromPage = sessionFromAuthCookieList(cookiesFromHeader(cookieHeader));
+    if (fromPage.session?.access_token) {
+      await rememberSession(origin, fromPage.session);
+    }
+  }
+  await importSessionFromKnownCookies(origin);
+  return (await getAccessToken(origin)) ? origin : "";
+}
+
+async function waitForPluginSession(tabId, preferredOrigin, timeoutMs = 180000) {
+  const started = Date.now();
+  let sawDone = false;
+  let sawError = false;
+  const onUpdated = (id, info, tab) => {
+    if (id !== tabId) return;
+    const url = String(info.url || tab?.url || "");
+    if (!url.includes("/auth/gmail-plugin/done")) return;
+    sawDone = true;
+    if (url.includes("error=")) {
+      sawError = true;
+      return;
+    }
+    void captureSessionFromDone(url);
+  };
+  chrome.tabs.onUpdated.addListener(onUpdated);
+  try {
+    while (Date.now() - started < timeoutMs) {
+      const imported = await importSessionFromKnownCookies(preferredOrigin);
+      if (imported && (await getAccessToken(imported))) return imported;
+      if (sawError) return "";
+      try {
+        const tab = await chrome.tabs.get(tabId);
+        const url = String(tab.url || tab.pendingUrl || "");
+        if (url.includes("/auth/gmail-plugin/done")) {
+          sawDone = true;
+          if (url.includes("error=")) return "";
+          const ready = await captureSessionFromDone(url);
+          if (ready) return ready;
+        }
+      } catch {
+        const importedAfterClose =
+          (await importSessionFromKnownCookies(preferredOrigin)) || "";
+        if (importedAfterClose && (await getAccessToken(importedAfterClose))) {
+          return importedAfterClose;
+        }
+        if (!sawDone) return "";
+        await new Promise((resolve) => setTimeout(resolve, 600));
+        const retry = await importSessionFromKnownCookies(preferredOrigin);
+        return retry && (await getAccessToken(retry)) ? retry : "";
+      }
+      await new Promise((resolve) => setTimeout(resolve, 400));
+    }
+    return "";
+  } finally {
+    chrome.tabs.onUpdated.removeListener(onUpdated);
+  }
+}
+
 function scheduleSessionRefresh() {
   if (!chrome.alarms) return;
   void chrome.alarms.create("routine.refreshSession", { periodInMinutes: 45 });
@@ -1048,6 +1209,17 @@ if (chrome.alarms) {
   });
 }
 
+if (chrome.tabs?.onUpdated) {
+  chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+    const url = String(changeInfo.url || tab?.url || "");
+    if (!isPluginLoginDoneUrl(url) || url.includes("error=")) return;
+    void (async () => {
+      if (!(await pluginCookieImportAllowed())) return;
+      await captureSessionFromDone(url);
+    })();
+  });
+}
+
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   (async () => {
     try {
@@ -1059,6 +1231,18 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         const teamId = String(message.teamId || "").trim();
         if (teamId) await chrome.storage.sync.set({ selectedTeamId: teamId });
         sendResponse({ ok: true, teamId });
+        return;
+      }
+      if (message?.type === "routine.pluginAuthDone") {
+        const state = String(message.state || "");
+        const url = String(message.url || "");
+        if (state !== "logged-in" && state !== "connected") {
+          sendResponse({ ok: false });
+          return;
+        }
+        await markPluginSignedIn();
+        const origin = await captureSessionFromDone(url, message.cookieHeader);
+        sendResponse({ ok: Boolean(origin) });
         return;
       }
       if (message?.type === "routine.openLogin") {
@@ -1088,17 +1272,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           sendResponse({ ok: true });
           return;
         }
-        const doneUrl = await waitForTabMatch(tab.id, isPluginLoginDoneUrl);
-        if (!doneUrl || doneUrl.includes("error=")) {
-          sendResponse({
-            ok: false,
-            error: "extension.gmail.login_failed",
-          });
-          return;
-        }
-        const doneOrigin = parseOrigin(doneUrl) || tabOrigin;
-        await importSessionFromKnownCookies(doneOrigin);
-        const token = await getAccessToken(doneOrigin);
+        const readyOrigin = await waitForPluginSession(tab.id, tabOrigin);
+        const token = readyOrigin ? await getAccessToken(readyOrigin) : null;
         sendResponse({
           ok: Boolean(token),
           error: token ? undefined : "extension.gmail.login_failed",

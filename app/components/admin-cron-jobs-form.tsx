@@ -42,18 +42,26 @@ export function AdminCronJobsForm({
   const { showFeedback } = useFeedbackToast();
   const [jobs, setJobs] = useState(initialJobs);
   const [pendingKey, setPendingKey] = useState<CronJobKey | null>(null);
-  const [isPending, startTransition] = useTransition();
+  const [, startTransition] = useTransition();
 
   useEffect(() => {
     setJobs(initialJobs);
   }, [initialJobs]);
 
   function handleToggle(job: CronJobSummary, enabled: boolean) {
+    if (pendingKey) return;
+    const previous = jobs;
+    setPendingKey(job.jobKey);
+    setJobs((current) =>
+      current.map((item) =>
+        item.jobKey === job.jobKey ? { ...item, enabled } : item,
+      ),
+    );
     startTransition(async () => {
-      setPendingKey(job.jobKey);
       const result = await setCronJobEnabledAction(job.jobKey, enabled);
-      setPendingKey(null);
       if (!result.ok) {
+        setJobs(previous);
+        setPendingKey(null);
         showFeedback({
           type: "error",
           text: translateActionError(t, result.error),
@@ -63,6 +71,7 @@ export function AdminCronJobsForm({
       setJobs((current) =>
         current.map((item) => (item.jobKey === result.job.jobKey ? result.job : item)),
       );
+      setPendingKey(null);
       showFeedback({
         type: "success",
         text: enabled
@@ -101,7 +110,8 @@ export function AdminCronJobsForm({
         <ul className="divide-y divide-zinc-100">
           {jobs.map((job) => {
             const copy = JOB_COPY[job.jobKey];
-            const busy = isPending && pendingKey === job.jobKey;
+            const busy = pendingKey === job.jobKey;
+            const rowLocked = pendingKey !== null;
             return (
               <li key={job.jobKey} className="px-5 py-4">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -135,13 +145,14 @@ export function AdminCronJobsForm({
                         )}
                         icon="fas fa-copy"
                         variant="muted"
-                        disabled={busy}
+                        disabled={rowLocked}
                         onClick={() => void copyUrl(job.url!)}
                       />
                     ) : null}
                     <ToggleSwitch
                       checked={job.enabled}
-                      disabled={busy}
+                      disabled={rowLocked && !busy}
+                      busy={busy}
                       label={t(copy.titleKey, copy.titleFallback)}
                       onChange={(enabled) => handleToggle(job, enabled)}
                     />

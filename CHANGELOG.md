@@ -4,6 +4,11 @@
 
 - (none)
 
+## v0.2.18
+
+- Gmail spraudnis `0.4.6`: pēc Google ielogošanās sesija paliek spraudnī (`base64-` cookie un done lapas paziņojums)
+- Admin cron jobs: slēdzis uzreiz rāda loading, kamēr saglabājas
+
 ## v0.2.17
 
 - Cron jobs: palaiž reizi stundā, līdz 1000 lietotājiem katrā reizē; sākuma atgādinājums no 8:00 un termiņš no 9:00 lietotāja laika joslā (`091`)
