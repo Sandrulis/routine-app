@@ -226,8 +226,10 @@ async function insertForwardActivity(input: {
   fileId?: string;
   to: string;
   subject: string;
+  body?: string;
   resendEmailId?: string;
 }): Promise<TaskActivity | null> {
+  const body = (input.body ?? "").trim().slice(0, 4000);
   const activity = createActivity({
     actorId: input.actorId,
     taskId: input.taskId,
@@ -239,6 +241,7 @@ async function insertForwardActivity(input: {
       to: input.to,
       subject: input.subject,
       deliveryStatus: "sent",
+      ...(body ? { body } : {}),
       ...(input.fileId ? { fileId: input.fileId } : {}),
       ...(input.resendEmailId ? { resendEmailId: input.resendEmailId } : {}),
     },
@@ -395,6 +398,7 @@ export async function forwardTaskFileAction(input: {
       fileId: fileId || undefined,
       to,
       subject,
+      body,
       resendEmailId: sent.id,
     });
   }

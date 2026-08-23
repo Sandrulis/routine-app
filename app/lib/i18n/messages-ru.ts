@@ -1398,7 +1398,7 @@ export const ru: Record<string, string> = {
   "subtasks.history.file": "Прикреплён файл: {name}",
   "subtasks.history.file_removed": "Файл удалён: {name}",
   "subtasks.history.file_renamed": "Файл переименован: {from} → {to}",
-  "subtasks.history.file_forwarded": "Файл «{name}» переслан на {email}. Тема: {subject}",
+  "subtasks.history.file_forwarded": "Файл «{name}» переслан",
   "subtasks.history.file_forwarded_bounced":
     "Письмо не доставлено. Проверьте адрес и отправьте снова.",
   "subtasks.history.checklist": "Чек-лист изменён.",

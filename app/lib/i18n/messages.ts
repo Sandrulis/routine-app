@@ -1414,7 +1414,7 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
     "subtasks.history.file": "Pievienots fails: {name}",
     "subtasks.history.file_removed": "Noņemts fails: {name}",
     "subtasks.history.file_renamed": "Fails pārsaukts: {from} → {to}",
-    "subtasks.history.file_forwarded": "Pārsūtīts fails „{name}” uz {email}. Tēma: {subject}",
+    "subtasks.history.file_forwarded": "Pārsūtīts fails „{name}”",
     "subtasks.history.file_forwarded_bounced":
       "E-pasts netika piegādāts. Pārbaudi adresi un nosūti vēlreiz.",
     "subtasks.history.checklist": "Kontrolsaraksts mainīts.",
@@ -3321,7 +3321,7 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
     "subtasks.history.file": "File attached: {name}",
     "subtasks.history.file_removed": "File removed: {name}",
     "subtasks.history.file_renamed": "File renamed: {from} → {to}",
-    "subtasks.history.file_forwarded": "File “{name}” forwarded to {email}. Subject: {subject}",
+    "subtasks.history.file_forwarded": "File “{name}” forwarded",
     "subtasks.history.file_forwarded_bounced":
       "The email was not delivered. Check the address and send again.",
     "subtasks.history.checklist": "Checklist changed.",

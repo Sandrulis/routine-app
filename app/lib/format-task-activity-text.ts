@@ -152,24 +152,9 @@ export function formatTaskActivityText({
     });
   }
   if (item.kind === "file_forwarded") {
-    const meta = item.metadata;
-    const email =
-      meta && typeof meta === "object" && typeof meta.to === "string"
-        ? meta.to.trim()
-        : item.previousText?.trim() || "—";
-    const subject =
-      meta && typeof meta === "object" && typeof meta.subject === "string"
-        ? meta.subject.trim()
-        : item.text?.trim() || "—";
-    return t(
-      "subtasks.history.file_forwarded",
-      "Pārsūtīts fails „{name}” uz {email}. Tēma: {subject}",
-      {
-        name: item.fileName?.trim() || "—",
-        email: email || "—",
-        subject: subject || "—",
-      },
-    );
+    return t("subtasks.history.file_forwarded", "Pārsūtīts fails „{name}”", {
+      name: item.fileName?.trim() || "—",
+    });
   }
   if (item.kind === "reordered") {
     return t("subtasks.history.reordered", "Mainīta kārtība.");

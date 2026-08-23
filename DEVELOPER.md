@@ -396,7 +396,7 @@ app/
     move-subtask-modal.tsx        # Apakšuzdevuma pārvietošana pie cita uzdevuma
     move-subtask-destination-button.tsx # Pārvietošanas mērķis ar PATH zem nosaukuma
     subtask-detail-modal.tsx      # Apakšuzdevuma modālis; unikāli checklist/attachments key; vēsture; failu pārsūtīšana
-    forward-task-file-modal.tsx   # Resend: pārsūtīt pielikumu (e-pasts, tēma=PATH, ziņojums); vēsture `file_forwarded`
+    forward-task-file-modal.tsx   # Resend: pārsūtīt pielikumu (e-pasts, tēma=PATH, ziņojums); vēsture `file_forwarded` (e-pasts/tēma/body rindās + OverflowTooltip)
     task-checklists.tsx           # Check List pirms pielikumiem; tukšs sakļauts; forceCollapsed
     status-control.tsx            # Statusa poga, picker, čeklista josla
     relative-time.tsx             # Relatīvais laiks (min / h / d / m)

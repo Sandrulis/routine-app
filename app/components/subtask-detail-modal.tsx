@@ -18,7 +18,7 @@ import { ForwardTaskFileModal } from "@/app/components/forward-task-file-modal";
 import { TaskAttachments } from "@/app/components/task-attachments";
 import { TaskChecklists } from "@/app/components/task-checklists";
 import { RelativeTime } from "@/app/components/relative-time";
-import { Tooltip } from "@/app/components/tooltip";
+import { OverflowTooltip, Tooltip } from "@/app/components/tooltip";
 import { UserAvatar } from "@/app/components/user-avatar";
 import { useFeedbackToast } from "@/app/components/feedback-toast-provider";
 import { useDisplayPreferences } from "@/app/components/display-preferences-provider";
@@ -106,6 +106,36 @@ const emptyDraft: SubtaskDraft = {
   assigneeIds: [],
   checklists: [],
 };
+
+function HistoryForwardDetails({
+  email,
+  subject,
+  body,
+  failed,
+}: {
+  email: string;
+  subject: string;
+  body: string;
+  failed: boolean;
+}) {
+  const tone = failed ? "text-red-600" : "text-zinc-600";
+  const lineClass = `block min-w-0 truncate text-[13px] ${tone}`;
+  const lines = [
+    { key: "email", value: email },
+    { key: "subject", value: subject },
+    ...(body ? [{ key: "body", value: body }] : []),
+  ];
+
+  return (
+    <div className="mt-0.5 min-w-0 space-y-0.5">
+      {lines.map((line) => (
+        <OverflowTooltip key={line.key} label={line.value} className="block min-w-0">
+          <span className={lineClass}>{line.value || "—"}</span>
+        </OverflowTooltip>
+      ))}
+    </div>
+  );
+}
 
 function ScrollableHistoryList({ children }: { children: ReactNode }) {
   const ref = useRef<HTMLOListElement>(null);
@@ -262,6 +292,7 @@ export function SubtaskDetailModal({
     size?: number;
     defaultTo?: string;
     defaultSubject?: string;
+    defaultBody?: string;
   } | null>(null);
   const [resendEnabled, setResendEnabled] = useState(false);
   const [uploadProgress, setUploadProgress] =
@@ -580,6 +611,7 @@ export function SubtaskDetailModal({
         (typeof meta?.subject === "string" && meta.subject.trim()) ||
         item.text?.trim() ||
         forwardSubject,
+      defaultBody: typeof meta?.body === "string" ? meta.body : "",
     });
   }
 
@@ -1142,6 +1174,17 @@ export function SubtaskDetailModal({
                   const forwardFailed = isForwardDeliveryFailed(
                     forwardMeta?.deliveryStatus,
                   );
+                  const forwardEmail =
+                    (typeof forwardMeta?.to === "string" && forwardMeta.to.trim()) ||
+                    item.previousText?.trim() ||
+                    "";
+                  const forwardSubjectLine =
+                    (typeof forwardMeta?.subject === "string" &&
+                      forwardMeta.subject.trim()) ||
+                    item.text?.trim() ||
+                    "";
+                  const forwardBody =
+                    typeof forwardMeta?.body === "string" ? forwardMeta.body.trim() : "";
                   return (
                     <li key={item.id} className="flex gap-2">
                       {actor ? (
@@ -1151,17 +1194,31 @@ export function SubtaskDetailModal({
                           ?
                         </span>
                       )}
-                      <div className="min-w-0">
+                      <div className="min-w-0 flex-1">
                         <p className="text-[12px] font-medium text-zinc-700">
                           {actor?.name ?? t("todo.fields.unassigned", "Nepiešķirts")}
                         </p>
-                        <p
-                          className={`mt-0.5 whitespace-pre-wrap text-[13px] ${
-                            forwardFailed ? "text-red-600" : "text-zinc-600"
-                          }`}
-                        >
-                          {activityText(item)}
-                        </p>
+                        {item.kind === "file_forwarded" ? (
+                          <>
+                            <p
+                              className={`mt-0.5 text-[13px] ${
+                                forwardFailed ? "text-red-600" : "text-zinc-600"
+                              }`}
+                            >
+                              {activityText(item)}
+                            </p>
+                            <HistoryForwardDetails
+                              email={forwardEmail || "—"}
+                              subject={forwardSubjectLine || "—"}
+                              body={forwardBody}
+                              failed={forwardFailed}
+                            />
+                          </>
+                        ) : (
+                          <p className="mt-0.5 whitespace-pre-wrap text-[13px] text-zinc-600">
+                            {activityText(item)}
+                          </p>
+                        )}
                         {forwardFailed ? (
                           <div className="mt-1 space-y-1">
                             <p className="text-[12px] font-medium text-red-600">
@@ -1276,6 +1333,7 @@ export function SubtaskDetailModal({
       fileSize={fileToForward?.size}
       defaultTo={fileToForward?.defaultTo ?? ""}
       defaultSubject={fileToForward?.defaultSubject ?? forwardSubject}
+      defaultBody={fileToForward?.defaultBody ?? ""}
       onSend={confirmForwardAttachment}
     />
     <FileUploadOverlay progress={uploadProgress} />

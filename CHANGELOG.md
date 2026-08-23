@@ -4,6 +4,10 @@
 
 - (none)
 
+## v0.2.14
+
+- Pārsūtītā faila vēsturē e-pasts, tēma un ziņojums katrs savā rindā ar truncate un tooltip
+
 ## v0.2.13
 
 - Security smoke: Resend webhook (`/api/webhooks/resend`) atzīts kā Svix-parakstīts publiskais endpoint, nevis sesijas auth

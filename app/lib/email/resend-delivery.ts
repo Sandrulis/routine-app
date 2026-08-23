@@ -14,6 +14,7 @@ export type ForwardDeliveryStatus =
 export type ForwardActivityMetadata = TaskActivityMetadata & {
   to?: string;
   subject?: string;
+  body?: string;
   fileId?: string;
   resendEmailId?: string;
   deliveryStatus?: ForwardDeliveryStatus;

@@ -15,6 +15,7 @@ export function ForwardTaskFileModal({
   fileSize,
   defaultTo = "",
   defaultSubject,
+  defaultBody = "",
   onSend,
 }: {
   open: boolean;
@@ -23,6 +24,7 @@ export function ForwardTaskFileModal({
   fileSize?: number;
   defaultTo?: string;
   defaultSubject: string;
+  defaultBody?: string;
   onSend: (input: {
     to: string;
     subject: string;
@@ -32,16 +34,16 @@ export function ForwardTaskFileModal({
   const { t } = useTranslations();
   const [to, setTo] = useState(defaultTo);
   const [subject, setSubject] = useState(defaultSubject);
-  const [body, setBody] = useState("");
+  const [body, setBody] = useState(defaultBody);
   const [pending, setPending] = useState(false);
 
   useEffect(() => {
     if (!open) return;
     setTo(defaultTo);
     setSubject(defaultSubject);
-    setBody("");
+    setBody(defaultBody);
     setPending(false);
-  }, [defaultSubject, defaultTo, open]);
+  }, [defaultBody, defaultSubject, defaultTo, open]);
 
   const trimmedTo = to.trim();
   const trimmedSubject = subject.trim();
@@ -49,7 +51,7 @@ export function ForwardTaskFileModal({
   const canSubmit = emailValid && trimmedSubject.length > 0 && !pending;
   const dirty =
     trimmedTo !== defaultTo.trim() ||
-    body.trim().length > 0 ||
+    body.trim() !== defaultBody.trim() ||
     trimmedSubject !== defaultSubject.trim();
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
