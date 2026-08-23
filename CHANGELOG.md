@@ -4,6 +4,11 @@
 
 - (none)
 
+## v0.2.6
+
+- 15 UI valodas (t.sk. itāļu un zviedru); valodas izvēlne rāda lielākus karogus un nosaukumus, noklusējums pirmais
+- Landing zem hero ielādējas lazy, hash saites slīd gludi; hreflang un sitemap visām valodām, OG 1200×630
+
 ## v0.2.5
 
 - Login/signup metodes (e-pasts, Google, Microsoft) nāk no publiska RPC `public_sign_in_methods` — pogas rādās arī bez `SUPABASE_SERVICE_ROLE_KEY` pārlūkā

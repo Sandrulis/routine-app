@@ -30,6 +30,7 @@ import { mapUserDisplay } from "@/app/lib/auth/map-user-display";
 import { useAuthSession } from "@/app/lib/auth/use-auth-session";
 import {
   TEAM_CHANGE_EVENT,
+  createMemberId,
   createOwnerMember,
   createRoleId,
   createTeamId,
@@ -69,17 +70,19 @@ type AddTeamInput = {
 type TeamContextValue = {
   isReady: boolean;
   members: TeamMember[];
+  membersByTeam: MembersByTeam;
   currentUser: TeamMember;
   teams: WorkTeam[];
   currentTeam: WorkTeam | null;
   roles: TeamRole[];
+  rolesByTeam: RolesByTeam;
   inviteMember: (input: InviteMemberInput) => Promise<TeamMember>;
   refreshTeams: () => Promise<{
     teams: WorkTeam[];
     membersByTeam: MembersByTeam;
     rolesByTeam: RolesByTeam;
   }>;
-  addTeam: (input: AddTeamInput) => WorkTeam;
+  addTeam: (input: AddTeamInput) => Promise<WorkTeam>;
   updateTeam: (teamId: string, input: AddTeamInput) => void;
   deleteTeam: (teamId: string) => boolean;
   selectTeam: (teamId: string) => void;
@@ -345,7 +348,7 @@ export function TeamProvider({ children }: { children: ReactNode }) {
   }, [currentTeam, rolesByTeam]);
 
   const addTeam = useCallback(
-    (input: AddTeamInput) => {
+    async (input: AddTeamInput) => {
       const trimmed = input.name.trim();
       const team: WorkTeam = {
         id: createTeamId(),
@@ -364,40 +367,34 @@ export function TeamProvider({ children }: { children: ReactNode }) {
           };
       const ownerWithOnline = {
         ...owner,
+        id: createMemberId(),
         lastOnlineAt: new Date().toISOString(),
         roleId: defaultTeamRoleId(team.id, "owner"),
       };
       const seededRoles = defaultTeamRoles(team.id);
 
       if (authUser) {
-        void insertTeam(team, ownerWithOnline, authUser.id)
-          .then(() => {
-            setTeams((current) => [...current, team]);
-            setCurrentTeamId(team.id);
-            setMembersByTeam((current) => ({
-              ...current,
-              [team.id]: [ownerWithOnline],
-            }));
-            setRolesByTeam((current) => ({
-              ...current,
-              [team.id]: seededRoles,
-            }));
-          })
-          .catch((error) => {
-            console.error("Failed to create team", error);
-          });
-      } else {
-        setTeams((current) => [...current, team]);
-        setCurrentTeamId(team.id);
-        setMembersByTeam((current) => ({
-          ...current,
-          [team.id]: [ownerWithOnline],
-        }));
-        setRolesByTeam((current) => ({
-          ...current,
-          [team.id]: seededRoles,
-        }));
+        try {
+          await insertTeam(team, ownerWithOnline, authUser.id);
+        } catch (error) {
+          console.error(
+            "Failed to create team",
+            error instanceof Error ? error.message : error,
+          );
+          throw error;
+        }
       }
+
+      setTeams((current) => [...current, team]);
+      setCurrentTeamId(team.id);
+      setMembersByTeam((current) => ({
+        ...current,
+        [team.id]: [ownerWithOnline],
+      }));
+      setRolesByTeam((current) => ({
+        ...current,
+        [team.id]: seededRoles,
+      }));
       return team;
     },
     [authUser],
@@ -623,10 +620,12 @@ export function TeamProvider({ children }: { children: ReactNode }) {
     () => ({
       isReady,
       members,
+      membersByTeam,
       currentUser,
       teams,
       currentTeam,
       roles,
+      rolesByTeam,
       inviteMember,
       refreshTeams,
       addTeam,
@@ -652,9 +651,11 @@ export function TeamProvider({ children }: { children: ReactNode }) {
       refreshTeams,
       isReady,
       members,
+      membersByTeam,
       renameTeamRole,
       reorderTeamRoles,
       roles,
+      rolesByTeam,
       selectTeam,
       teams,
       updateRolePermissions,

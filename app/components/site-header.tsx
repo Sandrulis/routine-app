@@ -2,11 +2,15 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import type { MouseEvent } from "react";
 import { LanguageSwitcher } from "@/app/components/language-switcher";
 import { ListBadge } from "@/app/components/list-badge";
 import { useTranslations } from "@/app/components/translations-provider";
 import { useAuthSession } from "@/app/lib/auth/use-auth-session";
+import { localePath, stripLocalePrefix } from "@/app/lib/seo/locale-path";
 import { DEFAULT_SITE_LOGO_COLOR } from "@/app/lib/site-admin/branding";
+import { LANDING_REVEAL_EVENT } from "@/app/components/lazy-on-visible";
+import { scrollToHashIdWhenReady } from "@/app/lib/smooth-scroll";
 
 const AUTH_PATHS = new Set(["/login", "/signup", "/forgot-password"]);
 
@@ -22,16 +26,33 @@ export function SiteHeader({
   signupEnabled?: boolean;
 }) {
   const pathname = usePathname();
-  const { t } = useTranslations();
+  const { t, languageCode } = useTranslations();
   const { user, isReady } = useAuthSession();
-  const isAuthPage = AUTH_PATHS.has(pathname);
-  const brandName = systemName?.trim() || t("app.name", "Routine");
+  const isAuthPage = AUTH_PATHS.has(stripLocalePrefix(pathname));
+  const brandName = systemName?.trim() || t("app.name", "{SYSTEM_NAME}");
+  const homeHref = localePath("/", languageCode);
+  const loginHref = localePath("/login", languageCode);
+  const signupHref = localePath("/signup", languageCode);
+  const onLanding = stripLocalePrefix(pathname) === "/";
+
+  function onLandingHashClick(
+    event: MouseEvent<HTMLAnchorElement>,
+    id: string,
+  ) {
+    if (!onLanding) return;
+    event.preventDefault();
+    event.stopPropagation();
+    event.nativeEvent.preventDefault();
+    event.nativeEvent.stopImmediatePropagation();
+    window.dispatchEvent(new Event(LANDING_REVEAL_EVENT));
+    scrollToHashIdWhenReady(id, `${homeHref}#${id}`);
+  }
 
   return (
     <header className="sticky top-0 z-30 border-b border-zinc-200 bg-white/95 backdrop-blur-sm">
       <div className="mx-auto flex h-14 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">
         <Link
-          href="/"
+          href={homeHref}
           className="inline-flex items-center gap-2 text-sm font-semibold text-zinc-900"
         >
           <ListBadge
@@ -48,7 +69,7 @@ export function SiteHeader({
           <div className="flex items-center gap-3">
             <LanguageSwitcher variant="menu" />
             <Link
-              href="/"
+              href={homeHref}
               className="text-sm font-medium text-zinc-500 transition hover:text-zinc-900"
             >
               {t("site.back_home", "Uz sākumu")}
@@ -56,6 +77,22 @@ export function SiteHeader({
           </div>
         ) : (
           <div className="flex items-center gap-2">
+            <nav className="mr-1 hidden items-center gap-1 sm:flex" aria-label={brandName}>
+              <a
+                href={`${homeHref}#features`}
+                onClickCapture={(event) => onLandingHashClick(event, "features")}
+                className="rounded-lg px-3 py-2 text-sm font-medium text-zinc-600 transition hover:bg-zinc-100 hover:text-zinc-900"
+              >
+                {t("site.nav.features", "Iespējas")}
+              </a>
+              <a
+                href={`${homeHref}#faq`}
+                onClickCapture={(event) => onLandingHashClick(event, "faq")}
+                className="rounded-lg px-3 py-2 text-sm font-medium text-zinc-600 transition hover:bg-zinc-100 hover:text-zinc-900"
+              >
+                {t("site.nav.faq", "BUJ")}
+              </a>
+            </nav>
             <LanguageSwitcher variant="menu" />
             {isReady && user ? (
               <Link
@@ -67,14 +104,14 @@ export function SiteHeader({
             ) : (
               <>
                 <Link
-                  href="/login"
+                  href={loginHref}
                   className="rounded-lg px-3 py-2 text-sm font-medium text-zinc-700 transition hover:bg-zinc-100"
                 >
                   {t("auth.login.title", "Ienākt")}
                 </Link>
                 {signupEnabled ? (
                   <Link
-                    href="/signup"
+                    href={signupHref}
                     className="rounded-lg bg-zinc-900 px-3 py-2 text-sm font-semibold text-white transition hover:bg-zinc-700"
                   >
                     {t("auth.signup.title", "Reģistrēties")}

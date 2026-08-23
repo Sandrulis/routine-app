@@ -178,6 +178,14 @@ export function isSelfTeamMember(
   return false;
 }
 
+export function membershipForUser(
+  members: TeamMember[] | undefined,
+  user: Pick<TeamMember, "id" | "userId">,
+): TeamMember | null {
+  if (!members?.length) return null;
+  return members.find((member) => isSelfTeamMember(user, member)) ?? null;
+}
+
 export function canLeaveTeam(
   currentUser: Pick<TeamMember, "id" | "role" | "roleId" | "userId">,
   member: Pick<TeamMember, "id" | "role" | "roleId" | "userId">,
@@ -347,7 +355,7 @@ export function createOwnerMember(input: {
 }): TeamMember {
   const name = input.name.trim() || input.email.trim() || "User";
   return {
-    id: input.id,
+    id: createMemberId(),
     name,
     initials: initialsFromName(name),
     role: OWNER_TEAM_ROLE,

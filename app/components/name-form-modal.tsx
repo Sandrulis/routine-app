@@ -51,7 +51,7 @@ export function NameFormModal({
   showLogo?: boolean;
   showIcons?: boolean;
   initialValue?: NameFormInput | null;
-  onCreate: (input: NameFormInput) => void;
+  onCreate: (input: NameFormInput) => void | Promise<void>;
   blocking?: boolean;
   rankLabel?: string | null;
   /** Locked suffix shown after the name input (e.g. `.pdf`). */
@@ -70,6 +70,7 @@ export function NameFormModal({
   const [initialColor, setInitialColor] = useState(DEFAULT_LIST_COLOR);
   const [appearanceOpen, setAppearanceOpen] = useState(false);
   const [logoDragging, setLogoDragging] = useState(false);
+  const [pending, setPending] = useState(false);
 
   useEffect(() => {
     if (!open) return;
@@ -159,9 +160,9 @@ export function NameFormModal({
     void applyLogoFile(event.dataTransfer.files[0]);
   }
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!trimmedName) return;
+    if (!trimmedName || pending) return;
     const rawSuffix = nameSuffix?.trim() ?? "";
     let fullName = trimmedName;
     if (rawSuffix) {
@@ -174,17 +175,24 @@ export function NameFormModal({
       if (!base.trim()) base = trimmedName;
       fullName = `${base.trim()}${suffix}`;
     }
-    onCreate({
-      name: fullName,
-      description: trimmedDetails,
-      ...(showAppearance
-        ? showIcons
-          ? { icon, color }
-          : { color }
-        : {}),
-      ...(showLogo ? { logoUrl } : {}),
-    });
-    onOpenChange(false);
+    setPending(true);
+    try {
+      await onCreate({
+        name: fullName,
+        description: trimmedDetails,
+        ...(showAppearance
+          ? showIcons
+            ? { icon, color }
+            : { color }
+          : {}),
+        ...(showLogo ? { logoUrl } : {}),
+      });
+      onOpenChange(false);
+    } catch {
+      // Caller shows feedback; keep the form open.
+    } finally {
+      setPending(false);
+    }
   }
 
   return (
@@ -360,15 +368,16 @@ export function NameFormModal({
           {blocking ? null : (
             <button
               type="button"
+              disabled={pending}
               onClick={() => onOpenChange(false)}
-              className="inline-flex min-h-10 items-center justify-center rounded-2xl bg-zinc-100 px-4 text-sm font-semibold text-zinc-700 transition hover:bg-zinc-200"
+              className="inline-flex min-h-10 items-center justify-center rounded-2xl bg-zinc-100 px-4 text-sm font-semibold text-zinc-700 transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {t("actions.cancel", "Atcelt")}
             </button>
           )}
           <button
             type="submit"
-            disabled={!trimmedName || Boolean(snapshot && !dirty)}
+            disabled={pending || !trimmedName || Boolean(snapshot && !dirty)}
             className="inline-flex min-h-10 items-center justify-center rounded-2xl bg-blue-700 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-800 disabled:bg-zinc-200 disabled:text-zinc-400"
           >
             {submitLabel}

@@ -20,7 +20,14 @@
 html {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  scroll-behavior: smooth;
   overflow-x: clip;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
 }
 
 body {
@@ -28,7 +35,11 @@ body {
   font-family: var(--font-geist-sans), "Segoe UI", system-ui, sans-serif;
   background: #f4f4f5;
   color: #18181b;
-  overflow-x: clip;
+  overflow-x: hidden;
+}
+
+.landing-lazy-section {
+  contain-intrinsic-size: auto 480px;
 }
 
 button:not(:disabled),
@@ -80,6 +91,14 @@ button:disabled,
 
 .landing-online-dot {
   animation: landing-pulse 2s ease-in-out infinite;
+}
+
+.landing-faq-item > summary {
+  list-style: none;
+}
+
+.landing-faq-item > summary::-webkit-details-marker {
+  display: none;
 }
 
 @keyframes landing-float {

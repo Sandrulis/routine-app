@@ -11,7 +11,8 @@ export async function generateMetadata(): Promise<Metadata> {
   const { t } = await getServerTranslations();
   return canonicalMetadata("/login", {
     title: t("auth.login.title", "Ienākt"),
-    description: t("auth.login.subtitle", "Pieslēdzies savam Routine kontam."),
+    description: t("auth.login.subtitle", "Pieslēdzies savam {SYSTEM_NAME} kontam."),
+    index: false,
   });
 }
 

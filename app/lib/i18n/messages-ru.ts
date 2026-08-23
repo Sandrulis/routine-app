@@ -1,13 +1,21 @@
 export const ru: Record<string, string> = {
-  "app.name": "Routine",
+  "app.name": "{SYSTEM_NAME}",
   "app.subtitle": "Командный список задач",
   "site.back_home": "На главную",
-  "site.footer.rights": "© {year} Routine",
-  "landing.hero.title": "Вся команда знает, что делать сегодня",
+  "site.nav.features": "Возможности",
+  "site.nav.faq": "Вопросы",
+  "site.footer.rights": "© {year} {SYSTEM_NAME}",
+  "landing.seo.title": "{name} — простое управление задачами команды",
+  "landing.seo.description":
+    "{name} — программа для управления задачами команды. Планируйте задачи, проекты и сроки в одном рабочем пространстве — без лишней сложности.",
+  "landing.seo.keywords":
+    "управление задачами команды, программа для управления задачами, управление проектами, командная работа, учёт задач, совместная работа",
+  "landing.hero.title": "Управление задачами команды без лишней сложности",
   "landing.hero.subtitle":
-    "Routine собирает списки, задачи и людей в одном месте. Статусы, сроки и ответственные — без таблиц и хаоса в чате.",
+    "{name} помогает всей команде видеть, что делать сегодня. Задачи, проекты, люди и сроки — в одном месте, а не в таблицах и чате.",
   "landing.hero.cta_signup": "Попробовать бесплатно",
-  "landing.hero.kicker": "Инструмент для командной работы",
+  "landing.hero.trust": "Без установки. Начните с электронной почты.",
+  "landing.hero.kicker": "Управление задачами команды",
   "landing.hero.stat_status_title": "К выполнению, в работе, готово",
   "landing.hero.stat_status": "Одна доска на день, а не пять инструментов.",
   "landing.hero.stat_together_title": "Люди у задач",
@@ -31,7 +39,17 @@ export const ru: Record<string, string> = {
   "landing.preview.checklist_wireframes": "Макеты",
   "landing.preview.checklist_copy": "Черновик текстов",
   "landing.preview.checklist_review": "Отзывы",
-  "landing.features.title": "Почему команды остаются в Routine",
+  "landing.problem.title": "Сейчас работа разбросана",
+  "landing.problem.subtitle":
+    "Команды планируют работу в таблицах, чате, календарях и папках с файлами. Потом никто не уверен, что актуально.",
+  "landing.problem.item_tables": "Excel и таблицы",
+  "landing.problem.item_chat": "Чат",
+  "landing.problem.item_calendars": "Календари",
+  "landing.problem.item_files": "Папки с файлами",
+  "landing.problem.item_tools": "Несколько таск-трекеров",
+  "landing.problem.solution":
+    "{name} собирает задачи, проекты, людей, файлы, сроки и рабочие процессы в одном пространстве.",
+  "landing.features.title": "Всё, что команде нужно для управления работой",
   "landing.features.subtitle":
     "Меньше инструментов, яснее ответственность и работа, которую можно закончить, а не только обсуждать.",
   "landing.features.lists.title": "Списки под ваш способ работы",
@@ -46,7 +64,7 @@ export const ru: Record<string, string> = {
     "Приглашайте коллег, назначайте работу и видите, кто в сети. Больше не нужно искать в чате обещание.",
   "landing.features.dashboard.title": "Главная — это доска на день",
   "landing.features.dashboard.description":
-    "Откройте Routine и увидите, что нужно сделать, что в работе и что готово. Перетаскивайте карточки и держите фокус на том, что должно быть закончено сегодня.",
+    "Откройте {name} и увидите, что нужно сделать, что в работе и что готово. Перетаскивайте карточки и держите фокус на том, что должно быть закончено сегодня.",
   "landing.features.private_list.title": "Приватные списки",
   "landing.features.private_list.description":
     "Скройте список от остальной команды. Его видите только вы и выбранные участники или роли.",
@@ -71,13 +89,28 @@ export const ru: Record<string, string> = {
     "Сроки задач появляются в Google Calendar, чтобы день оставался в одном месте.",
   "landing.features.google_drive.title": "Google Drive",
   "landing.features.google_drive.description":
-    "Храните файлы в Google Drive и открывайте их из списка, не выходя из Routine.",
+    "Храните файлы в Google Drive и открывайте их из списка, не выходя из {name}.",
   "landing.features.onedrive.title": "OneDrive",
   "landing.features.onedrive.description":
-    "Храните файлы в OneDrive и открывайте их из списка, не выходя из Routine.",
+    "Храните файлы в OneDrive и открывайте их из списка, не выходя из {name}.",
   "landing.features.gmail.title": "Плагин Gmail",
   "landing.features.gmail.description":
     "Из Gmail добавляйте письмо и вложения к задаче, чтобы переписка оставалась при работе.",
+  "landing.audiences.title": "Для команд, которым нужно делать работу",
+  "landing.audiences.subtitle":
+    "Простое рабочее пространство для небольших команд, агентств и растущих компаний.",
+  "landing.audiences.small.title": "Небольшие команды",
+  "landing.audiences.small.description":
+    "Когда работу должны видеть все, а не держать её в заметках или в голове.",
+  "landing.audiences.agencies.title": "Агентства",
+  "landing.audiences.agencies.description":
+    "Клиенты, проекты и сроки в одном дереве, чтобы ничего не терялось между задачами.",
+  "landing.audiences.growing.title": "Растущие компании",
+  "landing.audiences.growing.description":
+    "Понятные ответственные и статусы, когда команда становится больше.",
+  "landing.audiences.remote.title": "Удалённые команды",
+  "landing.audiences.remote.description":
+    "Одно пространство, чтобы работа не была разбросана по чатам в разных поясах.",
   "landing.how.title": "От регистрации до первой готовой задачи",
   "landing.how.subtitle":
     "Три шага. Команда может начать работать в тот же день.",
@@ -90,11 +123,44 @@ export const ru: Record<string, string> = {
   "landing.how.step3.title": "Работайте и видите, что готово",
   "landing.how.step3.description":
     "Каждое утро открывайте Главную. Там картина дня: что ещё сделать, что в работе и что уже закрыто.",
-  "landing.cta.title": "Хватит держать работу в голове",
+  "landing.faq.title": "Частые вопросы",
+  "landing.faq.subtitle":
+    "Короткие ответы о том, что такое {name} и кому он нужен.",
+  "landing.faq.what.question": "Что такое {name}?",
+  "landing.faq.what.answer":
+    "{name} — программа для управления задачами команды. Списки, задачи, люди и сроки живут в одном рабочем пространстве, чтобы команда видела, что делать сегодня.",
+  "landing.faq.team_task.question": "Что такое управление задачами команды?",
+  "landing.faq.team_task.answer":
+    "Это организация работы, где у каждой задачи есть ответственный, статус и срок, и вся команда видит одну и ту же картину — а не каждый свою таблицу или тред в чате.",
+  "landing.faq.who.question": "Для кого {name}?",
+  "landing.faq.who.answer":
+    "Для небольших и растущих команд, агентств и удалённых команд, которым нужна ясная картина работы без тяжёлой системы управления проектами.",
+  "landing.faq.pm.question": "Это инструмент управления проектами?",
+  "landing.faq.pm.answer":
+    "{name} помогает вести проекты как списки с задачами, сроками и ответственными. Это не корпоративный портфельный инструмент — он сделан для повседневной работы.",
+  "landing.faq.projects.question": "Можно ли вести проекты и задачи?",
+  "landing.faq.projects.answer":
+    "Да. Создайте списки для проектов или клиентов, разбейте их на задачи, назначьте ответственных и следите за статусом от «к выполнению» до «готово».",
+  "landing.faq.invite.question": "Можно ли пригласить команду?",
+  "landing.faq.invite.answer":
+    "Да. Приглашайте коллег, назначайте задачи и видите, кто в сети. Все работают в одном пространстве.",
+  "landing.faq.files.question": "Можно ли прикреплять файлы к задачам?",
+  "landing.faq.files.answer":
+    "Да. Документы добавляются прямо к задаче, чтобы файлы оставались при работе, а не в почте или отдельной папке.",
+  "landing.faq.drive.question": "Есть ли связь с Google Drive?",
+  "landing.faq.drive.answer":
+    "Да. Файлы можно хранить в Google Drive и открывать из списка, не выходя из {name}.",
+  "landing.faq.calendar.question": "Есть ли календарь?",
+  "landing.faq.calendar.answer":
+    "Сроки задач могут появляться в Apple Calendar или Google Calendar, чтобы план дня оставался в одном месте.",
+  "landing.faq.free.question": "Можно ли начать бесплатно?",
+  "landing.faq.free.answer":
+    "Да. Создайте аккаунт и начните работу. Без установки и без внедрения на неделю.",
+  "landing.cta.title": "Начните управлять работой команды сегодня",
   "landing.cta.subtitle":
     "Зарегистрируйтесь, пригласите команду и создайте первый список. Без установки и без внедрения на неделю.",
   "auth.login.title": "Войти",
-  "auth.login.subtitle": "Войдите в свой аккаунт Routine.",
+  "auth.login.subtitle": "Войдите в свой аккаунт {SYSTEM_NAME}.",
   "auth.login.forgot": "Забыли пароль?",
   "auth.login.no_account": "Нет аккаунта?",
   "auth.login.success": "Вы успешно вошли.",
@@ -109,7 +175,7 @@ export const ru: Record<string, string> = {
   "auth.signup.password_mismatch": "Пароли не совпадают.",
   "auth.signup.terms_required":
     "Чтобы зарегистрироваться, примите условия.",
-  "auth.signup.success": "Аккаунт создан. Добро пожаловать в Routine.",
+  "auth.signup.success": "Аккаунт создан. Добро пожаловать в {SYSTEM_NAME}.",
   "auth.signup.check_email": "Проверьте почту, чтобы подтвердить аккаунт.",
   "auth.confirm.loading": "Завершаем подтверждение…",
   "auth.confirm.failed_title": "Не удалось подтвердить",
@@ -168,12 +234,12 @@ export const ru: Record<string, string> = {
   "legal.toc.label": "Содержание",
   "legal.privacy.title": "Политика конфиденциальности",
   "legal.privacy.intro":
-    "В настоящей политике мы разъясняем, какие персональные данные обрабатываем, когда вы посещаете сайт routine.app или пользуетесь приложением Routine, зачем мы это делаем и какие у вас есть права в соответствии с Общим регламентом по защите данных (ЕС) 2016/679 (GDPR).",
+    "В настоящей политике мы разъясняем, какие персональные данные обрабатываем, когда вы посещаете сайт routine.app или пользуетесь приложением {SYSTEM_NAME}, зачем мы это делаем и какие у вас есть права в соответствии с Общим регламентом по защите данных (ЕС) 2016/679 (GDPR).",
   "legal.privacy.controller.title": "1. Контроллер данных",
   "legal.privacy.controller.p1":
-    "Контроллером персональных данных является поставщик сервиса Routine. По вопросам обработки данных пишите на privacy@routine.app. Мы ответим в разумный срок и при необходимости запросим дополнительные сведения, чтобы подтвердить вашу личность.",
+    "Контроллером персональных данных является поставщик сервиса {SYSTEM_NAME}. По вопросам обработки данных пишите на privacy@routine.app. Мы ответим в разумный срок и при необходимости запросим дополнительные сведения, чтобы подтвердить вашу личность.",
   "legal.privacy.controller.p2":
-    "Если вы пользуетесь Routine по поручению работодателя или клиента, контроллером рабочих данных, внесённых в команду, может быть соответствующая организация. В этом случае мы обрабатываем данные как обработчик по поручению организации.",
+    "Если вы пользуетесь {SYSTEM_NAME} по поручению работодателя или клиента, контроллером рабочих данных, внесённых в команду, может быть соответствующая организация. В этом случае мы обрабатываем данные как обработчик по поручению организации.",
   "legal.privacy.data.title": "2. Какие данные мы обрабатываем",
   "legal.privacy.data.p1":
     "Данные учётной записи: имя, адрес электронной почты, пароль (храним только в виде хеша), выбранный язык и настройки профиля.",
@@ -215,13 +281,13 @@ export const ru: Record<string, string> = {
     "Мы применяем разумные технические и организационные меры: шифрованное соединение, контроль доступа и хеширование паролей. Абсолютную безопасность в интернете гарантировать нельзя, поэтому берегите и пароль своего аккаунта.",
   "legal.privacy.changes.title": "9. Изменения",
   "legal.privacy.changes.p1":
-    "Если политика существенно изменится, мы обновим эту страницу и укажем новую дату. Продолжая пользоваться Routine после изменений, вы принимаете обновлённую политику в той мере, в какой это допускает применимое законодательство.",
+    "Если политика существенно изменится, мы обновим эту страницу и укажем новую дату. Продолжая пользоваться {SYSTEM_NAME} после изменений, вы принимаете обновлённую политику в той мере, в какой это допускает применимое законодательство.",
   "legal.terms.title": "Условия использования",
   "legal.terms.intro":
-    "Настоящие условия регулируют использование сайта и приложения Routine. Регистрируясь или входя в систему, вы подтверждаете, что прочитали и принимаете их. Если вы не согласны, пожалуйста, не пользуйтесь сервисом.",
+    "Настоящие условия регулируют использование сайта и приложения {SYSTEM_NAME}. Регистрируясь или входя в систему, вы подтверждаете, что прочитали и принимаете их. Если вы не согласны, пожалуйста, не пользуйтесь сервисом.",
   "legal.terms.service.title": "1. Сервис",
   "legal.terms.service.p1":
-    "Routine — инструмент командной работы для списков, задач, файлов и совместной работы. Мы предоставляем доступ к программному обеспечению в том виде, в каком оно есть, чтобы вы и ваша команда могли планировать и выполнять работу.",
+    "{SYSTEM_NAME} — инструмент командной работы для списков, задач, файлов и совместной работы. Мы предоставляем доступ к программному обеспечению в том виде, в каком оно есть, чтобы вы и ваша команда могли планировать и выполнять работу.",
   "legal.terms.service.p2":
     "Мы можем улучшать, добавлять или прекращать функции, если это нужно для развития продукта или безопасности. О существенных изменениях сообщим на сайте или по электронной почте.",
   "legal.terms.account.title": "2. Аккаунт",
@@ -231,22 +297,22 @@ export const ru: Record<string, string> = {
     "Вы отвечаете за сохранность пароля и за все действия, совершённые из вашего аккаунта. При подозрении на несанкционированный доступ немедленно смените пароль и напишите нам.",
   "legal.terms.content.title": "3. Содержание",
   "legal.terms.content.p1":
-    "Списки, задачи, файлы и другие данные, которые вы вносите в Routine, остаются вашими или вашей организации. Мы используем их только для предоставления сервиса, обеспечения безопасности и поддержки.",
+    "Списки, задачи, файлы и другие данные, которые вы вносите в {SYSTEM_NAME}, остаются вашими или вашей организации. Мы используем их только для предоставления сервиса, обеспечения безопасности и поддержки.",
   "legal.terms.content.p2":
     "Вы гарантируете, что имеете право вносить это содержание и что оно не нарушает права других лиц, конфиденциальность или применимое законодательство.",
   "legal.terms.acceptable.title": "4. Допустимое использование",
   "legal.terms.acceptable.p1":
-    "Запрещается пытаться взломать систему, перегружать её, обходить защиту, копировать данные другой команды или использовать Routine в противоправных целях.",
+    "Запрещается пытаться взломать систему, перегружать её, обходить защиту, копировать данные другой команды или использовать {SYSTEM_NAME} в противоправных целях.",
   "legal.terms.acceptable.p2":
     "При существенном нарушении мы можем ограничить или закрыть аккаунт. О явно противоправном содержании можем сообщить компетентным органам.",
   "legal.terms.availability.title": "5. Доступность",
   "legal.terms.availability.p1":
-    "Мы стремимся, чтобы Routine был доступен без перерывов, но не можем гарантировать 100% времени работы. Плановые работы и экстренные исправления могут кратко прервать доступ.",
+    "Мы стремимся, чтобы {SYSTEM_NAME} был доступен без перерывов, но не можем гарантировать 100% времени работы. Плановые работы и экстренные исправления могут кратко прервать доступ.",
   "legal.terms.liability.title": "6. Ответственность",
   "legal.terms.liability.p1":
-    "Routine помогает организовать работу, но решения на основе информации в системе принимаете вы. В той мере, в какой это допускает закон, мы не отвечаем за косвенные убытки, упущенную выгоду или утрату данных, возникшие из-за использования сервиса.",
+    "{SYSTEM_NAME} помогает организовать работу, но решения на основе информации в системе принимаете вы. В той мере, в какой это допускает закон, мы не отвечаем за косвенные убытки, упущенную выгоду или утрату данных, возникшие из-за использования сервиса.",
   "legal.terms.liability.p2":
-    "Если закон не позволяет исключить ответственность, она ограничена суммой, которую вы уплатили за Routine за последние 12 месяцев, либо 100 EUR, если платы не было.",
+    "Если закон не позволяет исключить ответственность, она ограничена суммой, которую вы уплатили за {SYSTEM_NAME} за последние 12 месяцев, либо 100 EUR, если платы не было.",
   "legal.terms.termination.title": "7. Прекращение",
   "legal.terms.termination.p1":
     "Вы можете прекратить использование и удалить аккаунт в любое время. Мы можем закрыть аккаунт, если вы существенно нарушите эти условия или если мы прекратим сервис.",
@@ -255,7 +321,7 @@ export const ru: Record<string, string> = {
     "К условиям применяется право Латвийской Республики. Споры сначала попытаемся урегулировать переговорами. Если это не удастся, спор подведомствен судам Латвии, если нормы защиты потребителей не предусматривают иное.",
   "legal.cookies.title": "Политика использования файлов cookie",
   "legal.cookies.intro":
-    "Эта политика объясняет, какие файлы cookie использует Routine, зачем они нужны и как вы можете управлять согласием. Её следует читать вместе с политикой конфиденциальности.",
+    "Эта политика объясняет, какие файлы cookie использует {SYSTEM_NAME}, зачем они нужны и как вы можете управлять согласием. Её следует читать вместе с политикой конфиденциальности.",
   "legal.cookies.what.title": "1. Что такое файлы cookie",
   "legal.cookies.what.p1":
     "Файлы cookie — небольшие текстовые файлы, которые браузер сохраняет на вашем устройстве. Они помогают запоминать настройки, хранить согласие и, если вы разрешите, измерять использование.",
@@ -265,7 +331,7 @@ export const ru: Record<string, string> = {
   "legal.cookies.necessary.p1":
     "Обязательные файлы cookie нужны для работы сайта: мы сохраняем ваш выбор cookie, поддерживаем сессию входа (в том числе через Google) до 30 дней, если вы выбираете «Запомнить меня», и обеспечиваем безопасный просмотр. Без них окно согласия появлялось бы при каждом посещении, а часть функций была бы недоступна.",
   "legal.cookies.necessary.p2":
-    "Эти файлы cookie нельзя отключить в системе. Их можно заблокировать в настройках браузера, но тогда Routine может работать некорректно.",
+    "Эти файлы cookie нельзя отключить в системе. Их можно заблокировать в настройках браузера, но тогда {SYSTEM_NAME} может работать некорректно.",
   "legal.cookies.preferences.title": "3. Файлы cookie предпочтений",
   "legal.cookies.preferences.p1":
     "Файлы cookie предпочтений запоминают выбор интерфейса, например порядок окон списка (Задачи, Файлы, Список). Благодаря им не нужно заново настраивать вид при каждом посещении.",
@@ -273,7 +339,7 @@ export const ru: Record<string, string> = {
     "Мы записываем эти файлы cookie только с вашего согласия. Если вы откажетесь, выбор сохранится только до перезагрузки страницы.",
   "legal.cookies.optional.title": "4. Статистические и маркетинговые файлы cookie",
   "legal.cookies.optional.p1":
-    "Статистические файлы cookie позволяли бы анонимно понять, какие страницы помогают, а какие путают. Маркетинговые — измерять кампании. Сейчас Routine такие инструменты не включает.",
+    "Статистические файлы cookie позволяли бы анонимно понять, какие страницы помогают, а какие путают. Маркетинговые — измерять кампании. Сейчас {SYSTEM_NAME} такие инструменты не включает.",
   "legal.cookies.optional.p2":
     "Если мы добавим их позже, они будут работать только с вашего согласия. До тех пор выбор «Принять все» сохраняет готовность, но не включает отслеживание третьими лицами.",
   "legal.cookies.manage.title": "5. Как управлять согласием",
@@ -1021,10 +1087,10 @@ export const ru: Record<string, string> = {
   "google_drive.menu_description":
     "Отправляйте загруженные файлы в Google Drive команды",
   "google_drive.page.subtitle":
-    "Подключите Google-аккаунт команды. По умолчанию файлы хранятся на Drive; по желанию также на сервере Routine.",
+    "Подключите Google-аккаунт команды. По умолчанию файлы хранятся на Drive; по желанию также на сервере {SYSTEM_NAME}.",
   "google_drive.connect.title": "Аккаунт Google",
   "google_drive.connect.description":
-    "Доступ только к файлам, которые создаёт Routine (Drive scope: drive.file).",
+    "Доступ только к файлам, которые создаёт {SYSTEM_NAME} (Drive scope: drive.file).",
   "google_drive.connect.button": "Войти через Google",
   "google_drive.status.connected": "Подключено",
   "google_drive.status.disconnected": "Не подключено",
@@ -1041,12 +1107,12 @@ export const ru: Record<string, string> = {
     "Файлы попадают в эту папку с сохранением структуры списков и папок.",
   "google_drive.folder.path": "Путь к папке Drive",
   "google_drive.folder.hint":
-    "Например Routine или Команда/Файлы. Папка создаётся, если её ещё нет.",
+    "Например {SYSTEM_NAME} или Команда/Файлы. Папка создаётся, если её ещё нет.",
   "google_drive.upload.enabled":
-    "Загружать файлы в Google Drive, когда их добавляют в Routine",
+    "Загружать файлы в Google Drive, когда их добавляют в {SYSTEM_NAME}",
   "google_drive.storage.drive_primary": "Хранить файлы в Google Drive",
   "google_drive.storage.drive_primary_hint":
-    "Включено по умолчанию: Routine хранит только ссылку. Если снять галочку, содержимое файла также сохраняется на сервере Routine.",
+    "Включено по умолчанию: {SYSTEM_NAME} хранит только ссылку. Если снять галочку, содержимое файла также сохраняется на сервере {SYSTEM_NAME}.",
   "google_drive.feedback.connected": "Аккаунт Google подключён.",
   "google_drive.feedback.disconnected": "Аккаунт Google отключён.",
   "google_drive.feedback.saved": "Настройки Google Drive сохранены.",
@@ -1056,7 +1122,7 @@ export const ru: Record<string, string> = {
     "Подключите Microsoft-аккаунт команды, чтобы загруженные файлы попадали и на OneDrive.",
   "onedrive.connect.title": "Аккаунт Microsoft",
   "onedrive.connect.description":
-    "Доступ к файлам, которые создаёт Routine в OneDrive команды (scope: Files.ReadWrite).",
+    "Доступ к файлам, которые создаёт {SYSTEM_NAME} в OneDrive команды (scope: Files.ReadWrite).",
   "onedrive.connect.button": "Войти через Microsoft",
   "onedrive.status.connected": "Подключено",
   "onedrive.status.disconnected": "Не подключено",
@@ -1073,9 +1139,9 @@ export const ru: Record<string, string> = {
     "Файлы попадают в эту папку с сохранением структуры списков и папок.",
   "onedrive.folder.path": "Путь к папке OneDrive",
   "onedrive.folder.hint":
-    "Например Routine или Команда/Файлы. Папка создаётся, если её ещё нет.",
+    "Например {SYSTEM_NAME} или Команда/Файлы. Папка создаётся, если её ещё нет.",
   "onedrive.upload.enabled":
-    "Загружать файлы в OneDrive, когда их добавляют в Routine",
+    "Загружать файлы в OneDrive, когда их добавляют в {SYSTEM_NAME}",
   "onedrive.feedback.connected": "Аккаунт Microsoft подключён.",
   "onedrive.feedback.disconnected": "Аккаунт Microsoft отключён.",
   "onedrive.feedback.saved": "Настройки OneDrive сохранены.",
@@ -1523,6 +1589,18 @@ export const ru: Record<string, string> = {
   "lang.lv": "Latviešu",
   "lang.en": "English",
   "lang.ru": "Русский",
+  "lang.de": "Deutsch",
+  "lang.fr": "Français",
+  "lang.es": "Español",
+  "lang.nl": "Nederlands",
+  "lang.da": "Dansk",
+  "lang.no": "Norsk",
+  "lang.fi": "Suomi",
+  "lang.pl": "Polski",
+  "lang.lt": "Lietuvių",
+  "lang.et": "Eesti",
+  "lang.it": "Italiano",
+  "lang.sv": "Svenska",
   "common.description": "Описание",
   "settings.language.title": "Язык",
   "settings.language.description": "Язык интерфейса приложения.",
@@ -1607,15 +1685,15 @@ export const ru: Record<string, string> = {
   "errors.extension_gmail_not_found":
     "Gmail не нашёл письмо. Откройте его в полном виде и попробуйте снова.",
   "errors.extension_auth_required":
-    "Войдите в Routine (в том же браузере) и попробуйте снова.",
+    "Войдите в {SYSTEM_NAME} (в том же браузере) и попробуйте снова.",
   "errors.extension_unknown": "Неизвестная ошибка.",
   "errors.extension_gmail_not_connected":
-    "Сначала подключите Gmail в плагине. Подключение сохранится и в Routine.",
+    "Сначала подключите Gmail в плагине. Подключение сохранится и в {SYSTEM_NAME}.",
   "errors.extension_plugin_disabled": "Плагин Gmail в системе выключен.",
   "errors.extension_team_drive_missing":
     "У этой команды не подключён Google Drive. Плагин не будет работать.",
   "errors.extension_login_mfa":
-    "У этого аккаунта включена MFA. Завершите вход на странице Routine и попробуйте снова.",
+    "У этого аккаунта включена MFA. Завершите вход на странице {SYSTEM_NAME} и попробуйте снова.",
   "extension.gmail.title": "Добавить к подзадаче",
   "extension.gmail.back": "Назад",
   "extension.gmail.waiting": "Ожидание…",
@@ -1644,26 +1722,26 @@ export const ru: Record<string, string> = {
   "extension.gmail.no_subtasks": "Нет открытых подзадач",
   "extension.gmail.email_label": "Письмо: {subject}",
   "extension.gmail.open_email": "Откройте письмо в Gmail, затем добавьте его.",
-  "extension.gmail.checking_session": "Проверка сессии Routine…",
-  "extension.gmail.open_login": "Открыть вход в Routine",
-  "extension.gmail.add_to_routine": "Добавить в Routine",
+  "extension.gmail.checking_session": "Проверка сессии {SYSTEM_NAME}…",
+  "extension.gmail.open_login": "Открыть вход в {SYSTEM_NAME}",
+  "extension.gmail.add_to_routine": "Добавить в {SYSTEM_NAME}",
   "extension.gmail.loading_gmail": "Загрузка письма и вложений из Gmail…",
   "extension.gmail.progress_email": "Загрузка письма из Gmail…",
   "extension.gmail.progress_download": "Скачивание {name} ({current}/{total})",
-  "extension.gmail.progress_upload": "Сохранение в Routine ({count})…",
+  "extension.gmail.progress_upload": "Сохранение в {SYSTEM_NAME} ({count})…",
   "extension.gmail.attach_failed": "Не удалось прикрепить.",
   "extension.gmail.attached_one": "Готово. Прикреплено «{name}».",
   "extension.gmail.attached_many": "Готово. Прикреплено файлов: {count}.",
   "extension.gmail.skipped": "Пропущено: {count}.",
   "extension.gmail.skipped_named": "Пропущено {count}: {names}.",
-  "extension.gmail.options.app_url": "Routine URL",
+  "extension.gmail.options.app_url": "{SYSTEM_NAME} URL",
   "extension.gmail.options.client_id": "Gmail OAuth Client ID",
   "extension.gmail.options.redirect": "Redirect URI (добавьте в клиент Google Cloud OAuth):",
   "extension.gmail.options.connect": "Подключить Gmail",
   "extension.gmail.options.hint":
-    "Войдите в Routine в том же профиле Chrome. Вложения идут через Gmail API (до 25 МБ; для больших файлов нужен Google Drive команды).",
+    "Войдите в {SYSTEM_NAME} в том же профиле Chrome. Вложения идут через Gmail API (до 25 МБ; для больших файлов нужен Google Drive команды).",
   "extension.gmail.options.saved": "Сохранено.",
-  "extension.gmail.options.invalid_url": "Некорректный Routine URL.",
+  "extension.gmail.options.invalid_url": "Некорректный {SYSTEM_NAME} URL.",
   "extension.gmail.options.need_client_id":
     "Сначала введите Gmail OAuth Client ID и сохраните.",
   "extension.gmail.options.connecting": "Открывается окно разрешения Google…",
@@ -1676,15 +1754,15 @@ export const ru: Record<string, string> = {
     "У этой команды не подключён Google Drive. Плагин не будет работать.",
   "extension.gmail.connect_gmail": "Подключить Gmail",
   "extension.gmail.connect_gmail_hint":
-    "Аккаунту с паролем нужно подключить Gmail здесь. Подключение сохранится и в Routine.",
+    "Аккаунту с паролем нужно подключить Gmail здесь. Подключение сохранится и в {SYSTEM_NAME}.",
   "extension.gmail.gmail_connected": "Gmail подключён: {email}",
   "extension.gmail.plugin_disabled":
     "Плагин Gmail выключен. Включите его в Администрирование → Модули.",
   "extension.gmail.login_failed": "Не удалось войти.",
-  "extension.gmail.checking_app": "Поиск Routine…",
+  "extension.gmail.checking_app": "Поиск {SYSTEM_NAME}…",
   "extension.gmail.done.title": "Gmail подключён",
   "extension.gmail.done.body":
-    "Gmail подключён к Routine. Можно закрыть это окно и вернуться в плагин.",
+    "Gmail подключён к {SYSTEM_NAME}. Можно закрыть это окно и вернуться в плагин.",
   "extension.gmail.done.error_title": "Не удалось подключить Gmail",
   "extension.gmail.done.error_body":
     "Попробуйте снова из плагина Gmail. Убедитесь, что Google OAuth и Gmail API включены.",

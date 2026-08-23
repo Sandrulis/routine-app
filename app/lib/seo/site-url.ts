@@ -3,6 +3,7 @@ import {
   PRODUCTION_SITE_ORIGIN,
 } from "./known-site-origins";
 
+import { DEFAULT_LANGUAGE, LANGUAGE_CODES } from "../i18n/language";
 import { readEnv } from "../env/read-env";
 
 export function getPublicSiteUrl(): string {
@@ -38,9 +39,22 @@ export const PUBLIC_SITEMAP_PATHS = [
   "/privacy",
   "/terms",
   "/cookies",
-  "/login",
-  "/signup",
 ] as const;
+
+/** Auth pages stay reachable, but must not be indexed. */
+export const AUTH_NOINDEX_PATHS = ["/login", "/signup"] as const;
+
+const PUBLIC_LOCALE_PREFIXES = LANGUAGE_CODES.filter(
+  (code) => code !== DEFAULT_LANGUAGE,
+);
+
+export function withPublicLocalePrefixes(path: string): string[] {
+  const normalized = path.startsWith("/") ? path : `/${path}`;
+  return [
+    normalized,
+    ...PUBLIC_LOCALE_PREFIXES.map((code) => `/${code}${normalized}`),
+  ];
+}
 
 export const ROBOTS_DISALLOW_PATHS = [
   "/dashboard",
@@ -53,10 +67,80 @@ export const ROBOTS_DISALLOW_PATHS = [
   "/invite",
   "/forgot-password",
   "/update-password",
+  ...AUTH_NOINDEX_PATHS.flatMap((path) => withPublicLocalePrefixes(path)),
   "/api/",
   "/auth/",
   "/calendar/",
 ] as const;
+
+function hostnameOf(origin: string): string | null {
+  try {
+    return new URL(origin).hostname.toLowerCase();
+  } catch {
+    return null;
+  }
+}
+
+function apexHost(host: string): string {
+  return host.replace(/^www\./i, "");
+}
+
+function isLocalHost(host: string): boolean {
+  return host === "localhost" || host === "127.0.0.1";
+}
+
+/**
+ * If the request host is the www/apex twin of NEXT_PUBLIC_SITE_URL, return
+ * the canonical absolute URL (301 target). Otherwise null.
+ */
+export function canonicalHostRedirectUrl(
+  requestUrl: string,
+  requestHostHeader: string | null,
+): string | null {
+  const canonicalHost = hostnameOf(getPublicSiteUrl());
+  if (!canonicalHost || isLocalHost(canonicalHost)) return null;
+
+  const requestHost = (requestHostHeader ?? "").split(":")[0]?.trim().toLowerCase();
+  if (!requestHost || requestHost === canonicalHost || isLocalHost(requestHost)) {
+    return null;
+  }
+  if (apexHost(requestHost) !== apexHost(canonicalHost)) return null;
+
+  let canonical: URL;
+  try {
+    canonical = new URL(getPublicSiteUrl());
+  } catch {
+    return null;
+  }
+
+  const next = new URL(requestUrl);
+  next.protocol = canonical.protocol;
+  next.hostname = canonical.hostname;
+  next.port = canonical.port;
+  return next.toString();
+}
+
+/** next.config `redirects()` rule: www ↔ apex for the configured site origin. */
+export function canonicalHostRedirectRule(): {
+  source: string;
+  has: { type: "host"; value: string }[];
+  destination: string;
+  permanent: true;
+} | null {
+  const origin = getPublicSiteUrl();
+  const canonicalHost = hostnameOf(origin);
+  if (!canonicalHost || isLocalHost(canonicalHost)) return null;
+  const fromHost = canonicalHost.startsWith("www.")
+    ? canonicalHost.slice(4)
+    : `www.${canonicalHost}`;
+  if (!fromHost || fromHost === canonicalHost) return null;
+  return {
+    source: "/:path*",
+    has: [{ type: "host", value: fromHost }],
+    destination: `${origin.replace(/\/$/, "")}/:path*`,
+    permanent: true,
+  };
+}
 
 /** Next.js `headers()` sources that should send `X-Robots-Tag: noindex, nofollow`. */
 export function robotsNoIndexHeaderSources(): string[] {

@@ -112,7 +112,7 @@ function t(key, params) {
 
 function applySessionI18n(data) {
   const code = data?.languageCode;
-  if (code === "en" || code === "lv" || code === "ru") languageCode = code;
+  if (typeof code === "string" && /^[a-z]{2}$/.test(code)) languageCode = code;
   if (data?.strings && typeof data.strings === "object") {
     strings = { ...FALLBACK_STRINGS, ...data.strings };
   }

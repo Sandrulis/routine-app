@@ -43,7 +43,7 @@ export function getPrivacyPolicyContent(t: Translate): LegalDocumentContent {
     title: t("legal.privacy.title", "Privātuma politika"),
     intro: t(
       "legal.privacy.intro",
-      "Šajā politikā skaidrojam, kādus personas datus apstrādājam, kad tu apmeklē vietni routine.app vai izmanto Routine lietotni, kāpēc to darām un kādas ir tavas tiesības saskaņā ar Vispārīgo datu aizsardzības regulu (ES) 2016/679 (VDAR).",
+      "Šajā politikā skaidrojam, kādus personas datus apstrādājam, kad tu apmeklē vietni routine.app vai izmanto {SYSTEM_NAME} lietotni, kāpēc to darām un kādas ir tavas tiesības saskaņā ar Vispārīgo datu aizsardzības regulu (ES) 2016/679 (VDAR).",
     ),
     updatedAt: getUpdatedAt(t),
     sections: buildSections(t, [
@@ -55,12 +55,12 @@ export function getPrivacyPolicyContent(t: Translate): LegalDocumentContent {
           {
             key: "legal.privacy.controller.p1",
             fallback:
-              "Personas datu pārzinis ir Routine pakalpojuma sniedzējs. Par datu apstrādi raksti uz privacy@routine.app. Atbildēsim saprātīgā termiņā un, ja nepieciešams, lūgsim papildu informāciju, lai pārliecinātos par tavu identitāti.",
+              "Personas datu pārzinis ir {SYSTEM_NAME} pakalpojuma sniedzējs. Par datu apstrādi raksti uz privacy@routine.app. Atbildēsim saprātīgā termiņā un, ja nepieciešams, lūgsim papildu informāciju, lai pārliecinātos par tavu identitāti.",
           },
           {
             key: "legal.privacy.controller.p2",
             fallback:
-              "Ja Routine izmanto sava darba devēja vai klienta uzdevumā, par komandā ievadītajiem darba datiem pārzinis var būt attiecīgais uzņēmums. Šādā gadījumā mēs datus apstrādājam kā apstrādātājs uzņēmuma uzdevumā.",
+              "Ja {SYSTEM_NAME} izmanto sava darba devēja vai klienta uzdevumā, par komandā ievadītajiem darba datiem pārzinis var būt attiecīgais uzņēmums. Šādā gadījumā mēs datus apstrādājam kā apstrādātājs uzņēmuma uzdevumā.",
           },
         ],
       },
@@ -201,7 +201,7 @@ export function getPrivacyPolicyContent(t: Translate): LegalDocumentContent {
           {
             key: "legal.privacy.changes.p1",
             fallback:
-              "Ja politika būtiski mainās, atjaunināsim šo lapu un norādīsim jauno datumu. Turpinot lietot Routine pēc izmaiņām, tu piekrīti atjauninātajai politikai, ciktāl to pieļauj piemērojamie tiesību akti.",
+              "Ja politika būtiski mainās, atjaunināsim šo lapu un norādīsim jauno datumu. Turpinot lietot {SYSTEM_NAME} pēc izmaiņām, tu piekrīti atjauninātajai politikai, ciktāl to pieļauj piemērojamie tiesību akti.",
           },
         ],
       },
@@ -214,7 +214,7 @@ export function getTermsContent(t: Translate): LegalDocumentContent {
     title: t("legal.terms.title", "Lietošanas noteikumi"),
     intro: t(
       "legal.terms.intro",
-      "Šie noteikumi regulē Routine vietnes un lietotnes lietošanu. Reģistrējoties vai ienākot, tu apstiprini, ka esi tos izlasījis un piekrīti. Ja nepiekrīti, lūdzu, nelieto pakalpojumu.",
+      "Šie noteikumi regulē {SYSTEM_NAME} vietnes un lietotnes lietošanu. Reģistrējoties vai ienākot, tu apstiprini, ka esi tos izlasījis un piekrīti. Ja nepiekrīti, lūdzu, nelieto pakalpojumu.",
     ),
     updatedAt: getUpdatedAt(t),
     sections: buildSections(t, [
@@ -226,7 +226,7 @@ export function getTermsContent(t: Translate): LegalDocumentContent {
           {
             key: "legal.terms.service.p1",
             fallback:
-              "Routine ir komandas darba rīks sarakstiem, uzdevumiem, failiem un sadarbībai. Mēs sniedzam piekļuvi programmatūrai tādā stāvoklī, kādā tā ir, lai tu un tava komanda varētu plānot un izpildīt darbu.",
+              "{SYSTEM_NAME} ir komandas darba rīks sarakstiem, uzdevumiem, failiem un sadarbībai. Mēs sniedzam piekļuvi programmatūrai tādā stāvoklī, kādā tā ir, lai tu un tava komanda varētu plānot un izpildīt darbu.",
           },
           {
             key: "legal.terms.service.p2",
@@ -260,7 +260,7 @@ export function getTermsContent(t: Translate): LegalDocumentContent {
           {
             key: "legal.terms.content.p1",
             fallback:
-              "Saraksti, uzdevumi, faili un citi dati, ko ievadi Routine, paliek tev vai tavam uzņēmumam. Mēs tos izmantojam tikai pakalpojuma nodrošināšanai, drošībai un atbalstam.",
+              "Saraksti, uzdevumi, faili un citi dati, ko ievadi {SYSTEM_NAME}, paliek tev vai tavam uzņēmumam. Mēs tos izmantojam tikai pakalpojuma nodrošināšanai, drošībai un atbalstam.",
           },
           {
             key: "legal.terms.content.p2",
@@ -277,7 +277,7 @@ export function getTermsContent(t: Translate): LegalDocumentContent {
           {
             key: "legal.terms.acceptable.p1",
             fallback:
-              "Nedrīkst mēģināt ielauzties sistēmā, pārslogot to, apiet drošību, kopēt citu komandu datus vai izmantot Routine pretlikumīgiem mērķiem.",
+              "Nedrīkst mēģināt ielauzties sistēmā, pārslogot to, apiet drošību, kopēt citu komandu datus vai izmantot {SYSTEM_NAME} pretlikumīgiem mērķiem.",
           },
           {
             key: "legal.terms.acceptable.p2",
@@ -294,7 +294,7 @@ export function getTermsContent(t: Translate): LegalDocumentContent {
           {
             key: "legal.terms.availability.p1",
             fallback:
-              "Cenšamies, lai Routine būtu pieejams bez pārtraukuma, taču nevaram garantēt 100% darbības laiku. Plānoti darbi un ārkārtas labojumi var īslaicīgi pārtraukt piekļuvi.",
+              "Cenšamies, lai {SYSTEM_NAME} būtu pieejams bez pārtraukuma, taču nevaram garantēt 100% darbības laiku. Plānoti darbi un ārkārtas labojumi var īslaicīgi pārtraukt piekļuvi.",
           },
         ],
       },
@@ -306,12 +306,12 @@ export function getTermsContent(t: Translate): LegalDocumentContent {
           {
             key: "legal.terms.liability.p1",
             fallback:
-              "Routine palīdz organizēt darbu, taču tu esi atbildīgs par lēmumiem, ko pieņem, balstoties uz sistēmā redzamo informāciju. Ciktāl to pieļauj likums, mēs neatbildam par netiešiem zaudējumiem, peļņas zudumu vai datu zudumu, kas radies no pakalpojuma lietošanas.",
+              "{SYSTEM_NAME} palīdz organizēt darbu, taču tu esi atbildīgs par lēmumiem, ko pieņem, balstoties uz sistēmā redzamo informāciju. Ciktāl to pieļauj likums, mēs neatbildam par netiešiem zaudējumiem, peļņas zudumu vai datu zudumu, kas radies no pakalpojuma lietošanas.",
           },
           {
             key: "legal.terms.liability.p2",
             fallback:
-              "Ja likums neļauj izslēgt atbildību, mūsu atbildība ir ierobežota ar summu, ko tu esi samaksājis par Routine pēdējo 12 mēnešu laikā, vai 100 EUR, ja maksa nav bijusi.",
+              "Ja likums neļauj izslēgt atbildību, mūsu atbildība ir ierobežota ar summu, ko tu esi samaksājis par {SYSTEM_NAME} pēdējo 12 mēnešu laikā, vai 100 EUR, ja maksa nav bijusi.",
           },
         ],
       },
@@ -348,7 +348,7 @@ export function getCookiePolicyContent(t: Translate): LegalDocumentContent {
     title: t("legal.cookies.title", "Sīkdatņu politika"),
     intro: t(
       "legal.cookies.intro",
-      "Šī politika paskaidro, kādas sīkdatnes Routine izmanto, kāpēc tās ir vajadzīgas un kā tu vari pārvaldīt piekrišanu. Tā jālasa kopā ar privātuma politiku.",
+      "Šī politika paskaidro, kādas sīkdatnes {SYSTEM_NAME} izmanto, kāpēc tās ir vajadzīgas un kā tu vari pārvaldīt piekrišanu. Tā jālasa kopā ar privātuma politiku.",
     ),
     updatedAt: getUpdatedAt(t),
     sections: buildSections(t, [
@@ -382,7 +382,7 @@ export function getCookiePolicyContent(t: Translate): LegalDocumentContent {
           {
             key: "legal.cookies.necessary.p2",
             fallback:
-              "Šīs sīkdatnes nevar izslēgt sistēmā. Tās vari bloķēt pārlūka iestatījumos, taču tad Routine var nestrādāt pareizi.",
+              "Šīs sīkdatnes nevar izslēgt sistēmā. Tās vari bloķēt pārlūka iestatījumos, taču tad {SYSTEM_NAME} var nestrādāt pareizi.",
           },
         ],
       },
@@ -411,7 +411,7 @@ export function getCookiePolicyContent(t: Translate): LegalDocumentContent {
           {
             key: "legal.cookies.optional.p1",
             fallback:
-              "Statistikas sīkdatnes ļautu anonīmi saprast, kuras lapas palīdz un kuras mulsina. Mārketinga sīkdatnes ļautu mērīt kampaņas. Šobrīd Routine šādus rīkus neieslēdz.",
+              "Statistikas sīkdatnes ļautu anonīmi saprast, kuras lapas palīdz un kuras mulsina. Mārketinga sīkdatnes ļautu mērīt kampaņas. Šobrīd {SYSTEM_NAME} šādus rīkus neieslēdz.",
           },
           {
             key: "legal.cookies.optional.p2",

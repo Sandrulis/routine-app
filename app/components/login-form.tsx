@@ -109,7 +109,7 @@ export function LoginForm({
           {t("auth.login.title", "Ienākt")}
         </h1>
         <p className="mt-1 text-sm text-zinc-500">
-          {t("auth.login.subtitle", "Pieslēdzies savam Routine kontam.")}
+          {t("auth.login.subtitle", "Pieslēdzies savam {SYSTEM_NAME} kontam.")}
         </p>
       </div>
 

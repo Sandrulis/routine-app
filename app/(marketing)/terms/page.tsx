@@ -10,7 +10,7 @@ export async function generateMetadata(): Promise<Metadata> {
     title: t("legal.terms.title", "Lietošanas noteikumi"),
     description: t(
       "legal.terms.intro",
-      "Šie noteikumi regulē Routine vietnes un lietotnes lietošanu. Reģistrējoties vai ienākot, tu apstiprini, ka esi tos izlasījis un piekrīti. Ja nepiekrīti, lūdzu, nelieto pakalpojumu.",
+      "Šie noteikumi regulē {SYSTEM_NAME} vietnes un lietotnes lietošanu. Reģistrējoties vai ienākot, tu apstiprini, ka esi tos izlasījis un piekrīti. Ja nepiekrīti, lūdzu, nelieto pakalpojumu.",
     ),
   });
 }

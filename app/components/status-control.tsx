@@ -49,17 +49,24 @@ export function statusTextClassName(status: WorkTaskStatus) {
   return "text-zinc-400";
 }
 
-export function StatusTreeDot({ status }: { status: string }) {
-  const { colorFor } = useTaskStatuses();
-  const color = colorFor(status) ?? "#a1a1aa";
+export function StatusTreeDot({
+  status,
+  listId = null,
+  parentTaskId = null,
+}: {
+  status: string;
+  listId?: string | null;
+  parentTaskId?: string | null;
+}) {
+  const { colorFor, groupKeyFor } = useTaskStatuses(listId, parentTaskId);
   return (
     <span
       className="pointer-events-none inline-flex w-4 shrink-0 items-center justify-center"
       aria-hidden="true"
     >
-      <span
-        className="size-2.5 rounded-full border"
-        style={{ backgroundColor: color, borderColor: color }}
+      <StatusGlyph
+        color={colorFor(status) ?? "#a1a1aa"}
+        groupKey={groupKeyFor(status)}
       />
     </span>
   );

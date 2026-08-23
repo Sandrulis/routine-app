@@ -1,8 +1,10 @@
 export const DOCUMENT_TITLE_SEPARATOR = " | ";
+export const DEFAULT_SYSTEM_NAME = "Routine";
+export const SYSTEM_NAME_PARAM = "SYSTEM_NAME";
 
 export function resolveSystemName(
   systemName: string | null | undefined,
-  fallback = "Routine",
+  fallback = DEFAULT_SYSTEM_NAME,
 ): string {
   return systemName?.trim() || fallback;
 }

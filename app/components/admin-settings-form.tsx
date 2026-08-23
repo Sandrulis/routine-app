@@ -157,7 +157,7 @@ export function AdminSettingsForm({
                     className="shrink-0 rounded-xl ring-offset-2 transition hover:opacity-90 focus-visible:ring-2 focus-visible:ring-blue-400"
                   >
                     <ListBadge
-                      name={settings.systemName.trim() || t("app.name", "Routine")}
+                      name={settings.systemName.trim() || t("app.name", "{SYSTEM_NAME}")}
                       icon={null}
                       color={settings.logoColor}
                       logoUrl={settings.logoUrl}
@@ -171,7 +171,7 @@ export function AdminSettingsForm({
                       setSettings((current) => ({ ...current, systemName: event.target.value }))
                     }
                     className="min-h-11 w-full flex-1 rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 outline-none transition focus:border-zinc-400 focus:ring-4 focus:ring-zinc-100"
-                    placeholder={t("app.name", "Routine")}
+                    placeholder={t("app.name", "{SYSTEM_NAME}")}
                   />
                 </div>
                 <p className={hintClassName}>
@@ -183,7 +183,7 @@ export function AdminSettingsForm({
                 <ListAppearancePicker
                   open={appearanceOpen}
                   triggerRef={badgeRef}
-                  name={settings.systemName.trim() || t("app.name", "Routine")}
+                  name={settings.systemName.trim() || t("app.name", "{SYSTEM_NAME}")}
                   icon={null}
                   color={settings.logoColor}
                   showIcons={false}
@@ -448,7 +448,7 @@ export function AdminSettingsForm({
           </p>
           <div className="mt-3 flex min-w-0 items-center gap-3">
             <ListBadge
-              name={settings.systemName.trim() || t("app.name", "Routine")}
+              name={settings.systemName.trim() || t("app.name", "{SYSTEM_NAME}")}
               icon={null}
               color={settings.logoColor}
               logoUrl={settings.logoUrl || settings.faviconUrl}

@@ -69,7 +69,11 @@ import {
 import { useListFiles } from "@/app/lib/use-list-files";
 import { useTeam } from "@/app/lib/team-store";
 import { useIsAdmin } from "@/app/lib/users/use-is-admin";
-import { useTaskStatuses } from "@/app/lib/task-statuses";
+import {
+  compareTasksByStatusPriority,
+  resolveStatusCatalogs,
+} from "@/app/lib/list-statuses";
+import { useSystemTaskStatuses, useTaskStatuses } from "@/app/lib/task-statuses";
 import {
   navListRootDroppableId,
   navGroupEndDroppableId,
@@ -270,6 +274,8 @@ function NavTreeSection({
   leaf = false,
   onActivate,
   status,
+  statusListId = null,
+  statusParentTaskId = null,
   isPrivate = false,
   dragHandle,
   setRowRef,
@@ -291,6 +297,8 @@ function NavTreeSection({
   /** Prefer over href for leaves that open a modal / download. */
   onActivate?: () => void;
   status?: WorkTaskStatus;
+  statusListId?: string | null;
+  statusParentTaskId?: string | null;
   isPrivate?: boolean;
   label: string;
   description?: string;
@@ -424,7 +432,11 @@ function NavTreeSection({
             </Tooltip>
           ) : status ? (
             <span className="relative z-10">
-              <StatusTreeDot status={status} />
+              <StatusTreeDot
+                status={status}
+                listId={statusListId}
+                parentTaskId={statusParentTaskId}
+              />
             </span>
           ) : iconToneClassName && icon ? (
             <span
@@ -514,7 +526,7 @@ export function AppNav() {
   const router = useRouter();
   const { t } = useTranslations();
   const { showFeedback } = useFeedbackToast();
-  const { lists, tasks, listTasks, childTasks, subtasks, addList, updateList, deleteList, reorderLists, updateTask, deleteTask, setWorkItemArchived, reorderTasks, moveWorkItem, allTaskFiles, isReady: listsReady } = useLists();
+  const { lists, tasks, listTasks, childTasks, subtasks, listStatuses, workTaskStatuses, addList, updateList, deleteList, reorderLists, updateTask, deleteTask, setWorkItemArchived, reorderTasks, moveWorkItem, allTaskFiles, isReady: listsReady } = useLists();
   const { files: storedFiles } = useListFiles();
   const files = storedFiles.filter((file) =>
     lists.some((list) => list.id === file.listId),
@@ -525,6 +537,7 @@ export function AppNav() {
   const { isEnabled: isModuleEnabled } = useFrontendModules();
   const fileUploadsEnabled = isModuleEnabled(FRONTEND_MODULE_KEYS.fileUpload);
   const { statuses } = useTaskStatuses();
+  const { statuses: systemStatuses } = useSystemTaskStatuses();
   const progressById = useMemo(
     () => workProgressById(tasks, statuses),
     [statuses, tasks],
@@ -878,10 +891,26 @@ export function AppNav() {
         ? childTasks(parentId)
         : subtasks(parentId)
       : listTasks(listId);
-    const items =
-      parentId && !(parent && isWorkFolder(parent))
-        ? rawItems.filter((task) => isTaskActiveInLists(task, statuses))
-        : rawItems;
+    const isSubtaskBranch = Boolean(
+      parentId && !(parent && isWorkFolder(parent)),
+    );
+    const subtaskStatusCatalog = isSubtaskBranch
+      ? resolveStatusCatalogs(systemStatuses, listStatuses, {
+          listId,
+          parentTaskId: parentId,
+          workTaskStatuses,
+          list: lists.find((item) => item.id === listId) ?? null,
+          parentTask: parent,
+        }).visible
+      : statuses;
+    const items = isSubtaskBranch
+      ? rawItems
+          .filter((task) => isTaskActiveInLists(task, subtaskStatusCatalog))
+          .slice()
+          .sort((left, right) =>
+            compareTasksByStatusPriority(left, right, subtaskStatusCatalog),
+          )
+      : rawItems;
     const nestedFiles = showFiles ? childListFiles(files, listId, parentId) : [];
     const mixed = showFiles
       ? [
@@ -951,6 +980,8 @@ export function AppNav() {
                   href={href}
                   icon={isWorkSubtask(task) ? undefined : workItemIcon(task)}
                   status={isWorkSubtask(task) ? task.status : undefined}
+                  statusListId={isWorkSubtask(task) ? listId : null}
+                  statusParentTaskId={isWorkSubtask(task) ? task.parentId : null}
                   swapOnHover={!isWorkSubtask(task)}
                   leaf={isWorkSubtask(task)}
                   itemId={task.id}

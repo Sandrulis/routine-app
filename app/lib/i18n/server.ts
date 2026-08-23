@@ -1,9 +1,12 @@
 import { cache } from "react";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import {
+  getSiteSettings,
   getSiteTranslationDictionary,
   listSiteLanguages,
 } from "@/app/lib/site-admin/repository";
+import { DEFAULT_SYSTEM_NAME, resolveSystemName } from "@/app/lib/document-title";
+import { withSystemNameParams } from "@/app/lib/i18n/interpolate";
 import {
   DEFAULT_LANGUAGE,
   interpolate,
@@ -21,6 +24,7 @@ import {
 import { getCurrentUser } from "@/app/lib/auth/get-current-user";
 import { createClient } from "@/app/lib/supabase/server";
 import { isSupabaseConfigured } from "@/app/lib/supabase/env";
+import { UI_LANGUAGE_HEADER } from "@/app/lib/seo/locale-path";
 
 type TranslateFn = (
   key: string,
@@ -40,7 +44,13 @@ function activeUiLanguages(
 ): UiLanguageOption[] {
   return languages.flatMap((language) =>
     language.isActive && isLanguageCode(language.code)
-      ? [{ code: language.code, name: language.name }]
+      ? [
+          {
+            code: language.code,
+            name: language.name,
+            isDefault: language.isDefault,
+          },
+        ]
       : [],
   );
 }
@@ -66,6 +76,10 @@ export async function getRequestLanguageCode(): Promise<LanguageCode> {
     }
     return value;
   }
+
+  const headerStore = await headers();
+  const fromUrl = pick(headerStore.get(UI_LANGUAGE_HEADER));
+  if (fromUrl) return fromUrl;
 
   const cookieStore = await cookies();
   const explicitCookie = hasExplicitLanguageChoice(
@@ -95,9 +109,13 @@ export async function getRequestLanguageCode(): Promise<LanguageCode> {
 }
 
 export const getServerTranslations = cache(async function getServerTranslations(): Promise<ServerTranslations> {
-  const languageCode = await getRequestLanguageCode();
+  const [languageCode, settings] = await Promise.all([
+    getRequestLanguageCode(),
+    getSiteSettings(),
+  ]);
   const overlay = await getSiteTranslationDictionary(languageCode);
   const table = messages[languageCode] ?? messages[DEFAULT_LANGUAGE];
+  const systemName = resolveSystemName(settings.systemName, DEFAULT_SYSTEM_NAME);
 
   return {
     languageCode,
@@ -105,7 +123,10 @@ export const getServerTranslations = cache(async function getServerTranslations(
     table,
     t(key, fallback, params) {
       const fromOverlay = overlay[key]?.trim();
-      return interpolate(fromOverlay || table[key] || fallback, params);
+      return interpolate(
+        fromOverlay || table[key] || fallback,
+        withSystemNameParams(systemName, params),
+      );
     },
   };
 });

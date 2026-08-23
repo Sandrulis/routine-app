@@ -35,6 +35,7 @@ import {
 } from "@/app/lib/task-activity";
 import {
   currentTeamIdStorageKey,
+  createMemberId,
   membersStorageKey,
   normalizeStoredMembersByTeam,
   normalizeStoredTeams,
@@ -94,13 +95,28 @@ export async function importLocalWorkIfNeeded(
 
   for (const team of storedTeams) {
     const members = storedMembers?.[team.id] ?? [owner];
+    const ownerUserId = owner.userId || owner.id;
     const ownerMember =
-      members.find((member) => member.id === owner.id || member.userId === owner.id) ??
-      owner;
-    await insertTeam(team, { ...ownerMember, ...owner, id: owner.id }, userId);
+      members.find(
+        (member) =>
+          member.id === ownerUserId ||
+          member.userId === ownerUserId ||
+          member.id === owner.id,
+      ) ?? owner;
+    await insertTeam(
+      team,
+      { ...ownerMember, ...owner, id: createMemberId(), userId },
+      userId,
+    );
 
     for (const member of members) {
-      if (member.id === owner.id || member.userId === owner.id) continue;
+      if (
+        member.id === ownerUserId ||
+        member.userId === ownerUserId ||
+        member.id === owner.id
+      ) {
+        continue;
+      }
       try {
         await insertMember(team.id, member);
       } catch {

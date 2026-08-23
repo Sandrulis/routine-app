@@ -1,20 +1,20 @@
 ---
-description: I18n translation key reuse, lv/en/ru catalog, no duplicate action keys
+description: I18n translation key reuse, all system language catalogs, no duplicate action keys
 alwaysApply: true
 ---
 
-# Tulkojumu atslēgas — lv, en, ru
+# Tulkojumu atslēgas — visās sistēmas valodās
 
 UI tekstiem izmanto `t(key, fallback, params)`. Fallback kodā ir drošības teksts latviešu valodā, nevis pilns tulkojumu katalogs.
 
-Sistēmas valodas: **`lv`**, **`en`**, **`ru`**. Katalogs dzīvo **`app/lib/i18n/messages.ts`** (lv, en) un **`app/lib/i18n/messages-ru.ts`** (ru). `site_translations` ir tikai **overlay** (admin labojumi) - **neiesevo** visus key datubāzē.
+Sistēmas valodas: **`lv`**, **`en`**, **`ru`**, **`de`**, **`fr`**, **`es`**, **`nl`**, **`da`**, **`no`**, **`fi`**, **`pl`**, **`lt`**, **`et`**, **`it`**, **`sv`**. Katalogs dzīvo **`app/lib/i18n/messages.ts`** (lv, en) un **`app/lib/i18n/messages-{code}.ts`** (pārējās valodas). `site_translations` ir tikai **overlay** (admin labojumi) - **neiesevo** visus key datubāzē.
 
 ## Jauni vai mainīti UI teksti
 
 Kad pievieno vai maina lietotājam redzamu tekstu:
 
 - kodā izmanto `t(key, fallback, params)`;
-- tajā pašā izmaiņā pievieno vai atjaunina atslēgu **visās trijās** valodās (`messages.ts` lv+en un `messages-ru.ts`);
+- tajā pašā izmaiņā pievieno vai atjaunina atslēgu **visās sistēmas valodās** (`messages.ts` lv+en un katrs `messages-{code}.ts`);
 - nedrīkst atstāt hardcoded UI tekstu bez `t(...)`.
 
 ## Nedublēt vienādas vērtības

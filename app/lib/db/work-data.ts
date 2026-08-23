@@ -206,24 +206,61 @@ export async function fetchUserTeams(): Promise<{
 }> {
   return withJwtClockSkewRetry(async () => {
   const supabase = db();
-  const { data: teamRows, error: teamError } = await supabase
-    .from("teams")
-    .select("id, name, initials, icon, color, logo_url")
-    .order("created_at", { ascending: true });
-  if (teamError) throw teamError;
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    return { teams: [], membersByTeam: {}, rolesByTeam: {} };
+  }
 
-  const { data: memberRows, error: memberError } = await supabase
+  const { data: membershipRows, error: membershipError } = await supabase
     .from("team_members")
-    .select(
-      "id, team_id, user_id, email, name, role, role_id, tone_class_name, avatar_url, last_online_at",
-    );
-  if (memberError) throw memberError;
+    .select("team_id")
+    .eq("user_id", user.id);
+  if (membershipError) throw membershipError;
 
-  const { data: roleRows, error: roleError } = await supabase
-    .from("team_roles")
-    .select("id, team_id, slug, name, sort_order, is_system, permissions")
-    .order("sort_order", { ascending: true });
-  if (roleError) throw roleError;
+  const teamIds = [
+    ...new Set(
+      (membershipRows ?? []).flatMap((row: { team_id?: string | null }) => {
+        const id = String(row.team_id || "").trim();
+        return id ? [id] : [];
+      }),
+    ),
+  ] as string[];
+  if (teamIds.length === 0) {
+    return { teams: [], membersByTeam: {}, rolesByTeam: {} };
+  }
+
+  const [teamRows, memberRows, roleRows] = await Promise.all([
+    fetchInChunks(teamIds, (chunk) =>
+      supabase
+        .from("teams")
+        .select("id, name, initials, icon, color, logo_url, created_at")
+        .in("id", chunk)
+        .order("created_at", { ascending: true }),
+    ),
+    fetchInChunks(teamIds, (chunk) =>
+      supabase
+        .from("team_members")
+        .select(
+          "id, team_id, user_id, email, name, role, role_id, tone_class_name, avatar_url, last_online_at",
+        )
+        .in("team_id", chunk),
+    ),
+    fetchInChunks(teamIds, (chunk) =>
+      supabase
+        .from("team_roles")
+        .select("id, team_id, slug, name, sort_order, is_system, permissions")
+        .in("team_id", chunk)
+        .order("sort_order", { ascending: true }),
+    ),
+  ]);
+
+  teamRows.sort((left, right) => {
+    const leftAt = String(left.created_at ?? "");
+    const rightAt = String(right.created_at ?? "");
+    return leftAt.localeCompare(rightAt) || String(left.id).localeCompare(String(right.id));
+  });
 
   const membersByTeam: MembersByTeam = {};
   for (const row of memberRows ?? []) {
@@ -327,11 +364,14 @@ export async function insertTeam(
   const { error: teamError } = await supabase
     .from("teams")
     .insert(teamToRow(team, createdBy));
-  if (teamError) throw teamError;
+  if (teamError) throw new Error(formatSupabaseError(teamError));
   const { error: memberError } = await supabase
     .from("team_members")
     .insert(memberToRow(team.id, owner));
-  if (memberError) throw memberError;
+  if (memberError) {
+    await supabase.from("teams").delete().eq("id", team.id);
+    throw new Error(formatSupabaseError(memberError));
+  }
 }
 
 export async function updateTeamRow(team: WorkTeam) {

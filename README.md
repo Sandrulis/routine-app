@@ -2,7 +2,7 @@
 
 Komandas darba rīks ar publisku landing lapu un sānjoslas lietotni. Gaišs Next.js frontend.
 
-**Current version:** `0.2.5`
+**Current version:** `0.2.6`
 
 ## Palaist
 
@@ -15,8 +15,9 @@ Atver [http://localhost:3120](http://localhost:3120).
 
 ## Kas iekšā
 
-- **Landing** — `/` ar dashboard vizuāli; fīču kartītes un hero teksts tikai no ieslēgtajiem frontend moduļiem (izslēgtie netiek pieminēti); Ienākt (un Reģistrēties, ja Resend aktīvs) un sīkdatņu popup; ielogotam uzreiz `/dashboard`
-- **SEO / Search Console** — `/robots.txt` un `/sitemap.xml`; kanoniskie URL no `NEXT_PUBLIC_SITE_URL`; privātās lapas `noindex`; HTML tag verifikācija ar `GOOGLE_SITE_VERIFICATION`
+- **Landing** — `/` ar dashboard vizuāli; zem hero lazy load; hash saites slīd gludi; fīču kartītes un hero teksts tikai no ieslēgtajiem frontend moduļiem (izslēgtie netiek pieminēti); Ienākt (un Reģistrēties, ja Resend aktīvs) un sīkdatņu popup; ielogotam uzreiz `/dashboard`
+- **Valodas** — 15 UI valodas (lv, en, ru + DE/FR/ES/NL/DA/NO/FI/PL/LT/ET/IT/SV); izvēlnē karogs un nosaukums, noklusējums pirmais, tad alfabēts
+- **SEO / Search Console** — `/robots.txt` un `/sitemap.xml`; kanoniskie URL no `NEXT_PUBLIC_SITE_URL`; hreflang visām valodām; 1200×630 OG attēls; privātās lapas `noindex`; HTML tag verifikācija ar `GOOGLE_SITE_VERIFICATION`
 - **Auth** — `/login`, `/signup`, `/forgot-password`, `/update-password`, `/auth/confirm`; e-pasts un parole tikai ja **Resend** ir konfigurēts un aktīvs (bez tā nav Reģistrēties joslā, signup saites loginā un Atcerēties mani; `/signup` uz `/login`); login/signup pogas nāk no publiska RPC (`public_sign_in_methods`), nevis service role; reģistrācijas apstiprinājums un paroles atjaunošana iet kā HTML e-pasts no admin šabloniem (ne Supabase noklusējuma); **Turpināt ar Google** / **Turpināt ar Microsoft** (ja admin ieslēdzis OAuth) signupā bez noteikumu ķeksīša; **Atcerēties mani** tikai loginā, pēc noklusējuma izslēgts (30 dienas ar ķeksi); ielogotam `/` ved uz dashboard
 - **Gmail spraudnis** — Chrome unpacked `extensions/gmail`: bez URL/Client ID; popup rāda kontu un komandas; custom login vai Google; Gmail savienojums saglabājas sistēmā; origini `tasqin.com` / `www.tasqin.com` / `localhost:3120`; admin modulis **Gmail spraudnis**
 - **MFA** — profilā pēc izvēles visiem; ja ieslēgta, pie ielogošanās TOTP modālis; sistēmas adminam MFA obligāta `/admin`

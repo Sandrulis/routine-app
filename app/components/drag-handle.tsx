@@ -32,6 +32,7 @@ export function DragHandle({ label, attributes, listeners }: DragHandleProps) {
 type StatusReorderHandleProps = {
   status: string;
   listId?: string | null;
+  parentTaskId?: string | null;
   label: string;
   attributes: DraggableAttributes;
   listeners: SyntheticListenerMap | undefined;
@@ -45,6 +46,7 @@ type StatusReorderHandleProps = {
 export function StatusReorderHandle({
   status,
   listId = null,
+  parentTaskId = null,
   label,
   attributes,
   listeners,
@@ -54,7 +56,7 @@ export function StatusReorderHandle({
   disabled = false,
   onClick,
 }: StatusReorderHandleProps) {
-  const { colorFor, groupKeyFor } = useTaskStatuses(listId);
+  const { colorFor, groupKeyFor } = useTaskStatuses(listId, parentTaskId);
   const glyph = (
     <StatusGlyph
       color={colorFor(status) ?? "#a1a1aa"}

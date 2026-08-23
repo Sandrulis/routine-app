@@ -3,13 +3,14 @@
 import Link from "next/link";
 import { useCookieConsent } from "@/app/components/cookie-consent-context";
 import { useTranslations } from "@/app/components/translations-provider";
+import { localePath } from "@/app/lib/seo/locale-path";
 
 export function SiteFooter({
   variant = "site",
 }: {
   variant?: "site" | "app";
 }) {
-  const { t } = useTranslations();
+  const { t, languageCode } = useTranslations();
   const { openSettings } = useCookieConsent();
   const year = new Date().getFullYear();
   const isApp = variant === "app";
@@ -24,23 +25,23 @@ export function SiteFooter({
         }
       >
         <p className="text-sm text-zinc-500">
-          {t("site.footer.rights", "© {year} Routine", { year })}
+          {t("site.footer.rights", "© {year} {SYSTEM_NAME}", { year })}
         </p>
         <nav className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
           <Link
-            href="/privacy"
+            href={localePath("/privacy", languageCode)}
             className="text-zinc-500 transition hover:text-zinc-900"
           >
             {t("legal.privacy.title", "Privātuma politika")}
           </Link>
           <Link
-            href="/terms"
+            href={localePath("/terms", languageCode)}
             className="text-zinc-500 transition hover:text-zinc-900"
           >
             {t("legal.terms.title", "Lietošanas noteikumi")}
           </Link>
           <Link
-            href="/cookies"
+            href={localePath("/cookies", languageCode)}
             className="text-zinc-500 transition hover:text-zinc-900"
           >
             {t("legal.cookies.title", "Sīkdatņu politika")}

@@ -98,7 +98,7 @@ export function LandingAppPreview() {
           <span className="size-2 rounded-full bg-zinc-300" />
           <span className="size-2 rounded-full bg-zinc-300" />
           <span className="ml-2 text-[11px] font-medium text-zinc-400">
-            {t("app.name", "Routine")}
+            {t("app.name", "{SYSTEM_NAME}")}
           </span>
         </div>
 

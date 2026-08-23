@@ -3,8 +3,15 @@ import { cache } from "react";
 import { createAdminClient } from "@/app/lib/supabase/admin";
 import { createClient as createUserServerClient } from "@/app/lib/supabase/server";
 import { isSupabaseAdminConfigured, isSupabaseConfigured } from "@/app/lib/supabase/env";
+import { DEFAULT_SYSTEM_NAME } from "@/app/lib/document-title";
 import { messages, type LanguageCode } from "@/app/lib/i18n/messages";
 import {
+  DEFAULT_LANGUAGE,
+  LANGUAGE_CODES,
+  NATIVE_LANGUAGE_NAMES,
+} from "@/app/lib/i18n/language";
+import {
+  createMemberId,
   createOwnerMember,
   createTeamId,
   initialsFromName,
@@ -498,7 +505,7 @@ export async function createAdminTeam(
   });
 
   const { error: memberError } = await supabase.from("team_members").insert({
-    id: owner.id,
+    id: createMemberId(),
     team_id: teamId,
     user_id: createdBy.id,
     email: owner.email,
@@ -562,11 +569,15 @@ export async function deleteAdminTeam(teamId: string): Promise<ActionResult> {
   return { ok: true };
 }
 
-const FALLBACK_LANGUAGES: SiteLanguageSummary[] = [
-  { code: "lv", name: "Latviešu", isActive: true, isDefault: true, sortOrder: 10 },
-  { code: "en", name: "English", isActive: true, isDefault: false, sortOrder: 20 },
-  { code: "ru", name: "Русский", isActive: true, isDefault: false, sortOrder: 30 },
-];
+const FALLBACK_LANGUAGES: SiteLanguageSummary[] = LANGUAGE_CODES.map(
+  (code, index) => ({
+    code,
+    name: NATIVE_LANGUAGE_NAMES[code],
+    isActive: true,
+    isDefault: code === DEFAULT_LANGUAGE,
+    sortOrder: (index + 1) * 10,
+  }),
+);
 
 export const listSiteLanguages = cache(async function listSiteLanguages(): Promise<SiteLanguageSummary[]> {
   if (!isSupabaseConfigured()) {
@@ -948,7 +959,7 @@ function readDisplayPreferences(row: SettingsRow) {
 
 export const getSiteSettings = cache(async function getSiteSettings(): Promise<SiteSettingsSummary> {
   const fallback: SiteSettingsSummary = {
-    systemName: messages.lv["app.name"] || "Routine",
+    systemName: DEFAULT_SYSTEM_NAME,
     sloganValues: {
       lv: messages.lv["app.subtitle"] || "",
       en: messages.en["app.subtitle"] || "",

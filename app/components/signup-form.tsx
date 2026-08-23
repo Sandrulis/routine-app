@@ -112,7 +112,7 @@ export function SignupForm({
     }
     showFeedback({
       type: "success",
-      text: t("auth.signup.success", "Konts izveidots. Laipni lūgts Routine."),
+      text: t("auth.signup.success", "Konts izveidots. Laipni lūgts {SYSTEM_NAME}."),
     });
     router.push(result.next);
     router.refresh();

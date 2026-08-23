@@ -1057,6 +1057,7 @@ function SortableSubtaskRow({
           <StatusReorderHandle
             status={task.status}
             listId={listId}
+            parentTaskId={parentTaskId}
             label={dragLabel}
             attributes={attributes}
             listeners={listeners}

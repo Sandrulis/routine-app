@@ -16,6 +16,7 @@ export async function generateMetadata(): Promise<Metadata> {
       "auth.signup.subtitle",
       "Izveido kontu un sāc darbu ar komandu.",
     ),
+    index: false,
   });
 }
 

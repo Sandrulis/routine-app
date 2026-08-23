@@ -1,48 +1,82 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
-import { LandingAppPreview } from "@/app/components/landing-app-preview";
+import {
+  LANDING_REVEAL_EVENT,
+  LazyOnVisible,
+} from "@/app/components/lazy-on-visible";
 import { useTranslations } from "@/app/components/translations-provider";
 import { useFrontendModules } from "@/app/lib/frontend-modules/context";
 import { resolveLandingPageContent } from "@/app/lib/landing/features";
+import { localePath } from "@/app/lib/seo/locale-path";
+import { scrollToHashIdWhenReady } from "@/app/lib/smooth-scroll";
 
-const STEPS = [
+const LandingAppPreview = dynamic(
+  () =>
+    import("@/app/components/landing-app-preview").then((mod) => ({
+      default: mod.LandingAppPreview,
+    })),
   {
-    titleKey: "landing.how.step1.title",
-    titleFallback: "Izveido kontu minūtēs",
-    descriptionKey: "landing.how.step1.description",
-    descriptionFallback:
-      "Reģistrējies ar e-pastu. Nekādas instalēšanas, nekādu garu iestatījumu pirms pirmā saraksta.",
+    ssr: false,
+    loading: () => (
+      <div
+        className="min-h-[320px] animate-pulse rounded-3xl border border-zinc-200 bg-white/80"
+        aria-hidden="true"
+      />
+    ),
   },
-  {
-    titleKey: "landing.how.step2.title",
-    titleFallback: "Saliec komandu un darbu",
-    descriptionKey: "landing.how.step2.description",
-    descriptionFallback:
-      "Uzaicini biedrus, izveido sarakstus projektiem vai klientiem un sadali uzdevumus ar termiņiem.",
-  },
-  {
-    titleKey: "landing.how.step3.title",
-    titleFallback: "Dari un redzi, kas gatavs",
-    descriptionKey: "landing.how.step3.description",
-    descriptionFallback:
-      "Katru rītu atver Sākumu. Tur ir dienas bilde: kas vēl jādara, kas ir procesā un kas jau aizvērts.",
-  },
-] as const;
+);
 
-export function LandingPage() {
-  const { t } = useTranslations();
+function BelowFoldSkeleton() {
+  return (
+    <div
+      className="landing-lazy-section min-h-[480px] animate-pulse bg-zinc-100/80"
+      aria-hidden="true"
+    />
+  );
+}
+
+const LandingBelowFold = dynamic(
+  () =>
+    import("@/app/components/landing-below-fold").then((mod) => ({
+      default: mod.LandingBelowFold,
+    })),
+  { ssr: true, loading: () => <BelowFoldSkeleton /> },
+);
+
+function revealLandingHash(id: string) {
+  if (id === "features" || id === "faq") {
+    window.dispatchEvent(new Event(LANDING_REVEAL_EVENT));
+  }
+}
+
+export function LandingPage({ productName }: { productName: string }) {
+  const { t, languageCode } = useTranslations();
   const { isEnabled } = useFrontendModules();
   const content = useMemo(
     () => resolveLandingPageContent(isEnabled),
     [isEnabled],
   );
+  const name = { name: productName };
+  const signupHref = localePath("/signup", languageCode);
+  const loginHref = localePath("/login", languageCode);
+
+  useEffect(() => {
+    const id = window.location.hash.replace(/^#/, "");
+    if (!id) return;
+    revealLandingHash(id);
+    const frame = window.requestAnimationFrame(() => {
+      scrollToHashIdWhenReady(id);
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, []);
 
   return (
     <div>
-      <section className="relative">
-        <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
+      <section className="relative overflow-hidden">
+        <div className="pointer-events-none absolute inset-0" aria-hidden="true">
           <div className="absolute -top-24 -left-16 size-72 rounded-full bg-orange-100/70 blur-3xl" />
           <div className="absolute top-20 right-0 size-80 rounded-full bg-emerald-100/60 blur-3xl" />
           <div className="absolute bottom-0 left-1/3 size-64 rounded-full bg-sky-100/50 blur-3xl" />
@@ -52,31 +86,38 @@ export function LandingPage() {
           <div>
             <p className="inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-white/80 px-3 py-1 text-xs font-semibold tracking-wide text-zinc-500 uppercase">
               <span className="size-1.5 rounded-full bg-emerald-500" />
-              {t("landing.hero.kicker", "Komandas darba rīks")}
+              {t("landing.hero.kicker", "Komandas uzdevumu pārvaldība")}
             </p>
-            <h1 className="mt-4 max-w-xl text-4xl font-semibold tracking-tight text-zinc-900 sm:text-5xl">
-              {t("landing.hero.title", "Visa komanda zina, kas jādara šodien")}
+            <h1 className="mt-4 max-w-xl text-4xl font-semibold tracking-tight text-balance text-zinc-900 sm:text-5xl">
+              {t(
+                "landing.hero.title",
+                "Komandas uzdevumu pārvaldība bez liekas sarežģītības",
+              )}
             </h1>
             <p className="mt-4 max-w-lg text-lg leading-7 text-zinc-500">
               {t(
                 "landing.hero.subtitle",
-                "Routine savāc sarakstus, uzdevumus un cilvēkus vienā vietā. Redzi statusu, termiņus un atbildīgos bez izklājlapām un čata haosa.",
+                "{name} palīdz visai komandai redzēt, kas jādara šodien. Uzdevumi, projekti, cilvēki un termiņi — vienā vietā, nevis tabulās un čatā.",
+                name,
               )}
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Link
-                href="/signup"
+                href={signupHref}
                 className="inline-flex min-h-11 items-center rounded-2xl bg-zinc-900 px-5 text-sm font-semibold text-white transition hover:bg-zinc-700"
               >
                 {t("landing.hero.cta_signup", "Izmēģināt bez maksas")}
               </Link>
               <Link
-                href="/login"
+                href={loginHref}
                 className="inline-flex min-h-11 items-center rounded-2xl border border-zinc-200 bg-white/80 px-5 text-sm font-semibold text-zinc-800 transition hover:bg-white"
               >
                 {t("auth.login.title", "Ienākt")}
               </Link>
             </div>
+            <p className="mt-4 text-sm text-zinc-400">
+              {t("landing.hero.trust", "Bez instalēšanas. Sāc ar e-pastu.")}
+            </p>
 
             <div className="mt-10 flex flex-wrap gap-6 text-sm">
               <div>
@@ -107,96 +148,9 @@ export function LandingPage() {
         </div>
       </section>
 
-      <section className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
-        <h2 className="text-2xl font-semibold tracking-tight text-zinc-900">
-          {t("landing.features.title", "Kāpēc komandas paliek Routine")}
-        </h2>
-        <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-500">
-          {t(
-            "landing.features.subtitle",
-            "Mazāk rīku, skaidrāka atbildība un darbs, ko var pabeigt, nevis tikai apspriest.",
-          )}
-        </p>
-        <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {content.features.map((feature) => (
-            <article
-              key={feature.id}
-              className="rounded-3xl border border-zinc-200/80 bg-white p-6 shadow-sm"
-            >
-              <div className="flex items-center gap-3">
-                <span className="inline-flex size-10 shrink-0 items-center justify-center rounded-2xl bg-zinc-100 text-zinc-600">
-                  <i className={`${feature.icon} text-sm`} aria-hidden="true" />
-                </span>
-                <h3 className="text-base font-semibold text-zinc-900">
-                  {t(feature.titleKey, feature.titleFallback)}
-                </h3>
-              </div>
-              <p className="mt-3 text-sm leading-6 text-zinc-500">
-                {t(feature.descriptionKey, feature.descriptionFallback)}
-              </p>
-            </article>
-          ))}
-        </div>
-      </section>
-
-      <section className="border-y border-zinc-200/80 bg-white/60">
-        <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
-          <h2 className="text-2xl font-semibold tracking-tight text-zinc-900">
-            {t("landing.how.title", "No reģistrācijas līdz pirmajam pabeigtajam darbam")}
-          </h2>
-          <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-500">
-            {t(
-              "landing.how.subtitle",
-              "Trīs soļi. Komanda var sākt strādāt tajā pašā dienā.",
-            )}
-          </p>
-          <div className="mt-8 grid gap-6 md:grid-cols-3">
-            {STEPS.map((step, index) => (
-              <article key={step.titleKey} className="flex gap-4">
-                <span className="inline-flex size-10 shrink-0 items-center justify-center rounded-2xl bg-zinc-900 text-sm font-semibold text-white">
-                  {index + 1}
-                </span>
-                <div>
-                  <h3 className="text-base font-semibold text-zinc-900">
-                    {t(step.titleKey, step.titleFallback)}
-                  </h3>
-                  <p className="mt-1 text-sm leading-6 text-zinc-500">
-                    {t(step.descriptionKey, step.descriptionFallback)}
-                  </p>
-                </div>
-              </article>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
-        <div className="rounded-3xl bg-zinc-900 px-6 py-12 text-center text-white sm:px-10">
-          <h2 className="text-2xl font-semibold tracking-tight">
-            {t("landing.cta.title", "Pārtrauc darbu turēt galvā")}
-          </h2>
-          <p className="mx-auto mt-3 max-w-lg text-sm leading-6 text-zinc-300">
-            {t(
-              "landing.cta.subtitle",
-              "Reģistrējies, uzaicini komandu un izveido pirmo sarakstu. Bez instalēšanas un bez nedēļas ilgas ieviešanas.",
-            )}
-          </p>
-          <div className="mt-7 flex flex-wrap justify-center gap-3">
-            <Link
-              href="/signup"
-              className="inline-flex min-h-11 items-center rounded-2xl bg-white px-5 text-sm font-semibold text-zinc-900 transition hover:bg-zinc-100"
-            >
-              {t("landing.hero.cta_signup", "Izmēģināt bez maksas")}
-            </Link>
-            <Link
-              href="/login"
-              className="inline-flex min-h-11 items-center rounded-2xl border border-zinc-600 px-5 text-sm font-semibold text-white transition hover:bg-zinc-800"
-            >
-              {t("auth.login.title", "Ienākt")}
-            </Link>
-          </div>
-        </div>
-      </section>
+      <LazyOnVisible fallback={<BelowFoldSkeleton />}>
+        <LandingBelowFold productName={productName} />
+      </LazyOnVisible>
     </div>
   );
 }

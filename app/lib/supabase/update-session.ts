@@ -7,6 +7,8 @@ import {
   withAuthCookieOptions,
 } from "@/app/lib/auth/remember-session";
 import { getSupabasePublicEnv } from "@/app/lib/supabase/env";
+import { stripLocalePrefix } from "@/app/lib/seo/locale-path";
+import { isCrawlerUserAgent } from "@/app/lib/seo/crawler";
 
 const AUTH_PAGES = new Set(["/login", "/signup", "/forgot-password"]);
 
@@ -55,22 +57,27 @@ function redirectToLogin(request: NextRequest) {
   return response;
 }
 
-export async function updateSession(request: NextRequest) {
+export async function updateSession(
+  request: NextRequest,
+  requestHeaders?: Headers,
+) {
   const env = getSupabasePublicEnv();
+  const nextInit = requestHeaders
+    ? { request: { headers: requestHeaders } }
+    : { request };
+
   if (!env) {
-    return NextResponse.next({ request });
+    return NextResponse.next(nextInit);
   }
 
-  if (
-    request.nextUrl.pathname === "/" &&
-    request.nextUrl.searchParams.has("code")
-  ) {
+  const pathname = stripLocalePrefix(request.nextUrl.pathname);
+  if (pathname === "/" && request.nextUrl.searchParams.has("code")) {
     const callbackUrl = request.nextUrl.clone();
     callbackUrl.pathname = "/auth/callback";
     return NextResponse.redirect(callbackUrl);
   }
 
-  let supabaseResponse = NextResponse.next({ request });
+  let supabaseResponse = NextResponse.next(nextInit);
   const remember = parseRememberSession(
     request.cookies.get(REMEMBER_SESSION_COOKIE)?.value,
   );
@@ -85,7 +92,7 @@ export async function updateSession(request: NextRequest) {
         nextCookies.forEach(({ name, value }) =>
           request.cookies.set(name, value),
         );
-        supabaseResponse = NextResponse.next({ request });
+        supabaseResponse = NextResponse.next(nextInit);
         nextCookies.forEach(({ name, value, options }) =>
           supabaseResponse.cookies.set(
             name,
@@ -104,8 +111,11 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const { pathname } = request.nextUrl;
-  if (user && (pathname === "/" || AUTH_PAGES.has(pathname))) {
+  if (
+    user &&
+    (pathname === "/" || AUTH_PAGES.has(pathname)) &&
+    !(pathname === "/" && isCrawlerUserAgent(request.headers.get("user-agent")))
+  ) {
     return redirectToDashboard(request);
   }
   if (!user && isProtectedAppPath(pathname)) {

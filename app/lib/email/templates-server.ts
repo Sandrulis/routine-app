@@ -1,3 +1,4 @@
+import { LANGUAGE_CODES } from "@/app/lib/i18n/language";
 import {
   listSiteLanguages,
   updateSiteTranslation,
@@ -32,7 +33,7 @@ export async function listEmailTemplateDrafts(
   const langs = languages ?? (await listSiteLanguages());
   const languageCodes = langs.map((language) => language.code);
   if (languageCodes.length === 0) {
-    languageCodes.push("lv", "en", "ru");
+    languageCodes.push(...LANGUAGE_CODES);
   }
 
   const allKeys = EMAIL_TEMPLATE_KINDS.flatMap((kind) => {

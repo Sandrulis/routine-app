@@ -35,7 +35,7 @@ export default async function GmailPluginDonePage({
         {connected
           ? t(
               "extension.gmail.done.body",
-              "Gmail ir pieslēgts Routine. Vari aizvērt šo logu un atgriezties spraudnī.",
+              "Gmail ir pieslēgts {SYSTEM_NAME}. Vari aizvērt šo logu un atgriezties spraudnī.",
             )
           : t(
               "extension.gmail.done.error_body",

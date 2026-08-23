@@ -17,6 +17,7 @@ import { useTeam } from "@/app/lib/team-store";
 import {
   canDeleteTeam,
   canEditTeamSettings,
+  membershipForUser,
   REQUEST_CREATE_TEAM_EVENT,
   teamRankLabel,
   type WorkTeam,
@@ -45,8 +46,19 @@ export function TeamSwitcher() {
   const menuRef = useRef<HTMLDivElement | null>(null);
   const { t } = useTranslations();
   const { showFeedback } = useFeedbackToast();
-  const { isReady, teams, currentTeam, currentUser, addTeam, updateTeam, deleteTeam, selectTeam, roles } =
-    useTeam();
+  const {
+    isReady,
+    teams,
+    currentTeam,
+    currentUser,
+    addTeam,
+    updateTeam,
+    deleteTeam,
+    selectTeam,
+    roles,
+    membersByTeam,
+    rolesByTeam,
+  } = useTeam();
   const { isAdmin } = useIsAdmin();
   const canEditCurrentTeam = canEditTeamSettings(currentUser, roles, isAdmin);
   const canDeleteCurrentTeam = canDeleteTeam(currentUser, roles, isAdmin);
@@ -172,6 +184,17 @@ export function TeamSwitcher() {
         >
           {teams.map((team) => {
             const isCurrent = team.id === currentTeam?.id;
+            const membership = membershipForUser(
+              membersByTeam[team.id],
+              currentUser,
+            );
+            const teamRankLabelText = membership
+              ? teamRankLabel(
+                  membership.role,
+                  t,
+                  rolesByTeam[team.id] ?? [],
+                )
+              : null;
             return (
               <div
                 key={team.id}
@@ -194,9 +217,9 @@ export function TeamSwitcher() {
                       <span className="block truncate text-[13px] font-medium text-zinc-900">
                         {team.name}
                       </span>
-                      {rank ? (
+                      {teamRankLabelText ? (
                         <span className="mt-0.5 block truncate text-[11px] text-zinc-400">
-                          {rank}
+                          {teamRankLabelText}
                         </span>
                       ) : null}
                     </span>
@@ -346,7 +369,7 @@ export function TeamSwitcher() {
               }
             : null
         }
-        onCreate={(input) => {
+        onCreate={async (input) => {
           if (editingTeam) {
             updateTeam(editingTeam.id, {
               name: input.name,
@@ -360,16 +383,28 @@ export function TeamSwitcher() {
             });
             return;
           }
-          addTeam({
-            name: input.name,
-            icon: input.icon ?? null,
-            color: input.color,
-            logoUrl: input.logoUrl ?? null,
-          });
-          showFeedback({
-            type: "success",
-            text: t("teams.created", "Komanda pievienota."),
-          });
+          try {
+            await addTeam({
+              name: input.name,
+              icon: input.icon ?? null,
+              color: input.color,
+              logoUrl: input.logoUrl ?? null,
+            });
+            showFeedback({
+              type: "success",
+              text: t("teams.created", "Komanda pievienota."),
+            });
+          } catch (error) {
+            console.error(
+              "Failed to create team",
+              error instanceof Error ? error.message : error,
+            );
+            showFeedback({
+              type: "error",
+              text: t("errors.team_create_failed", "Neizdevās izveidot komandu."),
+            });
+            throw error;
+          }
         }}
       />
 

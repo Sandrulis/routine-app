@@ -3,11 +3,8 @@
 import { createContext, useContext, useMemo, type ReactNode } from "react";
 import { useTranslations } from "@/app/components/translations-provider";
 import {
-  applyListStatusLayout,
-  applyStatusGroupOverrides,
   applyTeamStatusLabels,
-  enforceSingletonGroups,
-  mergeStatusCatalog,
+  resolveStatusCatalogs,
 } from "@/app/lib/list-statuses";
 import { useListsOptional } from "@/app/lib/lists-store";
 import type { TaskStatusSummary } from "@/app/lib/site-admin/types";
@@ -15,7 +12,23 @@ import type { TaskStatusSummary } from "@/app/lib/site-admin/types";
 const FALLBACK_STATUSES: TaskStatusSummary[] = [
   {
     id: "todo",
-    labels: { lv: "Darāms", en: "To do", ru: "К выполнению" },
+    labels: {
+      lv: "Darāms",
+      en: "To do",
+      ru: "К выполнению",
+      de: "Offen",
+      fr: "À faire",
+      es: "Por hacer",
+      nl: "Te doen",
+      da: "Opgave",
+      no: "Gjøremål",
+      fi: "Tekemättä",
+      pl: "Do zrobienia",
+      lt: "Atliktina",
+      et: "Tegemata",
+      it: "Da fare",
+      sv: "Att göra",
+    },
     label: "Darāms",
     color: "#a1a1aa",
     sortOrder: 0,
@@ -23,7 +36,23 @@ const FALLBACK_STATUSES: TaskStatusSummary[] = [
   },
   {
     id: "in_progress",
-    labels: { lv: "Procesā", en: "In progress", ru: "В работе" },
+    labels: {
+      lv: "Procesā",
+      en: "In progress",
+      ru: "В работе",
+      de: "In Bearbeitung",
+      fr: "En cours",
+      es: "En curso",
+      nl: "Bezig",
+      da: "I gang",
+      no: "Pågår",
+      fi: "Käynnissä",
+      pl: "W toku",
+      lt: "Vykdoma",
+      et: "Töös",
+      it: "In corso",
+      sv: "Pågår",
+    },
     label: "Procesā",
     color: "#f97316",
     sortOrder: 1,
@@ -31,7 +60,23 @@ const FALLBACK_STATUSES: TaskStatusSummary[] = [
   },
   {
     id: "done",
-    labels: { lv: "Gatavs", en: "Done", ru: "Готово" },
+    labels: {
+      lv: "Gatavs",
+      en: "Done",
+      ru: "Готово",
+      de: "Fertig",
+      fr: "Terminé",
+      es: "Hecho",
+      nl: "Klaar",
+      da: "Færdig",
+      no: "Ferdig",
+      fi: "Valmis",
+      pl: "Gotowe",
+      lt: "Atlikta",
+      et: "Valmis",
+      it: "Fatto",
+      sv: "Klar",
+    },
     label: "Gatavs",
     color: "#10b981",
     sortOrder: 2,
@@ -159,36 +204,17 @@ export function useTaskStatuses(
     : undefined;
 
   return useMemo(() => {
-    const merged = applyStatusGroupOverrides(
-      mergeStatusCatalog(
-        system.statuses,
-        listStatuses ?? [],
-        listId,
-        workTaskStatuses ?? [],
-        parentTaskId,
-      ),
+    const { laidOut, visible } = resolveStatusCatalogs(
+      system.statuses,
+      listStatuses ?? [],
       {
-        ...(list?.statusGroupOverrides ?? {}),
-        ...(parentTask?.statusGroupOverrides ?? {}),
+        listId,
+        parentTaskId,
+        workTaskStatuses,
+        list,
+        parentTask,
       },
     );
-    const layoutOrder =
-      parentTaskId && parentTask?.statusOrder?.length
-        ? parentTask.statusOrder
-        : (list?.statusOrder ?? []);
-    const laidOut = applyListStatusLayout(merged, layoutOrder);
-    const hiddenIds = new Set(
-      parentTaskId && parentTask
-        ? parentTask.hiddenStatusIds
-        : listId && list
-          ? list.hiddenStatusIds
-          : [],
-    );
-    const withoutHidden = laidOut.filter((status) => !hiddenIds.has(status.id));
-    const visible =
-      (listId && list) || (parentTaskId && parentTask)
-        ? enforceSingletonGroups(withoutHidden).catalog
-        : withoutHidden;
     return catalogValue(laidOut, languageCode, visible);
   }, [
     languageCode,

@@ -1,3 +1,12 @@
+import { SYSTEM_NAME_PARAM } from "@/app/lib/document-title";
+
+export function withSystemNameParams(
+  systemName: string,
+  params?: Record<string, string | number>,
+): Record<string, string | number> {
+  return { [SYSTEM_NAME_PARAM]: systemName, ...params };
+}
+
 export function interpolate(
   value: string,
   params?: Record<string, string | number>,

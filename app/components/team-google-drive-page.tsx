@@ -20,13 +20,14 @@ import type { GoogleDriveStatus } from "@/app/lib/google-drive/repository";
 import { canEditTeamSettings } from "@/app/lib/team";
 import { useTeam } from "@/app/lib/team-store";
 import { useIsAdmin } from "@/app/lib/users/use-is-admin";
+import { DEFAULT_SYSTEM_NAME } from "@/app/lib/document-title";
 
 const emptyStatus: GoogleDriveStatus = {
   configured: false,
   connected: false,
   enabled: false,
   storeOnServer: false,
-  folderPath: "Routine",
+  folderPath: DEFAULT_SYSTEM_NAME,
   accountEmail: "",
   canConfigure: false,
 };
@@ -40,7 +41,7 @@ export function TeamGoogleDrivePage() {
   const { isAdmin } = useIsAdmin();
   const canConfigureUi = canEditTeamSettings(currentUser, roles, isAdmin);
   const [status, setStatus] = useState<GoogleDriveStatus>(emptyStatus);
-  const [folderPath, setFolderPath] = useState("Routine");
+  const [folderPath, setFolderPath] = useState(DEFAULT_SYSTEM_NAME);
   const [enabled, setEnabled] = useState(false);
   const [storeOnDrive, setStoreOnDrive] = useState(true);
   const [loaded, setLoaded] = useState(false);
@@ -198,7 +199,7 @@ export function TeamGoogleDrivePage() {
             <p className="mt-1 text-sm text-zinc-500">
               {t(
                 "google_drive.connect.description",
-                "Piekļuve tikai failiem, ko izveido Routine (Drive scope: drive.file).",
+                "Piekļuve tikai failiem, ko izveido {SYSTEM_NAME} (Drive scope: drive.file).",
               )}
             </p>
             <div className="mt-4 flex flex-wrap items-center gap-3">
@@ -283,13 +284,13 @@ export function TeamGoogleDrivePage() {
               value={folderPath}
               onChange={(event) => setFolderPath(event.target.value)}
               disabled={!canConfigure || isPending}
-              placeholder="Routine"
+              placeholder={t("app.name", "{SYSTEM_NAME}")}
               className="mt-1.5 w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 outline-none ring-zinc-300 transition focus:ring-2 disabled:cursor-not-allowed disabled:bg-zinc-50"
             />
             <p className="mt-1.5 text-xs text-zinc-500">
               {t(
                 "google_drive.folder.hint",
-                "Piemēram Routine vai Komanda/Faili. Mape tiek izveidota, ja tās vēl nav.",
+                "Piemēram {SYSTEM_NAME} vai Komanda/Faili. Mape tiek izveidota, ja tās vēl nav.",
               )}
             </p>
             <label className="mt-5 flex items-start gap-3 text-sm text-zinc-800">
@@ -303,7 +304,7 @@ export function TeamGoogleDrivePage() {
               <span>
                 {t(
                   "google_drive.upload.enabled",
-                  "Augšupielādēt failus uz Google Drive, kad tos pievieno Routine",
+                  "Augšupielādēt failus uz Google Drive, kad tos pievieno {SYSTEM_NAME}",
                 )}
               </span>
             </label>
@@ -327,7 +328,7 @@ export function TeamGoogleDrivePage() {
                 <span className="mt-0.5 block text-xs font-normal text-zinc-500">
                   {t(
                     "google_drive.storage.drive_primary_hint",
-                    "Ieslēgts pēc noklusējuma: Routine glabā tikai saiti. Ja izķeksē, faila saturs tiek saglabāts arī Routine serverī.",
+                    "Ieslēgts pēc noklusējuma: {SYSTEM_NAME} glabā tikai saiti. Ja izķeksē, faila saturs tiek saglabāts arī {SYSTEM_NAME} serverī.",
                   )}
                 </span>
               </span>

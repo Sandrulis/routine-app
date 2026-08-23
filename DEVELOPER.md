@@ -6,8 +6,8 @@
 - Tailwind CSS 4, Geist, Font Awesome
 - `@dnd-kit` drag-and-drop
 - Ports: **3120**
-- i18n: `t(key, fallback, params)`; katalogs `messages.ts` (lv + en) un `messages-ru.ts` serverī; klients saņem tikai aktīvās valodas tabulu + overlay (`TranslationsProvider`); `interpolate` ir `app/lib/i18n/interpolate.ts`; `site_translations` ir overlay
-- Ja aktīvas valodas > 1, ceļa joslā aiz paziņojumiem rādās valodas kods (`LanguageSwitcher` `variant="menu"`). UI valoda: `users.language_code` (apzināta izvēle), citādi viesu cookie ar `routine-app-language-chosen`, citādi sistēmas noklusējuma valoda.
+- i18n: `t(key, fallback, params)`; katalogs `messages.ts` (lv + en) un `messages-{code}.ts` (ru, de, fr, es, nl, da, no, fi, pl, lt, et, it, sv) serverī; JSON avots `app/lib/i18n/_catalog/` + `scripts/sync-i18n-catalogs.mjs`; klients saņem tikai aktīvās valodas tabulu + overlay (`TranslationsProvider`); `interpolate` ir `app/lib/i18n/interpolate.ts`; `site_translations` ir overlay
+- Ja aktīvas valodas > 1, galvenē `LanguageSwitcher` `variant="menu"` rāda karogu (izvēlnē karogs + nosaukums, noklusējums pirmais, tad alfabēts). UI valoda: `users.language_code` (apzināta izvēle), citādi viesu cookie ar `routine-app-language-chosen`, citādi sistēmas noklusējuma valoda.
 - Datumi UI: `useDisplayPreferences().formatDate()` / `formatDateTime()`. Efektīvās preferences: lietotāja (`users.week_start_day`, `date_format`, `date_separator`, `time_format`) ja norādītas, citādi `site_settings`. Noklusējums: pirmdiena, `d.m.Y`, `.`, 24 h. DB paliek ISO `YYYY-MM-DD`.
 - Favicon: `app/layout.tsx` `<head>` + `generateMetadata.icons` no `siteHeadIconUrl` (`favicon_url` → `logo_url` → iniciāļu SVG ar `logo_color`).
 - Document title: `lapas nosaukums | sistēmas nosaukums` (`app/lib/document-title.ts`). Root `generateMetadata.title.template`. Katrai `(app)` un mārketinga lapai `generateMetadata` (`app/lib/page-metadata.ts`); dinamiskajiem maršrutiem DB vaicājumi `document-title-server.ts`. Next.js pēc ielādes vairs nepārraksta title ar tikai sistēmas nosaukumu.
@@ -50,7 +50,7 @@ Route group `app/(marketing)/` - bez sānjoslas. Galvene `SiteHeader` (sistēmas
 
 | Ceļš | Saturs |
 |---|---|
-| `/` | Landing (`LandingPage` + `LandingAppPreview`); fīčas un hero no `resolveLandingPageContent` (ieslēgtie frontend moduļi); ielogotam `redirect("/dashboard")` |
+| `/` | Landing (`LandingPage` + `LandingAppPreview`); hero eagers, zem fold `next/dynamic` + `LazyOnVisible`; hash saites `smooth-scroll.ts`; fīčas un hero no `resolveLandingPageContent` (ieslēgtie frontend moduļi); ielogotam `redirect("/dashboard")` |
 | `/login` | Ienākt (`LoginForm`) |
 | `/signup` | Reģistrēties (`SignupForm`) |
 | `/forgot-password` | Aizmirsi paroli (`ForgotPasswordForm`) |
@@ -74,15 +74,18 @@ Indeksējamās lapas: `/`, `/privacy`, `/terms`, `/cookies`, `/login`, `/signup`
 | `robots.txt` | `/robots.txt` (`app/robots.ts`) |
 | Sitemap | `/sitemap.xml` (`app/sitemap.ts`) |
 | HTML tag verifikācija | `GOOGLE_SITE_VERIFICATION` (meta `google-site-verification`; drīkst ielīmēt arī visu meta tagu) |
-| Canonical / OG URL | `canonicalMetadata()` + root `metadataBase` |
-| JSON-LD | landing `LandingJsonLd` (Organization, WebSite, SoftwareApplication) |
+| Canonical / OG URL | `canonicalMetadata()` + root `metadataBase`; publiskajām lapām self-canonical pēc valodas (`/`, `/en`, `/de`, …) |
+| hreflang | `alternates.languages` visām `LANGUAGE_CODES` + `x-default` caur `localePath()` / `proxy.ts` |
+| JSON-LD | landing `LandingJsonLd` (Organization, WebSite, SoftwareApplication, FAQPage) |
 
 1. Produkcijā iestati `NEXT_PUBLIC_SITE_URL` uz **vienu** kanonisko hostu (`https://tasqin.com` vai `https://www.tasqin.com`, bez trailing slash) - tas pats, ko pievieno GSC. Spraudnis zina abus (`KNOWN_SITE_ORIGINS`).
 2. Search Console → pievieno **URL prefix** īpašumu ar to pašu URL (vai Domain īpašumu caur DNS).
 3. Ownership → **HTML tag**: ielīmē `content` vērtību (vai visu meta rindu) env `GOOGLE_SITE_VERIFICATION` un redeplojo.
 4. Pēc deploy atver `{NEXT_PUBLIC_SITE_URL}/robots.txt` un `{NEXT_PUBLIC_SITE_URL}/sitemap.xml` - sitemap rādītajiem URL jāsākas ar to pašu origin.
 5. GSC → Sitemaps → pievieno `{NEXT_PUBLIC_SITE_URL}/sitemap.xml`.
-6. URL Inspection uz `/` - jābūt `index, follow` un canonical uz to pašu origin. Dashboard URL - `noindex`.
+6. URL Inspection uz `/` - jābūt `index, follow` un canonical uz to pašu origin. Pārbaudi arī `/en` un citu valodu prefiksus. Dashboard URL - `noindex`.
+
+Publiskās lapas (`/`, `/privacy`, `/terms`, `/cookies`, `/login`, `/signup`) ir indeksējamas visās `LANGUAGE_CODES` valodās. Noklusējums ir `lv` bez prefiksa; pārējās ir `/{code}` (piem. `/en/privacy`, `/it`, `/sv`). `/lv` 308 uz versiju bez prefiksa. App maršruti paliek bez valodas prefiksa. `proxy.ts` iestata `x-ui-language`, lai title/description/canonical atbilstu URL, nevis tikai sīkdatnei. Sitemap iekļauj landing un legal lapas visās valodās; login/signup paliek ārpus sitemap. OG/Twitter attēls 1200×630 (`app/opengraph-image.tsx`).
 
 Neiesniedz GSC uzaicinājumu, paroles vai API ceļus. Ja Resend nav aktīvs, `/signup` novirza uz `/login` - tas GSC ir normāli.
 
@@ -143,7 +146,7 @@ Ielāde: `LoadingState` (`app/components/loading-state.tsx`, `fas fa-circle-notc
 - Klienta pārbaude: `useIsAdmin()` caur RPC `current_user_is_admin()` (ikona)
 - Lietotāju saraksts caur ielogotā admin sesiju (RLS `008_admin_list_access.sql`); jauna lietotāja izveide ar service role
 - Valodas, tulkojumi, uzstādījumi caur to pašu sesiju (RLS `010_site_admin_session_access.sql`); `site_*` SELECT arī `anon`
-- Migrācijas: `003` admin RPC, `006` valodas/tulkojumi/uzstādījumi, `007` RU, `008` admin list access, `009` `users` aktivitātes lauki, `010` site admin session RLS, `011` `users.language_code`, `012`/`016`/`018` statusi, `017`/`020`/`021` lomas, `013`/`014`/`019` privāti saraksti, `022`/`023` sarakstu pieeju līmeņi, `024` `work_tasks.deleted_at`, `025` kataloga statusa check, `027`/`028`/`030` saraksta statusi, `029` `work_tasks.checklists`, `031` `team_status_labels`, `032` failu `size` backfill, `033`/`035` display preferences, `034` `file_type_extensions`, `036`/`037` sistēmas logotips/favicon un `logo_color`, `038` `work_tasks.archived_at`, `039` `work_templates` / `work_template_items`, `040` šablona `kind: folder` un ligzdots koks, `041` `work_list_automations` (trigger + action uz sarakstu), `044`–`049` komandas uzaicinājumi (tabula, RPC accept/reject, paziņojumi, self-leave, explicit accept, reject fix), `050` `set_current_user_name` (lietotājs maina savu vārdu), `051_team_permissions_extended` (komandu lomu pieejas UI + efektīvais list access), `051_task_activities_extended` un `052_task_activities_reordered` (apakšuzdevumu vēsture), `053` `user_notification_preferences`, `054` paplašināti `app_notifications.kind`, `055` `work_task_statuses` + uzdevuma statusu layout lauki, `056` šablona assignee/checklist, `057` šablona custom statusi, `058` `site_frontend_modules` (`module_templates`, `module_automations`), `059` `module_private_list` + RPC `publish_all_private_work_lists`, `060` `module_file_upload`, `061` `module_checklist`, `062` `site_payment_plans` + `site_payment_plan_modules` + `teams` plāna kolonnas, `063` `touch_current_member_online`, `064` `module_google_drive` + `team_google_drive_integrations`, `065` `user_calendar_integrations` + `module_calendar` / `module_calendar_apple` / `module_calendar_google`, `066` `module_onedrive` + `team_onedrive_integrations`, `067`/`068`/`069` `site_integrations` (`google_oauth`, `microsoft_oauth`, Resend/Umami/Sentry), `070` Drive `store_on_server` + `google_drive_file_id` uz `list_files` / `task_files`, `071` attēlu paplašinājumi (`png`/`jpg`/`jpeg`/`gif`/`webp`) `file_type_extensions`, `072` `txt`/`html` failu tipi, `073_workspace_speed` (`has_content`, `team_id` indeksi, RPC reorder / `set_task_assignees` / `update_tasks_status`), `074` kalendāra tokenu šifrēšana, `075` zip/rar, `076` `has_content` backfill, `077_email_templates` (`find_auth_user_by_email` RPC + HTML šablonu seed `site_translations`), `078`/`079` `module_gmail_plugin` + `user_gmail_connections`, `080` `public_sign_in_methods()` (anon login karogi bez noslēpumiem)
+- Migrācijas: `003` admin RPC, `006` valodas/tulkojumi/uzstādījumi, `007` RU, `008` admin list access, `009` `users` aktivitātes lauki, `010` site admin session RLS, `011` `users.language_code`, `081` komandas izveidotāja owner INSERT, `082` extra `site_languages`, `083` `it`/`sv`, `012`/`016`/`018` statusi, `017`/`020`/`021` lomas, `013`/`014`/`019` privāti saraksti, `022`/`023` sarakstu pieeju līmeņi, `024` `work_tasks.deleted_at`, `025` kataloga statusa check, `027`/`028`/`030` saraksta statusi, `029` `work_tasks.checklists`, `031` `team_status_labels`, `032` failu `size` backfill, `033`/`035` display preferences, `034` `file_type_extensions`, `036`/`037` sistēmas logotips/favicon un `logo_color`, `038` `work_tasks.archived_at`, `039` `work_templates` / `work_template_items`, `040` šablona `kind: folder` un ligzdots koks, `041` `work_list_automations` (trigger + action uz sarakstu), `044`–`049` komandas uzaicinājumi (tabula, RPC accept/reject, paziņojumi, self-leave, explicit accept, reject fix), `050` `set_current_user_name` (lietotājs maina savu vārdu), `051_team_permissions_extended` (komandu lomu pieejas UI + efektīvais list access), `051_task_activities_extended` un `052_task_activities_reordered` (apakšuzdevumu vēsture), `053` `user_notification_preferences`, `054` paplašināti `app_notifications.kind`, `055` `work_task_statuses` + uzdevuma statusu layout lauki, `056` šablona assignee/checklist, `057` šablona custom statusi, `058` `site_frontend_modules` (`module_templates`, `module_automations`), `059` `module_private_list` + RPC `publish_all_private_work_lists`, `060` `module_file_upload`, `061` `module_checklist`, `062` `site_payment_plans` + `site_payment_plan_modules` + `teams` plāna kolonnas, `063` `touch_current_member_online`, `064` `module_google_drive` + `team_google_drive_integrations`, `065` `user_calendar_integrations` + `module_calendar` / `module_calendar_apple` / `module_calendar_google`, `066` `module_onedrive` + `team_onedrive_integrations`, `067`/`068`/`069` `site_integrations` (`google_oauth`, `microsoft_oauth`, Resend/Umami/Sentry), `070` Drive `store_on_server` + `google_drive_file_id` uz `list_files` / `task_files`, `071` attēlu paplašinājumi (`png`/`jpg`/`jpeg`/`gif`/`webp`) `file_type_extensions`, `072` `txt`/`html` failu tipi, `073_workspace_speed` (`has_content`, `team_id` indeksi, RPC reorder / `set_task_assignees` / `update_tasks_status`), `074` kalendāra tokenu šifrēšana, `075` zip/rar, `076` `has_content` backfill, `077_email_templates` (`find_auth_user_by_email` RPC + HTML šablonu seed `site_translations`), `078`/`079` `module_gmail_plugin` + `user_gmail_connections`, `080` `public_sign_in_methods()` (anon login karogi bez noslēpumiem)
 
 ## Frontend moduļi
 
@@ -311,10 +314,11 @@ Aktīvais lietotājs raksta `last_online_at` DB ik pēc 90 s (`touchMemberOnline
 ## Project structure
 
 ```
+proxy.ts                          # Sesijas refresh, ielogota novirzīšana, publisko lapu valodas prefiksi (`/en`, `/de`, …); `/lv` → `/`
 app/
   layout.tsx                      # Root: i18n, cookie consent, Umami/Sentry, SEO metadata
   robots.ts                       # /robots.txt — publiskās lapas, bloķē app/API
-  sitemap.ts                      # /sitemap.xml — landing, legal, login, signup
+  sitemap.ts                      # /sitemap.xml — landing + legal × visām LANGUAGE_CODES
   fontawesome.css                 # FA solid/regular/brands (ne `all.min.css`)
   (marketing)/
     layout.tsx                    # SiteHeader/Footer + FrontendModulesProvider (landing fīčas)
@@ -333,8 +337,8 @@ app/
   components/
     site-header.tsx               # Publiskā galvene; sistēmas logo/iniciāļi; ielogotam Atvērt lietotni; Reģistrēties tikai ar Resend
     site-footer.tsx               # Publiskā kājene
-    landing-page.tsx              # Landing saturs; fīču kartītes (nosaukums blakus ikonai) no resolveLandingPageContent
-    landing-json-ld.tsx           # schema.org Organization / WebSite / SoftwareApplication
+    landing-page.tsx              # Landing: H1, problem, features, audiences, FAQ; zem fold lazy (`landing-below-fold`, `lazy-on-visible`); hash `smooth-scroll`
+    landing-json-ld.tsx           # schema.org Organization / WebSite / SoftwareApplication / FAQPage
     landing-app-preview.tsx       # Hero dashboard vizuālis (moduļu fīčas tikai ja ieslēgtas)
     login-form.tsx                # Ienākt; e-pasts/Atcerēties/signup saite tikai ar Resend; Google/Microsoft
     signup-form.tsx               # Reģistrēties: noteikumi tikai e-pasta formai; Google/Microsoft bez ķeksīša
@@ -476,7 +480,8 @@ app/
     site-admin/display-preferences.ts # tipi, merge (lietotājs > sistēma)
     site-admin/branding.ts        # logo/favicon data URL, iniciāļu favicon SVG
     i18n/messages.ts              # lv + en katalogs (serveris)
-    i18n/messages-ru.ts           # ru katalogs (serveris)
+    i18n/messages-*.ts            # ru, de, fr, es, nl, da, no, fi, pl, lt, et, it, sv katalogi
+    i18n/_catalog/                # JSON avots extra valodām
     i18n/interpolate.ts           # `{param}` aizvietošana (klienta bundle)
     i18n/                          # language, server overlay + table klientam
     site-admin/                   # Admin CRUD repository, tipi
@@ -498,9 +503,8 @@ app/auth/google-oauth/callback/route.ts # Google login + admin konfigurācija
 app/auth/microsoft-oauth/callback/route.ts # Microsoft login + admin konfigurācija
 app/auth/google-drive/callback/route.ts # Drive OAuth code → team refresh token
 app/auth/onedrive/callback/route.ts # OneDrive OAuth code → team refresh token
-proxy.ts                          # Sesijas refresh + ielogota novirzīšana no / un /login
-scripts/                          # audit-check.mjs, apply-migrations.mjs, test-supabase.mjs
-supabase/migrations/              # 001–080: shēma, admin, work data, Drive, drošība, ielādes ātrums, e-pasta šabloni, Gmail spraudnis, publiskie login karogi
+scripts/                          # audit-check.mjs, apply-migrations.mjs, test-supabase.mjs, sync-i18n-catalogs.mjs
+supabase/migrations/              # 001–083: shēma, admin, work data, Drive, drošība, ielādes ātrums, e-pasta šabloni, Gmail spraudnis, publiskie login karogi, extra valodas
 .github/workflows/                # secret-scan.yml, security-audit.yml, security-smoke.yml
 .gitleaks.toml                    # default rules + i18n translation key allowlist
 .cursor/rules/                    # README bump, commits

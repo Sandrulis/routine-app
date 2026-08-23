@@ -1,4 +1,16 @@
 import { ru } from "@/app/lib/i18n/messages-ru";
+import { de } from "@/app/lib/i18n/messages-de";
+import { fr } from "@/app/lib/i18n/messages-fr";
+import { es } from "@/app/lib/i18n/messages-es";
+import { nl } from "@/app/lib/i18n/messages-nl";
+import { da } from "@/app/lib/i18n/messages-da";
+import { no } from "@/app/lib/i18n/messages-no";
+import { fi } from "@/app/lib/i18n/messages-fi";
+import { pl } from "@/app/lib/i18n/messages-pl";
+import { lt } from "@/app/lib/i18n/messages-lt";
+import { et } from "@/app/lib/i18n/messages-et";
+import { it } from "@/app/lib/i18n/messages-it";
+import { sv } from "@/app/lib/i18n/messages-sv";
 import type { LanguageCode } from "@/app/lib/i18n/language";
 
 export { interpolate } from "@/app/lib/i18n/interpolate";
@@ -8,15 +20,23 @@ export { DEFAULT_LANGUAGE } from "@/app/lib/i18n/language";
 
 export const messages: Record<LanguageCode, Record<string, string>> = {
   lv: {
-    "app.name": "Routine",
+    "app.name": "{SYSTEM_NAME}",
     "app.subtitle": "Komandas darāmo darbu saraksts",
     "site.back_home": "Uz sākumu",
-    "site.footer.rights": "© {year} Routine",
-    "landing.hero.title": "Visa komanda zina, kas jādara šodien",
+    "site.nav.features": "Iespējas",
+    "site.nav.faq": "BUJ",
+    "site.footer.rights": "© {year} {SYSTEM_NAME}",
+    "landing.seo.title": "{name} — vienkārša komandas uzdevumu pārvaldība",
+    "landing.seo.description":
+      "{name} ir komandas uzdevumu pārvaldības rīks mazām un augošām komandām. Plāno uzdevumus, projektus un termiņus vienā darbvietā — bez liekas sarežģītības.",
+    "landing.seo.keywords":
+      "komandas uzdevumu pārvaldība, uzdevumu pārvaldības programma, projektu vadība, darba pārvaldība, uzdevumu uzskaite, komandas sadarbība",
+    "landing.hero.title": "Komandas uzdevumu pārvaldība bez liekas sarežģītības",
     "landing.hero.subtitle":
-      "Routine savāc sarakstus, uzdevumus un cilvēkus vienā vietā. Redzi statusu, termiņus un atbildīgos bez izklājlapām un čata haosa.",
+      "{name} palīdz visai komandai redzēt, kas jādara šodien. Uzdevumi, projekti, cilvēki un termiņi — vienā vietā, nevis tabulās un čatā.",
     "landing.hero.cta_signup": "Izmēģināt bez maksas",
-    "landing.hero.kicker": "Komandas darba rīks",
+    "landing.hero.trust": "Bez instalēšanas. Sāc ar e-pastu.",
+    "landing.hero.kicker": "Komandas uzdevumu pārvaldība",
     "landing.hero.stat_status_title": "Darāms, procesā, gatavs",
     "landing.hero.stat_status": "Viena tāfele visai dienai, nevis pieci rīki.",
     "landing.hero.stat_together_title": "Cilvēki pie darba",
@@ -40,25 +60,35 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
     "landing.preview.checklist_wireframes": "Maketi",
     "landing.preview.checklist_copy": "Tekstu uzmetums",
     "landing.preview.checklist_review": "Atsauksmes",
-    "landing.features.title": "Kāpēc komandas paliek Routine",
+    "landing.problem.title": "Darbs tagad ir izkaisīts",
+    "landing.problem.subtitle":
+      "Komandas plāno darbu tabulās, čatā, kalendāros un failu mapēs. Tad neviens nav drošs, kas ir aktuāls.",
+    "landing.problem.item_tables": "Excel un tabulas",
+    "landing.problem.item_chat": "Čats",
+    "landing.problem.item_calendars": "Kalendāri",
+    "landing.problem.item_files": "Failu mapes",
+    "landing.problem.item_tools": "Vairāki uzdevumu rīki",
+    "landing.problem.solution":
+      "{name} savieno uzdevumus, projektus, cilvēkus, failus, termiņus un darbplūsmas vienā darbvietā.",
+    "landing.features.title": "Viss, kas komandai vajadzīgs darba vadībai",
     "landing.features.subtitle":
       "Mazāk rīku, skaidrāka atbildība un darbs, ko var pabeigt, nevis tikai apspriest.",
     "landing.features.lists.title": "Saraksti, kas atbilst tavam darbam",
     "landing.features.lists.description":
-      "Projekti, klienti, mapes un faili vienā kokā. Katram uzdevumam ir statuss, termiņš un atbildīgais, nevis vēl viena izklājlapa.",
+      "Projekti, klienti, mapes un faili vienā kokā. Katram uzdevumam ir statuss, termiņš un atbildīgais — nevis vēl viena Excel tabula.",
     "landing.features.lists.description_no_files":
-      "Projekti, klienti un mapes vienā kokā. Katram uzdevumam ir statuss, termiņš un atbildīgais, nevis vēl viena izklājlapa.",
+      "Projekti, klienti un mapes vienā kokā. Katram uzdevumam ir statuss, termiņš un atbildīgais — nevis vēl viena Excel tabula.",
     "landing.features.team.title": "Visa komanda redz to pašu",
     "landing.features.team.description":
-      "Uzaicini biedrus, piešķir darbus un zini, kas ir tiešsaistē. Nav jāmeklē čatā, kur palika fails vai kurš ko sola.",
+      "Uzaicini komandas biedrus, piešķir darbus un zini, kas ir tiešsaistē. Nav jāmeklē čatā, kur palika fails vai kurš ko sola.",
     "landing.features.team.description_no_files":
-      "Uzaicini biedrus, piešķir darbus un zini, kas ir tiešsaistē. Nav jāmeklē čatā, kurš ko sola.",
+      "Uzaicini komandas biedrus, piešķir darbus un zini, kas ir tiešsaistē. Nav jāmeklē čatā, kurš ko sola.",
     "landing.features.dashboard.title": "Sākums ir dienas tāfele",
     "landing.features.dashboard.description":
-      "Atverot Routine, redzi darāmo, procesā un gatavo. Vilc kartītes un turi fokusu uz to, kas jāpabeidz šodien.",
+      "Atverot {name}, redzi darāmo, procesā un gatavo. Vilc kartītes un turi fokusu uz to, kas jāpabeidz šodien.",
     "landing.features.private_list.title": "Privāti saraksti",
     "landing.features.private_list.description":
-      "Paslēp sarakstu no pārējās komandas. Redz tikai tu un izvēlētie biedri vai lomas.",
+      "Paslēp sarakstu no pārējās komandas. Redz tikai tu un izvēlētie komandas biedri vai lomas.",
     "landing.features.templates.title": "Šabloni",
     "landing.features.templates.description":
       "Saglabā atkārtojamu darbu kā šablonu un izveido jaunu mapi ar gatavu struktūru.",
@@ -80,13 +110,28 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
       "Uzdevumu termiņi parādās Google Calendar, lai diena paliktu vienā vietā.",
     "landing.features.google_drive.title": "Google Drive",
     "landing.features.google_drive.description":
-      "Glabā failus Google Drive un atver tos no saraksta, neizejot no Routine.",
+      "Glabā failus Google Drive un atver tos no saraksta, neizejot no {name}.",
     "landing.features.onedrive.title": "OneDrive",
     "landing.features.onedrive.description":
-      "Glabā failus OneDrive un atver tos no saraksta, neizejot no Routine.",
+      "Glabā failus OneDrive un atver tos no saraksta, neizejot no {name}.",
     "landing.features.gmail.title": "Gmail spraudnis",
     "landing.features.gmail.description":
       "No Gmail pievieno e-pastu un pielikumus pie uzdevuma, lai sarakste paliktu pie darba.",
+    "landing.audiences.title": "Veidots komandām, kurām jāpaveic darbs",
+    "landing.audiences.subtitle":
+      "Vienkārša darbvieta mazām komandām, aģentūrām un uzņēmumiem, kas aug.",
+    "landing.audiences.small.title": "Mazas komandas",
+    "landing.audiences.small.description":
+      "Kad darbs jāredz visiem, nevis jātur piezīmēs vai galvā.",
+    "landing.audiences.agencies.title": "Aģentūras",
+    "landing.audiences.agencies.description":
+      "Klienti, projekti un termiņi vienā kokā, lai nekas nepazūd starp uzdevumiem.",
+    "landing.audiences.growing.title": "Augoši uzņēmumi",
+    "landing.audiences.growing.description":
+      "Skaidri atbildīgie un statusi, kad komanda kļūst lielāka.",
+    "landing.audiences.remote.title": "Attālinātas komandas",
+    "landing.audiences.remote.description":
+      "Viena darbvieta, lai darbs nav izkaisīts pa čatiem dažādās joslās.",
     "landing.how.title":
       "No reģistrācijas līdz pirmajam pabeigtajam darbam",
     "landing.how.subtitle":
@@ -96,15 +141,48 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
       "Reģistrējies ar e-pastu. Nekādas instalēšanas, nekādu garu iestatījumu pirms pirmā saraksta.",
     "landing.how.step2.title": "Saliec komandu un darbu",
     "landing.how.step2.description":
-      "Uzaicini biedrus, izveido sarakstus projektiem vai klientiem un sadali uzdevumus ar termiņiem.",
+      "Uzaicini komandas biedrus, izveido sarakstus projektiem vai klientiem un sadali uzdevumus ar termiņiem.",
     "landing.how.step3.title": "Dari un redzi, kas gatavs",
     "landing.how.step3.description":
       "Katru rītu atver Sākumu. Tur ir dienas bilde: kas vēl jādara, kas ir procesā un kas jau aizvērts.",
-    "landing.cta.title": "Pārtrauc darbu turēt galvā",
+    "landing.faq.title": "Biežāk uzdotie jautājumi",
+    "landing.faq.subtitle":
+      "Īsas atbildes par to, kas {name} ir un kam tas noder.",
+    "landing.faq.what.question": "Kas ir {name}?",
+    "landing.faq.what.answer":
+      "{name} ir komandas uzdevumu pārvaldības rīks. Tajā vienā darbvietā ir saraksti, uzdevumi, cilvēki un termiņi, lai komanda redzētu, kas jādara šodien.",
+    "landing.faq.team_task.question": "Kas ir komandas uzdevumu pārvaldība?",
+    "landing.faq.team_task.answer":
+      "Tā ir darba organizēšana, kur katram uzdevumam ir atbildīgais, statuss un termiņš, un visa komanda redz to pašu ainu — nevis katrs savu tabulu vai čata pavedienu.",
+    "landing.faq.who.question": "Kam {name} ir paredzēts?",
+    "landing.faq.who.answer":
+      "Mazām un augošām komandām, aģentūrām un attālinātām komandām, kam vajag skaidru darba ainu bez smagas projektu vadības sistēmas.",
+    "landing.faq.pm.question": "Vai {name} ir projektu vadības rīks?",
+    "landing.faq.pm.answer":
+      "{name} palīdz vadīt projektus kā sarakstus ar uzdevumiem, termiņiem un atbildīgajiem. Tas nav korporatīvs portfeļa rīks — tas ir veidots ikdienas darbam.",
+    "landing.faq.projects.question": "Vai varu vadīt projektus un uzdevumus?",
+    "landing.faq.projects.answer":
+      "Jā. Izveido sarakstus projektiem vai klientiem, sadali tos uzdevumos, piešķir atbildīgos un seko statusam no darāmā līdz gatavam.",
+    "landing.faq.invite.question": "Vai varu uzaicināt komandu?",
+    "landing.faq.invite.answer":
+      "Jā. Uzaicini komandas biedrus, piešķir uzdevumus un redzi, kas ir tiešsaistē. Visi strādā vienā darbvietā.",
+    "landing.faq.files.question": "Vai varu pievienot failus uzdevumiem?",
+    "landing.faq.files.answer":
+      "Jā. Dokumentus pievieno tieši pie uzdevuma, lai faili paliek pie darba, nevis e-pastā vai atsevišķā mapē.",
+    "landing.faq.drive.question": "Vai {name} savienojas ar Google Drive?",
+    "landing.faq.drive.answer":
+      "Jā. Failus var glabāt Google Drive un atvērt no saraksta, neizejot no {name}.",
+    "landing.faq.calendar.question": "Vai {name} ir kalendāra funkcija?",
+    "landing.faq.calendar.answer":
+      "Uzdevumu termiņi var parādīties Apple Calendar vai Google Calendar, lai dienas plāns paliek vienā vietā.",
+    "landing.faq.free.question": "Vai varu sākt bez maksas?",
+    "landing.faq.free.answer":
+      "Jā. Izveido kontu un sāc darbu bez instalēšanas. Nav nedēļas ilgas ieviešanas.",
+    "landing.cta.title": "Sāc vadīt komandas darbu jau šodien",
     "landing.cta.subtitle":
       "Reģistrējies, uzaicini komandu un izveido pirmo sarakstu. Bez instalēšanas un bez nedēļas ilgas ieviešanas.",
     "auth.login.title": "Ienākt",
-    "auth.login.subtitle": "Pieslēdzies savam Routine kontam.",
+    "auth.login.subtitle": "Pieslēdzies savam {SYSTEM_NAME} kontam.",
     "auth.login.forgot": "Aizmirsi paroli?",
     "auth.login.no_account": "Nav konta?",
     "auth.login.success": "Veiksmīgi ienāci.",
@@ -118,7 +196,7 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
     "auth.signup.password_short": "Parolei jābūt vismaz 8 zīmēm.",
     "auth.signup.password_mismatch": "Paroles nesakrīt.",
     "auth.signup.terms_required": "Lai reģistrētos, piekrīti noteikumiem.",
-    "auth.signup.success": "Konts izveidots. Laipni lūgts Routine.",
+    "auth.signup.success": "Konts izveidots. Laipni lūgts {SYSTEM_NAME}.",
     "auth.signup.check_email": "Pārbaudi e-pastu, lai apstiprinātu kontu.",
     "auth.confirm.loading": "Pabeidz apstiprināšanu…",
     "auth.confirm.failed_title": "Apstiprināšana neizdevās",
@@ -176,12 +254,12 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
     "legal.toc.label": "Saturs",
     "legal.privacy.title": "Privātuma politika",
     "legal.privacy.intro":
-      "Šajā politikā skaidrojam, kādus personas datus apstrādājam, kad tu apmeklē vietni routine.app vai izmanto Routine lietotni, kāpēc to darām un kādas ir tavas tiesības saskaņā ar Vispārīgo datu aizsardzības regulu (ES) 2016/679 (VDAR).",
+      "Šajā politikā skaidrojam, kādus personas datus apstrādājam, kad tu apmeklē vietni routine.app vai izmanto {SYSTEM_NAME} lietotni, kāpēc to darām un kādas ir tavas tiesības saskaņā ar Vispārīgo datu aizsardzības regulu (ES) 2016/679 (VDAR).",
     "legal.privacy.controller.title": "1. Datu pārzinis",
     "legal.privacy.controller.p1":
-      "Personas datu pārzinis ir Routine pakalpojuma sniedzējs. Par datu apstrādi raksti uz privacy@routine.app. Atbildēsim saprātīgā termiņā un, ja nepieciešams, lūgsim papildu informāciju, lai pārliecinātos par tavu identitāti.",
+      "Personas datu pārzinis ir {SYSTEM_NAME} pakalpojuma sniedzējs. Par datu apstrādi raksti uz privacy@routine.app. Atbildēsim saprātīgā termiņā un, ja nepieciešams, lūgsim papildu informāciju, lai pārliecinātos par tavu identitāti.",
     "legal.privacy.controller.p2":
-      "Ja Routine izmanto sava darba devēja vai klienta uzdevumā, par komandā ievadītajiem darba datiem pārzinis var būt attiecīgais uzņēmums. Šādā gadījumā mēs datus apstrādājam kā apstrādātājs uzņēmuma uzdevumā.",
+      "Ja {SYSTEM_NAME} izmanto sava darba devēja vai klienta uzdevumā, par komandā ievadītajiem darba datiem pārzinis var būt attiecīgais uzņēmums. Šādā gadījumā mēs datus apstrādājam kā apstrādātājs uzņēmuma uzdevumā.",
     "legal.privacy.data.title": "2. Kādus datus apstrādājam",
     "legal.privacy.data.p1":
       "Konta dati: vārds, e-pasta adrese, parole (glabājam tikai jaucējkodu), valodas izvēle un profila iestatījumi.",
@@ -223,13 +301,13 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
       "Izmantojam saprātīgus tehniskos un organizatoriskos pasākumus: šifrētu savienojumu, piekļuves kontroli un paroļu jaucējkodus. Absolūtu drošību internetā nevaram garantēt, tāpēc lūdzam sargāt arī sava konta paroli.",
     "legal.privacy.changes.title": "9. Izmaiņas",
     "legal.privacy.changes.p1":
-      "Ja politika būtiski mainās, atjaunināsim šo lapu un norādīsim jauno datumu. Turpinot lietot Routine pēc izmaiņām, tu piekrīti atjauninātajai politikai, ciktāl to pieļauj piemērojamie tiesību akti.",
+      "Ja politika būtiski mainās, atjaunināsim šo lapu un norādīsim jauno datumu. Turpinot lietot {SYSTEM_NAME} pēc izmaiņām, tu piekrīti atjauninātajai politikai, ciktāl to pieļauj piemērojamie tiesību akti.",
     "legal.terms.title": "Lietošanas noteikumi",
     "legal.terms.intro":
-      "Šie noteikumi regulē Routine vietnes un lietotnes lietošanu. Reģistrējoties vai ienākot, tu apstiprini, ka esi tos izlasījis un piekrīti. Ja nepiekrīti, lūdzu, nelieto pakalpojumu.",
+      "Šie noteikumi regulē {SYSTEM_NAME} vietnes un lietotnes lietošanu. Reģistrējoties vai ienākot, tu apstiprini, ka esi tos izlasījis un piekrīti. Ja nepiekrīti, lūdzu, nelieto pakalpojumu.",
     "legal.terms.service.title": "1. Pakalpojums",
     "legal.terms.service.p1":
-      "Routine ir komandas darba rīks sarakstiem, uzdevumiem, failiem un sadarbībai. Mēs sniedzam piekļuvi programmatūrai tādā stāvoklī, kādā tā ir, lai tu un tava komanda varētu plānot un izpildīt darbu.",
+      "{SYSTEM_NAME} ir komandas darba rīks sarakstiem, uzdevumiem, failiem un sadarbībai. Mēs sniedzam piekļuvi programmatūrai tādā stāvoklī, kādā tā ir, lai tu un tava komanda varētu plānot un izpildīt darbu.",
     "legal.terms.service.p2":
       "Funkcijas varam uzlabot, papildināt vai pārtraukt, ja tas nepieciešams produkta attīstībai vai drošībai. Par būtiskām izmaiņām informēsim vietnē vai e-pastā.",
     "legal.terms.account.title": "2. Konts",
@@ -239,22 +317,22 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
       "Tu atbildi par paroles slepenību un par visām darbībām, kas veiktas no tava konta. Ja aizdomājies par nesankcionētu piekļuvi, nekavējoties nomaini paroli un raksti mums.",
     "legal.terms.content.title": "3. Saturs",
     "legal.terms.content.p1":
-      "Saraksti, uzdevumi, faili un citi dati, ko ievadi Routine, paliek tev vai tavam uzņēmumam. Mēs tos izmantojam tikai pakalpojuma nodrošināšanai, drošībai un atbalstam.",
+      "Saraksti, uzdevumi, faili un citi dati, ko ievadi {SYSTEM_NAME}, paliek tev vai tavam uzņēmumam. Mēs tos izmantojam tikai pakalpojuma nodrošināšanai, drošībai un atbalstam.",
     "legal.terms.content.p2":
       "Tu garantē, ka tev ir tiesības ievadīt šo saturu un ka tas nepārkāpj citu personu tiesības, konfidencialitāti vai piemērojamos likumus.",
     "legal.terms.acceptable.title": "4. Pieļaujamā lietošana",
     "legal.terms.acceptable.p1":
-      "Nedrīkst mēģināt ielauzties sistēmā, pārslogot to, apiet drošību, kopēt citu komandu datus vai izmantot Routine pretlikumīgiem mērķiem.",
+      "Nedrīkst mēģināt ielauzties sistēmā, pārslogot to, apiet drošību, kopēt citu komandu datus vai izmantot {SYSTEM_NAME} pretlikumīgiem mērķiem.",
     "legal.terms.acceptable.p2":
       "Ja pārkāpums ir būtisks, mēs varam ierobežot vai slēgt kontu. Par acīmredzami prettiesisku saturu varam ziņot kompetentajām iestādēm.",
     "legal.terms.availability.title": "5. Pieejamība",
     "legal.terms.availability.p1":
-      "Cenšamies, lai Routine būtu pieejams bez pārtraukuma, taču nevaram garantēt 100% darbības laiku. Plānoti darbi un ārkārtas labojumi var īslaicīgi pārtraukt piekļuvi.",
+      "Cenšamies, lai {SYSTEM_NAME} būtu pieejams bez pārtraukuma, taču nevaram garantēt 100% darbības laiku. Plānoti darbi un ārkārtas labojumi var īslaicīgi pārtraukt piekļuvi.",
     "legal.terms.liability.title": "6. Atbildība",
     "legal.terms.liability.p1":
-      "Routine palīdz organizēt darbu, taču tu esi atbildīgs par lēmumiem, ko pieņem, balstoties uz sistēmā redzamo informāciju. Ciktāl to pieļauj likums, mēs neatbildam par netiešiem zaudējumiem, peļņas zudumu vai datu zudumu, kas radies no pakalpojuma lietošanas.",
+      "{SYSTEM_NAME} palīdz organizēt darbu, taču tu esi atbildīgs par lēmumiem, ko pieņem, balstoties uz sistēmā redzamo informāciju. Ciktāl to pieļauj likums, mēs neatbildam par netiešiem zaudējumiem, peļņas zudumu vai datu zudumu, kas radies no pakalpojuma lietošanas.",
     "legal.terms.liability.p2":
-      "Ja likums neļauj izslēgt atbildību, mūsu atbildība ir ierobežota ar summu, ko tu esi samaksājis par Routine pēdējo 12 mēnešu laikā, vai 100 EUR, ja maksa nav bijusi.",
+      "Ja likums neļauj izslēgt atbildību, mūsu atbildība ir ierobežota ar summu, ko tu esi samaksājis par {SYSTEM_NAME} pēdējo 12 mēnešu laikā, vai 100 EUR, ja maksa nav bijusi.",
     "legal.terms.termination.title": "7. Izbeigšana",
     "legal.terms.termination.p1":
       "Tu vari pārtraukt lietošanu un dzēst kontu jebkurā laikā. Mēs varam slēgt kontu, ja tu būtiski pārkāp šos noteikumus vai ja pakalpojumu pārtraucam.",
@@ -263,7 +341,7 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
       "Noteikumiem piemērojami Latvijas Republikas tiesību akti. Strīdus vispirms risināsim sarunās. Ja tas neizdodas, strīds ir piekritīgs Latvijas tiesām, ja vien patērētāja aizsardzības normas nenosaka citādi.",
     "legal.cookies.title": "Sīkdatņu politika",
     "legal.cookies.intro":
-      "Šī politika paskaidro, kādas sīkdatnes Routine izmanto, kāpēc tās ir vajadzīgas un kā tu vari pārvaldīt piekrišanu. Tā jālasa kopā ar privātuma politiku.",
+      "Šī politika paskaidro, kādas sīkdatnes {SYSTEM_NAME} izmanto, kāpēc tās ir vajadzīgas un kā tu vari pārvaldīt piekrišanu. Tā jālasa kopā ar privātuma politiku.",
     "legal.cookies.what.title": "1. Kas ir sīkdatnes",
     "legal.cookies.what.p1":
       "Sīkdatnes ir nelieli teksta faili, ko pārlūks saglabā tavā ierīcē. Tās palīdz atcerēties iestatījumus, saglabāt piekrišanu un, ja tu atļauj, mērīt lietojumu.",
@@ -273,7 +351,7 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
     "legal.cookies.necessary.p1":
       "Obligātās sīkdatnes ir vajadzīgas, lai vietne darbotos: saglabājam tavu sīkdatņu izvēli, uzturam pieslēgšanās sesiju (arī pēc Google ienākšanas) līdz 30 dienām, ja izvēlies Atcerēties mani, un nodrošinām drošu pārlūkošanu. Bez tām piekrišanas logs atkārtotos katrā apmeklējumā un daļa funkciju nebūtu pieejama.",
     "legal.cookies.necessary.p2":
-      "Šīs sīkdatnes nevar izslēgt sistēmā. Tās vari bloķēt pārlūka iestatījumos, taču tad Routine var nestrādāt pareizi.",
+      "Šīs sīkdatnes nevar izslēgt sistēmā. Tās vari bloķēt pārlūka iestatījumos, taču tad {SYSTEM_NAME} var nestrādāt pareizi.",
     "legal.cookies.preferences.title": "3. Preferenču sīkdatnes",
     "legal.cookies.preferences.p1":
       "Preferenču sīkdatnes atceras saskarnes izvēles, piemēram, saraksta logu (Uzdevumi, Faili, Saraksts) kārtību. Tās palīdz, lai tev nebūtu jāiestata skats no jauna katrā apmeklējumā.",
@@ -281,7 +359,7 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
       "Šīs sīkdatnes rakstām tikai tad, ja tu tām piekrīti. Ja atsakies, izvēles paliek tikai līdz lapas pārlādei.",
     "legal.cookies.optional.title": "4. Statistikas un mārketinga sīkdatnes",
     "legal.cookies.optional.p1":
-      "Statistikas sīkdatnes ļautu anonīmi saprast, kuras lapas palīdz un kuras mulsina. Mārketinga sīkdatnes ļautu mērīt kampaņas. Šobrīd Routine šādus rīkus neieslēdz.",
+      "Statistikas sīkdatnes ļautu anonīmi saprast, kuras lapas palīdz un kuras mulsina. Mārketinga sīkdatnes ļautu mērīt kampaņas. Šobrīd {SYSTEM_NAME} šādus rīkus neieslēdz.",
     "legal.cookies.optional.p2":
       "Ja nākotnē tos pievienosim, tie darbosies tikai ar tavu piekrišanu. Līdz tam izvēle “Piekrist visām” saglabā gatavību, bet neieslēdz trešo pušu izsekošanu.",
     "legal.cookies.manage.title": "5. Kā pārvaldīt piekrišanu",
@@ -1028,10 +1106,10 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
     "google_drive.menu_description":
       "Sūti augšupielādētos failus uz komandas Google Drive",
     "google_drive.page.subtitle":
-      "Pieslēdz komandas Google kontu. Pēc noklusējuma faili tiek glabāti Drive; pēc izvēles arī Routine serverī.",
+      "Pieslēdz komandas Google kontu. Pēc noklusējuma faili tiek glabāti Drive; pēc izvēles arī {SYSTEM_NAME} serverī.",
     "google_drive.connect.title": "Google konts",
     "google_drive.connect.description":
-      "Piekļuve tikai failiem, ko izveido Routine (Drive scope: drive.file).",
+      "Piekļuve tikai failiem, ko izveido {SYSTEM_NAME} (Drive scope: drive.file).",
     "google_drive.connect.button": "Pierakstīties ar Google",
     "google_drive.status.connected": "Savienots",
     "google_drive.status.disconnected": "Nav savienots",
@@ -1048,12 +1126,12 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
       "Faili nonāk šajā mapē, saglabājot saraksta un mapju struktūru.",
     "google_drive.folder.path": "Mapes ceļš Drive",
     "google_drive.folder.hint":
-      "Piemēram Routine vai Komanda/Faili. Mape tiek izveidota, ja tās vēl nav.",
+      "Piemēram {SYSTEM_NAME} vai Komanda/Faili. Mape tiek izveidota, ja tās vēl nav.",
     "google_drive.upload.enabled":
-      "Augšupielādēt failus uz Google Drive, kad tos pievieno Routine",
+      "Augšupielādēt failus uz Google Drive, kad tos pievieno {SYSTEM_NAME}",
     "google_drive.storage.drive_primary": "Glabāt failus Google Drive",
     "google_drive.storage.drive_primary_hint":
-      "Ieslēgts pēc noklusējuma: Routine glabā tikai saiti. Ja izķeksē, faila saturs tiek saglabāts arī Routine serverī.",
+      "Ieslēgts pēc noklusējuma: {SYSTEM_NAME} glabā tikai saiti. Ja izķeksē, faila saturs tiek saglabāts arī {SYSTEM_NAME} serverī.",
     "google_drive.feedback.connected": "Google konts pieslēgts.",
     "google_drive.feedback.disconnected": "Google konts atvienots.",
     "google_drive.feedback.saved": "Google Drive iestatījumi saglabāti.",
@@ -1063,7 +1141,7 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
       "Pieslēdz komandas Microsoft kontu, lai augšupielādētie faili nonāktu arī OneDrive mapē.",
     "onedrive.connect.title": "Microsoft konts",
     "onedrive.connect.description":
-      "Piekļuve failiem, ko Routine izveido komandas OneDrive (scope: Files.ReadWrite).",
+      "Piekļuve failiem, ko {SYSTEM_NAME} izveido komandas OneDrive (scope: Files.ReadWrite).",
     "onedrive.connect.button": "Pierakstīties ar Microsoft",
     "onedrive.status.connected": "Savienots",
     "onedrive.status.disconnected": "Nav savienots",
@@ -1080,9 +1158,9 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
       "Faili nonāk šajā mapē, saglabājot saraksta un mapju struktūru.",
     "onedrive.folder.path": "Mapes ceļš OneDrive",
     "onedrive.folder.hint":
-      "Piemēram Routine vai Komanda/Faili. Mape tiek izveidota, ja tās vēl nav.",
+      "Piemēram {SYSTEM_NAME} vai Komanda/Faili. Mape tiek izveidota, ja tās vēl nav.",
     "onedrive.upload.enabled":
-      "Augšupielādēt failus uz OneDrive, kad tos pievieno Routine",
+      "Augšupielādēt failus uz OneDrive, kad tos pievieno {SYSTEM_NAME}",
     "onedrive.feedback.connected": "Microsoft konts pieslēgts.",
     "onedrive.feedback.disconnected": "Microsoft konts atvienots.",
     "onedrive.feedback.saved": "OneDrive iestatījumi saglabāti.",
@@ -1524,6 +1602,18 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
     "lang.lv": "Latviešu",
     "lang.en": "English",
     "lang.ru": "Русский",
+    "lang.de": "Deutsch",
+    "lang.fr": "Français",
+    "lang.es": "Español",
+    "lang.nl": "Nederlands",
+    "lang.da": "Dansk",
+    "lang.no": "Norsk",
+    "lang.fi": "Suomi",
+    "lang.pl": "Polski",
+    "lang.lt": "Lietuvių",
+    "lang.et": "Eesti",
+    "lang.it": "Italiano",
+    "lang.sv": "Svenska",
     "common.description": "Apraksts",
     "settings.language.title": "Valoda",
     "settings.language.description": "Lietotnes saskarnes valoda.",
@@ -1608,15 +1698,15 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
     "errors.extension_gmail_not_found":
       "Gmail neatradā ziņu. Atver e-pastu pilnā skatā un mēģini vēlreiz.",
     "errors.extension_auth_required":
-      "Ielogojies Routine (tajā pašā pārlūkā) un mēģini vēlreiz.",
+      "Ielogojies {SYSTEM_NAME} (tajā pašā pārlūkā) un mēģini vēlreiz.",
     "errors.extension_unknown": "Nezināma kļūda.",
     "errors.extension_gmail_not_connected":
-      "Vispirms savieno Gmail spraudnī. Savienojums tiks saglabāts arī Routine.",
+      "Vispirms savieno Gmail spraudnī. Savienojums tiks saglabāts arī {SYSTEM_NAME}.",
     "errors.extension_plugin_disabled": "Gmail spraudnis sistēmā ir izslēgts.",
     "errors.extension_team_drive_missing":
       "Šai komandai nav pieslēgts Google Drive. Spraudnis nestrādās.",
     "errors.extension_login_mfa":
-      "Šim kontam ir MFA. Pabeidz ienākšanu Routine lapā un mēģini vēlreiz.",
+      "Šim kontam ir MFA. Pabeidz ienākšanu {SYSTEM_NAME} lapā un mēģini vēlreiz.",
     "extension.gmail.title": "Pievienot apakšuzdevumam",
     "extension.gmail.back": "Atpakaļ",
     "extension.gmail.waiting": "Gaida…",
@@ -1645,26 +1735,26 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
     "extension.gmail.no_subtasks": "Nav atvērtu apakšuzdevumu",
     "extension.gmail.email_label": "E-pasts: {subject}",
     "extension.gmail.open_email": "Atver e-pastu Gmailā, tad pievieno.",
-    "extension.gmail.checking_session": "Pārbauda Routine sesiju…",
-    "extension.gmail.open_login": "Atvērt Routine login",
-    "extension.gmail.add_to_routine": "Pievienot Routine",
+    "extension.gmail.checking_session": "Pārbauda {SYSTEM_NAME} sesiju…",
+    "extension.gmail.open_login": "Atvērt {SYSTEM_NAME} login",
+    "extension.gmail.add_to_routine": "Pievienot {SYSTEM_NAME}",
     "extension.gmail.loading_gmail": "Ielādē e-pastu un pielikumus no Gmail…",
     "extension.gmail.progress_email": "Ielādē e-pastu no Gmail…",
     "extension.gmail.progress_download": "Lejupielādē {name} ({current}/{total})",
-    "extension.gmail.progress_upload": "Saglabā Routine ({count})…",
+    "extension.gmail.progress_upload": "Saglabā {SYSTEM_NAME} ({count})…",
     "extension.gmail.attach_failed": "Neizdevās pievienot.",
     "extension.gmail.attached_one": "Veiksmīgi! Pievienots «{name}».",
     "extension.gmail.attached_many": "Veiksmīgi! Pievienoti {count} faili.",
     "extension.gmail.skipped": "Izlaisti {count}.",
     "extension.gmail.skipped_named": "Izlaisti {count}: {names}.",
-    "extension.gmail.options.app_url": "Routine URL",
+    "extension.gmail.options.app_url": "{SYSTEM_NAME} URL",
     "extension.gmail.options.client_id": "Gmail OAuth Client ID",
     "extension.gmail.options.redirect": "Redirect URI (ieliec Google Cloud OAuth klientā):",
     "extension.gmail.options.connect": "Savienot Gmail",
     "extension.gmail.options.hint":
-      "Ielogojies Routine tajā pašā Chrome profilā. Pielikumi nāk caur Gmail API (līdz 25 MB; lielākiem failiem vajag komandas Google Drive).",
+      "Ielogojies {SYSTEM_NAME} tajā pašā Chrome profilā. Pielikumi nāk caur Gmail API (līdz 25 MB; lielākiem failiem vajag komandas Google Drive).",
     "extension.gmail.options.saved": "Saglabāts.",
-    "extension.gmail.options.invalid_url": "Nederīgs Routine URL.",
+    "extension.gmail.options.invalid_url": "Nederīgs {SYSTEM_NAME} URL.",
     "extension.gmail.options.need_client_id":
       "Vispirms ievadi Gmail OAuth Client ID un saglabā.",
     "extension.gmail.options.connecting": "Atveras Google atļauju logs…",
@@ -1677,15 +1767,15 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
       "Šai komandai nav pieslēgts Google Drive. Spraudnis nestrādās.",
     "extension.gmail.connect_gmail": "Savienot Gmail",
     "extension.gmail.connect_gmail_hint":
-      "Custom login kontam Gmail jāsavieno šeit. Savienojums tiks saglabāts arī Routine.",
+      "Custom login kontam Gmail jāsavieno šeit. Savienojums tiks saglabāts arī {SYSTEM_NAME}.",
     "extension.gmail.gmail_connected": "Gmail savienots: {email}",
     "extension.gmail.plugin_disabled":
       "Gmail spraudnis sistēmā ir izslēgts. Ieslēdz to Administrācija → Moduļi.",
     "extension.gmail.login_failed": "Neizdevās ienākt.",
-    "extension.gmail.checking_app": "Meklē Routine…",
+    "extension.gmail.checking_app": "Meklē {SYSTEM_NAME}…",
     "extension.gmail.done.title": "Gmail savienots",
     "extension.gmail.done.body":
-      "Gmail ir pieslēgts Routine. Vari aizvērt šo logu un atgriezties spraudnī.",
+      "Gmail ir pieslēgts {SYSTEM_NAME}. Vari aizvērt šo logu un atgriezties spraudnī.",
     "extension.gmail.done.error_title": "Neizdevās savienot Gmail",
     "extension.gmail.done.error_body":
       "Mēģini vēlreiz no Gmail spraudņa. Pārliecinies, ka Google OAuth un Gmail API ir ieslēgti.",
@@ -1806,15 +1896,23 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
     "errors.early_bird_save_failed": "Neizdevās saglabāt Early Bird limītu.",
   },
   en: {
-    "app.name": "Routine",
+    "app.name": "{SYSTEM_NAME}",
     "app.subtitle": "Team to-do list",
     "site.back_home": "Back to home",
-    "site.footer.rights": "© {year} Routine",
-    "landing.hero.title": "Your team knows what to do today",
+    "site.nav.features": "Features",
+    "site.nav.faq": "FAQ",
+    "site.footer.rights": "© {year} {SYSTEM_NAME}",
+    "landing.seo.title": "{name} — Simple Team Task Management Software",
+    "landing.seo.description":
+      "{name} is team task management software for small and growing teams. Plan tasks, projects and deadlines in one workspace — without the usual complexity.",
+    "landing.seo.keywords":
+      "team task management software, task management software, team collaboration software, project management software, work management software, task tracking software",
+    "landing.hero.title": "Team task management without the complexity",
     "landing.hero.subtitle":
-      "Routine brings lists, tasks and people into one place. See status, due dates and owners without spreadsheets or chat chaos.",
+      "{name} helps the whole team see what to do today. Tasks, projects, people and deadlines — in one place, not scattered across sheets and chat.",
     "landing.hero.cta_signup": "Try it for free",
-    "landing.hero.kicker": "Team work tool",
+    "landing.hero.trust": "No install. Start with your email.",
+    "landing.hero.kicker": "Team task management",
     "landing.hero.stat_status_title": "To do, in progress, done",
     "landing.hero.stat_status": "One board for the day, not five tools.",
     "landing.hero.stat_together_title": "People on the work",
@@ -1838,7 +1936,17 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
     "landing.preview.checklist_wireframes": "Wireframes",
     "landing.preview.checklist_copy": "Copy draft",
     "landing.preview.checklist_review": "Feedback",
-    "landing.features.title": "Why teams stay with Routine",
+    "landing.problem.title": "Work is scattered today",
+    "landing.problem.subtitle":
+      "Teams plan work in tables, chat, calendars and file folders. Then nobody is sure what is current.",
+    "landing.problem.item_tables": "Excel and tables",
+    "landing.problem.item_chat": "Chat",
+    "landing.problem.item_calendars": "Calendars",
+    "landing.problem.item_files": "File folders",
+    "landing.problem.item_tools": "Multiple task tools",
+    "landing.problem.solution":
+      "{name} brings tasks, projects, people, files, deadlines and workflows into one workspace.",
+    "landing.features.title": "Everything a team needs to manage work",
     "landing.features.subtitle":
       "Fewer tools, clearer ownership and work you can finish, not just discuss.",
     "landing.features.lists.title": "Lists that match how you work",
@@ -1853,7 +1961,7 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
       "Invite teammates, assign work and see who is online. No more hunting chat for a promise.",
     "landing.features.dashboard.title": "Home is your daily board",
     "landing.features.dashboard.description":
-      "Open Routine and see to do, in progress and done. Drag cards and keep focus on what must ship today.",
+      "Open {name} and see to do, in progress and done. Drag cards and keep focus on what must ship today.",
     "landing.features.private_list.title": "Private lists",
     "landing.features.private_list.description":
       "Hide a list from the rest of the team. Only you and selected members or roles can see it.",
@@ -1878,13 +1986,28 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
       "Task due dates show up in Google Calendar, so the day stays in one place.",
     "landing.features.google_drive.title": "Google Drive",
     "landing.features.google_drive.description":
-      "Store files in Google Drive and open them from the list without leaving Routine.",
+      "Store files in Google Drive and open them from the list without leaving {name}.",
     "landing.features.onedrive.title": "OneDrive",
     "landing.features.onedrive.description":
-      "Store files in OneDrive and open them from the list without leaving Routine.",
+      "Store files in OneDrive and open them from the list without leaving {name}.",
     "landing.features.gmail.title": "Gmail plugin",
     "landing.features.gmail.description":
       "Add an email and its attachments from Gmail to a task, so the thread stays with the work.",
+    "landing.audiences.title": "Built for teams that need to get work done",
+    "landing.audiences.subtitle":
+      "A simple workspace for small teams, agencies and businesses that are growing.",
+    "landing.audiences.small.title": "Small teams",
+    "landing.audiences.small.description":
+      "When everyone needs to see the work — not keep it in notes or in their head.",
+    "landing.audiences.agencies.title": "Agencies",
+    "landing.audiences.agencies.description":
+      "Clients, projects and deadlines in one tree, so nothing gets lost between tasks.",
+    "landing.audiences.growing.title": "Growing businesses",
+    "landing.audiences.growing.description":
+      "Clear owners and statuses when the team gets larger.",
+    "landing.audiences.remote.title": "Remote teams",
+    "landing.audiences.remote.description":
+      "One workspace, so work is not scattered across chats in different time zones.",
     "landing.how.title": "From sign-up to the first finished task",
     "landing.how.subtitle":
       "Three steps. Your team can start working the same day.",
@@ -1897,11 +2020,44 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
     "landing.how.step3.title": "Do the work and see what is done",
     "landing.how.step3.description":
       "Open Home every morning. That is the day's picture: still to do, in progress and already closed.",
-    "landing.cta.title": "Stop keeping the work in your head",
+    "landing.faq.title": "Frequently asked questions",
+    "landing.faq.subtitle":
+      "Short answers about what {name} is and who it is for.",
+    "landing.faq.what.question": "What is {name}?",
+    "landing.faq.what.answer":
+      "{name} is team task management software. Lists, tasks, people and due dates live in one workspace, so the team can see what to do today.",
+    "landing.faq.team_task.question": "What is team task management?",
+    "landing.faq.team_task.answer":
+      "It is how a team organizes work so every task has an owner, a status and a due date — and everyone sees the same picture, not a separate table or chat thread.",
+    "landing.faq.who.question": "Who is {name} for?",
+    "landing.faq.who.answer":
+      "Small and growing teams, agencies and remote teams that need a clear view of work without a heavy project-management system.",
+    "landing.faq.pm.question": "Is {name} a project management tool?",
+    "landing.faq.pm.answer":
+      "{name} helps you run projects as lists with tasks, due dates and owners. It is not a corporate portfolio suite — it is built for everyday work.",
+    "landing.faq.projects.question": "Can I manage projects and tasks?",
+    "landing.faq.projects.answer":
+      "Yes. Create lists for projects or clients, break them into tasks, assign owners and follow status from to do to done.",
+    "landing.faq.invite.question": "Can I invite my team?",
+    "landing.faq.invite.answer":
+      "Yes. Invite teammates, assign tasks and see who is online. Everyone works in the same workspace.",
+    "landing.faq.files.question": "Can I attach files to tasks?",
+    "landing.faq.files.answer":
+      "Yes. Add documents on the task itself, so files stay with the work instead of in email or a separate folder.",
+    "landing.faq.drive.question": "Does {name} connect to Google Drive?",
+    "landing.faq.drive.answer":
+      "Yes. You can store files in Google Drive and open them from the list without leaving {name}.",
+    "landing.faq.calendar.question": "Does {name} have calendar functionality?",
+    "landing.faq.calendar.answer":
+      "Task due dates can appear in Apple Calendar or Google Calendar, so the day's plan stays in one place.",
+    "landing.faq.free.question": "Can I start for free?",
+    "landing.faq.free.answer":
+      "Yes. Create an account and start working. No install and no week-long rollout.",
+    "landing.cta.title": "Start managing your team's work today",
     "landing.cta.subtitle":
       "Sign up, invite the team and create the first list. No install and no week-long rollout.",
     "auth.login.title": "Sign in",
-    "auth.login.subtitle": "Sign in to your Routine account.",
+    "auth.login.subtitle": "Sign in to your {SYSTEM_NAME} account.",
     "auth.login.forgot": "Forgot password?",
     "auth.login.no_account": "No account?",
     "auth.login.success": "Signed in successfully.",
@@ -1915,7 +2071,7 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
     "auth.signup.password_short": "Password must be at least 8 characters.",
     "auth.signup.password_mismatch": "Passwords do not match.",
     "auth.signup.terms_required": "Please accept the terms to sign up.",
-    "auth.signup.success": "Account created. Welcome to Routine.",
+    "auth.signup.success": "Account created. Welcome to {SYSTEM_NAME}.",
     "auth.signup.check_email": "Check your email to confirm the account.",
     "auth.confirm.loading": "Finishing confirmation…",
     "auth.confirm.failed_title": "Confirmation failed",
@@ -1973,12 +2129,12 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
     "legal.toc.label": "Contents",
     "legal.privacy.title": "Privacy policy",
     "legal.privacy.intro":
-      "This policy explains what personal data we process when you visit routine.app or use the Routine app, why we do it, and what rights you have under the General Data Protection Regulation (EU) 2016/679 (GDPR).",
+      "This policy explains what personal data we process when you visit routine.app or use the {SYSTEM_NAME} app, why we do it, and what rights you have under the General Data Protection Regulation (EU) 2016/679 (GDPR).",
     "legal.privacy.controller.title": "1. Controller",
     "legal.privacy.controller.p1":
-      "The controller of personal data is the Routine service provider. Write to privacy@routine.app about data processing. We will reply within a reasonable time and may ask for extra details to confirm your identity.",
+      "The controller of personal data is the {SYSTEM_NAME} service provider. Write to privacy@routine.app about data processing. We will reply within a reasonable time and may ask for extra details to confirm your identity.",
     "legal.privacy.controller.p2":
-      "If you use Routine for your employer or a client, that company may be the controller of the work data entered in the team. In that case we process the data as a processor on the company's behalf.",
+      "If you use {SYSTEM_NAME} for your employer or a client, that company may be the controller of the work data entered in the team. In that case we process the data as a processor on the company's behalf.",
     "legal.privacy.data.title": "2. What data we process",
     "legal.privacy.data.p1":
       "Account data: name, email address, password (stored only as a hash), language choice and profile settings.",
@@ -2020,13 +2176,13 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
       "We use reasonable technical and organisational measures: encrypted connections, access control and password hashes. Absolute security on the internet cannot be guaranteed, so please also protect your account password.",
     "legal.privacy.changes.title": "9. Changes",
     "legal.privacy.changes.p1":
-      "If this policy changes in a material way, we will update this page and the date. Continuing to use Routine after a change means you accept the updated policy to the extent allowed by applicable law.",
+      "If this policy changes in a material way, we will update this page and the date. Continuing to use {SYSTEM_NAME} after a change means you accept the updated policy to the extent allowed by applicable law.",
     "legal.terms.title": "Terms of use",
     "legal.terms.intro":
-      "These terms govern use of the Routine website and app. By signing up or signing in you confirm that you have read and accept them. If you do not agree, please do not use the service.",
+      "These terms govern use of the {SYSTEM_NAME} website and app. By signing up or signing in you confirm that you have read and accept them. If you do not agree, please do not use the service.",
     "legal.terms.service.title": "1. Service",
     "legal.terms.service.p1":
-      "Routine is a team work tool for lists, tasks, files and collaboration. We provide access to the software as it stands so you and your team can plan and finish work.",
+      "{SYSTEM_NAME} is a team work tool for lists, tasks, files and collaboration. We provide access to the software as it stands so you and your team can plan and finish work.",
     "legal.terms.service.p2":
       "We may improve, add or discontinue features when needed for product development or security. We will announce material changes on the site or by email.",
     "legal.terms.account.title": "2. Account",
@@ -2036,31 +2192,31 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
       "You are responsible for keeping your password secret and for all activity from your account. If you suspect unauthorised access, change the password at once and contact us.",
     "legal.terms.content.title": "3. Content",
     "legal.terms.content.p1":
-      "Lists, tasks, files and other data you enter in Routine stay yours or your company's. We use them only to provide the service, keep it secure and give support.",
+      "Lists, tasks, files and other data you enter in {SYSTEM_NAME} stay yours or your company's. We use them only to provide the service, keep it secure and give support.",
     "legal.terms.content.p2":
       "You warrant that you have the right to enter this content and that it does not infringe other people's rights, confidentiality or applicable law.",
     "legal.terms.acceptable.title": "4. Acceptable use",
     "legal.terms.acceptable.p1":
-      "You must not try to break into the system, overload it, bypass security, copy another team's data or use Routine for unlawful purposes.",
+      "You must not try to break into the system, overload it, bypass security, copy another team's data or use {SYSTEM_NAME} for unlawful purposes.",
     "legal.terms.acceptable.p2":
       "If a breach is material, we may restrict or close the account. For clearly unlawful content we may notify the competent authorities.",
     "legal.terms.availability.title": "5. Availability",
     "legal.terms.availability.p1":
-      "We aim to keep Routine available without interruption, but we cannot guarantee 100% uptime. Planned work and emergency fixes may briefly interrupt access.",
+      "We aim to keep {SYSTEM_NAME} available without interruption, but we cannot guarantee 100% uptime. Planned work and emergency fixes may briefly interrupt access.",
     "legal.terms.liability.title": "6. Liability",
     "legal.terms.liability.p1":
-      "Routine helps organise work, but you are responsible for decisions based on what you see in the system. To the extent allowed by law, we are not liable for indirect loss, lost profit or data loss arising from use of the service.",
+      "{SYSTEM_NAME} helps organise work, but you are responsible for decisions based on what you see in the system. To the extent allowed by law, we are not liable for indirect loss, lost profit or data loss arising from use of the service.",
     "legal.terms.liability.p2":
-      "If the law does not allow us to exclude liability, it is limited to the amount you paid for Routine in the last 12 months, or EUR 100 if there was no fee.",
+      "If the law does not allow us to exclude liability, it is limited to the amount you paid for {SYSTEM_NAME} in the last 12 months, or EUR 100 if there was no fee.",
     "legal.terms.termination.title": "7. Termination",
     "legal.terms.termination.p1":
-      "You may stop using Routine and delete your account at any time. We may close an account if you materially breach these terms or if we discontinue the service.",
+      "You may stop using {SYSTEM_NAME} and delete your account at any time. We may close an account if you materially breach these terms or if we discontinue the service.",
     "legal.terms.law.title": "8. Governing law",
     "legal.terms.law.p1":
       "These terms are governed by the law of the Republic of Latvia. We will first try to resolve disputes by discussion. If that fails, Latvian courts have jurisdiction unless consumer protection rules say otherwise.",
     "legal.cookies.title": "Cookie policy",
     "legal.cookies.intro":
-      "This policy explains which cookies Routine uses, why they are needed and how you can manage consent. Read it together with the privacy policy.",
+      "This policy explains which cookies {SYSTEM_NAME} uses, why they are needed and how you can manage consent. Read it together with the privacy policy.",
     "legal.cookies.what.title": "1. What cookies are",
     "legal.cookies.what.p1":
       "Cookies are small text files stored in your browser. They help remember settings, store consent and, if you allow it, measure usage.",
@@ -2070,7 +2226,7 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
     "legal.cookies.necessary.p1":
       "Necessary cookies are required for the site to work: we store your cookie choice, keep your sign-in session (including Google) for up to 30 days if you choose Remember me, and keep browsing secure. Without them the consent banner would return on every visit and some features would not work.",
     "legal.cookies.necessary.p2":
-      "These cookies cannot be turned off in the product. You can block them in the browser, but then Routine may not work correctly.",
+      "These cookies cannot be turned off in the product. You can block them in the browser, but then {SYSTEM_NAME} may not work correctly.",
     "legal.cookies.preferences.title": "3. Preference cookies",
     "legal.cookies.preferences.p1":
       "Preference cookies remember interface choices, such as the order of list windows (Tasks, Files, Overview). They save you from resetting the view on every visit.",
@@ -2078,7 +2234,7 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
       "We write these cookies only if you consent. If you refuse, the choices last only until you reload the page.",
     "legal.cookies.optional.title": "4. Analytics and marketing cookies",
     "legal.cookies.optional.p1":
-      "Analytics cookies would let us see anonymously which pages help and which confuse. Marketing cookies would measure campaigns. Routine does not turn these tools on today.",
+      "Analytics cookies would let us see anonymously which pages help and which confuse. Marketing cookies would measure campaigns. {SYSTEM_NAME} does not turn these tools on today.",
     "legal.cookies.optional.p2":
       "If we add them later, they will run only with your consent. Until then, Accept all stores your preference but does not enable third-party tracking.",
     "legal.cookies.manage.title": "5. How to manage consent",
@@ -2815,10 +2971,10 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
     "google_drive.menu_description":
       "Send uploaded files to the team Google Drive",
     "google_drive.page.subtitle":
-      "Connect a team Google account. By default files are stored on Drive; optionally also on the Routine server.",
+      "Connect a team Google account. By default files are stored on Drive; optionally also on the {SYSTEM_NAME} server.",
     "google_drive.connect.title": "Google account",
     "google_drive.connect.description":
-      "Access is limited to files created by Routine (Drive scope: drive.file).",
+      "Access is limited to files created by {SYSTEM_NAME} (Drive scope: drive.file).",
     "google_drive.connect.button": "Sign in with Google",
     "google_drive.status.connected": "Connected",
     "google_drive.status.disconnected": "Not connected",
@@ -2835,12 +2991,12 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
       "Files go into this folder, keeping the list and folder structure.",
     "google_drive.folder.path": "Drive folder path",
     "google_drive.folder.hint":
-      "For example Routine or Team/Files. The folder is created if it does not exist yet.",
+      "For example {SYSTEM_NAME} or Team/Files. The folder is created if it does not exist yet.",
     "google_drive.upload.enabled":
-      "Upload files to Google Drive when they are added in Routine",
+      "Upload files to Google Drive when they are added in {SYSTEM_NAME}",
     "google_drive.storage.drive_primary": "Store files on Google Drive",
     "google_drive.storage.drive_primary_hint":
-      "On by default: Routine keeps only a link. If unchecked, file content is also saved on the Routine server.",
+      "On by default: {SYSTEM_NAME} keeps only a link. If unchecked, file content is also saved on the {SYSTEM_NAME} server.",
     "google_drive.feedback.connected": "Google account connected.",
     "google_drive.feedback.disconnected": "Google account disconnected.",
     "google_drive.feedback.saved": "Google Drive settings saved.",
@@ -2850,7 +3006,7 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
       "Connect a team Microsoft account so uploaded files are also stored in OneDrive.",
     "onedrive.connect.title": "Microsoft account",
     "onedrive.connect.description":
-      "Access to files Routine creates in the team OneDrive (scope: Files.ReadWrite).",
+      "Access to files {SYSTEM_NAME} creates in the team OneDrive (scope: Files.ReadWrite).",
     "onedrive.connect.button": "Sign in with Microsoft",
     "onedrive.status.connected": "Connected",
     "onedrive.status.disconnected": "Not connected",
@@ -2867,9 +3023,9 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
       "Files go into this folder, keeping the list and folder structure.",
     "onedrive.folder.path": "OneDrive folder path",
     "onedrive.folder.hint":
-      "For example Routine or Team/Files. The folder is created if it does not exist yet.",
+      "For example {SYSTEM_NAME} or Team/Files. The folder is created if it does not exist yet.",
     "onedrive.upload.enabled":
-      "Upload files to OneDrive when they are added in Routine",
+      "Upload files to OneDrive when they are added in {SYSTEM_NAME}",
     "onedrive.feedback.connected": "Microsoft account connected.",
     "onedrive.feedback.disconnected": "Microsoft account disconnected.",
     "onedrive.feedback.saved": "OneDrive settings saved.",
@@ -3301,6 +3457,18 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
     "lang.lv": "Latviešu",
     "lang.en": "English",
     "lang.ru": "Русский",
+    "lang.de": "Deutsch",
+    "lang.fr": "Français",
+    "lang.es": "Español",
+    "lang.nl": "Nederlands",
+    "lang.da": "Dansk",
+    "lang.no": "Norsk",
+    "lang.fi": "Suomi",
+    "lang.pl": "Polski",
+    "lang.lt": "Lietuvių",
+    "lang.et": "Eesti",
+    "lang.it": "Italiano",
+    "lang.sv": "Svenska",
     "common.description": "Description",
     "settings.language.title": "Language",
     "settings.language.description": "App interface language.",
@@ -3384,15 +3552,15 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
     "errors.extension_gmail_not_found":
       "Gmail could not find the message. Open the email in full view and try again.",
     "errors.extension_auth_required":
-      "Sign in to Routine (in the same browser) and try again.",
+      "Sign in to {SYSTEM_NAME} (in the same browser) and try again.",
     "errors.extension_unknown": "Unknown error.",
     "errors.extension_gmail_not_connected":
-      "Connect Gmail in the plugin first. The connection is also saved in Routine.",
+      "Connect Gmail in the plugin first. The connection is also saved in {SYSTEM_NAME}.",
     "errors.extension_plugin_disabled": "The Gmail plugin is disabled in the system.",
     "errors.extension_team_drive_missing":
       "This team has no Google Drive connected. The plugin will not work.",
     "errors.extension_login_mfa":
-      "This account has MFA. Finish signing in on the Routine page and try again.",
+      "This account has MFA. Finish signing in on the {SYSTEM_NAME} page and try again.",
     "extension.gmail.title": "Add to subtask",
     "extension.gmail.back": "Back",
     "extension.gmail.waiting": "Waiting…",
@@ -3421,26 +3589,26 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
     "extension.gmail.no_subtasks": "No open subtasks",
     "extension.gmail.email_label": "Email: {subject}",
     "extension.gmail.open_email": "Open an email in Gmail, then attach it.",
-    "extension.gmail.checking_session": "Checking Routine session…",
-    "extension.gmail.open_login": "Open Routine login",
-    "extension.gmail.add_to_routine": "Add to Routine",
+    "extension.gmail.checking_session": "Checking {SYSTEM_NAME} session…",
+    "extension.gmail.open_login": "Open {SYSTEM_NAME} login",
+    "extension.gmail.add_to_routine": "Add to {SYSTEM_NAME}",
     "extension.gmail.loading_gmail": "Loading email and attachments from Gmail…",
     "extension.gmail.progress_email": "Loading email from Gmail…",
     "extension.gmail.progress_download": "Downloading {name} ({current}/{total})",
-    "extension.gmail.progress_upload": "Saving to Routine ({count})…",
+    "extension.gmail.progress_upload": "Saving to {SYSTEM_NAME} ({count})…",
     "extension.gmail.attach_failed": "Could not attach.",
     "extension.gmail.attached_one": "Done. Attached “{name}”.",
     "extension.gmail.attached_many": "Done. Attached {count} files.",
     "extension.gmail.skipped": "Skipped {count}.",
     "extension.gmail.skipped_named": "Skipped {count}: {names}.",
-    "extension.gmail.options.app_url": "Routine URL",
+    "extension.gmail.options.app_url": "{SYSTEM_NAME} URL",
     "extension.gmail.options.client_id": "Gmail OAuth Client ID",
     "extension.gmail.options.redirect": "Redirect URI (add it to the Google Cloud OAuth client):",
     "extension.gmail.options.connect": "Connect Gmail",
     "extension.gmail.options.hint":
-      "Sign in to Routine in the same Chrome profile. Attachments come through the Gmail API (up to 25 MB; larger files need team Google Drive).",
+      "Sign in to {SYSTEM_NAME} in the same Chrome profile. Attachments come through the Gmail API (up to 25 MB; larger files need team Google Drive).",
     "extension.gmail.options.saved": "Saved.",
-    "extension.gmail.options.invalid_url": "Invalid Routine URL.",
+    "extension.gmail.options.invalid_url": "Invalid {SYSTEM_NAME} URL.",
     "extension.gmail.options.need_client_id":
       "Enter the Gmail OAuth Client ID first and save.",
     "extension.gmail.options.connecting": "Google permission window is opening…",
@@ -3453,15 +3621,15 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
       "This team has no Google Drive connected. The plugin will not work.",
     "extension.gmail.connect_gmail": "Connect Gmail",
     "extension.gmail.connect_gmail_hint":
-      "Custom-login accounts must connect Gmail here. The connection is also saved in Routine.",
+      "Custom-login accounts must connect Gmail here. The connection is also saved in {SYSTEM_NAME}.",
     "extension.gmail.gmail_connected": "Gmail connected: {email}",
     "extension.gmail.plugin_disabled":
       "The Gmail plugin is disabled. Turn it on in Administration → Modules.",
     "extension.gmail.login_failed": "Could not sign in.",
-    "extension.gmail.checking_app": "Looking for Routine…",
+    "extension.gmail.checking_app": "Looking for {SYSTEM_NAME}…",
     "extension.gmail.done.title": "Gmail connected",
     "extension.gmail.done.body":
-      "Gmail is connected to Routine. You can close this window and return to the plugin.",
+      "Gmail is connected to {SYSTEM_NAME}. You can close this window and return to the plugin.",
     "extension.gmail.done.error_title": "Could not connect Gmail",
     "extension.gmail.done.error_body":
       "Try again from the Gmail plugin. Make sure Google OAuth and the Gmail API are enabled.",
@@ -3579,5 +3747,17 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
     "errors.early_bird_save_failed": "Could not save the Early Bird limit.",
   },
   ru,
+  de,
+  fr,
+  es,
+  nl,
+  da,
+  no,
+  fi,
+  pl,
+  lt,
+  et,
+  it,
+  sv,
 };
 

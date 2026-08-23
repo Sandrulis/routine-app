@@ -1,11 +1,30 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { OptionalTooltip } from "@/app/components/tooltip";
 import { useTranslations } from "@/app/components/translations-provider";
 import { setLanguageAction } from "@/app/lib/i18n/actions";
-import type { LanguageCode } from "@/app/lib/i18n/language";
+import {
+  languageFlagEmoji,
+  sortSwitcherLanguages,
+  type LanguageCode,
+} from "@/app/lib/i18n/language";
+import { isPublicLocalizedPath, localePath } from "@/app/lib/seo/locale-path";
+
+function LanguageFlag({
+  code,
+  className = "inline-flex shrink-0 items-center justify-center text-[1.35rem] leading-none",
+}: {
+  code: LanguageCode;
+  className?: string;
+}) {
+  return (
+    <span className={className} aria-hidden="true" translate="no">
+      {languageFlagEmoji(code)}
+    </span>
+  );
+}
 
 export function LanguageSwitcher({
   variant = "compact",
@@ -13,11 +32,13 @@ export function LanguageSwitcher({
   variant?: "compact" | "stacked" | "menu";
 }) {
   const router = useRouter();
+  const pathname = usePathname();
   const menuRef = useRef<HTMLDivElement | null>(null);
   const { languageCode, languages, t } = useTranslations();
   const [pending, startTransition] = useTransition();
   const [open, setOpen] = useState(false);
-  const options = languages;
+  const options = sortSwitcherLanguages(languages);
+  const current = options.find((language) => language.code === languageCode);
   const label = t("settings.language.title", "Valoda");
 
   function switchLanguage(next: LanguageCode) {
@@ -28,7 +49,11 @@ export function LanguageSwitcher({
     startTransition(async () => {
       await setLanguageAction(next);
       setOpen(false);
-      router.refresh();
+      if (isPublicLocalizedPath(pathname)) {
+        router.push(localePath(pathname, next));
+      } else {
+        router.refresh();
+      }
     });
   }
 
@@ -63,18 +88,21 @@ export function LanguageSwitcher({
         <OptionalTooltip label={open ? null : label}>
           <button
             type="button"
-            onClick={() => setOpen((current) => !current)}
+            onClick={() => setOpen((currentOpen) => !currentOpen)}
             aria-haspopup="menu"
             aria-expanded={open}
-            aria-label={label}
+            aria-label={`${label}${current ? `: ${current.name}` : ""}`}
             disabled={pending}
-            className={`inline-flex h-8 min-w-8 items-center justify-center rounded-md px-2 text-[11px] font-semibold uppercase tracking-wide transition disabled:cursor-not-allowed disabled:opacity-60 ${
+            className={`inline-flex h-9 min-w-9 items-center justify-center rounded-md px-1.5 leading-none transition disabled:cursor-not-allowed disabled:opacity-60 ${
               open
                 ? "bg-zinc-100 text-zinc-800"
                 : "text-zinc-500 hover:bg-zinc-100 hover:text-zinc-800"
             }`}
           >
-            {languageCode}
+            <LanguageFlag
+              code={languageCode}
+              className="inline-flex size-6 items-center justify-center text-[1.45rem] leading-none"
+            />
           </button>
         </OptionalTooltip>
 
@@ -92,21 +120,20 @@ export function LanguageSwitcher({
                   role="menuitem"
                   disabled={pending}
                   onClick={() => switchLanguage(language.code)}
-                  className={`flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-sm transition hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-60 ${
+                  className={`flex w-full items-center gap-3 px-3 py-2.5 text-left text-sm transition hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-60 ${
                     active ? "font-medium text-zinc-900" : "text-zinc-600"
                   }`}
                 >
-                  <span className="min-w-0 truncate">{language.name}</span>
-                  <span className="flex shrink-0 items-center gap-2">
-                    <span className="font-mono text-[11px] uppercase text-zinc-400">
-                      {language.code}
-                    </span>
-                    {active ? (
-                      <i className="fas fa-check text-[10px] text-zinc-400" aria-hidden="true" />
-                    ) : (
-                      <span className="inline-block w-2.5" aria-hidden="true" />
-                    )}
-                  </span>
+                  <LanguageFlag
+                    code={language.code}
+                    className="inline-flex h-8 w-8 shrink-0 items-center justify-center text-[2rem] leading-none"
+                  />
+                  <span className="min-w-0 flex-1 truncate">{language.name}</span>
+                  {active ? (
+                    <i className="fas fa-check text-[10px] text-zinc-400" aria-hidden="true" />
+                  ) : (
+                    <span className="inline-block w-2.5" aria-hidden="true" />
+                  )}
                 </button>
               );
             })}
@@ -129,20 +156,20 @@ export function LanguageSwitcher({
               aria-checked={active}
               disabled={pending}
               onClick={() => switchLanguage(language.code)}
-              className={`flex items-center justify-between rounded-xl border px-3 py-2.5 text-left text-sm transition ${
+              className={`flex items-center gap-3 rounded-xl border px-3 py-2.5 text-left text-sm transition ${
                 active
                   ? "border-zinc-900 bg-zinc-900 text-white"
                   : "border-zinc-200 bg-white text-zinc-800 hover:border-zinc-300 hover:bg-zinc-50"
               } disabled:cursor-not-allowed disabled:opacity-60`}
             >
-              <span className="font-medium">{language.name}</span>
-              <span
-                className={`font-mono text-[11px] uppercase ${
-                  active ? "text-zinc-300" : "text-zinc-400"
-                }`}
-              >
-                {language.code}
-              </span>
+              <LanguageFlag
+                code={language.code}
+                className="inline-flex h-8 w-8 shrink-0 items-center justify-center text-[2rem] leading-none"
+              />
+              <span className="min-w-0 flex-1 font-medium">{language.name}</span>
+              {active ? (
+                <i className="fas fa-check text-[10px] text-white/70" aria-hidden="true" />
+              ) : null}
             </button>
           );
         })}
@@ -164,15 +191,14 @@ export function LanguageSwitcher({
             type="button"
             role="radio"
             aria-checked={active}
+            aria-label={language.name}
             disabled={pending}
             onClick={() => switchLanguage(language.code)}
-            className={`rounded-md px-2 py-1 text-[11px] font-semibold uppercase tracking-wide transition ${
-              active
-                ? "bg-zinc-900 text-white"
-                : "text-zinc-500 hover:text-zinc-900"
+            className={`inline-flex items-center justify-center rounded-md px-1.5 py-1.5 leading-none transition ${
+              active ? "bg-zinc-900" : "hover:bg-zinc-200"
             } disabled:cursor-not-allowed disabled:opacity-60`}
           >
-            {language.code}
+            <LanguageFlag code={language.code} />
           </button>
         );
       })}

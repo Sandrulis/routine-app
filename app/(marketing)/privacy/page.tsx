@@ -10,7 +10,7 @@ export async function generateMetadata(): Promise<Metadata> {
     title: t("legal.privacy.title", "Privātuma politika"),
     description: t(
       "legal.privacy.intro",
-      "Šajā politikā skaidrojam, kādus personas datus apstrādājam, kad tu apmeklē vietni routine.app vai izmanto Routine lietotni, kāpēc to darām un kādas ir tavas tiesības saskaņā ar Vispārīgo datu aizsardzības regulu (ES) 2016/679 (VDAR).",
+      "Šajā politikā skaidrojam, kādus personas datus apstrādājam, kad tu apmeklē vietni routine.app vai izmanto {SYSTEM_NAME} lietotni, kāpēc to darām un kādas ir tavas tiesības saskaņā ar Vispārīgo datu aizsardzības regulu (ES) 2016/679 (VDAR).",
     ),
   });
 }

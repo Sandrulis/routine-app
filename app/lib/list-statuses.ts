@@ -213,6 +213,64 @@ export function compareTasksByStatusPriority(
   return a.id.localeCompare(b.id);
 }
 
+type StatusLayoutSource = {
+  hiddenStatusIds?: string[];
+  statusOrder?: string[];
+  statusGroupOverrides?: Record<string, string>;
+};
+
+/** Same catalog as `useTaskStatuses(listId, parentTaskId)` — layout, hidden, singleton groups. */
+export function resolveStatusCatalogs(
+  system: TaskStatusSummary[],
+  listStatuses: ListStatus[],
+  options: {
+    listId?: string | null;
+    parentTaskId?: string | null;
+    workTaskStatuses?: WorkTaskStatusDef[];
+    list?: StatusLayoutSource | null;
+    parentTask?: StatusLayoutSource | null;
+  } = {},
+): { laidOut: TaskStatusSummary[]; visible: TaskStatusSummary[] } {
+  const {
+    listId,
+    parentTaskId,
+    workTaskStatuses = [],
+    list,
+    parentTask,
+  } = options;
+  const merged = applyStatusGroupOverrides(
+    mergeStatusCatalog(
+      system,
+      listStatuses,
+      listId,
+      workTaskStatuses,
+      parentTaskId,
+    ),
+    {
+      ...(list?.statusGroupOverrides ?? {}),
+      ...(parentTask?.statusGroupOverrides ?? {}),
+    },
+  );
+  const layoutOrder =
+    parentTaskId && parentTask?.statusOrder?.length
+      ? parentTask.statusOrder
+      : (list?.statusOrder ?? []);
+  const laidOut = applyListStatusLayout(merged, layoutOrder);
+  const hiddenIds = new Set(
+    parentTaskId && parentTask
+      ? (parentTask.hiddenStatusIds ?? [])
+      : listId && list
+        ? (list.hiddenStatusIds ?? [])
+        : [],
+  );
+  const withoutHidden = laidOut.filter((status) => !hiddenIds.has(status.id));
+  const visible =
+    (listId && list) || (parentTaskId && parentTask)
+      ? enforceSingletonGroups(withoutHidden).catalog
+      : withoutHidden;
+  return { laidOut, visible };
+}
+
 export function defaultSortedStatusCatalog(
   catalog: TaskStatusSummary[],
 ): TaskStatusSummary[] {

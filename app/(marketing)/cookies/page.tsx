@@ -11,7 +11,7 @@ export async function generateMetadata(): Promise<Metadata> {
     title: t("legal.cookies.title", "Sīkdatņu politika"),
     description: t(
       "legal.cookies.intro",
-      "Šī politika paskaidro, kādas sīkdatnes Routine izmanto, kāpēc tās ir vajadzīgas un kā tu vari pārvaldīt piekrišanu. Tā jālasa kopā ar privātuma politiku.",
+      "Šī politika paskaidro, kādas sīkdatnes {SYSTEM_NAME} izmanto, kāpēc tās ir vajadzīgas un kā tu vari pārvaldīt piekrišanu. Tā jālasa kopā ar privātuma politiku.",
     ),
   });
 }

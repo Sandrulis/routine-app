@@ -16,6 +16,7 @@ import { documentTitleTemplate, resolveSystemName } from "@/app/lib/document-tit
 import { brandImageMime, siteHeadIconUrl } from "@/app/lib/site-admin/branding";
 import { getSiteSettings } from "@/app/lib/site-admin/repository";
 import { getEffectiveDisplayPreferences } from "@/app/lib/users/display-preferences";
+import { ogLocale as openGraphLocale } from "@/app/lib/seo/locale-path";
 import {
   getGoogleSiteVerification,
   getPublicSiteUrl,
@@ -36,7 +37,7 @@ export async function generateMetadata(): Promise<Metadata> {
     getServerTranslations(),
     getSiteSettings(),
   ]);
-  const systemName = resolveSystemName(settings.systemName, t("app.name", "Routine"));
+  const systemName = resolveSystemName(settings.systemName);
   const slogan =
     settings.sloganValues[languageCode]?.trim() ||
     settings.sloganValues.lv?.trim() ||
@@ -50,8 +51,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
   const googleVerification = getGoogleSiteVerification();
   const siteUrl = getPublicSiteUrl();
-  const ogLocale =
-    languageCode === "en" ? "en_US" : languageCode === "ru" ? "ru_RU" : "lv_LV";
+  const ogLocale = openGraphLocale(languageCode);
 
   return {
     metadataBase: new URL(siteUrl),
@@ -70,10 +70,9 @@ export async function generateMetadata(): Promise<Metadata> {
       title: systemName,
       description: slogan,
       url: siteUrl,
-      ...(settings.logoUrl ? { images: [{ url: settings.logoUrl }] } : {}),
     },
     twitter: {
-      card: "summary",
+      card: "summary_large_image",
       title: systemName,
       description: slogan,
     },
@@ -149,6 +148,7 @@ export default async function RootLayout({
               overlay={overlay}
               table={table}
               languages={languages}
+              systemName={resolveSystemName(settings.systemName)}
             >
               <DisplayPreferencesProvider preferences={effectiveDisplayPreferences}>
                 <FeedbackToastProvider>

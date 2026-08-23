@@ -4,6 +4,7 @@ export const LANGUAGE_OPTIONS = [
   { code: "de", name: "Deutsch" },
   { code: "fr", name: "Français" },
   { code: "es", name: "Español" },
+  { code: "nl", name: "Nederlands" },
   { code: "it", name: "Italiano" },
   { code: "lt", name: "Lietuvių" },
   { code: "et", name: "Eesti" },

@@ -1,7 +1,10 @@
 import { dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { NextConfig } from "next";
-import { robotsNoIndexHeaderSources } from "./app/lib/seo/site-url";
+import {
+  canonicalHostRedirectRule,
+  robotsNoIndexHeaderSources,
+} from "./app/lib/seo/site-url";
 
 const projectRoot = dirname(fileURLToPath(import.meta.url));
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "";
@@ -91,6 +94,20 @@ const nextConfig: NextConfig = {
         source,
         headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }],
       })),
+    ];
+  },
+  async redirects() {
+    const hostRule = canonicalHostRedirectRule();
+    if (!hostRule) return [];
+    const origin = hostRule.destination.replace(/\/:path\*$/, "");
+    return [
+      {
+        source: "/",
+        has: hostRule.has,
+        destination: `${origin}/`,
+        permanent: true,
+      },
+      hostRule,
     ];
   },
 };
