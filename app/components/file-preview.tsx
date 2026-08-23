@@ -265,6 +265,7 @@ export function FilePreview({
       <iframe
         src={`${embedUrl}#navpanes=0`}
         title={file.name}
+        sandbox="allow-scripts allow-same-origin"
         className="min-h-[70vh] w-full rounded-2xl border border-zinc-200 bg-white"
       />
     );

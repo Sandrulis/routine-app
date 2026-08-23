@@ -42,9 +42,19 @@ function formatResendFrom(from: string, displayName?: string): string {
   const named = trimmed.match(/^(.*)<([^<>]+)>\s*$/);
   const email = parseFromEmail(trimmed);
   const existingName = named?.[1]?.trim().replace(/^["']|["']$/g, "") ?? "";
-  const label = existingName || displayName?.trim().replace(/[<>"]/g, "") || "";
+  // Explicit fromName wins over a name baked into the configured From address
+  // (e.g. forward emails should show the user, not "TASQIN").
+  const override = displayName?.trim().replace(/[<>"]/g, "") || "";
+  const label = override || existingName || "";
   if (!label || !email.includes("@")) return trimmed;
   return `${label} <${email}>`;
+}
+
+function formatResendReplyTo(email: string, displayName?: string): string {
+  const address = parseFromEmail(email.trim()) || email.trim();
+  const label = displayName?.trim().replace(/[<>"]/g, "") || "";
+  if (!label || !address.includes("@")) return address;
+  return `${label} <${address}>`;
 }
 
 export type ResendAttachment = {
@@ -63,8 +73,10 @@ export async function sendResendEmail(input: {
   /**
    * Override Reply-To. Pass a string to force it; pass `null` to omit Reply-To;
    * omit / `undefined` to use the integration default Reply-To (if set).
+   * Display name for Reply-To (optional) — formats as `Name <email>`.
    */
   replyTo?: string | null;
+  replyToName?: string;
   attachments?: ResendAttachment[];
   /** Resend tags (e.g. activity_id) for webhook correlation. */
   tags?: Record<string, string>;
@@ -82,10 +94,13 @@ export async function sendResendEmail(input: {
     return { ok: false as const, error: fromError };
   }
 
-  const replyTo =
+  const replyToRaw =
     input.replyTo === undefined
       ? credentials.replyToEmail
       : input.replyTo?.trim() || undefined;
+  const replyTo = replyToRaw
+    ? formatResendReplyTo(replyToRaw, input.replyToName)
+    : undefined;
 
   const tags = input.tags
     ? Object.entries(input.tags)

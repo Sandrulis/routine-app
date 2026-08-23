@@ -1,24 +1,9 @@
-import { ru } from "@/app/lib/i18n/messages-ru";
-import { de } from "@/app/lib/i18n/messages-de";
-import { fr } from "@/app/lib/i18n/messages-fr";
-import { es } from "@/app/lib/i18n/messages-es";
-import { nl } from "@/app/lib/i18n/messages-nl";
-import { da } from "@/app/lib/i18n/messages-da";
-import { no } from "@/app/lib/i18n/messages-no";
-import { fi } from "@/app/lib/i18n/messages-fi";
-import { pl } from "@/app/lib/i18n/messages-pl";
-import { lt } from "@/app/lib/i18n/messages-lt";
-import { et } from "@/app/lib/i18n/messages-et";
-import { it } from "@/app/lib/i18n/messages-it";
-import { sv } from "@/app/lib/i18n/messages-sv";
-import type { LanguageCode } from "@/app/lib/i18n/language";
-
 export { interpolate } from "@/app/lib/i18n/interpolate";
 
 export type { LanguageCode } from "@/app/lib/i18n/language";
 export { DEFAULT_LANGUAGE } from "@/app/lib/i18n/language";
 
-export const messages: Record<LanguageCode, Record<string, string>> = {
+export const messages: { lv: Record<string, string>; en: Record<string, string> } = {
   lv: {
     "app.name": "{SYSTEM_NAME}",
     "app.subtitle": "Komandas darāmo darbu saraksts",
@@ -413,6 +398,37 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
     "nav.storage.hint": "Kokā un apakšuzdevumos augšupielādētie faili",
     "nav.storage.hint.server": "Serveris: {size}",
     "nav.storage.hint.cloud": "Cloud: {size}",
+    "nav.report_bug": "Atrast kļūdu?",
+    "nav.request_feature": "Pieprasīt funkciju",
+    "nav.feedback": "Atsauksmes",
+    "feedback.bug.title": "Atrast kļūdu?",
+    "feedback.bug.description":
+      "Apraksti kļūdu. Ziņojums tiks nosūtīts uz juridisko e-pastu.",
+    "feedback.bug.title_placeholder": "Īss kļūdas kopsavilkums",
+    "feedback.bug.body_placeholder": "Kas notika, ko gaidīji un kā to atkārtot",
+    "feedback.bug.sent": "Paldies, kļūdas ziņojums nosūtīts.",
+    "feedback.feature.title": "Pieprasīt funkciju",
+    "feedback.feature.description":
+      "Iesaki jaunu iespēju. Citi var balsot, lai palīdzētu noteikt prioritāti.",
+    "feedback.feature.title_placeholder": "Ko vēlies pievienot?",
+    "feedback.feature.body_placeholder": "Kāpēc tas palīdzētu un kā to izmantotu",
+    "feedback.feature.sent": "Funkcijas pieprasījums nosūtīts.",
+    "feedback.feature.empty": "Vēl nav pieprasījumu. Esi pirmais.",
+    "feedback.feature.list": "Citu pieprasījumi",
+    "feedback.feature.upvote": "Balsot",
+    "feedback.general.title": "Atsauksmes",
+    "feedback.general.description":
+      "Padalies ar savu viedokli. Ziņojums tiks nosūtīts uz juridisko e-pastu.",
+    "feedback.general.title_placeholder": "Tēma",
+    "feedback.general.body_placeholder": "Kas tev patīk vai ko varētu uzlabot",
+    "feedback.general.sent": "Paldies, atsauksme nosūtīta.",
+    "feedback.email.kind.bug": "kļūdas ziņojumu",
+    "feedback.email.kind.feature": "funkcijas pieprasījumu",
+    "feedback.email.kind.feedback": "atsauksmi",
+    "feedback.email.subject.bug": "Kļūdas ziņojums: {title}",
+    "feedback.email.subject.feature": "Funkcijas pieprasījums: {title}",
+    "feedback.email.subject.feedback": "Atsauksme: {title}",
+    "feedback.email.body": "{name} ({email}) nosūtīja {kind}.\n\n{title}\n\n{body}",
     "admin.panel.title": "Administrācijas panelis",
     "admin.page.subtitle":
       "Sistēmas iestatījumi. Pieejams tikai administratoriem.",
@@ -430,7 +446,21 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
     "admin.nav.payment_plans": "Maksas plāni",
     "admin.nav.integrations": "Integrācijas",
     "admin.nav.email_templates": "E-pasta šabloni",
+    "admin.nav.cron_jobs": "Cron jobs",
     "admin.email_templates.section": "E-pasta šabloni",
+    "admin.cron_jobs.page_hint": "Ieslēdz vajadzīgo darbu un iekopē saiti cron-job.org. Ieteicams palaist reizi dienā no rīta. Kamēr darbs ir izslēgts, saite neatbildēs.",
+    "admin.cron_jobs.job.subtask_start_reminder.title": "Apakšuzdevuma sākuma atgādinājums",
+    "admin.cron_jobs.job.subtask_start_reminder.description": "Paziņo piesaistītajam lietotājam vai grupai, ka jāuzsāk apakšuzdevums, kura sākuma datums ir šodien vai jau pagājis un statuss vēl ir “nav sākts”.",
+    "admin.cron_jobs.job.subtask_due_reminder.title": "Apakšuzdevuma termiņa atgādinājums",
+    "admin.cron_jobs.job.subtask_due_reminder.description": "Paziņo piesaistītajam lietotājam vai grupai, ka šodien ir apakšuzdevuma termiņš un tas vēl nav slēgts.",
+    "admin.cron_jobs.copy_url": "Kopēt cron-job.org saiti",
+    "admin.cron_jobs.url_copied": "Saite nokopēta.",
+    "admin.cron_jobs.last_run": "Pēdējā palaišana",
+    "admin.cron_jobs.last_run.failed": "kļūda",
+    "admin.cron_jobs.last_run.notified": "{count} paziņojumi",
+    "admin.cron_jobs.last_run.never": "Vēl nav palaists",
+    "admin.cron_jobs.feedback.enabled": "Cron job ieslēgts.",
+    "admin.cron_jobs.feedback.disabled": "Cron job izslēgts.",
     "admin.email_templates.section_hint":
       "HTML e-pasti katrā sistēmas valodā. Parametri: {name}, {system}, {team}, {inviter}, {title}, {message}; pogai {link}.",
     "admin.email_templates.kind.signup": "Reģistrācijas apstiprinājums",
@@ -1394,6 +1424,7 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
       "Vispirms izpildi visus kontrolsaraksta punktus.",
     "subtasks.modal.history": "Vēsture",
     "subtasks.history.empty": "Vēl nav vēstures ierakstu.",
+    "subtasks.history.load_older": "Ielādēt vecākus",
     "subtasks.comment.placeholder": "Raksti komentāru",
     "subtasks.comment.submit": "Pievienot komentāru",
     "subtasks.history.created": "Apakšuzdevums izveidots.",
@@ -1510,6 +1541,7 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
     "notifications.item.unassigned": "{name} noņēma tevi no “{task}”",
     "notifications.item.comment": "{name} komentēja “{task}”",
     "notifications.item.due": "Tuvojas termiņš: “{task}”",
+    "notifications.item.start": "Jāuzsāk: “{task}”",
     "notifications.item.file": "{name} pievienoja failu pie “{task}”",
     "notifications.item.status_changed": "{name} mainīja statusu “{task}”",
     "notifications.item.task_updated": "{name} atjaunināja “{task}”",
@@ -1549,7 +1581,9 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
     "notifications.settings.kind.task_updated.hint":
       "Datumi, nosaukums, apraksts, kontrolsaraksts, pārvietošana, izveide.",
     "notifications.settings.kind.due": "Tuvojošs termiņš",
-    "notifications.settings.kind.due.hint": "Atgādinājums par tuvojošos termiņu.",
+    "notifications.settings.kind.due.hint": "Atgādinājums, ka šodien ir apakšuzdevuma termiņš.",
+    "notifications.settings.kind.start": "Jāuzsāk apakšuzdevums",
+    "notifications.settings.kind.start.hint": "Atgādinājums, ka jāuzsāk apakšuzdevums.",
     "notifications.settings.kind.team_invite": "Komandas uzaicinājums",
     "notifications.settings.kind.team_invite.hint":
       "Kad uzaicina pievienoties komandai.",
@@ -1587,6 +1621,8 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
     "calendar.integration.regenerate_description":
       "Vecais links pārstās darboties. Kalendārā būs jāabonē jaunais.",
     "calendar.integration.regenerated": "Jauns kalendāra links ir gatavs.",
+    "calendar.integration.feed_hidden": "Kalendāra saite ir saglabāta. Jaunu saiti var izveidot ar pogu zemāk — vecā tad pārstās darboties.",
+    "calendar.integration.feed_once": "Nokopē saiti tagad. Pēc šī loga aizvēršanas tā vairs netiks rādīta.",
     "user_menu.settings": "Personīgie uzstādījumi",
     "user_menu.settings_hint": "Profils un datumu attēlojums",
     "user_menu.password": "Mainīt paroli",
@@ -1637,6 +1673,7 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
     "actions.close": "Aizvērt",
     "actions.continue": "Turpināt",
     "actions.end": "Izbeigt",
+    "actions.send": "Nosūtīt",
     "modal.confirm_exit.title": "Izbeigt darbību?",
     "modal.confirm_exit.description": "Vai vēlaties izbeigt šo darbību?",
     "lang.lv": "Latviešu",
@@ -1647,7 +1684,7 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
     "lang.es": "Español",
     "lang.nl": "Nederlands",
     "lang.da": "Dansk",
-    "lang.no": "Norsk",
+    "lang.no": "Norsk bokmål",
     "lang.fi": "Suomi",
     "lang.pl": "Polski",
     "lang.lt": "Lietuvių",
@@ -1708,6 +1745,9 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
     "errors.auth_required": "Nepieciešama autentificēta sesija.",
     "errors.auth_invalid": "E-pasts vai parole nav pareiza.",
     "errors.auth_rate_limited": "Pārāk daudz mēģinājumu. Mēģini vēlāk.",
+    "errors.auth_account_exists": "Šis e-pasts jau ir reģistrēts. Ienāc ar paroli vai sākotnējo pakalpojumu.",
+    "errors.auth_locked": "Pārāk daudz neveiksmīgu mēģinājumu. Mēģini vēlāk.",
+    "errors.auth_email_unverified": "E-pasta adrese nav apstiprināta pie pakalpojuma.",
     "errors.auth_signup_failed": "Neizdevās izveidot kontu.",
     "errors.auth_password_update_failed": "Neizdevās atjaunot paroli.",
     "errors.auth_email_disabled":
@@ -1743,7 +1783,7 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
     "errors.extension_gmail_not_found":
       "Gmail neatradā ziņu. Atver e-pastu pilnā skatā un mēģini vēlreiz.",
     "errors.extension_auth_required":
-      "Ielogojies {SYSTEM_NAME} (tajā pašā pārlūkā) un mēģini vēlreiz.",
+      "Ienāc {SYSTEM_NAME} spraudnī. Sesija paliek aptuveni 30 dienas, arī ja lapa ir aizvērta.",
     "errors.extension_unknown": "Nezināma kļūda.",
     "errors.extension_gmail_not_connected":
       "Vispirms savieno Gmail spraudnī. Savienojums tiks saglabāts arī {SYSTEM_NAME}.",
@@ -1943,6 +1983,14 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
     "errors.early_bird_limit_invalid":
       "Ievadi derīgu Early Bird slotu skaitu (0 vai vairāk).",
     "errors.early_bird_save_failed": "Neizdevās saglabāt Early Bird limītu.",
+    "errors.feedback_title_required": "Ievadi virsrakstu.",
+    "errors.feedback_body_required": "Ievadi aprakstu.",
+    "errors.feedback_legal_email_missing":
+      "Juridiskais e-pasts nav norādīts sistēmas uzstādījumos.",
+    "errors.feedback_save_failed": "Neizdevās saglabāt ziņojumu.",
+    "errors.feedback_rate_limited": "Pārāk daudz ziņojumu. Mēģini vēlāk.",
+    "errors.feedback_vote_failed": "Neizdevās saglabāt balsi.",
+    "errors.feedback_list_failed": "Neizdevās ielādēt pieprasījumus.",
   },
   en: {
     "app.name": "{SYSTEM_NAME}",
@@ -2336,6 +2384,37 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
     "nav.storage.hint": "Files uploaded in the tree and subtasks",
     "nav.storage.hint.server": "Server: {size}",
     "nav.storage.hint.cloud": "Cloud: {size}",
+    "nav.report_bug": "Find a bug?",
+    "nav.request_feature": "Request a feature",
+    "nav.feedback": "Feedback",
+    "feedback.bug.title": "Find a bug?",
+    "feedback.bug.description":
+      "Describe the bug. The report will be sent to the legal email.",
+    "feedback.bug.title_placeholder": "Short summary of the bug",
+    "feedback.bug.body_placeholder": "What happened, what you expected, and how to reproduce it",
+    "feedback.bug.sent": "Thanks, the bug report was sent.",
+    "feedback.feature.title": "Request a feature",
+    "feedback.feature.description":
+      "Suggest a new capability. Others can vote to help set priority.",
+    "feedback.feature.title_placeholder": "What would you like to add?",
+    "feedback.feature.body_placeholder": "Why it would help and how you would use it",
+    "feedback.feature.sent": "Feature request sent.",
+    "feedback.feature.empty": "No requests yet. Be the first.",
+    "feedback.feature.list": "Requests from others",
+    "feedback.feature.upvote": "Upvote",
+    "feedback.general.title": "Feedback",
+    "feedback.general.description":
+      "Share your thoughts. The message will be sent to the legal email.",
+    "feedback.general.title_placeholder": "Subject",
+    "feedback.general.body_placeholder": "What you like or what could be improved",
+    "feedback.general.sent": "Thanks, your feedback was sent.",
+    "feedback.email.kind.bug": "a bug report",
+    "feedback.email.kind.feature": "a feature request",
+    "feedback.email.kind.feedback": "feedback",
+    "feedback.email.subject.bug": "Bug report: {title}",
+    "feedback.email.subject.feature": "Feature request: {title}",
+    "feedback.email.subject.feedback": "Feedback: {title}",
+    "feedback.email.body": "{name} ({email}) sent {kind}.\n\n{title}\n\n{body}",
     "admin.panel.title": "Administration panel",
     "admin.page.subtitle": "System settings. Available only to administrators.",
     "admin.nav.label": "Administration sections",
@@ -2352,7 +2431,21 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
     "admin.nav.payment_plans": "Payment plans",
     "admin.nav.integrations": "Integrations",
     "admin.nav.email_templates": "Email templates",
+    "admin.nav.cron_jobs": "Cron jobs",
     "admin.email_templates.section": "Email templates",
+    "admin.cron_jobs.page_hint": "Enable a job and copy the URL into cron-job.org. Run it once a day in the morning. While disabled, the URL will not respond.",
+    "admin.cron_jobs.job.subtask_start_reminder.title": "Subtask start reminder",
+    "admin.cron_jobs.job.subtask_start_reminder.description": "Notifies the assigned person or group that a subtask should be started when its start date is today or already passed and the status is still not started.",
+    "admin.cron_jobs.job.subtask_due_reminder.title": "Subtask due reminder",
+    "admin.cron_jobs.job.subtask_due_reminder.description": "Notifies the assigned person or group that a subtask is due today and is not closed yet.",
+    "admin.cron_jobs.copy_url": "Copy cron-job.org URL",
+    "admin.cron_jobs.url_copied": "Link copied.",
+    "admin.cron_jobs.last_run": "Last run",
+    "admin.cron_jobs.last_run.failed": "error",
+    "admin.cron_jobs.last_run.notified": "{count} notifications",
+    "admin.cron_jobs.last_run.never": "Not run yet",
+    "admin.cron_jobs.feedback.enabled": "Cron job enabled.",
+    "admin.cron_jobs.feedback.disabled": "Cron job disabled.",
     "admin.email_templates.section_hint":
       "HTML emails in every system language. Parameters: {name}, {system}, {team}, {inviter}, {title}, {message}; the button uses {link}.",
     "admin.email_templates.kind.signup": "Registration confirmation",
@@ -3301,6 +3394,7 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
     "subtasks.checklist.incomplete": "Complete all checklist items first.",
     "subtasks.modal.history": "History",
     "subtasks.history.empty": "No history yet.",
+    "subtasks.history.load_older": "Load older",
     "subtasks.comment.placeholder": "Write a comment",
     "subtasks.comment.submit": "Add comment",
     "subtasks.history.created": "Subtask created.",
@@ -3415,6 +3509,7 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
     "notifications.item.unassigned": "{name} removed you from “{task}”",
     "notifications.item.comment": "{name} commented on “{task}”",
     "notifications.item.due": "Due soon: “{task}”",
+    "notifications.item.start": "Time to start: “{task}”",
     "notifications.item.file": "{name} added a file to “{task}”",
     "notifications.item.status_changed": "{name} changed status of “{task}”",
     "notifications.item.task_updated": "{name} updated “{task}”",
@@ -3453,7 +3548,9 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
     "notifications.settings.kind.task_updated.hint":
       "Dates, title, description, checklist, move, creation.",
     "notifications.settings.kind.due": "Due date reminder",
-    "notifications.settings.kind.due.hint": "Reminder before a due date.",
+    "notifications.settings.kind.due.hint": "Reminder that a subtask is due today.",
+    "notifications.settings.kind.start": "Start a subtask",
+    "notifications.settings.kind.start.hint": "Reminder that a subtask should be started.",
     "notifications.settings.kind.team_invite": "Team invitation",
     "notifications.settings.kind.team_invite.hint":
       "When you are invited to join a team.",
@@ -3490,6 +3587,8 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
     "calendar.integration.regenerate_description":
       "The old link will stop working. You will need to subscribe again in the calendar.",
     "calendar.integration.regenerated": "A new calendar link is ready.",
+    "calendar.integration.feed_hidden": "The calendar link is saved. Create a new one with the button below — the old link will then stop working.",
+    "calendar.integration.feed_once": "Copy the link now. After you close this window it will not be shown again.",
     "user_menu.settings": "Personal settings",
     "user_menu.settings_hint": "Profile and date display",
     "user_menu.password": "Change password",
@@ -3540,6 +3639,7 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
     "actions.close": "Close",
     "actions.continue": "Continue",
     "actions.end": "End",
+    "actions.send": "Send",
     "modal.confirm_exit.title": "End this action?",
     "modal.confirm_exit.description": "Do you want to end this action?",
     "lang.lv": "Latviešu",
@@ -3550,7 +3650,7 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
     "lang.es": "Español",
     "lang.nl": "Nederlands",
     "lang.da": "Dansk",
-    "lang.no": "Norsk",
+    "lang.no": "Norsk bokmål",
     "lang.fi": "Suomi",
     "lang.pl": "Polski",
     "lang.lt": "Lietuvių",
@@ -3611,6 +3711,9 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
     "errors.auth_required": "An authenticated session is required.",
     "errors.auth_invalid": "Email or password is incorrect.",
     "errors.auth_rate_limited": "Too many attempts. Try again later.",
+    "errors.auth_account_exists": "This email is already registered. Sign in with your password or original provider.",
+    "errors.auth_locked": "Too many failed attempts. Try again later.",
+    "errors.auth_email_unverified": "The email address is not verified with the provider.",
     "errors.auth_signup_failed": "Could not create the account.",
     "errors.auth_password_update_failed": "Could not update the password.",
     "errors.auth_email_disabled":
@@ -3645,7 +3748,7 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
     "errors.extension_gmail_not_found":
       "Gmail could not find the message. Open the email in full view and try again.",
     "errors.extension_auth_required":
-      "Sign in to {SYSTEM_NAME} (in the same browser) and try again.",
+      "Sign in to the {SYSTEM_NAME} extension. The session lasts about 30 days, even if the website is closed.",
     "errors.extension_unknown": "Unknown error.",
     "errors.extension_gmail_not_connected":
       "Connect Gmail in the plugin first. The connection is also saved in {SYSTEM_NAME}.",
@@ -3842,19 +3945,14 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
     "errors.trial_settings_save_failed": "Could not save trial settings.",
     "errors.early_bird_limit_invalid": "Enter a valid Early Bird slot limit (0 or more).",
     "errors.early_bird_save_failed": "Could not save the Early Bird limit.",
+    "errors.feedback_title_required": "Enter a title.",
+    "errors.feedback_body_required": "Enter a description.",
+    "errors.feedback_legal_email_missing":
+      "Legal email is not set in system settings.",
+    "errors.feedback_save_failed": "Could not save the message.",
+    "errors.feedback_rate_limited": "Too many messages. Try again later.",
+    "errors.feedback_vote_failed": "Could not save the vote.",
+    "errors.feedback_list_failed": "Could not load feature requests.",
   },
-  ru,
-  de,
-  fr,
-  es,
-  nl,
-  da,
-  no,
-  fi,
-  pl,
-  lt,
-  et,
-  it,
-  sv,
 };
 

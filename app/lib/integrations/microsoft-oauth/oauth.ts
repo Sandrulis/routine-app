@@ -120,9 +120,6 @@ function pickVerifiedMicrosoftEmail(
 
   if (tokenEmail && tokenVerified === true) return tokenEmail;
   if (infoEmail && infoVerified === true) return infoEmail;
-  if (tokenEmail && tokenVerified !== false && infoEmail && tokenEmail === infoEmail) {
-    return tokenEmail;
-  }
   return "";
 }
 

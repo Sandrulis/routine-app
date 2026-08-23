@@ -65,7 +65,7 @@ export function CalendarIntegrationModal({
       .then((result) => {
         if (cancelled) return;
         if (!result.ok) {
-          setSummary({ enabled: false, provider: null, feedPath: null });
+          setSummary({ enabled: false, provider: null, feedPath: null, hasFeed: false });
           showFeedback({
             type: "error",
             text: translateActionError(t, result.error),
@@ -76,7 +76,7 @@ export function CalendarIntegrationModal({
       })
       .catch(() => {
         if (cancelled) return;
-        setSummary({ enabled: false, provider: null, feedPath: null });
+        setSummary({ enabled: false, provider: null, feedPath: null, hasFeed: false });
         showFeedback({
           type: "error",
           text: t(
@@ -268,7 +268,25 @@ export function CalendarIntegrationModal({
               />
             ) : null}
 
+            {summary.hasFeed && !summary.feedPath ? (
+              <p className="text-[12px] leading-5 text-zinc-500">
+                {t(
+                  "calendar.integration.feed_hidden",
+                  "Kalendāra saite ir saglabāta. Jaunu saiti var izveidot ar pogu zemāk — vecā tad pārstās darboties.",
+                )}
+              </p>
+            ) : null}
+
             {summary.feedPath ? (
+              <p className="text-[12px] leading-5 text-zinc-500">
+                {t(
+                  "calendar.integration.feed_once",
+                  "Nokopē saiti tagad. Pēc šī loga aizvēršanas tā vairs netiks rādīta.",
+                )}
+              </p>
+            ) : null}
+
+            {summary.feedPath || summary.hasFeed ? (
               <button
                 type="button"
                 disabled={busy}

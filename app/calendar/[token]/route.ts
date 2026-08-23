@@ -19,7 +19,7 @@ function icsResponse(body: string): NextResponse {
 }
 
 async function calendarFeedResponse(request: Request, tokenParam: string) {
-  const limited = consumeRateLimit(
+  const limited = await consumeRateLimit(
     `calendar:${requestClientIp(request)}`,
     60,
     15 * 60 * 1000,

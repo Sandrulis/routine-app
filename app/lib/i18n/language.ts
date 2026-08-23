@@ -37,7 +37,7 @@ export const NATIVE_LANGUAGE_NAMES: Record<LanguageCode, string> = {
   es: "Español",
   nl: "Nederlands",
   da: "Dansk",
-  no: "Norsk",
+  no: "Norsk bokmål",
   fi: "Suomi",
   pl: "Polski",
   lt: "Lietuvių",

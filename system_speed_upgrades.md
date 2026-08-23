@@ -344,5 +344,6 @@ Neoptimizēt visus LOW, kamēr H1–H5 nav izmērīti (Network + React Profiler)
 |---|---|---|
 | 2026-08-20 | Sākotnējais audits, šis fails | Darba saraksts |
 | 2026-08-20 | HIGH + MIDDLE + LOW ieviešana. v0.2.0 | Migrācija `073_workspace_speed.sql`. Workspace bez `content`/aktivitātēm/todos. Dokumentēts CHANGELOG / README / DEVELOPER. |
+| 2026-08-23 | Čaula bez description/checklists; `ListsNav`; tabulas virtualizācija; vēstures “vecāki”; i18n dynamic; FA brands tikai app. v0.2.15 | `090_auth_tokens_rate_limit.sql`. Paliek HttpOnly ārpus ātruma saraksta. |
 
 Kad punkts ir izdarīts: atzīmē `[x]`, ieraksti žurnālā versiju (`package.json`) un īsu rezultātu (piem. “workspace JSON 2.4 MB → 180 KB”).

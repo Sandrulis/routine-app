@@ -32,7 +32,9 @@ import { workItemArchiveFeedback } from "@/app/components/work-item-archive-butt
 import { MemberLastOnline } from "@/app/components/member-last-online";
 import { UserAvatar } from "@/app/components/user-avatar";
 import { TeamSwitcher } from "@/app/components/team-switcher";
+import { SiteFeedbackModals } from "@/app/components/site-feedback-modals";
 import { UserMenu } from "@/app/components/user-menu";
+import type { FeedbackKind } from "@/app/lib/feedback/actions";
 import {
   collectTaskSubtreeIds,
   getTaskAncestors,
@@ -54,7 +56,7 @@ import { useFileTypes } from "@/app/lib/file-types-context";
 import { fileBaseName, fileExtensionFromName } from "@/app/lib/file-types";
 import { FRONTEND_MODULE_KEYS } from "@/app/lib/frontend-modules/keys";
 import { useFrontendModules } from "@/app/lib/frontend-modules/context";
-import { useLists } from "@/app/lib/lists-store";
+import { useListsActions, useListsNav } from "@/app/lib/lists-store";
 import {
   childListFiles,
   deleteStoredListFile,
@@ -526,7 +528,8 @@ export function AppNav() {
   const router = useRouter();
   const { t } = useTranslations();
   const { showFeedback } = useFeedbackToast();
-  const { lists, tasks, listTasks, childTasks, subtasks, listStatuses, workTaskStatuses, addList, updateList, deleteList, reorderLists, updateTask, deleteTask, setWorkItemArchived, reorderTasks, moveWorkItem, allTaskFiles, isReady: listsReady } = useLists();
+  const { lists, tasks, listTasks, childTasks, subtasks, listStatuses, workTaskStatuses, allTaskFiles, isReady: listsReady } = useListsNav();
+  const { addList, updateList, deleteList, reorderLists, updateTask, deleteTask, setWorkItemArchived, reorderTasks, moveWorkItem } = useListsActions();
   const { files: storedFiles } = useListFiles();
   const files = storedFiles.filter((file) =>
     lists.some((list) => list.id === file.listId),
@@ -555,6 +558,7 @@ export function AppNav() {
   const { getFileIconDisplay } = useFileTypes();
   const { openListFile } = useFileViewer();
   const [inviteOpen, setInviteOpen] = useState(false);
+  const [feedbackKind, setFeedbackKind] = useState<FeedbackKind | null>(null);
   const [createListOpen, setCreateListOpen] = useState(false);
   const [parentCreate, setParentCreate] = useState<ParentCreateContext | null>(
     null,
@@ -1254,6 +1258,42 @@ export function AppNav() {
         </nav>
 
         <div className="shrink-0 space-y-0.5 border-t border-zinc-100 px-2 py-2">
+          <button
+            type="button"
+            onClick={() => setFeedbackKind("bug")}
+            className="flex min-h-8 w-full items-center gap-2 rounded-md px-1.5 text-[13px] text-zinc-600 transition hover:bg-zinc-100 hover:text-zinc-900"
+          >
+            <span className="inline-flex size-5 shrink-0 items-center justify-center text-zinc-400">
+              <i className="fas fa-bug text-[12px]" aria-hidden="true" />
+            </span>
+            <span className="min-w-0 flex-1 truncate text-left">
+              {t("nav.report_bug", "Atrast kļūdu?")}
+            </span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setFeedbackKind("feature")}
+            className="flex min-h-8 w-full items-center gap-2 rounded-md px-1.5 text-[13px] text-zinc-600 transition hover:bg-zinc-100 hover:text-zinc-900"
+          >
+            <span className="inline-flex size-5 shrink-0 items-center justify-center text-zinc-400">
+              <i className="fas fa-lightbulb text-[12px]" aria-hidden="true" />
+            </span>
+            <span className="min-w-0 flex-1 truncate text-left">
+              {t("nav.request_feature", "Pieprasīt funkciju")}
+            </span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setFeedbackKind("feedback")}
+            className="flex min-h-8 w-full items-center gap-2 rounded-md px-1.5 text-[13px] text-zinc-600 transition hover:bg-zinc-100 hover:text-zinc-900"
+          >
+            <span className="inline-flex size-5 shrink-0 items-center justify-center text-zinc-400">
+              <i className="fas fa-comment text-[12px]" aria-hidden="true" />
+            </span>
+            <span className="min-w-0 flex-1 truncate text-left">
+              {t("nav.feedback", "Atsauksmes")}
+            </span>
+          </button>
           {currentTeam && fileUploadsEnabled ? (
             <Tooltip label={storageTooltip} className="block">
               <div className="flex min-h-8 items-center gap-2 rounded-md px-1.5 text-[13px] text-zinc-500">
@@ -1272,6 +1312,13 @@ export function AppNav() {
           <UserMenu user={currentUser} />
         </div>
       </aside>
+
+      <SiteFeedbackModals
+        kind={feedbackKind}
+        onOpenChange={(open) => {
+          if (!open) setFeedbackKind(null);
+        }}
+      />
 
       <ParentCreateFlow
         context={parentCreate}

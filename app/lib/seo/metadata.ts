@@ -8,6 +8,12 @@ import {
   ogLocale,
   PUBLIC_LOCALIZED_PATHS,
 } from "@/app/lib/seo/locale-path";
+import {
+  OG_IMAGE_PATH,
+  OG_IMAGE_SIZE,
+  OG_IMAGE_TYPE,
+  TWITTER_IMAGE_PATH,
+} from "@/app/lib/seo/share-image";
 import { absoluteUrl } from "@/app/lib/seo/site-url";
 
 export const NO_INDEX_ROBOTS: Metadata["robots"] = {
@@ -33,13 +39,26 @@ export function hreflangMap(path: string): Record<string, string> {
   return buildHreflangMap(path, absoluteUrl);
 }
 
+function shareImages(alt: string) {
+  const ogImage = {
+    url: absoluteUrl(OG_IMAGE_PATH),
+    width: OG_IMAGE_SIZE.width,
+    height: OG_IMAGE_SIZE.height,
+    alt,
+    type: OG_IMAGE_TYPE,
+  };
+  return {
+    openGraph: [ogImage],
+    twitter: [absoluteUrl(TWITTER_IMAGE_PATH)],
+  };
+}
+
 export async function canonicalMetadata(
   path: string,
   extras?: {
     title?: string;
     titleAbsolute?: string;
     description?: string;
-    keywords?: string | string[];
     languageCode?: LanguageCode;
     index?: boolean;
   },
@@ -48,15 +67,8 @@ export async function canonicalMetadata(
   const localizedPath = localePath(path, languageCode);
   const url = absoluteUrl(localizedPath);
   const languages = hreflangMap(path);
-  const keywords =
-    extras?.keywords == null
-      ? undefined
-      : Array.isArray(extras.keywords)
-        ? extras.keywords
-        : extras.keywords
-            .split(",")
-            .map((part) => part.trim())
-            .filter(Boolean);
+  const title = extras?.titleAbsolute || extras?.title;
+  const images = shareImages(title || "TASQIN");
 
   return {
     ...(extras?.titleAbsolute
@@ -65,26 +77,24 @@ export async function canonicalMetadata(
         ? { title: extras.title }
         : {}),
     ...(extras?.description ? { description: extras.description } : {}),
-    ...(keywords && keywords.length > 0 ? { keywords } : {}),
     alternates: {
       canonical: url,
       languages,
     },
     robots: extras?.index === false ? NO_INDEX_ROBOTS : INDEX_ROBOTS,
     openGraph: {
+      type: "website",
       url,
       locale: ogLocale(languageCode),
       alternateLocale: ogAlternateLocales(languageCode),
-      ...(extras?.titleAbsolute || extras?.title
-        ? { title: extras.titleAbsolute || extras.title }
-        : {}),
+      images: images.openGraph,
+      ...(title ? { title } : {}),
       ...(extras?.description ? { description: extras.description } : {}),
     },
     twitter: {
       card: "summary_large_image",
-      ...(extras?.titleAbsolute || extras?.title
-        ? { title: extras.titleAbsolute || extras.title }
-        : {}),
+      images: images.twitter,
+      ...(title ? { title } : {}),
       ...(extras?.description ? { description: extras.description } : {}),
     },
   };

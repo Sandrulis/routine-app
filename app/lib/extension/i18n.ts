@@ -1,7 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { resolveSystemName } from "@/app/lib/document-title";
 import { interpolate, withSystemNameParams } from "@/app/lib/i18n/interpolate";
-import { messages } from "@/app/lib/i18n/messages";
+import { allMessages as messages } from "@/app/lib/i18n/all-messages";
 import {
   DEFAULT_LANGUAGE,
   isLanguageCode,

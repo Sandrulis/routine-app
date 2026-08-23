@@ -53,6 +53,28 @@ export function LoginForm({
         type: "error",
         text: t("auth.microsoft.failed", "Neizdevās pieslēgties ar Microsoft."),
       });
+      return;
+    }
+
+    if (error === "account_exists") {
+      showFeedback({
+        type: "error",
+        text: t(
+          "errors.auth_account_exists",
+          "Šim e-pastam jau ir konts. Ienāc ar to pašu metodi, ar kuru reģistrējies.",
+        ),
+      });
+      return;
+    }
+    if (error === "email_unverified") {
+      showFeedback({
+        type: "error",
+        text: t(
+          "errors.auth_email_unverified",
+          "Microsoft e-pasts nav verificēts.",
+        ),
+      });
+      return;
     }
   }, [searchParams, showFeedback, t]);
 

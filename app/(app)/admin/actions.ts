@@ -3,6 +3,10 @@
 import { revalidatePath } from "next/cache";
 import { mapUserDisplay } from "@/app/lib/auth/map-user-display";
 import {
+  setCronJobEnabled,
+} from "@/app/lib/cron-jobs/repository";
+import { isCronJobKey } from "@/app/lib/cron-jobs/types";
+import {
   createFrontendModule,
   deleteFrontendModule,
   updateFrontendModuleEnabled,
@@ -376,4 +380,18 @@ export async function deletePaymentPlanAction(planId: string) {
   const result = await deletePaymentPlan(planId);
   if (result.ok) refreshAdmin();
   return result;
+}
+
+export async function setCronJobEnabledAction(jobKey: string, enabled: boolean) {
+  await requireAdmin({ action: "admin.cron.toggle", target: jobKey });
+  if (!isCronJobKey(jobKey)) {
+    return { ok: false as const, error: "errors.db_not_configured" };
+  }
+  try {
+    const job = await setCronJobEnabled(jobKey, enabled);
+    refreshAdmin();
+    return { ok: true as const, job };
+  } catch {
+    return { ok: false as const, error: "errors.db_not_configured" };
+  }
 }

@@ -67,6 +67,11 @@ async function handleLogin(request: Request, origin: string, code: string) {
     tokens.access_token,
     tokens.id_token,
   );
+  if (!profile.email) {
+    return clearOAuthCookie(
+      oauthSignInErrorRedirect(origin, errorPage, "microsoft", "email_unverified"),
+    );
+  }
   const response = await completeOAuthSignIn(request, {
     origin,
     next: loginState.next,
@@ -82,7 +87,7 @@ async function handleLogin(request: Request, origin: string, code: string) {
 }
 
 export async function GET(request: Request) {
-  const limited = consumeRateLimit(
+  const limited = await consumeRateLimit(
     `oauth-microsoft:${requestClientIp(request)}`,
     40,
     15 * 60 * 1000,

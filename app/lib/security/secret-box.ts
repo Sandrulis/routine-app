@@ -5,6 +5,7 @@ import { logError } from "@/app/lib/security/log-error";
 const PREFIX = "enc:v1:";
 const IV_LENGTH = 12;
 const TAG_LENGTH = 16;
+const DEV_FALLBACK = "routine-app-dev-secrets";
 
 function uniqueNonEmpty(values: Array<string | undefined>) {
   const seen = new Set<string>();
@@ -18,20 +19,32 @@ function uniqueNonEmpty(values: Array<string | undefined>) {
   return result;
 }
 
-function keyMaterials() {
-  return uniqueNonEmpty([
-    readEnv("INTEGRATION_SECRETS_KEY"),
-    readEnv("SUPABASE_SERVICE_ROLE_KEY"),
-    "routine-app-dev-secrets",
-  ]);
+function dedicatedKey() {
+  return readEnv("INTEGRATION_SECRETS_KEY")?.trim() || "";
+}
+
+function decryptMaterials() {
+  const dedicated = dedicatedKey();
+  const service = readEnv("SUPABASE_SERVICE_ROLE_KEY");
+  if (process.env.NODE_ENV === "production") {
+    return uniqueNonEmpty([dedicated, service]);
+  }
+  return uniqueNonEmpty([dedicated, service, DEV_FALLBACK]);
+}
+
+function requireEncryptMaterial() {
+  const dedicated = dedicatedKey();
+  if (dedicated) return dedicated;
+  if (process.env.NODE_ENV === "production") {
+    throw new Error(
+      "INTEGRATION_SECRETS_KEY is required in production to encrypt integration secrets",
+    );
+  }
+  return readEnv("SUPABASE_SERVICE_ROLE_KEY")?.trim() || DEV_FALLBACK;
 }
 
 function keyFromMaterial(raw: string) {
   return createHash("sha256").update(`routine-app-secrets:${raw}`).digest();
-}
-
-function getPrimaryKey() {
-  return keyFromMaterial(keyMaterials()[0] ?? "routine-app-dev-secrets");
 }
 
 function decryptWithKey(packed: Buffer, key: Buffer) {
@@ -55,7 +68,11 @@ export function encryptSecret(plain: string | null | undefined): string {
   if (value.startsWith(PREFIX)) return value;
 
   const iv = randomBytes(IV_LENGTH);
-  const cipher = createCipheriv("aes-256-gcm", getPrimaryKey(), iv);
+  const cipher = createCipheriv(
+    "aes-256-gcm",
+    keyFromMaterial(requireEncryptMaterial()),
+    iv,
+  );
   const encrypted = Buffer.concat([cipher.update(value, "utf8"), cipher.final()]);
   const tag = cipher.getAuthTag();
   return `${PREFIX}${Buffer.concat([iv, tag, encrypted]).toString("base64url")}`;
@@ -69,7 +86,7 @@ export function decryptSecret(value: string | null | undefined): string {
   try {
     const packed = Buffer.from(raw.slice(PREFIX.length), "base64url");
     if (packed.length <= IV_LENGTH + TAG_LENGTH) return "";
-    const materials = keyMaterials();
+    const materials = decryptMaterials();
     for (let index = 0; index < materials.length; index += 1) {
       try {
         return decryptWithKey(packed, keyFromMaterial(materials[index]));
@@ -91,3 +108,4 @@ export function persistSecret(value: string | null | undefined): string | null {
   const encrypted = encryptSecret(decryptSecret(value));
   return encrypted || null;
 }
+

@@ -9,7 +9,7 @@ export const LANGUAGE_OPTIONS = [
   { code: "lt", name: "Lietuvių" },
   { code: "et", name: "Eesti" },
   { code: "sv", name: "Svenska" },
-  { code: "no", name: "Norsk" },
+  { code: "no", name: "Norsk bokmål" },
   { code: "da", name: "Dansk" },
   { code: "fi", name: "Suomi" },
   { code: "pl", name: "Polski" },

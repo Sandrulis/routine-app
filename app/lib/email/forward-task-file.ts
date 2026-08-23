@@ -21,9 +21,41 @@ import {
   createActivity,
   type TaskActivity,
 } from "@/app/lib/task-activity";
+import { readPersonalNameFromMetadata } from "@/app/lib/users/display-name";
 
 /** Resend allows ~40MB total; keep headroom for HTML + base64 overhead. */
 const MAX_ATTACHMENT_BYTES = 25 * 1024 * 1024;
+
+async function resolveForwardSenderLabel(input: {
+  userId: string;
+  email: string;
+  metadata: Record<string, unknown> | undefined;
+}): Promise<{ displayName: string; headerLabel: string }> {
+  let profileName = "";
+  if (isSupabaseAdminConfigured()) {
+    try {
+      const admin = createAdminClient();
+      const { data } = await admin
+        .from("users")
+        .select("name, email")
+        .eq("id", input.userId)
+        .maybeSingle();
+      profileName = String(data?.name || "").trim();
+    } catch (error) {
+      logError("forwardTaskFile sender profile lookup failed", error);
+    }
+  }
+
+  const names = readPersonalNameFromMetadata(input.metadata, profileName);
+  const displayName =
+    [names.firstName, names.lastName].filter(Boolean).join(" ").trim() ||
+    profileName ||
+    input.email;
+  const headerLabel = input.email
+    ? `${displayName} (${input.email})`
+    : displayName;
+  return { displayName, headerLabel };
+}
 
 export async function isResendEnabledAction(): Promise<boolean> {
   const user = await getCurrentUser();
@@ -353,8 +385,14 @@ export async function forwardTaskFileAction(input: {
 
   const settings = await getSiteSettings();
   const systemName = settings.systemName.trim() || "TASQIN";
+  const sender = await resolveForwardSenderLabel({
+    userId: user.id,
+    email: replyTo,
+    metadata: user.user_metadata as Record<string, unknown> | undefined,
+  });
   const html = buildSimpleEmailHtml({
     systemName,
+    headerLabel: sender.headerLabel,
     heading: subject,
     bodyText: body,
   });
@@ -364,8 +402,9 @@ export async function forwardTaskFileAction(input: {
     subject,
     html,
     text: body || subject,
-    fromName: systemName,
+    fromName: sender.displayName || systemName,
     replyTo,
+    replyToName: sender.displayName || undefined,
     attachments: [
       {
         filename: attachment.filename,

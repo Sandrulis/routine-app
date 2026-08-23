@@ -166,7 +166,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const limited = consumeRateLimit(
+  const limited = await consumeRateLimit(
     `ext-attach:${requestClientIp(request)}:${auth.user.id}`,
     40,
     15 * 60 * 1000,

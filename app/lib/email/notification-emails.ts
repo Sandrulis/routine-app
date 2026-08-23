@@ -4,7 +4,7 @@ import { getCurrentUser } from "@/app/lib/auth/get-current-user";
 import { sendTemplatedEmail } from "@/app/lib/email/send-templated";
 import { getResendCredentials } from "@/app/lib/integrations/resend/client";
 import { interpolate } from "@/app/lib/i18n/interpolate";
-import { messages } from "@/app/lib/i18n/messages";
+import { allMessages as messages } from "@/app/lib/i18n/all-messages";
 import { isLanguageCode, type LanguageCode } from "@/app/lib/i18n/language";
 import type { AppNotification, NotificationKind } from "@/app/lib/notifications";
 import { getPublicSiteUrl } from "@/app/lib/seo/site-url";
@@ -32,6 +32,7 @@ const NOTIFICATION_FALLBACK: Record<NotificationKind, string> = {
   unassigned: "{name} noņēma tevi no “{task}”",
   comment: "{name} komentēja “{task}”",
   due: "Tuvojas termiņš: “{task}”",
+  start: "Jāuzsāk: “{task}”",
   file: "{name} pievienoja failu pie “{task}”",
   status_changed: "{name} mainīja statusu “{task}”",
   task_updated: "{name} atjaunināja “{task}”",

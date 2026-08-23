@@ -28,10 +28,6 @@ export async function generateMetadata(): Promise<Metadata> {
       "{name} ir komandas uzdevumu pārvaldības rīks mazām un augošām komandām. Plāno uzdevumus, projektus un termiņus vienā darbvietā — bez liekas sarežģītības.",
       name,
     ),
-    keywords: t(
-      "landing.seo.keywords",
-      "komandas uzdevumu pārvaldība, uzdevumu pārvaldības programma, projektu vadība, darba pārvaldība, uzdevumu uzskaite, komandas sadarbība",
-    ),
   });
 }
 

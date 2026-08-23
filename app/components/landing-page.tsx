@@ -3,10 +3,8 @@
 import { useEffect, useMemo } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import {
-  LANDING_REVEAL_EVENT,
-  LazyOnVisible,
-} from "@/app/components/lazy-on-visible";
+import { LandingBelowFold } from "@/app/components/landing-below-fold";
+import { LANDING_REVEAL_EVENT } from "@/app/components/lazy-on-visible";
 import { useTranslations } from "@/app/components/translations-provider";
 import { useFrontendModules } from "@/app/lib/frontend-modules/context";
 import { resolveLandingPageContent } from "@/app/lib/landing/features";
@@ -27,23 +25,6 @@ const LandingAppPreview = dynamic(
       />
     ),
   },
-);
-
-function BelowFoldSkeleton() {
-  return (
-    <div
-      className="landing-lazy-section min-h-[480px] animate-pulse bg-zinc-100/80"
-      aria-hidden="true"
-    />
-  );
-}
-
-const LandingBelowFold = dynamic(
-  () =>
-    import("@/app/components/landing-below-fold").then((mod) => ({
-      default: mod.LandingBelowFold,
-    })),
-  { ssr: true, loading: () => <BelowFoldSkeleton /> },
 );
 
 function revealLandingHash(id: string) {
@@ -152,9 +133,7 @@ export function LandingPage({ productName }: { productName: string }) {
         </div>
       </section>
 
-      <LazyOnVisible fallback={<BelowFoldSkeleton />}>
-        <LandingBelowFold productName={productName} />
-      </LazyOnVisible>
+      <LandingBelowFold productName={productName} />
     </div>
   );
 }

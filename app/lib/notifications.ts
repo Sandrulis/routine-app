@@ -5,6 +5,7 @@ export type NotificationKind =
   | "unassigned"
   | "comment"
   | "due"
+  | "start"
   | "file"
   | "status_changed"
   | "task_updated"
@@ -32,6 +33,7 @@ const NOTIFICATION_KINDS: NotificationKind[] = [
   "unassigned",
   "comment",
   "due",
+  "start",
   "file",
   "status_changed",
   "task_updated",

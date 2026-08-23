@@ -24,7 +24,7 @@ export async function GET(request: Request) {
     );
   }
 
-  const limited = consumeRateLimit(
+  const limited = await consumeRateLimit(
     `ext-gmail-token:${requestClientIp(request)}:${auth.user.id}`,
     60,
     15 * 60 * 1000,

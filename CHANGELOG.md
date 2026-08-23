@@ -4,6 +4,17 @@
 
 - (none)
 
+## v0.2.15
+
+- Gmail spraudnis `0.4.4`: paša sesija (~30 dienas) `chrome.storage.local`, neatkarīga no vietnes ielogošanās; **Iziet** spraudnī nenoņem vietnes sesiju
+- Landing SEO: katrai valodas URL unikāls title, description, H1/H2, html lang, self-canonical, hreflang, OG title/description/locale; norvēģu Bokmål kā `nb-NO` / `nb_NO` (publiskais ceļš paliek `/no`); noņemts `meta keywords`; OG/Twitter attēls 1200×630; JSON-LD Organization + WebSite
+- Umami: skripts ielādējas pēc hidratācijas (`document.createElement`), lai CSP `nonce` nesalauztu React hidratāciju
+- Admin cron jobs: ieslēdzams sākuma un termiņa atgādinājums apakšuzdevumiem, ar kopējamu saiti cron-job.org (`089`)
+- Drošība: OAuth nesasaista kontus tikai pēc e-pasta; Microsoft tikai verificēts e-pasts; uzaicinājumu/cron tokeni kā hash; kalendāra ICS URL rāda vienreiz; paroles lockout DB; CSP ar nonce; PDF iframe `sandbox` (`090`)
+- Ātrums: workspace čaula bez apraksta/checklist; uzdevuma detaļas un vecāka vēsture pēc atvēršanas; sānjosla ar šaurāku context; i18n lv+en statiski, pārējās valodas dinamiski; Font Awesome brands tikai app čaulā
+- Pārsūtītā faila e-pasts: From = `Vārds Uzvārds <Resend From>`, Reply-To = `Vārds Uzvārds <lietotāja e-pasts>`, HTML galvene ar `(e-pasts)`; `fromName` pārraksta iestrādāto „TASQIN” From nosaukumu
+- Sānjoslā virs Failu vietas: **Atrast kļūdu?**, **Pieprasīt funkciju**, **Atsauksmes** — modāļi sūta e-pastu uz juridisko e-pastu; funkciju pieprasījumus citi var skatīt un balsot (`088`)
+
 ## v0.2.14
 
 - Pārsūtītā faila vēsturē e-pasts, tēma un ziņojums katrs savā rindā ar truncate un tooltip

@@ -95,6 +95,12 @@ const GROUPS = [
         fallback: "E-pasta šabloni",
       },
       {
+        href: "/admin/cron-jobs",
+        icon: "fas fa-clock",
+        labelKey: "admin.nav.cron_jobs",
+        fallback: "Cron jobs",
+      },
+      {
         href: "/admin/settings",
         icon: "fas fa-sliders",
         labelKey: "nav.settings",

@@ -1,6 +1,12 @@
 "use client";
 
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+  type RefObject,
+} from "react";
 
 const DEFAULT_THRESHOLD = 40;
 const DEFAULT_OVERSCAN = 8;
@@ -11,6 +17,9 @@ export function VirtualWindow({
   overscan = DEFAULT_OVERSCAN,
   threshold = DEFAULT_THRESHOLD,
   className = "",
+  mode = "div",
+  colSpan = 1,
+  scrollerRef,
   children,
 }: {
   count: number;
@@ -18,14 +27,17 @@ export function VirtualWindow({
   overscan?: number;
   threshold?: number;
   className?: string;
+  mode?: "div" | "table";
+  colSpan?: number;
+  scrollerRef?: RefObject<HTMLElement | null>;
   children: (index: number) => ReactNode;
 }) {
-  const scrollerRef = useRef<HTMLDivElement | null>(null);
+  const innerScrollerRef = useRef<HTMLDivElement | null>(null);
   const [scrollTop, setScrollTop] = useState(0);
   const [viewportHeight, setViewportHeight] = useState(itemHeight * 12);
 
   useEffect(() => {
-    const node = scrollerRef.current;
+    const node = scrollerRef?.current ?? innerScrollerRef.current;
     if (!node) return;
 
     function sync() {
@@ -42,27 +54,48 @@ export function VirtualWindow({
       node.removeEventListener("scroll", sync);
       observer.disconnect();
     };
-  }, [itemHeight]);
+  }, [itemHeight, scrollerRef]);
 
-  if (count <= threshold) {
-    return (
-      <div className={className}>
-        {Array.from({ length: count }, (_, index) => children(index))}
-      </div>
-    );
+  function spacer(height: number, key: string) {
+    if (height <= 0) return null;
+    if (mode === "table") {
+      return (
+        <tr key={key} aria-hidden="true">
+          <td
+            colSpan={colSpan}
+            style={{ height, padding: 0, border: 0 }}
+          />
+        </tr>
+      );
+    }
+    return <div key={key} style={{ height }} />;
   }
 
-  const start = Math.max(0, Math.floor(scrollTop / itemHeight) - overscan);
-  const visibleCount = Math.ceil(viewportHeight / itemHeight) + overscan * 2;
-  const end = Math.min(count, start + visibleCount);
+  const items =
+    count <= threshold
+      ? Array.from({ length: count }, (_, index) => children(index))
+      : (() => {
+          const start = Math.max(0, Math.floor(scrollTop / itemHeight) - overscan);
+          const visibleCount = Math.ceil(viewportHeight / itemHeight) + overscan * 2;
+          const end = Math.min(count, start + visibleCount);
+          return (
+            <>
+              {spacer(start * itemHeight, "start")}
+              {Array.from({ length: end - start }, (_, offset) =>
+                children(start + offset),
+              )}
+              {spacer((count - end) * itemHeight, "end")}
+            </>
+          );
+        })();
+
+  if (mode === "table" || scrollerRef) {
+    return <>{items}</>;
+  }
 
   return (
-    <div ref={scrollerRef} className={className}>
-      <div style={{ height: start * itemHeight }} />
-      {Array.from({ length: end - start }, (_, offset) =>
-        children(start + offset),
-      )}
-      <div style={{ height: (count - end) * itemHeight }} />
+    <div ref={innerScrollerRef} className={className}>
+      {items}
     </div>
   );
 }

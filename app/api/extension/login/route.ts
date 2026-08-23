@@ -64,8 +64,8 @@ export async function POST(request: Request) {
   }
 
   const ip = requestClientIp(request);
-  const ipLimit = consumeRateLimit(`ext-login-ip:${ip}`, 20, 15 * 60 * 1000);
-  const emailLimit = consumeRateLimit(
+  const ipLimit = await consumeRateLimit(`ext-login-ip:${ip}`, 20, 15 * 60 * 1000);
+  const emailLimit = await consumeRateLimit(
     `ext-login-email:${email}`,
     8,
     15 * 60 * 1000,

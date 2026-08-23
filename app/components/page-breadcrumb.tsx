@@ -245,6 +245,7 @@ export function PageBreadcrumb() {
         "payment-plans": t("admin.nav.payment_plans", "Maksas plāni"),
         integrations: t("admin.nav.integrations", "Integrācijas"),
         "email-templates": t("admin.nav.email_templates", "E-pasta šabloni"),
+        "cron-jobs": t("admin.nav.cron_jobs", "Cron jobs"),
         settings: t("nav.settings", "Uzstādījumi"),
       };
       const sectionLabel = section ? (sectionLabels[section] ?? null) : null;

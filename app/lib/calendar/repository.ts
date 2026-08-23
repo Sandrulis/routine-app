@@ -38,6 +38,7 @@ const EMPTY_SUMMARY: CalendarIntegrationSummary = {
   enabled: false,
   provider: null,
   feedPath: null,
+  hasFeed: false,
 };
 
 function revealFeedToken(stored: string | null | undefined) {
@@ -56,11 +57,13 @@ function mapSummary(
   plaintextToken?: string,
 ): CalendarIntegrationSummary {
   if (!row) return EMPTY_SUMMARY;
-  const token = plaintextToken || revealFeedToken(row.feed_token);
+  const hasFeed = Boolean(row.feed_token?.trim() || plaintextToken);
+  const token = plaintextToken ?? "";
   return {
     enabled: row.is_enabled,
     provider: row.provider,
     feedPath: token ? calendarFeedPath(token) : null,
+    hasFeed,
   };
 }
 
@@ -99,9 +102,11 @@ export async function upsertCalendarIntegration(
     .eq("user_id", userId)
     .maybeSingle();
 
-  const feedToken =
-    revealFeedToken((existing as { feed_token?: string } | null)?.feed_token) ||
-    createCalendarFeedToken();
+  const existingToken = revealFeedToken(
+    (existing as { feed_token?: string } | null)?.feed_token,
+  );
+  const createdNew = !existingToken;
+  const feedToken = existingToken || createCalendarFeedToken();
 
   const { data, error } = await supabase
     .from("user_calendar_integrations")
@@ -122,7 +127,7 @@ export async function upsertCalendarIntegration(
     throw new Error("errors.calendar_save_failed");
   }
 
-  return mapSummary(data as IntegrationRow, feedToken);
+  return mapSummary(data as IntegrationRow, createdNew ? feedToken : undefined);
 }
 
 export async function regenerateCalendarFeedToken(

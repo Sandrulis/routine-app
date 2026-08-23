@@ -5,7 +5,9 @@ import { fetchTaskActivities } from "@/app/lib/db/work-data";
 import type { TaskActivity } from "@/app/lib/task-activity";
 
 const EMPTY: TaskActivity[] = [];
+const PAGE_SIZE = 80;
 const cache = new Map<string, TaskActivity[]>();
+const hasMoreByTask = new Map<string, boolean>();
 const listeners = new Map<string, Set<() => void>>();
 const inflight = new Map<string, Promise<void>>();
 const pendingEmits = new Set<string>();
@@ -85,8 +87,9 @@ export function clearTaskActivities(taskIds: string[]) {
 
 export function loadTaskActivities(taskId: string) {
   if (!taskId || cache.has(taskId) || inflight.has(taskId)) return;
-  const request = fetchTaskActivities(taskId)
+  const request = fetchTaskActivities(taskId, PAGE_SIZE)
     .then((items) => {
+      hasMoreByTask.set(taskId, items.length >= PAGE_SIZE);
       setTaskActivities(taskId, items);
     })
     .catch((error) => {
@@ -97,6 +100,40 @@ export function loadTaskActivities(taskId: string) {
       if (inflight.get(taskId) === request) inflight.delete(taskId);
     });
   inflight.set(taskId, request);
+}
+
+export function taskActivitiesHasMore(taskId: string) {
+  return hasMoreByTask.get(taskId) === true;
+}
+
+export async function loadOlderTaskActivities(taskId: string) {
+  if (!taskId || inflight.has(taskId) || !taskActivitiesHasMore(taskId)) return;
+  const current = cache.get(taskId) ?? [];
+  const oldest = current[current.length - 1]?.at;
+  if (!oldest) return;
+  const request = fetchTaskActivities(taskId, PAGE_SIZE, oldest)
+    .then((items) => {
+      hasMoreByTask.set(taskId, items.length >= PAGE_SIZE);
+      const known = new Set(current.map((item) => item.id));
+      setTaskActivities(taskId, [...current, ...items.filter((item) => !known.has(item.id))]);
+    })
+    .catch((error) => {
+      console.error("Failed to load older task activities", error);
+    })
+    .finally(() => {
+      if (inflight.get(taskId) === request) inflight.delete(taskId);
+    });
+  inflight.set(taskId, request);
+  await request;
+}
+
+export function useTaskActivitiesHasMore(taskId: string | null | undefined): boolean {
+  const id = taskId ?? "";
+  return useSyncExternalStore(
+    (onStoreChange) => (id ? subscribeTaskActivities(id, onStoreChange) : () => undefined),
+    () => (id ? taskActivitiesHasMore(id) : false),
+    () => false,
+  );
 }
 
 export function useTaskActivities(taskId: string | null | undefined): TaskActivity[] {

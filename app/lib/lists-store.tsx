@@ -301,7 +301,21 @@ type ListsContextValue = {
   deleteListAutomation: (automationId: string) => void;
 };
 
+type ListsNavValue = Pick<
+  ListsContextValue,
+  | "isReady"
+  | "lists"
+  | "tasks"
+  | "listStatuses"
+  | "workTaskStatuses"
+  | "listTasks"
+  | "childTasks"
+  | "subtasks"
+  | "allTaskFiles"
+>;
+
 const ListsContext = createContext<ListsContextValue | null>(null);
+const ListsNavContext = createContext<ListsNavValue | null>(null);
 const ListsActionsContext = createContext<
   Omit<
     ListsContextValue,
@@ -2159,9 +2173,26 @@ export function ListsProvider({ children }: { children: ReactNode }) {
     [actionsValue, dataValue],
   );
 
+  const navValue = useMemo<ListsNavValue>(
+    () => ({
+      isReady: dataValue.isReady,
+      lists: dataValue.lists,
+      tasks: dataValue.tasks,
+      listStatuses: dataValue.listStatuses,
+      workTaskStatuses: dataValue.workTaskStatuses,
+      listTasks: dataValue.listTasks,
+      childTasks: dataValue.childTasks,
+      subtasks: dataValue.subtasks,
+      allTaskFiles: dataValue.allTaskFiles,
+    }),
+    [dataValue],
+  );
+
   return (
     <ListsActionsContext.Provider value={actionsValue}>
-      <ListsContext.Provider value={value}>{children}</ListsContext.Provider>
+      <ListsNavContext.Provider value={navValue}>
+        <ListsContext.Provider value={value}>{children}</ListsContext.Provider>
+      </ListsNavContext.Provider>
     </ListsActionsContext.Provider>
   );
 }
@@ -2170,6 +2201,14 @@ export function useLists() {
   const context = useContext(ListsContext);
   if (!context) {
     throw new Error("useLists must be used within ListsProvider");
+  }
+  return context;
+}
+
+export function useListsNav() {
+  const context = useContext(ListsNavContext);
+  if (!context) {
+    throw new Error("useListsNav must be used within ListsProvider");
   }
   return context;
 }

@@ -12,6 +12,7 @@ import { isSupabaseConfigured } from "@/app/lib/supabase/env";
 import { createClient } from "@/app/lib/supabase/server";
 import { ensureCurrentUserProfile } from "@/app/lib/users/ensure-profile";
 import { NO_INDEX_ROBOTS } from "@/app/lib/seo/metadata";
+import "../fontawesome-brands.css";
 
 export const metadata: Metadata = {
   robots: NO_INDEX_ROBOTS,

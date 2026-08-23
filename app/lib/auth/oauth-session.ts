@@ -57,6 +57,20 @@ function isExistingUserError(message: string) {
   );
 }
 
+function oauthProviderMatches(
+  user: {
+    app_metadata?: { provider?: unknown; providers?: unknown };
+  },
+  provider: "google" | "microsoft",
+) {
+  const metadata = user.app_metadata ?? {};
+  const stored = String(metadata.provider ?? "").trim().toLowerCase();
+  const providers = Array.isArray(metadata.providers)
+    ? metadata.providers.map((item) => String(item).trim().toLowerCase())
+    : [];
+  return stored === provider || (providers.length === 1 && providers[0] === provider);
+}
+
 async function findOrCreateOAuthUser(profile: OAuthSignInProfile) {
   const admin = createAdminClient();
   const email = profile.email.trim().toLowerCase();
@@ -85,7 +99,7 @@ async function findOrCreateOAuthUser(profile: OAuthSignInProfile) {
 
   if (!created.error || !isExistingUserError(created.error.message)) {
     logError("createUser for OAuth failed", created.error?.message);
-    return { ok: false as const };
+    return { ok: false as const, reason: "failed" as const };
   }
 
   const { data, error } = await admin.auth.admin.generateLink({
@@ -94,7 +108,11 @@ async function findOrCreateOAuthUser(profile: OAuthSignInProfile) {
   });
   if (error || !data.user) {
     logError("generateLink for existing OAuth user failed", error?.message);
-    return { ok: false as const };
+    return { ok: false as const, reason: "failed" as const };
+  }
+
+  if (!oauthProviderMatches(data.user, profile.provider)) {
+    return { ok: false as const, reason: "account_exists" as const };
   }
 
   await admin.auth.admin.updateUserById(data.user.id, {
@@ -108,9 +126,10 @@ export function oauthSignInErrorRedirect(
   origin: string,
   errorPage: OAuthLoginErrorPage,
   provider: "google" | "microsoft",
+  errorCode?: string,
 ) {
   const url = new URL(`/${errorPage}`, origin);
-  url.searchParams.set("error", provider);
+  url.searchParams.set("error", errorCode || provider);
   return NextResponse.redirect(url);
 }
 
@@ -139,7 +158,17 @@ export async function completeOAuthSignIn(
     email,
     name: input.profile.name.trim() || email.split("@")[0] || email,
   });
-  if (!prepared.ok) return fail();
+  if (!prepared.ok) {
+    if (prepared.reason === "account_exists") {
+      return oauthSignInErrorRedirect(
+        input.origin,
+        input.errorPage,
+        input.profile.provider,
+        "account_exists",
+      );
+    }
+    return fail();
+  }
 
   const admin = createAdminClient();
   const { data: linkData, error: linkError } = await admin.auth.admin.generateLink({

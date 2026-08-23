@@ -10,9 +10,9 @@ import { withSystemNameParams } from "@/app/lib/i18n/interpolate";
 import {
   DEFAULT_LANGUAGE,
   interpolate,
-  messages,
   type LanguageCode,
 } from "@/app/lib/i18n/messages";
+import { loadMessages } from "@/app/lib/i18n/load-messages";
 import {
   hasExplicitLanguageChoice,
   isLanguageCode,
@@ -114,7 +114,7 @@ export const getServerTranslations = cache(async function getServerTranslations(
     getSiteSettings(),
   ]);
   const overlay = await getSiteTranslationDictionary(languageCode);
-  const table = messages[languageCode] ?? messages[DEFAULT_LANGUAGE];
+  const table = await loadMessages(languageCode);
   const systemName = resolveSystemName(settings.systemName, DEFAULT_SYSTEM_NAME);
 
   return {

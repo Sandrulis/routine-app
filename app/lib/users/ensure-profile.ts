@@ -19,14 +19,20 @@ async function ensureProfileWithClient(
   name: string,
   avatarUrl: string | null,
 ) {
-  const { error } = await supabase.rpc("ensure_user_profile", {
-    p_name: name,
-    p_avatar: avatarUrl ?? "",
-  });
-
-  if (error) {
-    console.error("ensure_user_profile failed:", error.message);
-    return;
+  const { data: existing } = await supabase
+    .from("users")
+    .select("id")
+    .eq("id", userId)
+    .maybeSingle();
+  if (!existing?.id) {
+    const { error } = await supabase.rpc("ensure_user_profile", {
+      p_name: name,
+      p_avatar: avatarUrl ?? "",
+    });
+    if (error) {
+      console.error("ensure_user_profile failed:", error.message);
+      return;
+    }
   }
 
   await persistGuestLanguageChoice(supabase, userId);

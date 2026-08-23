@@ -23,7 +23,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const limited = consumeRateLimit(
+  const limited = await consumeRateLimit(
     `ext-refresh:${requestClientIp(request)}`,
     60,
     15 * 60 * 1000,

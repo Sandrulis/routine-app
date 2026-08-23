@@ -12,7 +12,7 @@ const FALLBACK = {
     "Šim kontam ir MFA. Pabeidz ienākšanu TASQIN lapā un mēģini vēlreiz.",
   "errors.auth_invalid": "E-pasts vai parole nav pareiza.",
   "errors.extension_auth_required":
-    "Ielogojies TASQIN (tajā pašā pārlūkā) un mēģini vēlreiz.",
+    "Ienāc TASQIN spraudnī. Sesija paliek aptuveni 30 dienas, arī ja lapa ir aizvērta.",
   "nav.team": "Komanda",
   "extension.gmail.team.label": "Komanda",
   "extension.gmail.team.drive_missing":

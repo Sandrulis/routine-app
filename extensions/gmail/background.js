@@ -6,6 +6,7 @@ const APP_ORIGIN_CANDIDATES = [
   "http://127.0.0.1:3120",
 ];
 const STORED_SESSION_KEY = "extensionAuth";
+const PLUGIN_SIGNED_OUT_KEY = "pluginSignedOut";
 const COOKIE_CHUNK = 3180;
 const AUTH_MAX_AGE_SEC = 30 * 24 * 60 * 60;
 const EXTENSION_UPLOAD_MAX_BYTES = 25 * 1024 * 1024;
@@ -114,28 +115,20 @@ function mergeSessionPreserveRefresh(primary, secondary) {
   };
 }
 
+function sessionUsable(session) {
+  if (!session?.access_token) return false;
+  return Boolean(session.refresh_token) || !sessionExpired(session);
+}
+
+/** Plugin storage is the session. Website cookies only bootstrap an empty store. */
 function pickBestSession(cookieSession, storedSession) {
-  if (!cookieSession) return storedSession || null;
-  if (!storedSession) return cookieSession;
-  const cookieExpired = sessionExpired(cookieSession);
-  const storedExpired = sessionExpired(storedSession);
-  if (!cookieExpired && storedExpired) {
-    return mergeSessionPreserveRefresh(cookieSession, storedSession);
-  }
-  if (!storedExpired && cookieExpired) {
+  if (sessionUsable(storedSession)) {
     return mergeSessionPreserveRefresh(storedSession, cookieSession);
   }
-  if (cookieSession.refresh_token && !storedSession.refresh_token) {
+  if (sessionUsable(cookieSession)) {
     return mergeSessionPreserveRefresh(cookieSession, storedSession);
   }
-  if (storedSession.refresh_token && !cookieSession.refresh_token) {
-    return mergeSessionPreserveRefresh(storedSession, cookieSession);
-  }
-  const cookieAt = Number(cookieSession.expires_at) || 0;
-  const storedAt = Number(storedSession.expires_at) || 0;
-  return cookieAt >= storedAt
-    ? mergeSessionPreserveRefresh(cookieSession, storedSession)
-    : mergeSessionPreserveRefresh(storedSession, cookieSession);
+  return storedSession || cookieSession || null;
 }
 
 async function writeStoredSession(appBase, session) {
@@ -163,6 +156,20 @@ async function writeStoredSession(appBase, session) {
 
 async function clearStoredSession() {
   await chrome.storage.local.remove([STORED_SESSION_KEY]);
+}
+
+async function pluginCookieImportAllowed() {
+  const data = await chrome.storage.local.get([PLUGIN_SIGNED_OUT_KEY]);
+  return data[PLUGIN_SIGNED_OUT_KEY] !== true;
+}
+
+async function markPluginSignedIn() {
+  await chrome.storage.local.set({ [PLUGIN_SIGNED_OUT_KEY]: false });
+}
+
+async function markPluginSignedOut() {
+  await chrome.storage.local.set({ [PLUGIN_SIGNED_OUT_KEY]: true });
+  await clearStoredSession();
 }
 
 async function rememberSession(appBase, session) {
@@ -408,6 +415,7 @@ async function refreshSession(appBase, session) {
     const response = await fetch(`${appBase}/api/extension/refresh`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      credentials: "omit",
       body: JSON.stringify({ refresh_token: session.refresh_token }),
     });
     const data = await response.json().catch(() => null);
@@ -422,11 +430,6 @@ async function refreshSession(appBase, session) {
       expires_in: expiresIn,
       expires_at: expiresAt,
     };
-    const cookieName =
-      data.authCookieName ||
-      (await chrome.storage.sync.get(["authCookieName"])).authCookieName ||
-      "";
-    if (cookieName) await writeAuthCookies(appBase, cookieName, next);
     if (data.authCookieName) {
       await chrome.storage.sync.set({ authCookieName: data.authCookieName });
     }
@@ -448,48 +451,40 @@ function jwtStillValid(session) {
   }
 }
 
+async function resolveAccessToken(appBase, session, fallback) {
+  if (!session?.access_token) return null;
+  if (!sessionExpired(session)) {
+    await rememberSession(
+      appBase,
+      mergeSessionPreserveRefresh(session, fallback),
+    );
+    return session.access_token;
+  }
+  const refreshed = await refreshSession(appBase, session);
+  if (refreshed?.access_token) return refreshed.access_token;
+  if (jwtStillValid(session)) {
+    await rememberSession(
+      appBase,
+      mergeSessionPreserveRefresh(session, fallback),
+    );
+    return session.access_token;
+  }
+  return null;
+}
+
 async function getAccessToken(appBase) {
   const origin = parseOrigin(appBase);
-  const { session: cookieSession } = await readSessionFromCookies(appBase);
   const stored = await readStoredSession();
   const storedSession =
     stored && parseOrigin(stored.appBase) === origin ? stored.session : null;
 
-  let session = pickBestSession(cookieSession, storedSession);
-  if (!session) return null;
+  const fromStored = await resolveAccessToken(appBase, storedSession, null);
+  if (fromStored) return fromStored;
 
-  if (!sessionExpired(session)) {
-    await rememberSession(appBase, session);
-    return session.access_token;
-  }
-
-  const refreshed = await refreshSession(appBase, session);
-  if (refreshed?.access_token) return refreshed.access_token;
-
-  // Cookie may have been expired without refresh_token — try the other copy.
-  const other =
-    session === cookieSession
-      ? storedSession
-      : session === storedSession
-        ? cookieSession
-        : storedSession && storedSession.refresh_token !== session.refresh_token
-          ? storedSession
-          : cookieSession && cookieSession.refresh_token !== session.refresh_token
-            ? cookieSession
-            : null;
-  if (
-    other?.refresh_token &&
-    other.refresh_token !== session.refresh_token
-  ) {
-    const alt = await refreshSession(appBase, other);
-    if (alt?.access_token) return alt.access_token;
-  }
-
-  if (jwtStillValid(session)) {
-    await rememberSession(appBase, session);
-    return session.access_token;
-  }
-  return null;
+  if (!(await pluginCookieImportAllowed())) return null;
+  const { session: cookieSession } = await readSessionFromCookies(appBase);
+  const bootstrapped = mergeSessionPreserveRefresh(cookieSession, storedSession);
+  return resolveAccessToken(appBase, bootstrapped, storedSession);
 }
 
 async function apiFetch(path, options = {}) {
@@ -508,7 +503,7 @@ async function apiFetch(path, options = {}) {
   const response = await fetch(`${appBase}${path}`, {
     ...options,
     headers,
-    credentials: "include",
+    credentials: "omit",
   });
 
   let data = null;
@@ -977,6 +972,13 @@ if (chrome.cookies?.onChanged) {
         host === "localhost" || host === "127.0.0.1"
           ? `${protocol}://${host}:3120`
           : `${protocol}://${host}`;
+      const stored = await readStoredSession();
+      const storedSession =
+        stored && parseOrigin(stored.appBase) === parseOrigin(origin)
+          ? stored.session
+          : null;
+      if (sessionUsable(storedSession)) return;
+      if (!(await pluginCookieImportAllowed())) return;
       const { session } = await readSessionFromCookies(origin);
       if (session?.access_token) await rememberSession(origin, session);
     })();
@@ -1013,6 +1015,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         return;
       }
       if (message?.type === "routine.openLogin") {
+        await markPluginSignedIn();
         const appBase = await getAppBase();
         await chrome.tabs.create({ url: `${appBase}/login` });
         sendResponse({ ok: true });
@@ -1024,6 +1027,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         const response = await fetch(`${appBase}/api/extension/login`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
+          credentials: "omit",
           body: JSON.stringify({
             email: String(message.email || ""),
             password: String(message.password || ""),
@@ -1039,20 +1043,13 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           });
           return;
         }
-        const cookieName = data.authCookieName || "";
-        if (cookieName) {
-          await writeAuthCookies(appBase, cookieName, data.session);
-          await chrome.storage.sync.set({ authCookieName: cookieName });
-        }
+        await markPluginSignedIn();
         await rememberSession(appBase, data.session);
         sendResponse({ ok: true });
         return;
       }
       if (message?.type === "routine.logout") {
-        const appBase = await getAppBase();
-        const stored = await chrome.storage.sync.get(["authCookieName"]);
-        await clearAuthCookies(appBase, stored.authCookieName || "sb-auth-token");
-        await clearStoredSession();
+        await markPluginSignedOut();
         await chrome.storage.local.remove(["gmailAccessToken", "gmailTokenExpiresAt"]);
         sendResponse({ ok: true });
         return;

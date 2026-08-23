@@ -4,7 +4,7 @@ import { createAdminClient } from "@/app/lib/supabase/admin";
 import { createClient as createUserServerClient } from "@/app/lib/supabase/server";
 import { isSupabaseAdminConfigured, isSupabaseConfigured } from "@/app/lib/supabase/env";
 import { DEFAULT_SYSTEM_NAME } from "@/app/lib/document-title";
-import { messages, type LanguageCode } from "@/app/lib/i18n/messages";
+import { allMessages as messages, type LanguageCode } from "@/app/lib/i18n/all-messages";
 import {
   DEFAULT_LANGUAGE,
   LANGUAGE_CODES,

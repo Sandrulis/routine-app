@@ -16,13 +16,18 @@ import { documentTitleTemplate, resolveSystemName } from "@/app/lib/document-tit
 import { brandImageMime, siteHeadIconUrl } from "@/app/lib/site-admin/branding";
 import { getSiteSettings } from "@/app/lib/site-admin/repository";
 import { getEffectiveDisplayPreferences } from "@/app/lib/users/display-preferences";
-import { ogLocale as openGraphLocale } from "@/app/lib/seo/locale-path";
+import { htmlLang, ogLocale as openGraphLocale } from "@/app/lib/seo/locale-path";
+import {
+  OG_IMAGE_PATH,
+  OG_IMAGE_SIZE,
+  OG_IMAGE_TYPE,
+  TWITTER_IMAGE_PATH,
+} from "@/app/lib/seo/share-image";
 import {
   getGoogleSiteVerification,
   getPublicSiteUrl,
 } from "@/app/lib/seo/site-url";
 import { INDEX_ROBOTS } from "@/app/lib/seo/metadata";
-import Script from "next/script";
 import "./fontawesome.css";
 import "./globals.css";
 
@@ -70,11 +75,21 @@ export async function generateMetadata(): Promise<Metadata> {
       title: systemName,
       description: slogan,
       url: siteUrl,
+      images: [
+        {
+          url: OG_IMAGE_PATH,
+          width: OG_IMAGE_SIZE.width,
+          height: OG_IMAGE_SIZE.height,
+          alt: systemName,
+          type: OG_IMAGE_TYPE,
+        },
+      ],
     },
     twitter: {
       card: "summary_large_image",
       title: systemName,
       description: slogan,
+      images: [TWITTER_IMAGE_PATH],
     },
     icons: {
       icon: [{ url: headIcon, type: brandImageMime(headIcon) }],
@@ -114,7 +129,7 @@ export default async function RootLayout({
   );
 
   return (
-    <html lang={languageCode} className={`${geistSans.variable} h-full`}>
+    <html lang={htmlLang(languageCode)} className={`${geistSans.variable} h-full`}>
       <head>
         <link rel="icon" href={headIcon} type={brandImageMime(headIcon)} />
         <link rel="shortcut icon" href={headIcon} />
@@ -123,21 +138,6 @@ export default async function RootLayout({
         ) : null}
       </head>
       <body className="min-h-dvh">
-        {umami ? (
-          <Script
-            id="umami-analytics"
-            src={umami.scriptSrc}
-            strategy="beforeInteractive"
-            data-website-id={umami.websiteId}
-            data-auto-track="false"
-            {...(umami.integrity
-              ? {
-                  integrity: umami.integrity,
-                  crossOrigin: "anonymous" as const,
-                }
-              : {})}
-          />
-        ) : null}
         {sentry ? (
           <SentryInit dsn={sentry.dsn} environment={sentry.environment} />
         ) : null}
@@ -154,7 +154,13 @@ export default async function RootLayout({
                 <FeedbackToastProvider>
                   <CookieConsentProvider>
                     {children}
-                    {umami ? <UmamiAnalytics /> : null}
+                    {umami ? (
+                      <UmamiAnalytics
+                        websiteId={umami.websiteId}
+                        scriptSrc={umami.scriptSrc}
+                        integrity={umami.integrity}
+                      />
+                    ) : null}
                   </CookieConsentProvider>
                 </FeedbackToastProvider>
               </DisplayPreferencesProvider>

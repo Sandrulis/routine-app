@@ -2,7 +2,7 @@
 
 Chrome paplašinājums: Gmailā rāda sistēmas logo, atver modāli un pievieno e-pastu + pielikumus pie Routine apakšuzdevuma.
 
-Nav jāievada Routine URL vai OAuth Client ID. Spraudnis vispirms prasa [https://www.tasqin.com](https://www.tasqin.com), tad apex un `http://localhost:3120`. Sistēmas auth cookie lasa tajā pašā Chrome profilā un turpaļ glabā savu sesiju `chrome.storage.local` ar `refresh_token` (atjaunošana caur `/api/extension/refresh` un alarm ~45 min), tāpēc TASQIN cilnei nav jāpaliek atvērtai un ielogošanās var turēties līdz ~30 dienām. Cookie atjauninājumi **nesaglabā** `refresh_token`, ja tas jau ir lokāli. Gmail savieno caur sistēmas Google OAuth.
+Nav jāievada Routine URL vai OAuth Client ID. Spraudnis vispirms prasa [https://www.tasqin.com](https://www.tasqin.com), tad apex un `http://localhost:3120`. Sesija ir spraudņa paša (`chrome.storage.local` + `refresh_token`, atjaunošana caur `/api/extension/refresh` un alarm ~45 min) — TASQIN cilnei nav jābūt atvērtai un ielogošanās turas līdz ~30 dienām, arī ja vietnē iziet. Vietnes cookie izmanto tikai pirmajai Google ielogošanās bootstrap; pēc **Iziet** spraudnī vietnes sesija paliek. Gmail savieno caur sistēmas Google OAuth.
 
 `GET /api/extension/config` ir publisks. Serveris atbildē atspoguļo derīgu `chrome-extension://` Origin (`Access-Control-Allow-Origin`). Privātie API prasa Bearer. `CHROME_EXTENSION_IDS` nav vajadzīgs. `/api/extension/*` neiet caur www/apex 301 (tas bez CORS galvenēm bloķētu Chrome).
 

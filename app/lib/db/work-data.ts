@@ -473,8 +473,9 @@ function mapActivityRow(row: {
 export async function fetchTaskActivities(
   taskId: string,
   limit = 80,
+  before?: string,
 ): Promise<TaskActivity[]> {
-  const { data, error } = await db()
+  let query = db()
     .from("task_activities")
     .select(
       "id, task_id, actor_id, kind, from_status, to_status, assignee_ids, from_assignee_ids, date_value, from_date_value, text, previous_text, file_name, from_parent_id, to_parent_id, metadata, created_at",
@@ -482,8 +483,28 @@ export async function fetchTaskActivities(
     .eq("task_id", taskId)
     .order("created_at", { ascending: false })
     .limit(limit);
+  if (before) query = query.lt("created_at", before);
+  const { data, error } = await query;
   if (error) throw new Error(formatSupabaseError(error));
   return ((data ?? []) as Parameters<typeof mapActivityRow>[0][]).map(mapActivityRow);
+}
+
+export async function fetchTaskDetails(taskId: string): Promise<{
+  description: string;
+  checklists: ReturnType<typeof parseTaskChecklists>;
+} | null> {
+  const { data, error } = await db()
+    .from("work_tasks")
+    .select("description, checklists")
+    .eq("id", taskId)
+    .maybeSingle();
+  if (error) throw new Error(formatSupabaseError(error));
+  if (!data) return null;
+  const row = data as { description?: string | null; checklists?: unknown };
+  return {
+    description: row.description ?? "",
+    checklists: parseTaskChecklists(row.checklists),
+  };
 }
 
 export async function fetchTeamWorkspace(teamId: string): Promise<TeamWorkspace> {
@@ -520,7 +541,7 @@ export async function fetchTeamWorkspace(teamId: string): Promise<TeamWorkspace>
       supabase
         .from("work_tasks")
         .select(
-          "id, list_id, parent_id, kind, title, description, status, status_changed_at, deleted_at, archived_at, start_date, due_date, sort_order, checklists, hidden_status_ids, status_order, status_group_overrides, created_at",
+          "id, list_id, parent_id, kind, title, status, status_changed_at, deleted_at, archived_at, start_date, due_date, sort_order, hidden_status_ids, status_order, status_group_overrides, created_at",
         )
         .eq("team_id", teamId)
         .order("sort_order", { ascending: true })
@@ -700,7 +721,7 @@ export async function fetchTeamWorkspace(teamId: string): Promise<TeamWorkspace>
       parentId: row.parent_id,
       kind: row.kind,
       title: row.title,
-      description: row.description,
+      description: "",
       status: row.status,
       statusChangedAt: row.status_changed_at ?? null,
       deletedAt: row.deleted_at ?? null,
@@ -710,7 +731,7 @@ export async function fetchTeamWorkspace(teamId: string): Promise<TeamWorkspace>
       startDate: row.start_date,
       dueDate: row.due_date,
       sortOrder: row.sort_order,
-      checklists: parseTaskChecklists(row.checklists),
+      checklists: [],
       hiddenStatusIds: Array.isArray(row.hidden_status_ids)
         ? row.hidden_status_ids.filter(
             (id: unknown): id is string => typeof id === "string" && id.trim().length > 0,

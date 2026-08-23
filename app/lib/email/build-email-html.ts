@@ -83,10 +83,15 @@ export function buildEmailHtml(options: {
  */
 export function buildSimpleEmailHtml(options: {
   systemName: string;
+  /** Gray label above the heading (defaults to systemName). */
+  headerLabel?: string;
   heading: string;
   bodyText: string;
 }): string {
   const systemName = escapeHtml(options.systemName);
+  const headerLabel = escapeHtml(
+    (options.headerLabel ?? options.systemName).trim() || options.systemName,
+  );
   const heading = escapeHtml(options.heading);
   const bodyHtml = paragraphsToHtml(options.bodyText);
 
@@ -105,8 +110,8 @@ export function buildSimpleEmailHtml(options: {
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:560px;background-color:#ffffff;border-radius:16px;overflow:hidden;border:1px solid #e4e4e7;">
           <tr>
             <td style="padding:28px 32px 20px;border-bottom:1px solid #f4f4f5;">
-              <p style="margin:0;font-size:13px;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;color:#71717a;">
-                ${systemName}
+              <p style="margin:0;font-size:13px;font-weight:600;line-height:1.4;color:#71717a;">
+                ${headerLabel}
               </p>
               <h1 style="margin:10px 0 0;font-size:22px;line-height:1.3;font-weight:700;color:#18181b;">
                 ${heading}

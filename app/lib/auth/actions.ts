@@ -3,7 +3,12 @@
 import { createClient } from "@/app/lib/supabase/server";
 import { getCurrentUser } from "@/app/lib/auth/get-current-user";
 import { getClientIp } from "@/app/lib/security/client-ip";
-import { consumeRateLimit } from "@/app/lib/security/rate-limit";
+import {
+  consumeRateLimit,
+  readAuthLockout,
+  recordAuthFailure,
+  clearAuthFailures,
+} from "@/app/lib/security/rate-limit";
 import { getSafeRedirectPath } from "@/app/lib/security/safe-redirect-path";
 import { logError } from "@/app/lib/security/log-error";
 import { isSupabaseConfigured } from "@/app/lib/supabase/env";
@@ -35,8 +40,8 @@ async function guardAuth(kind: string, email: string): Promise<AuthResult | null
     return { ok: false, error: "errors.db_not_configured" };
   }
   const ip = await getClientIp();
-  const ipLimit = consumeRateLimit(`auth-ip:${kind}:${ip}`, 20, 15 * 60 * 1000);
-  const emailLimit = consumeRateLimit(
+  const ipLimit = await consumeRateLimit(`auth-ip:${kind}:${ip}`, 20, 15 * 60 * 1000);
+  const emailLimit = await consumeRateLimit(
     `auth-email:${kind}:${email}`,
     8,
     15 * 60 * 1000,
@@ -62,12 +67,19 @@ export async function signInWithPasswordAction(input: {
   const blocked = await guardAuth("login", email);
   if (blocked) return blocked;
 
+  const lockout = await readAuthLockout(email);
+  if (!lockout.ok) {
+    return { ok: false, error: "errors.auth_locked" };
+  }
+
   const supabase = await createClient();
   const { error } = await supabase.auth.signInWithPassword({ email, password });
   if (error) {
     logError("signInWithPassword failed", error.message);
+    await recordAuthFailure(email);
     return { ok: false, error: "errors.auth_invalid" };
   }
+  await clearAuthFailures(email);
   await ensureCurrentUserProfile(supabase);
   const gate = await getMfaGate(supabase);
   return {
@@ -158,7 +170,7 @@ export async function updatePasswordAction(input: {
     return { ok: false, error: "errors.db_not_configured" };
   }
   const ip = await getClientIp();
-  const limited = consumeRateLimit(`auth-password:${ip}`, 10, 15 * 60 * 1000);
+  const limited = await consumeRateLimit(`auth-password:${ip}`, 10, 15 * 60 * 1000);
   if (!limited.ok) {
     return { ok: false, error: "errors.auth_rate_limited" };
   }

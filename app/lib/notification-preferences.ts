@@ -11,6 +11,7 @@ export const NOTIFICATION_PREFERENCE_KINDS: NotificationPreferenceKind[] = [
   "status_changed",
   "task_updated",
   "due",
+  "start",
   "team_invite",
   "team_invite_rejected",
 ];
@@ -29,6 +30,7 @@ export function defaultNotificationPreferences(): NotificationPreferences {
     status_changed: true,
     task_updated: true,
     due: true,
+    start: true,
     team_invite: true,
     team_invite_rejected: true,
   };
@@ -79,6 +81,7 @@ export function preferenceFallbackForKind(
     status_changed: "Statusa maiņa uzdevumā",
     task_updated: "Citi uzdevuma labojumi",
     due: "Tuvojošs termiņš",
+    start: "Jāuzsāk apakšuzdevums",
     team_invite: "Komandas uzaicinājums",
     team_invite_rejected: "Noraidīts komandas uzaicinājums",
   };
@@ -96,7 +99,8 @@ export function preferenceHintForKind(
     status_changed: "Kad maina statusu uzdevumam, kurā esi iesaistīts.",
     task_updated:
       "Datumi, nosaukums, apraksts, kontrolsaraksts, pārvietošana, izveide.",
-    due: "Atgādinājums par tuvojošos termiņu.",
+    due: "Atgādinājums, ka šodien ir apakšuzdevuma termiņš.",
+    start: "Atgādinājums, ka jāuzsāk apakšuzdevums.",
     team_invite: "Kad uzaicina pievienoties komandai.",
     team_invite_rejected: "Kad kāds noraida tavu komandas uzaicinājumu.",
   };

@@ -7,7 +7,9 @@ import { mapUserDisplay } from "@/app/lib/auth/map-user-display";
 import { createNotificationId } from "@/app/lib/notifications";
 import { getClientIp } from "@/app/lib/security/client-ip";
 import { logError } from "@/app/lib/security/log-error";
+import { sha256Hex } from "@/app/lib/security/hash-token";
 import { consumeRateLimit } from "@/app/lib/security/rate-limit";
+import { decryptSecret, persistSecret } from "@/app/lib/security/secret-box";
 import { createAdminClient } from "@/app/lib/supabase/admin";
 import {
   isSupabaseAdminConfigured,
@@ -40,6 +42,10 @@ function createInvitationToken(): string {
 
 function createInvitationId(): string {
   return `invite-${randomBytes(12).toString("hex")}`;
+}
+
+function revealInviteToken(stored: string) {
+  return decryptSecret(stored) || stored;
 }
 
 async function rollbackPendingInvite(
@@ -388,7 +394,8 @@ export async function inviteTeamMemberAction(input: {
     invited_user_id: existingUser?.id ?? null,
     email,
     status: "pending",
-    token,
+    token: persistSecret(token),
+    token_hash: sha256Hex(token),
     created_at: now,
   });
 
@@ -661,7 +668,7 @@ export async function resendTeamInvitationAction(
     .maybeSingle();
   const emailResult = await sendTeamInviteEmail({
     email: invitation.email,
-    token: invitation.token,
+    token: revealInviteToken(invitation.token),
     teamName: teamRow?.name ?? "",
     inviterName: mapUserDisplay(user).name || user.email || "",
     languageCode: inviterProfile?.language_code,
@@ -683,7 +690,7 @@ export async function resendTeamInvitationAction(
   return {
     ok: true,
     data: {
-      inviteUrl: teamInvitePublicUrl(invitation.token),
+      inviteUrl: teamInvitePublicUrl(revealInviteToken(invitation.token)),
       emailSent,
       emailError,
     },
@@ -743,7 +750,7 @@ export async function getTeamInviteLinkAction(
 
   return {
     ok: true,
-    data: { inviteUrl: teamInvitePublicUrl(invitation.token) },
+    data: { inviteUrl: teamInvitePublicUrl(revealInviteToken(invitation.token)) },
   };
 }
 
@@ -831,7 +838,7 @@ export async function getTeamInvitationByTokenAction(token: string): Promise<
     return { ok: false, error: "errors.db_not_configured" };
   }
 
-  const limited = consumeRateLimit(
+  const limited = await consumeRateLimit(
     `invite-preview:${await getClientIp()}`,
     30,
     15 * 60 * 1000,
@@ -880,7 +887,7 @@ export async function getInviteSignupContextAction(token: string): Promise<
     return { ok: false, error: "errors.team_invite_not_found" };
   }
 
-  const limited = consumeRateLimit(
+  const limited = await consumeRateLimit(
     `invite-signup:${await getClientIp()}`,
     20,
     15 * 60 * 1000,
@@ -890,12 +897,23 @@ export async function getInviteSignupContextAction(token: string): Promise<
   }
 
   const admin = createAdminClient();
-  const { data: invitation, error } = await admin
+  const tokenHash = sha256Hex(trimmed);
+  let { data: invitation, error } = await admin
     .from("team_invitations")
     .select("id, email, invited_user_id, status, team_id, invited_by_member_id")
-    .eq("token", trimmed)
+    .eq("token_hash", tokenHash)
     .eq("status", "pending")
     .maybeSingle();
+  if (!invitation) {
+    const fallback = await admin
+      .from("team_invitations")
+      .select("id, email, invited_user_id, status, team_id, invited_by_member_id")
+      .eq("token", trimmed)
+      .eq("status", "pending")
+      .maybeSingle();
+    invitation = fallback.data;
+    error = fallback.error;
+  }
 
   if (error || !invitation) {
     return { ok: false, error: "errors.team_invite_not_found" };

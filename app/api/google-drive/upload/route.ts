@@ -38,7 +38,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, error: "errors.auth_required" }, { status: 401 });
   }
 
-  const limited = consumeRateLimit(
+  const limited = await consumeRateLimit(
     `drive-upload:${requestClientIp(request)}:${user.id}`,
     40,
     15 * 60 * 1000,

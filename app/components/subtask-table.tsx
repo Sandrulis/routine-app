@@ -1,6 +1,7 @@
 "use client";
 
 import { Fragment, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type MouseEvent } from "react";
+import { VirtualWindow } from "@/app/components/virtual-window";
 import { createPortal } from "react-dom";
 import {
   DndContext,
@@ -489,6 +490,7 @@ export function SubtaskTable({
   const [dropHint, setDropHint] = useState<DropHint | null>(null);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const lastSelectedIdRef = useRef<string | null>(null);
+  const tableScrollRef = useRef<HTMLDivElement | null>(null);
   const { currentUser, roles } = useTeam();
   const { isAdmin } = useIsAdmin();
   const parentTaskId = useMemo(() => {
@@ -770,13 +772,16 @@ export function SubtaskTable({
     );
   }
 
+  const virtualizeUngrouped = !groupByStatus && displayed.length > 40;
+
   return (
     <>
     <div
+      ref={tableScrollRef}
       className={
         embedded
-          ? `w-full overflow-x-auto overflow-y-clip ${someSelectableSelected ? "pb-16" : ""}`
-          : `w-full overflow-x-auto overflow-y-clip rounded-2xl border border-zinc-200 bg-white ${
+          ? `w-full overflow-x-auto ${virtualizeUngrouped ? "max-h-[min(70vh,42rem)] overflow-y-auto" : "overflow-y-clip"} ${someSelectableSelected ? "pb-16" : ""}`
+          : `w-full overflow-x-auto ${virtualizeUngrouped ? "max-h-[min(70vh,42rem)] overflow-y-auto" : "overflow-y-clip"} rounded-2xl border border-zinc-200 bg-white ${
               someSelectableSelected ? "pb-16" : ""
             }`
       }
@@ -869,7 +874,15 @@ export function SubtaskTable({
                       items={displayed.map((task) => task.id)}
                       strategy={frozenSortingStrategy}
                     >
-                      {displayed.map((task) => renderRow(task))}
+                      <VirtualWindow
+                        count={displayed.length}
+                        itemHeight={48}
+                        mode="table"
+                        colSpan={6}
+                        scrollerRef={tableScrollRef}
+                      >
+                        {(index) => renderRow(displayed[index])}
+                      </VirtualWindow>
                     </SortableContext>
                   )}
             </tbody>

@@ -86,6 +86,9 @@ function notificationText(
   if (item.kind === "due") {
     return t("notifications.item.due", "Tuvojas termiņš: “{task}”", params);
   }
+  if (item.kind === "start") {
+    return t("notifications.item.start", "Jāuzsāk: “{task}”", params);
+  }
   return t("notifications.item.task_updated", "{name} atjaunināja “{task}”", params);
 }
 

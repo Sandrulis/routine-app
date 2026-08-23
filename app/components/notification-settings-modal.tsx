@@ -44,7 +44,7 @@ const PREFERENCE_GROUPS: PreferenceGroup[] = [
     labelFallback: "Atgādinājumi",
     icon: "fa-clock",
     iconColor: "text-amber-500",
-    kinds: ["due"],
+    kinds: ["start", "due"],
   },
   {
     labelKey: "notifications.settings.group.team",
@@ -63,6 +63,7 @@ const KIND_ICONS: Record<NotificationPreferenceKind, string> = {
   status_changed: "fa-arrow-right-arrow-left",
   task_updated: "fa-pen",
   due: "fa-bell",
+  start: "fa-play",
   team_invite: "fa-envelope",
   team_invite_rejected: "fa-user-xmark",
 };

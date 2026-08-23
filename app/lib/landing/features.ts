@@ -183,7 +183,7 @@ export function resolveLandingPageContent(
   if (filesOn && isEnabled(FRONTEND_MODULE_KEYS.googleDrive)) {
     features.push({
       id: "google_drive",
-      icon: "fab fa-google-drive",
+      icon: "fas fa-cloud",
       titleKey: "landing.features.google_drive.title",
       titleFallback: "Google Drive",
       descriptionKey: "landing.features.google_drive.description",
@@ -195,7 +195,7 @@ export function resolveLandingPageContent(
   if (filesOn && isEnabled(FRONTEND_MODULE_KEYS.onedrive)) {
     features.push({
       id: "onedrive",
-      icon: "fab fa-microsoft",
+      icon: "fas fa-cloud",
       titleKey: "landing.features.onedrive.title",
       titleFallback: "OneDrive",
       descriptionKey: "landing.features.onedrive.description",

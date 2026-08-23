@@ -1,9 +1,9 @@
 # Sistēmas drošības uzlabojumi — routine-app
 
-**Pašreizējā atzīme:** **8.5 / 10**  
+**Pašreizējā atzīme:** **8.8 / 10**  
 **Iepriekšējā pilnā pārbaude:** 7.0 / 10 (2026-08-20, pirms šī viļņa)  
-**Šī izpilde:** 2026-08-20 (HIGH + MIDDLE + LOW)  
-**Atlikušais:** H2 pilns HttpOnly (klienta Supabase lasa `document.cookie`); CSP `'unsafe-inline'` nonce ceļš.
+**Šī izpilde:** 2026-08-23 (OAuth nesasaistīšana, token hash, CSP nonce, lockout; paliek HttpOnly)  
+**Atlikušais:** H2 pilns HttpOnly (klienta Supabase lasa `document.cookie`). CSP nonce ir `proxy.ts` + `x-nonce`.
 
 Šis fails ir uzskaites saraksts. Statuss: `pending` / `done` / `accepted`.
 
@@ -17,7 +17,8 @@
 |---|---|
 | **8.0** | H1, H3, H5, H6 |
 | **8.5** | visi HIGH (H2 īstermiņa) |
-| **9.0** | H2 HttpOnly + CSP nonce |
+| **8.8** | CSP nonce + OAuth/token hash (bez pilna HttpOnly) |
+| **9.0** | H2 HttpOnly |
 
 ---
 
@@ -63,7 +64,7 @@ Ietekmē kontu pārņemšanu, privātu failu noplūdi vai noslēpumu izgūšanu 
 ### H2. Sesijas sīkdatnes nav HttpOnly
 
 - **Statuss:** done (īstermiņa)
-- **Piezīme:** `httpOnly` paliek `false`, jo `createBrowserClient` lasa `document.cookie`. Ieviests: remember noklusējums izslēgts, production `Secure`, stingrāka CSP/`connect-src`/`object-src`. Pilns HttpOnly = visi DB vaicājumi uz serveri.
+- **Piezīme:** `httpOnly` paliek `false`, jo `createBrowserClient` lasa `document.cookie`. Ieviests: remember noklusējums izslēgts, production `Secure`, CSP `script-src` ar nonce (`proxy.ts`, bez `'unsafe-inline'`). Pilns HttpOnly = visi DB vaicājumi uz serveri.
 - **Kur:** `app/lib/auth/remember-session.ts` — `httpOnly: false` apzināti, lai pārlūka Supabase klients lasītu `document.cookie`.
 - **Risks:** jebkurš XSS nozog 30 dienu sesiju. CSP atļauj `'unsafe-inline'` skriptiem, tāpēc XSS logs ir platāks.
 - **Ko darīt:**
@@ -159,8 +160,8 @@ Ietekmē kontu pārņemšanu, privātu failu noplūdi vai noslēpumu izgūšanu 
 ### M7. CSP `'unsafe-inline'` + nepilns `connect-src`
 
 - **Statuss:** done
-- **Kur:** `next.config.ts` — `script-src` ietver `'unsafe-inline'`; `connect-src` ir tikai `self` + Supabase. Umami/Sentry/Google token endpointi nav CSP sarakstā (vai nu bloķēti, vai jāpapildina apzināti).
-- **Ko darīt:** nonce/hash CSP; `connect-src` allowlist (Supabase, Google OAuth, Graph, Umami, Sentry) pēc ieslēgtām integrācijām; `object-src 'none'`.
+- **Kur:** `app/lib/security/csp.ts` + `proxy.ts` — CSP ar `x-nonce`; Umami skripts pēc hidratācijas kopē dokumenta nonce. `connect-src` allowlist (Supabase, Google/Microsoft OAuth, Umami, Sentry).
+- **Piezīme:** nonce ceļš ir done. HttpOnly sesija paliek atsevišķs H2 punkts.
 
 ### M8. Failu MIME uzticas klientam
 

@@ -36,6 +36,35 @@ const OG_LOCALE: Record<LanguageCode, string> = {
   sv: "sv_SE",
 };
 
+/**
+ * Public URL stays `/no`. Bokmål SEO uses `nb-NO` (HTML/hreflang) and `nb_NO` (Open Graph).
+ */
+const HTML_LANG: Record<LanguageCode, string> = {
+  lv: "lv",
+  en: "en",
+  ru: "ru",
+  de: "de",
+  fr: "fr",
+  es: "es",
+  nl: "nl",
+  da: "da",
+  no: "nb-NO",
+  fi: "fi",
+  pl: "pl",
+  lt: "lt",
+  et: "et",
+  it: "it",
+  sv: "sv",
+};
+
+export function htmlLang(code: LanguageCode): string {
+  return HTML_LANG[code];
+}
+
+export function hreflangValue(code: LanguageCode): string {
+  return HTML_LANG[code];
+}
+
 export function ogLocale(languageCode: LanguageCode): string {
   return OG_LOCALE[languageCode];
 }
@@ -92,7 +121,7 @@ export function hreflangMap(
     "x-default": toAbsoluteUrl(localePath(base, DEFAULT_LANGUAGE)),
   };
   for (const code of LANGUAGE_CODES) {
-    languages[code] = toAbsoluteUrl(localePath(base, code));
+    languages[hreflangValue(code)] = toAbsoluteUrl(localePath(base, code));
   }
   return languages;
 }

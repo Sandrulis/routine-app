@@ -34,6 +34,7 @@ import { batchUploadPercent } from "@/app/lib/google-drive/queue-upload";
 import { FRONTEND_MODULE_KEYS } from "@/app/lib/frontend-modules/keys";
 import { useFrontendModules } from "@/app/lib/frontend-modules/context";
 import { useLists } from "@/app/lib/lists-store";
+import { fetchTaskDetails } from "@/app/lib/db/work-data";
 import { ensureTaskFileContent } from "@/app/lib/file-content";
 import {
   forwardTaskFileAction,
@@ -47,8 +48,10 @@ import {
 import { translateActionError } from "@/app/lib/i18n/action-errors";
 import {
   appendTaskActivity,
+  loadOlderTaskActivities,
   patchTaskActivities,
   useTaskActivities,
+  useTaskActivitiesHasMore,
 } from "@/app/lib/task-activities-cache";
 import { useTeam } from "@/app/lib/team-store";
 import { useIsAdmin } from "@/app/lib/users/use-is-admin";
@@ -321,6 +324,8 @@ export function SubtaskDetailModal({
 
   const deleted = Boolean(task && isTaskDeleted(task));
   const activities = useTaskActivities(task?.id);
+  const activitiesHasMore = useTaskActivitiesHasMore(task?.id);
+  const [loadingOlderActivities, setLoadingOlderActivities] = useState(false);
   const files = task ? taskFiles(task.id) : [];
   const createdAt =
     task?.createdAt ??
@@ -409,6 +414,24 @@ export function SubtaskDetailModal({
     const next = task ? draftFromTask(task) : emptyDraft;
     snapshotRef.current = next;
     setDraft(next);
+    if (!task?.id) return;
+    let cancelled = false;
+    void fetchTaskDetails(task.id).then((details) => {
+      if (cancelled || !details) return;
+      setDraft((current) => ({
+        ...current,
+        description: details.description,
+        checklists: details.checklists,
+      }));
+      snapshotRef.current = {
+        ...snapshotRef.current,
+        description: details.description,
+        checklists: details.checklists,
+      };
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [open, task]);
 
   useEffect(() => {
@@ -1245,6 +1268,24 @@ export function SubtaskDetailModal({
                     </li>
                   );
                 })}
+                {activitiesHasMore ? (
+                  <li>
+                    <button
+                      type="button"
+                      disabled={loadingOlderActivities}
+                      onClick={() => {
+                        if (!task?.id) return;
+                        setLoadingOlderActivities(true);
+                        void loadOlderTaskActivities(task.id).finally(() => {
+                          setLoadingOlderActivities(false);
+                        });
+                      }}
+                      className="w-full rounded-xl px-2 py-2 text-left text-[12px] font-semibold text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-700 disabled:opacity-60"
+                    >
+                      {t("subtasks.history.load_older", "Ielādēt vecākus")}
+                    </button>
+                  </li>
+                ) : null}
               </ScrollableHistoryList>
             )}
           </aside>

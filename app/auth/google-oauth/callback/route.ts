@@ -84,7 +84,7 @@ async function handleLogin(request: Request, origin: string, code: string) {
 }
 
 export async function GET(request: Request) {
-  const limited = consumeRateLimit(
+  const limited = await consumeRateLimit(
     `oauth-google:${requestClientIp(request)}`,
     40,
     15 * 60 * 1000,

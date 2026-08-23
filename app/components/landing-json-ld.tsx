@@ -3,8 +3,14 @@ import { resolveSystemName } from "@/app/lib/document-title";
 import { getEnabledFrontendModuleKeys } from "@/app/lib/frontend-modules/repository";
 import { resolveLandingFaqItems } from "@/app/lib/landing/faq";
 import { getSiteSettings } from "@/app/lib/site-admin/repository";
-import { localePath } from "@/app/lib/seo/locale-path";
+import { htmlLang, localePath } from "@/app/lib/seo/locale-path";
+import { OG_IMAGE_PATH, OG_IMAGE_SIZE } from "@/app/lib/seo/share-image";
 import { absoluteUrl } from "@/app/lib/seo/site-url";
+
+function httpUrl(value: string | null | undefined): string | null {
+  if (!value) return null;
+  return /^https?:\/\//i.test(value) ? value : null;
+}
 
 export async function LandingJsonLd() {
   const [{ languageCode, t }, settings, enabledKeys] = await Promise.all([
@@ -21,7 +27,12 @@ export async function LandingJsonLd() {
     "{name} is team task management software for small and growing teams. Plan tasks, projects and deadlines in one workspace.",
     name,
   );
+  const homeUrl = absoluteUrl("/");
   const url = absoluteUrl(localePath("/", languageCode));
+  const language = htmlLang(languageCode);
+  const logoUrl = httpUrl(settings.logoUrl) ?? absoluteUrl(OG_IMAGE_PATH);
+  const organizationId = `${homeUrl}#organization`;
+  const websiteId = `${url}#website`;
   const faqItems = resolveLandingFaqItems(isEnabled).map((item) => ({
     "@type": "Question",
     name: t(item.questionKey, item.questionFallback, name),
@@ -31,22 +42,32 @@ export async function LandingJsonLd() {
     },
   }));
 
+  const organization = {
+    "@type": "Organization",
+    "@id": organizationId,
+    name: systemName,
+    url: homeUrl,
+    logo: {
+      "@type": "ImageObject",
+      url: logoUrl,
+      width: OG_IMAGE_SIZE.width,
+      height: OG_IMAGE_SIZE.height,
+    },
+    image: logoUrl,
+  };
+
   const jsonLd = {
     "@context": "https://schema.org",
     "@graph": [
-      {
-        "@type": "Organization",
-        name: systemName,
-        url: absoluteUrl("/"),
-        ...(settings.logoUrl ? { logo: settings.logoUrl } : {}),
-      },
+      organization,
       {
         "@type": "WebSite",
+        "@id": websiteId,
         name: systemName,
         url,
         description,
-        inLanguage: languageCode,
-        publisher: { "@type": "Organization", name: systemName, url: absoluteUrl("/") },
+        inLanguage: language,
+        publisher: { "@id": organizationId },
       },
       {
         "@type": "SoftwareApplication",
@@ -56,7 +77,8 @@ export async function LandingJsonLd() {
         operatingSystem: "Web",
         url,
         description,
-        inLanguage: languageCode,
+        inLanguage: language,
+        publisher: { "@id": organizationId },
       },
       {
         "@type": "FAQPage",

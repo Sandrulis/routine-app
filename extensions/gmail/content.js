@@ -17,9 +17,9 @@
   "actions.save": "Saglabāt",
   "actions.close": "Aizvērt",
   "errors.auth_required":
-    "Ielogojies TASQIN (tajā pašā pārlūkā) un mēģini vēlreiz.",
+    "Ienāc TASQIN spraudnī. Sesija paliek aptuveni 30 dienas, arī ja lapa ir aizvērta.",
   "errors.extension_auth_required":
-    "Ielogojies TASQIN (tajā pašā pārlūkā) un mēģini vēlreiz.",
+    "Ienāc TASQIN spraudnī. Sesija paliek aptuveni 30 dienas, arī ja lapa ir aizvērta.",
   "errors.extension_gmail_not_connected":
     "Vispirms savieno Gmail spraudnī. Savienojums tiks saglabāts arī TASQIN.",
   "errors.extension_plugin_disabled": "Gmail spraudnis sistēmā ir izslēgts.",
