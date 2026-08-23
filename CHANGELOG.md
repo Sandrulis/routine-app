@@ -4,6 +4,14 @@
 
 - (none)
 
+## v0.2.10
+
+- Apakšuzdevuma pielikuma `…` → **Pārsūtīt failu** (ja Resend aktīvs): modālis ar e-pastu, tēmu (PATH `mape > uzdevums > apakšuzdevums`) un ziņojumu; From = Resend From, Reply-To = lietotāja e-pasts; maks. 25 MB
+- Uzaicinājums: ja e-pasta konta nav, `/invite/{token}` ved uz `/signup?invite=…` ar Vārds/Uzvārds/Parole un bloķētu e-pastu; preview RPC `account_exists` (`085`)
+- Paroles lauki ar rādīt/paslēpt (`PasswordInput`) loginā, signupā, paroles maiņā un Gmail spraudņa options
+- Gmail spraudnis: Login bez sesijas preferē `www.tasqin.com`, ne `localhost` (arī ja lokālais `npm run dev` skrien)
+- Gmail content script ķer „Extension context invalidated” pēc spraudņa Reload un prasa pārlādēt Gmail cilni (F5)
+
 ## v0.2.9
 
 - Resend: admin uzstādījumos un integrācijās From (verificēts domēns) un Reply-To (var būt Gmail); sūtīšana iet caur `reply_to`

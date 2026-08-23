@@ -31,6 +31,7 @@ export default function InviteTokenPage({
     teamName: string;
     inviterName: string;
     email: string;
+    accountExists: boolean;
   } | null>(null);
 
   useEffect(() => {
@@ -50,6 +51,13 @@ export default function InviteTokenPage({
       })
       .finally(() => setLoading(false));
   }, [token]);
+
+  useEffect(() => {
+    if (!authReady || loading || !token || !invite || user) return;
+    if (!invite.accountExists) {
+      router.replace(`/signup?invite=${encodeURIComponent(token)}`);
+    }
+  }, [authReady, invite, loading, router, token, user]);
 
   async function handleAccept() {
     if (!token || pending) return;
@@ -122,8 +130,15 @@ export default function InviteTokenPage({
     );
   }
 
+  if (!user && !invite.accountExists) {
+    return (
+      <div className="px-4 py-16">
+        <LoadingState className="justify-center" />
+      </div>
+    );
+  }
+
   const loginHref = `/login?next=${encodeURIComponent(`/invite/${token}`)}`;
-  const signupHref = `/signup?next=${encodeURIComponent(`/invite/${token}`)}`;
 
   return (
     <div className="mx-auto max-w-lg px-4 py-16">
@@ -154,12 +169,6 @@ export default function InviteTokenPage({
                 className="inline-flex min-h-10 items-center justify-center rounded-2xl bg-blue-700 px-4 text-sm font-semibold text-white"
               >
                 {t("auth.login.title", "Ienākt")}
-              </Link>
-              <Link
-                href={signupHref}
-                className="inline-flex min-h-10 items-center justify-center rounded-2xl bg-zinc-100 px-4 text-sm font-semibold text-zinc-700"
-              >
-                {t("auth.signup.title", "Reģistrēties")}
               </Link>
             </div>
           </div>

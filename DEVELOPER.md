@@ -60,7 +60,7 @@ Route group `app/(marketing)/` - bez sānjoslas. Galvene `SiteHeader` (sistēmas
 | `/terms` | Lietošanas noteikumi |
 | `/cookies` | Sīkdatņu politika + iestatījumu poga |
 
-Auth: `/login` un `/signup` metodes (e-pasts, Google, Microsoft) nāk no RPC `public_sign_in_methods()` (`080`, `getPublicSignInMethods`) ar anon atslēgu — tikai `is_configured AND is_enabled` karogi, bez noslēpumiem. Service role login pogām nav vajadzīgs. E-pasta Ienākt iet caur Supabase `signInWithPassword` ar IP+e-pasta rate limit **un tikai ja Resend ir konfigurēts un aktīvs** (`isEmailPasswordAuthEnabled` vispirms RPC `email`, citādi From + API Key). Reģistrācija: `generateLink({ type: "signup" })` + HTML e-pasts no admin šablona `signup` (`sendSignupConfirmationEmail`); apstiprinājums `/auth/confirm?token_hash&type=signup` (`verifyOtp`). Paroles atjaunošana: `generateLink({ type: "recovery" })` + šablons `password_reset`; saite ved uz `/auth/confirm` ar `next=/update-password`. Esošam apstiprinātam e-pastam signup un nezināmam e-pastam reset joprojām rāda vispārīgu veiksmi (nav enumerācijas). Bez Resend: e-pasta lauki nav, galvenē nav Reģistrēties, loginā nav signup saites un Atcerēties mani, `/signup` `redirect("/login")`; server actions atgriež `errors.auth_email_disabled`. **Turpināt ar Google** / **Turpināt ar Microsoft** paliek neatkarīgi (admin **Integrācijas** OAuth, `/auth/google-oauth/callback`, `/auth/microsoft-oauth/callback`), nevis Supabase Google provider - pēc profila no Google/Microsoft tiek izveidots vai atrasts Supabase Auth lietotājs un sesija. Microsoft pieprasa verificētu e-pastu (OIDC / `id_token`, bez `userPrincipalName`). Pogas rādās tikai ja attiecīgā integrācija ir konfigurēta un **Aktīva**. Signupā OAuth **neprasa** noteikumu ķeksīti (tas paliek tikai e-pasta reģistrācijai). **Atcerēties mani** rādās tikai `/login` e-pasta formā; pēc noklusējuma izslēgts: bez ķeksīša sesija līdz pārlūka aizvēršanai; ar ķeksi 30 dienas (`httpOnly: false`, lai browser Supabase klients lasītu cookie; production HTTPS `Secure`). Ielogotam `proxy` `/`, `/login`, `/signup` un `/forgot-password` novirza uz `/dashboard`; neautentificēts lietotājs no aizsargātiem app ceļiem uz `/login`; landing `app/(marketing)/page.tsx` arī `redirect("/dashboard")`, ja ir sesija. Iziet ved uz `/`. Publiskajā galvenē ielogotam rādās **Atvērt lietotni**. MFA (TOTP) ir opcija `/settings/profile` visiem; ja faktoram ir `verified` un sesija nav `aal2`, lietotne rāda `MfaVerifyModal` pirms app čaulas. `is_admin` pie `/admin` bez MFA tiek novirzīts enroll (`?mfa=required`); ar MFA, bet bez AAL2 - admin modālis. Paroles maiņa (`updatePasswordAction`) prasa `getCurrentUser` (CI `actions.ts` auth-guard).
+Auth: `/login` un `/signup` metodes (e-pasts, Google, Microsoft) nāk no RPC `public_sign_in_methods()` (`080`, `getPublicSignInMethods`) ar anon atslēgu — tikai `is_configured AND is_enabled` karogi, bez noslēpumiem. Service role login pogām nav vajadzīgs. E-pasta Ienākt iet caur Supabase `signInWithPassword` ar IP+e-pasta rate limit **un tikai ja Resend ir konfigurēts un aktīvs** (`isEmailPasswordAuthEnabled` vispirms RPC `email`, citādi From + API Key). Reģistrācija: `generateLink({ type: "signup" })` + HTML e-pasts no admin šablona `signup` (`sendSignupConfirmationEmail`); apstiprinājums `/auth/confirm?token_hash&type=signup` (`verifyOtp`). Uzaicinājuma signup: `/signup?invite={token}` ar Vārds/Uzvārds, bloķētu e-pastu un `account_exists` preview (`085`). Paroles lauki: `PasswordInput` (rādīt/paslēpt). Paroles atjaunošana: `generateLink({ type: "recovery" })` + šablons `password_reset`; saite ved uz `/auth/confirm` ar `next=/update-password`. Esošam apstiprinātam e-pastam signup un nezināmam e-pastam reset joprojām rāda vispārīgu veiksmi (nav enumerācijas). Bez Resend: e-pasta lauki nav, galvenē nav Reģistrēties, loginā nav signup saites un Atcerēties mani, `/signup` `redirect("/login")`; server actions atgriež `errors.auth_email_disabled`. **Turpināt ar Google** / **Turpināt ar Microsoft** paliek neatkarīgi (admin **Integrācijas** OAuth, `/auth/google-oauth/callback`, `/auth/microsoft-oauth/callback`), nevis Supabase Google provider - pēc profila no Google/Microsoft tiek izveidots vai atrasts Supabase Auth lietotājs un sesija. Microsoft pieprasa verificētu e-pastu (OIDC / `id_token`, bez `userPrincipalName`). Pogas rādās tikai ja attiecīgā integrācija ir konfigurēta un **Aktīva**. Signupā OAuth **neprasa** noteikumu ķeksīti (tas paliek tikai e-pasta reģistrācijai). **Atcerēties mani** rādās tikai `/login` e-pasta formā; pēc noklusējuma izslēgts: bez ķeksīša sesija līdz pārlūka aizvēršanai; ar ķeksi 30 dienas (`httpOnly: false`, lai browser Supabase klients lasītu cookie; production HTTPS `Secure`). Ielogotam `proxy` `/`, `/login`, `/signup` un `/forgot-password` novirza uz `/dashboard`; neautentificēts lietotājs no aizsargātiem app ceļiem uz `/login`; landing `app/(marketing)/page.tsx` arī `redirect("/dashboard")`, ja ir sesija. Iziet ved uz `/`. Publiskajā galvenē ielogotam rādās **Atvērt lietotni**. MFA (TOTP) ir opcija `/settings/profile` visiem; ja faktoram ir `verified` un sesija nav `aal2`, lietotne rāda `MfaVerifyModal` pirms app čaulas. `is_admin` pie `/admin` bez MFA tiek novirzīts enroll (`?mfa=required`); ar MFA, bet bez AAL2 - admin modālis. Paroles maiņa (`updatePasswordAction`) prasa `getCurrentUser` (CI `actions.ts` auth-guard).
 
 Legal teksti: `app/lib/legal/documents.ts`. Privātuma pārziņa e-pasts nāk no `site_settings.legal_email` (`getPrivacyPolicyContent(t, settings.legalEmail)`); tukšs lauks izlaiž kontakta teikumu. UI: `LegalDocumentView` ar **Saturs** sānjoslu (`sticky` zem galvenes): klikšķis ritina uz sadaļu, josla paliek redzama visā dokumentā.
 
@@ -288,9 +288,10 @@ Saraksta statusi: `ListStatusesModal` (`app/components/list-statuses-modal.tsx`)
 | Solis | Kas notiek |
 |---|---|
 | Uzaicināt (`inviteTeamMemberAction`) | `team_members` rinda ar `user_id = null`, `team_invitations` `pending`, unikāls `token` |
-| Jaunam e-pastam | Ja Resend aktīvs: HTML šablons `invite` ar `/invite/{token}` (nav `inviteUserByEmail`, lai nebūtu dubulta Supabase vēstule); jauns lietotājs reģistrējas pats. Bez Resend: jaunu e-pastu nevar uzaicināt |
+| Jaunam e-pastam | Ja Resend aktīvs: HTML šablons `invite` ar `/invite/{token}` (nav `inviteUserByEmail`, lai nebūtu dubulta Supabase vēstule). Bez Resend: jaunu e-pastu nevar uzaicināt |
 | Reģistrētam lietotājam | In-app `team_invite` paziņojums (`target_user_id`); HTML uzaicinājuma e-pasts, ja Resend aktīvs |
-| Apstiprināt | Paziņojumos, `/invite/{token}` (tur arī Reģistrēties) vai RPC `accept_team_invitation` → `user_id` tiek iestatīts |
+| Apstiprināt | Paziņojumos, `/invite/{token}` vai RPC `accept_team_invitation` → `user_id` tiek iestatīts |
+| Nav konta | Preview `account_exists = false` (`085`) → redirect `/signup?invite={token}`: Vārds/Uzvārds/Parole, e-pasts disabled+prefill; metadata `given_name` / `family_name` / `name` / `full_name` |
 | Noraidīt | Paziņojumos vai `/invite/{token}` → RPC `reject_team_invitation`; pending `team_members` rinda dzēsta; uzaicinātājam `team_invite_rejected` |
 | Pending UI | `/team` un `/team/[id]`: resend, kopēt linku, noņemt; sānjoslā tikai apstiprinātie (`confirmedTeamMembers`) |
 
@@ -298,7 +299,7 @@ Saraksta statusi: `ListStatusesModal` (`app/components/list-statuses-modal.tsx`)
 
 **Pamest komandu:** apstiprināts biedrs (ne īpašnieks) var pats aiziet — `removeTeamMemberAction` self-leave, UI `TeamLeaveSection` (`/team`, `/settings/profile`).
 
-**E-pasts:** ar Resend HTML uzaicinājums tiek izveidots bez Supabase Auth invite (jauns lietotājs iet `/signup` no uzaicinājuma lapas). Bez Resend jaunu (nereģistrētu) e-pastu nevar uzaicināt; reģistrētam lietotājam pietiek ar in-app `team_invite` paziņojumu. Esošam pending uzaicinājumam var kopēt `/invite/{token}` linku.
+**E-pasts:** ar Resend HTML uzaicinājums tiek izveidots bez Supabase Auth invite. Ja Auth konta nav, `/invite/{token}` novirza uz `/signup?invite=…` (nevis tukšu „Reģistrēties”). Bez Resend jaunu (nereģistrētu) e-pastu nevar uzaicināt; reģistrētam lietotājam pietiek ar in-app `team_invite` paziņojumu. Esošam pending uzaicinājumam var kopēt `/invite/{token}` linku.
 
 - Attēlojums: `app/components/member-last-online.tsx`, loģika `app/lib/last-online.ts`
 
@@ -326,7 +327,7 @@ app/
     layout.tsx                    # SiteHeader/Footer + FrontendModulesProvider (landing fīčas)
     page.tsx                      # Landing; ielogotam redirect /dashboard; JSON-LD
     login/ signup/ forgot-password/ update-password/ auth/confirm/
-    invite/[token]/               # Komandas uzaicinājuma landing (accept/reject + Reģistrēties)
+    invite/[token]/               # Komandas uzaicinājuma landing; bez konta → `/signup?invite=`
     privacy/ terms/ cookies/
   (app)/
     layout.tsx                    # AppProviders + sānjosla; MFA vārteja (AAL2); enabled frontend module keys
@@ -342,8 +343,9 @@ app/
     landing-page.tsx              # Landing: H1, problem, features, audiences, FAQ; zem fold lazy (`landing-below-fold`, `lazy-on-visible`); hash `smooth-scroll`
     landing-json-ld.tsx           # schema.org Organization / WebSite / SoftwareApplication / FAQPage
     landing-app-preview.tsx       # Hero dashboard vizuālis (moduļu fīčas tikai ja ieslēgtas)
-    login-form.tsx                # Ienākt; e-pasts/Atcerēties/signup saite tikai ar Resend; Google/Microsoft
-    signup-form.tsx               # Reģistrēties: noteikumi tikai e-pasta formai; Google/Microsoft bez ķeksīša
+    login-form.tsx                # Ienākt; e-pasts/Atcerēties/signup saite tikai ar Resend; Google/Microsoft; PasswordInput
+    signup-form.tsx               # Reģistrēties; `?invite=` → Vārds/Uzvārds, bloķēts e-pasts; noteikumi tikai e-pasta formai
+    password-input.tsx            # Parole + rādīt/paslēpt acu ikona
     google-auth-button.tsx        # Turpināt ar Google / Microsoft
     admin-integrations-page.tsx   # /admin/integrations: Google + Microsoft OAuth, Resend, Umami, Sentry
     admin-email-templates-form.tsx # /admin/email-templates: HTML šabloni + priekšskatījums
@@ -351,7 +353,7 @@ app/
     remember-me-checkbox.tsx      # Atcerēties mani (noklusējums izslēgts; 30 dienas ar ķeksi)
     forgot-password-form.tsx      # Aizmirsi paroli (forma tikai ar Resend)
     work-progress.tsx             # done/total, josla, sānjoslas fona aizpildījums
-    update-password-form.tsx      # Jauna parole pēc e-pasta saites
+    update-password-form.tsx      # Jauna parole pēc e-pasta saites; PasswordInput
     mfa-settings-card.tsx         # TOTP enroll/verify/unenroll profilā (visiem)
     mfa-verify-modal.tsx          # TOTP pie ielogošanās un admin sesijas
     legal-document-view.tsx       # Legal lapas + fiksēta satura TOC
@@ -364,7 +366,7 @@ app/
     calendar-integration-modal.tsx # Apple/Google .ics abonēšana
     personal-info-modal.tsx       # Vārda un uzvārda rediģēšana
     notification-settings-modal.tsx # In-app (un e-pasta) paziņojumu veidu slēdži (grupēts, auto-save)
-    change-password-modal.tsx     # Paroles maiņa (email login)
+    change-password-modal.tsx     # Paroles maiņa (email login); PasswordInput
     profile-settings-view.tsx     # /settings/profile: profils + display preferences
     nav-tree-dnd.tsx              # Koka DnD: mapē / ārā / zem pēdējā, drop līnija
     work-item-archive-button.tsx  # Arhivēt / noņemt no arhīva (mapes ikona)
@@ -393,7 +395,8 @@ app/
     task-drop-line.tsx            # Zila drop līnija, frozen sort, grupu collision
     move-subtask-modal.tsx        # Apakšuzdevuma pārvietošana pie cita uzdevuma
     move-subtask-destination-button.tsx # Pārvietošanas mērķis ar PATH zem nosaukuma
-    subtask-detail-modal.tsx      # Apakšuzdevuma modālis; unikāli checklist/attachments key; vēsture
+    subtask-detail-modal.tsx      # Apakšuzdevuma modālis; unikāli checklist/attachments key; vēsture; failu pārsūtīšana
+    forward-task-file-modal.tsx   # Resend: pārsūtīt pielikumu (e-pasts, tēma=PATH, ziņojums)
     task-checklists.tsx           # Check List pirms pielikumiem; tukšs sakļauts; forceCollapsed
     status-control.tsx            # Statusa poga, picker, čeklista josla
     relative-time.tsx             # Relatīvais laiks (min / h / d / m)
@@ -404,7 +407,7 @@ app/
     admin-roles-manager.tsx       # Sistēmas noklusējuma lomas
     admin-statuses-manager.tsx    # Uzdevumu statusu katalogs
     admin-file-types-manager.tsx  # Failu paplašinājumu CRUD
-    task-attachments.tsx          # Pielikumu drop zona, kartītes, ... izvēlne; tukšs sakļauts
+    task-attachments.tsx          # Pielikumu drop zona, kartītes; `…` → view/download/forward/rename/delete; tukšs sakļauts
     file-icon.tsx                 # Faila ikona + krāsa no kataloga
     file-preview.tsx              # Faila priekšskatījums
     create-item-menu.tsx          # Darbību izvēlne
@@ -471,7 +474,7 @@ app/
     notifications.ts              # Paziņojumu tipi, appendNotifications, e-pasta trigger
     notification-preferences.ts   # Lietotāja preference kinds un defaults
     task-notifications.ts         # Kam sūtīt paziņojumus par uzdevumu notikumiem
-    email/                        # HTML šabloni, build HTML, Resend sūtīšana (auth + paziņojumi)
+    email/                        # HTML šabloni, build HTML, Resend sūtīšana (auth + paziņojumi + forward-task-file)
     use-notifications.ts          # Paziņojumi no Postgres
     team-todo.ts                  # Todo tipi
     db/work-data.ts               # Komandas darba CRUD; čaulas fetch; PGRST303 retry; RPC reorder/assignees
@@ -506,7 +509,7 @@ app/auth/microsoft-oauth/callback/route.ts # Microsoft login + admin konfigurāc
 app/auth/google-drive/callback/route.ts # Drive OAuth code → team refresh token
 app/auth/onedrive/callback/route.ts # OneDrive OAuth code → team refresh token
 scripts/                          # audit-check.mjs, apply-migrations.mjs, test-supabase.mjs, sync-i18n-catalogs.mjs
-supabase/migrations/              # 001–084: shēma, admin, work data, Drive, drošība, ielādes ātrums, e-pasta šabloni, Gmail spraudnis, publiskie login karogi, extra valodas, legal_email
+supabase/migrations/              # 001–085: shēma, admin, work data, Drive, drošība, ielādes ātrums, e-pasta šabloni, Gmail spraudnis, publiskie login karogi, extra valodas, legal_email, invite preview `account_exists`
 .github/workflows/                # secret-scan.yml, security-audit.yml, security-smoke.yml
 .gitleaks.toml                    # default rules + i18n translation key allowlist
 .cursor/rules/                    # README bump, commits
@@ -613,13 +616,13 @@ Admin **Integrācijas** kartiņas (`resend`, `umami`, `sentry`) - Saglabāt cred
 
 | Integrācija | Lauki | Kad aktīva |
 |---|---|---|
-| **Resend** | From e-pasts + Reply-To + API Key | `sendResendEmail()` ar `reply_to`, ja Reply-To nav tukšs; e-pasta login/signup/forgot (`isEmailPasswordAuthEnabled`); HTML šabloni `/admin/email-templates`; komandas uzaicinājums jaunam e-pastam tikai ja aktīvs (esošam lietotājam pietiek ar in-app); From = `client_id` (verificēts Resend domēns, ne `@gmail.com`); Reply-To = `configured_account_email` (var būt Gmail); validācija `resend/from-email.ts`; From/Reply-To arī `/admin/settings`; fallback env `RESEND_FROM_EMAIL`, `RESEND_API_KEY` |
+| **Resend** | From e-pasts + Reply-To + API Key | `sendResendEmail()` ar `reply_to` (integrācijas Reply-To, ja nav override) un opcionāliem `attachments` (base64); e-pasta login/signup/forgot (`isEmailPasswordAuthEnabled`); HTML šabloni `/admin/email-templates`; komandas uzaicinājums jaunam e-pastam tikai ja aktīvs (esošam lietotājam pietiek ar in-app); **Pārsūtīt failu** (`forwardTaskFileAction`): From = Resend From, Reply-To = **sūtītāja** e-pasts, tēma = PATH, pielikums ≤ 25 MB; From = `client_id` (verificēts Resend domēns, ne `@gmail.com`); Reply-To = `configured_account_email` (var būt Gmail); validācija `resend/from-email.ts`; From/Reply-To arī `/admin/settings`; fallback env `RESEND_FROM_EMAIL`, `RESEND_API_KEY` |
 | **Umami** | Website ID + Script URL (noklusējums `https://cloud.umami.is/script.js`) | Root `layout.tsx`: `next/script` `beforeInteractive` HTML `<head>` (`data-auto-track="false"`); `UmamiAnalytics` sūta pageview pēc **analytics** piekrišanas; env `UMAMI_WEBSITE_ID`, `UMAMI_SCRIPT_URL` |
 | **Sentry** | Environment (opcionāli) + DSN | Root `layout.tsx` `SentryInit` (`@sentry/browser`, **tikai klienta** kļūdas); CSP `connect-src` `*.sentry.io`, `*.ingest.sentry.io`, `*.ingest.de.sentry.io`, `*.ingest.us.sentry.io`; env `SENTRY_ENVIRONMENT`, `SENTRY_DSN` |
 
 ### E-pasta šabloni
 
-Admin **Sistēma → E-pasta šabloni** (`/admin/email-templates`). Četri `kind`: `signup`, `password_reset`, `invite`, `notification`. Katrā valodā (`lv` / `en` / `ru`) rediģē tematu, tekstu un pogas tekstu; placeholderi `{name}`, `{system}`, `{team}`, `{inviter}`, `{title}`, `{message}`, `{link}`. HTML ģenerē `build-email-html.ts` (tabulas layout + CTA). Seed un saglabāšana: `site_translations` (`email.template.{kind}.{subject|body|button}`); `app/lib/email/templates.ts` (tipi/fallback, client-safe), `templates-server.ts` (DB). Ja Resend nav aktīvs, forma rāda brīdinājumu ar saiti uz Integrācijām; sūtīšana notiek tikai ar aktīvu Resend.
+Admin **Sistēma → E-pasta šabloni** (`/admin/email-templates`). Četri `kind`: `signup`, `password_reset`, `invite`, `notification`. Katrā valodā (`lv` / `en` / `ru`) rediģē tematu, tekstu un pogas tekstu; placeholderi `{name}`, `{system}`, `{team}`, `{inviter}`, `{title}`, `{message}`, `{link}`. HTML ģenerē `build-email-html.ts` (tabulas layout + CTA; `buildSimpleEmailHtml` bez pogas — failu pārsūtīšanai). Seed un saglabāšana: `site_translations` (`email.template.{kind}.{subject|body|button}`); `app/lib/email/templates.ts` (tipi/fallback, client-safe), `templates-server.ts` (DB). Ja Resend nav aktīvs, forma rāda brīdinājumu ar saiti uz Integrācijām; sūtīšana notiek tikai ar aktīvu Resend.
 
 Sentry nav HTML/DNS verifikācija kā Search Console. Pārbaude ir pirmais events sentry.io:
 
@@ -640,9 +643,11 @@ Kad `module_onedrive` un `module_file_upload` ir ieslēgti, komandas `...` rāda
 
 ## Chrome extension (Gmail)
 
-Mapē `extensions/gmail` — unpacked Chrome MV3. Popup: balta kartīte, avatars, vārds/uzvārds, e-pasts, **Iziet** tikai ikona augšējā labajā stūrī, centrēts loading, komandu pārslēgšana, Drive brīdinājums zem select, Gmail statuss kā ikona ar tooltip; bez URL/Client ID ievades; `12px` noapaļojums, `{SYSTEM_NAME}` no `getExtensionStrings(language, systemName)`. Zinātie origini (`KNOWN_SITE_ORIGINS`): `https://www.tasqin.com` (pirmais), `https://tasqin.com`, `http://localhost:3120` (priekšroka originam ar derīgu sesiju, ne pirmajam, kas atbild uz `/api/extension/config`). Sesija: sistēmas auth cookie **un** `chrome.storage.local` (`extensionAuth`), lai Gmail strādā bez atvērtas TASQIN cilnes. Custom login (`POST /api/extension/login`) vai Google; publisks `GET /api/extension/config` (logo, valoda, vai e-pasts/Google ieslēgts). Ja Gmail nav savienots, **Savienot Gmail** (`/auth/gmail-plugin/start`) iet caur to pašu `/auth/google-oauth/callback` kā login (vecais `/auth/gmail-plugin/callback` paliek aliases); tokeni `user_gmail_connections` (service role, RLS deny). Komandai bez Google Drive — popup rāda sarkanu brīdinājumu un Gmailā TASQIN pogas nav. Ja Drive ir pieslēgts, Gmailā inline logo poga → modālis → saraksts / mape / uzdevums → apakšuzdevums. E-pasts un pielikumi caur **Gmail API** (`gmail.readonly`, piekļuves tokens no `GET /api/extension/gmail-access`); limīts 25 MB. Sesijas access tokenu spraudnis atjauno ar `POST /api/extension/refresh` (tāpēc vairs “neizmet” pēc ~1 h). `proxy` neapstrādā `/api/extension/` (izņemot kanoniskā hosta 301). UI valoda no sesijas. Sk. `extensions/gmail/README.md`.
+Mapē `extensions/gmail` — unpacked Chrome MV3 (`manifest` `0.4.2`). Popup: balta kartīte, avatars, vārds/uzvārds, e-pasts, **Iziet** tikai ikona augšējā labajā stūrī, centrēts loading, komandu pārslēgšana, Drive brīdinājums zem select, Gmail statuss kā ikona ar tooltip; bez URL/Client ID ievades; `12px` noapaļojums, `{SYSTEM_NAME}` no `getExtensionStrings(language, systemName)`. Zinātie origini (`KNOWN_SITE_ORIGINS` / `APP_ORIGIN_CANDIDATES`): `https://www.tasqin.com` (pirmais), `https://tasqin.com`, `http://localhost:3120`. **`getAppBase()`:** ja ir derīga sesija kādā originā — to izmanto; bez sesijas (Login) preferē production, ne `localhost`, pat ja lokālais serveris atbild uz `/api/extension/config`. Sesija: sistēmas auth cookie **un** `chrome.storage.local` (`extensionAuth`), lai Gmail strādā bez atvērtas TASQIN cilnes. Custom login (`POST /api/extension/login`) vai Google; publisks `GET /api/extension/config` (logo, valoda, vai e-pasts/Google ieslēgts). Ja Gmail nav savienots, **Savienot Gmail** (`/auth/gmail-plugin/start`) iet caur to pašu `/auth/google-oauth/callback` kā login (vecais `/auth/gmail-plugin/callback` paliek aliases); tokeni `user_gmail_connections` (service role, RLS deny). Komandai bez Google Drive — popup rāda sarkanu brīdinājumu un Gmailā TASQIN pogas nav. Ja Drive ir pieslēgts, Gmailā inline logo poga → modālis → saraksts / mape / uzdevums → apakšuzdevums. E-pasts un pielikumi caur **Gmail API** (`gmail.readonly`, piekļuves tokens no `GET /api/extension/gmail-access`); limīts 25 MB. Sesijas access tokenu spraudnis atjauno ar `POST /api/extension/refresh` (tāpēc vairs “neizmet” pēc ~1 h). `proxy` neapstrādā `/api/extension/` (izņemot kanoniskā hosta 301). UI valoda no sesijas. Sk. `extensions/gmail/README.md`.
 
 **CORS.** Chrome bloķē `fetch` no `chrome-extension://<id>`, ja atbildē nav `Access-Control-Allow-Origin`. `app/lib/extension/cors.ts` atspoguļo jebkuru derīgu 32 simbolu extension ID (`[a-p]{32}`); CORS nav piekļuves kontrole — privātie maršruti joprojām prasa Bearer. `CHROME_EXTENSION_IDS` / `NEXT_PUBLIC_CHROME_EXTENSION_IDS` netiek lasīti. Apex↔www 301 bez CORS galvenēm arī bloķē pārlūku: `canonicalHostRedirectRules()` (`next.config.ts`) **izlaiž** `/api/extension/*`; ja `proxy.ts` tomēr taisa hosta 301, tas pievieno `Access-Control-Allow-Origin` `chrome-extension://` Origin. Spraudnis vispirms prasa www (`redirect: "manual"`), lai netrāpītu hosta redirect.
+
+**Reload / content script.** Pēc `chrome://extensions` → **Reload** vecā Gmail cilne zaudē kontekstu (`Extension context invalidated` pie `content.js` `sendMessage`). `content.js` `send()` to ķer un rāda `errors.extension_context_invalidated` (pārlādē Gmail ar F5). Pēc spraudņa Reload vienmēr **F5** Gmailā.
 
 ## Dati
 

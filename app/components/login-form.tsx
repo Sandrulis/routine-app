@@ -6,6 +6,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import {
   authCardClassName,
   authInputClassName,
+  authInputFieldClassName,
   authPrimaryButtonClassName,
 } from "@/app/components/auth-form-styles";
 import { useFeedbackToast } from "@/app/components/feedback-toast-provider";
@@ -14,6 +15,7 @@ import {
   RememberMeCheckbox,
   useRememberMe,
 } from "@/app/components/remember-me-checkbox";
+import { PasswordInput } from "@/app/components/password-input";
 import { useTranslations } from "@/app/components/translations-provider";
 import { signInWithPasswordAction } from "@/app/lib/auth/actions";
 import { getSafeRedirectPath } from "@/app/lib/security/safe-redirect-path";
@@ -134,13 +136,13 @@ export function LoginForm({
             <span className="text-sm font-semibold text-zinc-700">
               {t("auth.fields.password", "Parole")}
             </span>
-            <input
+            <PasswordInput
               required
-              type="password"
               autoComplete="current-password"
               value={password}
               onChange={(event) => setPassword(event.target.value)}
-              className={authInputClassName}
+              className="mt-2"
+              inputClassName={authInputFieldClassName}
             />
           </label>
         </>

@@ -14,6 +14,7 @@ import { ListBadge } from "@/app/components/list-badge";
 import { NameFormModal } from "@/app/components/name-form-modal";
 import { StatusControl, useStatusLabels } from "@/app/components/status-control";
 import { AssigneeCell, DateCell } from "@/app/components/subtask-table";
+import { ForwardTaskFileModal } from "@/app/components/forward-task-file-modal";
 import { TaskAttachments } from "@/app/components/task-attachments";
 import { TaskChecklists } from "@/app/components/task-checklists";
 import { RelativeTime } from "@/app/components/relative-time";
@@ -34,6 +35,11 @@ import { FRONTEND_MODULE_KEYS } from "@/app/lib/frontend-modules/keys";
 import { useFrontendModules } from "@/app/lib/frontend-modules/context";
 import { useLists } from "@/app/lib/lists-store";
 import { ensureTaskFileContent } from "@/app/lib/file-content";
+import {
+  forwardTaskFileAction,
+  isResendEnabledAction,
+} from "@/app/lib/email/forward-task-file";
+import { translateActionError } from "@/app/lib/i18n/action-errors";
 import { useTaskActivities } from "@/app/lib/task-activities-cache";
 import { useTeam } from "@/app/lib/team-store";
 import { useIsAdmin } from "@/app/lib/users/use-is-admin";
@@ -60,6 +66,17 @@ import {
 } from "@/app/lib/task-checklists";
 import { useTaskStatuses } from "@/app/lib/task-statuses";
 import { isListStatusGroup } from "@/app/lib/list-statuses";
+
+async function fileToBase64(file: File): Promise<string> {
+  const dataUrl = await new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result ?? ""));
+    reader.onerror = () => reject(reader.error ?? new Error("read failed"));
+    reader.readAsDataURL(file);
+  });
+  const comma = dataUrl.indexOf(",");
+  return comma >= 0 ? dataUrl.slice(comma + 1) : dataUrl;
+}
 
 type SubtaskDraft = {
   title: string;
@@ -230,6 +247,12 @@ export function SubtaskDetailModal({
     id: string;
     name: string;
   } | null>(null);
+  const [fileToForward, setFileToForward] = useState<{
+    id: string;
+    name: string;
+    size?: number;
+  } | null>(null);
+  const [resendEnabled, setResendEnabled] = useState(false);
   const [uploadProgress, setUploadProgress] =
     useState<FileUploadProgressState | null>(null);
 
@@ -288,6 +311,12 @@ export function SubtaskDetailModal({
       : listName && parentListId
         ? [{ type: "list" as const, listId: parentListId, label: listName }]
         : [];
+  const forwardSubject = [
+    ...locationSegments.map((segment) => segment.label),
+    (draft.title || task?.title || "").trim(),
+  ]
+    .filter(Boolean)
+    .join(" > ");
 
   const flushChecklistPersist = useCallback(() => {
     if (persistChecklistsTimerRef.current) {
@@ -347,6 +376,7 @@ export function SubtaskDetailModal({
     setForceCreate(false);
     setFileToDelete(null);
     setFileToRename(null);
+    setFileToForward(null);
     setPendingFiles((current) => {
       for (const item of current) {
         if (item.previewUrl) URL.revokeObjectURL(item.previewUrl);
@@ -354,6 +384,20 @@ export function SubtaskDetailModal({
       return [];
     });
   }, [flushChecklistPersist, open]);
+
+  useEffect(() => {
+    if (!open || !fileUploadsEnabled) {
+      setResendEnabled(false);
+      return;
+    }
+    let cancelled = false;
+    void isResendEnabledAction().then((enabled) => {
+      if (!cancelled) setResendEnabled(enabled);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [fileUploadsEnabled, open]);
 
   const statusLabel = useStatusLabels();
   const { labelFor, groupKeyFor } = useTaskStatuses(parentListId, task?.parentId ?? createFor?.parentId ?? null);
@@ -463,6 +507,68 @@ export function SubtaskDetailModal({
     const name = pending?.name ?? stored?.name;
     if (!name) return;
     setFileToRename({ id: fileId, name });
+  }
+
+  function requestForwardAttachment(fileId: string) {
+    const pending = pendingFiles.find((item) => item.id === fileId);
+    const stored = files.find((file) => file.id === fileId);
+    const name = pending?.name ?? stored?.name;
+    if (!name) return;
+    setFileToForward({
+      id: fileId,
+      name,
+      size: pending?.file.size ?? stored?.size,
+    });
+  }
+
+  async function confirmForwardAttachment(input: {
+    to: string;
+    subject: string;
+    body: string;
+  }) {
+    if (!fileToForward) return;
+    const pending = pendingFiles.find((item) => item.id === fileToForward.id);
+    const stored = files.find((file) => file.id === fileToForward.id);
+
+    let result;
+    if (pending) {
+      const contentBase64 = await fileToBase64(pending.file);
+      result = await forwardTaskFileAction({
+        to: input.to,
+        subject: input.subject,
+        body: input.body,
+        fileName: pending.name,
+        mimeType: pending.file.type || mimeFromName(pending.name),
+        contentBase64,
+      });
+    } else if (stored) {
+      result = await forwardTaskFileAction({
+        to: input.to,
+        subject: input.subject,
+        body: input.body,
+        fileId: stored.id,
+      });
+    } else {
+      showFeedback({
+        type: "error",
+        text: translateActionError(t, "errors.files_forward_missing"),
+      });
+      return;
+    }
+
+    if (!result.ok) {
+      showFeedback({
+        type: "error",
+        text: translateActionError(t, result.error),
+      });
+      throw new Error(result.error);
+    }
+
+    showFeedback({
+      type: "success",
+      text: t("files.forward.sent", "Fails nosūtīts."),
+    });
+    setFileToForward(null);
   }
 
   async function requestDownloadAttachment(fileId: string) {
@@ -699,7 +805,8 @@ export function SubtaskDetailModal({
       dirty={dirty}
       blocking={
         fileToDelete !== null ||
-        fileToRename !== null
+        fileToRename !== null ||
+        fileToForward !== null
       }
       panelMaxWidthClassName={appModalSplitPanelMaxWidthClassName}
       headerMeta={
@@ -933,6 +1040,7 @@ export function SubtaskDetailModal({
                 Boolean(uploadProgress) ||
                 (isCreate ? !access.canCreateTasks : !access.canEditTasks)
               }
+              forwardEnabled={resendEnabled}
               onAdd={(selected) => {
                 void handleAddAttachments(selected);
               }}
@@ -940,6 +1048,7 @@ export function SubtaskDetailModal({
               onDownload={(fileId) => {
                 void requestDownloadAttachment(fileId);
               }}
+              onForward={requestForwardAttachment}
               onRename={requestRenameAttachment}
               onRemove={requestRemoveAttachment}
             />
@@ -1059,6 +1168,16 @@ export function SubtaskDetailModal({
           : null
       }
       onCreate={(input) => confirmRenameAttachment(input.name)}
+    />
+    <ForwardTaskFileModal
+      open={fileToForward !== null}
+      onOpenChange={(nextOpen) => {
+        if (!nextOpen) setFileToForward(null);
+      }}
+      fileName={fileToForward?.name ?? ""}
+      fileSize={fileToForward?.size}
+      defaultSubject={forwardSubject}
+      onSend={confirmForwardAttachment}
     />
     <FileUploadOverlay progress={uploadProgress} />
     </>

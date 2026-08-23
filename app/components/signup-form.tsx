@@ -6,13 +6,18 @@ import { useEffect, useState, type FormEvent } from "react";
 import {
   authCardClassName,
   authInputClassName,
+  authInputFieldClassName,
   authPrimaryButtonClassName,
 } from "@/app/components/auth-form-styles";
 import { useFeedbackToast } from "@/app/components/feedback-toast-provider";
 import { AuthDivider, GoogleAuthButton, MicrosoftAuthButton } from "@/app/components/google-auth-button";
+import { LoadingState } from "@/app/components/loading-state";
+import { PasswordInput } from "@/app/components/password-input";
 import { useTranslations } from "@/app/components/translations-provider";
 import { signUpWithPasswordAction } from "@/app/lib/auth/actions";
+import { translateActionError } from "@/app/lib/i18n/action-errors";
 import { getSafeRedirectPath } from "@/app/lib/security/safe-redirect-path";
+import { getInviteSignupContextAction } from "@/app/lib/team/actions";
 
 export function SignupForm({
   googleSignInEnabled = false,
@@ -27,13 +32,24 @@ export function SignupForm({
   const router = useRouter();
   const searchParams = useSearchParams();
   const { showFeedback, clearFeedback } = useFeedbackToast();
-  const [name, setName] = useState("");
+  const inviteToken = searchParams.get("invite")?.trim() ?? "";
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [accepted, setAccepted] = useState(false);
   const [pending, setPending] = useState(false);
-  const oauthEnabled = googleSignInEnabled || microsoftSignInEnabled;
+  const [inviteLoading, setInviteLoading] = useState(Boolean(inviteToken));
+  const [inviteContext, setInviteContext] = useState<{
+    email: string;
+    teamName: string;
+    inviterName: string;
+    nextPath: string;
+  } | null>(null);
+  const emailLocked = Boolean(inviteContext);
+  const oauthEnabled =
+    !emailLocked && (googleSignInEnabled || microsoftSignInEnabled);
 
   useEffect(() => {
     const error = searchParams.get("error");
@@ -52,10 +68,63 @@ export function SignupForm({
     }
   }, [searchParams, showFeedback, t]);
 
+  useEffect(() => {
+    if (!inviteToken) {
+      setInviteLoading(false);
+      setInviteContext(null);
+      return;
+    }
+
+    let cancelled = false;
+    setInviteLoading(true);
+    void getInviteSignupContextAction(inviteToken)
+      .then((result) => {
+        if (cancelled) return;
+        if (!result.ok) {
+          if (result.error === "errors.team_invite_account_exists") {
+            router.replace(
+              `/login?next=${encodeURIComponent(`/invite/${inviteToken}`)}`,
+            );
+            return;
+          }
+          showFeedback({
+            type: "error",
+            text: translateActionError(t, result.error),
+          });
+          router.replace(`/invite/${inviteToken}`);
+          return;
+        }
+        setInviteContext(result.data);
+        setEmail(result.data.email);
+      })
+      .finally(() => {
+        if (!cancelled) setInviteLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [inviteToken, router, showFeedback, t]);
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!emailPasswordEnabled) return;
     clearFeedback();
+
+    if (!firstName.trim()) {
+      showFeedback({
+        type: "error",
+        text: translateActionError(t, "errors.first_name_required"),
+      });
+      return;
+    }
+    if (!lastName.trim()) {
+      showFeedback({
+        type: "error",
+        text: translateActionError(t, "errors.last_name_required"),
+      });
+      return;
+    }
 
     if (password.length < 8) {
       showFeedback({
@@ -86,16 +155,18 @@ export function SignupForm({
 
     setPending(true);
     const result = await signUpWithPasswordAction({
-      name,
+      firstName,
+      lastName,
       email,
       password,
-      next: getSafeRedirectPath(searchParams.get("next")),
+      next: inviteContext?.nextPath ?? getSafeRedirectPath(searchParams.get("next")),
+      inviteToken: inviteToken || undefined,
     });
     setPending(false);
     if (!result.ok) {
       showFeedback({
         type: "error",
-        text: t(result.error, "Reģistrācija neizdevās."),
+        text: translateActionError(t, result.error),
       });
       return;
     }
@@ -107,7 +178,11 @@ export function SignupForm({
           "Pārbaudi e-pastu, lai apstiprinātu kontu.",
         ),
       });
-      router.push("/login");
+      router.push(
+        inviteContext
+          ? `/login?next=${encodeURIComponent(inviteContext.nextPath)}`
+          : "/login",
+      );
       return;
     }
     showFeedback({
@@ -116,6 +191,14 @@ export function SignupForm({
     });
     router.push(result.next);
     router.refresh();
+  }
+
+  if (inviteLoading) {
+    return (
+      <div className={`${authCardClassName} py-12`}>
+        <LoadingState className="justify-center" />
+      </div>
+    );
   }
 
   const oauthButtons = oauthEnabled ? (
@@ -144,7 +227,13 @@ export function SignupForm({
           {t("auth.signup.title", "Reģistrēties")}
         </h1>
         <p className="mt-1 text-sm text-zinc-500">
-          {t("auth.signup.subtitle", "Izveido kontu un sāc darbu ar komandu.")}
+          {inviteContext
+            ? t(
+                "auth.signup.invite_subtitle",
+                "Izveido kontu, lai pievienotos komandai “{team}”.",
+                { team: inviteContext.teamName },
+              )
+            : t("auth.signup.subtitle", "Izveido kontu un sāc darbu ar komandu.")}
         </p>
       </div>
 
@@ -152,15 +241,28 @@ export function SignupForm({
         <>
           <label className="block">
             <span className="text-sm font-semibold text-zinc-700">
-              {t("common.name", "Vārds")}
+              {t("profile.personal.first_name", "Vārds")}
             </span>
             <input
               required
               type="text"
-              autoComplete="name"
-              value={name}
-              onChange={(event) => setName(event.target.value)}
-              placeholder={t("auth.fields.name_placeholder", "Vārds un uzvārds")}
+              autoComplete="given-name"
+              value={firstName}
+              onChange={(event) => setFirstName(event.target.value)}
+              className={authInputClassName}
+            />
+          </label>
+
+          <label className="block">
+            <span className="text-sm font-semibold text-zinc-700">
+              {t("profile.personal.last_name", "Uzvārds")}
+            </span>
+            <input
+              required
+              type="text"
+              autoComplete="family-name"
+              value={lastName}
+              onChange={(event) => setLastName(event.target.value)}
               className={authInputClassName}
             />
           </label>
@@ -174,9 +276,13 @@ export function SignupForm({
               type="email"
               autoComplete="email"
               value={email}
-              onChange={(event) => setEmail(event.target.value)}
+              onChange={(event) => {
+                if (!emailLocked) setEmail(event.target.value);
+              }}
+              readOnly={emailLocked}
+              disabled={emailLocked}
               placeholder={t("auth.fields.email_placeholder", "vards@uznemums.lv")}
-              className={authInputClassName}
+              className={`${authInputClassName} disabled:cursor-not-allowed disabled:bg-zinc-100 disabled:text-zinc-600`}
             />
           </label>
 
@@ -184,13 +290,13 @@ export function SignupForm({
             <span className="text-sm font-semibold text-zinc-700">
               {t("auth.fields.password", "Parole")}
             </span>
-            <input
+            <PasswordInput
               required
-              type="password"
               autoComplete="new-password"
               value={password}
               onChange={(event) => setPassword(event.target.value)}
-              className={authInputClassName}
+              className="mt-2"
+              inputClassName={authInputFieldClassName}
             />
           </label>
 
@@ -198,13 +304,13 @@ export function SignupForm({
             <span className="text-sm font-semibold text-zinc-700">
               {t("auth.fields.password_confirm", "Atkārtot paroli")}
             </span>
-            <input
+            <PasswordInput
               required
-              type="password"
               autoComplete="new-password"
               value={confirmPassword}
               onChange={(event) => setConfirmPassword(event.target.value)}
-              className={authInputClassName}
+              className="mt-2"
+              inputClassName={authInputFieldClassName}
             />
           </label>
 
@@ -248,7 +354,7 @@ export function SignupForm({
       {emailPasswordEnabled ? (
         <button
           type="submit"
-          disabled={pending}
+          disabled={pending || (Boolean(inviteToken) && !inviteContext)}
           className={authPrimaryButtonClassName}
         >
           {t("auth.signup.title", "Reģistrēties")}
@@ -261,7 +367,11 @@ export function SignupForm({
       <p className="text-center text-sm text-zinc-500">
         {t("auth.signup.has_account", "Jau ir konts?")}{" "}
         <Link
-          href="/login"
+          href={
+            inviteToken
+              ? `/login?next=${encodeURIComponent(`/invite/${inviteToken}`)}`
+              : "/login"
+          }
           className="font-semibold text-zinc-900 underline decoration-zinc-300 underline-offset-2"
         >
           {t("auth.login.title", "Ienākt")}

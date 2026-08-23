@@ -18,8 +18,8 @@ Nav jāievada Routine URL vai OAuth Client ID. Spraudnis vispirms prasa [https:/
 ## Ielāde Chrome
 
 1. `chrome://extensions` → Developer mode → **Load unpacked** → `extensions/gmail`
-2. Pēc koda izmaiņām: **Reload** uz paplašinājuma kartītes
-3. Popup: ienāc ar Google vai e-pastu/paroli (custom login). Ja Gmail nav savienots, nospied **Savienot Gmail** - tas saglabā savienojumu arī Routine
+2. Pēc koda izmaiņām: **Reload** uz paplašinājuma kartītes, tad **F5** Gmail cilnē (citādi vecais content script met `Extension context invalidated`)
+3. Popup: ienāc ar Google vai e-pastu/paroli (custom login). Login bez sesijas atver `https://www.tasqin.com/login`, ne `localhost` (arī ja lokālais serveris skrien). Ja Gmail nav savienots, nospied **Savienot Gmail** - tas saglabā savienojumu arī Routine
 
 ## Lietošana
 
@@ -29,6 +29,8 @@ Nav jāievada Routine URL vai OAuth Client ID. Spraudnis vispirms prasa [https:/
 4. Apakšā atzīmē pielikumus → **Pievienot**
 
 Apakšuzdevumu saraksts (3. solis) ir tajā pašā statusa secībā kā sānjosla un uzdevuma UI: aktīvie pirms “nav sākts”, slēgtie netiek rādīti.
+
+Ja pēc spraudņa Reload Gmailā rādās kļūda par pārstartētu spraudni — pārlādē Gmail lapu (F5). Tas nav Google Drive problēma.
 
 Popup ir balta kartīte: avatars, vārds un uzvārds, e-pasts, **Iziet** tikai kā ikona augšējā labajā stūrī, komandu izvēle, Drive brīdinājums zem select, Gmail statuss kā ikona ar tooltip. Teksti ar `{SYSTEM_NAME}` ņem sistēmas nosaukumu no `GET /api/extension/config` / sesijas. Sesija paliek spraudnī (`chrome.storage.local`) arī tad, ja TASQIN cilne nav atvērta. Gmailā TASQIN pogas rādās tikai tad, ja izvēlētajai komandai ir pieslēgts Google Drive.
 

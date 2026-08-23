@@ -5,6 +5,8 @@ const FALLBACK = {
   "auth.google.continue": "Turpināt ar Google",
   "common.email": "E-pasts",
   "auth.fields.password": "Parole",
+  "auth.fields.password_show": "Rādīt paroli",
+  "auth.fields.password_hide": "Paslēpt paroli",
   "extension.gmail.login_failed": "Neizdevās ienākt.",
   "errors.extension_login_mfa":
     "Šim kontam ir MFA. Pabeidz ienākšanu TASQIN lapā un mēģini vēlreiz.",
@@ -80,6 +82,7 @@ function applyLabels() {
   $("emailLabel").textContent = t("common.email");
   $("passwordLabel").textContent = t("auth.fields.password");
   $("passwordLogin").textContent = t("auth.login.title");
+  updatePasswordToggle(false);
   $("teamLabel").textContent = t("extension.gmail.team.label");
   $("driveWarn").textContent = t("extension.gmail.team.drive_missing");
   $("pluginWarn").textContent = t("extension.gmail.plugin_disabled");
@@ -189,6 +192,27 @@ function fitPopup() {
 $("googleLogin").addEventListener("click", async () => {
   setStatus("", true);
   await send("routine.openLogin");
+});
+
+function updatePasswordToggle(visible) {
+  const input = $("password");
+  const button = $("passwordToggle");
+  const icon = $("passwordToggleIcon");
+  if (!input || !button || !icon) return;
+  input.type = visible ? "text" : "password";
+  button.setAttribute("aria-pressed", visible ? "true" : "false");
+  const label = visible
+    ? t("auth.fields.password_hide")
+    : t("auth.fields.password_show");
+  button.title = label;
+  button.setAttribute("aria-label", label);
+  icon.innerHTML = visible
+    ? '<path d="M3 3l18 18M10.6 10.7a3 3 0 0 0 4.2 4.2M9.9 5.2A10.4 10.4 0 0 1 12 5c6.5 0 10 7 10 7a17.7 17.7 0 0 1-4.1 4.8M6.1 6.2A17.5 17.5 0 0 0 2 12s3.5 7 10 7c1.2 0 2.3-.2 3.3-.6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>'
+    : '<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z" stroke="currentColor" stroke-width="1.6"/><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.6"/>';
+}
+
+$("passwordToggle")?.addEventListener("click", () => {
+  updatePasswordToggle($("password").type === "password");
 });
 
 $("passwordLogin").addEventListener("click", async () => {

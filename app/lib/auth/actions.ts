@@ -78,17 +78,20 @@ export async function signInWithPasswordAction(input: {
 }
 
 export async function signUpWithPasswordAction(input: {
-  name: string;
+  firstName: string;
+  lastName: string;
   email: string;
   password: string;
   next?: string;
+  inviteToken?: string;
 }): Promise<AuthResult> {
   const emailAuth = await requireEmailPasswordAuth();
   if (emailAuth) return emailAuth;
   const email = normalizeEmail(input.email);
   const password = input.password;
-  const name = input.name.trim();
-  if (!EMAIL_RE.test(email) || !name) {
+  const firstName = input.firstName.trim();
+  const lastName = input.lastName.trim();
+  if (!EMAIL_RE.test(email) || !firstName || !lastName) {
     return { ok: false, error: "errors.auth_invalid" };
   }
   if (password.length < 8) {
@@ -97,11 +100,28 @@ export async function signUpWithPasswordAction(input: {
   const blocked = await guardAuth("signup", email);
   if (blocked) return blocked;
 
+  let next = input.next;
+  const inviteToken = input.inviteToken?.trim();
+  if (inviteToken) {
+    const { getInviteSignupContextAction } = await import(
+      "@/app/lib/team/actions"
+    );
+    const invite = await getInviteSignupContextAction(inviteToken);
+    if (!invite.ok) {
+      return { ok: false, error: invite.error };
+    }
+    if (invite.data.email !== email) {
+      return { ok: false, error: "errors.team_invite_email_mismatch" };
+    }
+    next = invite.data.nextPath;
+  }
+
   const result = await registerWithEmailPassword({
-    name,
+    firstName,
+    lastName,
     email,
     password,
-    next: input.next,
+    next,
   });
   if (!result.ok) {
     return { ok: false, error: result.error };
@@ -150,7 +170,15 @@ export async function updatePasswordAction(input: {
   const { error } = await supabase.auth.updateUser({ password: input.password });
   if (error) {
     logError("updatePassword failed", error.message);
-    return { ok: false, error: "errors.auth_signup_failed" };
+    const message = error.message.toLowerCase();
+    if (
+      message.includes("same password") ||
+      message.includes("should be different") ||
+      message.includes("different from the old")
+    ) {
+      return { ok: false, error: "user_menu.password.same" };
+    }
+    return { ok: false, error: "errors.auth_password_update_failed" };
   }
   return { ok: true, next: "/dashboard" };
 }

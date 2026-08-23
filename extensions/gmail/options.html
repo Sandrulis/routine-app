@@ -57,6 +57,39 @@
         background: #fff;
         color: inherit;
       }
+      .password-field {
+        position: relative;
+        margin-bottom: 8px;
+      }
+      .password-field input {
+        margin-bottom: 0;
+        padding-right: 40px;
+      }
+      .password-toggle {
+        position: absolute;
+        top: 50%;
+        right: 6px;
+        transform: translateY(-50%);
+        width: 30px;
+        height: 30px;
+        padding: 0;
+        border: 0;
+        border-radius: 8px;
+        background: transparent;
+        color: #64748b;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .password-toggle:hover:not(:disabled) {
+        background: #f1f5f9;
+        color: #0f172a;
+      }
+      .password-toggle svg {
+        width: 16px;
+        height: 16px;
+        display: block;
+      }
       input:focus, select:focus {
         outline: 2px solid #99f6e4;
         outline-offset: 0;
@@ -227,7 +260,15 @@
         <label for="email" id="emailLabel"></label>
         <input id="email" type="email" autocomplete="username" />
         <label for="password" id="passwordLabel"></label>
-        <input id="password" type="password" autocomplete="current-password" />
+        <div class="password-field">
+          <input id="password" type="password" autocomplete="current-password" />
+          <button type="button" id="passwordToggle" class="password-toggle" aria-pressed="false">
+            <svg id="passwordToggleIcon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z" stroke="currentColor" stroke-width="1.6"/>
+              <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.6"/>
+            </svg>
+          </button>
+        </div>
         <button type="button" id="passwordLogin"></button>
       </div>
     </div>

@@ -143,7 +143,12 @@ async function resolveInviteTargetUserId(
 
   const authUser = authData.user;
   const metadata = authUser.user_metadata as Record<string, unknown> | undefined;
+  const given =
+    typeof metadata?.given_name === "string" ? metadata.given_name.trim() : "";
+  const family =
+    typeof metadata?.family_name === "string" ? metadata.family_name.trim() : "";
   const name =
+    [given, family].filter(Boolean).join(" ") ||
     (typeof metadata?.name === "string" && metadata.name.trim()) ||
     (typeof metadata?.full_name === "string" && metadata.full_name.trim()) ||
     authUser.email?.split("@")[0] ||
@@ -819,6 +824,7 @@ export async function getTeamInvitationByTokenAction(token: string): Promise<
     teamName: string;
     inviterName: string;
     email: string;
+    accountExists: boolean;
   }>
 > {
   if (!isSupabaseConfigured()) {
@@ -851,6 +857,86 @@ export async function getTeamInvitationByTokenAction(token: string): Promise<
       teamName: String(row.team_name ?? ""),
       inviterName: String(row.inviter_name ?? ""),
       email: String(row.email ?? ""),
+      accountExists: Boolean(row.account_exists),
+    },
+  };
+}
+
+/** Full invite email for signup (token from e-mail link). */
+export async function getInviteSignupContextAction(token: string): Promise<
+  ActionResult<{
+    email: string;
+    teamName: string;
+    inviterName: string;
+    nextPath: string;
+  }>
+> {
+  if (!isSupabaseConfigured() || !isSupabaseAdminConfigured()) {
+    return { ok: false, error: "errors.db_not_configured" };
+  }
+
+  const trimmed = token.trim();
+  if (!trimmed) {
+    return { ok: false, error: "errors.team_invite_not_found" };
+  }
+
+  const limited = consumeRateLimit(
+    `invite-signup:${await getClientIp()}`,
+    20,
+    15 * 60 * 1000,
+  );
+  if (!limited.ok) {
+    return { ok: false, error: "errors.auth_rate_limited" };
+  }
+
+  const admin = createAdminClient();
+  const { data: invitation, error } = await admin
+    .from("team_invitations")
+    .select("id, email, invited_user_id, status, team_id, invited_by_member_id")
+    .eq("token", trimmed)
+    .eq("status", "pending")
+    .maybeSingle();
+
+  if (error || !invitation) {
+    return { ok: false, error: "errors.team_invite_not_found" };
+  }
+
+  const email = String(invitation.email ?? "")
+    .trim()
+    .toLowerCase();
+  if (!email) {
+    return { ok: false, error: "errors.team_invite_not_found" };
+  }
+
+  if (invitation.invited_user_id) {
+    return { ok: false, error: "errors.team_invite_account_exists" };
+  }
+
+  const { data: existingUser } = await admin
+    .from("users")
+    .select("id")
+    .ilike("email", email)
+    .maybeSingle();
+  if (existingUser?.id) {
+    return { ok: false, error: "errors.team_invite_account_exists" };
+  }
+
+  const [{ data: teamRow }, { data: inviterRow }] = await Promise.all([
+    admin.from("teams").select("name").eq("id", invitation.team_id).maybeSingle(),
+    admin
+      .from("team_members")
+      .select("name")
+      .eq("id", invitation.invited_by_member_id)
+      .maybeSingle(),
+  ]);
+
+  return {
+    ok: true,
+    data: {
+      email,
+      teamName: String(teamRow?.name ?? ""),
+      inviterName: String(inviterRow?.name ?? ""),
+      nextPath: `/invite/${trimmed}`,
     },
   };
 }

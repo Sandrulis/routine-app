@@ -78,6 +78,54 @@ export function buildEmailHtml(options: {
 </html>`;
 }
 
+/**
+ * Simple HTML email without a CTA button (e.g. file forward with attachment).
+ */
+export function buildSimpleEmailHtml(options: {
+  systemName: string;
+  heading: string;
+  bodyText: string;
+}): string {
+  const systemName = escapeHtml(options.systemName);
+  const heading = escapeHtml(options.heading);
+  const bodyHtml = paragraphsToHtml(options.bodyText);
+
+  return `<!DOCTYPE html>
+<html lang="lv">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <title>${systemName}</title>
+</head>
+<body style="margin:0;padding:0;background-color:#f4f4f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f4f4f5;padding:32px 16px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:560px;background-color:#ffffff;border-radius:16px;overflow:hidden;border:1px solid #e4e4e7;">
+          <tr>
+            <td style="padding:28px 32px 20px;border-bottom:1px solid #f4f4f5;">
+              <p style="margin:0;font-size:13px;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;color:#71717a;">
+                ${systemName}
+              </p>
+              <h1 style="margin:10px 0 0;font-size:22px;line-height:1.3;font-weight:700;color:#18181b;">
+                ${heading}
+              </h1>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:28px 32px 28px;font-size:15px;line-height:1.6;color:#3f3f46;">
+              ${bodyHtml || `<p style="margin:0;color:#a1a1aa;">&nbsp;</p>`}
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+}
+
 function escapeHtml(value: string): string {
   return value
     .replace(/&/g, "&amp;")

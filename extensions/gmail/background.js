@@ -130,16 +130,28 @@ async function rememberSession(appBase, session) {
   if (origin) await chrome.storage.sync.set({ appBaseUrl: origin });
 }
 
+function isLocalOrigin(origin) {
+  try {
+    const host = new URL(origin).hostname;
+    return host === "localhost" || host === "127.0.0.1";
+  } catch {
+    return false;
+  }
+}
+
 async function getAppBase() {
   const stored = await chrome.storage.sync.get(["appBaseUrl"]);
   const storedOrigin = parseOrigin(stored.appBaseUrl);
   const storedSession = await readStoredSession();
   const cookieOrigins = await originsFromAuthCookies();
+  // Production first for discovery; local cookies/session still checked for an
+  // existing login, but must not win as a blind fallback when CORS blocks www.
   const candidates = expandOrigins([
+    ...APP_ORIGIN_CANDIDATES.filter((origin) => !isLocalOrigin(origin)),
     storedSession?.appBase,
-    ...cookieOrigins,
     storedOrigin,
-    ...APP_ORIGIN_CANDIDATES,
+    ...cookieOrigins,
+    ...APP_ORIGIN_CANDIDATES.filter((origin) => isLocalOrigin(origin)),
   ]);
 
   async function adopt(origin, config) {
@@ -150,19 +162,25 @@ async function getAppBase() {
     return origin;
   }
 
-  let fallbackOrigin = "";
-  let fallbackConfig = null;
+  let productionFallback = null;
+  let localFallback = null;
   for (const origin of candidates) {
     const config = await probeConfig(origin);
     if (!config) continue;
-    if (!fallbackOrigin) {
-      fallbackOrigin = origin;
-      fallbackConfig = config;
+    if (isLocalOrigin(origin)) {
+      if (!localFallback) localFallback = { origin, config };
+    } else if (!productionFallback) {
+      productionFallback = { origin, config };
     }
     const token = await getAccessToken(origin);
     if (token) return adopt(origin, config);
   }
-  if (fallbackOrigin) return adopt(fallbackOrigin, fallbackConfig);
+  // No session: prefer production so Login never opens localhost just because
+  // `npm run dev` is up while www CORS/probe fails.
+  if (productionFallback) {
+    return adopt(productionFallback.origin, productionFallback.config);
+  }
+  if (localFallback) return adopt(localFallback.origin, localFallback.config);
 
   try {
     await chrome.permissions.request({
@@ -175,17 +193,25 @@ async function getAppBase() {
     ...(await originsFromAuthCookies()),
     ...APP_ORIGIN_CANDIDATES,
   ]).filter((origin) => !candidates.includes(origin));
+  let extraProduction = null;
+  let extraLocal = null;
   for (const origin of extraOrigins) {
     const config = await probeConfig(origin);
     if (!config) continue;
-    await chrome.storage.sync.set({
-      appBaseUrl: origin,
-      authCookieName: config.authCookieName || "",
-    });
-    return origin;
+    if (isLocalOrigin(origin)) {
+      if (!extraLocal) extraLocal = { origin, config };
+    } else if (!extraProduction) {
+      extraProduction = { origin, config };
+    }
   }
+  if (extraProduction) {
+    return adopt(extraProduction.origin, extraProduction.config);
+  }
+  if (extraLocal) return adopt(extraLocal.origin, extraLocal.config);
 
-  return storedOrigin || DEFAULT_APP_BASE;
+  // Never stick to a stale localhost sync value when production is the default.
+  if (storedOrigin && !isLocalOrigin(storedOrigin)) return storedOrigin;
+  return DEFAULT_APP_BASE;
 }
 
 function parseSessionValue(raw) {

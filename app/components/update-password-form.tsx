@@ -4,12 +4,14 @@ import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import {
   authCardClassName,
-  authInputClassName,
+  authInputFieldClassName,
   authPrimaryButtonClassName,
 } from "@/app/components/auth-form-styles";
 import { useFeedbackToast } from "@/app/components/feedback-toast-provider";
+import { PasswordInput } from "@/app/components/password-input";
 import { useTranslations } from "@/app/components/translations-provider";
 import { updatePasswordAction } from "@/app/lib/auth/actions";
+import { translateActionError } from "@/app/lib/i18n/action-errors";
 
 export function UpdatePasswordForm() {
   const { t } = useTranslations();
@@ -42,7 +44,7 @@ export function UpdatePasswordForm() {
     if (!result.ok) {
       showFeedback({
         type: "error",
-        text: t(result.error, "Paroli neizdevās atjaunot."),
+        text: translateActionError(t, result.error),
       });
       return;
     }
@@ -71,26 +73,26 @@ export function UpdatePasswordForm() {
         <span className="text-sm font-semibold text-zinc-700">
           {t("auth.fields.password", "Parole")}
         </span>
-        <input
+        <PasswordInput
           required
-          type="password"
           autoComplete="new-password"
           value={password}
           onChange={(event) => setPassword(event.target.value)}
-          className={authInputClassName}
+          className="mt-2"
+          inputClassName={authInputFieldClassName}
         />
       </label>
       <label className="block">
         <span className="text-sm font-semibold text-zinc-700">
           {t("auth.fields.password_confirm", "Atkārtot paroli")}
         </span>
-        <input
+        <PasswordInput
           required
-          type="password"
           autoComplete="new-password"
           value={confirmPassword}
           onChange={(event) => setConfirmPassword(event.target.value)}
-          className={authInputClassName}
+          className="mt-2"
+          inputClassName={authInputFieldClassName}
         />
       </label>
       <button

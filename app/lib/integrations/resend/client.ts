@@ -47,12 +47,25 @@ function formatResendFrom(from: string, displayName?: string): string {
   return `${label} <${email}>`;
 }
 
+export type ResendAttachment = {
+  filename: string;
+  /** Base64-encoded file contents (Resend API). */
+  content: string;
+  contentType?: string;
+};
+
 export async function sendResendEmail(input: {
   to: string | string[];
   subject: string;
   html: string;
   text?: string;
   fromName?: string;
+  /**
+   * Override Reply-To. Pass a string to force it; pass `null` to omit Reply-To;
+   * omit / `undefined` to use the integration default Reply-To (if set).
+   */
+  replyTo?: string | null;
+  attachments?: ResendAttachment[];
 }) {
   const credentials = await getResendCredentials();
   if (!credentials) {
@@ -64,6 +77,11 @@ export async function sendResendEmail(input: {
     return { ok: false as const, error: fromError };
   }
 
+  const replyTo =
+    input.replyTo === undefined
+      ? credentials.replyToEmail
+      : input.replyTo?.trim() || undefined;
+
   try {
     const response = await fetch("https://api.resend.com/emails", {
       method: "POST",
@@ -74,12 +92,19 @@ export async function sendResendEmail(input: {
       body: JSON.stringify({
         from: formatResendFrom(credentials.fromEmail, input.fromName),
         to: input.to,
-        ...(credentials.replyToEmail
-          ? { reply_to: credentials.replyToEmail }
-          : {}),
+        ...(replyTo ? { reply_to: replyTo } : {}),
         subject: input.subject,
         html: input.html,
         text: input.text,
+        ...(input.attachments && input.attachments.length > 0
+          ? {
+              attachments: input.attachments.map((item) => ({
+                filename: item.filename,
+                content: item.content,
+                ...(item.contentType ? { content_type: item.contentType } : {}),
+              })),
+            }
+          : {}),
       }),
     });
 

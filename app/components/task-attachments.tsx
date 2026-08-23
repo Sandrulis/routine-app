@@ -41,6 +41,8 @@ export function TaskAttachments({
   onDownload,
   onRename,
   onRemove,
+  onForward,
+  forwardEnabled = false,
   disabled = false,
   accept,
 }: {
@@ -50,6 +52,9 @@ export function TaskAttachments({
   onDownload: (id: string) => void;
   onRename: (id: string) => void;
   onRemove: (id: string) => void;
+  onForward?: (id: string) => void;
+  /** Show “Forward file” when Resend is enabled. */
+  forwardEnabled?: boolean;
   disabled?: boolean;
   accept?: string;
 }) {
@@ -66,6 +71,7 @@ export function TaskAttachments({
     fileId: string;
     anchor: CreateMenuAnchor;
   } | null>(null);
+  const canForward = Boolean(forwardEnabled && onForward);
 
   useEffect(() => {
     setExpanded(files.length > 0);
@@ -293,6 +299,15 @@ export function TaskAttachments({
             icon: "fas fa-download",
             title: t("files.detail.download", "Lejupielādēt"),
           },
+          ...(canForward
+            ? [
+                {
+                  id: "forward",
+                  icon: "fas fa-paper-plane",
+                  title: t("files.forward", "Pārsūtīt failu"),
+                },
+              ]
+            : []),
           {
             id: "rename",
             icon: "fas fa-pen",
@@ -313,6 +328,7 @@ export function TaskAttachments({
           setMenu(null);
           if (id === "view") onView(fileId);
           if (id === "download") onDownload(fileId);
+          if (id === "forward") onForward?.(fileId);
           if (id === "rename") onRename(fileId);
           if (id === "delete") onRemove(fileId);
         }}

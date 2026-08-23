@@ -6,9 +6,13 @@ import {
   appModalWidePanelMaxWidthClassName,
 } from "@/app/components/app-modal";
 import { useFeedbackToast } from "@/app/components/feedback-toast-provider";
+import { PasswordInput } from "@/app/components/password-input";
 import { useTranslations } from "@/app/components/translations-provider";
 import { createClient } from "@/app/lib/supabase/client";
 import { isSupabaseConfigured } from "@/app/lib/supabase/env";
+
+const passwordFieldClassName =
+  "min-h-11 w-full rounded-2xl border border-zinc-200 bg-zinc-50 px-4 text-sm text-zinc-900 outline-none transition placeholder:text-zinc-400 focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-100";
 
 export function ChangePasswordModal({
   open,
@@ -154,13 +158,13 @@ export function ChangePasswordModal({
           >
             {t("user_menu.password.current", "Pašreizējā parole")}
           </label>
-          <input
+          <PasswordInput
             id="current-password"
-            type="password"
             autoComplete="current-password"
             value={currentPassword}
             onChange={(event) => setCurrentPassword(event.target.value)}
-            className="mt-2 min-h-11 w-full rounded-2xl border border-zinc-200 bg-zinc-50 px-4 text-sm text-zinc-900 outline-none transition placeholder:text-zinc-400 focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-100"
+            className="mt-2"
+            inputClassName={passwordFieldClassName}
             autoFocus
           />
         </div>
@@ -171,13 +175,13 @@ export function ChangePasswordModal({
           >
             {t("user_menu.password.next", "Jaunā parole")}
           </label>
-          <input
+          <PasswordInput
             id="next-password"
-            type="password"
             autoComplete="new-password"
             value={nextPassword}
             onChange={(event) => setNextPassword(event.target.value)}
-            className="mt-2 min-h-11 w-full rounded-2xl border border-zinc-200 bg-zinc-50 px-4 text-sm text-zinc-900 outline-none transition placeholder:text-zinc-400 focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-100"
+            className="mt-2"
+            inputClassName={passwordFieldClassName}
           />
         </div>
         <div>
@@ -187,14 +191,14 @@ export function ChangePasswordModal({
           >
             {t("user_menu.password.confirm", "Atkārtot jauno paroli")}
           </label>
-          <input
+          <PasswordInput
             id="confirm-password"
-            type="password"
             autoComplete="new-password"
             value={confirmPassword}
             onChange={(event) => setConfirmPassword(event.target.value)}
             aria-invalid={confirmPassword.length > 0 && !passwordsMatch}
-            className="mt-2 min-h-11 w-full rounded-2xl border border-zinc-200 bg-zinc-50 px-4 text-sm text-zinc-900 outline-none transition placeholder:text-zinc-400 focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-100"
+            className="mt-2"
+            inputClassName={passwordFieldClassName}
           />
         </div>
         <div className="flex justify-end gap-2 pt-2">

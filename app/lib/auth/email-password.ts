@@ -10,6 +10,7 @@ import {
   resolveAuthEmailLink,
 } from "@/app/lib/auth/auth-confirm-link";
 import { findAuthUserByEmailExact } from "@/app/lib/auth/find-auth-user-by-email";
+import { joinDisplayName } from "@/app/lib/users/display-name";
 import { logError } from "@/app/lib/security/log-error";
 import { getSafeRedirectPath } from "@/app/lib/security/safe-redirect-path";
 
@@ -28,20 +29,32 @@ function isAlreadyRegisteredError(error: {
   );
 }
 
+function buildSignupMetadata(firstName: string, lastName: string) {
+  const fullName = joinDisplayName(firstName, lastName);
+  return {
+    given_name: firstName,
+    family_name: lastName,
+    name: fullName,
+    full_name: fullName,
+  };
+}
+
 async function sendSignupLink(
   email: string,
   password: string,
-  name: string,
+  firstName: string,
+  lastName: string,
   next: string,
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   const admin = createAdminClient();
   const redirectTo = authConfirmRedirectUrl(next);
+  const metadata = buildSignupMetadata(firstName, lastName);
   const generated = await admin.auth.admin.generateLink({
     type: "signup",
     email,
     password,
     options: {
-      data: { name, full_name: name },
+      data: metadata,
       redirectTo,
     },
   });
@@ -59,6 +72,17 @@ async function sendSignupLink(
       }
 
       if (existing && !existing.emailConfirmed) {
+        const { error: updateError } = await admin.auth.admin.updateUserById(
+          existing.id,
+          {
+            password,
+            user_metadata: metadata,
+          },
+        );
+        if (updateError) {
+          logError("updateUserById signup metadata failed", updateError.message);
+        }
+
         const invite = await admin.auth.admin.generateLink({
           type: "invite",
           email,
@@ -94,12 +118,13 @@ async function sendSignupLink(
   return sendSignupConfirmation({
     email,
     confirmLink,
-    name,
+    name: metadata.name,
   });
 }
 
 export async function registerWithEmailPassword(input: {
-  name: string;
+  firstName: string;
+  lastName: string;
   email: string;
   password: string;
   next?: string;
@@ -111,6 +136,12 @@ export async function registerWithEmailPassword(input: {
     return { ok: false, error: "errors.db_not_configured" };
   }
 
+  const firstName = input.firstName.trim();
+  const lastName = input.lastName.trim();
+  if (!firstName || !lastName) {
+    return { ok: false, error: "errors.auth_invalid" };
+  }
+
   const existing = await findAuthUserByEmailExact(input.email);
   if (existing?.emailConfirmed) {
     return { ok: true };
@@ -119,7 +150,8 @@ export async function registerWithEmailPassword(input: {
   return sendSignupLink(
     input.email,
     input.password,
-    input.name,
+    firstName,
+    lastName,
     getSafeRedirectPath(input.next),
   );
 }

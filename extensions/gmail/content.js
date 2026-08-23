@@ -52,6 +52,8 @@
   "errors.extension_gmail_message_id":
     "Neatrada Gmail ziņas ID — atver e-pastu pilnā skatā.",
   "errors.extension_unknown": "Nezināma kļūda.",
+  "errors.extension_context_invalidated":
+    "Spraudnis tika pārstartēts. Pārlādē Gmail cilni (F5) un mēģini vēlreiz.",
   "extension.gmail.title": "Pievienot apakšuzdevumam",
   "extension.gmail.back": "Atpakaļ",
   "extension.gmail.waiting": "Gaida…",
@@ -137,7 +139,60 @@ const ICONS = {
 };
 
 function send(type, payload = {}) {
-  return chrome.runtime.sendMessage({ type, ...payload });
+  try {
+    if (!chrome?.runtime?.id) {
+      return Promise.resolve({
+        ok: false,
+        error: "errors.extension_context_invalidated",
+      });
+    }
+    return chrome.runtime.sendMessage({ type, ...payload }).then(
+      (response) => {
+        if (chrome.runtime.lastError) {
+          const message = chrome.runtime.lastError.message || "";
+          if (/context invalidated|extension host|receiving end/i.test(message)) {
+            return {
+              ok: false,
+              error: "errors.extension_context_invalidated",
+            };
+          }
+          return {
+            ok: false,
+            error: "errors.extension_unknown",
+            detail: message,
+          };
+        }
+        return response;
+      },
+      (error) => {
+        const message = error instanceof Error ? error.message : String(error || "");
+        if (/context invalidated|extension host|receiving end/i.test(message)) {
+          return {
+            ok: false,
+            error: "errors.extension_context_invalidated",
+          };
+        }
+        return {
+          ok: false,
+          error: "errors.extension_unknown",
+          detail: message,
+        };
+      },
+    );
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error || "");
+    if (/context invalidated|extension host|receiving end/i.test(message)) {
+      return Promise.resolve({
+        ok: false,
+        error: "errors.extension_context_invalidated",
+      });
+    }
+    return Promise.resolve({
+      ok: false,
+      error: "errors.extension_unknown",
+      detail: message,
+    });
+  }
 }
 
 function textOf(el) {
@@ -896,8 +951,13 @@ function ensureUi() {
       ? t("extension.gmail.email_label", { subject: email.subject })
       : t("extension.gmail.open_email");
     setBusy(false);
+    if (sessionResult?.error === "errors.extension_context_invalidated") {
+      setResultMode(true);
+      setFeedback(tError("errors.extension_context_invalidated"), "error");
+      return;
+    }
     if (!sessionResult?.data?.authenticated) {
-      const appBase = sessionResult?.appBase || "https://tasqin.com";
+      const appBase = sessionResult?.appBase || "https://www.tasqin.com";
       setResultMode(true);
       setFeedback(tError("errors.extension_auth_required"), "error");
       feedback.insertAdjacentHTML(
@@ -918,7 +978,7 @@ function ensureUi() {
       return;
     }
     if (!data.gmailConnected) {
-      const appBase = sessionResult.appBase || "https://tasqin.com";
+      const appBase = sessionResult.appBase || "https://www.tasqin.com";
       const path = data.connectGmailPath || "/auth/gmail-plugin/start";
       setResultMode(true);
       setFeedback(tError("errors.extension_gmail_not_connected"), "error");
@@ -1052,10 +1112,20 @@ function ensureUi() {
     } catch (error) {
       setBusy(false);
       setResultMode(true);
+      const message =
+        error instanceof Error ? error.message : String(error || "");
       setFeedback(
-        error instanceof Error ? error.message : t("extension.gmail.attach_failed"),
+        /context invalidated|extension host|receiving end/i.test(message)
+          ? tError("errors.extension_context_invalidated")
+          : t("extension.gmail.attach_failed"),
         "error",
       );
+      return;
+    }
+    if (result?.error === "errors.extension_context_invalidated") {
+      setBusy(false);
+      setResultMode(true);
+      setFeedback(tError("errors.extension_context_invalidated"), "error");
       return;
     }
 

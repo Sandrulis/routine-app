@@ -26,15 +26,13 @@ function metadataSources(user: User): Record<string, unknown>[] {
 function readName(metadata: Record<string, unknown>): string {
   const given = readString(metadata, "given_name");
   const family = readString(metadata, "family_name");
-  if (given && family) {
-    return `${given} ${family}`;
+  if (given || family) {
+    return [given, family].filter(Boolean).join(" ");
   }
 
   return (
     readString(metadata, "full_name") ||
-    readString(metadata, "name") ||
-    given ||
-    family
+    readString(metadata, "name")
   );
 }
 
