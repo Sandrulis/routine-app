@@ -15,50 +15,58 @@ export function OPTIONS(request: Request) {
 }
 
 export async function GET(request: Request) {
-  const auth = await getExtensionAuth(request);
-  if (!auth) {
+  try {
+    const auth = await getExtensionAuth(request);
+    if (!auth) {
+      return extensionJson(
+        request,
+        { ok: false, error: "errors.auth_required" },
+        { status: 401 },
+      );
+    }
+
+    const limited = await consumeRateLimit(
+      `ext-gmail-token:${requestClientIp(request)}:${auth.user.id}`,
+      60,
+      15 * 60 * 1000,
+    );
+    if (!limited.ok) {
+      return extensionJson(
+        request,
+        { ok: false, error: "errors.auth_rate_limited" },
+        { status: 429 },
+      );
+    }
+
+    const flags = await loadExtensionSessionFlags(auth.supabase);
+    if (!flags.gmailPluginEnabled) {
+      return extensionJson(
+        request,
+        { ok: false, error: "errors.extension_plugin_disabled" },
+        { status: 403 },
+      );
+    }
+
+    const token = await getValidGmailAccessToken(auth.user.id);
+    if (!token.ok) {
+      return extensionJson(
+        request,
+        { ok: false, error: token.error },
+        { status: 403 },
+      );
+    }
+
+    return extensionJson(request, {
+      ok: true,
+      accessToken: token.accessToken,
+      expiresIn: token.expiresIn,
+      googleEmail: token.googleEmail,
+    });
+  } catch {
     return extensionJson(
       request,
-      { ok: false, error: "errors.auth_required" },
-      { status: 401 },
+      { ok: false, error: "errors.extension_gmail_auth" },
+      { status: 500 },
     );
   }
-
-  const limited = await consumeRateLimit(
-    `ext-gmail-token:${requestClientIp(request)}:${auth.user.id}`,
-    60,
-    15 * 60 * 1000,
-  );
-  if (!limited.ok) {
-    return extensionJson(
-      request,
-      { ok: false, error: "errors.auth_rate_limited" },
-      { status: 429 },
-    );
-  }
-
-  const flags = await loadExtensionSessionFlags(auth.supabase);
-  if (!flags.gmailPluginEnabled) {
-    return extensionJson(
-      request,
-      { ok: false, error: "errors.extension_plugin_disabled" },
-      { status: 403 },
-    );
-  }
-
-  const token = await getValidGmailAccessToken(auth.user.id);
-  if (!token.ok) {
-    return extensionJson(
-      request,
-      { ok: false, error: token.error },
-      { status: 403 },
-    );
-  }
-
-  return extensionJson(request, {
-    ok: true,
-    accessToken: token.accessToken,
-    expiresIn: token.expiresIn,
-    googleEmail: token.googleEmail,
-  });
 }

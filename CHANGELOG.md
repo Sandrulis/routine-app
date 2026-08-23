@@ -4,6 +4,10 @@
 
 - (none)
 
+## v0.2.20
+
+- Gmail spraudnis `0.4.8`: API pieprasījumi iet uz `www.tasqin.com` (apex 308 bez CORS vairs nebloķē pievienošanu); `/api/extension` kļūdām arī ir CORS galvenes
+
 ## v0.2.19
 
 - Sānjoslas kokā apakšuzdevuma nosaukums un rinda atver detaļu modāli; statusa ikona atver statusa izvēlni

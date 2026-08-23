@@ -1,5 +1,5 @@
 /** Canonical production origin (no trailing slash). */
-export const PRODUCTION_SITE_ORIGIN = "https://tasqin.com";
+export const PRODUCTION_SITE_ORIGIN = "https://www.tasqin.com";
 
 export const LOCAL_DEV_ORIGINS = [
   "http://localhost:3120",
@@ -9,7 +9,7 @@ export const LOCAL_DEV_ORIGINS = [
 /** Origins the Gmail plugin and CORS already know without user input. */
 export const KNOWN_SITE_ORIGINS = [
   PRODUCTION_SITE_ORIGIN,
-  "https://www.tasqin.com",
+  "https://tasqin.com",
   ...LOCAL_DEV_ORIGINS,
 ] as const;
 

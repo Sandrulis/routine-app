@@ -34,6 +34,22 @@ function parseOrigin(raw) {
   }
 }
 
+/** Vercel 308s apex → www without CORS; never call https://tasqin.com from the plugin. */
+function preferLiveOrigin(origin) {
+  const parsed = parseOrigin(origin);
+  if (!parsed) return parsed;
+  try {
+    const url = new URL(parsed);
+    if (url.hostname === "tasqin.com") {
+      url.hostname = "www.tasqin.com";
+      return url.origin;
+    }
+  } catch {
+    // ignore
+  }
+  return parsed;
+}
+
 /** Prefer www over apex so we don't hit a CORS-blocked 301 to the canonical host. */
 function originsWithWwwFirst(origin) {
   const parsed = parseOrigin(origin);
@@ -53,7 +69,7 @@ function originsWithWwwFirst(origin) {
 }
 
 function expandOrigins(origins) {
-  return unique(origins.flatMap(originsWithWwwFirst));
+  return unique(origins.flatMap(originsWithWwwFirst).map(preferLiveOrigin));
 }
 
 async function originsFromAuthCookies() {
@@ -173,8 +189,8 @@ async function markPluginSignedOut() {
 }
 
 async function rememberSession(appBase, session) {
-  await writeStoredSession(appBase, session);
-  const origin = parseOrigin(appBase);
+  const origin = preferLiveOrigin(parseOrigin(appBase));
+  await writeStoredSession(origin, session);
   if (origin) await chrome.storage.sync.set({ appBaseUrl: origin });
 }
 
@@ -203,12 +219,13 @@ async function getAppBase() {
   ]);
 
   async function adopt(origin, config) {
-    const canonical = parseOrigin(config.appOrigin);
+    origin = preferLiveOrigin(origin) || origin;
+    const canonical = preferLiveOrigin(parseOrigin(config.appOrigin)) || origin;
     await chrome.storage.sync.set({
       appBaseUrl: origin,
       authCookieName: config.authCookieName || "",
       loginPath: config.loginPath || "/login",
-      canonicalOrigin: canonical || origin,
+      canonicalOrigin: canonical,
     });
     return origin;
   }
@@ -261,7 +278,9 @@ async function getAppBase() {
   if (extraLocal) return adopt(extraLocal.origin, extraLocal.config);
 
   // Never stick to a stale localhost sync value when production is the default.
-  if (storedOrigin && !isLocalOrigin(storedOrigin)) return storedOrigin;
+  if (storedOrigin && !isLocalOrigin(storedOrigin)) {
+    return preferLiveOrigin(storedOrigin);
+  }
   return DEFAULT_APP_BASE;
 }
 
@@ -513,13 +532,16 @@ async function writeAuthCookies(appBase, cookieName, session) {
 
 async function refreshSession(appBase, session) {
   if (!session?.refresh_token) return null;
+  const origin = preferLiveOrigin(appBase) || appBase;
   try {
-    const response = await fetch(`${appBase}/api/extension/refresh`, {
+    const response = await fetch(`${origin}/api/extension/refresh`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "omit",
+      redirect: "manual",
       body: JSON.stringify({ refresh_token: session.refresh_token }),
     });
+    if (response.status >= 300 && response.status < 400) return null;
     const data = await response.json().catch(() => null);
     if (!response.ok || !data?.session?.access_token) return null;
     const expiresIn = Number(data.session.expires_in) || 3600;
@@ -535,7 +557,7 @@ async function refreshSession(appBase, session) {
     if (data.authCookieName) {
       await chrome.storage.sync.set({ authCookieName: data.authCookieName });
     }
-    await rememberSession(appBase, next);
+    await rememberSession(origin, next);
     return next;
   } catch {
     return null;
@@ -623,8 +645,8 @@ async function getAccessToken(appBase) {
   return null;
 }
 
-async function apiFetch(path, options = {}) {
-  const appBase = await getAppBase();
+async function apiFetch(path, options = {}, retried = false) {
+  const appBase = preferLiveOrigin(await getAppBase()) || DEFAULT_APP_BASE;
   const token = await getAccessToken(appBase);
   const headers = new Headers(options.headers || {});
   if (token) headers.set("Authorization", `Bearer ${token}`);
@@ -640,7 +662,26 @@ async function apiFetch(path, options = {}) {
     ...options,
     headers,
     credentials: "omit",
+    redirect: "manual",
   });
+
+  if (
+    !retried &&
+    response.status >= 300 &&
+    response.status < 400
+  ) {
+    const location = response.headers.get("Location") || "";
+    let nextOrigin = "";
+    try {
+      nextOrigin = preferLiveOrigin(new URL(location, appBase).origin);
+    } catch {
+      nextOrigin = "";
+    }
+    if (nextOrigin && nextOrigin !== appBase) {
+      await chrome.storage.sync.set({ appBaseUrl: nextOrigin });
+      return apiFetch(path, options, true);
+    }
+  }
 
   let data = null;
   const text = await response.text();
@@ -1101,7 +1142,7 @@ function isPluginLoginDoneUrl(url) {
 }
 
 async function captureSessionFromDone(url, cookieHeader) {
-  const origin = parseOrigin(url);
+  const origin = preferLiveOrigin(parseOrigin(url));
   if (!origin) return "";
   if (cookieHeader) {
     const fromPage = sessionFromAuthCookieList(cookiesFromHeader(cookieHeader));
@@ -1263,9 +1304,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           ? "/auth/gmail-plugin/login"
           : stored.loginPath || "/login";
         const tabOrigin =
-          parseOrigin(stored.canonicalOrigin) ||
-          parseOrigin(appBase) ||
-          DEFAULT_APP_BASE;
+          preferLiveOrigin(
+            parseOrigin(stored.canonicalOrigin) || parseOrigin(appBase),
+          ) || DEFAULT_APP_BASE;
         const tab = await chrome.tabs.create({
           url: `${tabOrigin}${loginPath}`,
         });
@@ -1282,12 +1323,13 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         return;
       }
       if (message?.type === "routine.login") {
-        const appBase = await getAppBase();
+        const appBase = preferLiveOrigin(await getAppBase()) || DEFAULT_APP_BASE;
         await ensureOriginPermission(appBase);
         const response = await fetch(`${appBase}/api/extension/login`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           credentials: "omit",
+          redirect: "manual",
           body: JSON.stringify({
             email: String(message.email || ""),
             password: String(message.password || ""),

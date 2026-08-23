@@ -12,6 +12,11 @@ import {
 } from "@/app/lib/seo/locale-path";
 import { canonicalHostRedirectUrl } from "@/app/lib/seo/site-url";
 import {
+  applyExtensionCors,
+  extensionOptionsResponse,
+  isExtensionApiPath,
+} from "@/app/lib/extension/cors";
+import {
   buildContentSecurityPolicy,
   createCspNonce,
 } from "@/app/lib/security/csp";
@@ -42,6 +47,15 @@ function copySessionOnto(from: NextResponse, to: NextResponse) {
 
 export async function proxy(request: NextRequest) {
   const nonce = createCspNonce();
+  const { pathname } = request.nextUrl;
+
+  if (isExtensionApiPath(pathname)) {
+    if (request.method === "OPTIONS") {
+      return extensionOptionsResponse(request);
+    }
+    return applyExtensionCors(request, NextResponse.next());
+  }
+
   const canonicalUrl = canonicalHostRedirectUrl(
     request.url,
     request.headers.get("host"),
@@ -50,14 +64,10 @@ export async function proxy(request: NextRequest) {
     const redirect = NextResponse.redirect(canonicalUrl, 301);
     const origin = request.headers.get("origin") ?? "";
     if (origin.startsWith("chrome-extension://")) {
-      redirect.headers.set("Access-Control-Allow-Origin", origin);
-      redirect.headers.set("Access-Control-Allow-Credentials", "true");
-      redirect.headers.set("Vary", "Origin");
+      applyExtensionCors(request, redirect);
     }
     return applyCsp(redirect, nonce);
   }
-
-  const { pathname } = request.nextUrl;
 
   if (isPublicLocalizedPath(pathname)) {
     const urlLang = urlLanguageFromPath(pathname);
@@ -97,6 +107,6 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml|api/extension/|api/webhooks/|api/cron/|calendar/|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ics)$).*)",
+    "/((?!_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml|api/webhooks/|api/cron/|calendar/|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ics)$).*)",
   ],
 };

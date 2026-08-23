@@ -26,6 +26,12 @@ function allowOrigin(request: Request): string | null {
   return null;
 }
 
+export function isExtensionApiPath(pathname: string) {
+  return (
+    pathname === "/api/extension" || pathname.startsWith("/api/extension/")
+  );
+}
+
 export function extensionCorsHeaders(request: Request): HeadersInit {
   const origin = allowOrigin(request);
   const headers: Record<string, string> = {
@@ -39,6 +45,14 @@ export function extensionCorsHeaders(request: Request): HeadersInit {
     headers["Vary"] = "Origin";
   }
   return headers;
+}
+
+export function applyExtensionCors(request: Request, response: NextResponse) {
+  const headers = extensionCorsHeaders(request) as Record<string, string>;
+  for (const [key, value] of Object.entries(headers)) {
+    response.headers.set(key, value);
+  }
+  return response;
 }
 
 export function extensionOptionsResponse(request: Request) {
