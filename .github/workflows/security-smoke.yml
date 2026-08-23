@@ -86,6 +86,13 @@ jobs:
           fi
           for file in $(find app/api -name "route.ts"); do
             if grep -qE "export async function (GET|POST|PUT|DELETE|PATCH)" "$file"; then
+              case "$file" in
+                # Public handshake: login issues a session; refresh validates the
+                # new token with getExtensionAuth; config is unauthenticated plugin bootstrap.
+                app/api/extension/login/route.ts|app/api/extension/refresh/route.ts|app/api/extension/config/route.ts)
+                  continue
+                  ;;
+              esac
               if ! grep -qE "(getCurrentUser|requireAuth|getExtensionAuth)" "$file"; then
                 echo "FAIL: No auth check in $file"
                 exit 1

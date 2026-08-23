@@ -9,6 +9,7 @@ import { createAdminClient } from "@/app/lib/supabase/admin";
 import { isSupabaseAdminConfigured } from "@/app/lib/supabase/env";
 import { FRONTEND_MODULE_KEYS } from "@/app/lib/frontend-modules/keys";
 import { SITE_INTEGRATION_KEYS } from "@/app/lib/integrations/keys";
+import { getPublicSignInMethods } from "@/app/lib/integrations/public-sign-in";
 import type {
   GoogleOAuthCredentialsInput,
   GoogleOAuthIntegrationStatus,
@@ -157,6 +158,8 @@ export async function fetchGoogleOAuthIntegrationStatus(
 }
 
 export async function isGoogleSignInEnabled() {
+  const published = await getPublicSignInMethods();
+  if (published) return published.google;
   const status = await fetchGoogleOAuthIntegrationStatus();
   return status.enabled;
 }

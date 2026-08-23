@@ -7,6 +7,7 @@ import { useFeedbackToast } from "@/app/components/feedback-toast-provider";
 import { useTranslations } from "@/app/components/translations-provider";
 import { getSafeRedirectPath } from "@/app/lib/security/safe-redirect-path";
 import { createClient } from "@/app/lib/supabase/client";
+import { isSupabaseConfigured } from "@/app/lib/supabase/env";
 
 export function MfaVerifyModal({
   open,
@@ -29,6 +30,7 @@ export function MfaVerifyModal({
     setCode("");
     setPending(false);
     void (async () => {
+      if (!isSupabaseConfigured()) return;
       const supabase = createClient();
       const { data } = await supabase.auth.mfa.listFactors();
       const verified = (data?.totp ?? []).find(

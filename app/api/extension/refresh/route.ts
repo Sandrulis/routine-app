@@ -2,6 +2,7 @@ import {
   extensionJson,
   extensionOptionsResponse,
 } from "@/app/lib/extension/cors";
+import { getExtensionAuth } from "@/app/lib/extension/auth";
 import { supabaseAuthCookieName } from "@/app/lib/extension/cookie-name";
 import { consumeRateLimit } from "@/app/lib/security/rate-limit";
 import { requestClientIp } from "@/app/lib/security/client-ip";
@@ -83,6 +84,23 @@ export async function POST(request: Request) {
   } | null;
 
   if (!response.ok || !data?.access_token) {
+    return extensionJson(
+      request,
+      { ok: false, error: "errors.extension_auth_required" },
+      { status: 401 },
+    );
+  }
+
+  const verified = await getExtensionAuth(
+    new Request(request.url, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${data.access_token}`,
+        origin: request.headers.get("origin") ?? "",
+      },
+    }),
+  );
+  if (!verified) {
     return extensionJson(
       request,
       { ok: false, error: "errors.extension_auth_required" },

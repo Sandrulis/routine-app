@@ -1,9 +1,15 @@
-import { isLikelySupabaseServiceRoleKey, readEnv } from "@/app/lib/env/read-env";
+import {
+  isLikelySupabaseServiceRoleKey,
+  readEnv,
+  stripEnvQuotes,
+} from "@/app/lib/env/read-env";
 import { logError } from "@/app/lib/security/log-error";
 
 export function getSupabasePublicEnv() {
-  const url = readEnv("NEXT_PUBLIC_SUPABASE_URL");
-  const anonKey = readEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY");
+  const url = stripEnvQuotes(process.env.NEXT_PUBLIC_SUPABASE_URL?.trim() ?? "");
+  const anonKey = stripEnvQuotes(
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim() ?? "",
+  );
 
   if (!url || !anonKey || url.includes("YOUR_")) {
     return null;
@@ -17,7 +23,11 @@ export function isSupabaseConfigured() {
 }
 
 export function getSupabaseServiceRoleKey() {
-  return readEnv("SUPABASE_SERVICE_ROLE_KEY");
+  return (
+    readEnv("SUPABASE_SERVICE_ROLE_KEY") ||
+    readEnv("SUPABASE_SERVICE_ROLE") ||
+    readEnv("SUPABASE_SECRET_KEY")
+  );
 }
 
 let loggedAdminMissing = false;

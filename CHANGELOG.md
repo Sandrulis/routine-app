@@ -4,6 +4,12 @@
 
 - (none)
 
+## v0.2.5
+
+- Login/signup metodes (e-pasts, Google, Microsoft) nāk no publiska RPC `public_sign_in_methods` — pogas rādās arī bez `SUPABASE_SERVICE_ROLE_KEY` pārlūkā
+- `NEXT_PUBLIC_*` pārlūkā lasa statiski, lai MFA un Supabase klients neredzētu tukšu env
+- Extension `refresh` pārbauda jauno tokenu; CI smoke izlaiž publiskos handshake maršrutus (`login` / `refresh` / `config`)
+
 ## v0.2.4
 
 - Admin **E-pasta šabloni** (`/admin/email-templates`): HTML Resend e-pasti reģistrācijai, parolei, uzaicinājumam un sistēmas paziņojumiem (`lv` / `en` / `ru`)

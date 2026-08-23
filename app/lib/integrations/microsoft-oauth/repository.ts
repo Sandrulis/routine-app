@@ -9,6 +9,7 @@ import { createAdminClient } from "@/app/lib/supabase/admin";
 import { isSupabaseAdminConfigured } from "@/app/lib/supabase/env";
 import { FRONTEND_MODULE_KEYS } from "@/app/lib/frontend-modules/keys";
 import { SITE_INTEGRATION_KEYS } from "@/app/lib/integrations/keys";
+import { getPublicSignInMethods } from "@/app/lib/integrations/public-sign-in";
 import type {
   MicrosoftOAuthCredentialsInput,
   MicrosoftOAuthIntegrationStatus,
@@ -148,6 +149,8 @@ export async function fetchMicrosoftOAuthIntegrationStatus(
 }
 
 export async function isMicrosoftOAuthEnabled() {
+  const published = await getPublicSignInMethods();
+  if (published) return published.microsoft;
   const status = await fetchMicrosoftOAuthIntegrationStatus();
   return status.enabled;
 }

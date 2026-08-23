@@ -1,5 +1,6 @@
 import { logError } from "@/app/lib/security/log-error";
 import { SITE_INTEGRATION_KEYS } from "@/app/lib/integrations/keys";
+import { getPublicSignInMethods } from "@/app/lib/integrations/public-sign-in";
 import {
   getSimpleIntegrationCredentials,
   isSimpleIntegrationEnabled,
@@ -10,6 +11,8 @@ export async function isResendEnabled() {
 }
 
 export async function isEmailPasswordAuthEnabled() {
+  const published = await getPublicSignInMethods();
+  if (published) return published.email;
   return (await getResendCredentials()) !== null;
 }
 

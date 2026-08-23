@@ -2,7 +2,7 @@
 
 Komandas darba rīks ar publisku landing lapu un sānjoslas lietotni. Gaišs Next.js frontend.
 
-**Current version:** `0.2.4`
+**Current version:** `0.2.5`
 
 ## Palaist
 
@@ -17,7 +17,7 @@ Atver [http://localhost:3120](http://localhost:3120).
 
 - **Landing** — `/` ar dashboard vizuāli; fīču kartītes un hero teksts tikai no ieslēgtajiem frontend moduļiem (izslēgtie netiek pieminēti); Ienākt (un Reģistrēties, ja Resend aktīvs) un sīkdatņu popup; ielogotam uzreiz `/dashboard`
 - **SEO / Search Console** — `/robots.txt` un `/sitemap.xml`; kanoniskie URL no `NEXT_PUBLIC_SITE_URL`; privātās lapas `noindex`; HTML tag verifikācija ar `GOOGLE_SITE_VERIFICATION`
-- **Auth** — `/login`, `/signup`, `/forgot-password`, `/update-password`, `/auth/confirm`; e-pasts un parole tikai ja **Resend** ir konfigurēts un aktīvs (bez tā nav Reģistrēties joslā, signup saites loginā un Atcerēties mani; `/signup` uz `/login`); reģistrācijas apstiprinājums un paroles atjaunošana iet kā HTML e-pasts no admin šabloniem (ne Supabase noklusējuma); **Turpināt ar Google** / **Turpināt ar Microsoft** (ja admin ieslēdzis OAuth) signupā bez noteikumu ķeksīša; **Atcerēties mani** tikai loginā, pēc noklusējuma izslēgts (30 dienas ar ķeksi); ielogotam `/` ved uz dashboard
+- **Auth** — `/login`, `/signup`, `/forgot-password`, `/update-password`, `/auth/confirm`; e-pasts un parole tikai ja **Resend** ir konfigurēts un aktīvs (bez tā nav Reģistrēties joslā, signup saites loginā un Atcerēties mani; `/signup` uz `/login`); login/signup pogas nāk no publiska RPC (`public_sign_in_methods`), nevis service role; reģistrācijas apstiprinājums un paroles atjaunošana iet kā HTML e-pasts no admin šabloniem (ne Supabase noklusējuma); **Turpināt ar Google** / **Turpināt ar Microsoft** (ja admin ieslēdzis OAuth) signupā bez noteikumu ķeksīša; **Atcerēties mani** tikai loginā, pēc noklusējuma izslēgts (30 dienas ar ķeksi); ielogotam `/` ved uz dashboard
 - **Gmail spraudnis** — Chrome unpacked `extensions/gmail`: bez URL/Client ID; popup rāda kontu un komandas; custom login vai Google; Gmail savienojums saglabājas sistēmā; origini `tasqin.com` / `www.tasqin.com` / `localhost:3120`; admin modulis **Gmail spraudnis**
 - **MFA** — profilā pēc izvēles visiem; ja ieslēgta, pie ielogošanās TOTP modālis; sistēmas adminam MFA obligāta `/admin`
 - **Legal** — `/privacy`, `/terms`, `/cookies` ar fiksētu satura sānjoslu; kājene arī lietotnē
@@ -54,6 +54,6 @@ Atver [http://localhost:3120](http://localhost:3120).
 | `npm run db:test` | Pieslēgums Supabase Postgres un `public` tabulu saraksts |
 | `npm run db:migrate` | Pending `supabase/migrations/*.sql` |
 
-Kopē `.env.example` uz `.env.local`. `NEXT_PUBLIC_SUPABASE_URL` ir projekta hosts (`https://….supabase.co`), bez `/rest/v1/`. Produkcijā `NEXT_PUBLIC_SITE_URL` = viens kanoniskais hosts (`https://tasqin.com` vai `https://www.tasqin.com`). Vercel env: bez pēdiņām, `SUPABASE_SERVICE_ROLE_KEY` ir **service_role** (ne anon); pēc `NEXT_PUBLIC_*` izmaiņām **Redeploy**. Detalizēti: [DEVELOPER.md](DEVELOPER.md#vercel).
+Kopē `.env.example` uz `.env.local`. `NEXT_PUBLIC_SUPABASE_URL` ir projekta hosts (`https://….supabase.co`), bez `/rest/v1/`. Produkcijā `NEXT_PUBLIC_SITE_URL` = viens kanoniskais hosts (`https://tasqin.com` vai `https://www.tasqin.com`). Vercel env: bez pēdiņām, `SUPABASE_SERVICE_ROLE_KEY` ir **service_role** (ne anon). Pārlūka kods lasa `NEXT_PUBLIC_*` tikai kā statisku `process.env.NEXT_PUBLIC_…` (citādi MFA/klients redz tukšu env). Pēc `NEXT_PUBLIC_*` izmaiņām **Redeploy**. Detalizēti: [DEVELOPER.md](DEVELOPER.md#vercel).
 
 Tehniskā dokumentācija: [DEVELOPER.md](DEVELOPER.md). Drošības audits: [`security-check.md`](security-check.md), uzlabojumu saraksts: [`system_security_upgrades.md`](system_security_upgrades.md). Izmaiņu vēsture: [CHANGELOG.md](CHANGELOG.md).
