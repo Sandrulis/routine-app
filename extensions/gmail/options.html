@@ -2,14 +2,28 @@
 <html lang="lv">
   <head>
     <meta charset="utf-8" />
-    <title>Routine Gmail</title>
+    <title>TASQIN Gmail</title>
     <style>
-      body {
-        font-family: ui-sans-serif, system-ui, sans-serif;
+      html {
         margin: 0;
-        padding: 14px;
         width: 340px;
+        min-height: 0;
+        height: auto;
+        border-radius: 12px;
+        overflow: visible;
+        background: transparent;
+      }
+      body {
+        font-family: ui-sans-serif, system-ui, -apple-system, sans-serif;
+        margin: 0;
+        padding: 0;
+        width: 340px;
+        min-height: 0;
+        height: auto;
         color: #0f172a;
+        background: transparent;
+        box-sizing: border-box;
+        border-radius: 12px;
       }
       button {
         border: 0;
@@ -17,59 +31,83 @@
         background: #0f766e;
         color: #fff;
         font-weight: 600;
-        padding: 8px 12px;
+        font-size: 13px;
+        padding: 9px 12px;
         cursor: pointer;
-        margin-right: 6px;
-        margin-bottom: 6px;
+        margin: 0;
       }
-      button.secondary {
-        background: #e2e8f0;
-        color: #0f172a;
+      button:hover:not(:disabled) {
+        background: #0d9488;
       }
-      button:disabled {
-        cursor: not-allowed;
-        opacity: 0.6;
+      #googleWrap button,
+      #passwordLogin,
+      #connectGmail {
+        width: 100%;
       }
-      input,
-      select {
+      #googleWrap { margin-bottom: 10px; }
+      button:disabled { cursor: not-allowed; opacity: 0.6; }
+      input, select {
         width: 100%;
         box-sizing: border-box;
-        border: 1px solid #cbd5e1;
+        border: 1px solid #e2e8f0;
         border-radius: 8px;
         padding: 8px 10px;
         margin-bottom: 8px;
         font: inherit;
+        background: #fff;
+        color: inherit;
+      }
+      input:focus, select:focus {
+        outline: 2px solid #99f6e4;
+        outline-offset: 0;
+        border-color: #14b8a6;
       }
       label {
         display: block;
-        font-size: 12px;
-        color: #475569;
-        margin-bottom: 4px;
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.02em;
+        color: #64748b;
+        margin-bottom: 5px;
+        text-transform: uppercase;
       }
       p {
         font-size: 12px;
         color: #64748b;
-        margin: 8px 0 0;
+        margin: 0 0 10px;
+        line-height: 1.45;
       }
-      .warn {
-        color: #b91c1c;
-        font-weight: 600;
+      #boot {
+        margin: 16px 12px;
+        text-align: center;
       }
-      .ok {
-        color: #047857;
+      #login > :last-child,
+      #passwordWrap > :last-child,
+      #account > :last-child { margin-bottom: 0; }
+      .card {
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 12px;
+        box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
       }
-      .err {
-        color: #b91c1c;
+      .account-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 8px;
+        margin-bottom: 12px;
       }
       .account {
         display: flex;
         gap: 10px;
         align-items: center;
-        margin-bottom: 12px;
+        min-width: 0;
+        flex: 1;
       }
       .avatar {
-        width: 48px;
-        height: 48px;
+        width: 40px;
+        height: 40px;
         border-radius: 999px;
         object-fit: cover;
         background: #0f766e;
@@ -78,37 +116,109 @@
         align-items: center;
         justify-content: center;
         font-weight: 700;
+        font-size: 13px;
         flex-shrink: 0;
       }
       .avatar img {
-        width: 48px;
-        height: 48px;
+        width: 40px;
+        height: 40px;
         border-radius: 999px;
         object-fit: cover;
         display: block;
       }
-      .name {
-        font-weight: 700;
-        font-size: 14px;
-        line-height: 1.3;
+      .identity { min-width: 0; }
+      .name { font-weight: 700; font-size: 13px; line-height: 1.3; }
+      .email { font-size: 11px; color: #64748b; word-break: break-all; margin-top: 2px; }
+      .header-actions {
+        display: flex;
+        align-items: flex-start;
+        gap: 4px;
+        flex-shrink: 0;
       }
-      .email {
-        font-size: 12px;
+      .gmail-badge {
+        position: relative;
+        width: 28px;
+        height: 28px;
+        padding: 0;
+        border-radius: 8px;
+        background: #ecfdf5;
+        color: #047857;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .gmail-badge:hover:not(:disabled),
+      .gmail-badge:focus-visible {
+        background: #d1fae5;
+        color: #065f46;
+      }
+      .gmail-badge svg { width: 16px; height: 16px; display: block; }
+      .gmail-badge .tip {
+        position: absolute;
+        top: calc(100% + 6px);
+        right: 0;
+        z-index: 5;
+        min-width: 140px;
+        max-width: 220px;
+        padding: 6px 8px;
+        border-radius: 8px;
+        background: #0f172a;
+        color: #fff;
+        font-size: 11px;
+        font-weight: 500;
+        line-height: 1.35;
+        text-align: left;
+        white-space: normal;
+        opacity: 0;
+        pointer-events: none;
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(15, 23, 42, 0.18);
+      }
+      .gmail-badge:hover .tip,
+      .gmail-badge:focus-visible .tip {
+        opacity: 1;
+        transform: none;
+      }
+      .sign-out {
+        flex-shrink: 0;
+        width: 28px;
+        height: 28px;
+        padding: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: transparent;
         color: #64748b;
-        word-break: break-all;
       }
-      #status {
-        min-height: 1em;
-        margin-top: 8px;
+      .sign-out:hover:not(:disabled) { background: #f1f5f9; color: #0f172a; }
+      .sign-out svg { width: 15px; height: 15px; display: block; }
+      .email { overflow-wrap: anywhere; }
+      .field { margin-bottom: 0; }
+      .field select { margin-bottom: 0; }
+      .banner {
+        display: flex;
+        align-items: flex-start;
+        gap: 8px;
+        padding: 8px 10px;
+        border-radius: 10px;
+        font-size: 12px;
+        line-height: 1.4;
+        margin: 8px 0 0;
+        font-weight: 500;
       }
-      .hidden {
-        display: none !important;
-      }
+      .banner.warn { background: #fef2f2; color: #b91c1c; }
+      .banner.hint { background: #f8fafc; color: #475569; font-weight: 400; }
+      .actions { margin-top: 8px; }
+      #status { margin: 8px 12px 12px; }
+      #status:empty { display: none; }
+      .ok { color: #047857; }
+      .err { color: #b91c1c; }
+      .hidden { display: none !important; }
     </style>
   </head>
   <body>
     <p id="boot"></p>
-    <div id="login" class="hidden">
+    <div id="login" class="card hidden">
       <p id="loginHint"></p>
       <div id="googleWrap" class="hidden">
         <button type="button" id="googleLogin"></button>
@@ -121,22 +231,41 @@
         <button type="button" id="passwordLogin"></button>
       </div>
     </div>
-    <div id="account" class="hidden">
-      <div class="account">
-        <div class="avatar" id="avatarFallback">R</div>
-        <div>
-          <div class="name" id="displayName"></div>
-          <div class="email" id="displayEmail"></div>
+    <div id="account" class="card hidden">
+      <div class="account-header">
+        <div class="account">
+          <div class="avatar" id="avatarFallback">R</div>
+          <div class="identity">
+            <div class="name" id="displayName"></div>
+            <div class="email" id="displayEmail"></div>
+          </div>
+        </div>
+        <div class="header-actions">
+          <button type="button" id="gmailBadge" class="gmail-badge hidden">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path fill="#EA4335" d="M20.5 6.2 12 12.1 3.5 6.2A2 2 0 0 1 4.7 5h14.6a2 2 0 0 1 1.2 1.2Z"/>
+              <path fill="#4285F4" d="M3 7.1V17a2 2 0 0 0 2 2h.8V9.4L3 7.1Z"/>
+              <path fill="#34A853" d="M18.2 19H19a2 2 0 0 0 2-2V7.1l-2.8 2.3V19Z"/>
+              <path fill="#FBBC05" d="M5.8 19h12.4V9.4L12 13.6 5.8 9.4V19Z"/>
+            </svg>
+            <span id="gmailTip" class="tip" role="tooltip"></span>
+          </button>
+          <button type="button" id="signOut" class="sign-out">
+            <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <path d="M6 3H3.5A1.5 1.5 0 0 0 2 4.5v7A1.5 1.5 0 0 0 3.5 13H6M10.5 11.5 14 8l-3.5-3.5M14 8H6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
         </div>
       </div>
-      <label for="team" id="teamLabel"></label>
-      <select id="team"></select>
-      <p id="driveWarn" class="warn hidden"></p>
-      <p id="gmailStatus"></p>
-      <p id="pluginWarn" class="warn hidden"></p>
-      <div>
-        <button type="button" id="connectGmail" class="hidden"></button>
-        <button type="button" id="signOut" class="secondary"></button>
+      <div class="field">
+        <label for="team" id="teamLabel"></label>
+        <select id="team"></select>
+      </div>
+      <p id="driveWarn" class="banner warn hidden"></p>
+      <p id="gmailStatus" class="banner hint hidden"></p>
+      <p id="pluginWarn" class="banner warn hidden"></p>
+      <div id="connectWrap" class="actions hidden">
+        <button type="button" id="connectGmail"></button>
       </div>
     </div>
     <p id="status"></p>

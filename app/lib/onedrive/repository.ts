@@ -9,6 +9,9 @@ import {
   persistSecret,
 } from "@/app/lib/security/secret-box";
 
+/** Existing OneDrive folders were created under this name. Do not rename in reads. */
+const LEGACY_CLOUD_FOLDER = "Routine";
+
 export type OneDriveStatus = {
   configured: boolean;
   connected: boolean;
@@ -45,7 +48,7 @@ function mapSecretRow(row: IntegrationRow): OneDriveSecretRow {
     teamId: row.team_id,
     isConnected: row.is_connected,
     isEnabled: row.is_enabled,
-    folderPath: row.folder_path || "Routine",
+    folderPath: row.folder_path || LEGACY_CLOUD_FOLDER,
     accountEmail: row.account_email || "",
     refreshToken: decryptSecret(row.refresh_token),
     accessToken: decryptSecret(row.access_token),
@@ -59,7 +62,7 @@ export function sanitizeOneDriveFolderPath(value: string) {
     .map((part) => part.trim())
     .filter(Boolean)
     .filter((part) => part !== "." && part !== "..");
-  return parts.join("/") || "Routine";
+  return parts.join("/") || LEGACY_CLOUD_FOLDER;
 }
 
 export async function assertTeamMember(teamId: string, userId: string) {
@@ -158,7 +161,7 @@ export async function fetchOneDriveStatus(
     configured,
     connected: Boolean(row?.isConnected && row.refreshToken),
     enabled: Boolean(row?.isEnabled),
-    folderPath: row?.folderPath ?? "Routine",
+    folderPath: row?.folderPath ?? LEGACY_CLOUD_FOLDER,
     accountEmail: row?.accountEmail ?? "",
     canConfigure,
   };
@@ -186,7 +189,7 @@ export async function saveOneDriveTokens(input: {
     team_id: input.teamId,
     is_connected: true,
     is_enabled: existing?.isEnabled ?? true,
-    folder_path: existing?.folderPath ?? "Routine",
+    folder_path: existing?.folderPath ?? LEGACY_CLOUD_FOLDER,
     account_email: input.accountEmail,
     refresh_token: persistSecret(refreshToken),
     access_token: persistSecret(input.accessToken),
@@ -263,7 +266,7 @@ export async function disconnectOneDrive(teamId: string) {
     team_id: teamId,
     is_connected: false,
     is_enabled: false,
-    folder_path: existing?.folderPath ?? "Routine",
+    folder_path: existing?.folderPath ?? LEGACY_CLOUD_FOLDER,
     account_email: "",
     refresh_token: null,
     access_token: null,

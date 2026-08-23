@@ -46,7 +46,7 @@ const TEMPLATE_LABEL_KEYS: Record<
 const PREVIEW_PARAMS = {
   name: "Lietotājs",
   team: "Komanda",
-  system: "Routine",
+  system: "TASQIN",
   title: "Uzdevums",
   message: "Tev ir jauns paziņojums par uzdevumu.",
   inviter: "Kolēģis",

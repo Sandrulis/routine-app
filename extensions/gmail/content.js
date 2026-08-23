@@ -17,11 +17,11 @@
   "actions.save": "Saglabāt",
   "actions.close": "Aizvērt",
   "errors.auth_required":
-    "Ielogojies Routine (tajā pašā pārlūkā) un mēģini vēlreiz.",
+    "Ielogojies TASQIN (tajā pašā pārlūkā) un mēģini vēlreiz.",
   "errors.extension_auth_required":
-    "Ielogojies Routine (tajā pašā pārlūkā) un mēģini vēlreiz.",
+    "Ielogojies TASQIN (tajā pašā pārlūkā) un mēģini vēlreiz.",
   "errors.extension_gmail_not_connected":
-    "Vispirms savieno Gmail spraudnī. Savienojums tiks saglabāts arī Routine.",
+    "Vispirms savieno Gmail spraudnī. Savienojums tiks saglabāts arī TASQIN.",
   "errors.extension_plugin_disabled": "Gmail spraudnis sistēmā ir izslēgts.",
   "errors.extension_team_drive_missing":
     "Šai komandai nav pieslēgts Google Drive. Spraudnis nestrādās.",
@@ -36,7 +36,7 @@
   "errors.extension_upload_failed": "Neizdevās pievienot failu.",
   "errors.extension_nothing_attached": "Nekas netika pievienots.",
   "errors.extension_search_failed": "Meklēšana neizdevās.",
-  "errors.extension_uploads_disabled": "Failu augšupielāde Routine ir izslēgta.",
+  "errors.extension_uploads_disabled": "Failu augšupielāde TASQIN ir izslēgta.",
   "errors.extension_invalid_body": "Nederīgs pieprasījums.",
   "errors.extension_task_required": "Izvēlies apakšuzdevumu.",
   "errors.extension_list_required": "Izvēlies sarakstu.",
@@ -80,14 +80,14 @@
   "extension.gmail.no_subtasks": "Nav atvērtu apakšuzdevumu",
   "extension.gmail.email_label": "E-pasts: {subject}",
   "extension.gmail.open_email": "Atver e-pastu Gmailā, tad pievieno.",
-  "extension.gmail.checking_session": "Pārbauda Routine sesiju…",
-  "extension.gmail.open_login": "Atvērt Routine login",
+  "extension.gmail.checking_session": "Pārbauda TASQIN sesiju…",
+  "extension.gmail.open_login": "Atvērt TASQIN login",
   "extension.gmail.connect_gmail": "Savienot Gmail",
-  "extension.gmail.add_to_routine": "Pievienot Routine",
+  "extension.gmail.add_to_routine": "Pievienot TASQIN",
   "extension.gmail.loading_gmail": "Ielādē e-pastu un pielikumus no Gmail…",
   "extension.gmail.progress_email": "Ielādē e-pastu no Gmail…",
   "extension.gmail.progress_download": "Lejupielādē {name} ({current}/{total})",
-  "extension.gmail.progress_upload": "Saglabā Routine ({count})…",
+  "extension.gmail.progress_upload": "Saglabā TASQIN ({count})…",
   "extension.gmail.attach_failed": "Neizdevās pievienot.",
   "extension.gmail.attached_one": "Veiksmīgi! Pievienots «{name}».",
   "extension.gmail.attached_many": "Veiksmīgi! Pievienoti {count} faili.",
@@ -97,6 +97,7 @@
 
 let languageCode = "lv";
 let strings = { ...FALLBACK_STRINGS };
+let systemName = "TASQIN";
 
 function interpolate(value, params) {
   if (!params) return value;
@@ -107,12 +108,14 @@ function interpolate(value, params) {
 
 function t(key, params) {
   const raw = strings[key] || FALLBACK_STRINGS[key] || key;
-  return interpolate(raw, params);
+  return interpolate(raw, { SYSTEM_NAME: systemName, ...params });
 }
 
 function applySessionI18n(data) {
   const code = data?.languageCode;
   if (typeof code === "string" && /^[a-z]{2}$/.test(code)) languageCode = code;
+  const name = String(data?.systemName || "").trim();
+  if (name) systemName = name;
   if (data?.strings && typeof data.strings === "object") {
     strings = { ...FALLBACK_STRINGS, ...data.strings };
   }
@@ -626,6 +629,33 @@ function ensureUi() {
     }
   }
 
+  function selectedTeamFromSession(data) {
+    const teams = Array.isArray(data?.teams) ? data.teams : [];
+    const selectedId = data?.selectedTeamId || "";
+    return teams.find((team) => team.id === selectedId) || teams[0] || null;
+  }
+
+  function pluginButtonsAllowed() {
+    if (!session) return false;
+    if (!session.authenticated) return true;
+    const team = selectedTeamFromSession(session);
+    return Boolean(team?.googleDriveConnected);
+  }
+
+  function removeInlineButtons() {
+    for (const btn of document.querySelectorAll(`[${INLINE_BTN_ATTR}="1"]`)) {
+      btn.remove();
+    }
+  }
+
+  function syncPluginButtons() {
+    if (!pluginButtonsAllowed()) {
+      removeInlineButtons();
+      return;
+    }
+    injectInlineButtons();
+  }
+
   async function refreshSession() {
     const result = await send("routine.getSession");
     session = result?.data || null;
@@ -639,6 +669,7 @@ function ensureUi() {
         logoUrl,
       );
     }
+    syncPluginButtons();
     return result;
   }
 
@@ -901,8 +932,8 @@ function ensureUi() {
     const team =
       teams.find((item) => item.id === data.selectedTeamId) || teams[0] || null;
     if (team && !team.googleDriveConnected) {
-      setResultMode(true);
-      setFeedback(tError("errors.extension_team_drive_missing"), "error");
+      syncPluginButtons();
+      closeModal();
       return;
     }
     await Promise.all([loadAttachmentsList(), loadLists()]);
@@ -919,7 +950,7 @@ function ensureUi() {
     btn.innerHTML = `
       <img class="routine-gmail-inline-img is-hidden" alt="" />
       <span class="routine-gmail-inline-fallback">R</span>
-      <span class="routine-gmail-inline-label">Routine</span>
+      <span class="routine-gmail-inline-label">TASQIN</span>
     `;
     applyLogoTo(
       btn.querySelector(".routine-gmail-inline-img"),
@@ -939,6 +970,10 @@ function ensureUi() {
   }
 
   function injectInlineButtons() {
+    if (!pluginButtonsAllowed()) {
+      removeInlineButtons();
+      return;
+    }
     // Remove old left-side message bars from previous versions.
     for (const bar of document.querySelectorAll(".routine-gmail-inline-bar")) {
       bar.remove();
@@ -1076,8 +1111,19 @@ function ensureUi() {
 
   applyStaticLabels();
   refreshSession().catch(() => undefined);
-  injectInlineButtons();
-  root._routineInjectInline = injectInlineButtons;
+  root._routineInjectInline = syncPluginButtons;
+
+  function onTeamStorageChange(changes, area) {
+    if (area !== "sync" || !changes.selectedTeamId) return;
+    void refreshSession();
+  }
+  if (chrome.storage?.onChanged) {
+    if (globalThis.__routineGmailOnStorage) {
+      chrome.storage.onChanged.removeListener(globalThis.__routineGmailOnStorage);
+    }
+    globalThis.__routineGmailOnStorage = onTeamStorageChange;
+    chrome.storage.onChanged.addListener(onTeamStorageChange);
+  }
 }
 
 ensureUi();
@@ -1119,6 +1165,10 @@ globalThis.__routineGmailCleanup = () => {
   if (globalThis.__routineGmailOnMessage) {
     chrome.runtime.onMessage.removeListener(globalThis.__routineGmailOnMessage);
     globalThis.__routineGmailOnMessage = null;
+  }
+  if (globalThis.__routineGmailOnStorage && chrome.storage?.onChanged) {
+    chrome.storage.onChanged.removeListener(globalThis.__routineGmailOnStorage);
+    globalThis.__routineGmailOnStorage = null;
   }
   document.getElementById("routine-gmail-root")?.remove();
   for (const btn of document.querySelectorAll("[data-routine-gmail-inline]")) {

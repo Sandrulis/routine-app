@@ -4,6 +4,17 @@
 
 - (none)
 
+## v0.2.8
+
+- Juridiskais e-pasts sistēmas uzstādījumos (`is_admin`); privātuma politika rāda TASQIN un šo adresi, bez routine.app
+- Gmail spraudnis: OAuth caur `/auth/google-oauth/callback`; popup kartīte ar `{SYSTEM_NAME}`, Iziet tikai kā ikona, centrēts loading, Drive/Gmail statusi; paša sesija `chrome.storage.local` (TASQIN cilnei nav jāpaliek atvērtai); Gmailā pogas tikai ja komandai ir Google Drive
+- Jaunu komandas biedru ar e-pastu var uzaicināt tikai ar ieslēgtu Resend; esošs lietotājs joprojām saņem paziņojumu lietotnē
+
+## v0.2.7
+
+- Publiskais nosaukuma fallback ir TASQIN (Drive/OneDrive esošās mapes paliek Routine)
+- Landing hero, title un description visās 15 valodās; ES/LT/IT/SV landing teksti vairs nav angļu stubi; sekundārais CTA ved uz iespējām
+
 ## v0.2.6
 
 - 15 UI valodas (t.sk. itāļu un zviedru); valodas izvēlne rāda lielākus karogus un nosaukumus, noklusējums pirmais

@@ -230,7 +230,7 @@ export function AdminApiIntegrationsSection({
                 clearFeedback();
               }}
               disabled={isBusy}
-              placeholder="Routine <noreply@example.com>"
+              placeholder="TASQIN <noreply@example.com>"
               className="mt-1.5 w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 outline-none transition placeholder:text-zinc-400 focus:border-zinc-400 disabled:cursor-not-allowed disabled:bg-zinc-50"
               autoComplete="off"
               spellCheck={false}

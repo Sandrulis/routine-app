@@ -1,5 +1,5 @@
 export const DOCUMENT_TITLE_SEPARATOR = " | ";
-export const DEFAULT_SYSTEM_NAME = "Routine";
+export const DEFAULT_SYSTEM_NAME = "TASQIN";
 export const SYSTEM_NAME_PARAM = "SYSTEM_NAME";
 
 export function resolveSystemName(

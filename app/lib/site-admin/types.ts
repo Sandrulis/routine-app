@@ -93,6 +93,7 @@ export type SiteTranslationInput = {
 
 export type SiteSettingsSummary = {
   systemName: string;
+  legalEmail: string;
   sloganValues: Record<string, string>;
   displayPreferences: SiteDisplayPreferences;
   logoUrl: string | null;
@@ -103,6 +104,7 @@ export type SiteSettingsSummary = {
 
 export type SiteSettingsInput = {
   systemName: string;
+  legalEmail: string;
   sloganValues: Record<string, string>;
   displayPreferences: SiteDisplayPreferences;
   logoUrl: string | null;

@@ -61,7 +61,6 @@ export function LandingPage({ productName }: { productName: string }) {
   );
   const name = { name: productName };
   const signupHref = localePath("/signup", languageCode);
-  const loginHref = localePath("/login", languageCode);
 
   useEffect(() => {
     const id = window.location.hash.replace(/^#/, "");
@@ -91,13 +90,13 @@ export function LandingPage({ productName }: { productName: string }) {
             <h1 className="mt-4 max-w-xl text-4xl font-semibold tracking-tight text-balance text-zinc-900 sm:text-5xl">
               {t(
                 "landing.hero.title",
-                "Komandas uzdevumu pārvaldība bez liekas sarežģītības",
+                "Vienkārša komandas uzdevumu pārvaldība mūsdienīgām komandām",
               )}
             </h1>
             <p className="mt-4 max-w-lg text-lg leading-7 text-zinc-500">
               {t(
                 "landing.hero.subtitle",
-                "{name} palīdz visai komandai redzēt, kas jādara šodien. Uzdevumi, projekti, cilvēki un termiņi — vienā vietā, nevis tabulās un čatā.",
+                "{name} palīdz visai komandai redzēt sarakstus, uzdevumus un cilvēkus vienā darbvietā — ar statusu, termiņiem un atbildīgajiem, nevis tabulās un čatā.",
                 name,
               )}
             </p>
@@ -106,14 +105,19 @@ export function LandingPage({ productName }: { productName: string }) {
                 href={signupHref}
                 className="inline-flex min-h-11 items-center rounded-2xl bg-zinc-900 px-5 text-sm font-semibold text-white transition hover:bg-zinc-700"
               >
-                {t("landing.hero.cta_signup", "Izmēģināt bez maksas")}
+                {t("landing.hero.cta_signup", "Sākt bez maksas")}
               </Link>
-              <Link
-                href={loginHref}
+              <a
+                href="#features"
+                onClick={(event) => {
+                  event.preventDefault();
+                  revealLandingHash("features");
+                  scrollToHashIdWhenReady("features");
+                }}
                 className="inline-flex min-h-11 items-center rounded-2xl border border-zinc-200 bg-white/80 px-5 text-sm font-semibold text-zinc-800 transition hover:bg-white"
               >
-                {t("auth.login.title", "Ienākt")}
-              </Link>
+                {t("landing.hero.cta_how", "Skatīt, kā tas darbojas")}
+              </a>
             </div>
             <p className="mt-4 text-sm text-zinc-400">
               {t("landing.hero.trust", "Bez instalēšanas. Sāc ar e-pastu.")}

@@ -1,4 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { resolveSystemName } from "@/app/lib/document-title";
+import { interpolate, withSystemNameParams } from "@/app/lib/i18n/interpolate";
 import { messages } from "@/app/lib/i18n/messages";
 import {
   DEFAULT_LANGUAGE,
@@ -123,12 +125,14 @@ export async function resolveExtensionLanguageCode(
 
 export function getExtensionStrings(
   languageCode: LanguageCode,
+  systemName?: string,
 ): Record<string, string> {
   const table = messages[languageCode] ?? messages[DEFAULT_LANGUAGE];
   const fallback = messages[DEFAULT_LANGUAGE];
+  const params = withSystemNameParams(resolveSystemName(systemName));
   const strings: Record<string, string> = {};
   for (const key of EXTENSION_I18N_KEYS) {
-    strings[key] = table[key] || fallback[key] || "";
+    strings[key] = interpolate(table[key] || fallback[key] || "", params);
   }
   return strings;
 }

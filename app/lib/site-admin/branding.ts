@@ -26,7 +26,7 @@ function escapeXml(value: string): string {
 
 export function siteInitialsFaviconDataUrl(name: string, color: string): string {
   const tone = listColorById(color);
-  const initials = escapeXml(listInitials(name.trim() || "Routine"));
+  const initials = escapeXml(listInitials(name.trim() || "TASQIN"));
   const fontSize = initials.length > 1 ? 18 : 24;
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="6" fill="${tone.bg}"/><text x="16" y="16" dy="0.38em" text-anchor="middle" font-family="ui-sans-serif,system-ui,sans-serif" font-size="${fontSize}" font-weight="800" fill="${tone.fg}">${initials}</text></svg>`;
   return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;

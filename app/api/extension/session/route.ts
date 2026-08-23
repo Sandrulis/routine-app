@@ -64,7 +64,7 @@ export async function GET(request: Request) {
     auth?.supabase ?? null,
     auth?.user.id ?? null,
   );
-  const strings = getExtensionStrings(languageCode);
+  const strings = getExtensionStrings(languageCode, brand.systemName);
   const [emailPasswordEnabled, googleSignInEnabled] = await Promise.all([
     isEmailPasswordAuthEnabled(),
     isGoogleSignInEnabled(),

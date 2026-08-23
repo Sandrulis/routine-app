@@ -50,6 +50,7 @@ export async function LandingJsonLd() {
       },
       {
         "@type": "SoftwareApplication",
+        additionalType: "https://schema.org/WebApplication",
         name: systemName,
         applicationCategory: "BusinessApplication",
         operatingSystem: "Web",

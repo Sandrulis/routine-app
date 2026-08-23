@@ -1,10 +1,14 @@
 import { randomBytes } from "node:crypto";
-import { getGoogleOAuthCredentials } from "@/app/lib/integrations/google-oauth/repository";
+import {
+  GOOGLE_OAUTH_CALLBACK_PATH,
+  getGoogleOAuthCredentials,
+} from "@/app/lib/integrations/google-oauth/repository";
 
 export const GMAIL_PLUGIN_START_PATH = "/auth/gmail-plugin/start";
 export const GMAIL_PLUGIN_CALLBACK_PATH = "/auth/gmail-plugin/callback";
 export const GMAIL_PLUGIN_DONE_PATH = "/auth/gmail-plugin/done";
 export const GMAIL_PLUGIN_OAUTH_COOKIE = "routine-app-gmail-plugin-oauth";
+export const GMAIL_PLUGIN_STATE_PREFIX = "gmail.";
 export const GMAIL_PLUGIN_SCOPES = [
   "openid",
   "email",
@@ -35,30 +39,34 @@ export function createGmailPluginOAuthState(userId: string): GmailPluginOAuthSta
 }
 
 export function serializeGmailPluginOAuthState(state: GmailPluginOAuthState) {
-  return `${encodeURIComponent(state.userId)}.${state.nonce}`;
+  return `${GMAIL_PLUGIN_STATE_PREFIX}${encodeURIComponent(state.userId)}.${state.nonce}`;
 }
 
 export function parseGmailPluginOAuthState(
   raw: string | null | undefined,
 ): GmailPluginOAuthState | null {
-  if (!raw) return null;
-  const separator = raw.indexOf(".");
+  if (!raw?.startsWith(GMAIL_PLUGIN_STATE_PREFIX)) return null;
+  const rest = raw.slice(GMAIL_PLUGIN_STATE_PREFIX.length);
+  const separator = rest.indexOf(".");
   if (separator <= 0) return null;
-  const userId = decodeURIComponent(raw.slice(0, separator)).trim();
-  const nonce = raw.slice(separator + 1).trim();
+  const userId = decodeURIComponent(rest.slice(0, separator)).trim();
+  const nonce = rest.slice(separator + 1).trim();
   if (!userId || !nonce) return null;
   return { userId, nonce };
 }
 
-export function gmailPluginRedirectUri(origin: string) {
-  return `${origin.replace(/\/$/, "")}${GMAIL_PLUGIN_CALLBACK_PATH}`;
+export function gmailPluginRedirectUri(
+  origin: string,
+  callbackPath: string = GOOGLE_OAUTH_CALLBACK_PATH,
+) {
+  return `${origin.replace(/\/$/, "")}${callbackPath}`;
 }
 
 export function buildGmailPluginCallbackUrl(origin?: string) {
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL?.trim();
   const base = (origin?.trim() || siteUrl || "").replace(/\/$/, "");
-  if (!base) return GMAIL_PLUGIN_CALLBACK_PATH;
-  return `${base}${GMAIL_PLUGIN_CALLBACK_PATH}`;
+  if (!base) return GOOGLE_OAUTH_CALLBACK_PATH;
+  return `${base}${GOOGLE_OAUTH_CALLBACK_PATH}`;
 }
 
 type TokenResponse = {
@@ -98,7 +106,11 @@ export async function buildGmailPluginAuthorizeUrl(origin: string, state: string
   return `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
 }
 
-export async function exchangeGmailPluginCode(origin: string, code: string) {
+export async function exchangeGmailPluginCode(
+  origin: string,
+  code: string,
+  callbackPath: string = GOOGLE_OAUTH_CALLBACK_PATH,
+) {
   const credentials = await getGoogleOAuthCredentials();
   if (!credentials) return null;
   return postToken(
@@ -106,7 +118,7 @@ export async function exchangeGmailPluginCode(origin: string, code: string) {
       code,
       client_id: credentials.clientId,
       client_secret: credentials.clientSecret,
-      redirect_uri: gmailPluginRedirectUri(origin),
+      redirect_uri: gmailPluginRedirectUri(origin, callbackPath),
       grant_type: "authorization_code",
     }),
   );

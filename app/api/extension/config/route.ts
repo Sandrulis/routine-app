@@ -70,7 +70,7 @@ export async function GET(request: Request) {
     loginPath: "/login",
     connectGmailPath: GMAIL_PLUGIN_START_PATH,
     languageCode,
-    strings: getExtensionStrings(languageCode),
+    strings: getExtensionStrings(languageCode, settings.systemName),
     emailPasswordEnabled,
     googleSignInEnabled,
     gmailPluginEnabled,

@@ -592,14 +592,24 @@ export function AdminIntegrationsPage({
               {t("integrations.google_oauth.redirects.title", "Redirect URI")}
             </p>
             <ul className="mt-2 space-y-1 font-mono text-xs text-zinc-700">
-              <li>{googleStatus.callbackUrl}</li>
-              <li>{googleStatus.googleDriveCallbackUrl}</li>
-              <li>{googleStatus.gmailPluginCallbackUrl || ""}</li>
+              {(googleStatus.redirectUrls?.length
+                ? googleStatus.redirectUrls
+                : [
+                    googleStatus.callbackUrl,
+                    googleStatus.googleDriveCallbackUrl,
+                    googleStatus.gmailPluginCallbackUrl,
+                  ]
+              )
+                .filter(Boolean)
+                .filter((url, index, urls) => urls.indexOf(url) === index)
+                .map((url) => (
+                  <li key={url}>{url}</li>
+                ))}
             </ul>
             <p className="mt-2 text-xs text-zinc-500">
               {t(
                 "integrations.google_oauth.redirects.hint",
-                "Pirmo URI izmanto login/signup, otro — komandas Google Drive, trešo — Gmail spraudnim. Google Cloud projektā ieslēdz Drive API un Gmail API.",
+                "Pirmais URI katrā originā ir login/signup un Gmail spraudnim, otrais — komandas Google Drive. Pievieno visus URI Google Cloud (arī localhost). Google Cloud projektā ieslēdz Drive API un Gmail API.",
               )}
             </p>
           </div>

@@ -1,23 +1,23 @@
 const FALLBACK = {
-  "extension.gmail.checking_app": "Meklē Routine…",
-  "extension.gmail.checking_session": "Pārbauda Routine sesiju…",
+  "extension.gmail.checking_app": "Meklē TASQIN…",
+  "extension.gmail.checking_session": "Pārbauda TASQIN sesiju…",
   "auth.login.title": "Ienākt",
   "auth.google.continue": "Turpināt ar Google",
   "common.email": "E-pasts",
   "auth.fields.password": "Parole",
   "extension.gmail.login_failed": "Neizdevās ienākt.",
   "errors.extension_login_mfa":
-    "Šim kontam ir MFA. Pabeidz ienākšanu Routine lapā un mēģini vēlreiz.",
+    "Šim kontam ir MFA. Pabeidz ienākšanu TASQIN lapā un mēģini vēlreiz.",
   "errors.auth_invalid": "E-pasts vai parole nav pareiza.",
   "errors.extension_auth_required":
-    "Ielogojies Routine (tajā pašā pārlūkā) un mēģini vēlreiz.",
+    "Ielogojies TASQIN (tajā pašā pārlūkā) un mēģini vēlreiz.",
   "nav.team": "Komanda",
   "extension.gmail.team.label": "Komanda",
   "extension.gmail.team.drive_missing":
     "Šai komandai nav pieslēgts Google Drive. Spraudnis nestrādās.",
   "extension.gmail.connect_gmail": "Savienot Gmail",
   "extension.gmail.connect_gmail_hint":
-    "Custom login kontam Gmail jāsavieno šeit. Savienojums tiks saglabāts arī Routine.",
+    "Custom login kontam Gmail jāsavieno šeit. Savienojums tiks saglabāts arī TASQIN.",
   "extension.gmail.gmail_connected": "Gmail savienots: {email}",
   "extension.gmail.plugin_disabled":
     "Gmail spraudnis sistēmā ir izslēgts. Ieslēdz to Administrācija → Moduļi.",
@@ -30,6 +30,7 @@ const FALLBACK = {
 };
 
 let strings = { ...FALLBACK };
+let systemName = "TASQIN";
 
 function interpolate(value, params) {
   if (!params) return value;
@@ -39,11 +40,16 @@ function interpolate(value, params) {
 }
 
 function t(key, params) {
-  return interpolate(strings[key] || FALLBACK[key] || key, params);
+  return interpolate(strings[key] || FALLBACK[key] || key, {
+    SYSTEM_NAME: systemName,
+    ...params,
+  });
 }
 
 function applySessionI18n(data) {
   if (data?.languageCode) document.documentElement.lang = data.languageCode;
+  const name = String(data?.systemName || "").trim();
+  if (name) systemName = name;
   if (data?.strings && typeof data.strings === "object") {
     strings = { ...FALLBACK, ...data.strings };
   }
@@ -78,7 +84,9 @@ function applyLabels() {
   $("driveWarn").textContent = t("extension.gmail.team.drive_missing");
   $("pluginWarn").textContent = t("extension.gmail.plugin_disabled");
   $("connectGmail").textContent = t("extension.gmail.connect_gmail");
-  $("signOut").textContent = t("user_menu.sign_out");
+  const signOutLabel = t("user_menu.sign_out");
+  $("signOut").title = signOutLabel;
+  $("signOut").setAttribute("aria-label", signOutLabel);
 }
 
 function send(type, payload = {}) {
@@ -129,13 +137,17 @@ function renderAccount(session) {
   $("driveWarn").classList.toggle("hidden", !current || driveOk);
 
   const gmailConnected = Boolean(session.gmailConnected);
+  const gmailEmail = session.gmailEmail || user.email || "";
+  const gmailLabel = t("extension.gmail.gmail_connected", { email: gmailEmail });
+  $("gmailBadge").classList.toggle("hidden", !gmailConnected);
+  $("gmailTip").textContent = gmailLabel;
+  $("gmailBadge").title = gmailLabel;
+  $("gmailBadge").setAttribute("aria-label", gmailLabel);
   $("gmailStatus").textContent = gmailConnected
-    ? t("extension.gmail.gmail_connected", {
-        email: session.gmailEmail || user.email || "",
-      })
+    ? ""
     : t("extension.gmail.connect_gmail_hint");
-  $("gmailStatus").className = gmailConnected ? "ok" : "";
-  $("connectGmail").classList.toggle("hidden", gmailConnected);
+  $("gmailStatus").classList.toggle("hidden", gmailConnected);
+  $("connectWrap").classList.toggle("hidden", gmailConnected);
 
   const pluginOn = session.gmailPluginEnabled !== false;
   $("pluginWarn").classList.toggle("hidden", pluginOn);
@@ -159,12 +171,19 @@ async function refreshUi() {
       "hidden",
       session?.emailPasswordEnabled === false,
     );
+    fitPopup();
     return session;
   }
 
   $("account").classList.remove("hidden");
   renderAccount(session);
+  fitPopup();
   return session;
+}
+
+function fitPopup() {
+  document.documentElement.style.height = "auto";
+  document.body.style.height = "auto";
 }
 
 $("googleLogin").addEventListener("click", async () => {

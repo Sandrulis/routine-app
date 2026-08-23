@@ -38,7 +38,7 @@ export function MfaSettingsCard() {
     const supabase = createClient();
     const { data, error } = await supabase.auth.mfa.enroll({
       factorType: "totp",
-      friendlyName: "Routine",
+      friendlyName: "TASQIN",
     });
     setPending(false);
     if (error || !data) {

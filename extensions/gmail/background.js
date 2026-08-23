@@ -1,10 +1,11 @@
 const DEFAULT_APP_BASE = "https://tasqin.com";
 const APP_ORIGIN_CANDIDATES = [
-  "http://localhost:3120",
-  "http://127.0.0.1:3120",
   "https://tasqin.com",
   "https://www.tasqin.com",
+  "http://localhost:3120",
+  "http://127.0.0.1:3120",
 ];
+const STORED_SESSION_KEY = "extensionAuth";
 const COOKIE_CHUNK = 3180;
 const AUTH_MAX_AGE_SEC = 30 * 24 * 60 * 60;
 const EXTENSION_UPLOAD_MAX_BYTES = 25 * 1024 * 1024;
@@ -69,26 +70,75 @@ async function probeConfig(origin) {
   }
 }
 
+async function readStoredSession() {
+  const data = await chrome.storage.local.get([STORED_SESSION_KEY]);
+  const stored = data[STORED_SESSION_KEY];
+  const appBase = parseOrigin(stored?.appBase);
+  const session = stored?.session;
+  if (!appBase || !session?.access_token) return null;
+  return { appBase, session };
+}
+
+async function writeStoredSession(appBase, session) {
+  const origin = parseOrigin(appBase);
+  if (!origin || !session?.access_token) return;
+  await chrome.storage.local.set({
+    [STORED_SESSION_KEY]: {
+      appBase: origin,
+      session: {
+        access_token: session.access_token,
+        refresh_token: session.refresh_token,
+        expires_at: session.expires_at,
+        expires_in: session.expires_in,
+        token_type: session.token_type,
+      },
+    },
+  });
+}
+
+async function clearStoredSession() {
+  await chrome.storage.local.remove([STORED_SESSION_KEY]);
+}
+
+async function rememberSession(appBase, session) {
+  await writeStoredSession(appBase, session);
+  const origin = parseOrigin(appBase);
+  if (origin) await chrome.storage.sync.set({ appBaseUrl: origin });
+}
+
 async function getAppBase() {
   const stored = await chrome.storage.sync.get(["appBaseUrl"]);
   const storedOrigin = parseOrigin(stored.appBaseUrl);
+  const storedSession = await readStoredSession();
   const cookieOrigins = await originsFromAuthCookies();
   const candidates = unique([
+    storedSession?.appBase,
     ...cookieOrigins,
     storedOrigin,
     ...APP_ORIGIN_CANDIDATES,
   ]);
-  for (const origin of candidates) {
-    const config = await probeConfig(origin);
-    if (!config) continue;
-    // Stay on the origin that answered. config.appOrigin is NEXT_PUBLIC_SITE_URL
-    // and must not steal a working local session.
+
+  async function adopt(origin, config) {
     await chrome.storage.sync.set({
       appBaseUrl: origin,
       authCookieName: config.authCookieName || "",
     });
     return origin;
   }
+
+  let fallbackOrigin = "";
+  let fallbackConfig = null;
+  for (const origin of candidates) {
+    const config = await probeConfig(origin);
+    if (!config) continue;
+    if (!fallbackOrigin) {
+      fallbackOrigin = origin;
+      fallbackConfig = config;
+    }
+    const token = await getAccessToken(origin);
+    if (token) return adopt(origin, config);
+  }
+  if (fallbackOrigin) return adopt(fallbackOrigin, fallbackConfig);
 
   try {
     await chrome.permissions.request({
@@ -289,6 +339,7 @@ async function refreshSession(appBase, session) {
     if (data.authCookieName) {
       await chrome.storage.sync.set({ authCookieName: data.authCookieName });
     }
+    await rememberSession(appBase, next);
     return next;
   } catch {
     return null;
@@ -307,12 +358,24 @@ function jwtStillValid(session) {
 }
 
 async function getAccessToken(appBase) {
-  const { session } = await readSessionFromCookies(appBase);
+  let { session } = await readSessionFromCookies(appBase);
+  if (!session) {
+    const stored = await readStoredSession();
+    if (stored && parseOrigin(stored.appBase) === parseOrigin(appBase)) {
+      session = stored.session;
+    }
+  }
   if (!session) return null;
-  if (!sessionExpired(session)) return session.access_token;
+  if (!sessionExpired(session)) {
+    await rememberSession(appBase, session);
+    return session.access_token;
+  }
   const refreshed = await refreshSession(appBase, session);
   if (refreshed?.access_token) return refreshed.access_token;
-  if (jwtStillValid(session)) return session.access_token;
+  if (jwtStillValid(session)) {
+    await rememberSession(appBase, session);
+    return session.access_token;
+  }
   return null;
 }
 
@@ -788,6 +851,25 @@ function scheduleSessionRefresh() {
 }
 
 scheduleSessionRefresh();
+
+if (chrome.cookies?.onChanged) {
+  chrome.cookies.onChanged.addListener((changeInfo) => {
+    if (changeInfo?.removed) return;
+    const cookie = changeInfo.cookie;
+    if (!/-auth-token/.test(cookie?.name || "")) return;
+    void (async () => {
+      const host = String(cookie.domain || "").replace(/^\./, "");
+      const protocol = cookie.secure ? "https" : "http";
+      const origin =
+        host === "localhost" || host === "127.0.0.1"
+          ? `${protocol}://${host}:3120`
+          : `${protocol}://${host}`;
+      const { session } = await readSessionFromCookies(origin);
+      if (session?.access_token) await rememberSession(origin, session);
+    })();
+  });
+}
+
 if (chrome.alarms) {
   chrome.alarms.onAlarm.addListener((alarm) => {
     if (alarm.name !== "routine.refreshSession") return;
@@ -845,6 +927,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           await writeAuthCookies(appBase, cookieName, data.session);
           await chrome.storage.sync.set({ authCookieName: cookieName });
         }
+        await rememberSession(appBase, data.session);
         sendResponse({ ok: true });
         return;
       }
@@ -852,6 +935,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         const appBase = await getAppBase();
         const stored = await chrome.storage.sync.get(["authCookieName"]);
         await clearAuthCookies(appBase, stored.authCookieName || "sb-auth-token");
+        await clearStoredSession();
         await chrome.storage.local.remove(["gmailAccessToken", "gmailTokenExpiresAt"]);
         sendResponse({ ok: true });
         return;

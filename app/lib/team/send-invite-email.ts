@@ -1,30 +1,11 @@
-import { createAdminClient } from "@/app/lib/supabase/admin";
-import { isSupabaseAdminConfigured } from "@/app/lib/supabase/env";
-import { getPublicSiteUrl } from "@/app/lib/seo/site-url";
-import { getResendCredentials } from "@/app/lib/integrations/resend/client";
-import { sendTeamInviteNotice } from "@/app/lib/email/send-auth-emails";
 import { findAuthUserByEmailExact } from "@/app/lib/auth/find-auth-user-by-email";
+import { sendTeamInviteNotice } from "@/app/lib/email/send-auth-emails";
+import { isResendEnabled } from "@/app/lib/integrations/resend/client";
+import { getPublicSiteUrl } from "@/app/lib/seo/site-url";
 import { logError } from "@/app/lib/security/log-error";
-
-export function teamInviteRedirectUrl(token: string): string {
-  return `${getPublicSiteUrl()}/auth/callback?next=${encodeURIComponent(`/invite/${token}`)}`;
-}
 
 export function teamInvitePublicUrl(token: string): string {
   return `${getPublicSiteUrl()}/invite/${token}`;
-}
-
-function isRateLimitError(message: string): boolean {
-  return message.toLowerCase().includes("rate limit");
-}
-
-function isExistingAuthUserError(message: string): boolean {
-  const normalized = message.toLowerCase();
-  return (
-    normalized.includes("already") ||
-    normalized.includes("registered") ||
-    normalized.includes("exists")
-  );
 }
 
 export async function resolveAuthUserIdByEmail(
@@ -33,58 +14,6 @@ export async function resolveAuthUserIdByEmail(
 ): Promise<string | null> {
   const found = await findAuthUserByEmailExact(email);
   return found?.id ?? null;
-}
-
-async function sendSupabaseInviteFallback(
-  email: string,
-  token: string,
-): Promise<
-  { ok: true; emailSent: true } | { ok: true; emailSent: false } | { ok: false; error: string }
-> {
-  if (!isSupabaseAdminConfigured()) {
-    return { ok: false, error: "errors.team_invite_email_not_configured" };
-  }
-
-  const admin = createAdminClient();
-  const redirectTo = teamInviteRedirectUrl(token);
-
-  const inviteResult = await admin.auth.admin.inviteUserByEmail(email, {
-    redirectTo,
-    data: {
-      invitation_token: token,
-    },
-  });
-
-  if (!inviteResult.error) {
-    return { ok: true, emailSent: true };
-  }
-
-  if (
-    !isExistingAuthUserError(inviteResult.error.message) &&
-    !isRateLimitError(inviteResult.error.message)
-  ) {
-    logError("inviteUserByEmail failed", inviteResult.error.message);
-    return { ok: false, error: "errors.team_invite_email_failed" };
-  }
-
-  const otpResult = await admin.auth.signInWithOtp({
-    email,
-    options: {
-      emailRedirectTo: redirectTo,
-      shouldCreateUser: false,
-    },
-  });
-
-  if (!otpResult.error) {
-    return { ok: true, emailSent: true };
-  }
-
-  if (isRateLimitError(inviteResult.error.message) || isRateLimitError(otpResult.error.message)) {
-    return { ok: true, emailSent: false };
-  }
-
-  logError("signInWithOtp failed", otpResult.error.message);
-  return { ok: false, error: "errors.team_invite_email_failed" };
 }
 
 export async function sendTeamInviteEmail(input: {
@@ -100,7 +29,11 @@ export async function sendTeamInviteEmail(input: {
   const email = input.email.trim().toLowerCase();
   const inviteLink = teamInvitePublicUrl(input.token);
 
-  if (await getResendCredentials()) {
+  if (!(await isResendEnabled())) {
+    return { ok: true, emailSent: false };
+  }
+
+  try {
     const sent = await sendTeamInviteNotice({
       email,
       inviteLink,
@@ -113,7 +46,11 @@ export async function sendTeamInviteEmail(input: {
       return { ok: false, error: sent.error };
     }
     return { ok: true, emailSent: true };
+  } catch (error) {
+    logError(
+      "sendTeamInviteNotice failed",
+      error instanceof Error ? error.message : "unknown error",
+    );
+    return { ok: false, error: "errors.integrations_resend_send_failed" };
   }
-
-  return sendSupabaseInviteFallback(email, input.token);
 }

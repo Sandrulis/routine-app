@@ -209,7 +209,7 @@ export async function loadCalendarFeedByToken(token: string): Promise<{
     .maybeSingle();
 
   const calendarName = `${
-    ((settings as { system_name?: string } | null)?.system_name || "Routine").trim()
+    ((settings as { system_name?: string } | null)?.system_name || "TASQIN").trim()
   }`;
 
   if (!row.is_enabled || !calendarModuleOn) {

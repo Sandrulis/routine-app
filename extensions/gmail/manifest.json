@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
-  "name": "Routine - Gmail",
-  "description": "Pievieno Gmail e-pastu Routine apakšuzdevumam.",
+  "name": "TASQIN - Gmail",
+  "description": "Pievieno Gmail e-pastu TASQIN apakšuzdevumam.",
   "version": "0.4.0",
   "permissions": ["storage", "cookies", "tabs", "alarms"],
   "host_permissions": [
@@ -17,7 +17,7 @@
     "service_worker": "background.js"
   },
   "action": {
-    "default_title": "Routine Gmail",
+    "default_title": "TASQIN Gmail",
     "default_popup": "options.html",
     "default_icon": {
       "16": "icons/icon16.png",

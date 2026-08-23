@@ -7,13 +7,14 @@ export const ru: Record<string, string> = {
   "site.footer.rights": "© {year} {SYSTEM_NAME}",
   "landing.seo.title": "{name} — простое управление задачами команды",
   "landing.seo.description":
-    "{name} — программа для управления задачами команды. Планируйте задачи, проекты и сроки в одном рабочем пространстве — без лишней сложности.",
+    "{name} — программа для управления задачами команды. Планируйте задачи, проекты и людей в одном рабочем пространстве — со статусом, сроками и ответственными.",
   "landing.seo.keywords":
     "управление задачами команды, программа для управления задачами, управление проектами, командная работа, учёт задач, совместная работа",
-  "landing.hero.title": "Управление задачами команды без лишней сложности",
+  "landing.hero.title": "Простое управление задачами команды для современных команд",
   "landing.hero.subtitle":
-    "{name} помогает всей команде видеть, что делать сегодня. Задачи, проекты, люди и сроки — в одном месте, а не в таблицах и чате.",
-  "landing.hero.cta_signup": "Попробовать бесплатно",
+    "{name} помогает всей команде видеть списки, задачи и людей в одном рабочем пространстве — со статусом, сроками и ответственными, а не в таблицах и чате.",
+  "landing.hero.cta_signup": "Начать бесплатно",
+  "landing.hero.cta_how": "Как это работает",
   "landing.hero.trust": "Без установки. Начните с электронной почты.",
   "landing.hero.kicker": "Управление задачами команды",
   "landing.hero.stat_status_title": "К выполнению, в работе, готово",
@@ -229,15 +230,17 @@ export const ru: Record<string, string> = {
   "auth.mfa.unenroll": "Выключить MFA",
   "auth.mfa.enabled": "Двухфакторная аутентификация включена.",
   "auth.mfa.qr_alt": "QR-код MFA",
-  "legal.common.updated_at": "19.08.26",
+  "legal.common.updated_at": "23.08.26",
   "legal.nav.updated_at": "Обновлено {date}",
   "legal.toc.label": "Содержание",
   "legal.privacy.title": "Политика конфиденциальности",
   "legal.privacy.intro":
-    "В настоящей политике мы разъясняем, какие персональные данные обрабатываем, когда вы посещаете сайт routine.app или пользуетесь приложением {SYSTEM_NAME}, зачем мы это делаем и какие у вас есть права в соответствии с Общим регламентом по защите данных (ЕС) 2016/679 (GDPR).",
+    "В настоящей политике мы разъясняем, какие персональные данные обрабатываем, когда вы пользуетесь {SYSTEM_NAME}, зачем мы это делаем и какие у вас есть права в соответствии с Общим регламентом по защите данных (ЕС) 2016/679 (GDPR).",
   "legal.privacy.controller.title": "1. Контроллер данных",
+  "legal.privacy.controller.contact":
+    " По вопросам обработки данных пишите на {LEGAL_EMAIL}.",
   "legal.privacy.controller.p1":
-    "Контроллером персональных данных является поставщик сервиса {SYSTEM_NAME}. По вопросам обработки данных пишите на privacy@routine.app. Мы ответим в разумный срок и при необходимости запросим дополнительные сведения, чтобы подтвердить вашу личность.",
+    "Контроллером персональных данных является поставщик сервиса {SYSTEM_NAME}.{LEGAL_CONTACT} Мы ответим в разумный срок и при необходимости запросим дополнительные сведения, чтобы подтвердить вашу личность.",
   "legal.privacy.controller.p2":
     "Если вы пользуетесь {SYSTEM_NAME} по поручению работодателя или клиента, контроллером рабочих данных, внесённых в команду, может быть соответствующая организация. В этом случае мы обрабатываем данные как обработчик по поручению организации.",
   "legal.privacy.data.title": "2. Какие данные мы обрабатываем",
@@ -442,7 +445,7 @@ export const ru: Record<string, string> = {
     "Интеграция будет отключена, и пользователи больше не увидят вход через Google.",
   "integrations.google_oauth.redirects.title": "Redirect URI",
   "integrations.google_oauth.redirects.hint":
-    "Первый URI — для входа/регистрации, второй — для Google Drive команды, третий — для плагина Gmail. В Google Cloud включите Drive API и Gmail API.",
+    "Первый URI для каждого origin — вход/регистрация и плагин Gmail, второй — Google Drive команды. Добавьте все URI в Google Cloud (включая localhost). В Google Cloud включите Drive API и Gmail API.",
   "integrations.google_oauth.aria.enabled": "Интеграция Google OAuth включена",
   "integrations.google_oauth.feedback.configured": "Интеграция Google OAuth настроена.",
   "integrations.google_oauth.feedback.credentials_saved": "Данные Google OAuth сохранены.",
@@ -740,6 +743,9 @@ export const ru: Record<string, string> = {
   "site_translations.delete.bundled_disabled":
     "Встроенный перевод из кода нельзя удалить",
   "site_settings.form.system_name": "Название системы",
+  "site_settings.form.legal_email": "Юридический e-mail",
+  "site_settings.form.legal_email_hint":
+    "Этот адрес указан в политике конфиденциальности для обращений по обработке данных.",
   "site_settings.form.logo_color_hint":
     "Если логотип не загружен, аватар показывает инициалы системы на выбранном фоне.",
   "site_settings.form.slogan": "Слоган",
@@ -797,6 +803,8 @@ export const ru: Record<string, string> = {
   "team.invite.title": "Пригласить участника",
   "team.invite.description":
     "Введите e-mail и выберите роль. Участник заполнит профиль при первом входе.",
+  "team.invite.resend_required":
+    "Новый e-mail требует включённую интеграцию Resend. Существующий пользователь получит уведомление в приложении.",
   "team.invite.button": "Пригласить",
   "team.invite.sending": "Отправка…",
   "team.invite.accepted": "Приглашение принято.",
@@ -1778,7 +1786,7 @@ export const ru: Record<string, string> = {
   "errors.team_invite_failed": "Не удалось отправить приглашение.",
   "errors.team_invite_email_failed": "Не удалось отправить e-mail с приглашением.",
   "errors.team_invite_email_not_configured":
-    "Нельзя отправить e-mail новому адресу без SUPABASE_SERVICE_ROLE_KEY в .env.local. Существующие пользователи получат уведомление в приложении.",
+    "Пригласить нового участника по e-mail можно только при включённой интеграции Resend.",
   "errors.clipboard_failed": "Не удалось скопировать ссылку.",
   "errors.calendar_load_failed": "Не удалось загрузить интеграцию календаря.",
   "errors.calendar_save_failed": "Не удалось сохранить интеграцию календаря.",

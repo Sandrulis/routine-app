@@ -21,7 +21,7 @@ type SectionSpec = {
   id: string;
   titleKey: string;
   titleFallback: string;
-  paragraphs: { key: string; fallback: string }[];
+  paragraphs: { key: string; fallback: string; params?: Record<string, string | number> }[];
 };
 
 function buildSections(t: Translate, specs: SectionSpec[]): LegalSection[] {
@@ -29,7 +29,7 @@ function buildSections(t: Translate, specs: SectionSpec[]): LegalSection[] {
     id: spec.id,
     title: t(spec.titleKey, spec.titleFallback),
     paragraphs: spec.paragraphs.map((paragraph) =>
-      t(paragraph.key, paragraph.fallback),
+      t(paragraph.key, paragraph.fallback, paragraph.params),
     ),
   }));
 }
@@ -38,12 +38,23 @@ function getUpdatedAt(t: Translate): string {
   return t("legal.common.updated_at", "17.08.26");
 }
 
-export function getPrivacyPolicyContent(t: Translate): LegalDocumentContent {
+export function getPrivacyPolicyContent(
+  t: Translate,
+  legalEmail = "",
+): LegalDocumentContent {
+  const email = legalEmail.trim();
+  const legalContact = email
+    ? t(
+        "legal.privacy.controller.contact",
+        " Par datu apstrādi raksti uz {LEGAL_EMAIL}.",
+        { LEGAL_EMAIL: email },
+      )
+    : "";
   return {
     title: t("legal.privacy.title", "Privātuma politika"),
     intro: t(
       "legal.privacy.intro",
-      "Šajā politikā skaidrojam, kādus personas datus apstrādājam, kad tu apmeklē vietni routine.app vai izmanto {SYSTEM_NAME} lietotni, kāpēc to darām un kādas ir tavas tiesības saskaņā ar Vispārīgo datu aizsardzības regulu (ES) 2016/679 (VDAR).",
+      "Šajā politikā skaidrojam, kādus personas datus apstrādājam, kad tu izmanto {SYSTEM_NAME}, kāpēc to darām un kādas ir tavas tiesības saskaņā ar Vispārīgo datu aizsardzības regulu (ES) 2016/679 (VDAR).",
     ),
     updatedAt: getUpdatedAt(t),
     sections: buildSections(t, [
@@ -55,7 +66,8 @@ export function getPrivacyPolicyContent(t: Translate): LegalDocumentContent {
           {
             key: "legal.privacy.controller.p1",
             fallback:
-              "Personas datu pārzinis ir {SYSTEM_NAME} pakalpojuma sniedzējs. Par datu apstrādi raksti uz privacy@routine.app. Atbildēsim saprātīgā termiņā un, ja nepieciešams, lūgsim papildu informāciju, lai pārliecinātos par tavu identitāti.",
+              "Personas datu pārzinis ir {SYSTEM_NAME} pakalpojuma sniedzējs.{LEGAL_CONTACT} Atbildēsim saprātīgā termiņā un, ja nepieciešams, lūgsim papildu informāciju, lai pārliecinātos par tavu identitāti.",
+            params: { LEGAL_CONTACT: legalContact },
           },
           {
             key: "legal.privacy.controller.p2",

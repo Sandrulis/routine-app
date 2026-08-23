@@ -19,6 +19,7 @@ import {
   OWNER_TEAM_ROLE,
   toneForIndex,
 } from "@/app/lib/team";
+import { isResendEnabled } from "@/app/lib/integrations/resend/client";
 import { normalizeTeamPermissionSet } from "@/app/lib/team-permissions";
 import {
   resolveAuthUserIdByEmail,
@@ -347,6 +348,15 @@ export async function inviteTeamMemberAction(input: {
 
   const pendingName = existingUser?.name?.trim() ?? "";
 
+  if (!(await isResendEnabled())) {
+    const previewAuthId = existingUser?.id
+      ? existingUser.id
+      : await resolveAuthUserIdByEmail(null, email);
+    if (!previewAuthId) {
+      return { ok: false, error: "errors.team_invite_email_not_configured" };
+    }
+  }
+
   const { error: memberInsertError } = await supabase.from("team_members").insert({
     id: memberId,
     team_id: teamId,
@@ -411,12 +421,18 @@ export async function inviteTeamMemberAction(input: {
 
   let emailSent = false;
   const inviterName = mapUserDisplay(user).name || user.email || "";
+  const { data: inviterProfile } = await supabase
+    .from("users")
+    .select("language_code")
+    .eq("id", user.id)
+    .maybeSingle();
   const emailResult = await sendTeamInviteEmail({
     email,
     token,
     teamName: teamRow.name,
     inviterName,
     recipientName: pendingName || undefined,
+    languageCode: inviterProfile?.language_code,
   });
   if (!emailResult.ok) {
     if (!targetUserId) {
@@ -440,6 +456,12 @@ export async function inviteTeamMemberAction(input: {
       emailSent,
     },
   };
+}
+
+export async function isTeamInviteEmailEnabledAction(): Promise<boolean> {
+  const user = await getCurrentUser();
+  if (!user) return false;
+  return isResendEnabled();
 }
 
 export async function acceptTeamInvitationAction(
@@ -593,6 +615,10 @@ export async function resendTeamInvitationAction(
     invitation.invited_user_id,
   );
 
+  if (!(await isResendEnabled()) && !targetUserId) {
+    return { ok: false, error: "errors.team_invite_email_not_configured" };
+  }
+
   if (targetUserId && targetUserId !== invitation.invited_user_id) {
     await supabase
       .from("team_invitations")
@@ -621,11 +647,17 @@ export async function resendTeamInvitationAction(
     .select("name")
     .eq("id", member.team_id)
     .maybeSingle();
+  const { data: inviterProfile } = await supabase
+    .from("users")
+    .select("language_code")
+    .eq("id", user.id)
+    .maybeSingle();
   const emailResult = await sendTeamInviteEmail({
     email: invitation.email,
     token: invitation.token,
     teamName: teamRow?.name ?? "",
     inviterName: mapUserDisplay(user).name || user.email || "",
+    languageCode: inviterProfile?.language_code,
   });
   if (!emailResult.ok) {
     if (!targetUserId) {

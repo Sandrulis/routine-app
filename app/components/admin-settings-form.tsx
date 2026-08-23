@@ -59,6 +59,7 @@ function toInput(
 ): SiteSettingsInput {
   return {
     systemName: settings.systemName,
+    legalEmail: settings.legalEmail,
     sloganValues: mergeSloganValues(languages, settings.sloganValues),
     displayPreferences: settings.displayPreferences,
     logoUrl: settings.logoUrl,
@@ -91,6 +92,7 @@ export function AdminSettingsForm({
   );
   const hasChanges =
     settings.systemName !== savedInput.systemName ||
+    settings.legalEmail !== savedInput.legalEmail ||
     JSON.stringify(settings.sloganValues) !== JSON.stringify(savedInput.sloganValues) ||
     !siteDisplayPreferencesEqual(settings.displayPreferences, savedInput.displayPreferences) ||
     settings.logoUrl !== savedInput.logoUrl ||
@@ -120,6 +122,7 @@ export function AdminSettingsForm({
 
       setSavedSettings({
         systemName: settings.systemName,
+        legalEmail: settings.legalEmail,
         sloganValues: settings.sloganValues,
         displayPreferences: settings.displayPreferences,
         logoUrl: settings.logoUrl,
@@ -193,6 +196,28 @@ export function AdminSettingsForm({
                   }
                   onClose={() => setAppearanceOpen(false)}
                 />
+              </div>
+
+              <div>
+                <label htmlFor="legalEmail" className={labelClassName}>
+                  {t("site_settings.form.legal_email", "Juridiskais e-pasts")}
+                </label>
+                <input
+                  id="legalEmail"
+                  type="email"
+                  autoComplete="email"
+                  value={settings.legalEmail}
+                  onChange={(event) =>
+                    setSettings((current) => ({ ...current, legalEmail: event.target.value }))
+                  }
+                  className="mt-2 min-h-11 w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 outline-none transition focus:border-zinc-400 focus:ring-4 focus:ring-zinc-100"
+                />
+                <p className={hintClassName}>
+                  {t(
+                    "site_settings.form.legal_email_hint",
+                    "Šo adresi rāda privātuma politikā saziņai par datu apstrādi.",
+                  )}
+                </p>
               </div>
 
               <div>

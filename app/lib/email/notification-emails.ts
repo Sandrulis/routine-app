@@ -126,7 +126,7 @@ export async function sendNotificationEmailsAction(input: {
   const defaultLang =
     languages.find((language) => language.isDefault)?.code ?? "lv";
   const origin = getPublicSiteUrl();
-  const teamName = teamRow?.name?.trim() || "Routine";
+  const teamName = teamRow?.name?.trim() || "TASQIN";
 
   const overlayByLang = new Map<string, Record<string, string>>();
 

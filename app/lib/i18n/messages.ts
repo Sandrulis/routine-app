@@ -28,13 +28,14 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
     "site.footer.rights": "© {year} {SYSTEM_NAME}",
     "landing.seo.title": "{name} — vienkārša komandas uzdevumu pārvaldība",
     "landing.seo.description":
-      "{name} ir komandas uzdevumu pārvaldības rīks mazām un augošām komandām. Plāno uzdevumus, projektus un termiņus vienā darbvietā — bez liekas sarežģītības.",
+      "{name} ir komandas uzdevumu pārvaldības rīks. Plāno uzdevumus, projektus un cilvēkus vienā darbvietā — ar statusu, termiņiem un atbildīgajiem.",
     "landing.seo.keywords":
       "komandas uzdevumu pārvaldība, uzdevumu pārvaldības programma, projektu vadība, darba pārvaldība, uzdevumu uzskaite, komandas sadarbība",
-    "landing.hero.title": "Komandas uzdevumu pārvaldība bez liekas sarežģītības",
+    "landing.hero.title": "Vienkārša komandas uzdevumu pārvaldība mūsdienīgām komandām",
     "landing.hero.subtitle":
-      "{name} palīdz visai komandai redzēt, kas jādara šodien. Uzdevumi, projekti, cilvēki un termiņi — vienā vietā, nevis tabulās un čatā.",
-    "landing.hero.cta_signup": "Izmēģināt bez maksas",
+      "{name} palīdz visai komandai redzēt sarakstus, uzdevumus un cilvēkus vienā darbvietā — ar statusu, termiņiem un atbildīgajiem, nevis tabulās un čatā.",
+    "landing.hero.cta_signup": "Sākt bez maksas",
+    "landing.hero.cta_how": "Skatīt, kā tas darbojas",
     "landing.hero.trust": "Bez instalēšanas. Sāc ar e-pastu.",
     "landing.hero.kicker": "Komandas uzdevumu pārvaldība",
     "landing.hero.stat_status_title": "Darāms, procesā, gatavs",
@@ -249,15 +250,17 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
     "auth.mfa.unenroll": "Izslēgt MFA",
     "auth.mfa.enabled": "Divfaktoru autentifikācija ir ieslēgta.",
     "auth.mfa.qr_alt": "MFA QR kods",
-    "legal.common.updated_at": "19.08.26",
+    "legal.common.updated_at": "23.08.26",
     "legal.nav.updated_at": "Atjaunināts {date}",
     "legal.toc.label": "Saturs",
     "legal.privacy.title": "Privātuma politika",
     "legal.privacy.intro":
-      "Šajā politikā skaidrojam, kādus personas datus apstrādājam, kad tu apmeklē vietni routine.app vai izmanto {SYSTEM_NAME} lietotni, kāpēc to darām un kādas ir tavas tiesības saskaņā ar Vispārīgo datu aizsardzības regulu (ES) 2016/679 (VDAR).",
+      "Šajā politikā skaidrojam, kādus personas datus apstrādājam, kad tu izmanto {SYSTEM_NAME}, kāpēc to darām un kādas ir tavas tiesības saskaņā ar Vispārīgo datu aizsardzības regulu (ES) 2016/679 (VDAR).",
     "legal.privacy.controller.title": "1. Datu pārzinis",
+    "legal.privacy.controller.contact":
+      " Par datu apstrādi raksti uz {LEGAL_EMAIL}.",
     "legal.privacy.controller.p1":
-      "Personas datu pārzinis ir {SYSTEM_NAME} pakalpojuma sniedzējs. Par datu apstrādi raksti uz privacy@routine.app. Atbildēsim saprātīgā termiņā un, ja nepieciešams, lūgsim papildu informāciju, lai pārliecinātos par tavu identitāti.",
+      "Personas datu pārzinis ir {SYSTEM_NAME} pakalpojuma sniedzējs.{LEGAL_CONTACT} Atbildēsim saprātīgā termiņā un, ja nepieciešams, lūgsim papildu informāciju, lai pārliecinātos par tavu identitāti.",
     "legal.privacy.controller.p2":
       "Ja {SYSTEM_NAME} izmanto sava darba devēja vai klienta uzdevumā, par komandā ievadītajiem darba datiem pārzinis var būt attiecīgais uzņēmums. Šādā gadījumā mēs datus apstrādājam kā apstrādātājs uzņēmuma uzdevumā.",
     "legal.privacy.data.title": "2. Kādus datus apstrādājam",
@@ -463,7 +466,7 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
       "Integrācija tiks izslēgta un lietotāji vairs neredzēs Google pieslēgšanos.",
     "integrations.google_oauth.redirects.title": "Redirect URI",
     "integrations.google_oauth.redirects.hint":
-      "Pirmo URI izmanto login/signup, otro — komandas Google Drive, trešo — Gmail spraudnim. Google Cloud projektā ieslēdz Drive API un Gmail API.",
+      "Pirmais URI katrā originā ir login/signup un Gmail spraudnim, otrais — komandas Google Drive. Pievieno visus URI Google Cloud (arī localhost). Google Cloud projektā ieslēdz Drive API un Gmail API.",
     "integrations.google_oauth.aria.enabled": "Google OAuth integrācija ieslēgta",
     "integrations.google_oauth.feedback.configured": "Google OAuth integrācija konfigurēta.",
     "integrations.google_oauth.feedback.credentials_saved": "Google OAuth dati saglabāti.",
@@ -761,6 +764,9 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
     "site_translations.delete.confirm_prefix": "Vai tiešām dzēst tulkojumu",
     "site_translations.delete.bundled_disabled": "Koda tulkojumu nevar dzēst",
     "site_settings.form.system_name": "Sistēmas nosaukums",
+    "site_settings.form.legal_email": "Juridiskais e-pasts",
+    "site_settings.form.legal_email_hint":
+      "Šo adresi rāda privātuma politikā saziņai par datu apstrādi.",
     "site_settings.form.logo_color_hint":
       "Ja logotips nav augšupielādēts, avatārs rāda sistēmas iniciāļus ar izvēlēto fonu.",
     "site_settings.form.slogan": "Slogans",
@@ -818,6 +824,8 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
     "team.invite.title": "Uzaicināt biedru",
     "team.invite.description":
       "Ieraksti e-pastu un izvēlies lomu. Biedrs aizpildīs profilu pie pirmās ielogošanās.",
+    "team.invite.resend_required":
+      "Jauns e-pasts prasa ieslēgtu Resend integrāciju. Esošs lietotājs saņems paziņojumu lietotnē.",
     "team.invite.button": "Uzaicināt",
     "team.invite.sending": "Sūta…",
     "team.invite.accepted": "Uzaicinājums apstiprināts.",
@@ -1791,7 +1799,7 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
     "errors.team_invite_failed": "Neizdevās nosūtīt uzaicinājumu.",
     "errors.team_invite_email_failed": "Neizdevās nosūtīt uzaicinājuma e-pastu.",
     "errors.team_invite_email_not_configured":
-      "Jaunam e-pastam nevar nosūtīt uzaicinājumu — serverī trūkst SUPABASE_SERVICE_ROLE_KEY (.env.local). Esošam lietotājam pietiek ar paziņojumu lietotnē.",
+      "Jaunu komandas biedru ar e-pastu var uzaicināt tikai tad, ja Resend integrācija ir ieslēgta.",
     "errors.clipboard_failed": "Neizdevās nokopēt linku.",
     "errors.calendar_load_failed": "Neizdevās ielādēt kalendāra integrāciju.",
     "errors.calendar_save_failed": "Neizdevās saglabāt kalendāra integrāciju.",
@@ -1904,13 +1912,14 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
     "site.footer.rights": "© {year} {SYSTEM_NAME}",
     "landing.seo.title": "{name} — Simple Team Task Management Software",
     "landing.seo.description":
-      "{name} is team task management software for small and growing teams. Plan tasks, projects and deadlines in one workspace — without the usual complexity.",
+      "{name} is team task management software for tasks, projects and people in one workspace. Status, due dates and owners stay with the work — without the usual complexity.",
     "landing.seo.keywords":
       "team task management software, task management software, team collaboration software, project management software, work management software, task tracking software",
-    "landing.hero.title": "Team task management without the complexity",
+    "landing.hero.title": "Simple team task management for modern teams",
     "landing.hero.subtitle":
-      "{name} helps the whole team see what to do today. Tasks, projects, people and deadlines — in one place, not scattered across sheets and chat.",
-    "landing.hero.cta_signup": "Try it for free",
+      "{name} helps the whole team see lists, tasks and people in one workspace — with status, due dates and owners, not scattered across sheets and chat.",
+    "landing.hero.cta_signup": "Start for free",
+    "landing.hero.cta_how": "See how it works",
     "landing.hero.trust": "No install. Start with your email.",
     "landing.hero.kicker": "Team task management",
     "landing.hero.stat_status_title": "To do, in progress, done",
@@ -2124,15 +2133,16 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
     "auth.mfa.unenroll": "Turn off MFA",
     "auth.mfa.enabled": "Two-factor authentication is enabled.",
     "auth.mfa.qr_alt": "MFA QR code",
-    "legal.common.updated_at": "19.08.26",
+    "legal.common.updated_at": "23.08.26",
     "legal.nav.updated_at": "Updated {date}",
     "legal.toc.label": "Contents",
     "legal.privacy.title": "Privacy policy",
     "legal.privacy.intro":
-      "This policy explains what personal data we process when you visit routine.app or use the {SYSTEM_NAME} app, why we do it, and what rights you have under the General Data Protection Regulation (EU) 2016/679 (GDPR).",
+      "This policy explains what personal data we process when you use {SYSTEM_NAME}, why we do it, and what rights you have under the General Data Protection Regulation (EU) 2016/679 (GDPR).",
     "legal.privacy.controller.title": "1. Controller",
+    "legal.privacy.controller.contact": " Write to {LEGAL_EMAIL} about data processing.",
     "legal.privacy.controller.p1":
-      "The controller of personal data is the {SYSTEM_NAME} service provider. Write to privacy@routine.app about data processing. We will reply within a reasonable time and may ask for extra details to confirm your identity.",
+      "The controller of personal data is the {SYSTEM_NAME} service provider.{LEGAL_CONTACT} We will reply within a reasonable time and may ask for extra details to confirm your identity.",
     "legal.privacy.controller.p2":
       "If you use {SYSTEM_NAME} for your employer or a client, that company may be the controller of the work data entered in the team. In that case we process the data as a processor on the company's behalf.",
     "legal.privacy.data.title": "2. What data we process",
@@ -2336,7 +2346,7 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
       "The integration will be disabled and users will no longer see Google sign-in.",
     "integrations.google_oauth.redirects.title": "Redirect URI",
     "integrations.google_oauth.redirects.hint":
-      "The first URI is for login/signup, the second for team Google Drive, the third for the Gmail plugin. Also enable the Drive API and Gmail API in Google Cloud.",
+      "The first URI for each origin is for login/signup and the Gmail plugin; the second is for team Google Drive. Add every URI in Google Cloud (including localhost). Also enable the Drive API and Gmail API.",
     "integrations.google_oauth.aria.enabled": "Google OAuth integration enabled",
     "integrations.google_oauth.feedback.configured": "Google OAuth integration configured.",
     "integrations.google_oauth.feedback.credentials_saved": "Google OAuth credentials saved.",
@@ -2630,6 +2640,9 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
     "site_translations.delete.confirm_prefix": "Delete translation",
     "site_translations.delete.bundled_disabled": "Code translations cannot be deleted",
     "site_settings.form.system_name": "System name",
+    "site_settings.form.legal_email": "Legal email",
+    "site_settings.form.legal_email_hint":
+      "This address is shown in the privacy policy for data-processing requests.",
     "site_settings.form.logo_color_hint":
       "If no logo is uploaded, the avatar uses system initials on the chosen background.",
     "site_settings.form.slogan": "Slogan",
@@ -2686,6 +2699,8 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
     "team.invite.title": "Invite teammate",
     "team.invite.description":
       "Enter an email and choose a role. They will complete their profile on first sign-in.",
+    "team.invite.resend_required":
+      "A new email needs Resend enabled. Existing users still get an in-app notification.",
     "team.invite.button": "Invite",
     "team.invite.sending": "Sending…",
     "team.invite.accepted": "Invitation accepted.",
@@ -3645,7 +3660,7 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
     "errors.team_invite_failed": "Could not send the invitation.",
     "errors.team_invite_email_failed": "Could not send the invitation email.",
     "errors.team_invite_email_not_configured":
-      "Cannot email a new address without SUPABASE_SERVICE_ROLE_KEY in .env.local. Existing users still receive an in-app notification.",
+      "You can invite a new teammate by email only when the Resend integration is enabled.",
     "errors.clipboard_failed": "Could not copy the link.",
     "errors.calendar_load_failed": "Could not load calendar integration.",
     "errors.calendar_save_failed": "Could not save calendar integration.",

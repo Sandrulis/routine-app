@@ -10,6 +10,7 @@ import { isSupabaseAdminConfigured } from "@/app/lib/supabase/env";
 import { FRONTEND_MODULE_KEYS } from "@/app/lib/frontend-modules/keys";
 import { SITE_INTEGRATION_KEYS } from "@/app/lib/integrations/keys";
 import { getPublicSignInMethods } from "@/app/lib/integrations/public-sign-in";
+import { KNOWN_SITE_ORIGINS } from "@/app/lib/seo/known-site-origins";
 import type {
   GoogleOAuthCredentialsInput,
   GoogleOAuthIntegrationStatus,
@@ -128,8 +129,29 @@ export function buildGoogleDriveCallbackUrl(origin?: string) {
 
 export function buildGmailPluginCallbackUrl(origin?: string) {
   const base = (origin?.trim() || resolveSiteOrigin()).replace(/\/$/, "");
-  if (!base) return "/auth/gmail-plugin/callback";
-  return `${base}/auth/gmail-plugin/callback`;
+  if (!base) return GOOGLE_OAUTH_CALLBACK_PATH;
+  return `${base}${GOOGLE_OAUTH_CALLBACK_PATH}`;
+}
+
+export function listGoogleOAuthRedirectUrls(primaryOrigin = ""): string[] {
+  const primary = primaryOrigin.trim().replace(/\/$/, "");
+  const origins = [
+    primary,
+    ...KNOWN_SITE_ORIGINS.filter((origin) => origin !== primary),
+  ].filter(Boolean);
+  const urls: string[] = [];
+  const seen = new Set<string>();
+  for (const origin of origins) {
+    for (const url of [
+      buildGoogleOAuthCallbackUrl(origin),
+      buildGoogleDriveCallbackUrl(origin),
+    ]) {
+      if (seen.has(url)) continue;
+      seen.add(url);
+      urls.push(url);
+    }
+  }
+  return urls;
 }
 
 export async function fetchGoogleOAuthIntegrationStatus(
@@ -154,6 +176,7 @@ export async function fetchGoogleOAuthIntegrationStatus(
     callbackUrl: buildGoogleOAuthCallbackUrl(origin),
     googleDriveCallbackUrl: buildGoogleDriveCallbackUrl(origin),
     gmailPluginCallbackUrl: buildGmailPluginCallbackUrl(origin),
+    redirectUrls: listGoogleOAuthRedirectUrls(origin),
   };
 }
 

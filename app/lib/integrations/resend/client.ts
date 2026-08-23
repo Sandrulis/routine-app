@@ -29,37 +29,58 @@ export async function getResendCredentials() {
   };
 }
 
+function formatResendFrom(from: string, displayName?: string): string {
+  const trimmed = from.trim();
+  if (!trimmed) return trimmed;
+
+  const named = trimmed.match(/^(.*)<([^<>]+)>\s*$/);
+  const email = (named?.[2] ?? trimmed).trim();
+  const existingName = named?.[1]?.trim().replace(/^["']|["']$/g, "") ?? "";
+  const label = existingName || displayName?.trim().replace(/[<>"]/g, "") || "";
+  if (!label || !email.includes("@")) return trimmed;
+  return `${label} <${email}>`;
+}
+
 export async function sendResendEmail(input: {
   to: string | string[];
   subject: string;
   html: string;
   text?: string;
+  fromName?: string;
 }) {
   const credentials = await getResendCredentials();
   if (!credentials) {
     return { ok: false as const, error: "errors.integrations_resend_not_enabled" };
   }
 
-  const response = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${credentials.apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      from: credentials.fromEmail,
-      to: input.to,
-      subject: input.subject,
-      html: input.html,
-      text: input.text,
-    }),
-  });
+  try {
+    const response = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${credentials.apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        from: formatResendFrom(credentials.fromEmail, input.fromName),
+        to: input.to,
+        subject: input.subject,
+        html: input.html,
+        text: input.text,
+      }),
+    });
 
-  if (!response.ok) {
-    const body = await response.text().catch(() => "");
-    logError("Resend send failed", `${response.status} ${body}`);
+    if (!response.ok) {
+      const body = await response.text().catch(() => "");
+      logError("Resend send failed", `${response.status} ${body}`);
+      return { ok: false as const, error: "errors.integrations_resend_send_failed" };
+    }
+
+    return { ok: true as const };
+  } catch (error) {
+    logError(
+      "Resend send failed",
+      error instanceof Error ? error.message : "network error",
+    );
     return { ok: false as const, error: "errors.integrations_resend_send_failed" };
   }
-
-  return { ok: true as const };
 }

@@ -293,7 +293,7 @@ export function LandingBelowFold({ productName }: { productName: string }) {
               href={signupHref}
               className="inline-flex min-h-11 items-center rounded-2xl bg-white px-5 text-sm font-semibold text-zinc-900 transition hover:bg-zinc-100"
             >
-              {t("landing.hero.cta_signup", "Izmēģināt bez maksas")}
+              {t("landing.hero.cta_signup", "Sākt bez maksas")}
             </Link>
             <Link
               href={loginHref}

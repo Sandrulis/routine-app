@@ -9,6 +9,9 @@ import {
   persistSecret,
 } from "@/app/lib/security/secret-box";
 
+/** Existing Drive folders were created under this name. Do not rename in reads. */
+const LEGACY_CLOUD_FOLDER = "Routine";
+
 export type GoogleDriveStatus = {
   configured: boolean;
   connected: boolean;
@@ -63,7 +66,7 @@ function mapSecretRow(row: IntegrationRow): GoogleDriveSecretRow {
     isConnected: row.is_connected,
     isEnabled: row.is_enabled,
     storeOnServer: row.store_on_server === true,
-    folderPath: row.folder_path || "Routine",
+    folderPath: row.folder_path || LEGACY_CLOUD_FOLDER,
     accountEmail: row.account_email || "",
     refreshToken: decryptSecret(row.refresh_token),
     accessToken: decryptSecret(row.access_token),
@@ -78,7 +81,7 @@ export function sanitizeDriveFolderPath(value: string) {
     .map((part) => part.trim())
     .filter(Boolean)
     .filter((part) => part !== "." && part !== "..");
-  return parts.join("/") || "Routine";
+  return parts.join("/") || LEGACY_CLOUD_FOLDER;
 }
 
 export async function assertTeamMember(teamId: string, userId: string) {
@@ -178,7 +181,7 @@ export async function fetchGoogleDriveStatus(
     connected: Boolean(row?.isConnected && row.refreshToken),
     enabled: Boolean(row?.isEnabled),
     storeOnServer: Boolean(row?.storeOnServer),
-    folderPath: row?.folderPath ?? "Routine",
+    folderPath: row?.folderPath ?? LEGACY_CLOUD_FOLDER,
     accountEmail: row?.accountEmail ?? "",
     canConfigure,
   };
@@ -207,7 +210,7 @@ export async function saveGoogleDriveTokens(input: {
     is_connected: true,
     is_enabled: existing?.isEnabled ?? true,
     store_on_server: existing?.storeOnServer ?? false,
-    folder_path: existing?.folderPath ?? "Routine",
+    folder_path: existing?.folderPath ?? LEGACY_CLOUD_FOLDER,
     account_email: input.accountEmail,
     refresh_token: persistSecret(refreshToken),
     access_token: persistSecret(input.accessToken),
@@ -288,7 +291,7 @@ export async function disconnectGoogleDrive(teamId: string) {
     is_connected: false,
     is_enabled: false,
     store_on_server: existing?.storeOnServer ?? false,
-    folder_path: existing?.folderPath ?? "Routine",
+    folder_path: existing?.folderPath ?? LEGACY_CLOUD_FOLDER,
     account_email: "",
     refresh_token: null,
     access_token: null,

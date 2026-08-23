@@ -11,7 +11,12 @@ import {
   oauthSignInErrorRedirect,
 } from "@/app/lib/auth/oauth-session";
 import {
+  handleGmailPluginOAuthCallback,
+  isGmailPluginOAuthCallback,
+} from "@/app/lib/extension/gmail-oauth-callback";
+import {
   GOOGLE_OAUTH_ADMIN_PAGE_PATH,
+  GOOGLE_OAUTH_CALLBACK_PATH,
   isGoogleSignInEnabled,
   markGoogleOAuthConfigured,
 } from "@/app/lib/integrations/google-oauth/repository";
@@ -94,6 +99,9 @@ export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
   const stateParam = searchParams.get("state");
+  if (isGmailPluginOAuthCallback(stateParam)) {
+    return handleGmailPluginOAuthCallback(request, GOOGLE_OAUTH_CALLBACK_PATH);
+  }
   const cookieStore = await cookies();
   const cookieValue = cookieStore.get(GOOGLE_OAUTH_OAUTH_COOKIE)?.value;
   const loginCookie = parseOAuthLoginState(cookieValue);

@@ -129,6 +129,7 @@ type TranslationRow = {
 
 type SettingsRow = {
   system_name: string;
+  legal_email: string | null;
   slogan: string;
   slogan_values: Record<string, unknown> | null;
   week_start_day: string | null;
@@ -960,6 +961,7 @@ function readDisplayPreferences(row: SettingsRow) {
 export const getSiteSettings = cache(async function getSiteSettings(): Promise<SiteSettingsSummary> {
   const fallback: SiteSettingsSummary = {
     systemName: DEFAULT_SYSTEM_NAME,
+    legalEmail: "",
     sloganValues: {
       lv: messages.lv["app.subtitle"] || "",
       en: messages.en["app.subtitle"] || "",
@@ -980,7 +982,7 @@ export const getSiteSettings = cache(async function getSiteSettings(): Promise<S
   const { data, error } = await supabase
     .from("site_settings")
     .select(
-      "system_name, slogan, slogan_values, week_start_day, date_format, date_separator, time_format, logo_url, favicon_url, logo_color, updated_at",
+      "system_name, legal_email, slogan, slogan_values, week_start_day, date_format, date_separator, time_format, logo_url, favicon_url, logo_color, updated_at",
     )
     .eq("id", 1)
     .maybeSingle();
@@ -993,6 +995,7 @@ export const getSiteSettings = cache(async function getSiteSettings(): Promise<S
   const stored = asStringRecord(row.slogan_values);
   return {
     systemName: row.system_name,
+    legalEmail: row.legal_email?.trim() ?? "",
     sloganValues: {
       lv: stored.lv || row.slogan,
       en: stored.en || "",
@@ -1009,8 +1012,12 @@ export const getSiteSettings = cache(async function getSiteSettings(): Promise<S
 
 export async function saveSiteSettings(input: SiteSettingsInput): Promise<ActionResult> {
   const systemName = input.systemName.trim();
+  const legalEmail = input.legalEmail.trim();
   if (!systemName) {
     return { ok: false, error: "errors.system_name_required" };
+  }
+  if (legalEmail && !EMAIL_RE.test(legalEmail)) {
+    return { ok: false, error: "errors.email_invalid" };
   }
   if (!Object.values(input.sloganValues).some((value) => value.trim())) {
     return { ok: false, error: "errors.slogan_required" };
@@ -1028,6 +1035,7 @@ export async function saveSiteSettings(input: SiteSettingsInput): Promise<Action
   const { error } = await supabase.from("site_settings").upsert({
     id: 1,
     system_name: systemName,
+    legal_email: legalEmail,
     slogan,
     slogan_values: input.sloganValues,
     week_start_day: displayPreferences.weekStartDay,

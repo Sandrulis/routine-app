@@ -6,6 +6,7 @@ import {
   appModalWidePanelMaxWidthClassName,
 } from "@/app/components/app-modal";
 import { useTranslations } from "@/app/components/translations-provider";
+import { isTeamInviteEmailEnabledAction } from "@/app/lib/team/actions";
 import { MEMBER_TEAM_ROLE, teamRankLabel } from "@/app/lib/team";
 import { useTeam } from "@/app/lib/team-store";
 
@@ -25,12 +26,15 @@ export function TeamInviteModal({
   const [email, setEmail] = useState("");
   const [role, setRole] = useState(defaultRoleId);
   const [pending, setPending] = useState(false);
+  const [emailInviteEnabled, setEmailInviteEnabled] = useState(true);
 
   useEffect(() => {
     if (!open) return;
     setEmail("");
     setRole(defaultRoleId);
     setPending(false);
+    setEmailInviteEnabled(true);
+    void isTeamInviteEmailEnabledAction().then(setEmailInviteEnabled);
   }, [defaultRoleId, open]);
 
   const trimmedEmail = email.trim();
@@ -62,6 +66,14 @@ export function TeamInviteModal({
       panelMaxWidthClassName={appModalWidePanelMaxWidthClassName}
     >
       <form onSubmit={handleSubmit} className="space-y-4">
+        {emailInviteEnabled ? null : (
+          <p className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+            {t(
+              "team.invite.resend_required",
+              "Jauns e-pasts prasa ieslēgtu Resend integrāciju. Esošs lietotājs saņems paziņojumu lietotnē.",
+            )}
+          </p>
+        )}
         <div>
           <label htmlFor="team-invite-email" className="text-sm font-semibold text-zinc-700">
             {t("common.email", "E-pasts")}

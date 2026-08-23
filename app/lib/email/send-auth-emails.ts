@@ -43,7 +43,7 @@ export async function sendTeamInviteNotice(options: {
   name?: string;
   languageCode?: string | null;
 }): Promise<{ ok: true } | { ok: false; error: string }> {
-  const teamName = options.teamName.trim() || "Routine";
+  const teamName = options.teamName.trim() || "TASQIN";
   return sendTemplatedEmail({
     kind: "invite",
     to: options.email,
