@@ -4,6 +4,12 @@
 
 - (none)
 
+## v0.2.9
+
+- Resend: admin uzstādījumos un integrācijās From (verificēts domēns) un Reply-To (var būt Gmail); sūtīšana iet caur `reply_to`
+- Gmail spraudnis: `/api/extension/*` CORS atgriež `Access-Control-Allow-Origin` derīgam `chrome-extension://` origīnam (auth paliek Bearer; `CHROME_EXTENSION_IDS` nav vajadzīgs); www/apex redirect šos ceļus izlaiž; spraudnis vispirms prasa `www.tasqin.com`
+- Apakšuzdevumi (sānjosla, saraksta/uzdevuma UI, Gmail browse) pēc statusa grupas prioritātes: slēgts → aktīvs → nav sākts, tad `sortOrder`
+
 ## v0.2.8
 
 - Juridiskais e-pasts sistēmas uzstādījumos (`is_admin`); privātuma politika rāda TASQIN un šo adresi, bez routine.app

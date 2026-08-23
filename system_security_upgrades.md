@@ -152,9 +152,9 @@ Ietekmē kontu pārņemšanu, privātu failu noplūdi vai noslēpumu izgūšanu 
 
 ### M6. Chrome extension CORS atļauj jebkuru `chrome-extension://`
 
-- **Statuss:** done
-- **Kur:** `app/lib/extension/cors.ts` — `EXTENSION_ORIGIN = /^chrome-extension:\/\//`.
-- **Ko darīt:** allowlist konkrētam extension ID (`chrome-extension://<id>`); Bearer token paliek obligāts.
+- **Statuss:** done (apzināts dizains, ne ID allowlist)
+- **Kur:** `app/lib/extension/cors.ts` — atspoguļo derīgu 32 simbolu Chrome extension ID; `canonicalHostRedirectRules()` izlaiž `/api/extension/*`; `proxy.ts` pievieno CORS galvenes hosta 301.
+- **Kāpēc ne allowlist:** CORS nav auth. Privātie `/api/extension/*` prasa Bearer. `CHROME_EXTENSION_IDS` production vidē slēdza visus origīnus, ja saraksts bija tukšs vai novecojis, un Chrome rādīja “No Access-Control-Allow-Origin”.
 
 ### M7. CSP `'unsafe-inline'` + nepilns `connect-src`
 
@@ -249,7 +249,7 @@ Ietekmē kontu pārņemšanu, privātu failu noplūdi vai noslēpumu izgūšanu 
 4. **H4** — Microsoft verified email + nesasaistīt providera kontus klusi
 5. **H3** — Vault / šifrēšana tokeniem
 6. **H2** — HttpOnly ceļš vai CSP nonce
-7. **M1, M2, M4, M6** — uzaicinājumi, search_path, rate limit, extension ID
+7. **M1, M2, M4, M6** — uzaicinājumi, search_path, rate limit, extension CORS (Bearer, ne ID allowlist)
 8. Pārējie MIDDLE/LOW
 
 Pēc katra aizvērta punkta: atzīmē `done`, īsa piezīme (PR/commits), un ja atzīme mainās — atjaunini augšējo **Pašreizējā atzīme**.

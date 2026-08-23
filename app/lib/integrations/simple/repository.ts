@@ -11,7 +11,14 @@ import {
   SIMPLE_INTEGRATION_DEFINITIONS,
   type SimpleIntegrationDefinition,
 } from "@/app/lib/integrations/simple/definitions";
-import type { SimpleSiteIntegrationKey } from "@/app/lib/integrations/keys";
+import {
+  SITE_INTEGRATION_KEYS,
+  type SimpleSiteIntegrationKey,
+} from "@/app/lib/integrations/keys";
+import {
+  resendFromValidationError,
+  resendReplyToValidationError,
+} from "@/app/lib/integrations/resend/from-email";
 import type {
   SimpleIntegrationCredentialsInput,
   SimpleIntegrationStatus,
@@ -21,6 +28,7 @@ type IntegrationRow = {
   integration_key: string;
   client_id: string;
   client_secret: string;
+  configured_account_email: string;
   is_configured: boolean;
   is_enabled: boolean;
 };
@@ -39,7 +47,9 @@ async function fetchIntegrationRow(key: SimpleSiteIntegrationKey) {
   const admin = createAdminClient();
   const { data, error } = await admin
     .from("site_integrations")
-    .select("integration_key, client_id, client_secret, is_configured, is_enabled")
+    .select(
+      "integration_key, client_id, client_secret, configured_account_email, is_configured, is_enabled",
+    )
     .eq("integration_key", key)
     .maybeSingle();
   if (error) {
@@ -80,6 +90,7 @@ export async function fetchSimpleIntegrationStatus(
     hasClientSecret,
     configured,
     enabled,
+    replyToEmail: row?.configured_account_email?.trim() ?? "",
   };
 }
 
@@ -90,7 +101,7 @@ export async function isSimpleIntegrationEnabled(key: SimpleSiteIntegrationKey) 
 
 export async function getSimpleIntegrationCredentials(
   key: SimpleSiteIntegrationKey,
-): Promise<{ clientId: string; clientSecret: string } | null> {
+): Promise<{ clientId: string; clientSecret: string; replyToEmail: string } | null> {
   const definition = definitionFor(key);
   const row = await fetchIntegrationRow(key);
   const envClientId = readEnvValue(definition.envClientId);
@@ -108,7 +119,11 @@ export async function getSimpleIntegrationCredentials(
     return null;
   }
 
-  return { clientId, clientSecret };
+  return {
+    clientId,
+    clientSecret,
+    replyToEmail: row?.configured_account_email?.trim() ?? "",
+  };
 }
 
 function hasRequiredCredentials(
@@ -135,9 +150,22 @@ export async function saveSimpleIntegrationCredentials(
   const row = await fetchIntegrationRow(key);
   const existingSecret = row?.client_secret?.trim() ?? "";
   const envSecret = readEnvValue(definition.envClientSecret);
+  let replyToEmail = "";
 
   if (definition.requireClientId && !clientId) {
     return { ok: false as const, error: definition.missingClientIdError };
+  }
+
+  if (key === SITE_INTEGRATION_KEYS.resend) {
+    const fromError = resendFromValidationError(clientId);
+    if (fromError) {
+      return { ok: false as const, error: fromError };
+    }
+    replyToEmail = (input.replyToEmail ?? row?.configured_account_email ?? "").trim();
+    const replyError = resendReplyToValidationError(replyToEmail);
+    if (replyError) {
+      return { ok: false as const, error: replyError };
+    }
   }
 
   let nextSecret = existingSecret;
@@ -161,6 +189,10 @@ export async function saveSimpleIntegrationCredentials(
     updated_at: new Date().toISOString(),
     is_configured: configured,
   };
+
+  if (key === SITE_INTEGRATION_KEYS.resend) {
+    patch.configured_account_email = replyToEmail;
+  }
 
   if (clientSecretInput || (!existingSecret && nextSecret)) {
     patch.client_secret = persistSecret(nextSecret);

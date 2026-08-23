@@ -6,7 +6,7 @@ import { UserAvatar } from "@/app/components/user-avatar";
 import { OptionalTooltip } from "@/app/components/tooltip";
 import { useDisplayPreferences } from "@/app/components/display-preferences-provider";
 import { useTranslations } from "@/app/components/translations-provider";
-import { compareTasksByStatusPriority } from "@/app/lib/list-statuses";
+import { sortTasksLikeNavTree } from "@/app/lib/list-statuses";
 import { formatTaskLocationPath, getTaskAncestors, isTaskActiveInLists, isTaskDeleted, isWorkFolder, workItemIcon, workProgressById, type WorkProgress, type WorkTask } from "@/app/lib/lists";
 import { useLists } from "@/app/lib/lists-store";
 import { useTaskStatuses } from "@/app/lib/task-statuses";
@@ -57,29 +57,20 @@ const TaskSummarySection = memo(function TaskSummarySection({
   const { members } = useTeam();
   const { tasks, childTasks, subtasks } = useLists();
   const [expanded, setExpanded] = useState(defaultExpanded);
-  const { statuses } = useTaskStatuses(listId);
   const folder = isWorkFolder(task);
-  const children = subtasks(task.id);
-  const nestedItems = childTasks(task.id)
-    .filter((item) => {
+  const { statuses } = useTaskStatuses(listId, folder ? null : task.id);
+  const children = sortTasksLikeNavTree(subtasks(task.id), statuses);
+  const nestedItems = sortTasksLikeNavTree(
+    childTasks(task.id).filter((item) => {
       if (isTaskDeleted(item)) return false;
       if (archivedView || isWorkFolder(item)) return true;
       return isTaskActiveInLists(item, statuses);
-    })
-    .slice()
-    .sort((left, right) =>
-      compareTasksByStatusPriority(left, right, statuses),
-    );
-  const visibleChildren = children
-    .filter((item) =>
-      archivedView
-        ? !isTaskDeleted(item)
-        : isTaskActiveInLists(item, statuses),
-    )
-    .slice()
-    .sort((left, right) =>
-      compareTasksByStatusPriority(left, right, statuses),
-    );
+    }),
+    statuses,
+  );
+  const visibleChildren = children.filter((item) =>
+    archivedView ? !isTaskDeleted(item) : isTaskActiveInLists(item, statuses),
+  );
   const itemProgress = progress.get(task.id);
   const range = dateRange(task, [...nestedItems, ...children], formatDate);
   const assignees = members.filter((member) =>
@@ -240,11 +231,7 @@ export function ListSummary({
     () => workProgressById(allTasks, statuses),
     [allTasks, statuses],
   );
-  const orderedTasks = tasks
-    .slice()
-    .sort((left, right) =>
-      compareTasksByStatusPriority(left, right, statuses),
-    );
+  const orderedTasks = sortTasksLikeNavTree(tasks, statuses);
 
   if (tasks.length === 0) {
     return (

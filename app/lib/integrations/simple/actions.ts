@@ -23,6 +23,7 @@ type ActionResult<T = undefined> =
 
 function refreshIntegrations() {
   revalidatePath("/admin/integrations");
+  revalidatePath("/admin/settings");
   revalidatePath("/admin", "layout");
   revalidatePath("/", "layout");
 }

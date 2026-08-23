@@ -38,9 +38,11 @@ export type SimpleIntegrationStatus = {
   hasClientSecret: boolean;
   configured: boolean;
   enabled: boolean;
+  replyToEmail: string;
 };
 
 export type SimpleIntegrationCredentialsInput = {
   clientId: string;
   clientSecret: string;
+  replyToEmail?: string;
 };

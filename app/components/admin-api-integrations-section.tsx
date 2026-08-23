@@ -22,6 +22,7 @@ type DraftState = {
   status: SimpleIntegrationStatus;
   clientId: string;
   clientSecret: string;
+  replyToEmail: string;
   enabled: boolean;
   expanded: boolean;
 };
@@ -31,6 +32,7 @@ function createDraft(status: SimpleIntegrationStatus): DraftState {
     status,
     clientId: status.clientId,
     clientSecret: "",
+    replyToEmail: status.replyToEmail,
     enabled: status.enabled,
     expanded: status.configured,
   };
@@ -39,6 +41,7 @@ function createDraft(status: SimpleIntegrationStatus): DraftState {
 function isDraftDirty(draft: DraftState) {
   const credentialsDirty =
     draft.clientId.trim() !== draft.status.clientId ||
+    draft.replyToEmail.trim() !== draft.status.replyToEmail ||
     draft.clientSecret.trim().length > 0;
   const enabledDirty =
     draft.status.configured && draft.enabled !== draft.status.enabled;
@@ -92,7 +95,7 @@ export function AdminApiIntegrationsSection({
         current.expanded ? current : { ...current, expanded: true },
       );
     }
-  }, [resend.clientId, resend.clientSecret, resend.enabled, resend.status]);
+  }, [resend.clientId, resend.replyToEmail, resend.clientSecret, resend.enabled, resend.status]);
 
   useEffect(() => {
     if (isDraftDirty(umami)) {
@@ -137,6 +140,7 @@ export function AdminApiIntegrationsSection({
       const result = await saveSimpleIntegrationCredentialsAction(integrationKey(kind), {
         clientId: draft.clientId,
         clientSecret: draft.clientSecret,
+        replyToEmail: kind === "resend" ? draft.replyToEmail : undefined,
       });
       setPendingKey(null);
       if (!result.ok) {
@@ -210,6 +214,7 @@ export function AdminApiIntegrationsSection({
     const draft = draftFor(kind);
     const credentialsDirty =
       draft.clientId.trim() !== draft.status.clientId ||
+      draft.replyToEmail.trim() !== draft.status.replyToEmail ||
       draft.clientSecret.trim().length > 0;
 
     if (kind === "resend") {
@@ -230,11 +235,45 @@ export function AdminApiIntegrationsSection({
                 clearFeedback();
               }}
               disabled={isBusy}
-              placeholder="TASQIN <noreply@example.com>"
+              placeholder="no-reply@your-domain.com"
               className="mt-1.5 w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 outline-none transition placeholder:text-zinc-400 focus:border-zinc-400 disabled:cursor-not-allowed disabled:bg-zinc-50"
               autoComplete="off"
               spellCheck={false}
             />
+            <p className="mt-1.5 text-xs text-zinc-500">
+              {t(
+                "integrations.resend.from_hint",
+                "No šīs adreses sistēma sūta vēstules. Tai jābūt verificētā Resend domēnā.",
+              )}
+            </p>
+          </div>
+          <div>
+            <label
+              htmlFor="resend-reply-to"
+              className="block text-sm font-medium text-zinc-700"
+            >
+              {t("integrations.resend.reply_to", "Reply-To e-pasts")}
+            </label>
+            <input
+              id="resend-reply-to"
+              type="email"
+              value={draft.replyToEmail}
+              onChange={(event) => {
+                setResend((current) => ({ ...current, replyToEmail: event.target.value }));
+                clearFeedback();
+              }}
+              disabled={isBusy}
+              placeholder="hello@gmail.com"
+              className="mt-1.5 w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 outline-none transition placeholder:text-zinc-400 focus:border-zinc-400 disabled:cursor-not-allowed disabled:bg-zinc-50"
+              autoComplete="off"
+              spellCheck={false}
+            />
+            <p className="mt-1.5 text-xs text-zinc-500">
+              {t(
+                "integrations.resend.reply_to_hint",
+                "Atbildes uz vēstulēm iet uz šo adresi. Var būt Gmail vai cita publiska pastkaste.",
+              )}
+            </p>
           </div>
           <div>
             <label
@@ -271,7 +310,7 @@ export function AdminApiIntegrationsSection({
           <p className="text-xs text-zinc-500">
             {t(
               "integrations.resend.hint",
-              "Kad integrācija ir aktīva, sistēma var sūtīt transakciju e-pastus caur Resend API.",
+              "From adresei jābūt verificētā Resend domēnā. Reply-To var būt Gmail, lai atbildes nonāktu tavā pastkastē.",
             )}
           </p>
           {renderFooter("resend", credentialsDirty)}

@@ -2,7 +2,7 @@ import { dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { NextConfig } from "next";
 import {
-  canonicalHostRedirectRule,
+  canonicalHostRedirectRules,
   robotsNoIndexHeaderSources,
 } from "./app/lib/seo/site-url";
 
@@ -97,18 +97,7 @@ const nextConfig: NextConfig = {
     ];
   },
   async redirects() {
-    const hostRule = canonicalHostRedirectRule();
-    if (!hostRule) return [];
-    const origin = hostRule.destination.replace(/\/:path\*$/, "");
-    return [
-      {
-        source: "/",
-        has: hostRule.has,
-        destination: `${origin}/`,
-        permanent: true,
-      },
-      hostRule,
-    ];
+    return canonicalHostRedirectRules();
   },
 };
 

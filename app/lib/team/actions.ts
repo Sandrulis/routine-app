@@ -6,6 +6,7 @@ import { getCurrentUser } from "@/app/lib/auth/get-current-user";
 import { mapUserDisplay } from "@/app/lib/auth/map-user-display";
 import { createNotificationId } from "@/app/lib/notifications";
 import { getClientIp } from "@/app/lib/security/client-ip";
+import { logError } from "@/app/lib/security/log-error";
 import { consumeRateLimit } from "@/app/lib/security/rate-limit";
 import { createAdminClient } from "@/app/lib/supabase/admin";
 import {
@@ -243,7 +244,7 @@ export async function inviteTeamMemberAction(input: {
   teamId: string;
   email: string;
   roleId: string;
-}): Promise<ActionResult<{ memberId: string; inviteUrl: string; emailSent: boolean }>> {
+}): Promise<ActionResult<{ memberId: string; inviteUrl: string; emailSent: boolean; emailError?: string }>> {
   const user = await getCurrentUser();
   if (!user) {
     return { ok: false, error: "errors.auth_required" };
@@ -420,6 +421,7 @@ export async function inviteTeamMemberAction(input: {
   }
 
   let emailSent = false;
+  let emailError: string | undefined;
   const inviterName = mapUserDisplay(user).name || user.email || "";
   const { data: inviterProfile } = await supabase
     .from("users")
@@ -439,10 +441,8 @@ export async function inviteTeamMemberAction(input: {
       await rollbackPendingInvite(supabase, invitationId, memberId);
       return emailResult;
     }
-    console.warn(
-      "Invite email failed but user exists in-app, keeping invitation:",
-      emailResult.error,
-    );
+    emailError = emailResult.error;
+    logError("Invite email failed but user exists in-app, keeping invitation", emailResult.error);
   } else {
     emailSent = emailResult.emailSent;
   }
@@ -454,6 +454,7 @@ export async function inviteTeamMemberAction(input: {
       memberId,
       inviteUrl: teamInvitePublicUrl(token),
       emailSent,
+      emailError,
     },
   };
 }
@@ -559,7 +560,7 @@ export async function acceptTeamInvitationByTokenAction(
 
 export async function resendTeamInvitationAction(
   memberId: string,
-): Promise<ActionResult<{ inviteUrl: string; emailSent: boolean }>> {
+): Promise<ActionResult<{ inviteUrl: string; emailSent: boolean; emailError?: string }>> {
   const user = await getCurrentUser();
   if (!user) {
     return { ok: false, error: "errors.auth_required" };
@@ -642,6 +643,7 @@ export async function resendTeamInvitationAction(
   }
 
   let emailSent = false;
+  let emailError: string | undefined;
   const { data: teamRow } = await supabase
     .from("teams")
     .select("name")
@@ -663,8 +665,9 @@ export async function resendTeamInvitationAction(
     if (!targetUserId) {
       return emailResult;
     }
-    console.warn(
-      "Resend email failed but user exists in-app, continuing:",
+    emailError = emailResult.error;
+    logError(
+      "Resend email failed but user exists in-app, continuing",
       emailResult.error,
     );
   } else {
@@ -677,6 +680,7 @@ export async function resendTeamInvitationAction(
     data: {
       inviteUrl: teamInvitePublicUrl(invitation.token),
       emailSent,
+      emailError,
     },
   };
 }

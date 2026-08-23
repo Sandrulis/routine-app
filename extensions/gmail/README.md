@@ -2,11 +2,13 @@
 
 Chrome paplašinājums: Gmailā rāda sistēmas logo, atver modāli un pievieno e-pastu + pielikumus pie Routine apakšuzdevuma.
 
-Nav jāievada Routine URL vai OAuth Client ID. Spraudnis lasa sistēmas auth cookie tajā pašā Chrome profilā (`https://tasqin.com` vai `http://localhost:3120`) un turpaļ glabā savu sesiju `chrome.storage.local` (refresh caur `/api/extension/refresh`), tāpēc TASQIN cilnei nav jāpaliek atvērtai. Gmail savieno caur sistēmas Google OAuth.
+Nav jāievada Routine URL vai OAuth Client ID. Spraudnis vispirms prasa [https://www.tasqin.com](https://www.tasqin.com), tad apex un `http://localhost:3120`. Sistēmas auth cookie lasa tajā pašā Chrome profilā un turpaļ glabā savu sesiju `chrome.storage.local` (refresh caur `/api/extension/refresh`), tāpēc TASQIN cilnei nav jāpaliek atvērtai. Gmail savieno caur sistēmas Google OAuth.
+
+`GET /api/extension/config` ir publisks. Serveris atbildē atspoguļo derīgu `chrome-extension://` Origin (`Access-Control-Allow-Origin`). Privātie API prasa Bearer. `CHROME_EXTENSION_IDS` nav vajadzīgs. `/api/extension/*` neiet caur www/apex 301 (tas bez CORS galvenēm bloķētu Chrome).
 
 ## Priekšnosacījumi
 
-1. Production: [https://tasqin.com](https://tasqin.com) vai [https://www.tasqin.com](https://www.tasqin.com) (`NEXT_PUBLIC_SITE_URL` = kanoniskais hosts). Local: `npm run dev`
+1. Production: [https://www.tasqin.com](https://www.tasqin.com) (kanoniskais hosts `NEXT_PUBLIC_SITE_URL`). Local: `npm run dev`
 2. Administrācija → Moduļi: **Gmail spraudnis** ieslēgts
 3. Administrācija → Integrācijas: Google OAuth konfigurēts; Google Cloud: **Gmail API** + **Drive API**
 4. Google Cloud OAuth klientā Redirect URI: `/auth/google-oauth/callback` (login un Gmail spraudnis) un `/auth/google-drive/callback` — arī `http://localhost:3120` varianti. Rādās Integrācijās.
@@ -25,6 +27,8 @@ Nav jāievada Routine URL vai OAuth Client ID. Spraudnis lasa sistēmas auth coo
 2. Nospied **Routine** pogu e-pasta skatā
 3. Izvēlies **saraksts** → (mape) → **uzdevums** → **apakšuzdevums**
 4. Apakšā atzīmē pielikumus → **Pievienot**
+
+Apakšuzdevumu saraksts (3. solis) ir tajā pašā statusa secībā kā sānjosla un uzdevuma UI: aktīvie pirms “nav sākts”, slēgtie netiek rādīti.
 
 Popup ir balta kartīte: avatars, vārds un uzvārds, e-pasts, **Iziet** tikai kā ikona augšējā labajā stūrī, komandu izvēle, Drive brīdinājums zem select, Gmail statuss kā ikona ar tooltip. Teksti ar `{SYSTEM_NAME}` ņem sistēmas nosaukumu no `GET /api/extension/config` / sesijas. Sesija paliek spraudnī (`chrome.storage.local`) arī tad, ja TASQIN cilne nav atvērta. Gmailā TASQIN pogas rādās tikai tad, ja izvēlētajai komandai ir pieslēgts Google Drive.
 

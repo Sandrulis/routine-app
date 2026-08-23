@@ -140,7 +140,7 @@ Ielāde: `LoadingState` (`app/components/loading-state.tsx`, `fas fa-circle-notc
 | `/admin/payment-plans` | `site_payment_plans` katalogs: ieslēgums, izmēģinājums, Early Bird limīts, cenas, frontend moduļi plānā (`AdminPaymentPlansForm`) |
 | `/admin/integrations` | `site_integrations`: Google/Microsoft OAuth (login/signup); Resend, Umami, Sentry; Client ID/Secret, OAuth pārbaude vai Saglabāt, **Aktīva** slēdzis; sakļaujamas kartiņas (`AdminIntegrationsPage`) |
 | `/admin/email-templates` | HTML e-pasta šabloni (`signup`, `password_reset`, `invite`, `notification`) visās sistēmas valodās: temats, teksts, pogas teksts, iframe priekšskatījums (`AdminEmailTemplatesForm`); saglabā `site_translations` |
-| `/admin/settings` | `site_settings`: sistēmas nosaukums, juridiskais e-pasts (`legal_email`, privātuma politika), slogans, logotips/favicon (data URL) vai iniciāļu avatārs ar `logo_color`, nedēļas sākums, datuma formāts/atdalītājs, 12/24 h; hinti zem laukiem |
+| `/admin/settings` | `site_settings`: sistēmas nosaukums, juridiskais e-pasts (`legal_email`, privātuma politika), slogans, logotips/favicon (data URL) vai iniciāļu avatārs ar `logo_color`, nedēļas sākums, datuma formāts/atdalītājs, 12/24 h; ja Resend konfigurēts — From/Reply-To (`AdminSettingsForm` + `saveSiteSettingsAction`); hinti zem laukiem |
 
 - Servera vārti: `requireAdmin()` layoutā un `admin/actions.ts`
 - Klienta pārbaude: `useIsAdmin()` caur RPC `current_user_is_admin()` (ikona)
@@ -237,7 +237,8 @@ Hierarhija: **Saraksts → mape / uzdevumu saraksts / fails → apakšuzdevumi t
 - Jauns/labot sarakstu: `ListFormModal` — izskats, **noklusējuma pieeja**; slēdzis **Pielāgot katrai lomai** parāda lomu līmeņus un paslēpj globālo izvēli; **Privāts saraksts** slēdzis (un biedru izvēle) tikai ja `module_private_list` ir ieslēgts
 - Apakšuzdevumu tabula (`SubtaskTable` + `GroupedSubtaskTables`): viena tabula ar `groupByStatus` galvenēm iekšā; pie Pievienot arhīva poga (`IconActionButton` `variant="delete"`, aktīva paliek sarkanīga) rāda aktīvos **un** arhivētos; pabeigšana fade-out vietā; miskaste aiz Check (`deleted_at`, nav statusa katalogā); klikšķis uz dzēstā atjauno; zem nosaukuma `TaskLocationPath` (`getSubtaskLocationSegments`; saraksta nosaukums tikai, ja tabulā ir vairāki `listId`; pie katra posma tipa ikona); **Pārvietot** (`fa-exchange-alt`) atver `MoveSubtaskModal` — mērķiem mapē vai citā sarakstā PATH zem nosaukuma (`MoveSubtaskDestinationButton`, bez saitēm); tas pats masveida joslā; slēgtajiem/dzēstajiem **rindai** viegls fons (`fadeHexColor` 0.88; dzēstajiem `#ef4444`); statusa pogai atsevišķi blāvs fons; zem statusa `RelativeTime` un, ja ir čeklista punkti, zaļa progresa josla; jaunam uzdevumam `statusChangedAt` = izveides laiks; `reorderable={false}` (Sākums) slēpj kārtību, bet statusu joprojām var vilkt
 - Vilkšana: `app/components/task-drop-line.tsx` (`TaskDropLine`, `dropHintFromEvent`, `frozenSortingStrategy`, `groupedStatusCollisionDetection`). Vilkšanas laikā saraksts neslīd; drop ir bieza zila līnija. Starp statusu grupām vilkšana **tikai maina statusu**, nesamaina vietām ar cita grupas pēdējo uzdevumu
-- Kopsavilkums (`ListSummary` Sākumā un `/lists`): sadalītie uzdevumi un apakšuzdevumi pēc `statusesByPriorityDesc` / `compareTasksByStatusPriority` (`app/lib/list-statuses.ts`) - pretēji picker (slēgts → aktīvs → nav sākts). Slēgtie paliek ārpus aktīvā saraksta
+- Kopsavilkums (`ListSummary` Sākumā un `/lists`) un uzdevuma apakšuzdevumu tabula: tā pati secība kā sānjoslas kokā (`sortTasksLikeNavTree` / `compareTasksByStatusPriority` — vispirms grupa slēgts → aktīvs → nav sākts, tad kataloga indekss, tad `sortOrder`). `SubtaskTable` vienmēr kārto pati. Pretēji picker. Slēgtie paliek ārpus aktīvā saraksta
+- Gmail browse (`listExtensionSubtasksForTask`): tā pati statusa prioritāte kā UI, ne tikai `sort_order`
 - Projekta **Saraksts** logs: uzdevumu kartītes `repeat(auto-fit, minmax(min(100%, 16rem), 1fr))` tādā pašā statusa secībā. Mape rāda nested uzdevumus un to apakšuzdevumus (`OverviewSubtaskList`); grupēšana pēc statusa; aplītis hover rāda check + tooltip `status.complete_ask` (pabeidz / atver atpakaļ); arhīva poga kartītē parāda pabeigtos, progresa josla paliek. Apakšuzdevumam ar pielikumiem `fa-paperclip` aiz nosaukuma. Klikšķis uz apakšuzdevuma iet caur `ListWindowsBoard` `onOpenSubtask` → vienu `SubtaskDetailModal` lapā (`TaskDetailPage`). Apakšuzdevuma aplītis un nosaukums ir statusa krāsā. Logs **Faili**: tiešie `list_files` + `task_files` no `getDescendantSubtasks` (klikšķis: bildes/PDF/txt modālī, pārējie lejupielādējas caur FileViewerProvider). Logs **Uzdevumi** paliek vilktā `sortOrder` secībā; tā arhīva poga (`handleTasksArchiveChange`) sinhronizē arhīvu visām Saraksts loga kartītēm (`overviewArchiveById`), bet katru kartīti var pārslēgt atsevišķi
 
 ## Sarakstu pieejas
@@ -314,7 +315,8 @@ Aktīvais lietotājs raksta `last_online_at` DB ik pēc 90 s (`touchMemberOnline
 ## Project structure
 
 ```
-proxy.ts                          # Sesijas refresh, ielogota novirzīšana, publisko lapu valodas prefiksi (`/en`, `/de`, …); `/lv` → `/`
+proxy.ts                          # Sesijas refresh, ielogota novirzīšana, publisko lapu valodas prefiksi (`/en`, `/de`, …); `/lv` → `/`; kanoniskā hosta 301 ar CORS, ja Origin ir `chrome-extension://`
+next.config.ts                    # CSP/HSTS; `canonicalHostRedirectRules()` izlaiž `/api/extension/*`
 app/
   layout.tsx                      # Root: i18n, cookie consent, Umami/Sentry, SEO metadata
   robots.ts                       # /robots.txt — publiskās lapas, bloķē app/API
@@ -497,7 +499,7 @@ app/
     users/use-is-admin.tsx        # is_admin RPC + profils klientā
     security/                     # rate-limit, secret-box, file-bytes, log-error, hash-token
 app/auth/gmail-plugin/            # start / done; callback aliases vai `/auth/google-oauth/callback`
-app/api/extension/                # config, session, login, refresh (jaunais tokens + getExtensionAuth), gmail-access, browse, attach-email
+app/api/extension/                # config, session, login, refresh (jaunais tokens + getExtensionAuth), gmail-access, browse, attach-email; CORS `extension/cors.ts`
 app/auth/callback/route.ts        # E-pasta magic link / PKCE code → session
 app/auth/google-oauth/callback/route.ts # Google login, admin konfigurācija, Gmail spraudnis
 app/auth/microsoft-oauth/callback/route.ts # Microsoft login + admin konfigurācija
@@ -546,7 +548,7 @@ Kopē `.env.example` uz `.env.local`. URL ir tikai projekta hosts (`https://PROJ
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Settings → API → `anon` `public` |
 | `SUPABASE_SERVICE_ROLE_KEY` | Settings → API → `service_role` (secret) — `eyJ…` JWT vai jaunais `sb_secret_…`. Vajadzīgs adminam, OAuth sesijai un e-pastiem. Login **pogas** nāk no `public_sign_in_methods` (anon). **Ne** `anon` / `sb_publishable_`. Neliec pēdiņas. Rotācija nozīmē arī `INTEGRATION_SECRETS_KEY` pārskatīšanu, ja noslēpumi ir šifrēti ar atvasinātu atslēgu. |
 | `INTEGRATION_SECRETS_KEY` | Aplikācijas slāņa AES atslēga (`enc:v1:`) Drive/OneDrive/OAuth/Resend noslēpumiem. Ģenerē ar `openssl rand -base64 32`. Produkcijā **tā pati** vērtība kā lokāli, vai atstāj tukšu (atšifrēšana mēģina arī `SUPABASE_SERVICE_ROLE_KEY`). Jauna nejauša atslēga Vercel slēpj e-pasta login, kamēr noslēpumi paliek šifrēti ar veco. |
-| `CHROME_EXTENSION_IDS` | Production CORS allowlist paplašinājumam (komatu atdalīti ID). Bez saraksta production `chrome-extension://` izcelsmes tiek noraidītas. |
+| `CHROME_EXTENSION_IDS` | Nav vajadzīgs CORS. `/api/extension/*` atspoguļo derīgu `chrome-extension://` Origin; privātie API prasa Bearer. |
 | `NEXT_PUBLIC_SITE_URL` | Publiskais origin. Local: `http://localhost:3120`. Production: viens kanoniskais hosts (`https://tasqin.com` vai `https://www.tasqin.com`, bez `/` beigās). Canonical, sitemap, robots, HSTS, auth saites. Spraudnis zina abus (`KNOWN_SITE_ORIGINS`). |
 | `UMAMI_SCRIPT_INTEGRITY` | Neobligāts SRI (`sha384-...`) Umami skriptam. |
 | `GOOGLE_SITE_VERIFICATION` | Google Search Console HTML tag `content` (meta `google-site-verification`; drīkst ielīmēt arī visu tagu). |
@@ -569,13 +571,13 @@ Settings → Environment Variables → **Production** (un Preview, ja lieto prev
 
 | Name | Obligāts | Piezīme |
 |---|---|---|
-| `NEXT_PUBLIC_SITE_URL` | jā | `https://tasqin.com` (vai kanoniskais www), bez `/` |
+| `NEXT_PUBLIC_SITE_URL` | jā | viens kanoniskais hosts (`https://www.tasqin.com` vai `https://tasqin.com`), bez `/`. Spraudnis vispirms prasa www. |
 | `NEXT_PUBLIC_SUPABASE_URL` | jā | `https://PROJECT.supabase.co`, ne `/rest/v1/` |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | jā | API → `anon` `public` |
 | `SUPABASE_SERVICE_ROLE_KEY` | jā | API → `service_role` (`eyJ…` vai `sb_secret_…`). Admin/OAuth/e-pasts. Login pogas: RPC, ne šī atslēga. |
 | `INTEGRATION_SECRETS_KEY` | ieteicams | Tā pati kā `.env.local`, vai atstāj tukšu. **Neģenerē jaunu** Vercel, ja DB jau ir `enc:v1:` rindas. |
 | `GOOGLE_SITE_VERIFICATION` | GSC | HTML tag `content` |
-| `CHROME_EXTENSION_IDS` | Gmail spraudnis | komatu atdalīti extension ID |
+| `CHROME_EXTENSION_IDS` | nav | CORS vairs neizmanto; var atstāt tukšu vai dzēst no Vercel |
 
 Neliec Vercel: `RESEND_*`, `SENTRY_DSN`, `UMAMI_WEBSITE_ID`, Google/Microsoft Client ID - tos iestati **Admin → Integrācijas** pēc pirmā deploy, tad **Aktīva**. `PORT`, `DATABASE_URL`, `SUPABASE_DB_PASSWORD` ir tikai lokālajām migrācijām.
 
@@ -611,7 +613,7 @@ Admin **Integrācijas** kartiņas (`resend`, `umami`, `sentry`) - Saglabāt cred
 
 | Integrācija | Lauki | Kad aktīva |
 |---|---|---|
-| **Resend** | From e-pasts + API Key | `sendResendEmail()`; e-pasta login/signup/forgot (`isEmailPasswordAuthEnabled`); HTML šabloni `/admin/email-templates`; komandas uzaicinājums jaunam e-pastam tikai ja aktīvs (esošam lietotājam pietiek ar in-app); From jābūt verificētam Resend domēnam (ne `@gmail.com`); fallback env `RESEND_FROM_EMAIL`, `RESEND_API_KEY` |
+| **Resend** | From e-pasts + Reply-To + API Key | `sendResendEmail()` ar `reply_to`, ja Reply-To nav tukšs; e-pasta login/signup/forgot (`isEmailPasswordAuthEnabled`); HTML šabloni `/admin/email-templates`; komandas uzaicinājums jaunam e-pastam tikai ja aktīvs (esošam lietotājam pietiek ar in-app); From = `client_id` (verificēts Resend domēns, ne `@gmail.com`); Reply-To = `configured_account_email` (var būt Gmail); validācija `resend/from-email.ts`; From/Reply-To arī `/admin/settings`; fallback env `RESEND_FROM_EMAIL`, `RESEND_API_KEY` |
 | **Umami** | Website ID + Script URL (noklusējums `https://cloud.umami.is/script.js`) | Root `layout.tsx`: `next/script` `beforeInteractive` HTML `<head>` (`data-auto-track="false"`); `UmamiAnalytics` sūta pageview pēc **analytics** piekrišanas; env `UMAMI_WEBSITE_ID`, `UMAMI_SCRIPT_URL` |
 | **Sentry** | Environment (opcionāli) + DSN | Root `layout.tsx` `SentryInit` (`@sentry/browser`, **tikai klienta** kļūdas); CSP `connect-src` `*.sentry.io`, `*.ingest.sentry.io`, `*.ingest.de.sentry.io`, `*.ingest.us.sentry.io`; env `SENTRY_ENVIRONMENT`, `SENTRY_DSN` |
 
@@ -638,7 +640,9 @@ Kad `module_onedrive` un `module_file_upload` ir ieslēgti, komandas `...` rāda
 
 ## Chrome extension (Gmail)
 
-Mapē `extensions/gmail` — unpacked Chrome MV3. Popup: balta kartīte, avatars, vārds/uzvārds, e-pasts, **Iziet** tikai ikona augšējā labajā stūrī, centrēts loading, komandu pārslēgšana, Drive brīdinājums zem select, Gmail statuss kā ikona ar tooltip; bez URL/Client ID ievades; `12px` noapaļojums, `{SYSTEM_NAME}` no `getExtensionStrings(language, systemName)`. Zinātie origini (`KNOWN_SITE_ORIGINS`): `https://tasqin.com`, `https://www.tasqin.com`, `http://localhost:3120` (priekšroka originam ar derīgu sesiju, ne pirmajam, kas atbild uz `/api/extension/config`). Sesija: sistēmas auth cookie **un** `chrome.storage.local` (`extensionAuth`), lai Gmail strādā bez atvērtas TASQIN cilnes. Custom login (`POST /api/extension/login`) vai Google; publisks `GET /api/extension/config` (logo, valoda, vai e-pasts/Google ieslēgts). Ja Gmail nav savienots, **Savienot Gmail** (`/auth/gmail-plugin/start`) iet caur to pašu `/auth/google-oauth/callback` kā login (vecais `/auth/gmail-plugin/callback` paliek aliases); tokeni `user_gmail_connections` (service role, RLS deny). Komandai bez Google Drive — popup rāda sarkanu brīdinājumu un Gmailā TASQIN pogas nav. Ja Drive ir pieslēgts, Gmailā inline logo poga → modālis → saraksts / mape / uzdevums → apakšuzdevums. E-pasts un pielikumi caur **Gmail API** (`gmail.readonly`, piekļuves tokens no `GET /api/extension/gmail-access`); limīts 25 MB. Sesijas access tokenu spraudnis atjauno ar `POST /api/extension/refresh` (tāpēc vairs “neizmet” pēc ~1 h). `proxy` neapstrādā `/api/extension/`. UI valoda no sesijas. Sk. `extensions/gmail/README.md`.
+Mapē `extensions/gmail` — unpacked Chrome MV3. Popup: balta kartīte, avatars, vārds/uzvārds, e-pasts, **Iziet** tikai ikona augšējā labajā stūrī, centrēts loading, komandu pārslēgšana, Drive brīdinājums zem select, Gmail statuss kā ikona ar tooltip; bez URL/Client ID ievades; `12px` noapaļojums, `{SYSTEM_NAME}` no `getExtensionStrings(language, systemName)`. Zinātie origini (`KNOWN_SITE_ORIGINS`): `https://www.tasqin.com` (pirmais), `https://tasqin.com`, `http://localhost:3120` (priekšroka originam ar derīgu sesiju, ne pirmajam, kas atbild uz `/api/extension/config`). Sesija: sistēmas auth cookie **un** `chrome.storage.local` (`extensionAuth`), lai Gmail strādā bez atvērtas TASQIN cilnes. Custom login (`POST /api/extension/login`) vai Google; publisks `GET /api/extension/config` (logo, valoda, vai e-pasts/Google ieslēgts). Ja Gmail nav savienots, **Savienot Gmail** (`/auth/gmail-plugin/start`) iet caur to pašu `/auth/google-oauth/callback` kā login (vecais `/auth/gmail-plugin/callback` paliek aliases); tokeni `user_gmail_connections` (service role, RLS deny). Komandai bez Google Drive — popup rāda sarkanu brīdinājumu un Gmailā TASQIN pogas nav. Ja Drive ir pieslēgts, Gmailā inline logo poga → modālis → saraksts / mape / uzdevums → apakšuzdevums. E-pasts un pielikumi caur **Gmail API** (`gmail.readonly`, piekļuves tokens no `GET /api/extension/gmail-access`); limīts 25 MB. Sesijas access tokenu spraudnis atjauno ar `POST /api/extension/refresh` (tāpēc vairs “neizmet” pēc ~1 h). `proxy` neapstrādā `/api/extension/` (izņemot kanoniskā hosta 301). UI valoda no sesijas. Sk. `extensions/gmail/README.md`.
+
+**CORS.** Chrome bloķē `fetch` no `chrome-extension://<id>`, ja atbildē nav `Access-Control-Allow-Origin`. `app/lib/extension/cors.ts` atspoguļo jebkuru derīgu 32 simbolu extension ID (`[a-p]{32}`); CORS nav piekļuves kontrole — privātie maršruti joprojām prasa Bearer. `CHROME_EXTENSION_IDS` / `NEXT_PUBLIC_CHROME_EXTENSION_IDS` netiek lasīti. Apex↔www 301 bez CORS galvenēm arī bloķē pārlūku: `canonicalHostRedirectRules()` (`next.config.ts`) **izlaiž** `/api/extension/*`; ja `proxy.ts` tomēr taisa hosta 301, tas pievieno `Access-Control-Allow-Origin` `chrome-extension://` Origin. Spraudnis vispirms prasa www (`redirect: "manual"`), lai netrāpītu hosta redirect.
 
 ## Dati
 

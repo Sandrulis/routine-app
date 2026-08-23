@@ -482,12 +482,17 @@ export const ru: Record<string, string> = {
   "integrations.resend.description":
     "Транзакционные письма через Resend API (From-адрес + API Key).",
   "integrations.resend.from_email": "From e-mail",
+  "integrations.resend.from_hint":
+    "С этого адреса система отправляет письма. Он должен быть на домене, подтверждённом в Resend.",
+  "integrations.resend.reply_to": "Reply-To e-mail",
+  "integrations.resend.reply_to_hint":
+    "Ответы на письма приходят на этот адрес. Можно указать Gmail или другой публичный ящик.",
   "integrations.resend.api_key": "API Key",
   "integrations.resend.api_key_placeholder": "re_…",
   "integrations.resend.api_key_placeholder_saved":
     "Сохранено — оставьте пустым, если не меняете",
   "integrations.resend.hint":
-    "Когда интеграция активна, система может отправлять транзакционные письма через Resend API.",
+    "Адрес From должен быть на домене, подтверждённом в Resend. Reply-To может быть Gmail, чтобы ответы приходили в ваш ящик.",
   "integrations.resend.reset": "Сбросить настройку",
   "integrations.resend.reset.confirm_title": "Сбросить настройку Resend?",
   "integrations.resend.reset.confirm_description":
@@ -549,6 +554,10 @@ export const ru: Record<string, string> = {
   "errors.integrations_resend_api_key_required": "Введите Resend API Key.",
   "errors.integrations_resend_not_enabled": "Интеграция Resend не включена.",
   "errors.integrations_resend_send_failed": "Не удалось отправить e-mail через Resend.",
+  "errors.integrations_resend_from_unverified":
+    "Адрес From должен быть на домене, подтверждённом в Resend. Gmail и другие публичные почтовые ящики использовать нельзя.",
+  "errors.integrations_resend_reply_to_invalid":
+    "Введите корректный Reply-To e-mail адрес.",
   "errors.integrations_umami_website_id_required": "Введите Umami Website ID.",
   "errors.integrations_umami_script_required": "Введите Umami Script URL.",
   "errors.integrations_sentry_environment_required": "Введите Sentry Environment.",
@@ -746,6 +755,11 @@ export const ru: Record<string, string> = {
   "site_settings.form.legal_email": "Юридический e-mail",
   "site_settings.form.legal_email_hint":
     "Этот адрес указан в политике конфиденциальности для обращений по обработке данных.",
+  "site_settings.form.resend_title": "Resend e-mail",
+  "site_settings.form.resend_hint":
+    "Письма отправляются с адреса From; ответы приходят на адрес Reply-To.",
+  "site_settings.form.resend_disabled":
+    "Resend не настроен, поэтому письма не отправляются.",
   "site_settings.form.logo_color_hint":
     "Если логотип не загружен, аватар показывает инициалы системы на выбранном фоне.",
   "site_settings.form.slogan": "Слоган",
@@ -814,7 +828,7 @@ export const ru: Record<string, string> = {
   "team.invite.resending": "Отправка…",
   "team.invite.resent": "Приглашение отправлено снова.",
   "team.invite.resent_no_email":
-    "E-mail не отправлен (лимит Supabase). Отправьте ссылку на приглашение вручную.",
+    "E-mail не отправлен. Отправьте ссылку на приглашение вручную.",
   "team.invite.copy_link": "Копировать ссылку приглашения",
   "team.invite.link_copied": "Ссылка приглашения скопирована.",
   "team.invited_no_email":

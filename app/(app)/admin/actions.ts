@@ -64,6 +64,8 @@ import type {
   SiteTranslationInput,
   SystemDefaultRoleInput,
 } from "@/app/lib/site-admin/types";
+import { SITE_INTEGRATION_KEYS } from "@/app/lib/integrations/keys";
+import { saveSimpleIntegrationCredentials } from "@/app/lib/integrations/simple/repository";
 import { requireAdmin } from "@/app/lib/users/require-admin";
 
 function refreshAdmin() {
@@ -185,8 +187,19 @@ export async function deleteSiteTranslationAction(key: string) {
   return result;
 }
 
-export async function saveSiteSettingsAction(input: SiteSettingsInput) {
+export async function saveSiteSettingsAction(
+  input: SiteSettingsInput,
+  resendMail?: { fromEmail: string; replyToEmail: string },
+) {
   await requireAdmin({ action: "admin.settings.save" });
+  if (resendMail) {
+    const mail = await saveSimpleIntegrationCredentials(SITE_INTEGRATION_KEYS.resend, {
+      clientId: resendMail.fromEmail,
+      clientSecret: "",
+      replyToEmail: resendMail.replyToEmail,
+    });
+    if (!mail.ok) return mail;
+  }
   const result = await saveSiteSettings(input);
   if (result.ok) refreshAdmin();
   return result;

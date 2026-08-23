@@ -120,26 +120,46 @@ export function canonicalHostRedirectUrl(
   return next.toString();
 }
 
-/** next.config `redirects()` rule: www ↔ apex for the configured site origin. */
-export function canonicalHostRedirectRule(): {
+type HostRedirectRule = {
   source: string;
   has: { type: "host"; value: string }[];
   destination: string;
   permanent: true;
-} | null {
-  const origin = getPublicSiteUrl();
+};
+
+function canonicalHostFromTo(): { origin: string; fromHost: string } | null {
+  const origin = getPublicSiteUrl().replace(/\/$/, "");
   const canonicalHost = hostnameOf(origin);
   if (!canonicalHost || isLocalHost(canonicalHost)) return null;
   const fromHost = canonicalHost.startsWith("www.")
     ? canonicalHost.slice(4)
     : `www.${canonicalHost}`;
   if (!fromHost || fromHost === canonicalHost) return null;
-  return {
-    source: "/:path*",
-    has: [{ type: "host", value: fromHost }],
-    destination: `${origin.replace(/\/$/, "")}/:path*`,
-    permanent: true,
-  };
+  return { origin, fromHost };
+}
+
+/**
+ * Host redirects for next.config. Skips `/api/extension/*` so Chrome extension
+ * fetches are not 301'd without CORS headers (browsers block that).
+ */
+export function canonicalHostRedirectRules(): HostRedirectRule[] {
+  const pair = canonicalHostFromTo();
+  if (!pair) return [];
+  const has = [{ type: "host" as const, value: pair.fromHost }];
+  return [
+    {
+      source: "/",
+      has,
+      destination: `${pair.origin}/`,
+      permanent: true,
+    },
+    {
+      source: "/:path((?!api/extension(?:/|$)).*)",
+      has,
+      destination: `${pair.origin}/:path`,
+      permanent: true,
+    },
+  ];
 }
 
 /** Next.js `headers()` sources that should send `X-Robots-Tag: noindex, nofollow`. */

@@ -169,11 +169,19 @@ function groupIndex(groupKey: string): number {
   return index < 0 ? LIST_STATUS_GROUPS.length : index;
 }
 
-/** Opposite of the status picker: closed → active → not started. */
-export function statusesByPriorityDesc<T extends { id: string }>(
+/**
+ * Opposite of the status picker: closed → active → not started.
+ * Within a group, later catalog entries come first (matches layout reverse).
+ */
+export function statusesByPriorityDesc<T extends { id: string; groupKey: string }>(
   catalog: T[],
 ): T[] {
-  return catalog.slice().reverse();
+  const indexOf = new Map(catalog.map((status, index) => [status.id, index]));
+  return catalog.slice().sort((left, right) => {
+    const groupDiff = groupIndex(right.groupKey) - groupIndex(left.groupKey);
+    if (groupDiff !== 0) return groupDiff;
+    return (indexOf.get(right.id) ?? -1) - (indexOf.get(left.id) ?? -1);
+  });
 }
 
 export function resolveStatusIdForTask(
@@ -202,15 +210,27 @@ export function compareTasksByStatusPriority(
   b: { id: string; status: string; sortOrder: number },
   catalog: { id: string; groupKey: string }[],
 ): number {
-  const indexOf = (statusId: string) => {
-    const index = catalog.findIndex((item) => item.id === statusId);
-    return index < 0 ? -1 : index;
-  };
-  const left = indexOf(a.status);
-  const right = indexOf(b.status);
+  const leftStatus = catalog.find((item) => item.id === a.status);
+  const rightStatus = catalog.find((item) => item.id === b.status);
+  const leftGroup = groupIndex(leftStatus?.groupKey ?? "");
+  const rightGroup = groupIndex(rightStatus?.groupKey ?? "");
+  // closed (2) → active (1) → not_started (0); unknown last
+  if (leftGroup !== rightGroup) return rightGroup - leftGroup;
+  const left = leftStatus ? catalog.indexOf(leftStatus) : -1;
+  const right = rightStatus ? catalog.indexOf(rightStatus) : -1;
   if (left !== right) return right - left;
   if (a.sortOrder !== b.sortOrder) return a.sortOrder - b.sortOrder;
   return a.id.localeCompare(b.id);
+}
+
+/** Same order as the sidebar subtask tree: status catalog desc, then sortOrder. */
+export function sortTasksLikeNavTree<T extends { id: string; status: string; sortOrder: number }>(
+  tasks: T[],
+  catalog: { id: string; groupKey: string }[],
+): T[] {
+  return tasks.slice().sort((left, right) =>
+    compareTasksByStatusPriority(left, right, catalog),
+  );
 }
 
 type StatusLayoutSource = {

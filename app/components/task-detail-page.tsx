@@ -13,6 +13,7 @@ import { SectionPage } from "@/app/components/section-page";
 import { SubtaskDetailModal } from "@/app/components/subtask-detail-modal";
 import { useTranslations } from "@/app/components/translations-provider";
 import { isWorkFolder, isWorkItemArchived, isWorkSubtask, workProgressById } from "@/app/lib/lists";
+import { sortTasksLikeNavTree } from "@/app/lib/list-statuses";
 import { useLists } from "@/app/lib/lists-store";
 import { useTeam } from "@/app/lib/team-store";
 import { useIsAdmin } from "@/app/lib/users/use-is-admin";
@@ -43,7 +44,6 @@ export function TaskDetailPage({
   const { lists, tasks, childTasks, subtasks, isReady } = useLists();
   const { currentUser, roles } = useTeam();
   const { isAdmin } = useIsAdmin();
-  const { statuses } = useTaskStatuses(listId);
   const [parentCreate, setParentCreate] = useState<ParentCreateContext | null>(
     null,
   );
@@ -61,7 +61,10 @@ export function TaskDetailPage({
   const parent = isSubtask && opened?.parentId
     ? (tasks.find((item) => item.id === opened.parentId) ?? null)
     : opened;
-  const children = parent ? subtasks(parent.id) : [];
+  const { statuses } = useTaskStatuses(listId, parent?.id ?? null);
+  const children = parent
+    ? sortTasksLikeNavTree(subtasks(parent.id), statuses)
+    : [];
   const nested = parent ? childTasks(parent.id) : [];
   const progress = parent
     ? workProgressById(tasks, statuses).get(parent.id)

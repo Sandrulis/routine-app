@@ -1,5 +1,10 @@
 import { logError } from "@/app/lib/security/log-error";
 import { SITE_INTEGRATION_KEYS } from "@/app/lib/integrations/keys";
+import {
+  classifyResendSendError,
+  parseFromEmail,
+  resendFromValidationError,
+} from "@/app/lib/integrations/resend/from-email";
 import { getPublicSignInMethods } from "@/app/lib/integrations/public-sign-in";
 import {
   getSimpleIntegrationCredentials,
@@ -26,6 +31,7 @@ export async function getResendCredentials() {
   return {
     fromEmail: credentials.clientId,
     apiKey: credentials.clientSecret,
+    replyToEmail: credentials.replyToEmail,
   };
 }
 
@@ -34,7 +40,7 @@ function formatResendFrom(from: string, displayName?: string): string {
   if (!trimmed) return trimmed;
 
   const named = trimmed.match(/^(.*)<([^<>]+)>\s*$/);
-  const email = (named?.[2] ?? trimmed).trim();
+  const email = parseFromEmail(trimmed);
   const existingName = named?.[1]?.trim().replace(/^["']|["']$/g, "") ?? "";
   const label = existingName || displayName?.trim().replace(/[<>"]/g, "") || "";
   if (!label || !email.includes("@")) return trimmed;
@@ -53,6 +59,11 @@ export async function sendResendEmail(input: {
     return { ok: false as const, error: "errors.integrations_resend_not_enabled" };
   }
 
+  const fromError = resendFromValidationError(credentials.fromEmail);
+  if (fromError) {
+    return { ok: false as const, error: fromError };
+  }
+
   try {
     const response = await fetch("https://api.resend.com/emails", {
       method: "POST",
@@ -63,6 +74,9 @@ export async function sendResendEmail(input: {
       body: JSON.stringify({
         from: formatResendFrom(credentials.fromEmail, input.fromName),
         to: input.to,
+        ...(credentials.replyToEmail
+          ? { reply_to: credentials.replyToEmail }
+          : {}),
         subject: input.subject,
         html: input.html,
         text: input.text,
@@ -72,7 +86,10 @@ export async function sendResendEmail(input: {
     if (!response.ok) {
       const body = await response.text().catch(() => "");
       logError("Resend send failed", `${response.status} ${body}`);
-      return { ok: false as const, error: "errors.integrations_resend_send_failed" };
+      return {
+        ok: false as const,
+        error: classifyResendSendError(response.status, body),
+      };
     }
 
     return { ok: true as const };

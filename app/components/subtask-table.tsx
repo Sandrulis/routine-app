@@ -57,6 +57,7 @@ import {
 import {
   mergeStatusCatalog,
   resolveStatusIdForTask,
+  sortTasksLikeNavTree,
   statusesByPriorityDesc,
 } from "@/app/lib/list-statuses";
 import {
@@ -507,10 +508,14 @@ export function SubtaskTable({
       view === "with-archive"
         ? tasks
         : tasks.filter((task) => isTaskActiveInLists(task, statuses));
-    if (!groupByStatus) return visible;
-    return statusesByPriorityDesc(statuses).flatMap((status) =>
-      visible.filter((task) => task.status === status.id),
+    const ordered = sortTasksLikeNavTree(visible, statuses);
+    if (!groupByStatus) return ordered;
+    const known = new Set(statuses.map((status) => status.id));
+    const grouped = statusesByPriorityDesc(statuses).flatMap((status) =>
+      ordered.filter((task) => task.status === status.id),
     );
+    const unmatched = ordered.filter((task) => !known.has(task.status));
+    return [...grouped, ...unmatched];
   }, [groupByStatus, statuses, tasks, view]);
   const displayedRows = useDisplayedTasks(matching, view);
   const displayed = displayedRows.map((row) => row.task);

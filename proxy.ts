@@ -36,7 +36,14 @@ export async function proxy(request: NextRequest) {
     request.headers.get("host"),
   );
   if (canonicalUrl) {
-    return NextResponse.redirect(canonicalUrl, 301);
+    const redirect = NextResponse.redirect(canonicalUrl, 301);
+    const origin = request.headers.get("origin") ?? "";
+    if (origin.startsWith("chrome-extension://")) {
+      redirect.headers.set("Access-Control-Allow-Origin", origin);
+      redirect.headers.set("Access-Control-Allow-Credentials", "true");
+      redirect.headers.set("Vary", "Origin");
+    }
+    return redirect;
   }
 
   const { pathname } = request.nextUrl;

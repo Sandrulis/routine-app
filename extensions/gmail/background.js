@@ -1,7 +1,7 @@
-const DEFAULT_APP_BASE = "https://tasqin.com";
+const DEFAULT_APP_BASE = "https://www.tasqin.com";
 const APP_ORIGIN_CANDIDATES = [
-  "https://tasqin.com",
   "https://www.tasqin.com",
+  "https://tasqin.com",
   "http://localhost:3120",
   "http://127.0.0.1:3120",
 ];
@@ -33,6 +33,28 @@ function parseOrigin(raw) {
   }
 }
 
+/** Prefer www over apex so we don't hit a CORS-blocked 301 to the canonical host. */
+function originsWithWwwFirst(origin) {
+  const parsed = parseOrigin(origin);
+  if (!parsed) return [];
+  try {
+    const url = new URL(parsed);
+    const host = url.hostname;
+    if (host === "localhost" || host === "127.0.0.1") return [parsed];
+    const port = url.port ? `:${url.port}` : "";
+    if (host.startsWith("www.")) {
+      return unique([parsed, `${url.protocol}//${host.slice(4)}${port}`]);
+    }
+    return unique([`${url.protocol}//www.${host}${port}`, parsed]);
+  } catch {
+    return [parsed];
+  }
+}
+
+function expandOrigins(origins) {
+  return unique(origins.flatMap(originsWithWwwFirst));
+}
+
 async function originsFromAuthCookies() {
   let cookies = [];
   try {
@@ -60,7 +82,9 @@ async function probeConfig(origin) {
     await ensureOriginPermission(origin);
     const response = await fetch(`${origin}/api/extension/config`, {
       credentials: "omit",
+      redirect: "manual",
     });
+    if (response.status >= 300 && response.status < 400) return null;
     if (!response.ok) return null;
     const data = await response.json();
     if (!data?.ok) return null;
@@ -111,7 +135,7 @@ async function getAppBase() {
   const storedOrigin = parseOrigin(stored.appBaseUrl);
   const storedSession = await readStoredSession();
   const cookieOrigins = await originsFromAuthCookies();
-  const candidates = unique([
+  const candidates = expandOrigins([
     storedSession?.appBase,
     ...cookieOrigins,
     storedOrigin,
@@ -147,7 +171,7 @@ async function getAppBase() {
   } catch {
     // user dismissed
   }
-  const extraOrigins = unique([
+  const extraOrigins = expandOrigins([
     ...(await originsFromAuthCookies()),
     ...APP_ORIGIN_CANDIDATES,
   ]).filter((origin) => !candidates.includes(origin));

@@ -70,8 +70,8 @@ import { useListFiles } from "@/app/lib/use-list-files";
 import { useTeam } from "@/app/lib/team-store";
 import { useIsAdmin } from "@/app/lib/users/use-is-admin";
 import {
-  compareTasksByStatusPriority,
   resolveStatusCatalogs,
+  sortTasksLikeNavTree,
 } from "@/app/lib/list-statuses";
 import { useSystemTaskStatuses, useTaskStatuses } from "@/app/lib/task-statuses";
 import {
@@ -904,12 +904,12 @@ export function AppNav() {
         }).visible
       : statuses;
     const items = isSubtaskBranch
-      ? rawItems
-          .filter((task) => isTaskActiveInLists(task, subtaskStatusCatalog))
-          .slice()
-          .sort((left, right) =>
-            compareTasksByStatusPriority(left, right, subtaskStatusCatalog),
-          )
+      ? sortTasksLikeNavTree(
+          rawItems.filter((task) =>
+            isTaskActiveInLists(task, subtaskStatusCatalog),
+          ),
+          subtaskStatusCatalog,
+        )
       : rawItems;
     const nestedFiles = showFiles ? childListFiles(files, listId, parentId) : [];
     const mixed = showFiles

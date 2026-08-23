@@ -20,6 +20,8 @@ import {
   type WeekStartDay,
 } from "@/app/lib/site-admin/display-preferences";
 import type { SiteLanguageSummary, SiteSettingsInput, SiteSettingsSummary } from "@/app/lib/site-admin/types";
+import type { SimpleIntegrationStatus } from "@/app/lib/integrations/types";
+import Link from "next/link";
 
 const fieldClassName =
   "mt-2 w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 outline-none transition focus:border-zinc-400 focus:ring-4 focus:ring-zinc-100";
@@ -71,12 +73,17 @@ function toInput(
 export function AdminSettingsForm({
   initialSettings,
   languages,
+  resend,
 }: {
   initialSettings: SiteSettingsSummary;
   languages: SiteLanguageSummary[];
+  resend: SimpleIntegrationStatus;
 }) {
   const [settings, setSettings] = useState(() => toInput(initialSettings, languages));
   const [savedSettings, setSavedSettings] = useState(initialSettings);
+  const [resendFromEmail, setResendFromEmail] = useState(resend.clientId);
+  const [resendReplyToEmail, setResendReplyToEmail] = useState(resend.replyToEmail);
+  const [savedResend, setSavedResend] = useState(resend);
   const [editLang, setEditLang] = useState(
     () => languages.find((language) => language.isDefault)?.code ?? languages[0]?.code ?? "lv",
   );
@@ -97,7 +104,9 @@ export function AdminSettingsForm({
     !siteDisplayPreferencesEqual(settings.displayPreferences, savedInput.displayPreferences) ||
     settings.logoUrl !== savedInput.logoUrl ||
     settings.faviconUrl !== savedInput.faviconUrl ||
-    settings.logoColor !== savedInput.logoColor;
+    settings.logoColor !== savedInput.logoColor ||
+    resendFromEmail.trim() !== savedResend.clientId.trim() ||
+    resendReplyToEmail.trim() !== savedResend.replyToEmail.trim();
   const { confirmOpen, stayOnPage, confirmLeave } = useUnsavedChangesGuard({
     isDirty: hasChanges,
   });
@@ -114,7 +123,12 @@ export function AdminSettingsForm({
     if (!hasChanges) return;
 
     startTransition(async () => {
-      const result = await saveSiteSettingsAction(settings);
+      const result = await saveSiteSettingsAction(
+        settings,
+        savedResend.configured
+          ? { fromEmail: resendFromEmail, replyToEmail: resendReplyToEmail }
+          : undefined,
+      );
       if (!result.ok) {
         showFeedback({ type: "error", text: translateActionError(t, result.error) });
         return;
@@ -130,6 +144,11 @@ export function AdminSettingsForm({
         logoColor: settings.logoColor,
         updatedAt: new Date().toISOString(),
       });
+      setSavedResend((current) => ({
+        ...current,
+        clientId: resendFromEmail.trim(),
+        replyToEmail: resendReplyToEmail.trim(),
+      }));
       showFeedback({
         type: "success",
         text: t("site_settings.feedback.saved", "Sistēmas uzstādījumi saglabāti."),
@@ -218,6 +237,78 @@ export function AdminSettingsForm({
                     "Šo adresi rāda privātuma politikā saziņai par datu apstrādi.",
                   )}
                 </p>
+              </div>
+
+              <div className="space-y-4 rounded-2xl border border-zinc-100 bg-zinc-50/70 p-4">
+                <div>
+                  <p className={sectionTitleClassName}>
+                    {t("site_settings.form.resend_title", "Resend e-pasts")}
+                  </p>
+                  <p className={hintClassName}>
+                    {t(
+                      "site_settings.form.resend_hint",
+                      "Vēstules tiek sūtītas no From adreses; atbildes saņem Reply-To adrese.",
+                    )}
+                  </p>
+                </div>
+                {savedResend.configured ? null : (
+                  <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+                    {t(
+                      "site_settings.form.resend_disabled",
+                      "Resend nav konfigurēts, tāpēc e-pasti netiek sūtīti.",
+                    )}{" "}
+                    <Link
+                      href="/admin/integrations"
+                      className="font-semibold underline underline-offset-2"
+                    >
+                      {t("admin.nav.integrations", "Integrācijas")}
+                    </Link>
+                  </p>
+                )}
+                <div>
+                  <label htmlFor="resendFromEmail" className={labelClassName}>
+                    {t("integrations.resend.from_email", "From e-pasts")}
+                  </label>
+                  <input
+                    id="resendFromEmail"
+                    type="email"
+                    value={resendFromEmail}
+                    onChange={(event) => setResendFromEmail(event.target.value)}
+                    disabled={!savedResend.configured}
+                    placeholder="no-reply@tasqin.com"
+                    className="mt-2 min-h-11 w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 outline-none transition focus:border-zinc-400 focus:ring-4 focus:ring-zinc-100 disabled:cursor-not-allowed disabled:bg-zinc-100"
+                    autoComplete="off"
+                    spellCheck={false}
+                  />
+                  <p className={hintClassName}>
+                    {t(
+                      "integrations.resend.from_hint",
+                      "No šīs adreses sistēma sūta vēstules. Tai jābūt verificētā Resend domēnā.",
+                    )}
+                  </p>
+                </div>
+                <div>
+                  <label htmlFor="resendReplyToEmail" className={labelClassName}>
+                    {t("integrations.resend.reply_to", "Reply-To e-pasts")}
+                  </label>
+                  <input
+                    id="resendReplyToEmail"
+                    type="email"
+                    value={resendReplyToEmail}
+                    onChange={(event) => setResendReplyToEmail(event.target.value)}
+                    disabled={!savedResend.configured}
+                    placeholder="tasqin.com@gmail.com"
+                    className="mt-2 min-h-11 w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 outline-none transition focus:border-zinc-400 focus:ring-4 focus:ring-zinc-100 disabled:cursor-not-allowed disabled:bg-zinc-100"
+                    autoComplete="email"
+                    spellCheck={false}
+                  />
+                  <p className={hintClassName}>
+                    {t(
+                      "integrations.resend.reply_to_hint",
+                      "Atbildes uz vēstulēm iet uz šo adresi. Var būt Gmail vai cita publiska pastkaste.",
+                    )}
+                  </p>
+                </div>
               </div>
 
               <div>

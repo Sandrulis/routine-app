@@ -66,9 +66,9 @@ import {
   type ListWindowId,
 } from "@/app/lib/list-windows";
 import {
-  compareTasksByStatusPriority,
   mergeStatusCatalog,
   resolveStatusIdForTask,
+  sortTasksLikeNavTree,
   statusesByPriorityDesc,
 } from "@/app/lib/list-statuses";
 import {
@@ -582,10 +582,12 @@ function OverviewSubtaskRow({
 
 function OverviewSubtaskList({
   listId,
+  parentTaskId = null,
   tasks,
   onOpenSubtask,
 }: {
   listId: string;
+  parentTaskId?: string | null;
   tasks: WorkTask[];
   onOpenSubtask: (task: WorkTask) => void;
 }) {
@@ -594,7 +596,10 @@ function OverviewSubtaskList({
     useLists();
   const { currentUser, roles } = useTeam();
   const { isAdmin } = useIsAdmin();
-  const { statuses, colorFor, labelFor } = useTaskStatuses(listId);
+  const { statuses, colorFor, labelFor } = useTaskStatuses(
+    listId,
+    parentTaskId,
+  );
   const { statuses: systemStatuses } = useSystemTaskStatuses();
   const { isEnabled: isModuleEnabled } = useFrontendModules();
   const checklistsEnabled = isModuleEnabled(FRONTEND_MODULE_KEYS.checklist);
@@ -607,7 +612,10 @@ function OverviewSubtaskList({
   const groups = statusesByPriorityDesc(statuses)
     .map((status) => ({
       status,
-      items: tasks.filter((task) => task.status === status.id),
+      items: sortTasksLikeNavTree(
+        tasks.filter((task) => task.status === status.id),
+        statuses,
+      ),
     }))
     .filter((group) => group.items.length > 0);
   const closedStatusId =
@@ -780,26 +788,22 @@ function OverviewItem({
 }) {
   const { t } = useTranslations();
   const { tasks: allTasks, childTasks, subtasks } = useLists();
-  const { statuses } = useTaskStatuses(listId);
   const folder = isWorkFolder(task);
+  const { statuses } = useTaskStatuses(listId, folder ? null : task.id);
   const nestedAll = folder
     ? childTasks(task.id).filter((item) => !isTaskDeleted(item))
     : [];
-  const nestedItems = nestedAll
-    .filter((item) => isListedInWindow(item, statuses, archiveOpen))
-    .slice()
-    .sort((left, right) =>
-      compareTasksByStatusPriority(left, right, statuses),
-    );
+  const nestedItems = sortTasksLikeNavTree(
+    nestedAll.filter((item) => isListedInWindow(item, statuses, archiveOpen)),
+    statuses,
+  );
   const children = folder
     ? getDescendantSubtasks(allTasks, task.id)
     : subtasks(task.id);
-  const visibleChildren = children
-    .filter((item) => isListedInWindow(item, statuses, archiveOpen))
-    .slice()
-    .sort((left, right) =>
-      compareTasksByStatusPriority(left, right, statuses),
-    );
+  const visibleChildren = sortTasksLikeNavTree(
+    children.filter((item) => isListedInWindow(item, statuses, archiveOpen)),
+    statuses,
+  );
   const progress = progressById.get(task.id) ?? taskProgress(task, children, statuses);
   const closed = isClosedTaskStatus(task.status, statuses);
 
@@ -868,6 +872,7 @@ function OverviewItem({
       ) : visibleChildren.length > 0 ? (
         <OverviewSubtaskList
           listId={listId}
+          parentTaskId={folder ? null : task.id}
           tasks={visibleChildren}
           onOpenSubtask={onOpenSubtask}
         />
@@ -896,11 +901,7 @@ function OverviewWindow({
     () => workProgressById(allTasks, statuses),
     [allTasks, statuses],
   );
-  const orderedTasks = tasks
-    .slice()
-    .sort((left, right) =>
-      compareTasksByStatusPriority(left, right, statuses),
-    );
+  const orderedTasks = sortTasksLikeNavTree(tasks, statuses);
 
   if (tasks.length === 0) {
     return (

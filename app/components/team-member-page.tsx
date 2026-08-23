@@ -60,13 +60,19 @@ export function TeamMemberPage({ memberId }: { memberId: string }) {
         return;
       }
       showFeedback({
-        type: result.data.emailSent ? "success" : "info",
+        type: result.data.emailSent
+          ? "success"
+          : result.data.emailError
+            ? "error"
+            : "info",
         text: result.data.emailSent
           ? t("team.invite.resent", "Uzaicinājums nosūtīts vēlreiz.")
-          : t(
-              "team.invite.resent_no_email",
-              "E-pasts netika nosūtīts (Supabase limits). Nosūti uzaicinājuma linku manuāli.",
-            ),
+          : result.data.emailError
+            ? translateActionError(t, result.data.emailError)
+            : t(
+                "team.invite.resent_no_email",
+                "E-pasts netika nosūtīts. Nosūti uzaicinājuma linku manuāli.",
+              ),
       });
     } finally {
       setPendingAction(null);

@@ -2,29 +2,17 @@ import { NextResponse } from "next/server";
 import { isKnownSiteOrigin } from "@/app/lib/seo/known-site-origins";
 
 const EXTENSION_ORIGIN = /^chrome-extension:\/\//;
-
-function allowedExtensionIds() {
-  const raw =
-    process.env.CHROME_EXTENSION_IDS?.trim() ||
-    process.env.NEXT_PUBLIC_CHROME_EXTENSION_IDS?.trim() ||
-    "";
-  return raw
-    .split(",")
-    .map((item) => item.trim())
-    .filter(Boolean);
-}
+const CHROME_EXTENSION_ID = /^[a-p]{32}$/;
 
 function allowOrigin(request: Request): string | null {
   const origin = request.headers.get("origin");
   if (!origin) return null;
   if (EXTENSION_ORIGIN.test(origin)) {
     const extensionId = origin.replace("chrome-extension://", "").split("/")[0];
-    const allowlist = allowedExtensionIds();
-    if (allowlist.length > 0) {
-      return allowlist.includes(extensionId) ? origin : null;
-    }
-    if (process.env.NODE_ENV !== "production") return origin;
-    return null;
+    // CORS is not auth: echo any well-formed Chrome extension origin so
+    // production works without CHROME_EXTENSION_IDS. Private routes still
+    // require a Bearer token.
+    return CHROME_EXTENSION_ID.test(extensionId) ? origin : null;
   }
   const site = process.env.NEXT_PUBLIC_SITE_URL?.trim();
   if (site) {

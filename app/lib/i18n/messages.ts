@@ -506,12 +506,17 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
     "integrations.resend.description":
       "Transakciju e-pasti caur Resend API (From adrese + API Key).",
     "integrations.resend.from_email": "From e-pasts",
+    "integrations.resend.from_hint":
+      "No šīs adreses sistēma sūta vēstules. Tai jābūt verificētā Resend domēnā.",
+    "integrations.resend.reply_to": "Reply-To e-pasts",
+    "integrations.resend.reply_to_hint":
+      "Atbildes uz vēstulēm iet uz šo adresi. Var būt Gmail vai cita publiska pastkaste.",
     "integrations.resend.api_key": "API Key",
     "integrations.resend.api_key_placeholder": "re_…",
     "integrations.resend.api_key_placeholder_saved":
       "Saglabāts — atstāj tukšu, ja nemaina",
     "integrations.resend.hint":
-      "Kad integrācija ir aktīva, sistēma var sūtīt transakciju e-pastus caur Resend API.",
+      "From adresei jābūt verificētā Resend domēnā. Reply-To var būt Gmail, lai atbildes nonāktu tavā pastkastē.",
     "integrations.resend.reset": "Notīrīt konfigurāciju",
     "integrations.resend.reset.confirm_title": "Notīrīt Resend konfigurāciju?",
     "integrations.resend.reset.confirm_description":
@@ -573,6 +578,10 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
     "errors.integrations_resend_api_key_required": "Ievadi Resend API Key.",
     "errors.integrations_resend_not_enabled": "Resend integrācija nav ieslēgta.",
     "errors.integrations_resend_send_failed": "Neizdevās nosūtīt e-pastu caur Resend.",
+    "errors.integrations_resend_from_unverified":
+      "From adresei jābūt verificētā Resend domēnā. Gmail un citas publiskās pastkastes nevar izmantot.",
+    "errors.integrations_resend_reply_to_invalid":
+      "Ievadi derīgu Reply-To e-pasta adresi.",
     "errors.integrations_umami_website_id_required": "Ievadi Umami Website ID.",
     "errors.integrations_umami_script_required": "Ievadi Umami Script URL.",
     "errors.integrations_sentry_environment_required": "Ievadi Sentry Environment.",
@@ -767,6 +776,11 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
     "site_settings.form.legal_email": "Juridiskais e-pasts",
     "site_settings.form.legal_email_hint":
       "Šo adresi rāda privātuma politikā saziņai par datu apstrādi.",
+    "site_settings.form.resend_title": "Resend e-pasts",
+    "site_settings.form.resend_hint":
+      "Vēstules tiek sūtītas no From adreses; atbildes saņem Reply-To adrese.",
+    "site_settings.form.resend_disabled":
+      "Resend nav konfigurēts, tāpēc e-pasti netiek sūtīti.",
     "site_settings.form.logo_color_hint":
       "Ja logotips nav augšupielādēts, avatārs rāda sistēmas iniciāļus ar izvēlēto fonu.",
     "site_settings.form.slogan": "Slogans",
@@ -835,7 +849,7 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
     "team.invite.resending": "Sūta…",
     "team.invite.resent": "Uzaicinājums nosūtīts vēlreiz.",
     "team.invite.resent_no_email":
-      "E-pasts netika nosūtīts (Supabase limits). Nosūti uzaicinājuma linku manuāli.",
+      "E-pasts netika nosūtīts. Nosūti uzaicinājuma linku manuāli.",
     "team.invite.copy_link": "Kopēt uzaicinājuma linku",
     "team.invite.link_copied": "Uzaicinājuma links nokopēts.",
     "team.invited_no_email":
@@ -2384,12 +2398,17 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
     "integrations.resend.description":
       "Transactional email via the Resend API (From address + API Key).",
     "integrations.resend.from_email": "From email",
+    "integrations.resend.from_hint":
+      "Emails are sent from this address. It must be on a domain verified in Resend.",
+    "integrations.resend.reply_to": "Reply-To email",
+    "integrations.resend.reply_to_hint":
+      "Replies to emails go to this address. It can be Gmail or another public mailbox.",
     "integrations.resend.api_key": "API Key",
     "integrations.resend.api_key_placeholder": "re_…",
     "integrations.resend.api_key_placeholder_saved":
       "Saved — leave blank to keep unchanged",
     "integrations.resend.hint":
-      "When the integration is active, the system can send transactional email through the Resend API.",
+      "The From address must use a domain verified in Resend. Reply-To can be Gmail so replies reach your inbox.",
     "integrations.resend.reset": "Clear configuration",
     "integrations.resend.reset.confirm_title": "Clear Resend configuration?",
     "integrations.resend.reset.confirm_description":
@@ -2451,6 +2470,10 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
     "errors.integrations_resend_api_key_required": "Enter the Resend API Key.",
     "errors.integrations_resend_not_enabled": "Resend integration is not enabled.",
     "errors.integrations_resend_send_failed": "Could not send email through Resend.",
+    "errors.integrations_resend_from_unverified":
+      "The From address must be on a domain verified in Resend. Gmail and other public mailboxes cannot be used.",
+    "errors.integrations_resend_reply_to_invalid":
+      "Enter a valid Reply-To email address.",
     "errors.integrations_umami_website_id_required": "Enter the Umami Website ID.",
     "errors.integrations_umami_script_required": "Enter the Umami Script URL.",
     "errors.integrations_sentry_environment_required": "Enter the Sentry Environment.",
@@ -2643,6 +2666,11 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
     "site_settings.form.legal_email": "Legal email",
     "site_settings.form.legal_email_hint":
       "This address is shown in the privacy policy for data-processing requests.",
+    "site_settings.form.resend_title": "Resend email",
+    "site_settings.form.resend_hint":
+      "Messages are sent from the From address; replies go to the Reply-To address.",
+    "site_settings.form.resend_disabled":
+      "Resend is not configured, so emails are not sent.",
     "site_settings.form.logo_color_hint":
       "If no logo is uploaded, the avatar uses system initials on the chosen background.",
     "site_settings.form.slogan": "Slogan",
@@ -2710,7 +2738,7 @@ export const messages: Record<LanguageCode, Record<string, string>> = {
     "team.invite.resending": "Sending…",
     "team.invite.resent": "Invitation sent again.",
     "team.invite.resent_no_email":
-      "Email was not sent (Supabase rate limit). Share the invite link manually.",
+      "Email was not sent. Share the invite link manually.",
     "team.invite.copy_link": "Copy invitation link",
     "team.invite.link_copied": "Invitation link copied.",
     "team.invited_no_email":
