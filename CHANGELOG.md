@@ -4,6 +4,10 @@
 
 - (none)
 
+## v0.2.16
+
+- Security smoke: cron maršruts `/api/cron/[jobKey]` autentificējas ar darba tokenu, ne sesijas cookie
+
 ## v0.2.15
 
 - Gmail spraudnis `0.4.4`: paša sesija (~30 dienas) `chrome.storage.local`, neatkarīga no vietnes ielogošanās; **Iziet** spraudnī nenoņem vietnes sesiju

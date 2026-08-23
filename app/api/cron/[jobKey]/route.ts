@@ -39,6 +39,7 @@ async function handleCronRequest(
     );
   }
 
+  // Auth: per-job secret token (query or Bearer) — no session cookie.
   const urlToken = new URL(request.url).searchParams.get("token")?.trim() ?? "";
   const auth = request.headers.get("authorization") ?? "";
   const bearer = auth.toLowerCase().startsWith("bearer ")
