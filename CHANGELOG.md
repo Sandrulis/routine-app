@@ -4,6 +4,10 @@
 
 - (none)
 
+## v0.2.13
+
+- Security smoke: Resend webhook (`/api/webhooks/resend`) atzīts kā Svix-parakstīts publiskais endpoint, nevis sesijas auth
+
 ## v0.2.12
 
 - Pārsūtītā faila vēsturē Resend piegādes statuss: bounce/failed sarkanā ar **Nosūtīt vēlreiz**; webhook `/api/webhooks/resend` + poll atverot apakšuzdevumu (`087`)

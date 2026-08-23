@@ -20,6 +20,7 @@ function webhookSecret(): string {
 }
 
 export async function POST(request: Request) {
+  // Auth: Svix signature (RESEND_WEBHOOK_SECRET) — no session cookie.
   const secret = webhookSecret();
   if (!secret) {
     logError("Resend webhook", "RESEND_WEBHOOK_SECRET is not set");

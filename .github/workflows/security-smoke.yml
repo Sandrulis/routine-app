@@ -92,6 +92,14 @@ jobs:
                 app/api/extension/login/route.ts|app/api/extension/refresh/route.ts|app/api/extension/config/route.ts)
                   continue
                   ;;
+                # Provider webhooks authenticate via signing secret (Svix), not session cookies.
+                app/api/webhooks/*)
+                  if ! grep -qE "(new Webhook|wh\.verify|\.verify\()" "$file"; then
+                    echo "FAIL: No webhook signature verify in $file"
+                    exit 1
+                  fi
+                  continue
+                  ;;
               esac
               if ! grep -qE "(getCurrentUser|requireAuth|getExtensionAuth)" "$file"; then
                 echo "FAIL: No auth check in $file"
