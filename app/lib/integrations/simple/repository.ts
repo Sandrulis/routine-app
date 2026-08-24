@@ -58,10 +58,13 @@ async function fetchIntegrationRow(key: SimpleSiteIntegrationKey) {
   }
   const row = data as IntegrationRow | null;
   if (row?.client_secret && !isEncryptedSecret(row.client_secret)) {
-    void admin
-      .from("site_integrations")
-      .update({ client_secret: persistSecret(row.client_secret) })
-      .eq("integration_key", key);
+    const encrypted = persistSecret(row.client_secret);
+    if (encrypted) {
+      void admin
+        .from("site_integrations")
+        .update({ client_secret: encrypted })
+        .eq("integration_key", key);
+    }
   }
   if (!row) return null;
   return {

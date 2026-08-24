@@ -85,10 +85,13 @@ async function fetchIntegrationRow(): Promise<IntegrationRow | null> {
   if (!data) return null;
   const row = data as IntegrationRow;
   if (row.client_secret && !isEncryptedSecret(row.client_secret)) {
-    void admin
-      .from("site_integrations")
-      .update({ client_secret: persistSecret(row.client_secret) })
-      .eq("integration_key", SITE_INTEGRATION_KEYS.googleOAuth);
+    const encrypted = persistSecret(row.client_secret);
+    if (encrypted) {
+      void admin
+        .from("site_integrations")
+        .update({ client_secret: encrypted })
+        .eq("integration_key", SITE_INTEGRATION_KEYS.googleOAuth);
+    }
   }
   return {
     ...row,

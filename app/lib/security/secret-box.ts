@@ -105,7 +105,15 @@ export function decryptSecret(value: string | null | undefined): string {
 }
 
 export function persistSecret(value: string | null | undefined): string | null {
-  const encrypted = encryptSecret(decryptSecret(value));
-  return encrypted || null;
+  try {
+    const encrypted = encryptSecret(decryptSecret(value));
+    return encrypted || null;
+  } catch (error) {
+    logError(
+      "persistSecret skipped",
+      error instanceof Error ? error.message : String(error),
+    );
+    return null;
+  }
 }
 

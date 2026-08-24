@@ -1,4 +1,3 @@
-import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import {
   createOAuthLoginState,
@@ -51,12 +50,6 @@ export async function GET(request: Request) {
   }
 
   const response = NextResponse.redirect(url);
-  const cookieStore = await cookies();
-  cookieStore.set(
-    MICROSOFT_OAUTH_OAUTH_COOKIE,
-    serialized,
-    microsoftOAuthConfigureCookieOptions(600),
-  );
   response.cookies.set(
     MICROSOFT_OAUTH_OAUTH_COOKIE,
     serialized,
@@ -64,3 +57,5 @@ export async function GET(request: Request) {
   );
   return response;
 }
+
+export const runtime = "nodejs";

@@ -4,6 +4,10 @@
 
 - (none)
 
+## v0.2.23
+
+- Labots HTTP 500 OAuth maršrutos production: integrāciju secret migrācija vairs nemest kļūdu bez `INTEGRATION_SECRETS_KEY`
+
 ## v0.2.22
 
 - Kopīgi helperi: atkārtotas utilītas apvienotas `app/lib/` (skat. DEVELOPER.md → Kopīgie helperi); uzvedība lietotājam nemainās
