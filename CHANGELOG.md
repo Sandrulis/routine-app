@@ -4,6 +4,13 @@
 
 - (none)
 
+## v0.2.30
+
+- Maksas plāni: `max_members`, komandas plāna piešķiršana `/admin/teams`, moduļu ierobežojums pēc aktīvā plāna (ieslēgtiem plāniem)
+- Migrācija `093_payment_plan_max_members`
+- Cloudflare Turnstile botu aizsardzība login, signup, paroles atjaunošanā un OAuth (admin Integrācijas)
+- Migrācija `092_turnstile_integration` + publiskais RPC `public_turnstile_config`
+
 ## v0.2.28
 
 - Gmail spraudnis `0.4.19`: boot teksts «Ielādē…»; Gmail savienojums kā maza ikona ar tooltip (sarkana, ja nav savienots)

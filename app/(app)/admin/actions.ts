@@ -49,6 +49,7 @@ import {
   updateSystemDefaultRole,
   setDefaultSiteLanguage,
   updateAdminTeam,
+  updateAdminTeamPaymentPlan,
   updateAdminUser,
   updateSiteLanguageActiveStatus,
   updateSiteLanguageName,
@@ -59,6 +60,7 @@ import type { EmailTemplateDraft } from "@/app/lib/email/templates";
 import type {
   AdminTeamInput,
   AdminTeamMemberSummary,
+  AdminTeamPaymentPlanInput,
   AdminUserInput,
   TaskStatusInput,
   TaskStatusSummary,
@@ -121,6 +123,16 @@ export async function updateAdminTeamAction(teamId: string, input: AdminTeamInpu
 export async function deleteAdminTeamAction(teamId: string) {
   await requireAdmin({ action: "admin.team.delete", target: teamId });
   const result = await deleteAdminTeam(teamId);
+  if (result.ok) refreshAdmin();
+  return result;
+}
+
+export async function updateAdminTeamPaymentPlanAction(
+  teamId: string,
+  input: AdminTeamPaymentPlanInput,
+) {
+  await requireAdmin({ action: "admin.team.payment_plan", target: teamId });
+  const result = await updateAdminTeamPaymentPlan(teamId, input);
   if (result.ok) refreshAdmin();
   return result;
 }

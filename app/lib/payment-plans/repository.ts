@@ -1,11 +1,13 @@
 import { cache } from "react";
 import {
   DEFAULT_TRIAL_DAYS,
+  DEFAULT_PLAN_MEMBERS,
   MAX_TRIAL_DAYS,
   MIN_TRIAL_DAYS,
   normalizeLocalizedValues,
   parseLocalizedValues,
   parsePaymentPlanPrice,
+  parsePaymentPlanMaxMembers,
   type EarlyBirdAvailability,
   type EarlyBirdSettings,
   type PaymentPlanInput,
@@ -50,6 +52,7 @@ type PaymentPlanRow = {
   early_bird_price_month: number | string | null;
   early_bird_price_quarter: number | string | null;
   early_bird_price_year: number | string | null;
+  max_members: number;
   sort_order: number;
   created_at: string;
   updated_at: string;
@@ -63,7 +66,7 @@ type PlanModuleRow = {
 const PLAN_KEY_PATTERN = /^[a-z0-9._:-]+$/;
 
 const PLAN_SELECT =
-  "id, plan_key, name_values, description_values, price_month, price_quarter, price_year, early_bird_price_month, early_bird_price_quarter, early_bird_price_year, sort_order, created_at, updated_at";
+  "id, plan_key, name_values, description_values, price_month, price_quarter, price_year, early_bird_price_month, early_bird_price_quarter, early_bird_price_year, max_members, sort_order, created_at, updated_at";
 
 function normalizePlanKey(value: string): string {
   return value.trim().toLowerCase();
@@ -89,6 +92,8 @@ function mapPaymentPlanRow(
     nameValues: parseLocalizedValues(row.name_values),
     descriptionValues: parseLocalizedValues(row.description_values),
     moduleKeys,
+    maxMembers:
+      parsePaymentPlanMaxMembers(row.max_members) ?? DEFAULT_PLAN_MEMBERS,
     priceMonth: parsePaymentPlanPrice(row.price_month) ?? 0,
     priceQuarter: parsePaymentPlanPrice(row.price_quarter) ?? 0,
     priceYear: parsePaymentPlanPrice(row.price_year) ?? 0,
@@ -428,6 +433,10 @@ async function replacePlanModules(
   return { ok: true };
 }
 
+function normalizePlanMaxMembers(value: unknown): number | null {
+  return parsePaymentPlanMaxMembers(value);
+}
+
 export async function createPaymentPlan(
   input: PaymentPlanInput,
 ): Promise<{ ok: true; plan: PaymentPlanSummary } | { ok: false; error: string }> {
@@ -447,6 +456,11 @@ export async function createPaymentPlan(
     return pricesResult;
   }
 
+  const maxMembers = normalizePlanMaxMembers(input.maxMembers);
+  if (maxMembers === null) {
+    return { ok: false, error: "errors.payment_plan_max_members_invalid" };
+  }
+
   if (!isSupabaseConfigured()) {
     return { ok: false, error: "errors.db_not_configured" };
   }
@@ -463,6 +477,7 @@ export async function createPaymentPlan(
       name_values: nameValues,
       description_values: normalizeLocalizedValues(input.descriptionValues),
       sort_order: nextSortOrder,
+      max_members: maxMembers,
       ...pricesResult.prices,
     })
     .select(PLAN_SELECT)
@@ -514,6 +529,11 @@ export async function updatePaymentPlan(
     return pricesResult;
   }
 
+  const maxMembers = normalizePlanMaxMembers(input.maxMembers);
+  if (maxMembers === null) {
+    return { ok: false, error: "errors.payment_plan_max_members_invalid" };
+  }
+
   if (!isSupabaseConfigured()) {
     return { ok: false, error: "errors.db_not_configured" };
   }
@@ -525,6 +545,7 @@ export async function updatePaymentPlan(
       plan_key: planKey,
       name_values: nameValues,
       description_values: normalizeLocalizedValues(input.descriptionValues),
+      max_members: maxMembers,
       ...pricesResult.prices,
     })
     .eq("id", trimmedId);

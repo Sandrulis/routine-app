@@ -5,6 +5,10 @@ import { MfaVerifyModal } from "@/app/components/mfa-verify-modal";
 import { getMfaGate } from "@/app/lib/auth/mfa";
 import { getEnabledFrontendModuleKeys } from "@/app/lib/frontend-modules/repository";
 import {
+  getPaymentPlansEnabledCached,
+  listPaymentPlans,
+} from "@/app/lib/payment-plans/repository";
+import {
   listFileTypeExtensions,
   listTaskStatuses,
 } from "@/app/lib/site-admin/repository";
@@ -32,11 +36,13 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
     }
   }
 
-  const [taskStatuses, fileTypeExtensions, enabledFrontendModuleKeys] =
+  const [taskStatuses, fileTypeExtensions, enabledFrontendModuleKeys, paymentPlansEnabled, paymentPlans] =
     await Promise.all([
       listTaskStatuses(),
       listFileTypeExtensions(),
       getEnabledFrontendModuleKeys(),
+      getPaymentPlansEnabledCached(),
+      listPaymentPlans(),
     ]);
 
   return (
@@ -44,6 +50,11 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
       taskStatuses={taskStatuses}
       fileTypeExtensions={fileTypeExtensions}
       enabledFrontendModuleKeys={[...enabledFrontendModuleKeys]}
+      paymentPlansEnabled={paymentPlansEnabled}
+      paymentPlans={paymentPlans.map((plan) => ({
+        id: plan.id,
+        moduleKeys: plan.moduleKeys,
+      }))}
     >
       {children}
     </AppProviders>

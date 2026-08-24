@@ -31,12 +31,14 @@ import type {
 export function AdminIntegrationsPage({
   initialGoogleOAuth,
   initialMicrosoftOAuth,
+  initialTurnstile,
   initialResend,
   initialUmami,
   initialSentry,
 }: {
   initialGoogleOAuth: GoogleOAuthIntegrationStatus;
   initialMicrosoftOAuth: MicrosoftOAuthIntegrationStatus;
+  initialTurnstile: SimpleIntegrationStatus;
   initialResend: SimpleIntegrationStatus;
   initialUmami: SimpleIntegrationStatus;
   initialSentry: SimpleIntegrationStatus;
@@ -795,6 +797,7 @@ export function AdminIntegrationsPage({
       </AdminIntegrationCard>
 
       <AdminApiIntegrationsSection
+        initialTurnstile={initialTurnstile}
         initialResend={initialResend}
         initialUmami={initialUmami}
         initialSentry={initialSentry}

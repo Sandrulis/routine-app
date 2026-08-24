@@ -16,7 +16,7 @@ import {
 import { DEFAULT_UMAMI_SCRIPT_URL } from "@/app/lib/integrations/simple/definitions";
 import type { SimpleIntegrationStatus } from "@/app/lib/integrations/types";
 
-type ApiIntegrationKind = "resend" | "umami" | "sentry";
+type ApiIntegrationKind = "turnstile" | "resend" | "umami" | "sentry";
 
 type DraftState = {
   status: SimpleIntegrationStatus;
@@ -49,11 +49,13 @@ function isDraftDirty(draft: DraftState) {
 }
 
 export function AdminApiIntegrationsSection({
+  initialTurnstile,
   initialResend,
   initialUmami,
   initialSentry,
   onDirtyChange,
 }: {
+  initialTurnstile: SimpleIntegrationStatus;
   initialResend: SimpleIntegrationStatus;
   initialUmami: SimpleIntegrationStatus;
   initialSentry: SimpleIntegrationStatus;
@@ -62,6 +64,7 @@ export function AdminApiIntegrationsSection({
   const router = useRouter();
   const { showFeedback, clearFeedback } = useFeedbackToast();
   const { t } = useTranslations();
+  const [turnstile, setTurnstile] = useState(() => createDraft(initialTurnstile));
   const [resend, setResend] = useState(() => createDraft(initialResend));
   const [umami, setUmami] = useState(() => createDraft(initialUmami));
   const [sentry, setSentry] = useState(() => createDraft(initialSentry));
@@ -71,7 +74,14 @@ export function AdminApiIntegrationsSection({
   const isBusy = isPending || pendingKey !== null;
 
   const isDirty =
-    isDraftDirty(resend) || isDraftDirty(umami) || isDraftDirty(sentry);
+    isDraftDirty(turnstile) ||
+    isDraftDirty(resend) ||
+    isDraftDirty(umami) ||
+    isDraftDirty(sentry);
+
+  useEffect(() => {
+    setTurnstile(createDraft(initialTurnstile));
+  }, [initialTurnstile]);
 
   useEffect(() => {
     setResend(createDraft(initialResend));
@@ -88,6 +98,14 @@ export function AdminApiIntegrationsSection({
   useEffect(() => {
     onDirtyChange?.(isDirty);
   }, [isDirty, onDirtyChange]);
+
+  useEffect(() => {
+    if (isDraftDirty(turnstile)) {
+      setTurnstile((current) =>
+        current.expanded ? current : { ...current, expanded: true },
+      );
+    }
+  }, [turnstile.clientId, turnstile.clientSecret, turnstile.enabled, turnstile.status]);
 
   useEffect(() => {
     if (isDraftDirty(resend)) {
@@ -114,18 +132,21 @@ export function AdminApiIntegrationsSection({
   }, [sentry.clientId, sentry.clientSecret, sentry.enabled, sentry.status]);
 
   function draftFor(kind: ApiIntegrationKind) {
+    if (kind === "turnstile") return turnstile;
     if (kind === "resend") return resend;
     if (kind === "umami") return umami;
     return sentry;
   }
 
   function setDraft(kind: ApiIntegrationKind, updater: (current: DraftState) => DraftState) {
-    if (kind === "resend") setResend(updater);
+    if (kind === "turnstile") setTurnstile(updater);
+    else if (kind === "resend") setResend(updater);
     else if (kind === "umami") setUmami(updater);
     else setSentry(updater);
   }
 
   function integrationKey(kind: ApiIntegrationKind) {
+    if (kind === "turnstile") return SITE_INTEGRATION_KEYS.turnstile;
     if (kind === "resend") return SITE_INTEGRATION_KEYS.resend;
     if (kind === "umami") return SITE_INTEGRATION_KEYS.umami;
     return SITE_INTEGRATION_KEYS.sentry;
@@ -216,6 +237,79 @@ export function AdminApiIntegrationsSection({
       draft.clientId.trim() !== draft.status.clientId ||
       draft.replyToEmail.trim() !== draft.status.replyToEmail ||
       draft.clientSecret.trim().length > 0;
+
+    if (kind === "turnstile") {
+      return (
+        <form onSubmit={(event) => handleSave("turnstile", event)} className="space-y-4">
+          <div>
+            <label
+              htmlFor="turnstile-site-key"
+              className="block text-sm font-medium text-zinc-700"
+            >
+              {t("integrations.turnstile.site_key", "Site Key")}
+            </label>
+            <input
+              id="turnstile-site-key"
+              value={draft.clientId}
+              onChange={(event) => {
+                setTurnstile((current) => ({ ...current, clientId: event.target.value }));
+                clearFeedback();
+              }}
+              disabled={isBusy}
+              placeholder="0x4AAAAAAA…"
+              className="mt-1.5 w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 font-mono text-sm text-zinc-900 outline-none transition placeholder:font-sans placeholder:text-zinc-400 focus:border-zinc-400 disabled:cursor-not-allowed disabled:bg-zinc-50"
+              autoComplete="off"
+              spellCheck={false}
+            />
+            <p className="mt-1.5 text-xs text-zinc-500">
+              {t(
+                "integrations.turnstile.site_key_hint",
+                "Publiskā atslēga no Cloudflare Turnstile. Tā tiek rādīta login un reģistrācijas lapās.",
+              )}
+            </p>
+          </div>
+          <div>
+            <label
+              htmlFor="turnstile-secret-key"
+              className="block text-sm font-medium text-zinc-700"
+            >
+              {t("integrations.turnstile.secret_key", "Secret Key")}
+            </label>
+            <input
+              id="turnstile-secret-key"
+              type="password"
+              value={draft.clientSecret}
+              onChange={(event) => {
+                setTurnstile((current) => ({
+                  ...current,
+                  clientSecret: event.target.value,
+                }));
+                clearFeedback();
+              }}
+              disabled={isBusy}
+              placeholder={
+                draft.status.hasClientSecret
+                  ? t(
+                      "integrations.turnstile.secret_key_placeholder_saved",
+                      "Saglabāts — atstāj tukšu, ja nemaina",
+                    )
+                  : t("integrations.turnstile.secret_key_placeholder", "0x4AAAAAAA…")
+              }
+              className="mt-1.5 w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 font-mono text-sm text-zinc-900 outline-none transition placeholder:font-sans placeholder:text-zinc-400 focus:border-zinc-400 disabled:cursor-not-allowed disabled:bg-zinc-50"
+              autoComplete="off"
+              spellCheck={false}
+            />
+          </div>
+          <p className="text-xs text-zinc-500">
+            {t(
+              "integrations.turnstile.hint",
+              "Kad integrācija ir aktīva, login, reģistrācija, paroles atjaunošana un OAuth prasa Cloudflare Turnstile pārbaudi.",
+            )}
+          </p>
+          {renderFooter("turnstile", credentialsDirty)}
+        </form>
+      );
+    }
 
     if (kind === "resend") {
       return (
@@ -476,14 +570,21 @@ export function AdminApiIntegrationsSection({
   }
 
   const resetTitle =
-    resetTarget === "resend"
+    resetTarget === "turnstile"
+      ? t("integrations.turnstile.reset.confirm_title", "Notīrīt Turnstile konfigurāciju?")
+      : resetTarget === "resend"
       ? t("integrations.resend.reset.confirm_title", "Notīrīt Resend konfigurāciju?")
       : resetTarget === "umami"
         ? t("integrations.umami.reset.confirm_title", "Notīrīt Umami konfigurāciju?")
         : t("integrations.sentry.reset.confirm_title", "Notīrīt Sentry konfigurāciju?");
 
   const resetDescription =
-    resetTarget === "resend"
+    resetTarget === "turnstile"
+      ? t(
+          "integrations.turnstile.reset.confirm_description",
+          "Atslēgas tiks dzēstas un botu pārbaude login/reģistrācijā tiks izslēgta.",
+        )
+      : resetTarget === "resend"
       ? t(
           "integrations.resend.reset.confirm_description",
           "API atslēga tiks dzēsta un e-pastu sūtīšana caur Resend tiks izslēgta.",
@@ -500,6 +601,29 @@ export function AdminApiIntegrationsSection({
 
   return (
     <>
+      <AdminIntegrationCard
+        panelId="turnstile"
+        title={t("integrations.turnstile.title", "Cloudflare Turnstile")}
+        description={t(
+          "integrations.turnstile.description",
+          "Botu pārbaude login, reģistrācijā un OAuth plūsmās.",
+        )}
+        configured={turnstile.status.configured}
+        expanded={turnstile.expanded}
+        onExpandedChange={(expanded) =>
+          setTurnstile((current) => ({ ...current, expanded }))
+        }
+        enabled={turnstile.enabled}
+        onEnabledChange={(enabled) => handleEnabledToggle("turnstile", enabled)}
+        enabledAriaLabel={t(
+          "integrations.turnstile.aria.enabled",
+          "Turnstile integrācija ieslēgta",
+        )}
+        isBusy={isBusy}
+      >
+        {renderFields("turnstile")}
+      </AdminIntegrationCard>
+
       <AdminIntegrationCard
         panelId="resend"
         title={t("integrations.resend.title", "Resend")}

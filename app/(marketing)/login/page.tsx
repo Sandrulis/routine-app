@@ -6,6 +6,7 @@ import { canonicalMetadata } from "@/app/lib/seo/metadata";
 import { isGoogleSignInEnabled } from "@/app/lib/integrations/google-oauth/repository";
 import { isMicrosoftOAuthEnabled } from "@/app/lib/integrations/microsoft-oauth/repository";
 import { isEmailPasswordAuthEnabled } from "@/app/lib/integrations/resend/client";
+import { getPublicTurnstileConfig } from "@/app/lib/integrations/public-turnstile";
 
 export async function generateMetadata(): Promise<Metadata> {
   const { t } = await getServerTranslations();
@@ -17,11 +18,12 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function LoginPage() {
-  const [googleSignInEnabled, microsoftSignInEnabled, emailPasswordEnabled] =
+  const [googleSignInEnabled, microsoftSignInEnabled, emailPasswordEnabled, turnstile] =
     await Promise.all([
       isGoogleSignInEnabled(),
       isMicrosoftOAuthEnabled(),
       isEmailPasswordAuthEnabled(),
+      getPublicTurnstileConfig(),
     ]);
 
   return (
@@ -31,6 +33,7 @@ export default async function LoginPage() {
           googleSignInEnabled={googleSignInEnabled}
           microsoftSignInEnabled={microsoftSignInEnabled}
           emailPasswordEnabled={emailPasswordEnabled}
+          turnstileSiteKey={turnstile?.enabled ? turnstile.siteKey : null}
         />
       </Suspense>
     </div>

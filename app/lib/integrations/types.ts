@@ -33,7 +33,7 @@ export type MicrosoftOAuthCredentialsInput = {
 };
 
 export type SimpleIntegrationStatus = {
-  integrationKey: "resend" | "umami" | "sentry";
+  integrationKey: "resend" | "umami" | "sentry" | "turnstile";
   clientId: string;
   hasClientSecret: boolean;
   configured: boolean;

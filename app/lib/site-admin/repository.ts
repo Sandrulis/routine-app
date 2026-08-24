@@ -53,6 +53,7 @@ import type {
   ActionResult,
   AdminTeamInput,
   AdminTeamMemberSummary,
+  AdminTeamPaymentPlanInput,
   AdminTeamSummary,
   AdminUserInput,
   AdminUserSummary,
@@ -70,6 +71,10 @@ import type {
   FileTypeExtensionInput,
   FileTypeExtensionSummary,
 } from "@/app/lib/site-admin/types";
+import {
+  getEarlyBirdSettings,
+  listPaymentPlans,
+} from "@/app/lib/payment-plans/repository";
 
 const LANGUAGE_CODE_RE = /^[a-z]{2}(-[A-Z]{2})?$/;
 const TRANSLATION_KEY_RE = /^[a-zA-Z0-9_.:-]+$/;
@@ -116,6 +121,11 @@ type TeamRow = {
   color: string;
   logo_url: string | null;
   created_at: string;
+  payment_plan_id?: string | null;
+  payment_plan_until?: string | null;
+  payment_plan_paid?: boolean | null;
+  payment_plan_is_trial?: boolean | null;
+  payment_plan_is_early_bird?: boolean | null;
 };
 
 type LanguageRow = {
@@ -418,7 +428,9 @@ export const listAdminTeams = cache(async function listAdminTeams(): Promise<Adm
   const supabase = await getSessionClient();
   const { data: teams, error } = await supabase
     .from("teams")
-    .select("id, name, initials, icon, color, logo_url, created_at")
+    .select(
+      "id, name, initials, icon, color, logo_url, created_at, payment_plan_id, payment_plan_until, payment_plan_paid, payment_plan_is_trial, payment_plan_is_early_bird",
+    )
     .order("created_at", { ascending: true });
 
   if (error) {
@@ -442,6 +454,17 @@ export const listAdminTeams = cache(async function listAdminTeams(): Promise<Adm
     logoUrl: row.logo_url,
     memberCount: counts.get(row.id) ?? 0,
     createdAt: row.created_at,
+    paymentPlanId:
+      typeof row.payment_plan_id === "string" && row.payment_plan_id.trim()
+        ? row.payment_plan_id
+        : null,
+    paymentPlanUntil:
+      typeof row.payment_plan_until === "string" && row.payment_plan_until.trim()
+        ? row.payment_plan_until.slice(0, 10)
+        : null,
+    paymentPlanPaid: row.payment_plan_paid === true,
+    paymentPlanIsTrial: row.payment_plan_is_trial === true,
+    paymentPlanIsEarlyBird: row.payment_plan_is_early_bird === true,
   }));
 });
 
@@ -557,6 +580,66 @@ export async function updateAdminTeam(
 
   if (error) {
     return { ok: false, error: "errors.team_save_failed" };
+  }
+
+  return { ok: true };
+}
+
+export async function updateAdminTeamPaymentPlan(
+  teamId: string,
+  input: AdminTeamPaymentPlanInput,
+): Promise<ActionResult> {
+  const trimmedTeamId = teamId.trim();
+  if (!trimmedTeamId) {
+    return { ok: false, error: "errors.team_save_failed" };
+  }
+  if (!isSupabaseConfigured()) {
+    return dbNotConfigured();
+  }
+
+  const planId = input.planId?.trim() || null;
+  const untilRaw = input.until?.trim() || null;
+  const until = untilRaw ? untilRaw.slice(0, 10) : null;
+
+  if (planId) {
+    const plans = await listPaymentPlans();
+    if (!plans.some((plan) => plan.id === planId)) {
+      return { ok: false, error: "errors.payment_plan_not_found" };
+    }
+  }
+
+  if (input.isEarlyBird) {
+    const [{ limit, claimed }, teams] = await Promise.all([
+      getEarlyBirdSettings(),
+      listAdminTeams(),
+    ]);
+    const teamAlreadyEarlyBird = teams.some(
+      (team) => team.id === trimmedTeamId && team.paymentPlanIsEarlyBird,
+    );
+    if (
+      limit > 0 &&
+      !teamAlreadyEarlyBird &&
+      claimed >= limit
+    ) {
+      return { ok: false, error: "errors.early_bird_limit_reached" };
+    }
+  }
+
+  const supabase = await getSessionClient();
+  const { error } = await supabase
+    .from("teams")
+    .update({
+      payment_plan_id: planId,
+      payment_plan_until: until,
+      payment_plan_paid: input.paid === true,
+      payment_plan_is_trial: input.isTrial === true,
+      payment_plan_is_early_bird: input.isEarlyBird === true,
+    })
+    .eq("id", trimmedTeamId);
+
+  if (error) {
+    console.error("updateAdminTeamPaymentPlan failed:", error.message);
+    return { ok: false, error: "errors.team_payment_plan_save_failed" };
   }
 
   return { ok: true };

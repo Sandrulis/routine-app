@@ -25,6 +25,8 @@ import {
   formatPlanEuro,
   MAX_TRIAL_DAYS,
   MIN_TRIAL_DAYS,
+  MAX_PLAN_MEMBERS,
+  MIN_PLAN_MEMBERS,
   resolveLocalizedValue,
   type EarlyBirdAvailability,
   type LocalizedValues,
@@ -79,6 +81,7 @@ type PlanDraft = {
   nameValues: LocalizedValues;
   descriptionValues: LocalizedValues;
   moduleKeys: string[];
+  maxMembers: string;
   priceMonth: string;
   priceQuarter: string;
   priceYear: string;
@@ -97,6 +100,7 @@ function draftFromPlan(
       nameValues: emptyValues(languages),
       descriptionValues: emptyValues(languages),
       moduleKeys: [],
+      maxMembers: "",
       priceMonth: "",
       priceQuarter: "",
       priceYear: "",
@@ -110,6 +114,7 @@ function draftFromPlan(
     nameValues: mergeValues(languages, plan.nameValues),
     descriptionValues: mergeValues(languages, plan.descriptionValues),
     moduleKeys: [...plan.moduleKeys],
+    maxMembers: String(plan.maxMembers),
     priceMonth: priceToInput(plan.priceMonth),
     priceQuarter: priceToInput(plan.priceQuarter),
     priceYear: priceToInput(plan.priceYear),
@@ -125,6 +130,7 @@ function draftsEqual(left: PlanDraft, right: PlanDraft): boolean {
     valuesEqual(left.nameValues, right.nameValues) &&
     valuesEqual(left.descriptionValues, right.descriptionValues) &&
     moduleKeysEqual(left.moduleKeys, right.moduleKeys) &&
+    left.maxMembers.trim() === right.maxMembers.trim() &&
     left.priceMonth.trim() === right.priceMonth.trim() &&
     left.priceQuarter.trim() === right.priceQuarter.trim() &&
     left.priceYear.trim() === right.priceYear.trim() &&
@@ -416,6 +422,22 @@ export function AdminPaymentPlansForm({
       return;
     }
 
+    const parsedMaxMembers = Number.parseInt(draft.maxMembers.trim(), 10);
+    if (
+      !Number.isFinite(parsedMaxMembers) ||
+      parsedMaxMembers < MIN_PLAN_MEMBERS ||
+      parsedMaxMembers > MAX_PLAN_MEMBERS
+    ) {
+      showFeedback({
+        type: "error",
+        text: t(
+          "errors.payment_plan_max_members_invalid",
+          "Norādi derīgu biedru skaitu (no 1 līdz 10 000).",
+        ),
+      });
+      return;
+    }
+
     startTransition(async () => {
       setPendingKey(editingPlan ? `save:${editingPlan.id}` : "create");
       const input = {
@@ -423,6 +445,7 @@ export function AdminPaymentPlansForm({
         nameValues: draft.nameValues,
         descriptionValues: draft.descriptionValues,
         moduleKeys: draft.moduleKeys,
+        maxMembers: parsedMaxMembers,
         priceMonth: draft.priceMonth,
         priceQuarter: draft.priceQuarter,
         priceYear: draft.priceYear,
@@ -516,7 +539,7 @@ export function AdminPaymentPlansForm({
             <p className="mt-1 text-xs text-zinc-500">
               {t(
                 "site_payment_plans.enable.hint",
-                "Kad ieslēgts, komandas pieejamie frontend moduļi nāk no aktīvā maksas plāna (ja samaksāts un derīgs). Citādi izmanto globālos frontend moduļus.",
+                "Kad ieslēgts, komandas redz tikai tās moduļus, kas iekļauti aktīvajā maksas plānā. Kad izslēgts, visi globāli ieslēgtie moduļi ir pieejami visām komandām.",
               )}
             </p>
           </div>
@@ -715,6 +738,9 @@ export function AdminPaymentPlansForm({
                   {t("site_payment_plans.form.name", "Nosaukums")}
                 </th>
                 <th className="px-5 py-3">
+                  {t("site_payment_plans.list.members", "Biedri")}
+                </th>
+                <th className="px-5 py-3">
                   {t("site_payment_plans.list.prices", "Cenas")}
                 </th>
                 <th className="px-5 py-3">
@@ -729,7 +755,7 @@ export function AdminPaymentPlansForm({
               {plans.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={4}
+                    colSpan={5}
                     className="px-5 py-8 text-center text-sm text-zinc-500"
                   >
                     {t(
@@ -750,6 +776,9 @@ export function AdminPaymentPlansForm({
                         <p className="mt-0.5 font-mono text-xs text-zinc-400">
                           {plan.planKey}
                         </p>
+                      </td>
+                      <td className="px-5 py-4 text-zinc-600 tabular-nums">
+                        {plan.maxMembers}
                       </td>
                       <td className="px-5 py-4 text-xs tabular-nums text-zinc-600">
                         {plan.priceMonth > 0 ? (
@@ -982,6 +1011,34 @@ export function AdminPaymentPlansForm({
               className={fieldClassName}
               disabled={isBusy}
             />
+          </label>
+
+          <label className="block">
+            <span className="text-sm font-medium text-zinc-800">
+              {t("site_payment_plans.form.max_members", "Maks. biedru skaits")}
+            </span>
+            <input
+              type="number"
+              inputMode="numeric"
+              min={MIN_PLAN_MEMBERS}
+              max={MAX_PLAN_MEMBERS}
+              step={1}
+              value={draft.maxMembers}
+              onChange={(event) =>
+                setDraft((current) => ({
+                  ...current,
+                  maxMembers: event.target.value,
+                }))
+              }
+              className={`${fieldClassName} tabular-nums`}
+              disabled={isBusy}
+            />
+            <span className="mt-1 block text-xs text-zinc-500">
+              {t(
+                "site_payment_plans.form.max_members_hint",
+                "Cik komandas biedru drīkst būt šajā plānā.",
+              )}
+            </span>
           </label>
 
           <div>

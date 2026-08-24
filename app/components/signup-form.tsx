@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import {
   authCardClassName,
   authInputClassName,
@@ -18,20 +18,27 @@ import { signUpWithPasswordAction } from "@/app/lib/auth/actions";
 import { translateActionError } from "@/app/lib/i18n/action-errors";
 import { getSafeRedirectPath } from "@/app/lib/security/safe-redirect-path";
 import { getInviteSignupContextAction } from "@/app/lib/team/actions";
+import {
+  TurnstileWidget,
+  type TurnstileWidgetHandle,
+} from "@/app/components/turnstile-widget";
 
 export function SignupForm({
   googleSignInEnabled = false,
   microsoftSignInEnabled = false,
   emailPasswordEnabled = false,
+  turnstileSiteKey = null,
 }: {
   googleSignInEnabled?: boolean;
   microsoftSignInEnabled?: boolean;
   emailPasswordEnabled?: boolean;
+  turnstileSiteKey?: string | null;
 }) {
   const { t } = useTranslations();
   const router = useRouter();
   const searchParams = useSearchParams();
   const { showFeedback, clearFeedback } = useFeedbackToast();
+  const turnstileRef = useRef<TurnstileWidgetHandle>(null);
   const inviteToken = searchParams.get("invite")?.trim() ?? "";
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -50,6 +57,13 @@ export function SignupForm({
   const emailLocked = Boolean(inviteContext);
   const oauthEnabled =
     !emailLocked && (googleSignInEnabled || microsoftSignInEnabled);
+  const turnstileRequired = Boolean(turnstileSiteKey);
+  const showTurnstile =
+    turnstileRequired && (emailPasswordEnabled || oauthEnabled);
+
+  function getTurnstileToken() {
+    return turnstileRef.current?.getToken() ?? null;
+  }
 
   useEffect(() => {
     const error = searchParams.get("error");
@@ -87,6 +101,16 @@ export function SignupForm({
         ),
       });
       return;
+    }
+    if (error === "turnstile") {
+      showFeedback({
+        type: "error",
+        text: t(
+          "errors.auth_turnstile_failed",
+          "Botu pārbaude neizdevās. Mēģini vēlreiz.",
+        ),
+      });
+      turnstileRef.current?.reset();
     }
   }, [searchParams, showFeedback, t]);
 
@@ -175,6 +199,17 @@ export function SignupForm({
       return;
     }
 
+    if (turnstileRequired && !getTurnstileToken()) {
+      showFeedback({
+        type: "error",
+        text: t(
+          "errors.auth_turnstile_required",
+          "Apstiprini, ka neesi robots, pirms turpini.",
+        ),
+      });
+      return;
+    }
+
     setPending(true);
     const result = await signUpWithPasswordAction({
       firstName,
@@ -183,6 +218,7 @@ export function SignupForm({
       password,
       next: inviteContext?.nextPath ?? getSafeRedirectPath(searchParams.get("next")),
       inviteToken: inviteToken || undefined,
+      turnstileToken: getTurnstileToken() ?? undefined,
     });
     setPending(false);
     if (!result.ok) {
@@ -190,6 +226,7 @@ export function SignupForm({
         type: "error",
         text: translateActionError(t, result.error),
       });
+      turnstileRef.current?.reset();
       return;
     }
     if (result.needsEmail) {
@@ -230,6 +267,8 @@ export function SignupForm({
           disabled={pending}
           rememberMe={false}
           errorPage="signup"
+          getTurnstileToken={getTurnstileToken}
+          turnstileRequired={turnstileRequired}
         />
       ) : null}
       {microsoftSignInEnabled ? (
@@ -237,6 +276,8 @@ export function SignupForm({
           disabled={pending}
           rememberMe={false}
           errorPage="signup"
+          getTurnstileToken={getTurnstileToken}
+          turnstileRequired={turnstileRequired}
         />
       ) : null}
     </div>
@@ -374,16 +415,24 @@ export function SignupForm({
       ) : null}
 
       {emailPasswordEnabled ? (
-        <button
-          type="submit"
-          disabled={pending || (Boolean(inviteToken) && !inviteContext)}
-          className={authPrimaryButtonClassName}
-        >
-          {t("auth.signup.title", "Reģistrēties")}
-        </button>
+        <>
+          {showTurnstile && turnstileSiteKey ? (
+            <TurnstileWidget ref={turnstileRef} siteKey={turnstileSiteKey} />
+          ) : null}
+          <button
+            type="submit"
+            disabled={pending || (Boolean(inviteToken) && !inviteContext)}
+            className={authPrimaryButtonClassName}
+          >
+            {t("auth.signup.title", "Reģistrēties")}
+          </button>
+        </>
       ) : null}
 
       {emailPasswordEnabled && oauthEnabled ? <AuthDivider /> : null}
+      {!emailPasswordEnabled && showTurnstile && turnstileSiteKey ? (
+        <TurnstileWidget ref={turnstileRef} siteKey={turnstileSiteKey} />
+      ) : null}
       {oauthButtons}
 
       <p className="text-center text-sm text-zinc-500">

@@ -10,6 +10,7 @@ import {
   clearAuthFailures,
 } from "@/app/lib/security/rate-limit";
 import { getSafeRedirectPath } from "@/app/lib/security/safe-redirect-path";
+import { requireTurnstileToken } from "@/app/lib/security/turnstile";
 import { logError } from "@/app/lib/security/log-error";
 import { isSupabaseConfigured } from "@/app/lib/supabase/env";
 import { getMfaGate } from "@/app/lib/auth/mfa";
@@ -35,11 +36,19 @@ async function requireEmailPasswordAuth(): Promise<AuthResult | null> {
   return { ok: false, error: "errors.auth_email_disabled" };
 }
 
-async function guardAuth(kind: string, email: string): Promise<AuthResult | null> {
+async function guardAuth(
+  kind: string,
+  email: string,
+  turnstileToken?: string,
+): Promise<AuthResult | null> {
   if (!isSupabaseConfigured()) {
     return { ok: false, error: "errors.db_not_configured" };
   }
   const ip = await getClientIp();
+  const turnstile = await requireTurnstileToken(turnstileToken, ip);
+  if (!turnstile.ok) {
+    return { ok: false, error: turnstile.error };
+  }
   const ipLimit = await consumeRateLimit(`auth-ip:${kind}:${ip}`, 20, 15 * 60 * 1000);
   const emailLimit = await consumeRateLimit(
     `auth-email:${kind}:${email}`,
@@ -56,6 +65,7 @@ export async function signInWithPasswordAction(input: {
   email: string;
   password: string;
   next?: string;
+  turnstileToken?: string;
 }): Promise<AuthResult> {
   const emailAuth = await requireEmailPasswordAuth();
   if (emailAuth) return emailAuth;
@@ -64,7 +74,7 @@ export async function signInWithPasswordAction(input: {
   if (!EMAIL_RE.test(email) || password.length < 1) {
     return { ok: false, error: "errors.auth_invalid" };
   }
-  const blocked = await guardAuth("login", email);
+  const blocked = await guardAuth("login", email, input.turnstileToken);
   if (blocked) return blocked;
 
   const lockout = await readAuthLockout(email);
@@ -96,6 +106,7 @@ export async function signUpWithPasswordAction(input: {
   password: string;
   next?: string;
   inviteToken?: string;
+  turnstileToken?: string;
 }): Promise<AuthResult> {
   const emailAuth = await requireEmailPasswordAuth();
   if (emailAuth) return emailAuth;
@@ -109,7 +120,7 @@ export async function signUpWithPasswordAction(input: {
   if (password.length < 8) {
     return { ok: false, error: "auth.signup.password_short" };
   }
-  const blocked = await guardAuth("signup", email);
+  const blocked = await guardAuth("signup", email, input.turnstileToken);
   if (blocked) return blocked;
 
   let next = input.next;
@@ -143,6 +154,7 @@ export async function signUpWithPasswordAction(input: {
 
 export async function requestPasswordResetAction(input: {
   email: string;
+  turnstileToken?: string;
 }): Promise<AuthResult> {
   const emailAuth = await requireEmailPasswordAuth();
   if (emailAuth) return emailAuth;
@@ -150,7 +162,7 @@ export async function requestPasswordResetAction(input: {
   if (!EMAIL_RE.test(email)) {
     return { ok: true, next: "/login" };
   }
-  const blocked = await guardAuth("reset", email);
+  const blocked = await guardAuth("reset", email, input.turnstileToken);
   if (blocked) return blocked;
 
   const result = await requestPasswordResetEmail(email);

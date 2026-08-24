@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import {
   authCardClassName,
   authInputClassName,
@@ -18,27 +18,42 @@ import {
 import { PasswordInput } from "@/app/components/password-input";
 import { useTranslations } from "@/app/components/translations-provider";
 import { signInWithPasswordAction } from "@/app/lib/auth/actions";
+import { translateActionError } from "@/app/lib/i18n/action-errors";
 import { getSafeRedirectPath } from "@/app/lib/security/safe-redirect-path";
+import {
+  TurnstileWidget,
+  type TurnstileWidgetHandle,
+} from "@/app/components/turnstile-widget";
 
 export function LoginForm({
   googleSignInEnabled = false,
   microsoftSignInEnabled = false,
   emailPasswordEnabled = false,
+  turnstileSiteKey = null,
 }: {
   googleSignInEnabled?: boolean;
   microsoftSignInEnabled?: boolean;
   emailPasswordEnabled?: boolean;
+  turnstileSiteKey?: string | null;
 }) {
   const { t } = useTranslations();
   const router = useRouter();
   const { showFeedback, clearFeedback } = useFeedbackToast();
   const searchParams = useSearchParams();
+  const turnstileRef = useRef<TurnstileWidgetHandle>(null);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [pending, setPending] = useState(false);
   const { remember, updateRemember } = useRememberMe();
   const oauthEnabled = googleSignInEnabled || microsoftSignInEnabled;
   const oauthReturnPath = getSafeRedirectPath(searchParams.get("next"));
+  const turnstileRequired = Boolean(turnstileSiteKey);
+  const showTurnstile =
+    turnstileRequired && (emailPasswordEnabled || oauthEnabled);
+
+  function getTurnstileToken() {
+    return turnstileRef.current?.getToken() ?? null;
+  }
 
   useEffect(() => {
     const error = searchParams.get("error");
@@ -77,25 +92,47 @@ export function LoginForm({
       });
       return;
     }
+    if (error === "turnstile") {
+      showFeedback({
+        type: "error",
+        text: t(
+          "errors.auth_turnstile_failed",
+          "Robotu pārbaude neizdevās. Mēģini vēlreiz.",
+        ),
+      });
+      turnstileRef.current?.reset();
+    }
   }, [searchParams, showFeedback, t]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!emailPasswordEnabled) return;
     clearFeedback();
+    if (turnstileRequired && !getTurnstileToken()) {
+      showFeedback({
+        type: "error",
+        text: t(
+          "errors.auth_turnstile_required",
+          "Apstiprini, ka neesi robots, pirms turpini.",
+        ),
+      });
+      return;
+    }
     setPending(true);
     const next = getSafeRedirectPath(searchParams.get("next"));
     const result = await signInWithPasswordAction({
       email,
       password,
       next,
+      turnstileToken: getTurnstileToken() ?? undefined,
     });
     setPending(false);
     if (!result.ok) {
       showFeedback({
         type: "error",
-        text: t(result.error, "E-pasts vai parole nav pareiza."),
+        text: translateActionError(t, result.error),
       });
+      turnstileRef.current?.reset();
       return;
     }
     if (!result.needsMfa) {
@@ -116,6 +153,8 @@ export function LoginForm({
           rememberMe={remember}
           returnPath={oauthReturnPath}
           errorPage="login"
+          getTurnstileToken={getTurnstileToken}
+          turnstileRequired={turnstileRequired}
         />
       ) : null}
       {microsoftSignInEnabled ? (
@@ -124,6 +163,8 @@ export function LoginForm({
           rememberMe={remember}
           returnPath={oauthReturnPath}
           errorPage="login"
+          getTurnstileToken={getTurnstileToken}
+          turnstileRequired={turnstileRequired}
         />
       ) : null}
     </div>
@@ -194,6 +235,10 @@ export function LoginForm({
             </Link>
           </div>
 
+          {showTurnstile && turnstileSiteKey ? (
+            <TurnstileWidget ref={turnstileRef} siteKey={turnstileSiteKey} />
+          ) : null}
+
           <button
             type="submit"
             disabled={pending}
@@ -205,6 +250,9 @@ export function LoginForm({
       ) : null}
 
       {emailPasswordEnabled && oauthEnabled ? <AuthDivider /> : null}
+      {!emailPasswordEnabled && showTurnstile && turnstileSiteKey ? (
+        <TurnstileWidget ref={turnstileRef} siteKey={turnstileSiteKey} />
+      ) : null}
       {oauthButtons}
 
       {emailPasswordEnabled ? (

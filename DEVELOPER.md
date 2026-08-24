@@ -83,7 +83,7 @@ Route group `app/(marketing)/` - bez sānjoslas. Galvene `SiteHeader` (sistēmas
 | `/terms` | Lietošanas noteikumi |
 | `/cookies` | Sīkdatņu politika + iestatījumu poga |
 
-Auth: `/login` un `/signup` metodes (e-pasts, Google, Microsoft) nāk no RPC `public_sign_in_methods()` (`080`, `getPublicSignInMethods`) ar anon atslēgu — tikai `is_configured AND is_enabled` karogi, bez noslēpumiem. Service role login pogām nav vajadzīgs. E-pasta Ienākt iet caur Supabase `signInWithPassword` ar IP+e-pasta rate limit **un tikai ja Resend ir konfigurēts un aktīvs** (`isEmailPasswordAuthEnabled` vispirms RPC `email`, citādi From + API Key). Reģistrācija: `generateLink({ type: "signup" })` + HTML e-pasts no admin šablona `signup` (`sendSignupConfirmationEmail`); apstiprinājums `/auth/confirm?token_hash&type=signup` (`verifyOtp`). Uzaicinājuma signup: `/signup?invite={token}` ar Vārds/Uzvārds, bloķētu e-pastu un `account_exists` preview (`085`). Paroles lauki: `PasswordInput` (rādīt/paslēpt). Paroles atjaunošana: `generateLink({ type: "recovery" })` + šablons `password_reset`; saite ved uz `/auth/confirm` ar `next=/update-password`. Esošam apstiprinātam e-pastam signup un nezināmam e-pastam reset joprojām rāda vispārīgu veiksmi (nav enumerācijas). Bez Resend: e-pasta lauki nav, galvenē nav Reģistrēties, loginā nav signup saites un Atcerēties mani, `/signup` `redirect("/login")`; server actions atgriež `errors.auth_email_disabled`. **Turpināt ar Google** / **Turpināt ar Microsoft** paliek neatkarīgi (admin **Integrācijas** OAuth): pogas ved uz GET `/auth/google-oauth/sign-in?next=…` / `/auth/microsoft-oauth/sign-in?next=…` (login forma nodod `?next=` no URL); callback `/auth/google-oauth/callback`, `/auth/microsoft-oauth/callback` — pēc profila no Google/Microsoft tiek izveidots vai atrasts Supabase Auth lietotājs un sesija. Microsoft pieprasa verificētu e-pastu (OIDC / `id_token`, bez `userPrincipalName`). Pogas rādās tikai ja attiecīgā integrācija ir konfigurēta un **Aktīva**. Signupā OAuth **neprasa** noteikumu ķeksīti (tas paliek tikai e-pasta reģistrācijai). **Atcerēties mani** rādās tikai `/login` e-pasta formā; pēc noklusējuma izslēgts: bez ķeksīša sesija līdz pārlūka aizvēršanai; ar ķeksi 30 dienas (`httpOnly: false`, lai browser Supabase klients lasītu cookie; production HTTPS `Secure`). Ielogotam `proxy` `/`, `/login`, `/signup` un `/forgot-password` novirza uz `/dashboard`; neautentificēts lietotājs no aizsargātiem app ceļiem uz `/login`; landing `app/(marketing)/page.tsx` arī `redirect("/dashboard")`, ja ir sesija. Iziet ved uz `/`. Publiskajā galvenē ielogotam rādās **Atvērt lietotni**. MFA (TOTP) ir opcija `/settings/profile` visiem; ja faktoram ir `verified` un sesija nav `aal2`, lietotne rāda `MfaVerifyModal` pirms app čaulas. `is_admin` pie `/admin` bez MFA tiek novirzīts enroll (`?mfa=required`); ar MFA, bet bez AAL2 - admin modālis. Paroles maiņa (`updatePasswordAction`) prasa `getCurrentUser` (CI `actions.ts` auth-guard).
+Auth: `/login` un `/signup` metodes (e-pasts, Google, Microsoft) nāk no RPC `public_sign_in_methods()` (`080`, `getPublicSignInMethods`) ar anon atslēgu — tikai `is_configured AND is_enabled` karogi, bez noslēpumiem. Service role login pogām nav vajadzīgs. E-pasta Ienākt iet caur Supabase `signInWithPassword` ar IP+e-pasta rate limit **un tikai ja Resend ir konfigurēts un aktīvs** (`isEmailPasswordAuthEnabled` vispirms RPC `email`, citādi From + API Key). Reģistrācija: `generateLink({ type: "signup" })` + HTML e-pasts no admin šablona `signup` (`sendSignupConfirmationEmail`); apstiprinājums `/auth/confirm?token_hash&type=signup` (`verifyOtp`). Uzaicinājuma signup: `/signup?invite={token}` ar Vārds/Uzvārds, bloķētu e-pastu un `account_exists` preview (`085`). Paroles lauki: `PasswordInput` (rādīt/paslēpt). Paroles atjaunošana: `generateLink({ type: "recovery" })` + šablons `password_reset`; saite ved uz `/auth/confirm` ar `next=/update-password`. Esošam apstiprinātam e-pastam signup un nezināmam e-pastam reset joprojām rāda vispārīgu veiksmi (nav enumerācijas). Bez Resend: e-pasta lauki nav, galvenē nav Reģistrēties, loginā nav signup saites un Atcerēties mani, `/signup` `redirect("/login")`; server actions atgriež `errors.auth_email_disabled`. **Cloudflare Turnstile** (`092`, `public_turnstile_config`, `requireTurnstileToken`): ja integrācija ir konfigurēta un **Aktīva**, login/signup/forgot un OAuth sign-in (`?turnstile=`) prasa derīgu tokenu (Site Key publiski caur RPC; Secret tikai serverī). Bez Turnstile auth strādā kā iepriekš. **Turpināt ar Google** / **Turpināt ar Microsoft** paliek neatkarīgi (admin **Integrācijas** OAuth): pogas ved uz GET `/auth/google-oauth/sign-in?next=…` / `/auth/microsoft-oauth/sign-in?next=…` (login forma nodod `?next=` no URL); callback `/auth/google-oauth/callback`, `/auth/microsoft-oauth/callback` — pēc profila no Google/Microsoft tiek izveidots vai atrasts Supabase Auth lietotājs un sesija. Microsoft pieprasa verificētu e-pastu (OIDC / `id_token`, bez `userPrincipalName`). Pogas rādās tikai ja attiecīgā integrācija ir konfigurēta un **Aktīva**. Signupā OAuth **neprasa** noteikumu ķeksīti (tas paliek tikai e-pasta reģistrācijai). **Atcerēties mani** rādās tikai `/login` e-pasta formā; pēc noklusējuma izslēgts: bez ķeksīša sesija līdz pārlūka aizvēršanai; ar ķeksi 30 dienas (`httpOnly: false`, lai browser Supabase klients lasītu cookie; production HTTPS `Secure`). Ielogotam `proxy` `/`, `/login`, `/signup` un `/forgot-password` novirza uz `/dashboard`; neautentificēts lietotājs no aizsargātiem app ceļiem uz `/login`; landing `app/(marketing)/page.tsx` arī `redirect("/dashboard")`, ja ir sesija. Iziet ved uz `/`. Publiskajā galvenē ielogotam rādās **Atvērt lietotni**. MFA (TOTP) ir opcija `/settings/profile` visiem; ja faktoram ir `verified` un sesija nav `aal2`, lietotne rāda `MfaVerifyModal` pirms app čaulas. `is_admin` pie `/admin` bez MFA tiek novirzīts enroll (`?mfa=required`); ar MFA, bet bez AAL2 - admin modālis. Paroles maiņa (`updatePasswordAction`) prasa `getCurrentUser` (CI `actions.ts` auth-guard).
 
 Legal teksti: `app/lib/legal/documents.ts`. Privātuma pārziņa e-pasts nāk no `site_settings.legal_email` (`getPrivacyPolicyContent(t, settings.legalEmail)`); tukšs lauks izlaiž kontakta teikumu. Tā pati adrese saņem sānjoslas kļūdu ziņojumus, funkciju pieprasījumus un atsauksmes (`submitUserFeedbackAction`). UI: `LegalDocumentView` ar **Saturs** sānjoslu (`sticky` zem galvenes): klikšķis ritina uz sadaļu, josla paliek redzama visā dokumentā.
 
@@ -160,8 +160,8 @@ Ielāde: `LoadingState` (`app/components/loading-state.tsx`, `fas fa-circle-notc
 | `/admin/languages` | `site_languages`: pievienot, labot nosaukumu, aktīva/noklusējuma, dzēst |
 | `/admin/translations` | `site_translations` + `messages.ts` atslēgas: meklēšana, pievienot, labot, dzēst (koda atslēgas dzēst nevar) |
 | `/admin/modules` | `site_frontend_modules`: atslēga, ieslēgts/izslēgts, dzēšana (`AdminFrontendModulesForm`) |
-| `/admin/payment-plans` | `site_payment_plans` katalogs: ieslēgums, izmēģinājums, Early Bird limīts, cenas, frontend moduļi plānā (`AdminPaymentPlansForm`) |
-| `/admin/integrations` | `site_integrations`: Google/Microsoft OAuth (login/signup); Resend, Umami, Sentry; Client ID/Secret, OAuth pārbaude vai Saglabāt, **Aktīva** slēdzis; sakļaujamas kartiņas (`AdminIntegrationsPage`) |
+| `/admin/payment-plans` | `site_payment_plans` katalogs: ieslēgums, izmēģinājums, Early Bird limīts, `max_members`, cenas, frontend moduļi plānā (`AdminPaymentPlansForm`) |
+| `/admin/integrations` | `site_integrations`: Google/Microsoft OAuth (login/signup); Cloudflare Turnstile (Site Key + Secret); Resend, Umami, Sentry; Client ID/Secret, OAuth pārbaude vai Saglabāt, **Aktīva** slēdzis; sakļaujamas kartiņas (`AdminIntegrationsPage`) |
 | `/admin/email-templates` | HTML e-pasta šabloni (`signup`, `password_reset`, `invite`, `notification`) visās sistēmas valodās: temats, teksts, pogas teksts, iframe priekšskatījums (`AdminEmailTemplatesForm`); saglabā `site_translations` |
 | `/admin/cron-jobs` | `site_cron_jobs`: ieslēgt/izslēgt cron darbus (optimistisks slēdzis + `ToggleSwitch` `busy`) un kopēt `cron-job.org` saiti (`AdminCronJobsForm`); `GET/POST /api/cron/[jobKey]?token=` palaiž atgādinājumus. cron-job.org: **reizi stundā**. Sākums no 8:00 un termiņš no 9:00 lietotāja laika joslā; katrā palaišanā līdz 1000 lietotājiem (`089`, `091`) |
 | `/admin/settings` | `site_settings`: sistēmas nosaukums, juridiskais e-pasts (`legal_email`, privātuma politika un lietotāju kļūdu/atsauksmju/funkciju e-pasti), slogans, logotips/favicon (data URL) vai iniciāļu avatārs ar `logo_color`, nedēļas sākums, datuma formāts/atdalītājs, 12/24 h; ja Resend konfigurēts — From/Reply-To (`AdminSettingsForm` + `saveSiteSettingsAction`); hinti zem laukiem |
@@ -170,7 +170,7 @@ Ielāde: `LoadingState` (`app/components/loading-state.tsx`, `fas fa-circle-notc
 - Klienta pārbaude: `useIsAdmin()` caur RPC `current_user_is_admin()` (ikona)
 - Lietotāju saraksts caur ielogotā admin sesiju (RLS `008_admin_list_access.sql`); jauna lietotāja izveide ar service role
 - Valodas, tulkojumi, uzstādījumi caur to pašu sesiju (RLS `010_site_admin_session_access.sql`); `site_*` SELECT arī `anon`
-- Migrācijas: `003` admin RPC, `006` valodas/tulkojumi/uzstādījumi, `007` RU, `008` admin list access, `009` `users` aktivitātes lauki, `010` site admin session RLS, `011` `users.language_code`, `081` komandas izveidotāja owner INSERT, `082` extra `site_languages`, `083` `it`/`sv`, `012`/`016`/`018` statusi, `017`/`020`/`021` lomas, `013`/`014`/`019` privāti saraksti, `022`/`023` sarakstu pieeju līmeņi, `024` `work_tasks.deleted_at`, `025` kataloga statusa check, `027`/`028`/`030` saraksta statusi, `029` `work_tasks.checklists`, `031` `team_status_labels`, `032` failu `size` backfill, `033`/`035` display preferences, `034` `file_type_extensions`, `036`/`037` sistēmas logotips/favicon un `logo_color`, `038` `work_tasks.archived_at`, `039` `work_templates` / `work_template_items`, `040` šablona `kind: folder` un ligzdots koks, `041` `work_list_automations` (trigger + action uz sarakstu), `044`–`049` komandas uzaicinājumi (tabula, RPC accept/reject, paziņojumi, self-leave, explicit accept, reject fix), `050` `set_current_user_name` (lietotājs maina savu vārdu), `051_team_permissions_extended` (komandu lomu pieejas UI + efektīvais list access), `051_task_activities_extended` un `052_task_activities_reordered` (apakšuzdevumu vēsture), `053` `user_notification_preferences`, `054` paplašināti `app_notifications.kind`, `055` `work_task_statuses` + uzdevuma statusu layout lauki, `056` šablona assignee/checklist, `057` šablona custom statusi, `058` `site_frontend_modules` (`module_templates`, `module_automations`), `059` `module_private_list` + RPC `publish_all_private_work_lists`, `060` `module_file_upload`, `061` `module_checklist`, `062` `site_payment_plans` + `site_payment_plan_modules` + `teams` plāna kolonnas, `063` `touch_current_member_online`, `064` `module_google_drive` + `team_google_drive_integrations`, `065` `user_calendar_integrations` + `module_calendar` / `module_calendar_apple` / `module_calendar_google`, `066` `module_onedrive` + `team_onedrive_integrations`, `067`/`068`/`069` `site_integrations` (`google_oauth`, `microsoft_oauth`, Resend/Umami/Sentry), `070` Drive `store_on_server` + `google_drive_file_id` uz `list_files` / `task_files`, `071` attēlu paplašinājumi (`png`/`jpg`/`jpeg`/`gif`/`webp`) `file_type_extensions`, `072` `txt`/`html` failu tipi, `073_workspace_speed` (`has_content`, `team_id` indeksi, RPC reorder / `set_task_assignees` / `update_tasks_status`), `074` kalendāra tokenu šifrēšana, `075` zip/rar, `076` `has_content` backfill, `077_email_templates` (`find_auth_user_by_email` RPC + HTML šablonu seed `site_translations`), `078`/`079` `module_gmail_plugin` + `user_gmail_connections`, `080` `public_sign_in_methods()` (anon login karogi bez noslēpumiem), `084` `site_settings.legal_email`, `085` invite preview `account_exists`, `086`/`087` `file_forwarded` + Resend email id, `088` `site_user_feedback` / `site_feature_votes` + `toggle_feature_vote`, `089` `site_cron_jobs` + `app_notifications.kind` `start`, `090` `rate_limit_buckets` / hashed invite un cron tokeni, `091` `site_settings.timezone` / `users.timezone` + RPC `set_current_user_timezone`
+- Migrācijas: `003` admin RPC, `006` valodas/tulkojumi/uzstādījumi, `007` RU, `008` admin list access, `009` `users` aktivitātes lauki, `010` site admin session RLS, `011` `users.language_code`, `081` komandas izveidotāja owner INSERT, `082` extra `site_languages`, `083` `it`/`sv`, `012`/`016`/`018` statusi, `017`/`020`/`021` lomas, `013`/`014`/`019` privāti saraksti, `022`/`023` sarakstu pieeju līmeņi, `024` `work_tasks.deleted_at`, `025` kataloga statusa check, `027`/`028`/`030` saraksta statusi, `029` `work_tasks.checklists`, `031` `team_status_labels`, `032` failu `size` backfill, `033`/`035` display preferences, `034` `file_type_extensions`, `036`/`037` sistēmas logotips/favicon un `logo_color`, `038` `work_tasks.archived_at`, `039` `work_templates` / `work_template_items`, `040` šablona `kind: folder` un ligzdots koks, `041` `work_list_automations` (trigger + action uz sarakstu), `044`–`049` komandas uzaicinājumi (tabula, RPC accept/reject, paziņojumi, self-leave, explicit accept, reject fix), `050` `set_current_user_name` (lietotājs maina savu vārdu), `051_team_permissions_extended` (komandu lomu pieejas UI + efektīvais list access), `051_task_activities_extended` un `052_task_activities_reordered` (apakšuzdevumu vēsture), `053` `user_notification_preferences`, `054` paplašināti `app_notifications.kind`, `055` `work_task_statuses` + uzdevuma statusu layout lauki, `056` šablona assignee/checklist, `057` šablona custom statusi, `058` `site_frontend_modules` (`module_templates`, `module_automations`), `059` `module_private_list` + RPC `publish_all_private_work_lists`, `060` `module_file_upload`, `061` `module_checklist`, `062` `site_payment_plans` + `site_payment_plan_modules` + `teams` plāna kolonnas, `063` `touch_current_member_online`, `064` `module_google_drive` + `team_google_drive_integrations`, `065` `user_calendar_integrations` + `module_calendar` / `module_calendar_apple` / `module_calendar_google`, `066` `module_onedrive` + `team_onedrive_integrations`, `067`/`068`/`069` `site_integrations` (`google_oauth`, `microsoft_oauth`, Resend/Umami/Sentry), `070` Drive `store_on_server` + `google_drive_file_id` uz `list_files` / `task_files`, `071` attēlu paplašinājumi (`png`/`jpg`/`jpeg`/`gif`/`webp`) `file_type_extensions`, `072` `txt`/`html` failu tipi, `073_workspace_speed` (`has_content`, `team_id` indeksi, RPC reorder / `set_task_assignees` / `update_tasks_status`), `074` kalendāra tokenu šifrēšana, `075` zip/rar, `076` `has_content` backfill, `077_email_templates` (`find_auth_user_by_email` RPC + HTML šablonu seed `site_translations`), `078`/`079` `module_gmail_plugin` + `user_gmail_connections`, `080` `public_sign_in_methods()` (anon login karogi bez noslēpumiem), `084` `site_settings.legal_email`, `085` invite preview `account_exists`, `086`/`087` `file_forwarded` + Resend email id, `088` `site_user_feedback` / `site_feature_votes` + `toggle_feature_vote`, `089` `site_cron_jobs` + `app_notifications.kind` `start`, `090` `rate_limit_buckets` / hashed invite un cron tokeni, `091` `site_settings.timezone` / `users.timezone` + RPC `set_current_user_timezone`, `092_turnstile_integration` (`turnstile` + `public_turnstile_config`), `093_payment_plan_max_members`
 
 ## Cron jobs
 
@@ -212,17 +212,17 @@ Plūsma: `GET /calendar/{token}.ics` (`app/calendar/[token]/route.ts`). Apple: `
 
 ## Maksas plāni
 
-Admin apakšizvēlne (`admin-submenu.tsx`, `is_admin`) → `/admin/payment-plans` (`admin-payment-plans-form.tsx`). CRUD un iestatījumi: `admin/actions.ts` + `app/lib/payment-plans/` (`helpers.ts`, `repository.ts`). Cenas UI: `formatPlanEuro` → `formatEuro` no `app/lib/format/numbers.ts` (atstarpe kā tūkstošu atdalītājs).
+Admin apakšizvēlne (`admin-submenu.tsx`, `is_admin`) → `/admin/payment-plans` (`admin-payment-plans-form.tsx`). CRUD un iestatījumi: `admin/actions.ts` + `app/lib/payment-plans/` (`helpers.ts`, `repository.ts`, `team-plan.ts`). Cenas UI: `formatPlanEuro` → `formatEuro` no `app/lib/format/numbers.ts` (atstarpe kā tūkstošu atdalītājs).
 
 | Iestatījums | Kur | Uzvedība |
 |---|---|---|
-| Ieslēgt maksas plānus | `site_settings.payment_plans_enabled` | Toggle; **vēl neierobežo** frontend moduļus lietotnē |
+| Ieslēgt maksas plānus | `site_settings.payment_plans_enabled` | Toggle; **ieslēgts** — komandas frontend moduļi no aktīvā plāna; **izslēgts** — visi globāli ieslēgtie moduļi visām komandām |
 | Izmēģinājums | `trial_plan_id` + `trial_days` (1–365) | Plāns jaunām komandām; piešķiršana reģistrācijā vēl nav pieslēgta |
 | Early Bird | `early_bird_limit` | 0 = izslēgts; piešķirto skaits = `teams.payment_plan_is_early_bird` |
-| Katalogs | `site_payment_plans` | `name_values` / `description_values` visās sistēmas valodās; opcionālas mēneša / ceturkšņa / gada cenas (tukšs = 0); Early Bird cenas |
+| Katalogs | `site_payment_plans` | `name_values` / `description_values` visās sistēmas valodās; `max_members` (`093`, 1–10 000); opcionālas mēneša / ceturkšņa / gada cenas (tukšs = 0); Early Bird cenas |
 | Moduļi plānā | `site_payment_plan_modules` | Atzīmē tikai globāli ieslēgtos `site_frontend_modules` |
 
-Komandai kolonnas `payment_plan_id` / `payment_plan_until` / `payment_plan_paid` / `payment_plan_is_trial` / `payment_plan_is_early_bird` (`062`). Piešķiršanas UI `/admin/teams` vēl nav. Tabulas SELECT `anon`/`authenticated`; raksta tikai admin (`current_user_is_admin`).
+Komandai kolonnas `payment_plan_id` / `payment_plan_until` / `payment_plan_paid` / `payment_plan_is_trial` / `payment_plan_is_early_bird` (`062`). Piešķiršana: `/admin/teams` (`AdminTeamPlanModal` + `updateAdminTeamPaymentPlanAction`). Aktīvs plāns = ir `plan_id` un (`paid` **vai** `is_trial`) un `until` tukšs vai ≥ šodien. App layout ielādē globālos moduļus + plānu katalogu; `TeamScopedFrontendModules` filtrē pēc `currentTeam.paymentPlan`. Biedru limita enforcement pie uzaicināšanas vēl nav. Tabulas SELECT `anon`/`authenticated`; raksta tikai admin (`current_user_is_admin`).
 
 ## Paziņojumi
 
@@ -387,7 +387,8 @@ app/
     signup-form.tsx               # Reģistrēties; `?invite=` → Vārds/Uzvārds, bloķēts e-pasts; noteikumi tikai e-pasta formai
     password-input.tsx            # Parole + rādīt/paslēpt acu ikona
     google-auth-button.tsx        # Turpināt ar Google / Microsoft
-    admin-integrations-page.tsx   # /admin/integrations: Google + Microsoft OAuth, Resend, Umami, Sentry
+    admin-integrations-page.tsx   # /admin/integrations: Google + Microsoft OAuth, Turnstile, Resend, Umami, Sentry
+    turnstile-widget.tsx          # Cloudflare Turnstile (explicit render) login/signup/forgot
     admin-email-templates-form.tsx # /admin/email-templates: HTML šabloni + priekšskatījums
     admin-cron-jobs-form.tsx      # /admin/cron-jobs: ieslēgt darbus (loading uz slēdža), kopēt cron-job.org saiti
     timezone-sync.tsx             # Pārlūka IANA josla → users.timezone (RPC)
@@ -468,7 +469,9 @@ app/
     admin-translations-manager.tsx # Tulkojumu CRUD
     admin-settings-form.tsx       # Sistēmas uzstādījumi + logo/favicon
     admin-frontend-modules-form.tsx # Frontend moduļu atslēgas + slēdži
-    admin-payment-plans-form.tsx  # Maksas plānu katalogs, cenas, izmēģinājums, Early Bird
+    admin-payment-plans-form.tsx  # Maksas plānu katalogs, max_members, cenas, izmēģinājums, Early Bird
+    admin-team-plan-modal.tsx     # /admin/teams: piešķirt komandai maksas plānu
+    admin-teams-manager.tsx       # Komandu saraksts + plāna kolonna
     branding-image-field.tsx      # Logo/favicon drop zona
     language-switcher.tsx         # Valodas pārslēdzējs (lv / en / ru)
     notifications-menu.tsx        # Paziņojumu panelis
@@ -500,7 +503,7 @@ app/
     frontend-modules/             # keys, repository, context, requireFrontendModule
     calendar/                     # ICS plūsma, token, user calendar integration
     google-drive/                 # OAuth, status, Drive upload, team settings actions
-    payment-plans/                # helpers + repository (katalogs, cenas, trial, Early Bird)
+    payment-plans/                # helpers + repository + team-plan (katalogs, cenas, trial, Early Bird, moduļu filtrs)
     task-date-display.ts          # Sākuma/termiņa relatīvais hints pēc statusa grupas (DateCell)
     nav-tree-move.ts              # Koka drop: mape / ārā / secība / grupas beigas
     list-access.ts                # Saraksta pieeju līmeņi un resolve
@@ -545,7 +548,7 @@ app/
     site-admin/                   # Admin CRUD repository, tipi
     supabase/                     # env, browser/server/admin klienti, session refresh
     auth/                         # actions (generateLink + Resend HTML), email-password, auth-confirm-link, MFA, OAuth, remember-session
-    integrations/                 # Google/Microsoft OAuth (site_integrations); public-sign-in.ts RPC karogi
+    integrations/                 # Google/Microsoft OAuth (site_integrations); public-sign-in.ts / public-turnstile.ts RPC karogi
     users/ensure-profile.ts       # public.users rinda pēc OAuth
     users/display-name.ts         # vārda sadalījums/apvienošana (first + last → name)
     users/display-preferences.ts  # efektīvās UI datumu preferences
@@ -553,19 +556,19 @@ app/
     users/require-admin.ts        # /admin + MFA enroll vārteja + audit
     users/admin-audit.ts          # admin_audit_events
     users/use-is-admin.tsx        # is_admin RPC + profils klientā
-    security/                     # rate-limit, secret-box, file-bytes, log-error, hash-token
+    security/                     # rate-limit, turnstile, secret-box, file-bytes, log-error, hash-token
 app/auth/gmail-plugin/            # login (Google OAuth ielogošanās) / bridge / start / done; callback aliases vai `/auth/google-oauth/callback`
 app/api/extension/                # config, session, login, refresh, gmail-access, gmail-bridge-ticket, browse, attach-email; CORS `extension/cors.ts`
 app/api/cron/                     # GET/POST `/api/cron/[jobKey]` — token auth, stundas batch atgādinājumi
 app/auth/callback/route.ts        # E-pasta magic link / PKCE code → session
-app/auth/google-oauth/sign-in/route.ts # GET Google login/signup sākums (`?next=`, `?errorPage=`)
+app/auth/google-oauth/sign-in/route.ts # GET Google login/signup sākums (`?next=`, `?errorPage=`, `?turnstile=`)
 app/auth/google-oauth/callback/route.ts # Google login, admin konfigurācija, Gmail spraudnis
-app/auth/microsoft-oauth/sign-in/route.ts # GET Microsoft login/signup sākums
+app/auth/microsoft-oauth/sign-in/route.ts # GET Microsoft login/signup sākums (`?turnstile=`)
 app/auth/microsoft-oauth/callback/route.ts # Microsoft login + admin konfigurācija
 app/auth/google-drive/callback/route.ts # Drive OAuth code → team refresh token
 app/auth/onedrive/callback/route.ts # OneDrive OAuth code → team refresh token
 scripts/                          # audit-check.mjs, apply-migrations.mjs, test-supabase.mjs, sync-i18n-catalogs.mjs
-supabase/migrations/              # 001–091: shēma, admin, work data, Drive, drošība, ielādes ātrums, e-pasta šabloni, Gmail spraudnis, publiskie login karogi, extra valodas, legal_email, invite preview `account_exists`, `file_forwarded` vēsture, Resend email id indekss, user feedback + feature votes, cron jobs, hashed tokeni, timezone batchi
+supabase/migrations/              # 001–093: shēma, admin, work data, Drive, drošība, ielādes ātrums, e-pasta šabloni, Gmail spraudnis, publiskie login karogi, extra valodas, legal_email, invite preview `account_exists`, `file_forwarded` vēsture, Resend email id indekss, user feedback + feature votes, cron jobs, hashed tokeni, timezone batchi, Turnstile, payment plan max_members
 .github/workflows/                # secret-scan.yml, security-audit.yml, security-smoke.yml
 .gitleaks.toml                    # default rules + i18n translation key allowlist
 .cursor/rules/                    # README bump, commits
@@ -638,7 +641,7 @@ Settings → Environment Variables → **Production** (un Preview, ja lieto prev
 | `GOOGLE_SITE_VERIFICATION` | GSC | HTML tag `content` |
 | `CHROME_EXTENSION_IDS` | nav | CORS vairs neizmanto; var atstāt tukšu vai dzēst no Vercel |
 
-Neliec Vercel: `RESEND_*`, `SENTRY_DSN`, `UMAMI_WEBSITE_ID`, Google/Microsoft Client ID - tos iestati **Admin → Integrācijas** pēc pirmā deploy, tad **Aktīva**. `PORT`, `DATABASE_URL`, `SUPABASE_DB_PASSWORD` ir tikai lokālajām migrācijām.
+Neliec Vercel: `RESEND_*`, `SENTRY_DSN`, `UMAMI_WEBSITE_ID`, `TURNSTILE_*`, Google/Microsoft Client ID - tos iestati **Admin → Integrācijas** pēc pirmā deploy, tad **Aktīva**. `PORT`, `DATABASE_URL`, `SUPABASE_DB_PASSWORD` ir tikai lokālajām migrācijām.
 
 Pēc env saglabāšanas: Deployments → **Redeploy**. Vercel Function logs: `Supabase admin env` (trūkst service role) vai `decryptSecret failed` (nepareiza `INTEGRATION_SECRETS_KEY`). Google Cloud redirect URI jābūt arī `https://tasqin.com/auth/google-oauth/callback`.
 
@@ -666,12 +669,13 @@ Sesijas sīkdatnes ir **obligātās** (ePrivacy izņēmums autentifikācijai). *
 
 Admin **Integrācijas**: `microsoft_oauth` Client ID/Secret; **Aktīva** (tāpat kā Google: redzams vienmēr, ieslēdzams pēc konfigurācijas) rāda **Turpināt ar Microsoft** login/signup un ļauj ieslēgt `module_onedrive`. Login iet caur `/auth/microsoft-oauth/callback` (tā pati plūsma kā Google: profils → Supabase lietotājs → sesija). Komandas OneDrive pieslēgšanai atsevišķi `/auth/onedrive/callback` ar `Files.ReadWrite`. Fallback env: `ONEDRIVE_CLIENT_ID`, `ONEDRIVE_CLIENT_SECRET`.
 
-## Resend / Umami / Sentry
+## Resend / Umami / Sentry / Turnstile
 
-Admin **Integrācijas** kartiņas (`resend`, `umami`, `sentry`) - Saglabāt credentials → **Aktīva**.
+Admin **Integrācijas** kartiņas (`turnstile`, `resend`, `umami`, `sentry`) - Saglabāt credentials → **Aktīva**.
 
 | Integrācija | Lauki | Kad aktīva |
 |---|---|---|
+| **Turnstile** | Site Key + Secret Key | Login, signup, forgot-password un OAuth sign-in (`?turnstile=`) prasa Cloudflare `siteverify`; Site Key publiski caur `public_turnstile_config()` (`092`); Secret tikai serverī (`requireTurnstileToken`); fallback env `TURNSTILE_SITE_KEY`, `TURNSTILE_SECRET_KEY` |
 | **Resend** | From e-pasts + Reply-To + API Key | `sendResendEmail()` ar `reply_to` (integrācijas Reply-To, ja nav override) un opcionāliem `attachments` (base64); e-pasta login/signup/forgot (`isEmailPasswordAuthEnabled`); HTML šabloni `/admin/email-templates`; komandas uzaicinājums jaunam e-pastam tikai ja aktīvs (esošam lietotājam pietiek ar in-app); **Pārsūtīt failu** (`forwardTaskFileAction`): From = `Vārds Uzvārds <Resend From>` (`fromName` pārraksta iestrādāto sistēmas nosaukumu), Reply-To = `Vārds Uzvārds <lietotāja e-pasts>`, HTML galvene = vārds uzvārds `(e-pasts)`, tēma = PATH, pielikums ≤ 25 MB; pēc sūtīšanas `task_activities` `file_forwarded` ar `resendEmailId` + `deliveryStatus`; bounce/failed → sarkans vēstures teksts + **Nosūtīt vēlreiz**; statusu atjauno webhook `POST /api/webhooks/resend` (`RESEND_WEBHOOK_SECRET`) un/vai poll atverot apakšuzdevumu; sānjoslas **Atrast kļūdu?** / **Pieprasīt funkciju** / **Atsauksmes** (`submitUserFeedbackAction`) sūta uz `legal_email`, Reply-To = lietotāja e-pasts; From = `client_id` (verificēts Resend domēns, ne `@gmail.com`); Reply-To = `configured_account_email` (var būt Gmail); validācija `resend/from-email.ts`; From/Reply-To arī `/admin/settings`; fallback env `RESEND_FROM_EMAIL`, `RESEND_API_KEY` |
 | **Umami** | Website ID + Script URL (noklusējums `https://cloud.umami.is/script.js`) | `UmamiAnalytics` ielādē skriptu pēc hidratācijas ar dokumenta CSP `nonce` (`data-auto-track="false"`); pageview pēc **analytics** piekrišanas; env `UMAMI_WEBSITE_ID`, `UMAMI_SCRIPT_URL` |
 | **Sentry** | Environment (opcionāli) + DSN | Root `layout.tsx` `SentryInit` (`@sentry/browser`, **tikai klienta** kļūdas); CSP `connect-src` `*.sentry.io`, `*.ingest.sentry.io`, `*.ingest.de.sentry.io`, `*.ingest.us.sentry.io`; env `SENTRY_ENVIRONMENT`, `SENTRY_DSN` |
@@ -726,7 +730,7 @@ RLS (`005_work_data.sql`): `authenticated` drīkst SELECT/INSERT/UPDATE/DELETE t
 | `site_cron_jobs` | Cron darbi (`subtask_start_reminder`, `subtask_due_reminder`): ieslēgts, hashed `secret_token`, pēdējā palaišana (`089`); RLS deny authenticated |
 | `site_user_feedback` | Lietotāju kļūdu ziņojumi, funkciju pieprasījumi un atsauksmes (`kind`, `title`, `body`, `vote_count`; `088`); SELECT: `feature` visiem authenticated, pārējie tikai autoram |
 | `site_feature_votes` | Funkciju pieprasījumu UP balsis (`request_id` + `user_id`); RPC `toggle_feature_vote` (`088`) |
-| `site_payment_plans` | Maksas plānu katalogs (nosaukumi visās valodās, cenas, Early Bird cenas) |
+| `site_payment_plans` | Maksas plānu katalogs (nosaukumi visās valodās, cenas, Early Bird cenas, `max_members` `093`) |
 | `site_payment_plan_modules` | Frontend moduļi katrā plānā |
 | `site_integrations` | Sistēmas integrācijas (`google_oauth`, `microsoft_oauth`, `resend`, `umami`, `sentry`): credentials, konfigurēts/ieslēgts (`067`–`069`); RLS deny authenticated; publiskie login karogi `public_sign_in_methods()` (`080`) |
 | `list_statuses` | Komandas statusi vienam sarakstam (`lsts-…`) |

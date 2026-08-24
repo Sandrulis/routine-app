@@ -35,6 +35,19 @@ export type AdminTeamSummary = {
   logoUrl: string | null;
   memberCount: number;
   createdAt: string;
+  paymentPlanId: string | null;
+  paymentPlanUntil: string | null;
+  paymentPlanPaid: boolean;
+  paymentPlanIsTrial: boolean;
+  paymentPlanIsEarlyBird: boolean;
+};
+
+export type AdminTeamPaymentPlanInput = {
+  planId: string | null;
+  until: string | null;
+  paid: boolean;
+  isTrial: boolean;
+  isEarlyBird: boolean;
 };
 
 export type AdminTeamMemberSummary = {

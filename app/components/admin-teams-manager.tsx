@@ -8,6 +8,7 @@ import {
   updateAdminTeamAction,
 } from "@/app/(app)/admin/actions";
 import { AdminTeamMembersModal } from "@/app/components/admin-team-members-modal";
+import { AdminTeamPlanModal } from "@/app/components/admin-team-plan-modal";
 import { ConfirmModal } from "@/app/components/confirm-modal";
 import { useFeedbackToast } from "@/app/components/feedback-toast-provider";
 import { IconActionButton } from "@/app/components/icon-action-button";
@@ -15,17 +16,39 @@ import { ListBadge } from "@/app/components/list-badge";
 import { NameFormModal } from "@/app/components/name-form-modal";
 import { useTranslations } from "@/app/components/translations-provider";
 import { translateActionError } from "@/app/lib/i18n/action-errors";
+import {
+  resolveLocalizedValue,
+  type PaymentPlanSummary,
+} from "@/app/lib/payment-plans/helpers";
 import type { AdminTeamMembersTarget, AdminTeamSummary } from "@/app/lib/site-admin/types";
 
-export function AdminTeamsManager({ teams }: { teams: AdminTeamSummary[] }) {
+export function AdminTeamsManager({
+  teams,
+  plans,
+}: {
+  teams: AdminTeamSummary[];
+  plans: PaymentPlanSummary[];
+}) {
   const router = useRouter();
-  const { t } = useTranslations();
+  const { t, languageCode } = useTranslations();
   const { showFeedback, clearFeedback } = useFeedbackToast();
   const [modalOpen, setModalOpen] = useState(false);
   const [editingTeam, setEditingTeam] = useState<AdminTeamSummary | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<AdminTeamSummary | null>(null);
   const [membersTeam, setMembersTeam] = useState<AdminTeamMembersTarget | null>(null);
+  const [planTeam, setPlanTeam] = useState<AdminTeamSummary | null>(null);
   const [isPending, startTransition] = useTransition();
+
+  function planLabel(team: AdminTeamSummary): string {
+    if (!team.paymentPlanId) {
+      return "—";
+    }
+    const plan = plans.find((item) => item.id === team.paymentPlanId);
+    const name =
+      plan &&
+      (resolveLocalizedValue(plan.nameValues, languageCode) || plan.planKey);
+    return name || team.paymentPlanId;
+  }
 
   function openCreate() {
     clearFeedback();
@@ -114,6 +137,7 @@ export function AdminTeamsManager({ teams }: { teams: AdminTeamSummary[] }) {
               <tr>
                 <th className="px-5 py-3">{t("lists.fields.name", "Nosaukums")}</th>
                 <th className="px-5 py-3">{t("admin.teams.members", "Biedri")}</th>
+                <th className="px-5 py-3">{t("admin.teams.plan.column", "Plāns")}</th>
                 <th className="px-5 py-3 text-right">{t("common.actions", "Darbības")}</th>
               </tr>
             </thead>
@@ -136,8 +160,14 @@ export function AdminTeamsManager({ teams }: { teams: AdminTeamSummary[] }) {
                     </div>
                   </td>
                   <td className="px-5 py-4 text-zinc-600">{team.memberCount}</td>
+                  <td className="px-5 py-4 text-zinc-600">{planLabel(team)}</td>
                   <td className="px-5 py-4" onClick={(event) => event.stopPropagation()}>
                     <div className="flex justify-end gap-1">
+                      <IconActionButton
+                        label={t("admin.teams.plan.action", "Maksas plāns")}
+                        icon="fas fa-credit-card"
+                        onClick={() => setPlanTeam(team)}
+                      />
                       <IconActionButton
                         label={t("actions.edit", "Labot")}
                         icon="fas fa-pen"
@@ -155,7 +185,7 @@ export function AdminTeamsManager({ teams }: { teams: AdminTeamSummary[] }) {
               ))}
               {teams.length === 0 ? (
                 <tr>
-                  <td colSpan={3} className="px-5 py-8 text-center text-zinc-500">
+                  <td colSpan={4} className="px-5 py-8 text-center text-zinc-500">
                     {t("admin.teams.empty", "Nav nevienas komandas.")}
                   </td>
                 </tr>
@@ -164,6 +194,16 @@ export function AdminTeamsManager({ teams }: { teams: AdminTeamSummary[] }) {
           </table>
         </div>
       </div>
+
+      <AdminTeamPlanModal
+        team={planTeam}
+        plans={plans}
+        open={planTeam !== null}
+        onOpenChange={(open) => {
+          if (!open) setPlanTeam(null);
+        }}
+        onSaved={() => router.refresh()}
+      />
 
       <AdminTeamMembersModal
         open={membersTeam !== null}

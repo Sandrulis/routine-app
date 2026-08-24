@@ -61,6 +61,8 @@ type OAuthButtonProps = {
   rememberMe?: boolean;
   errorPage?: OAuthLoginErrorPage;
   onBeforeSignIn?: () => boolean;
+  getTurnstileToken?: () => string | null;
+  turnstileRequired?: boolean;
 };
 
 export function GoogleAuthButton({
@@ -69,14 +71,30 @@ export function GoogleAuthButton({
   rememberMe = true,
   errorPage = "login",
   onBeforeSignIn,
+  getTurnstileToken,
+  turnstileRequired = false,
 }: OAuthButtonProps) {
   const { t } = useTranslations();
-  const { clearFeedback } = useFeedbackToast();
+  const { showFeedback, clearFeedback } = useFeedbackToast();
   const [pending, setPending] = useState(false);
 
   function handleClick() {
     if (onBeforeSignIn && !onBeforeSignIn()) {
       return;
+    }
+
+    if (turnstileRequired) {
+      const turnstileToken = getTurnstileToken?.() ?? null;
+      if (!turnstileToken) {
+        showFeedback({
+          type: "error",
+          text: t(
+            "errors.auth_turnstile_required",
+            "Apstiprini, ka neesi robots, pirms turpini.",
+          ),
+        });
+        return;
+      }
     }
 
     clearFeedback();
@@ -86,6 +104,10 @@ export function GoogleAuthButton({
     const params = new URLSearchParams({ next: returnPath });
     if (errorPage !== "login") {
       params.set("errorPage", errorPage);
+    }
+    const turnstileToken = getTurnstileToken?.();
+    if (turnstileToken) {
+      params.set("turnstile", turnstileToken);
     }
     window.location.assign(`/auth/google-oauth/sign-in?${params.toString()}`);
   }
@@ -111,14 +133,30 @@ export function MicrosoftAuthButton({
   rememberMe = true,
   errorPage = "login",
   onBeforeSignIn,
+  getTurnstileToken,
+  turnstileRequired = false,
 }: OAuthButtonProps) {
   const { t } = useTranslations();
-  const { clearFeedback } = useFeedbackToast();
+  const { showFeedback, clearFeedback } = useFeedbackToast();
   const [pending, setPending] = useState(false);
 
   function handleClick() {
     if (onBeforeSignIn && !onBeforeSignIn()) {
       return;
+    }
+
+    if (turnstileRequired) {
+      const turnstileToken = getTurnstileToken?.() ?? null;
+      if (!turnstileToken) {
+        showFeedback({
+          type: "error",
+          text: t(
+            "errors.auth_turnstile_required",
+            "Apstiprini, ka neesi robots, pirms turpini.",
+          ),
+        });
+        return;
+      }
     }
 
     clearFeedback();
@@ -128,6 +166,10 @@ export function MicrosoftAuthButton({
     const params = new URLSearchParams({ next: returnPath });
     if (errorPage !== "login") {
       params.set("errorPage", errorPage);
+    }
+    const turnstileToken = getTurnstileToken?.();
+    if (turnstileToken) {
+      params.set("turnstile", turnstileToken);
     }
     window.location.assign(`/auth/microsoft-oauth/sign-in?${params.toString()}`);
   }

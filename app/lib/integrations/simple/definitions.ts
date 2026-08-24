@@ -49,4 +49,13 @@ export const SIMPLE_INTEGRATION_DEFINITIONS: Record<
     missingClientIdError: "errors.integrations_sentry_environment_required",
     missingClientSecretError: "errors.integrations_sentry_dsn_required",
   },
+  [SITE_INTEGRATION_KEYS.turnstile]: {
+    key: SITE_INTEGRATION_KEYS.turnstile,
+    requireClientId: true,
+    requireClientSecret: true,
+    envClientId: "TURNSTILE_SITE_KEY",
+    envClientSecret: "TURNSTILE_SECRET_KEY",
+    missingClientIdError: "errors.integrations_turnstile_site_key_required",
+    missingClientSecretError: "errors.integrations_turnstile_secret_key_required",
+  },
 };

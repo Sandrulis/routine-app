@@ -14,6 +14,7 @@ export type PaymentPlanSummary = {
   nameValues: LocalizedValues;
   descriptionValues: LocalizedValues;
   moduleKeys: string[];
+  maxMembers: number;
   priceMonth: number;
   priceQuarter: number;
   priceYear: number;
@@ -30,6 +31,7 @@ export type PaymentPlanInput = {
   nameValues: LocalizedValues;
   descriptionValues: LocalizedValues;
   moduleKeys: string[];
+  maxMembers: number | string;
   priceMonth: number | string;
   priceQuarter: number | string;
   priceYear: number | string;
@@ -56,6 +58,21 @@ export type TrialSettings = {
 export const MIN_TRIAL_DAYS = 1;
 export const MAX_TRIAL_DAYS = 365;
 export const DEFAULT_TRIAL_DAYS = 14;
+export const MIN_PLAN_MEMBERS = 1;
+export const MAX_PLAN_MEMBERS = 10_000;
+export const DEFAULT_PLAN_MEMBERS = 5;
+
+export function parsePaymentPlanMaxMembers(value: unknown): number | null {
+  const parsed =
+    typeof value === "number" ? value : Number.parseInt(String(value ?? ""), 10);
+  if (!Number.isFinite(parsed) || !Number.isInteger(parsed)) {
+    return null;
+  }
+  if (parsed < MIN_PLAN_MEMBERS || parsed > MAX_PLAN_MEMBERS) {
+    return null;
+  }
+  return parsed;
+}
 
 export function parsePaymentPlanPrice(value: unknown): number | null {
   if (typeof value === "number") {

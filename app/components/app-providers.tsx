@@ -3,8 +3,8 @@
 import type { ReactNode } from "react";
 import { AppShell } from "@/app/components/app-shell";
 import { FileViewerProvider } from "@/app/components/file-viewer-provider";
+import { TeamScopedFrontendModules } from "@/app/lib/frontend-modules/team-scoped-provider";
 import { FileTypesProvider } from "@/app/lib/file-types-context";
-import { FrontendModulesProvider } from "@/app/lib/frontend-modules/context";
 import { ListsProvider } from "@/app/lib/lists-store";
 import { TemplatesProvider } from "@/app/lib/templates-store";
 import { TaskStatusesProvider } from "@/app/lib/task-statuses";
@@ -15,21 +15,34 @@ import type {
   TaskStatusSummary,
 } from "@/app/lib/site-admin/types";
 
+type PaymentPlanModuleSnapshot = {
+  id: string;
+  moduleKeys: string[];
+};
+
 export function AppProviders({
   children,
   taskStatuses = [],
   fileTypeExtensions = [],
   enabledFrontendModuleKeys = [],
+  paymentPlansEnabled = false,
+  paymentPlans = [],
 }: {
   children: ReactNode;
   taskStatuses?: TaskStatusSummary[];
   fileTypeExtensions?: FileTypeExtensionSummary[];
   enabledFrontendModuleKeys?: string[];
+  paymentPlansEnabled?: boolean;
+  paymentPlans?: PaymentPlanModuleSnapshot[];
 }) {
   return (
     <TeamProvider>
       <AdminProvider>
-        <FrontendModulesProvider enabledKeys={enabledFrontendModuleKeys}>
+        <TeamScopedFrontendModules
+          globalEnabledKeys={enabledFrontendModuleKeys}
+          paymentPlansEnabled={paymentPlansEnabled}
+          plans={paymentPlans}
+        >
           <TaskStatusesProvider statuses={taskStatuses}>
             <FileTypesProvider extensions={fileTypeExtensions}>
               <TemplatesProvider>
@@ -41,7 +54,7 @@ export function AppProviders({
               </TemplatesProvider>
             </FileTypesProvider>
           </TaskStatusesProvider>
-        </FrontendModulesProvider>
+        </TeamScopedFrontendModules>
       </AdminProvider>
     </TeamProvider>
   );

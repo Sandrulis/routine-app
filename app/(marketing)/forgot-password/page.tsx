@@ -3,6 +3,7 @@ import { ForgotPasswordForm } from "@/app/components/forgot-password-form";
 import { getServerTranslations } from "@/app/lib/i18n/server";
 import { NO_INDEX_ROBOTS } from "@/app/lib/seo/metadata";
 import { isEmailPasswordAuthEnabled } from "@/app/lib/integrations/resend/client";
+import { getPublicTurnstileConfig } from "@/app/lib/integrations/public-turnstile";
 
 export async function generateMetadata(): Promise<Metadata> {
   const { t } = await getServerTranslations();
@@ -13,10 +14,16 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function ForgotPasswordPage() {
-  const emailPasswordEnabled = await isEmailPasswordAuthEnabled();
+  const [emailPasswordEnabled, turnstile] = await Promise.all([
+    isEmailPasswordAuthEnabled(),
+    getPublicTurnstileConfig(),
+  ]);
   return (
     <div className="px-4 py-12 sm:px-6 sm:py-16">
-      <ForgotPasswordForm emailPasswordEnabled={emailPasswordEnabled} />
+      <ForgotPasswordForm
+        emailPasswordEnabled={emailPasswordEnabled}
+        turnstileSiteKey={turnstile?.enabled ? turnstile.siteKey : null}
+      />
     </div>
   );
 }

@@ -324,6 +324,22 @@ export function defaultTeamRoles(teamId: string): TeamRole[] {
   ];
 }
 
+export type TeamPaymentPlanState = {
+  planId: string | null;
+  until: string | null;
+  paid: boolean;
+  isTrial: boolean;
+  isEarlyBird: boolean;
+};
+
+export const EMPTY_TEAM_PAYMENT_PLAN: TeamPaymentPlanState = {
+  planId: null,
+  until: null,
+  paid: false,
+  isTrial: false,
+  isEarlyBird: false,
+};
+
 export type WorkTeam = {
   id: string;
   name: string;
@@ -331,6 +347,7 @@ export type WorkTeam = {
   icon: string | null;
   color: string;
   logoUrl: string | null;
+  paymentPlan: TeamPaymentPlanState;
 };
 
 export const TEAMS_STORAGE_KEY = "routine-app-teams";
@@ -432,7 +449,7 @@ export function normalizeStoredTeams(value: unknown): WorkTeam[] | null {
           : DEFAULT_LIST_COLOR;
       const logoUrl =
         "logoUrl" in item && isTeamLogoUrl(item.logoUrl) ? item.logoUrl : null;
-      return { id, name, initials, icon, color, logoUrl };
+      return { id, name, initials, icon, color, logoUrl, paymentPlan: EMPTY_TEAM_PAYMENT_PLAN };
     })
     .filter((item): item is WorkTeam => item !== null);
 

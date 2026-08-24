@@ -163,6 +163,11 @@ function teamFromRow(row: {
   icon: string | null;
   color: string;
   logo_url: string | null;
+  payment_plan_id?: string | null;
+  payment_plan_until?: string | null;
+  payment_plan_paid?: boolean | null;
+  payment_plan_is_trial?: boolean | null;
+  payment_plan_is_early_bird?: boolean | null;
 }): WorkTeam {
   return {
     id: row.id,
@@ -171,6 +176,19 @@ function teamFromRow(row: {
     icon: row.icon,
     color: row.color,
     logoUrl: row.logo_url,
+    paymentPlan: {
+      planId:
+        typeof row.payment_plan_id === "string" && row.payment_plan_id.trim()
+          ? row.payment_plan_id
+          : null,
+      until:
+        typeof row.payment_plan_until === "string" && row.payment_plan_until.trim()
+          ? row.payment_plan_until.slice(0, 10)
+          : null,
+      paid: row.payment_plan_paid === true,
+      isTrial: row.payment_plan_is_trial === true,
+      isEarlyBird: row.payment_plan_is_early_bird === true,
+    },
   };
 }
 
@@ -235,7 +253,9 @@ export async function fetchUserTeams(): Promise<{
     fetchInChunks(teamIds, (chunk) =>
       supabase
         .from("teams")
-        .select("id, name, initials, icon, color, logo_url, created_at")
+        .select(
+          "id, name, initials, icon, color, logo_url, created_at, payment_plan_id, payment_plan_until, payment_plan_paid, payment_plan_is_trial, payment_plan_is_early_bird",
+        )
         .in("id", chunk)
         .order("created_at", { ascending: true }),
     ),

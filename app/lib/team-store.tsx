@@ -38,6 +38,7 @@ import {
   defaultTeamRoleId,
   defaultTeamRoles,
   emptyTeamMember,
+  EMPTY_TEAM_PAYMENT_PLAN,
   initialsFromName,
   MEMBER_TEAM_ROLE,
   OWNER_TEAM_ROLE,
@@ -357,6 +358,7 @@ export function TeamProvider({ children }: { children: ReactNode }) {
         icon: input.icon ?? null,
         color: input.color ?? randomListColorId(),
         logoUrl: input.logoUrl ?? null,
+        paymentPlan: { ...EMPTY_TEAM_PAYMENT_PLAN },
       };
 
       const owner = authUser
