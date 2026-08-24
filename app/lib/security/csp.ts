@@ -2,6 +2,7 @@ const CONNECT_SRC = [
   "'self'",
   "https://*.supabase.co",
   "wss://*.supabase.co",
+  "https://challenges.cloudflare.com",
   "https://accounts.google.com",
   "https://oauth2.googleapis.com",
   "https://www.googleapis.com",
@@ -27,6 +28,7 @@ function umamiHost() {
 export function buildContentSecurityPolicy(nonce: string) {
   const isDev = process.env.NODE_ENV === "development";
   const umami = umamiHost();
+  const turnstile = "https://challenges.cloudflare.com";
   const scriptSrc = [
     "'self'",
     `'nonce-${nonce}'`,
@@ -42,13 +44,13 @@ export function buildContentSecurityPolicy(nonce: string) {
   return [
     "default-src 'self'",
     `script-src ${scriptSrc}`,
-    `script-src-elem ${scriptSrc} ${umami}`.trim(),
+    `script-src-elem ${scriptSrc} ${umami} ${turnstile}`.trim(),
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: https: blob:",
     "font-src 'self' data:",
     `connect-src ${connectSrc}`,
     "media-src 'self' data: blob:",
-    "frame-src 'self' blob:",
+    `frame-src 'self' blob: ${turnstile}`,
     "object-src 'none'",
     "base-uri 'self'",
     "form-action 'self'",

@@ -166,11 +166,16 @@ export async function fetchMicrosoftOAuthUserInfo(
     | { displayName?: string }
     | null;
   const email = pickVerifiedMicrosoftEmail(parseJwtPayload(idToken), userinfoResponse.ok ? userinfo : null);
+  const givenName =
+    typeof userinfo?.given_name === "string" ? userinfo.given_name.trim() : "";
+  const familyName =
+    typeof userinfo?.family_name === "string" ? userinfo.family_name.trim() : "";
   const name =
     (typeof userinfo?.name === "string" ? userinfo.name.trim() : "") ||
+    [givenName, familyName].filter(Boolean).join(" ") ||
     graph?.displayName?.trim() ||
     "";
-  return { email, name };
+  return { email, name, givenName, familyName };
 }
 
 export async function fetchMicrosoftOAuthAccountEmail(

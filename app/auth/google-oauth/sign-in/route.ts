@@ -8,7 +8,10 @@ import { resolveOAuthOrigin } from "@/app/lib/auth/oauth-origin";
 import { getSafeRedirectPath } from "@/app/lib/security/safe-redirect-path";
 import { requestClientIp } from "@/app/lib/security/client-ip";
 import { consumeRateLimit } from "@/app/lib/security/rate-limit";
-import { requireTurnstileToken } from "@/app/lib/security/turnstile";
+import {
+  OAUTH_TURNSTILE_TOKEN_COOKIE,
+  oauthTurnstileCookieOptions,
+} from "@/app/lib/auth/oauth-turnstile";
 import {
   buildGoogleOAuthAuthorizeUrl,
   googleOAuthConfigureCookieOptions,
@@ -22,11 +25,6 @@ import {
 function parseErrorPage(raw: string | null): OAuthLoginErrorPage {
   if (raw === "signup" || raw === "plugin") return raw;
   return "login";
-}
-
-function turnstileErrorRedirect(origin: string, errorPage: OAuthLoginErrorPage) {
-  const path = errorPage === "signup" ? "/signup" : "/login";
-  return NextResponse.redirect(new URL(`${path}?error=turnstile`, origin));
 }
 
 export async function GET(request: Request) {
@@ -44,14 +42,6 @@ export async function GET(request: Request) {
       status: 429,
       headers: { "Retry-After": String(limited.retryAfterSec) },
     });
-  }
-
-  const turnstile = await requireTurnstileToken(
-    searchParams.get("turnstile"),
-    requestClientIp(request),
-  );
-  if (!turnstile.ok) {
-    return turnstileErrorRedirect(oauthOrigin, errorPage);
   }
 
   const next = getSafeRedirectPath(searchParams.get("next"));
@@ -85,6 +75,19 @@ export async function GET(request: Request) {
     serialized,
     googleOAuthConfigureCookieOptions(600),
   );
+  const turnstileToken = searchParams.get("turnstile")?.trim() ?? "";
+  if (turnstileToken) {
+    response.cookies.set(
+      OAUTH_TURNSTILE_TOKEN_COOKIE,
+      turnstileToken,
+      oauthTurnstileCookieOptions(600),
+    );
+  } else {
+    response.cookies.set(OAUTH_TURNSTILE_TOKEN_COOKIE, "", {
+      ...oauthTurnstileCookieOptions(0),
+      maxAge: 0,
+    });
+  }
   return response;
 }
 

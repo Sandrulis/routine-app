@@ -62,7 +62,6 @@ type OAuthButtonProps = {
   errorPage?: OAuthLoginErrorPage;
   onBeforeSignIn?: () => boolean;
   getTurnstileToken?: () => string | null;
-  turnstileRequired?: boolean;
 };
 
 export function GoogleAuthButton({
@@ -72,29 +71,14 @@ export function GoogleAuthButton({
   errorPage = "login",
   onBeforeSignIn,
   getTurnstileToken,
-  turnstileRequired = false,
 }: OAuthButtonProps) {
   const { t } = useTranslations();
-  const { showFeedback, clearFeedback } = useFeedbackToast();
+  const { clearFeedback } = useFeedbackToast();
   const [pending, setPending] = useState(false);
 
   function handleClick() {
     if (onBeforeSignIn && !onBeforeSignIn()) {
       return;
-    }
-
-    if (turnstileRequired) {
-      const turnstileToken = getTurnstileToken?.() ?? null;
-      if (!turnstileToken) {
-        showFeedback({
-          type: "error",
-          text: t(
-            "errors.auth_turnstile_required",
-            "Apstiprini, ka neesi robots, pirms turpini.",
-          ),
-        });
-        return;
-      }
     }
 
     clearFeedback();
@@ -134,29 +118,14 @@ export function MicrosoftAuthButton({
   errorPage = "login",
   onBeforeSignIn,
   getTurnstileToken,
-  turnstileRequired = false,
 }: OAuthButtonProps) {
   const { t } = useTranslations();
-  const { showFeedback, clearFeedback } = useFeedbackToast();
+  const { clearFeedback } = useFeedbackToast();
   const [pending, setPending] = useState(false);
 
   function handleClick() {
     if (onBeforeSignIn && !onBeforeSignIn()) {
       return;
-    }
-
-    if (turnstileRequired) {
-      const turnstileToken = getTurnstileToken?.() ?? null;
-      if (!turnstileToken) {
-        showFeedback({
-          type: "error",
-          text: t(
-            "errors.auth_turnstile_required",
-            "Apstiprini, ka neesi robots, pirms turpini.",
-          ),
-        });
-        return;
-      }
     }
 
     clearFeedback();

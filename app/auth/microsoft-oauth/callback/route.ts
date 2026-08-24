@@ -79,6 +79,8 @@ async function handleLogin(request: Request, origin: string, code: string) {
     profile: {
       email: profile.email,
       name: profile.name,
+      givenName: profile.givenName,
+      familyName: profile.familyName,
       avatarUrl: "",
       provider: "microsoft",
     },

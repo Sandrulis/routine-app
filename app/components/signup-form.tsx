@@ -18,6 +18,7 @@ import { signUpWithPasswordAction } from "@/app/lib/auth/actions";
 import { translateActionError } from "@/app/lib/i18n/action-errors";
 import { getSafeRedirectPath } from "@/app/lib/security/safe-redirect-path";
 import { getInviteSignupContextAction } from "@/app/lib/team/actions";
+import { OAuthPendingTurnstileModal } from "@/app/components/oauth-pending-turnstile";
 import {
   TurnstileWidget,
   type TurnstileWidgetHandle,
@@ -58,11 +59,25 @@ export function SignupForm({
   const oauthEnabled =
     !emailLocked && (googleSignInEnabled || microsoftSignInEnabled);
   const turnstileRequired = Boolean(turnstileSiteKey);
-  const showTurnstile =
-    turnstileRequired && (emailPasswordEnabled || oauthEnabled);
+  const googlePending = searchParams.get("pending") === "google";
+  const [turnstileModalOpen, setTurnstileModalOpen] = useState(false);
+  const showTurnstile = turnstileRequired && emailPasswordEnabled;
 
   function getTurnstileToken() {
     return turnstileRef.current?.getToken() ?? null;
+  }
+
+  useEffect(() => {
+    if (googlePending && turnstileSiteKey) {
+      setTurnstileModalOpen(true);
+    }
+  }, [googlePending, turnstileSiteKey]);
+
+  function clearPendingQuery() {
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete("pending");
+    const query = params.toString();
+    router.replace(query ? `/signup?${query}` : "/signup");
   }
 
   useEffect(() => {
@@ -267,8 +282,6 @@ export function SignupForm({
           disabled={pending}
           rememberMe={false}
           errorPage="signup"
-          getTurnstileToken={getTurnstileToken}
-          turnstileRequired={turnstileRequired}
         />
       ) : null}
       {microsoftSignInEnabled ? (
@@ -276,14 +289,13 @@ export function SignupForm({
           disabled={pending}
           rememberMe={false}
           errorPage="signup"
-          getTurnstileToken={getTurnstileToken}
-          turnstileRequired={turnstileRequired}
         />
       ) : null}
     </div>
   ) : null;
 
   return (
+    <>
     <form onSubmit={handleSubmit} className={`${authCardClassName} space-y-4`}>
       <div>
         <h1 className="text-2xl font-semibold tracking-tight text-zinc-900">
@@ -430,9 +442,6 @@ export function SignupForm({
       ) : null}
 
       {emailPasswordEnabled && oauthEnabled ? <AuthDivider /> : null}
-      {!emailPasswordEnabled && showTurnstile && turnstileSiteKey ? (
-        <TurnstileWidget ref={turnstileRef} siteKey={turnstileSiteKey} />
-      ) : null}
       {oauthButtons}
 
       <p className="text-center text-sm text-zinc-500">
@@ -449,5 +458,19 @@ export function SignupForm({
         </Link>
       </p>
     </form>
+
+    {turnstileSiteKey ? (
+      <OAuthPendingTurnstileModal
+        open={turnstileModalOpen}
+        siteKey={turnstileSiteKey}
+        onOpenChange={(open) => {
+          setTurnstileModalOpen(open);
+          if (!open && googlePending) {
+            clearPendingQuery();
+          }
+        }}
+      />
+    ) : null}
+    </>
   );
 }

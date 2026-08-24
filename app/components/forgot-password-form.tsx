@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRef, useState, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 import {
   authCardClassName,
   authInputClassName,
@@ -9,61 +9,25 @@ import {
 } from "@/app/components/auth-form-styles";
 import { useFeedbackToast } from "@/app/components/feedback-toast-provider";
 import { useTranslations } from "@/app/components/translations-provider";
-import {
-  TurnstileWidget,
-  type TurnstileWidgetHandle,
-} from "@/app/components/turnstile-widget";
 import { requestPasswordResetAction } from "@/app/lib/auth/actions";
-import { translateActionError } from "@/app/lib/i18n/action-errors";
 
 export function ForgotPasswordForm({
   emailPasswordEnabled = false,
-  turnstileSiteKey = null,
 }: {
   emailPasswordEnabled?: boolean;
-  turnstileSiteKey?: string | null;
 }) {
   const { t } = useTranslations();
   const { showFeedback, clearFeedback } = useFeedbackToast();
-  const turnstileRef = useRef<TurnstileWidgetHandle>(null);
   const [email, setEmail] = useState("");
   const [pending, setPending] = useState(false);
-  const turnstileRequired = Boolean(turnstileSiteKey);
-
-  function getTurnstileToken() {
-    return turnstileRef.current?.getToken() ?? null;
-  }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!emailPasswordEnabled) return;
     clearFeedback();
-
-    if (turnstileRequired && !getTurnstileToken()) {
-      showFeedback({
-        type: "error",
-        text: t(
-          "errors.auth_turnstile_required",
-          "Apstiprini, ka neesi robots, pirms turpini.",
-        ),
-      });
-      return;
-    }
-
     setPending(true);
-    const result = await requestPasswordResetAction({
-      email,
-      turnstileToken: getTurnstileToken() ?? undefined,
-    });
+    await requestPasswordResetAction({ email });
     setPending(false);
-    if (!result.ok) {
-      showFeedback({
-        type: "error",
-        text: translateActionError(t, result.error),
-      });
-      turnstileRef.current?.reset();
-      return;
-    }
     showFeedback({
       type: "success",
       text: t(
@@ -108,10 +72,6 @@ export function ForgotPasswordForm({
               className={authInputClassName}
             />
           </label>
-
-          {turnstileSiteKey ? (
-            <TurnstileWidget ref={turnstileRef} siteKey={turnstileSiteKey} />
-          ) : null}
 
           <button
             type="submit"

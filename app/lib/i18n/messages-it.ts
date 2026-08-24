@@ -131,6 +131,8 @@ export const it: Record<string, string> = {
   "auth.signup.terms_required": "Please accept the terms to sign up.",
   "auth.signup.success": "Account created. Welcome to {SYSTEM_NAME}.",
   "auth.signup.check_email": "Check your email to confirm the account.",
+  "auth.turnstile.modal_title": "Bot check",
+  "auth.turnstile.google_pending": "To continue with Google without a team, confirm you are not a robot.",
   "auth.confirm.loading": "Finishing confirmation…",
   "auth.confirm.failed_title": "Confirmation failed",
   "auth.confirm.failed": "This link has expired or is not valid. Request a new email and open it in the same browser.",

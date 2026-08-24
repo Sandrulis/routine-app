@@ -131,6 +131,8 @@ export const fi: Record<string, string> = {
   "auth.signup.terms_required": "Hyväksy ehdot rekisteröityäksesi.",
   "auth.signup.success": "Tili luotu. Tervetuloa {SYSTEM_NAME}-palveluun.",
   "auth.signup.check_email": "Tarkista sähköpostisi ja vahvista tili.",
+  "auth.turnstile.modal_title": "Bot check",
+  "auth.turnstile.google_pending": "To continue with Google without a team, confirm you are not a robot.",
   "auth.confirm.loading": "Vahvistusta viimeistellään…",
   "auth.confirm.failed_title": "Vahvistus epäonnistui",
   "auth.confirm.failed": "Tämä linkki on vanhentunut tai ei ole voimassa. Pyydä uusi sähköposti ja avaa se samassa selaimessa.",

@@ -186,6 +186,9 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "auth.signup.terms_required": "Lai reģistrētos, piekrīti noteikumiem.",
     "auth.signup.success": "Konts izveidots. Laipni lūgts {SYSTEM_NAME}.",
     "auth.signup.check_email": "Pārbaudi e-pastu, lai apstiprinātu kontu.",
+    "auth.turnstile.modal_title": "Botu pārbaude",
+    "auth.turnstile.google_pending":
+      "Lai turpinātu ar Google bez komandas, apstiprini, ka neesi robots.",
     "auth.confirm.loading": "Pabeidz apstiprināšanu…",
     "auth.confirm.failed_title": "Apstiprināšana neizdevās",
     "auth.confirm.failed":
@@ -592,16 +595,16 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "integrations.sentry.feedback.reset": "Sentry konfigurācija notīrīta.",
     "integrations.turnstile.title": "Cloudflare Turnstile",
     "integrations.turnstile.description":
-      "Botu pārbaude login, reģistrācijā un OAuth plūsmās.",
+      "Botu pārbaude e-pasta reģistrācijā un Google ienākšanā, ja vēl nav komandas.",
     "integrations.turnstile.site_key": "Site Key",
     "integrations.turnstile.site_key_hint":
-      "Publiskā atslēga no Cloudflare Turnstile. Tā tiek rādīta login un reģistrācijas lapās.",
+      "Publiskā atslēga no Cloudflare Turnstile. Tā tiek rādīta reģistrācijas formā un Google ienākšanā bez komandas.",
     "integrations.turnstile.secret_key": "Secret Key",
     "integrations.turnstile.secret_key_placeholder": "0x4AAAAAAA…",
     "integrations.turnstile.secret_key_placeholder_saved":
       "Saglabāts — atstāj tukšu, ja nemaina",
     "integrations.turnstile.hint":
-      "Kad integrācija ir aktīva, login, reģistrācija, paroles atjaunošana un OAuth prasa Cloudflare Turnstile pārbaudi.",
+      "Kad integrācija ir aktīva, e-pasta reģistrācija un Google ienākšana bez komandas prasa Cloudflare Turnstile pārbaudi.",
     "integrations.turnstile.reset": "Notīrīt konfigurāciju",
     "integrations.turnstile.reset.confirm_title": "Notīrīt Turnstile konfigurāciju?",
     "integrations.turnstile.reset.confirm_description":
@@ -2240,6 +2243,9 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "auth.signup.terms_required": "Please accept the terms to sign up.",
     "auth.signup.success": "Account created. Welcome to {SYSTEM_NAME}.",
     "auth.signup.check_email": "Check your email to confirm the account.",
+    "auth.turnstile.modal_title": "Bot check",
+    "auth.turnstile.google_pending":
+      "To continue with Google without a team, confirm you are not a robot.",
     "auth.confirm.loading": "Finishing confirmation…",
     "auth.confirm.failed_title": "Confirmation failed",
     "auth.confirm.failed":
@@ -2641,16 +2647,16 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "integrations.sentry.feedback.reset": "Sentry configuration cleared.",
     "integrations.turnstile.title": "Cloudflare Turnstile",
     "integrations.turnstile.description":
-      "Bot protection on login, signup, and OAuth flows.",
+      "Bot protection for email signup and Google sign-in when the user has no team.",
     "integrations.turnstile.site_key": "Site Key",
     "integrations.turnstile.site_key_hint":
-      "Public key from Cloudflare Turnstile. Shown on login and signup pages.",
+      "Public key from Cloudflare Turnstile. Shown on the signup form and when Google sign-in needs a bot check.",
     "integrations.turnstile.secret_key": "Secret Key",
     "integrations.turnstile.secret_key_placeholder": "0x4AAAAAAA…",
     "integrations.turnstile.secret_key_placeholder_saved":
       "Saved — leave blank to keep unchanged",
     "integrations.turnstile.hint":
-      "When active, login, signup, password reset, and OAuth require Cloudflare Turnstile verification.",
+      "When active, email signup and Google sign-in without a team require Cloudflare Turnstile verification.",
     "integrations.turnstile.reset": "Clear configuration",
     "integrations.turnstile.reset.confirm_title": "Clear Turnstile configuration?",
     "integrations.turnstile.reset.confirm_description":

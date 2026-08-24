@@ -39,15 +39,17 @@ async function requireEmailPasswordAuth(): Promise<AuthResult | null> {
 async function guardAuth(
   kind: string,
   email: string,
-  turnstileToken?: string,
+  options?: { turnstileToken?: string; requireTurnstile?: boolean },
 ): Promise<AuthResult | null> {
   if (!isSupabaseConfigured()) {
     return { ok: false, error: "errors.db_not_configured" };
   }
   const ip = await getClientIp();
-  const turnstile = await requireTurnstileToken(turnstileToken, ip);
-  if (!turnstile.ok) {
-    return { ok: false, error: turnstile.error };
+  if (options?.requireTurnstile) {
+    const turnstile = await requireTurnstileToken(options.turnstileToken, ip);
+    if (!turnstile.ok) {
+      return { ok: false, error: turnstile.error };
+    }
   }
   const ipLimit = await consumeRateLimit(`auth-ip:${kind}:${ip}`, 20, 15 * 60 * 1000);
   const emailLimit = await consumeRateLimit(
@@ -65,7 +67,6 @@ export async function signInWithPasswordAction(input: {
   email: string;
   password: string;
   next?: string;
-  turnstileToken?: string;
 }): Promise<AuthResult> {
   const emailAuth = await requireEmailPasswordAuth();
   if (emailAuth) return emailAuth;
@@ -74,7 +75,7 @@ export async function signInWithPasswordAction(input: {
   if (!EMAIL_RE.test(email) || password.length < 1) {
     return { ok: false, error: "errors.auth_invalid" };
   }
-  const blocked = await guardAuth("login", email, input.turnstileToken);
+  const blocked = await guardAuth("login", email);
   if (blocked) return blocked;
 
   const lockout = await readAuthLockout(email);
@@ -120,7 +121,10 @@ export async function signUpWithPasswordAction(input: {
   if (password.length < 8) {
     return { ok: false, error: "auth.signup.password_short" };
   }
-  const blocked = await guardAuth("signup", email, input.turnstileToken);
+  const blocked = await guardAuth("signup", email, {
+    turnstileToken: input.turnstileToken,
+    requireTurnstile: true,
+  });
   if (blocked) return blocked;
 
   let next = input.next;
@@ -154,7 +158,6 @@ export async function signUpWithPasswordAction(input: {
 
 export async function requestPasswordResetAction(input: {
   email: string;
-  turnstileToken?: string;
 }): Promise<AuthResult> {
   const emailAuth = await requireEmailPasswordAuth();
   if (emailAuth) return emailAuth;
@@ -162,7 +165,7 @@ export async function requestPasswordResetAction(input: {
   if (!EMAIL_RE.test(email)) {
     return { ok: true, next: "/login" };
   }
-  const blocked = await guardAuth("reset", email, input.turnstileToken);
+  const blocked = await guardAuth("reset", email);
   if (blocked) return blocked;
 
   const result = await requestPasswordResetEmail(email);
@@ -205,4 +208,81 @@ export async function updatePasswordAction(input: {
     return { ok: false, error: "errors.auth_password_update_failed" };
   }
   return { ok: true, next: "/dashboard" };
+}
+
+export async function completePendingGoogleOAuthAction(input: {
+  turnstileToken?: string;
+}): Promise<AuthResult> {
+  const ip = await getClientIp();
+  const turnstile = await requireTurnstileToken(input.turnstileToken, ip);
+  if (!turnstile.ok) {
+    return { ok: false, error: turnstile.error };
+  }
+
+  const { cookies, headers } = await import("next/headers");
+  const { completeOAuthSignIn } = await import("@/app/lib/auth/oauth-session");
+  const { parsePendingOAuthSignIn, OAUTH_PENDING_SIGNIN_COOKIE } = await import(
+    "@/app/lib/auth/oauth-turnstile"
+  );
+  const { resolveOAuthOrigin } = await import("@/app/lib/auth/oauth-origin");
+
+  const cookieStore = await cookies();
+  const pending = parsePendingOAuthSignIn(
+    cookieStore.get(OAUTH_PENDING_SIGNIN_COOKIE)?.value,
+  );
+  if (!pending) {
+    return { ok: false, error: "errors.auth_turnstile_failed" };
+  }
+
+  const headerStore = await headers();
+  const forwardedHost = headerStore.get("x-forwarded-host")?.split(",")[0]?.trim();
+  const host = forwardedHost || headerStore.get("host") || "";
+  const proto = headerStore.get("x-forwarded-proto")?.split(",")[0]?.trim() || "https";
+  const origin = resolveOAuthOrigin(host ? `${proto}://${host}` : "") ||
+    process.env.NEXT_PUBLIC_SITE_URL?.trim() ||
+    "";
+  if (!origin) {
+    return { ok: false, error: "errors.auth_turnstile_failed" };
+  }
+
+  const cookieHeader = cookieStore
+    .getAll()
+    .map((item) => `${item.name}=${item.value}`)
+    .join("; ");
+  const request = new Request(`${origin}/login`, {
+    headers: cookieHeader ? { cookie: cookieHeader } : undefined,
+  });
+  const response = await completeOAuthSignIn(request, {
+    origin,
+    next: pending.next,
+    errorPage: pending.errorPage === "plugin" ? "login" : pending.errorPage,
+    profile: {
+      email: pending.email,
+      name: pending.name,
+      givenName: pending.givenName,
+      familyName: pending.familyName,
+      avatarUrl: pending.avatarUrl,
+      provider: "google",
+    },
+    turnstileAlreadyVerified: true,
+    allowPendingRedirect: false,
+  });
+
+  const location = response.headers.get("location") ?? pending.next;
+  try {
+    const url = new URL(location, origin);
+    const error = url.searchParams.get("error");
+    if (error) {
+      if (error === "account_exists") {
+        return { ok: false, error: "errors.auth_account_exists" };
+      }
+      if (error === "turnstile") {
+        return { ok: false, error: "errors.auth_turnstile_failed" };
+      }
+      return { ok: false, error: "auth.google.failed" };
+    }
+    return { ok: true, next: getSafeRedirectPath(`${url.pathname}${url.search}`) };
+  } catch {
+    return { ok: true, next: getSafeRedirectPath(pending.next) };
+  }
 }

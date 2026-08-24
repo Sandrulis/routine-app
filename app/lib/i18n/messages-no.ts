@@ -131,6 +131,8 @@ export const no: Record<string, string> = {
   "auth.signup.terms_required": "Godta vilkårene for å registrere deg.",
   "auth.signup.success": "Konto opprettet. Velkommen til {SYSTEM_NAME}.",
   "auth.signup.check_email": "Sjekk e-posten din for å bekrefte kontoen.",
+  "auth.turnstile.modal_title": "Bot check",
+  "auth.turnstile.google_pending": "To continue with Google without a team, confirm you are not a robot.",
   "auth.confirm.loading": "Fullfører bekreftelsen…",
   "auth.confirm.failed_title": "Bekreftelsen mislyktes",
   "auth.confirm.failed": "Denne lenken er utløpt eller ugyldig. Be om en ny e-post og åpne den i samme nettleser.",

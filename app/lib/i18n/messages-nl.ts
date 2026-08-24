@@ -131,6 +131,8 @@ export const nl: Record<string, string> = {
   "auth.signup.terms_required": "Accepteer de voorwaarden om te registreren.",
   "auth.signup.success": "Account aangemaakt. Welkom bij {SYSTEM_NAME}.",
   "auth.signup.check_email": "Controleer je e-mail om het account te bevestigen.",
+  "auth.turnstile.modal_title": "Bot check",
+  "auth.turnstile.google_pending": "To continue with Google without a team, confirm you are not a robot.",
   "auth.confirm.loading": "Bevestiging afronden…",
   "auth.confirm.failed_title": "Bevestiging mislukt",
   "auth.confirm.failed": "Deze link is verlopen of ongeldig. Vraag een nieuwe e-mail aan en open die in dezelfde browser.",

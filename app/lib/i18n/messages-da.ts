@@ -131,6 +131,8 @@ export const da: Record<string, string> = {
   "auth.signup.terms_required": "Acceptér vilkårene for at oprette en konto.",
   "auth.signup.success": "Konto oprettet. Velkommen til {SYSTEM_NAME}.",
   "auth.signup.check_email": "Tjek din e-mail for at bekræfte kontoen.",
+  "auth.turnstile.modal_title": "Bot check",
+  "auth.turnstile.google_pending": "To continue with Google without a team, confirm you are not a robot.",
   "auth.confirm.loading": "Afslutter bekræftelse…",
   "auth.confirm.failed_title": "Bekræftelse mislykkedes",
   "auth.confirm.failed": "Dette link er udløbet eller ugyldigt. Anmod om en ny e-mail, og åbn den i den samme browser.",

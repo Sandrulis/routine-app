@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import {
   authCardClassName,
   authInputClassName,
@@ -11,6 +11,7 @@ import {
 } from "@/app/components/auth-form-styles";
 import { useFeedbackToast } from "@/app/components/feedback-toast-provider";
 import { AuthDivider, GoogleAuthButton, MicrosoftAuthButton } from "@/app/components/google-auth-button";
+import { OAuthPendingTurnstileModal } from "@/app/components/oauth-pending-turnstile";
 import {
   RememberMeCheckbox,
   useRememberMe,
@@ -20,10 +21,6 @@ import { useTranslations } from "@/app/components/translations-provider";
 import { signInWithPasswordAction } from "@/app/lib/auth/actions";
 import { translateActionError } from "@/app/lib/i18n/action-errors";
 import { getSafeRedirectPath } from "@/app/lib/security/safe-redirect-path";
-import {
-  TurnstileWidget,
-  type TurnstileWidgetHandle,
-} from "@/app/components/turnstile-widget";
 
 export function LoginForm({
   googleSignInEnabled = false,
@@ -40,19 +37,26 @@ export function LoginForm({
   const router = useRouter();
   const { showFeedback, clearFeedback } = useFeedbackToast();
   const searchParams = useSearchParams();
-  const turnstileRef = useRef<TurnstileWidgetHandle>(null);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [pending, setPending] = useState(false);
   const { remember, updateRemember } = useRememberMe();
   const oauthEnabled = googleSignInEnabled || microsoftSignInEnabled;
   const oauthReturnPath = getSafeRedirectPath(searchParams.get("next"));
-  const turnstileRequired = Boolean(turnstileSiteKey);
-  const showTurnstile =
-    turnstileRequired && (emailPasswordEnabled || oauthEnabled);
+  const googlePending = searchParams.get("pending") === "google";
+  const [turnstileModalOpen, setTurnstileModalOpen] = useState(false);
 
-  function getTurnstileToken() {
-    return turnstileRef.current?.getToken() ?? null;
+  useEffect(() => {
+    if (googlePending && turnstileSiteKey) {
+      setTurnstileModalOpen(true);
+    }
+  }, [googlePending, turnstileSiteKey]);
+
+  function clearPendingQuery() {
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete("pending");
+    const query = params.toString();
+    router.replace(query ? `/login?${query}` : "/login");
   }
 
   useEffect(() => {
@@ -97,10 +101,9 @@ export function LoginForm({
         type: "error",
         text: t(
           "errors.auth_turnstile_failed",
-          "Robotu pārbaude neizdevās. Mēģini vēlreiz.",
+          "Botu pārbaude neizdevās. Mēģini vēlreiz.",
         ),
       });
-      turnstileRef.current?.reset();
     }
   }, [searchParams, showFeedback, t]);
 
@@ -108,23 +111,12 @@ export function LoginForm({
     event.preventDefault();
     if (!emailPasswordEnabled) return;
     clearFeedback();
-    if (turnstileRequired && !getTurnstileToken()) {
-      showFeedback({
-        type: "error",
-        text: t(
-          "errors.auth_turnstile_required",
-          "Apstiprini, ka neesi robots, pirms turpini.",
-        ),
-      });
-      return;
-    }
     setPending(true);
     const next = getSafeRedirectPath(searchParams.get("next"));
     const result = await signInWithPasswordAction({
       email,
       password,
       next,
-      turnstileToken: getTurnstileToken() ?? undefined,
     });
     setPending(false);
     if (!result.ok) {
@@ -132,7 +124,6 @@ export function LoginForm({
         type: "error",
         text: translateActionError(t, result.error),
       });
-      turnstileRef.current?.reset();
       return;
     }
     if (!result.needsMfa) {
@@ -153,8 +144,6 @@ export function LoginForm({
           rememberMe={remember}
           returnPath={oauthReturnPath}
           errorPage="login"
-          getTurnstileToken={getTurnstileToken}
-          turnstileRequired={turnstileRequired}
         />
       ) : null}
       {microsoftSignInEnabled ? (
@@ -163,109 +152,115 @@ export function LoginForm({
           rememberMe={remember}
           returnPath={oauthReturnPath}
           errorPage="login"
-          getTurnstileToken={getTurnstileToken}
-          turnstileRequired={turnstileRequired}
         />
       ) : null}
     </div>
   ) : null;
 
   return (
-    <form onSubmit={handleSubmit} className={`${authCardClassName} space-y-4`}>
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight text-zinc-900">
-          {t("auth.login.title", "Ienākt")}
-        </h1>
-        <p className="mt-1 text-sm text-zinc-500">
-          {t("auth.login.subtitle", "Pieslēdzies savam {SYSTEM_NAME} kontam.")}
-        </p>
-      </div>
-
-      {emailPasswordEnabled ? (
-        <>
-          <label className="block">
-            <span className="text-sm font-semibold text-zinc-700">
-              {t("common.email", "E-pasts")}
-            </span>
-            <input
-              required
-              type="email"
-              autoComplete="email"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              placeholder={t("auth.fields.email_placeholder", "vards@uznemums.lv")}
-              className={authInputClassName}
-            />
-          </label>
-
-          <label className="block">
-            <span className="text-sm font-semibold text-zinc-700">
-              {t("auth.fields.password", "Parole")}
-            </span>
-            <PasswordInput
-              required
-              autoComplete="current-password"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              className="mt-2"
-              inputClassName={authInputFieldClassName}
-            />
-          </label>
-        </>
-      ) : null}
-
-      {!emailPasswordEnabled && !oauthEnabled ? (
-        <p className="text-sm text-zinc-500">
-          {t(
-            "auth.email.unavailable",
-            "Neviena ienākšanas metode nav ieslēgta. Adminā jābūt aktīvai Resend (e-pasts) vai Google / Microsoft OAuth integrācijai.",
-          )}
-        </p>
-      ) : null}
-
-      {emailPasswordEnabled ? (
-        <>
-          <RememberMeCheckbox checked={remember} onChange={updateRemember} />
-          <div className="flex justify-end">
-            <Link
-              href="/forgot-password"
-              className="text-sm font-medium text-zinc-500 transition hover:text-zinc-900"
-            >
-              {t("auth.login.forgot", "Aizmirsi paroli?")}
-            </Link>
-          </div>
-
-          {showTurnstile && turnstileSiteKey ? (
-            <TurnstileWidget ref={turnstileRef} siteKey={turnstileSiteKey} />
-          ) : null}
-
-          <button
-            type="submit"
-            disabled={pending}
-            className={authPrimaryButtonClassName}
-          >
+    <>
+      <form onSubmit={handleSubmit} className={`${authCardClassName} space-y-4`}>
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight text-zinc-900">
             {t("auth.login.title", "Ienākt")}
-          </button>
-        </>
-      ) : null}
+          </h1>
+          <p className="mt-1 text-sm text-zinc-500">
+            {t("auth.login.subtitle", "Pieslēdzies savam {SYSTEM_NAME} kontam.")}
+          </p>
+        </div>
 
-      {emailPasswordEnabled && oauthEnabled ? <AuthDivider /> : null}
-      {!emailPasswordEnabled && showTurnstile && turnstileSiteKey ? (
-        <TurnstileWidget ref={turnstileRef} siteKey={turnstileSiteKey} />
-      ) : null}
-      {oauthButtons}
+        {emailPasswordEnabled ? (
+          <>
+            <label className="block">
+              <span className="text-sm font-semibold text-zinc-700">
+                {t("common.email", "E-pasts")}
+              </span>
+              <input
+                required
+                type="email"
+                autoComplete="email"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                placeholder={t("auth.fields.email_placeholder", "vards@uznemums.lv")}
+                className={authInputClassName}
+              />
+            </label>
 
-      {emailPasswordEnabled ? (
-        <p className="text-center text-sm text-zinc-500">
-          {t("auth.login.no_account", "Nav konta?")}{" "}
-          <Link
-            href="/signup"
-            className="font-semibold text-zinc-900 underline decoration-zinc-300 underline-offset-2"
-          >
-            {t("auth.signup.title", "Reģistrēties")}
-          </Link>
-        </p>
+            <label className="block">
+              <span className="text-sm font-semibold text-zinc-700">
+                {t("auth.fields.password", "Parole")}
+              </span>
+              <PasswordInput
+                required
+                autoComplete="current-password"
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                className="mt-2"
+                inputClassName={authInputFieldClassName}
+              />
+            </label>
+          </>
+        ) : null}
+
+        {!emailPasswordEnabled && !oauthEnabled ? (
+          <p className="text-sm text-zinc-500">
+            {t(
+              "auth.email.unavailable",
+              "Neviena ienākšanas metode nav ieslēgta. Adminā jābūt aktīvai Resend (e-pasts) vai Google / Microsoft OAuth integrācijai.",
+            )}
+          </p>
+        ) : null}
+
+        {emailPasswordEnabled ? (
+          <>
+            <RememberMeCheckbox checked={remember} onChange={updateRemember} />
+            <div className="flex justify-end">
+              <Link
+                href="/forgot-password"
+                className="text-sm font-medium text-zinc-500 transition hover:text-zinc-900"
+              >
+                {t("auth.login.forgot", "Aizmirsi paroli?")}
+              </Link>
+            </div>
+
+            <button
+              type="submit"
+              disabled={pending}
+              className={authPrimaryButtonClassName}
+            >
+              {t("auth.login.title", "Ienākt")}
+            </button>
+          </>
+        ) : null}
+
+        {emailPasswordEnabled && oauthEnabled ? <AuthDivider /> : null}
+        {oauthButtons}
+
+        {emailPasswordEnabled ? (
+          <p className="text-center text-sm text-zinc-500">
+            {t("auth.login.no_account", "Nav konta?")}{" "}
+            <Link
+              href="/signup"
+              className="font-semibold text-zinc-900 underline decoration-zinc-300 underline-offset-2"
+            >
+              {t("auth.signup.title", "Reģistrēties")}
+            </Link>
+          </p>
+        ) : null}
+      </form>
+
+      {turnstileSiteKey ? (
+        <OAuthPendingTurnstileModal
+          open={turnstileModalOpen}
+          siteKey={turnstileSiteKey}
+          onOpenChange={(open) => {
+            setTurnstileModalOpen(open);
+            if (!open && googlePending) {
+              clearPendingQuery();
+            }
+          }}
+        />
       ) : null}
-    </form>
+    </>
   );
 }

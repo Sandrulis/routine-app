@@ -131,6 +131,8 @@ export const et: Record<string, string> = {
   "auth.signup.terms_required": "Registreerumiseks nõustu tingimustega.",
   "auth.signup.success": "Konto loodud. Tere tulemast {SYSTEM_NAME}i.",
   "auth.signup.check_email": "Kontrolli e-posti, et konto kinnitada.",
+  "auth.turnstile.modal_title": "Bot check",
+  "auth.turnstile.google_pending": "To continue with Google without a team, confirm you are not a robot.",
   "auth.confirm.loading": "Kinnitamine lõpetatakse…",
   "auth.confirm.failed_title": "Kinnitamine ebaõnnestus",
   "auth.confirm.failed": "See link on aegunud või kehtetu. Palu uus e-kiri ja ava see samas brauseris.",

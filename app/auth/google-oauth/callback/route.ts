@@ -30,6 +30,10 @@ import {
 import { requestClientIp } from "@/app/lib/security/client-ip";
 import { consumeRateLimit } from "@/app/lib/security/rate-limit";
 import { createClient } from "@/app/lib/supabase/server";
+import {
+  OAUTH_TURNSTILE_TOKEN_COOKIE,
+  oauthTurnstileCookieOptions,
+} from "@/app/lib/auth/oauth-turnstile";
 
 function redirectToIntegrationsPage(origin: string, query: Record<string, string>) {
   const url = new URL(GOOGLE_OAUTH_ADMIN_PAGE_PATH, origin);
@@ -42,6 +46,10 @@ function redirectToIntegrationsPage(origin: string, query: Record<string, string
 function clearOAuthCookie(response: NextResponse) {
   response.cookies.set(GOOGLE_OAUTH_OAUTH_COOKIE, "", {
     ...googleOAuthConfigureCookieOptions(0),
+    maxAge: 0,
+  });
+  response.cookies.set(OAUTH_TURNSTILE_TOKEN_COOKIE, "", {
+    ...oauthTurnstileCookieOptions(0),
     maxAge: 0,
   });
   return response;
@@ -76,9 +84,12 @@ async function handleLogin(request: Request, origin: string, code: string) {
     profile: {
       email: profile.email,
       name: profile.name,
+      givenName: profile.givenName,
+      familyName: profile.familyName,
       avatarUrl: profile.avatarUrl,
       provider: "google",
     },
+    turnstileToken: cookieStore.get(OAUTH_TURNSTILE_TOKEN_COOKIE)?.value,
   });
   return clearOAuthCookie(response);
 }

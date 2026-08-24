@@ -4,6 +4,11 @@
 
 - (none)
 
+## v0.2.31
+
+- Google bez komandas: Turnstile botu pārbaude modālī (ne formā); labots vienreizējā tokena dubultā verify
+- Google/Microsoft OAuth: vārds un uzvārds no profila (`given_name` / `family_name`) lietotāja profilā
+
 ## v0.2.30
 
 - Maksas plāni: `max_members`, komandas plāna piešķiršana `/admin/teams`, moduļu ierobežojums pēc aktīvā plāna (ieslēgtiem plāniem)

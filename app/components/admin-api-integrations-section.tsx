@@ -303,7 +303,7 @@ export function AdminApiIntegrationsSection({
           <p className="text-xs text-zinc-500">
             {t(
               "integrations.turnstile.hint",
-              "Kad integrācija ir aktīva, login, reģistrācija, paroles atjaunošana un OAuth prasa Cloudflare Turnstile pārbaudi.",
+              "Kad integrācija ir aktīva, e-pasta reģistrācija un Google ienākšana bez komandas prasa Cloudflare Turnstile pārbaudi.",
             )}
           </p>
           {renderFooter("turnstile", credentialsDirty)}
@@ -606,7 +606,7 @@ export function AdminApiIntegrationsSection({
         title={t("integrations.turnstile.title", "Cloudflare Turnstile")}
         description={t(
           "integrations.turnstile.description",
-          "Botu pārbaude login, reģistrācijā un OAuth plūsmās.",
+          "Botu pārbaude e-pasta reģistrācijā un Google ienākšanā, ja vēl nav komandas.",
         )}
         configured={turnstile.status.configured}
         expanded={turnstile.expanded}

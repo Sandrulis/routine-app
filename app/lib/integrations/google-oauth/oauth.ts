@@ -108,16 +108,31 @@ export async function fetchGoogleOAuthUserInfo(accessToken: string) {
   const data = (await response.json().catch(() => null)) as {
     email?: string;
     name?: string;
+    given_name?: string;
+    family_name?: string;
     picture?: string;
     verified_email?: boolean;
   } | null;
   if (!response.ok || !data?.verified_email) {
-    return { email: "", name: "", avatarUrl: "" };
+    return {
+      email: "",
+      name: "",
+      givenName: "",
+      familyName: "",
+      avatarUrl: "",
+    };
   }
+  const givenName = data.given_name?.trim() ?? "";
+  const familyName = data.family_name?.trim() ?? "";
+  const name =
+    data.name?.trim() ||
+    [givenName, familyName].filter(Boolean).join(" ");
   return {
-    email: data?.email?.trim() ?? "",
-    name: data?.name?.trim() ?? "",
-    avatarUrl: data?.picture?.trim() ?? "",
+    email: data.email?.trim() ?? "",
+    name,
+    givenName,
+    familyName,
+    avatarUrl: data.picture?.trim() ?? "",
   };
 }
 

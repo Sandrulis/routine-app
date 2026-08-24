@@ -132,6 +132,8 @@ export const es: Record<string, string> = {
   "auth.signup.terms_required": "Acepta los términos para registrarte.",
   "auth.signup.success": "Cuenta creada. Te damos la bienvenida a {SYSTEM_NAME}.",
   "auth.signup.check_email": "Revisa tu correo electrónico para confirmar la cuenta.",
+  "auth.turnstile.modal_title": "Bot check",
+  "auth.turnstile.google_pending": "To continue with Google without a team, confirm you are not a robot.",
   "auth.confirm.loading": "Terminando la confirmación…",
   "auth.confirm.failed_title": "La confirmación ha fallado",
   "auth.confirm.failed": "Este enlace ha caducado o no es válido. Pide un correo nuevo y ábrelo en el mismo navegador.",

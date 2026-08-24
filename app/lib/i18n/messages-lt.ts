@@ -131,6 +131,8 @@ export const lt: Record<string, string> = {
   "auth.signup.terms_required": "Norėdami registruotis, sutikite su sąlygomis.",
   "auth.signup.success": "Paskyra sukurta. Sveiki atvykę į {SYSTEM_NAME}.",
   "auth.signup.check_email": "Patikrinkite el. paštą, kad patvirtintumėte paskyrą.",
+  "auth.turnstile.modal_title": "Bot check",
+  "auth.turnstile.google_pending": "To continue with Google without a team, confirm you are not a robot.",
   "auth.confirm.loading": "Baigiamas patvirtinimas…",
   "auth.confirm.failed_title": "Patvirtinti nepavyko",
   "auth.confirm.failed": "Ši nuoroda nebegalioja arba neteisinga. Paprašykite naujo laiško ir atidarykite jį toje pačioje naršyklėje.",

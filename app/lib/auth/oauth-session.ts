@@ -19,13 +19,88 @@ import {
 } from "@/app/lib/supabase/env";
 import { parseCookieHeader } from "@/app/lib/http/parse-cookie-header";
 import { ensureCurrentUserProfile } from "@/app/lib/users/ensure-profile";
+import { findAuthUserByEmailExact } from "@/app/lib/auth/find-auth-user-by-email";
+import { userHasTeam } from "@/app/lib/auth/user-has-team";
+import { requireTurnstileToken } from "@/app/lib/security/turnstile";
+import { requestClientIp } from "@/app/lib/security/client-ip";
+import {
+  OAUTH_PENDING_SIGNIN_COOKIE,
+  OAUTH_TURNSTILE_TOKEN_COOKIE,
+  oauthTurnstileCookieOptions,
+  serializePendingOAuthSignIn,
+} from "@/app/lib/auth/oauth-turnstile";
+import {
+  joinDisplayName,
+  splitDisplayName,
+} from "@/app/lib/users/display-name";
 
 export type OAuthSignInProfile = {
   email: string;
   name: string;
+  givenName?: string;
+  familyName?: string;
   avatarUrl: string;
   provider: "google" | "microsoft";
 };
+
+function resolveOAuthPersonalNames(profile: OAuthSignInProfile) {
+  let givenName = profile.givenName?.trim() ?? "";
+  let familyName = profile.familyName?.trim() ?? "";
+  if (!givenName && !familyName) {
+    const split = splitDisplayName(profile.name);
+    givenName = split.firstName;
+    familyName = split.lastName;
+  }
+  const fullName =
+    joinDisplayName(givenName, familyName) ||
+    profile.name.trim() ||
+    profile.email.trim().split("@")[0] ||
+    profile.email.trim();
+  return { givenName, familyName, fullName };
+}
+
+function buildOAuthUserMetadata(
+  profile: OAuthSignInProfile,
+  existing?: Record<string, unknown> | null,
+) {
+  const resolved = resolveOAuthPersonalNames(profile);
+  const existingGiven =
+    typeof existing?.given_name === "string" ? existing.given_name.trim() : "";
+  const existingFamily =
+    typeof existing?.family_name === "string" ? existing.family_name.trim() : "";
+  const existingName =
+    typeof existing?.name === "string"
+      ? existing.name.trim()
+      : typeof existing?.full_name === "string"
+        ? existing.full_name.trim()
+        : "";
+  const avatarUrl =
+    profile.avatarUrl.trim() ||
+    (typeof existing?.avatar_url === "string" ? existing.avatar_url.trim() : "") ||
+    (typeof existing?.picture === "string" ? existing.picture.trim() : "");
+
+  const next: Record<string, unknown> = {
+    ...(existing ?? {}),
+    avatar_url: avatarUrl,
+    picture: avatarUrl,
+    provider: profile.provider,
+  };
+
+  if (!existingGiven && !existingFamily) {
+    const split = existingName
+      ? splitDisplayName(existingName)
+      : { firstName: resolved.givenName, lastName: resolved.familyName };
+    next.given_name = split.firstName || resolved.givenName;
+    next.family_name = split.lastName || resolved.familyName;
+  }
+
+  if (!existingName) {
+    next.name = resolved.fullName;
+    next.full_name = resolved.fullName;
+  }
+
+  return next;
+}
 
 function isExistingUserError(message: string) {
   const normalized = message.toLowerCase();
@@ -53,13 +128,7 @@ function oauthProviderMatches(
 async function findOrCreateOAuthUser(profile: OAuthSignInProfile) {
   const admin = createAdminClient();
   const email = profile.email.trim().toLowerCase();
-  const metadata = {
-    name: profile.name,
-    full_name: profile.name,
-    avatar_url: profile.avatarUrl,
-    picture: profile.avatarUrl,
-    provider: profile.provider,
-  };
+  const metadata = buildOAuthUserMetadata(profile);
 
   const created = await admin.auth.admin.createUser({
     email,
@@ -73,7 +142,11 @@ async function findOrCreateOAuthUser(profile: OAuthSignInProfile) {
   });
 
   if (created.data.user) {
-    return { ok: true as const, userId: created.data.user.id };
+    return {
+      ok: true as const,
+      userId: created.data.user.id,
+      fullName: resolveOAuthPersonalNames(profile).fullName,
+    };
   }
 
   if (!created.error || !isExistingUserError(created.error.message)) {
@@ -94,11 +167,21 @@ async function findOrCreateOAuthUser(profile: OAuthSignInProfile) {
     return { ok: false as const, reason: "account_exists" as const };
   }
 
+  const merged = buildOAuthUserMetadata(
+    profile,
+    (data.user.user_metadata ?? null) as Record<string, unknown> | null,
+  );
   await admin.auth.admin.updateUserById(data.user.id, {
-    user_metadata: metadata,
+    user_metadata: merged,
   });
 
-  return { ok: true as const, userId: data.user.id };
+  return {
+    ok: true as const,
+    userId: data.user.id,
+    fullName:
+      (typeof merged.name === "string" && merged.name.trim()) ||
+      resolveOAuthPersonalNames(profile).fullName,
+  };
 }
 
 export function oauthSignInErrorRedirect(
@@ -126,6 +209,10 @@ export async function completeOAuthSignIn(
     next: string;
     errorPage: OAuthLoginErrorPage;
     profile: OAuthSignInProfile;
+    turnstileToken?: string;
+    /** Token already verified once (Turnstile tokens are single-use). */
+    turnstileAlreadyVerified?: boolean;
+    allowPendingRedirect?: boolean;
   },
 ) {
   const email = input.profile.email.trim().toLowerCase();
@@ -139,10 +226,68 @@ export async function completeOAuthSignIn(
   const env = getSupabasePublicEnv();
   if (!env) return fail();
 
+  const needsGoogleTurnstile =
+    input.profile.provider === "google" &&
+    input.errorPage !== "plugin" &&
+    !input.turnstileAlreadyVerified;
+  if (needsGoogleTurnstile) {
+    const existing = await findAuthUserByEmailExact(email);
+    const hasTeam = existing ? await userHasTeam(existing.id) : false;
+    if (!hasTeam) {
+      const turnstile = await requireTurnstileToken(
+        input.turnstileToken,
+        requestClientIp(request),
+      );
+      if (!turnstile.ok) {
+        if (input.allowPendingRedirect === false) {
+          return oauthSignInErrorRedirect(
+            input.origin,
+            input.errorPage === "plugin" ? "login" : input.errorPage,
+            "google",
+            "turnstile",
+          );
+        }
+        const pending = serializePendingOAuthSignIn({
+          profile: { ...input.profile, email },
+          next: input.next,
+          errorPage: input.errorPage,
+        });
+        if (!pending) {
+          return oauthSignInErrorRedirect(
+            input.origin,
+            input.errorPage === "plugin" ? "login" : input.errorPage,
+            "google",
+            "turnstile",
+          );
+        }
+        const path = input.errorPage === "signup" ? "/signup" : "/login";
+        const redirect = NextResponse.redirect(
+          new URL(`${path}?pending=google`, input.origin),
+        );
+        redirect.cookies.set(
+          OAUTH_PENDING_SIGNIN_COOKIE,
+          pending,
+          oauthTurnstileCookieOptions(600),
+        );
+        redirect.cookies.set(OAUTH_TURNSTILE_TOKEN_COOKIE, "", {
+          ...oauthTurnstileCookieOptions(0),
+          maxAge: 0,
+        });
+        return redirect;
+      }
+    }
+  }
+
+  const resolvedNames = resolveOAuthPersonalNames({
+    ...input.profile,
+    email,
+  });
   const prepared = await findOrCreateOAuthUser({
     ...input.profile,
     email,
-    name: input.profile.name.trim() || email.split("@")[0] || email,
+    name: resolvedNames.fullName,
+    givenName: resolvedNames.givenName,
+    familyName: resolvedNames.familyName,
   });
   if (!prepared.ok) {
     if (prepared.reason === "account_exists") {
@@ -215,6 +360,41 @@ export async function completeOAuthSignIn(
   await ensureCurrentUserProfile(
     supabase as unknown as Parameters<typeof ensureCurrentUserProfile>[0],
   );
+
+  try {
+    const { data: profileRow } = await admin
+      .from("users")
+      .select("name")
+      .eq("id", prepared.userId)
+      .maybeSingle();
+    const currentName = String(profileRow?.name ?? "").trim();
+    const emailLocal = email.split("@")[0] || email;
+    if (
+      !currentName ||
+      currentName.toLowerCase() === email.toLowerCase() ||
+      currentName.toLowerCase() === emailLocal.toLowerCase()
+    ) {
+      await admin
+        .from("users")
+        .update({ name: prepared.fullName })
+        .eq("id", prepared.userId);
+    }
+  } catch (error) {
+    logError(
+      "OAuth profile name sync failed",
+      error instanceof Error ? error.message : String(error),
+    );
+  }
+
+  const clearOpts = { ...oauthTurnstileCookieOptions(0), maxAge: 0 };
+  redirectResponse.cookies.set(OAUTH_PENDING_SIGNIN_COOKIE, "", clearOpts);
+  redirectResponse.cookies.set(OAUTH_TURNSTILE_TOKEN_COOKIE, "", clearOpts);
+  try {
+    cookieStore.set(OAUTH_PENDING_SIGNIN_COOKIE, "", clearOpts);
+    cookieStore.set(OAUTH_TURNSTILE_TOKEN_COOKIE, "", clearOpts);
+  } catch {
+    // Redirect response still carries Set-Cookie.
+  }
 
   return redirectResponse;
 }
