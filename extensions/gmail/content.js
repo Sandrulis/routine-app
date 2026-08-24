@@ -43,7 +43,7 @@
   "errors.extension_gmail_client_id":
     "Iestati Gmail OAuth Client ID paplašinājuma opcijās.",
   "errors.extension_gmail_auth":
-    "Atļauj Gmail piekļuvi: opcijās → Savienot Gmail.",
+    "Gmail atļauja novecojusi. Spraudnī → Savienot Gmail (atjauno OAuth).",
   "errors.extension_gmail_fetch_failed": "Neizdevās ielādēt e-pastu no Gmail API.",
   "errors.extension_gmail_forbidden":
     "Gmail API liegts: ieslēdz Gmail API Google Cloud projektā un atkārtoti Savienot Gmail (scope gmail.readonly).",
@@ -52,6 +52,8 @@
   "errors.extension_gmail_message_id":
     "Neatrada Gmail ziņas ID — atver e-pastu pilnā skatā.",
   "errors.extension_unknown": "Nezināma kļūda.",
+  "errors.extension_network":
+    "Neizdevās savienoties ar serveri. Pārbaudi internetu un mēģini vēlreiz.",
   "errors.extension_context_invalidated":
     "Spraudnis tika pārstartēts. Pārlādē Gmail cilni (F5) un mēģini vēlreiz.",
   "extension.gmail.title": "Pievienot apakšuzdevumam",
@@ -63,9 +65,15 @@
   "extension.gmail.step_items_folder": "2. Izvēlies mapi vai uzdevumu mapē",
   "extension.gmail.step_subtasks": "3. Izvēlies apakšuzdevumu",
   "extension.gmail.attachments": "Pielikumi",
+  "extension.gmail.attachments_loading": "Ielādē pielikumus…",
+  "extension.gmail.attachments_empty": "Nav atsevišķu pielikumu.",
+  "extension.gmail.attachments_failed": "Neizdevās ielādēt pielikumus.",
+  "extension.gmail.attachments_retry": "Mēģināt vēlreiz",
   "extension.gmail.uncheck_all": "Noņemt visus",
   "extension.gmail.check_all": "Atzīmēt visus",
-  "extension.gmail.email_always": "E-pasta saturs (.txt) tiek pievienots vienmēr.",
+  "extension.gmail.email_always": "E-pasta saturs (.txt) ir izvēles iespēja.",
+  "extension.gmail.email_body": "E-pasta saturs (.txt)",
+  "extension.gmail.email_body_hint": "Atzīmē, ja vēlies pievienot arī e-pasta tekstu.",
   "extension.gmail.too_large": "{size} — pārāk liels (>25 MB)",
   "extension.gmail.empty": "Šeit nav ierakstu",
   "extension.gmail.load_lists": "Ielādē sarakstus…",
@@ -87,6 +95,7 @@
   "extension.gmail.login_failed": "Neizdevās ienākt.",
   "extension.gmail.options.connecting": "Atveras Google atļauju logs…",
   "extension.gmail.connect_gmail": "Savienot Gmail",
+  "extension.gmail.reconnect_gmail": "Atjaunot Gmail savienojumu",
   "extension.gmail.add_to_routine": "Pievienot TASQIN",
   "extension.gmail.loading_gmail": "Ielādē e-pastu un pielikumus no Gmail…",
   "extension.gmail.progress_email": "Ielādē e-pastu no Gmail…",
@@ -128,6 +137,13 @@ function applySessionI18n(data) {
 function tError(key) {
   if (!key) return t("errors.extension_unknown");
   if (key === "errors.auth_required") return t("errors.extension_auth_required");
+  if (
+    /failed to fetch|networkerror|network request failed|load failed|fetch failed/i.test(
+      String(key),
+    )
+  ) {
+    return t("errors.extension_network");
+  }
   return t(key);
 }
 
@@ -228,43 +244,62 @@ function findOpenMessageRoot() {
   return document.querySelector('div[role="main"]');
 }
 
+function attrOf(el, names) {
+  if (!el) return "";
+  for (const name of names) {
+    const value = el.getAttribute(name)?.trim();
+    if (value) return value;
+  }
+  return "";
+}
+
+function normalizeGmailApiId(raw) {
+  const value = String(raw || "").trim();
+  if (!value) return "";
+  // Gmail DOM sometimes uses "#msg-f:…" / "#msg-a:…" wrappers.
+  const stripped = value.replace(/^#?msg-[af]:/i, "").trim();
+  if (/^[a-zA-Z0-9_-]{6,}$/.test(stripped)) return stripped;
+  return "";
+}
+
 function getGmailIds() {
   const root = findOpenMessageRoot() || document;
 
-  const messageId =
+  const messageEl =
     firstMatch(root, [
       "[data-legacy-message-id]",
-      "[data-message-id][data-legacy-message-id]",
-    ])
-      ?.getAttribute("data-legacy-message-id")
-      ?.trim() ||
+      "[data-message-id]",
+    ]) ||
+    firstMatch(document, [
+      "div[role='main'] [data-legacy-message-id]",
+      "div[role='main'] [data-message-id]",
+      "[data-legacy-message-id]",
+    ]);
+
+  let messageId =
+    normalizeGmailApiId(attrOf(messageEl, ["data-legacy-message-id"])) ||
     [...document.querySelectorAll("[data-legacy-message-id]")]
-      .map((el) => el.getAttribute("data-legacy-message-id")?.trim())
+      .map((el) => normalizeGmailApiId(el.getAttribute("data-legacy-message-id")))
       .find(Boolean) ||
+    normalizeGmailApiId(attrOf(messageEl, ["data-message-id"])) ||
     "";
 
-  let threadId =
-    firstMatch(root, [
-      "[data-legacy-thread-id]",
-      "h2[data-legacy-thread-id]",
-      "h2[data-thread-perm-id]",
-    ])
-      ?.getAttribute("data-legacy-thread-id")
-      ?.trim() ||
-    firstMatch(root, ["h2[data-thread-perm-id]"])
-      ?.getAttribute("data-thread-perm-id")
-      ?.trim() ||
+  const threadEl =
     firstMatch(document, [
       "h2[data-legacy-thread-id]",
       "h2[data-thread-perm-id]",
       "[data-legacy-thread-id]",
-    ])
-      ?.getAttribute("data-legacy-thread-id")
-      ?.trim() ||
-    firstMatch(document, ["h2[data-thread-perm-id]"])
-      ?.getAttribute("data-thread-perm-id")
-      ?.trim() ||
-    "";
+      "[data-thread-perm-id]",
+    ]) ||
+    firstMatch(root, [
+      "[data-legacy-thread-id]",
+      "[data-thread-perm-id]",
+    ]);
+
+  let threadId =
+    normalizeGmailApiId(
+      attrOf(threadEl, ["data-legacy-thread-id", "data-thread-perm-id"]),
+    ) || "";
 
   if (!threadId) {
     const hash = location.hash || "";
@@ -307,7 +342,7 @@ function scrapeEmailFallback() {
 
 function ensureUi() {
   const existing = document.getElementById("routine-gmail-root");
-  if (existing?.dataset?.routineUi === "6") {
+  if (existing?.dataset?.routineUi === "11") {
     existing.querySelector("#routine-gmail-fab")?.remove();
     return;
   }
@@ -315,7 +350,7 @@ function ensureUi() {
 
   const root = document.createElement("div");
   root.id = "routine-gmail-root";
-  root.dataset.routineUi = "6";
+  root.dataset.routineUi = "11";
   root.innerHTML = `
     <div id="routine-gmail-modal" hidden>
       <div class="routine-gmail-backdrop" data-close="1"></div>
@@ -338,13 +373,13 @@ function ensureUi() {
             <ul id="routine-gmail-attach-list"></ul>
             <p class="routine-gmail-hint" id="routine-gmail-att-hint"></p>
           </section>
-          <footer>
-            <button type="button" id="routine-gmail-back" class="routine-gmail-back" hidden></button>
-            <button type="button" id="routine-gmail-attach" disabled>
-              <span class="routine-gmail-btn-label"></span>
-            </button>
-          </footer>
         </div>
+        <footer class="routine-gmail-footer">
+          <button type="button" id="routine-gmail-back" class="routine-gmail-back" hidden></button>
+          <button type="button" id="routine-gmail-attach" disabled>
+            <span class="routine-gmail-btn-label"></span>
+          </button>
+        </footer>
         <div id="routine-gmail-busy" class="routine-gmail-busy" hidden>
           <div class="routine-gmail-spinner" aria-hidden="true"></div>
           <p id="routine-gmail-busy-text" class="routine-gmail-busy-text"></p>
@@ -399,7 +434,7 @@ function ensureUi() {
     const attLabel = root.querySelector("#routine-gmail-att-label");
     if (attLabel) attLabel.textContent = t("extension.gmail.attachments");
     const attHint = root.querySelector("#routine-gmail-att-hint");
-    if (attHint) attHint.textContent = t("extension.gmail.email_always");
+    if (attHint) attHint.textContent = t("extension.gmail.email_body_hint");
     panel.setAttribute("lang", languageCode);
     for (const btn of document.querySelectorAll(`[${INLINE_BTN_ATTR}="1"]`)) {
       btn.title = t("extension.gmail.add_to_routine");
@@ -482,12 +517,88 @@ function ensureUi() {
     listedGmailMessageId = "";
     attachList.innerHTML = "";
     attachmentsSection.hidden = true;
+    attToggleBtn.hidden = true;
+    attToggleBtn.dataset.mode = "toggle";
     attToggleBtn.textContent = t("extension.gmail.uncheck_all");
   }
 
+  function showAttachmentsPlaceholder(message, options = {}) {
+    attachmentOptions = [];
+    attachmentsSection.hidden = false;
+    const reconnect = Boolean(options.reconnect);
+    const retry = Boolean(options.retry);
+    attachList.innerHTML = `<li class="routine-gmail-empty">${message}</li>`;
+    if (reconnect) {
+      const li = document.createElement("li");
+      li.className = "routine-gmail-empty";
+      const link = document.createElement("a");
+      link.href = "#";
+      link.className = "routine-gmail-reconnect";
+      link.textContent = t("extension.gmail.reconnect_gmail");
+      link.addEventListener("click", (event) => {
+        event.preventDefault();
+        void (async () => {
+          setBusy(true, t("extension.gmail.options.connecting"));
+          const result = await send("routine.connectGmail");
+          setBusy(false);
+          if (result?.ok) {
+            await loadAttachmentsList();
+            return;
+          }
+          setFeedback(
+            tError(result?.error || "extension.gmail.options.connect_failed"),
+            "error",
+          );
+        })();
+      });
+      li.appendChild(link);
+      attachList.appendChild(li);
+    }
+    if (retry) {
+      attToggleBtn.hidden = false;
+      attToggleBtn.dataset.mode = "retry";
+      attToggleBtn.textContent = t("extension.gmail.attachments_retry");
+    } else {
+      attToggleBtn.hidden = true;
+      attToggleBtn.dataset.mode = "toggle";
+    }
+  }
+
+  function ensureEmailBodyOption() {
+    if (attachList.querySelector("#routine-att-email-body")) return;
+    const li = document.createElement("li");
+    li.innerHTML = `
+      <label class="routine-gmail-att-row" for="routine-att-email-body">
+        <input type="checkbox" id="routine-att-email-body" checked data-email-body="1" />
+        <span class="routine-gmail-att-meta">
+          <span class="routine-gmail-att-name"></span>
+          <span class="routine-gmail-att-size"></span>
+        </span>
+      </label>
+    `;
+    const nameEl = li.querySelector(".routine-gmail-att-name");
+    const sizeEl = li.querySelector(".routine-gmail-att-size");
+    if (nameEl) nameEl.textContent = t("extension.gmail.email_body");
+    if (sizeEl) sizeEl.textContent = ".txt";
+    li.querySelector("input")?.addEventListener("change", updateAttToggleLabel);
+    attachList.prepend(li);
+  }
+
+  function includeEmailBodySelected() {
+    const input = attachList.querySelector('input[data-email-body="1"]');
+    if (!input) return true;
+    return Boolean(input.checked);
+  }
+
   function selectedAttachments() {
-    return [...attachList.querySelectorAll('input[type="checkbox"]')]
-      .map((input, index) => ({ input, item: attachmentOptions[index] }))
+    return [...attachList.querySelectorAll('input[type="checkbox"]:not([data-email-body])')]
+      .map((input) => {
+        const id = input.dataset.attachmentId || input.value;
+        const item = attachmentOptions.find(
+          (row) => String(row.attachmentId) === String(id),
+        );
+        return { input, item };
+      })
       .filter(({ input, item }) => Boolean(item) && input.checked && !item.tooLarge)
       .map(({ item }) => ({
         attachmentId: String(item.attachmentId || ""),
@@ -504,6 +615,7 @@ function ensureUi() {
       return;
     }
     attToggleBtn.hidden = false;
+    attToggleBtn.dataset.mode = "toggle";
     const allOn = boxes.every((box) => box.checked);
     attToggleBtn.textContent = allOn
       ? t("extension.gmail.uncheck_all")
@@ -513,11 +625,12 @@ function ensureUi() {
   function renderAttachments(items) {
     attachmentOptions = items || [];
     attachList.innerHTML = "";
+    attachmentsSection.hidden = false;
+    ensureEmailBodyOption();
     if (!attachmentOptions.length) {
-      attachmentsSection.hidden = true;
+      updateAttToggleLabel();
       return;
     }
-    attachmentsSection.hidden = false;
     attachmentOptions.forEach((item, index) => {
       const li = document.createElement("li");
       const id = `routine-att-${index}`;
@@ -550,17 +663,36 @@ function ensureUi() {
   async function loadAttachmentsList() {
     resetAttachmentsUi();
     const { messageId, threadId } = getGmailIds();
-    if (!messageId && !threadId) return;
+    if (!messageId && !threadId) {
+      showAttachmentsPlaceholder(tError("errors.extension_gmail_message_id"), {
+        retry: true,
+      });
+      return;
+    }
+    showAttachmentsPlaceholder(t("extension.gmail.attachments_loading"));
     try {
       const result = await send("routine.listAttachments", {
         gmailMessageId: messageId,
         gmailThreadId: threadId,
       });
-      if (!result?.ok) return;
+      if (!result?.ok) {
+        const err = result?.error || "extension.gmail.attachments_failed";
+        const needsReconnect =
+          err === "errors.extension_gmail_auth" ||
+          err === "errors.extension_gmail_not_connected" ||
+          err === "errors.extension_gmail_forbidden";
+        showAttachmentsPlaceholder(tError(err), {
+          retry: !needsReconnect,
+          reconnect: needsReconnect,
+        });
+        return;
+      }
       listedGmailMessageId = String(result.data?.gmailMessageId || "");
       renderAttachments(result.data?.attachments || []);
     } catch {
-      // keep picker usable without attachments list
+      showAttachmentsPlaceholder(t("extension.gmail.attachments_failed"), {
+        retry: true,
+      });
     }
   }
 
@@ -1017,14 +1149,31 @@ function ensureUi() {
       return;
     }
     if (!data.gmailConnected) {
-      const appBase = sessionResult.appBase || "https://www.tasqin.com";
-      const path = data.connectGmailPath || "/auth/gmail-plugin/start";
       setResultMode(true);
       setFeedback(tError("errors.extension_gmail_not_connected"), "error");
-      feedback.insertAdjacentHTML(
-        "afterend",
-        `<p class="routine-gmail-login-link"><a href="${appBase}${path}" target="_blank" rel="noreferrer">${t("extension.gmail.connect_gmail")}</a></p>`,
-      );
+      const linkWrap = document.createElement("p");
+      linkWrap.className = "routine-gmail-login-link";
+      const link = document.createElement("a");
+      link.href = "#";
+      link.textContent = t("extension.gmail.connect_gmail");
+      link.addEventListener("click", (event) => {
+        event.preventDefault();
+        void (async () => {
+          setBusy(true, t("extension.gmail.options.connecting"));
+          const result = await send("routine.connectGmail");
+          setBusy(false);
+          if (result?.ok) {
+            await openModal();
+            return;
+          }
+          setFeedback(
+            tError(result?.error || "extension.gmail.options.connect_failed"),
+            "error",
+          );
+        })();
+      });
+      linkWrap.appendChild(link);
+      feedback.insertAdjacentElement("afterend", linkWrap);
       return;
     }
     const teams = Array.isArray(data.teams) ? data.teams : [];
@@ -1117,6 +1266,10 @@ function ensureUi() {
 
   attToggleBtn.addEventListener("click", () => {
     if (isBusy) return;
+    if (attToggleBtn.dataset.mode === "retry") {
+      void loadAttachmentsList();
+      return;
+    }
     const boxes = [...attachList.querySelectorAll('input[type="checkbox"]:not(:disabled)')];
     if (!boxes.length) return;
     const allOn = boxes.every((box) => box.checked);
@@ -1136,7 +1289,12 @@ function ensureUi() {
     setFeedback("");
     const email = scrapeEmailFallback();
     const selected =
-      attachmentOptions.length > 0 ? selectedAttachments() : null;
+      attachmentOptions.length > 0 ? selectedAttachments() : [];
+    const includeEmailBody = includeEmailBodySelected();
+    if (!includeEmailBody && (!selected || selected.length === 0)) {
+      setFeedback(tError("errors.extension_nothing_attached"), "error");
+      return;
+    }
     setBusy(true, t("extension.gmail.loading_gmail"), 4);
 
     let result;
@@ -1147,6 +1305,7 @@ function ensureUi() {
         gmailThreadId: threadId,
         email,
         selectedAttachments: selected,
+        includeEmailBody,
       });
     } catch (error) {
       setBusy(false);

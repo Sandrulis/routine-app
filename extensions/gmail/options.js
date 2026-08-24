@@ -18,8 +18,11 @@ const FALLBACK = {
   "extension.gmail.team.drive_missing":
     "Šai komandai nav pieslēgts Google Drive. Spraudnis nestrādās.",
   "extension.gmail.connect_gmail": "Savienot Gmail",
+  "extension.gmail.reconnect_gmail": "Atjaunot Gmail savienojumu",
   "extension.gmail.connect_gmail_hint":
     "Custom login kontam Gmail jāsavieno šeit. Savienojums tiks saglabāts arī TASQIN.",
+  "extension.gmail.reconnect_gmail_hint":
+    "Pēc sistēmas vai OAuth izmaiņām atjauno Gmail piekļuvi šeit.",
   "extension.gmail.gmail_connected": "Gmail savienots: {email}",
   "extension.gmail.plugin_disabled":
     "Gmail spraudnis sistēmā ir izslēgts. Ieslēdz to Administrācija → Moduļi.",
@@ -29,6 +32,8 @@ const FALLBACK = {
     "Neizdevās savienot Gmail. Pārbaudi Google OAuth un Gmail API.",
   "user_menu.sign_out": "Iziet",
   "errors.extension_unknown": "Nezināma kļūda.",
+  "errors.extension_network":
+    "Neizdevās savienoties ar serveri. Pārbaudi internetu un mēģini vēlreiz.",
 };
 
 let strings = { ...FALLBACK };
@@ -42,7 +47,15 @@ function interpolate(value, params) {
 }
 
 function t(key, params) {
-  return interpolate(strings[key] || FALLBACK[key] || key, {
+  let resolved = key;
+  if (
+    /failed to fetch|networkerror|network request failed|load failed|fetch failed/i.test(
+      String(key || ""),
+    )
+  ) {
+    resolved = "errors.extension_network";
+  }
+  return interpolate(strings[resolved] || FALLBACK[resolved] || resolved, {
     SYSTEM_NAME: systemName,
     ...params,
   });
@@ -86,7 +99,6 @@ function applyLabels() {
   $("teamLabel").textContent = t("extension.gmail.team.label");
   $("driveWarn").textContent = t("extension.gmail.team.drive_missing");
   $("pluginWarn").textContent = t("extension.gmail.plugin_disabled");
-  $("connectGmail").textContent = t("extension.gmail.connect_gmail");
   const signOutLabel = t("user_menu.sign_out");
   $("signOut").title = signOutLabel;
   $("signOut").setAttribute("aria-label", signOutLabel);
@@ -147,10 +159,13 @@ function renderAccount(session) {
   $("gmailBadge").title = gmailLabel;
   $("gmailBadge").setAttribute("aria-label", gmailLabel);
   $("gmailStatus").textContent = gmailConnected
-    ? ""
+    ? t("extension.gmail.reconnect_gmail_hint")
     : t("extension.gmail.connect_gmail_hint");
-  $("gmailStatus").classList.toggle("hidden", gmailConnected);
-  $("connectWrap").classList.toggle("hidden", gmailConnected);
+  $("gmailStatus").classList.remove("hidden");
+  $("connectWrap").classList.remove("hidden");
+  $("connectGmail").textContent = gmailConnected
+    ? t("extension.gmail.reconnect_gmail")
+    : t("extension.gmail.connect_gmail");
 
   const pluginOn = session.gmailPluginEnabled !== false;
   $("pluginWarn").classList.toggle("hidden", pluginOn);

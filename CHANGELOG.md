@@ -4,6 +4,11 @@
 
 - (none)
 
+## v0.2.21
+
+- Gmail spraudnis `0.4.13`: Gmail OAuth caur īsu ticket bridge (bez tokeniem URL), atjaunojams savienojums, tīkla kļūdu tulkojums
+- Pielikumos checkbox arī e-pasta saturam (.txt); force token refresh pēc OAuth kļūdas
+
 ## v0.2.20
 
 - Gmail spraudnis `0.4.8`: API pieprasījumi iet uz `www.tasqin.com` (apex 308 bez CORS vairs nebloķē pievienošanu); `/api/extension` kļūdām arī ir CORS galvenes

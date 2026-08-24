@@ -1774,7 +1774,7 @@ export const ru: Record<string, string> = {
   "errors.extension_task_required": "Выберите подзадачу.",
   "errors.extension_list_required": "Выберите список.",
   "errors.extension_gmail_client_id": "В настройках расширения отсутствует Gmail OAuth Client ID.",
-  "errors.extension_gmail_auth": "Требуется разрешение Gmail OAuth.",
+  "errors.extension_gmail_auth": "Срок разрешения Gmail истёк. Подключите Gmail заново в расширении.",
   "errors.extension_gmail_fetch_failed": "Не удалось загрузить письмо через Gmail API.",
   "errors.extension_gmail_message_id": "Не найден ID сообщения Gmail.",
   "errors.extension_gmail_forbidden":
@@ -1784,6 +1784,7 @@ export const ru: Record<string, string> = {
   "errors.extension_auth_required":
     "Войдите в расширение {SYSTEM_NAME}. Сессия сохраняется примерно 30 дней, даже если сайт закрыт.",
   "errors.extension_unknown": "Неизвестная ошибка.",
+  "errors.extension_network": "Не удалось связаться с сервером. Проверьте интернет и попробуйте снова.",
   "errors.extension_gmail_not_connected":
     "Сначала подключите Gmail в плагине. Подключение сохранится и в {SYSTEM_NAME}.",
   "errors.extension_plugin_disabled": "Плагин Gmail в системе выключен.",
@@ -1802,7 +1803,9 @@ export const ru: Record<string, string> = {
   "extension.gmail.attachments": "Вложения",
   "extension.gmail.uncheck_all": "Снять все",
   "extension.gmail.check_all": "Отметить все",
-  "extension.gmail.email_always": "Содержимое письма (.txt) добавляется всегда.",
+  "extension.gmail.email_always": "Текст письма (.txt) необязателен.",
+  "extension.gmail.email_body": "Текст письма (.txt)",
+  "extension.gmail.email_body_hint": "Отметьте, если нужно также прикрепить текст письма.",
   "extension.gmail.too_large": "{size} — слишком большой (>25 МБ)",
   "extension.gmail.empty": "Здесь ничего нет",
   "extension.gmail.load_lists": "Загрузка списков…",
@@ -1850,8 +1853,13 @@ export const ru: Record<string, string> = {
   "extension.gmail.team.drive_missing":
     "У этой команды не подключён Google Drive. Плагин не будет работать.",
   "extension.gmail.connect_gmail": "Подключить Gmail",
+  "extension.gmail.reconnect_gmail": "Обновить подключение Gmail",
   "extension.gmail.connect_gmail_hint":
     "Аккаунту с паролем нужно подключить Gmail здесь. Подключение сохранится и в {SYSTEM_NAME}.",
+  "extension.gmail.reconnect_gmail_hint": "После изменений системы или OAuth обновите доступ к Gmail здесь.",
+  "extension.gmail.bridge.title": "Подключить Gmail",
+  "extension.gmail.bridge.loading": "Подготовка разрешений Gmail…",
+  "extension.gmail.bridge.error": "Не удалось подготовить сессию. Попробуйте снова из расширения.",
   "extension.gmail.gmail_connected": "Gmail подключён: {email}",
   "extension.gmail.plugin_disabled":
     "Плагин Gmail выключен. Включите его в Администрирование → Модули.",

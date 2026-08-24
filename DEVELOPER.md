@@ -175,7 +175,7 @@ Globāli feature flagi tabulā `public.site_frontend_modules` (`module_key` + `i
 | `module_private_list` | `ListFormModal` rāda **Privāts saraksts** slēdzi un biedru/lomu izvēli | Slēdzis pazūd; visi `work_lists.is_private` kļūst `false` (RPC `publish_all_private_work_lists`); UI tos rāda kā publiskus |
 | `module_file_upload` | Augšupielāde kokā, apakšuzdevumos, mapes **Faili** logs, sānjoslas **Failu vieta** | Nav upload; esošie faili kokā un apakšuzdevumā slēpti; Failu logs izņemts no window order; Failu vieta pazūd; faila URL redirect |
 | `module_google_drive` | Komandas `...` → **Google Drive Integrācija**; `/team/google-drive`; faili uz Drive (noklusējumā bez servera `content`, opcionāli spoguļojums); admin slēdzis ieslēdzams tikai ja Google OAuth integrācija ir konfigurēta un ieslēgta | Izvēlnes opcijas nav; maršruts redirect uz `/dashboard`; Drive sync nenotiek. Prasa arī `module_file_upload` |
-| `module_gmail_plugin` | Gmail Chrome spraudnis (`extensions/gmail` `0.4.8`): sesija, komandu pārslēgšana, e-pasta pievienošana. **Turpināt ar Google** → `/auth/gmail-plugin/login` (ne `/login`). Admin slēdzis tikai ja Google OAuth ir ieslēgts. Gmail OAuth tokeni `user_gmail_connections` (service role). Redirect `/auth/google-oauth/callback` | Spraudnis rāda, ka modulis izslēgts |
+| `module_gmail_plugin` | Gmail Chrome spraudnis (`extensions/gmail` `0.4.13`): sesija, komandu pārslēgšana, e-pasta pievienošana. **Turpināt ar Google** → `/auth/gmail-plugin/login` (ne `/login`). **Atjaunot Gmail** → ticket bridge `/auth/gmail-plugin/bridge?t=…` → `/start` (Gmail OAuth). Admin slēdzis tikai ja Google OAuth ir ieslēgts. Gmail OAuth tokeni `user_gmail_connections` (service role). Redirect `/auth/google-oauth/callback` | Spraudnis rāda, ka modulis izslēgts |
 | `module_onedrive` | Komandas `...` → **OneDrive Integrācija**; `/team/onedrive`; pēc faila pievienošanas kopija uz OneDrive, ja komanda ir pieslēgusi kontu. Admin slēdzis ieslēdzams tikai ja Microsoft OAuth integrācija ir konfigurēta un ieslēgta | Izvēlnes opcijas nav; maršruts redirect uz `/dashboard`; OneDrive sync nenotiek. Prasa arī `module_file_upload` |
 | `module_checklist` | Check List lietojams; slēgto statusu bloķē nepabeigti punkti | Sadaļa vienmēr sakļauta (`forceCollapsed`); slēgto statusu **nebloķē** |
 | `module_automations` | Saraksta `...` → **Automatizācijas**; `lists-store` izpilda statusa/čeklistes/apakšuzdevumu noteikumus | Izvēlnes opcijas nav; esošie noteikumi **neizpildās** |
@@ -525,7 +525,7 @@ app/
     users/use-is-admin.tsx        # is_admin RPC + profils klientā
     security/                     # rate-limit, secret-box, file-bytes, log-error, hash-token
 app/auth/gmail-plugin/            # login (Google OAuth ielogošanās) / start / done; callback aliases vai `/auth/google-oauth/callback`
-app/api/extension/                # config, session, login, refresh (jaunais tokens + getExtensionAuth), gmail-access, browse, attach-email; CORS `extension/cors.ts`
+app/api/extension/                # config, session, login, refresh, gmail-access, gmail-bridge-ticket, browse, attach-email; CORS `extension/cors.ts`
 app/api/cron/                     # GET/POST `/api/cron/[jobKey]` — token auth, stundas batch atgādinājumi
 app/auth/callback/route.ts        # E-pasta magic link / PKCE code → session
 app/auth/google-oauth/callback/route.ts # Google login, admin konfigurācija, Gmail spraudnis

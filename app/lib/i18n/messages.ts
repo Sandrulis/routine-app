@@ -1775,7 +1775,8 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "errors.extension_task_required": "Izvēlies apakšuzdevumu.",
     "errors.extension_list_required": "Izvēlies sarakstu.",
     "errors.extension_gmail_client_id": "Trūkst Gmail OAuth Client ID paplašinājuma opcijās.",
-    "errors.extension_gmail_auth": "Nepieciešama Gmail OAuth atļauja.",
+    "errors.extension_gmail_auth":
+      "Gmail atļauja novecojusi. Spraudnī atjauno savienojumu (Savienot Gmail).",
     "errors.extension_gmail_fetch_failed": "Neizdevās ielādēt e-pastu no Gmail API.",
     "errors.extension_gmail_message_id": "Neatrada Gmail ziņas ID.",
     "errors.extension_gmail_forbidden":
@@ -1785,6 +1786,8 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "errors.extension_auth_required":
       "Ienāc {SYSTEM_NAME} spraudnī. Sesija paliek aptuveni 30 dienas, arī ja lapa ir aizvērta.",
     "errors.extension_unknown": "Nezināma kļūda.",
+    "errors.extension_network":
+      "Neizdevās savienoties ar serveri. Pārbaudi internetu un mēģini vēlreiz.",
     "errors.extension_gmail_not_connected":
       "Vispirms savieno Gmail spraudnī. Savienojums tiks saglabāts arī {SYSTEM_NAME}.",
     "errors.extension_plugin_disabled": "Gmail spraudnis sistēmā ir izslēgts.",
@@ -1803,7 +1806,10 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "extension.gmail.attachments": "Pielikumi",
     "extension.gmail.uncheck_all": "Noņemt visus",
     "extension.gmail.check_all": "Atzīmēt visus",
-    "extension.gmail.email_always": "E-pasta saturs (.txt) tiek pievienots vienmēr.",
+    "extension.gmail.email_always": "E-pasta saturs (.txt) ir izvēles iespēja.",
+    "extension.gmail.email_body": "E-pasta saturs (.txt)",
+    "extension.gmail.email_body_hint":
+      "Atzīmē, ja vēlies pievienot arī e-pasta tekstu.",
     "extension.gmail.too_large": "{size} — pārāk liels (>25 MB)",
     "extension.gmail.empty": "Šeit nav ierakstu",
     "extension.gmail.load_lists": "Ielādē sarakstus…",
@@ -1851,8 +1857,15 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "extension.gmail.team.drive_missing":
       "Šai komandai nav pieslēgts Google Drive. Spraudnis nestrādās.",
     "extension.gmail.connect_gmail": "Savienot Gmail",
+    "extension.gmail.reconnect_gmail": "Atjaunot Gmail savienojumu",
     "extension.gmail.connect_gmail_hint":
       "Custom login kontam Gmail jāsavieno šeit. Savienojums tiks saglabāts arī {SYSTEM_NAME}.",
+    "extension.gmail.reconnect_gmail_hint":
+      "Pēc sistēmas vai OAuth izmaiņām atjauno Gmail piekļuvi šeit.",
+    "extension.gmail.bridge.title": "Savieno Gmail",
+    "extension.gmail.bridge.loading": "Sagatavo Gmail atļaujas…",
+    "extension.gmail.bridge.error":
+      "Neizdevās sagatavot sesiju. Mēģini vēlreiz no spraudņa.",
     "extension.gmail.gmail_connected": "Gmail savienots: {email}",
     "extension.gmail.plugin_disabled":
       "Gmail spraudnis sistēmā ir izslēgts. Ieslēdz to Administrācija → Moduļi.",
@@ -3746,7 +3759,8 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "errors.extension_task_required": "Select a subtask.",
     "errors.extension_list_required": "Select a list.",
     "errors.extension_gmail_client_id": "Gmail OAuth Client ID is missing in extension options.",
-    "errors.extension_gmail_auth": "Gmail OAuth permission is required.",
+    "errors.extension_gmail_auth":
+      "Gmail permission expired. Reconnect Gmail in the extension popup.",
     "errors.extension_gmail_fetch_failed": "Could not load the email from the Gmail API.",
     "errors.extension_gmail_message_id": "Could not find the Gmail message ID.",
     "errors.extension_gmail_forbidden":
@@ -3756,6 +3770,8 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "errors.extension_auth_required":
       "Sign in to the {SYSTEM_NAME} extension. The session lasts about 30 days, even if the website is closed.",
     "errors.extension_unknown": "Unknown error.",
+    "errors.extension_network":
+      "Could not reach the server. Check your connection and try again.",
     "errors.extension_gmail_not_connected":
       "Connect Gmail in the plugin first. The connection is also saved in {SYSTEM_NAME}.",
     "errors.extension_plugin_disabled": "The Gmail plugin is disabled in the system.",
@@ -3774,7 +3790,10 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "extension.gmail.attachments": "Attachments",
     "extension.gmail.uncheck_all": "Uncheck all",
     "extension.gmail.check_all": "Check all",
-    "extension.gmail.email_always": "Email content (.txt) is always attached.",
+    "extension.gmail.email_always": "Email content (.txt) is optional.",
+    "extension.gmail.email_body": "Email content (.txt)",
+    "extension.gmail.email_body_hint":
+      "Check this if you also want to attach the email text.",
     "extension.gmail.too_large": "{size} — too large (>25 MB)",
     "extension.gmail.empty": "Nothing here",
     "extension.gmail.load_lists": "Loading lists…",
@@ -3822,8 +3841,15 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "extension.gmail.team.drive_missing":
       "This team has no Google Drive connected. The plugin will not work.",
     "extension.gmail.connect_gmail": "Connect Gmail",
+    "extension.gmail.reconnect_gmail": "Reconnect Gmail",
     "extension.gmail.connect_gmail_hint":
       "Custom-login accounts must connect Gmail here. The connection is also saved in {SYSTEM_NAME}.",
+    "extension.gmail.reconnect_gmail_hint":
+      "After system or OAuth changes, renew Gmail access here.",
+    "extension.gmail.bridge.title": "Connect Gmail",
+    "extension.gmail.bridge.loading": "Preparing Gmail permissions…",
+    "extension.gmail.bridge.error":
+      "Could not prepare the session. Try again from the extension.",
     "extension.gmail.gmail_connected": "Gmail connected: {email}",
     "extension.gmail.plugin_disabled":
       "The Gmail plugin is disabled. Turn it on in Administration → Modules.",

@@ -114,8 +114,23 @@ type AttachEmailInput = {
   body: string;
   bodyHtml: string;
   permalink: string;
+  includeEmailBody: boolean;
   attachments: { name: string; mimeType: string; bytes: Uint8Array }[];
 };
+
+function readIncludeEmailBody(value: unknown, fallback = true) {
+  if (typeof value === "boolean") return value;
+  if (typeof value === "string") {
+    const normalized = value.trim().toLowerCase();
+    if (normalized === "0" || normalized === "false" || normalized === "no") {
+      return false;
+    }
+    if (normalized === "1" || normalized === "true" || normalized === "yes") {
+      return true;
+    }
+  }
+  return fallback;
+}
 
 async function parseAttachEmailRequest(request: Request): Promise<AttachEmailInput | null> {
   const contentType = request.headers.get("content-type") || "";
@@ -131,6 +146,7 @@ async function parseAttachEmailRequest(request: Request): Promise<AttachEmailInp
         body: String(json.body ?? ""),
         bodyHtml: String(json.bodyHtml ?? ""),
         permalink: String(json.permalink ?? ""),
+        includeEmailBody: readIncludeEmailBody(json.includeEmailBody, true),
         attachments: readJsonAttachments(json.attachments),
       };
     } catch {
@@ -149,6 +165,7 @@ async function parseAttachEmailRequest(request: Request): Promise<AttachEmailInp
       body: String(form.get("body") ?? ""),
       bodyHtml: String(form.get("bodyHtml") ?? ""),
       permalink: String(form.get("permalink") ?? ""),
+      includeEmailBody: readIncludeEmailBody(form.get("includeEmailBody"), true),
       attachments: await readAttachmentFiles(form),
     };
   } catch {
@@ -218,22 +235,34 @@ export async function POST(request: Request) {
     );
   }
 
-  const emailFile = buildEmailFile({
-    subject: input.subject,
-    from: input.from,
-    to: input.to,
-    date: input.date,
-    body: input.body,
-    bodyHtml: input.bodyHtml,
-    permalink: input.permalink,
-  });
+  const emailFile = input.includeEmailBody
+    ? buildEmailFile({
+        subject: input.subject,
+        from: input.from,
+        to: input.to,
+        date: input.date,
+        body: input.body,
+        bodyHtml: input.bodyHtml,
+        permalink: input.permalink,
+      })
+    : null;
+  const files = emailFile
+    ? [emailFile, ...input.attachments]
+    : [...input.attachments];
+  if (files.length === 0) {
+    return extensionJson(
+      request,
+      { ok: false, error: "errors.extension_nothing_attached" },
+      { status: 400 },
+    );
+  }
   const catalog = await loadFileTypeCatalog(auth.supabase);
 
   const result = await attachFilesToSubtask({
     supabase: auth.supabase,
     user: auth.user,
     taskId,
-    files: [emailFile, ...input.attachments],
+    files,
     catalog,
   });
 

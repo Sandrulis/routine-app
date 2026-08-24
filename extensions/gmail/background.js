@@ -471,12 +471,20 @@ async function clearAuthCookies(appBase, cookieName) {
   }
 }
 
+function stringToBase64Url(value) {
+  const bytes = new TextEncoder().encode(String(value || ""));
+  let binary = "";
+  for (const byte of bytes) binary += String.fromCharCode(byte);
+  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+}
+
 function cookieWriteBase(appBase, expires) {
   return {
     url: appBase,
     path: "/",
     expirationDate: expires,
-    httpOnly: true,
+    // Match website auth cookies (readable by Supabase browser client).
+    httpOnly: false,
     sameSite: "lax",
     secure: String(appBase).startsWith("https:"),
   };
@@ -487,7 +495,7 @@ async function setCookieSafe(details) {
     const written = await chrome.cookies.set(details);
     if (written) return true;
   } catch {
-    // Some Chrome builds reject httpOnly from extensions.
+    // Some Chrome builds reject certain cookie flags.
   }
   try {
     const { httpOnly: _httpOnly, ...rest } = details;
@@ -498,36 +506,91 @@ async function setCookieSafe(details) {
 }
 
 async function writeAuthCookies(appBase, cookieName, session) {
-  if (!cookieName || !session?.access_token) return;
+  if (!cookieName || !session?.access_token) return false;
   await clearAuthCookies(appBase, cookieName);
-  const encoded = encodeURIComponent(JSON.stringify(session));
+  const payload = JSON.stringify({
+    access_token: session.access_token,
+    refresh_token: session.refresh_token || "",
+    expires_at: session.expires_at,
+    expires_in: session.expires_in,
+    token_type: session.token_type || "bearer",
+  });
+  // Same encoding as @supabase/ssr (base64url + optional chunking).
+  const encoded = `base64-${stringToBase64Url(payload)}`;
   const expires = Math.floor(Date.now() / 1000) + AUTH_MAX_AGE_SEC;
+  const encodedForSize = encodeURIComponent(encoded);
   const chunks = [];
-  for (let offset = 0; offset < encoded.length; offset += COOKIE_CHUNK) {
-    chunks.push(encoded.slice(offset, offset + COOKIE_CHUNK));
+  if (encodedForSize.length <= COOKIE_CHUNK) {
+    chunks.push({ name: cookieName, value: encoded });
+  } else {
+    let remaining = encodedForSize;
+    let index = 0;
+    while (remaining.length > 0) {
+      let head = remaining.slice(0, COOKIE_CHUNK);
+      const lastEscape = head.lastIndexOf("%");
+      if (lastEscape > COOKIE_CHUNK - 3) head = head.slice(0, lastEscape);
+      let valueHead = "";
+      while (head.length > 0) {
+        try {
+          valueHead = decodeURIComponent(head);
+          break;
+        } catch {
+          if (head.at(-3) === "%" && head.length > 3) {
+            head = head.slice(0, head.length - 3);
+          } else {
+            break;
+          }
+        }
+      }
+      if (!valueHead) break;
+      chunks.push({ name: `${cookieName}.${index}`, value: valueHead });
+      remaining = remaining.slice(head.length);
+      index += 1;
+    }
   }
   const base = cookieWriteBase(appBase, expires);
-  if (chunks.length === 1) {
-    await setCookieSafe({
+  let ok = true;
+  for (const chunk of chunks) {
+    const written = await setCookieSafe({
       ...base,
-      name: cookieName,
-      value: chunks[0],
+      name: chunk.name,
+      value: chunk.value,
     });
-  } else {
-    for (let index = 0; index < chunks.length; index += 1) {
-      await setCookieSafe({
-        ...base,
-        name: `${cookieName}.${index}`,
-        value: chunks[index],
-      });
-    }
+    if (!written) ok = false;
   }
   await setCookieSafe({
     ...base,
-    httpOnly: false,
     name: "routine-app-remember-session",
     value: "1",
   });
+  return ok;
+}
+
+async function syncBrowserSessionCookies(appBase) {
+  const origin = preferLiveOrigin(parseOrigin(appBase)) || appBase;
+  const stored = await readStoredSession();
+  const session = stored?.session;
+  if (!session?.access_token) return false;
+  await ensureOriginPermission(origin);
+  let cookieName =
+    (await chrome.storage.sync.get(["authCookieName"])).authCookieName || "";
+  if (!cookieName) {
+    const config = await probeConfig(origin);
+    cookieName = config?.authCookieName || "";
+    if (cookieName) {
+      await chrome.storage.sync.set({ authCookieName: cookieName });
+    }
+  }
+  if (!cookieName) return false;
+  return writeAuthCookies(origin, cookieName, session);
+}
+
+function buildConnectGmailBridgeUrl(appBase, bridgePath, ticket) {
+  const origin = preferLiveOrigin(parseOrigin(appBase)) || appBase;
+  const path = bridgePath || "/auth/gmail-plugin/bridge";
+  const url = new URL(path, origin);
+  url.searchParams.set("t", ticket);
+  return url.toString();
 }
 
 async function refreshSession(appBase, session) {
@@ -658,12 +721,22 @@ async function apiFetch(path, options = {}, retried = false) {
     headers.set("Content-Type", "application/json");
   }
 
-  const response = await fetch(`${appBase}${path}`, {
-    ...options,
-    headers,
-    credentials: "omit",
-    redirect: "manual",
-  });
+  let response;
+  try {
+    response = await fetch(`${appBase}${path}`, {
+      ...options,
+      headers,
+      credentials: "omit",
+      redirect: "manual",
+    });
+  } catch {
+    return {
+      ok: false,
+      status: 0,
+      data: { ok: false, error: "errors.extension_network" },
+      appBase,
+    };
+  }
 
   if (
     !retried &&
@@ -691,6 +764,26 @@ async function apiFetch(path, options = {}, retried = false) {
     data = { ok: false, error: text || "errors.extension_invalid_body" };
   }
   return { ok: response.ok, status: response.status, data, appBase };
+}
+
+function normalizeExtensionError(error, fallback = "errors.extension_unknown") {
+  const message =
+    error instanceof Error
+      ? error.message
+      : typeof error === "string"
+        ? error
+        : String(error || "");
+  const trimmed = message.trim();
+  if (!trimmed) return fallback;
+  if (/^errors\./.test(trimmed)) return trimmed;
+  if (
+    /failed to fetch|networkerror|network request failed|load failed|fetch failed/i.test(
+      trimmed,
+    )
+  ) {
+    return "errors.extension_network";
+  }
+  return fallback;
 }
 
 function base64UrlToBase64(value) {
@@ -730,12 +823,21 @@ function postAttachProgress(tabId, payload) {
   }
 }
 
-async function getGmailAccessToken() {
-  const cached = await getCachedGmailToken();
-  if (cached) return cached;
-  const result = await apiFetch("/api/extension/gmail-access");
+async function getGmailAccessToken(options = {}) {
+  const forceRefresh = Boolean(options.forceRefresh);
+  if (!forceRefresh) {
+    const cached = await getCachedGmailToken();
+    if (cached) return cached;
+  } else {
+    await chrome.storage.local.remove(["gmailAccessToken", "gmailTokenExpiresAt"]);
+  }
+  const path = forceRefresh
+    ? "/api/extension/gmail-access?force=1"
+    : "/api/extension/gmail-access";
+  const result = await apiFetch(path);
   const token = result?.data?.accessToken;
   if (!result?.ok || !token) {
+    await chrome.storage.local.remove(["gmailAccessToken", "gmailTokenExpiresAt"]);
     throw new Error(
       result?.data?.error || result?.error || "errors.extension_gmail_not_connected",
     );
@@ -763,6 +865,56 @@ async function saveGmailToken(accessToken, expiresInSec) {
   });
 }
 
+function headerMap(part) {
+  const map = {};
+  for (const item of part?.headers || []) {
+    const name = String(item?.name || "").toLowerCase();
+    if (!name) continue;
+    map[name] = String(item?.value || "");
+  }
+  return map;
+}
+
+function filenameFromContentValue(value) {
+  const raw = String(value || "");
+  const star = raw.match(/filename\*\s*=\s*([^;]+)/i);
+  if (star?.[1]) {
+    let encoded = star[1].trim().replace(/^["']|["']$/g, "");
+    encoded = encoded.replace(/^UTF-8''/i, "");
+    try {
+      return decodeURIComponent(encoded).trim();
+    } catch {
+      return encoded.trim();
+    }
+  }
+  const plain = raw.match(/filename\s*=\s*"([^"]+)"|filename\s*=\s*([^;\s]+)/i);
+  if (plain) return String(plain[1] || plain[2] || "").trim();
+  const name = raw.match(/name\s*=\s*"([^"]+)"|name\s*=\s*([^;\s]+)/i);
+  if (name) return String(name[1] || name[2] || "").trim();
+  return "";
+}
+
+function partFilename(part) {
+  const direct = String(part?.filename || "").trim();
+  if (direct) return direct;
+  const headers = headerMap(part);
+  return (
+    filenameFromContentValue(headers["content-disposition"]) ||
+    filenameFromContentValue(headers["content-type"]) ||
+    ""
+  );
+}
+
+function defaultAttachmentName(mime, filename) {
+  if (filename) return filename;
+  if (mime === "application/pdf") return "attachment.pdf";
+  if (mime.startsWith("image/")) {
+    const ext = mime.split("/")[1]?.split("+")[0] || "bin";
+    return `image.${ext}`;
+  }
+  return "attachment.bin";
+}
+
 function walkParts(part, out) {
   if (!part) return;
   if (Array.isArray(part.parts)) {
@@ -772,15 +924,30 @@ function walkParts(part, out) {
   if (!attachmentId) return;
   const mime = String(part.mimeType || "").toLowerCase();
   if (mime.startsWith("multipart/")) return;
-  const filename = String(part.filename || "").trim();
+
+  const headers = headerMap(part);
+  const disposition = String(headers["content-disposition"] || "").toLowerCase();
+  const filename = partFilename(part);
+
   // Skip large inline bodies (html/plain) that Gmail exposes as attachmentId.
-  if (!filename && (mime === "text/plain" || mime === "text/html" || mime.startsWith("text/"))) {
+  if (
+    !filename &&
+    !disposition.includes("attachment") &&
+    (mime === "text/plain" || mime === "text/html" || mime.startsWith("text/"))
+  ) {
     return;
   }
-  // Untitled cid images are inline, not user attachments.
-  if (!filename && mime.startsWith("image/")) return;
+  // Untitled cid / inline images are not user attachments.
+  if (
+    !filename &&
+    mime.startsWith("image/") &&
+    !disposition.includes("attachment")
+  ) {
+    return;
+  }
+
   out.push({
-    filename: filename || (mime === "application/pdf" ? "attachment.pdf" : "attachment.bin"),
+    filename: defaultAttachmentName(mime, filename),
     mimeType: part.mimeType || "application/octet-stream",
     attachmentId,
     size: Number(part.body.size) || 0,
@@ -878,9 +1045,14 @@ function guessMimeFromName(name, fallback) {
 }
 
 async function gmailGet(path, token) {
-  const response = await fetch(`https://gmail.googleapis.com/gmail/v1/${path}`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
+  let response;
+  try {
+    response = await fetch(`https://gmail.googleapis.com/gmail/v1/${path}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+  } catch (error) {
+    throw new Error(normalizeExtensionError(error, "errors.extension_network"));
+  }
   if (response.status === 401) {
     await chrome.storage.local.remove(["gmailAccessToken", "gmailTokenExpiresAt"]);
     throw new Error("errors.extension_gmail_auth");
@@ -944,22 +1116,35 @@ async function resolveGmailMessage(messageId, threadId, token) {
 }
 
 async function listGmailAttachments(messageId, threadId, interactive) {
-  const token = await getGmailAccessToken(interactive);
-  if (!token) throw new Error("errors.extension_gmail_auth");
+  async function once(forceRefresh = false) {
+    const token = await getGmailAccessToken({
+      interactive,
+      forceRefresh,
+    });
+    if (!token) throw new Error("errors.extension_gmail_auth");
+    const message = await resolveGmailMessage(messageId, threadId, token);
+    const parts = [];
+    walkParts(message.payload, parts);
+    return {
+      gmailMessageId: message.id || messageId,
+      attachments: parts.map((part) => ({
+        attachmentId: String(part.attachmentId),
+        name:
+          part.filename.replace(/[<>:"/\\|?*]/g, "_").slice(0, 180) ||
+          "attachment.bin",
+        mimeType: part.mimeType || "application/octet-stream",
+        size: part.size,
+        tooLarge: part.size > EXTENSION_UPLOAD_MAX_BYTES,
+      })),
+    };
+  }
 
-  const message = await resolveGmailMessage(messageId, threadId, token);
-  const parts = [];
-  walkParts(message.payload, parts);
-  return {
-    gmailMessageId: message.id || messageId,
-    attachments: parts.map((part) => ({
-      attachmentId: String(part.attachmentId),
-      name: part.filename.replace(/[<>:"/\\|?*]/g, "_").slice(0, 180) || "attachment.bin",
-      mimeType: part.mimeType || "application/octet-stream",
-      size: part.size,
-      tooLarge: part.size > EXTENSION_UPLOAD_MAX_BYTES,
-    })),
-  };
+  try {
+    return await once(false);
+  } catch (error) {
+    if (error?.message !== "errors.extension_gmail_auth") throw error;
+    return once(true);
+  }
 }
 
 function sanitizeAttachmentName(name, mimeType) {
@@ -1000,14 +1185,26 @@ async function fetchGmailMessageBundle(
   selectedAttachments = null,
   onProgress = null,
 ) {
-  const token = await getGmailAccessToken(interactive);
-  if (!token) throw new Error("errors.extension_gmail_auth");
+  async function loadWithToken(forceRefresh = false) {
+    const token = await getGmailAccessToken({ forceRefresh });
+    if (!token) throw new Error("errors.extension_gmail_auth");
 
-  onProgress?.({
-    key: "extension.gmail.progress_email",
-    percent: 8,
-  });
-  const message = await resolveGmailMessage(messageId, threadId, token);
+    onProgress?.({
+      key: "extension.gmail.progress_email",
+      percent: 8,
+    });
+    const message = await resolveGmailMessage(messageId, threadId, token);
+    return { token, message };
+  }
+
+  let token;
+  let message;
+  try {
+    ({ token, message } = await loadWithToken(false));
+  } catch (error) {
+    if (error?.message !== "errors.extension_gmail_auth") throw error;
+    ({ token, message } = await loadWithToken(true));
+  }
   const resolvedId = message.id || messageId;
   const headers = message.payload?.headers || [];
   const email = {
@@ -1376,10 +1573,40 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         return;
       }
       if (message?.type === "routine.connectGmail") {
-        const appBase = await getAppBase();
-        const session = await sessionResponse();
-        const path = session?.data?.connectGmailPath || "/auth/gmail-plugin/start";
-        const tab = await chrome.tabs.create({ url: `${appBase}${path}` });
+        const appBase = preferLiveOrigin(await getAppBase()) || DEFAULT_APP_BASE;
+        await getAccessToken(appBase);
+        const stored = await readStoredSession();
+        const session = stored?.session;
+        if (!session?.access_token || !session?.refresh_token) {
+          sendResponse({ ok: false, error: "errors.extension_auth_required" });
+          return;
+        }
+        await syncBrowserSessionCookies(appBase);
+        const ticketResult = await apiFetch("/api/extension/gmail-bridge-ticket", {
+          method: "POST",
+          body: JSON.stringify({
+            accessToken: session.access_token,
+            refreshToken: session.refresh_token,
+          }),
+        });
+        const ticket = ticketResult?.data?.ticket;
+        if (!ticketResult?.ok || !ticket) {
+          sendResponse({
+            ok: false,
+            error:
+              ticketResult?.data?.error ||
+              ticketResult?.error ||
+              "errors.extension_gmail_auth",
+          });
+          return;
+        }
+        const bridgePath =
+          ticketResult.data.connectGmailBridgePath ||
+          ticketResult.data.bridgePath ||
+          "/auth/gmail-plugin/bridge";
+        const tab = await chrome.tabs.create({
+          url: buildConnectGmailBridgeUrl(appBase, bridgePath, ticket),
+        });
         const doneUrl = await waitForTabMatch(tab.id, isPluginLoginDoneUrl);
         if (!doneUrl || doneUrl.includes("error=")) {
           sendResponse({ ok: false, error: "errors.extension_gmail_auth" });
@@ -1422,10 +1649,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         } catch (error) {
           sendResponse({
             ok: false,
-            error:
-              error instanceof Error
-                ? error.message
-                : "errors.extension_gmail_fetch_failed",
+            error: normalizeExtensionError(
+              error,
+              "errors.extension_gmail_fetch_failed",
+            ),
           });
         }
         return;
@@ -1482,10 +1709,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           } catch (error) {
             sendResponse({
               ok: false,
-              error:
-                error instanceof Error
-                  ? error.message
-                  : "errors.extension_gmail_fetch_failed",
+              error: normalizeExtensionError(
+                error,
+                "errors.extension_gmail_fetch_failed",
+              ),
             });
             return;
           }
@@ -1503,6 +1730,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           percent: 78,
         });
 
+        const includeEmailBody = message.includeEmailBody !== false;
         const result = await apiFetch("/api/extension/attach-email", {
           method: "POST",
           body: JSON.stringify({
@@ -1514,6 +1742,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             body: email.body,
             bodyHtml: email.bodyHtml || "",
             permalink: email.permalink,
+            includeEmailBody,
             attachments: attachmentFiles.map((attachment) => ({
               name: attachment.name || "attachment.bin",
               mimeType: attachment.mimeType || "application/octet-stream",
@@ -1538,7 +1767,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     } catch (error) {
       sendResponse({
         ok: false,
-        error: error instanceof Error ? error.message : String(error),
+        error: normalizeExtensionError(error),
       });
     }
   })();

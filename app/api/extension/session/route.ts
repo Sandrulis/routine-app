@@ -22,6 +22,7 @@ import {
   listExtensionTeams,
 } from "@/app/lib/extension/session-payload";
 import {
+  GMAIL_PLUGIN_BRIDGE_PATH,
   GMAIL_PLUGIN_LOGIN_PATH,
   GMAIL_PLUGIN_START_PATH,
 } from "@/app/lib/extension/gmail-oauth";
@@ -85,6 +86,7 @@ export async function GET(request: Request) {
     googleSignInEnabled,
     loginPath: googleSignInEnabled ? GMAIL_PLUGIN_LOGIN_PATH : "/login",
     connectGmailPath: GMAIL_PLUGIN_START_PATH,
+    connectGmailBridgePath: GMAIL_PLUGIN_BRIDGE_PATH,
   };
 
   if (!auth) {

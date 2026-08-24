@@ -3,10 +3,11 @@ import {
   extensionJson,
   extensionOptionsResponse,
 } from "@/app/lib/extension/cors";
-import { getValidGmailAccessToken } from "@/app/lib/extension/gmail-connection";
+import { createGmailBridgeTicket } from "@/app/lib/extension/gmail-bridge-ticket";
+import { GMAIL_PLUGIN_BRIDGE_PATH } from "@/app/lib/extension/gmail-oauth";
 import { loadExtensionSessionFlags } from "@/app/lib/extension/session-payload";
-import { consumeRateLimit } from "@/app/lib/security/rate-limit";
 import { requestClientIp } from "@/app/lib/security/client-ip";
+import { consumeRateLimit } from "@/app/lib/security/rate-limit";
 
 export const runtime = "nodejs";
 
@@ -14,7 +15,7 @@ export function OPTIONS(request: Request) {
   return extensionOptionsResponse(request);
 }
 
-export async function GET(request: Request) {
+export async function POST(request: Request) {
   try {
     const auth = await getExtensionAuth(request);
     if (!auth) {
@@ -26,8 +27,8 @@ export async function GET(request: Request) {
     }
 
     const limited = await consumeRateLimit(
-      `ext-gmail-token:${requestClientIp(request)}:${auth.user.id}`,
-      60,
+      `ext-gmail-bridge:${requestClientIp(request)}:${auth.user.id}`,
+      20,
       15 * 60 * 1000,
     );
     if (!limited.ok) {
@@ -47,24 +48,46 @@ export async function GET(request: Request) {
       );
     }
 
-    const forceRefresh =
-      new URL(request.url).searchParams.get("force") === "1";
-    const token = await getValidGmailAccessToken(auth.user.id, {
-      forceRefresh,
-    });
-    if (!token.ok) {
+    let body: { accessToken?: string; refreshToken?: string } = {};
+    try {
+      body = (await request.json()) as typeof body;
+    } catch {
+      body = {};
+    }
+
+    const accessToken = String(body.accessToken || "").trim();
+    const refreshToken = String(body.refreshToken || "").trim();
+    if (!accessToken || !refreshToken) {
       return extensionJson(
         request,
-        { ok: false, error: token.error },
-        { status: 403 },
+        { ok: false, error: "errors.extension_auth_required" },
+        { status: 400 },
       );
     }
 
+    // Ensure the submitted access token belongs to this authenticated user.
+    const {
+      data: { user: tokenUser },
+      error: tokenError,
+    } = await auth.supabase.auth.getUser(accessToken);
+    if (tokenError || !tokenUser || tokenUser.id !== auth.user.id) {
+      return extensionJson(
+        request,
+        { ok: false, error: "errors.extension_auth_required" },
+        { status: 401 },
+      );
+    }
+
+    const ticket = createGmailBridgeTicket({
+      accessToken,
+      refreshToken,
+      userId: auth.user.id,
+    });
+
     return extensionJson(request, {
       ok: true,
-      accessToken: token.accessToken,
-      expiresIn: token.expiresIn,
-      googleEmail: token.googleEmail,
+      ticket,
+      bridgePath: GMAIL_PLUGIN_BRIDGE_PATH,
     });
   } catch {
     return extensionJson(

@@ -174,7 +174,10 @@ async function syncUserProfileFromGoogle(input: {
   }
 }
 
-export async function getValidGmailAccessToken(userId: string): Promise<
+export async function getValidGmailAccessToken(
+  userId: string,
+  options?: { forceRefresh?: boolean },
+): Promise<
   | { ok: true; accessToken: string; expiresIn: number; googleEmail: string }
   | { ok: false; error: string }
 > {
@@ -183,10 +186,15 @@ export async function getValidGmailAccessToken(userId: string): Promise<
     return { ok: false, error: "errors.extension_gmail_not_connected" };
   }
 
+  const forceRefresh = Boolean(options?.forceRefresh);
   const expiresAt = row.accessTokenExpiresAt
     ? Date.parse(row.accessTokenExpiresAt)
     : 0;
-  if (row.accessToken && expiresAt > Date.now() + 60_000) {
+  if (
+    !forceRefresh &&
+    row.accessToken &&
+    expiresAt > Date.now() + 60_000
+  ) {
     return {
       ok: true,
       accessToken: row.accessToken,

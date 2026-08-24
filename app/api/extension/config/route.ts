@@ -5,6 +5,7 @@ import {
 import { supabaseAuthCookieName } from "@/app/lib/extension/cookie-name";
 import { getExtensionStrings } from "@/app/lib/extension/i18n";
 import {
+  GMAIL_PLUGIN_BRIDGE_PATH,
   GMAIL_PLUGIN_LOGIN_PATH,
   GMAIL_PLUGIN_START_PATH,
 } from "@/app/lib/extension/gmail-oauth";
@@ -72,6 +73,7 @@ export async function GET(request: Request) {
     logoUrl,
     loginPath: googleSignInEnabled ? GMAIL_PLUGIN_LOGIN_PATH : "/login",
     connectGmailPath: GMAIL_PLUGIN_START_PATH,
+    connectGmailBridgePath: GMAIL_PLUGIN_BRIDGE_PATH,
     languageCode,
     strings: getExtensionStrings(languageCode, settings.systemName),
     emailPasswordEnabled,
