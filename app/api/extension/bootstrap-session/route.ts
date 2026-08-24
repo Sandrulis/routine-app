@@ -1,4 +1,4 @@
-import { createClient } from "@/app/lib/supabase/server";
+import { getExtensionAuth } from "@/app/lib/extension/auth";
 import { supabaseAuthCookieName } from "@/app/lib/extension/cookie-name";
 import {
   extensionJson,
@@ -37,11 +37,19 @@ export async function GET(request: Request) {
     );
   }
 
-  const supabase = await createClient();
+  const auth = await getExtensionAuth(request);
+  if (!auth) {
+    return extensionJson(
+      request,
+      { ok: false, error: "errors.auth_required" },
+      { status: 401 },
+    );
+  }
+
   const {
     data: { session },
     error,
-  } = await supabase.auth.getSession();
+  } = await auth.supabase.auth.getSession();
   if (error || !session?.access_token) {
     return extensionJson(
       request,

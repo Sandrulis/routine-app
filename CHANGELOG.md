@@ -4,6 +4,10 @@
 
 - (none)
 
+## v0.2.26
+
+- CI: `bootstrap-session` maršruts izmanto `getExtensionAuth` (security-smoke auth pārbaude)
+
 ## v0.2.25
 
 - Gmail spraudnis `0.4.17`: OAuth done lapā vienreizējs bootstrap ticket + `POST /api/extension/bootstrap-from-ticket`; «Ienāci» tikai ar reālu sesiju; labāka sesijas nodošana spraudnim
