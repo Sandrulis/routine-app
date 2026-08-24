@@ -20,7 +20,7 @@ const LandingAppPreview = dynamic(
     ssr: false,
     loading: () => (
       <div
-        className="min-h-[320px] animate-pulse rounded-3xl border border-zinc-200 bg-white/80"
+        className="min-h-[320px] animate-pulse rounded-4xl border border-zinc-200 bg-white/80"
         aria-hidden="true"
       />
     ),
@@ -55,26 +55,26 @@ export function LandingPage({ productName }: { productName: string }) {
 
   return (
     <div>
-      <section className="relative overflow-hidden">
+      <section className="relative overflow-hidden bg-gradient-to-b from-white via-white to-zinc-50">
         <div className="pointer-events-none absolute inset-0" aria-hidden="true">
-          <div className="absolute -top-24 -left-16 size-72 rounded-full bg-orange-100/70 blur-3xl" />
-          <div className="absolute top-20 right-0 size-80 rounded-full bg-emerald-100/60 blur-3xl" />
-          <div className="absolute bottom-0 left-1/3 size-64 rounded-full bg-sky-100/50 blur-3xl" />
+          <div className="absolute -top-24 -left-16 size-72 rounded-full bg-emerald-100/70 blur-3xl" />
+          <div className="absolute top-16 right-0 size-96 rounded-full bg-emerald-200/40 blur-3xl" />
+          <div className="absolute bottom-0 left-1/3 size-64 rounded-full bg-teal-100/50 blur-3xl" />
         </div>
 
-        <div className="relative mx-auto grid max-w-6xl items-center gap-12 px-4 py-14 sm:px-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] lg:py-20">
+        <div className="relative mx-auto grid max-w-6xl items-center gap-12 px-4 py-16 sm:px-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.35fr)] lg:gap-16 lg:py-24">
           <div>
-            <p className="inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-white/80 px-3 py-1 text-xs font-semibold tracking-wide text-zinc-500 uppercase">
-              <span className="size-1.5 rounded-full bg-emerald-500" />
+            <p className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold tracking-wide text-emerald-700 uppercase">
+              <span className="landing-online-dot size-1.5 rounded-full bg-emerald-500" />
               {t("landing.hero.kicker", "Komandas uzdevumu pārvaldība")}
             </p>
-            <h1 className="mt-4 max-w-xl text-4xl font-semibold tracking-tight text-balance text-zinc-900 sm:text-5xl">
+            <h1 className="mt-5 max-w-xl text-4xl font-bold tracking-tight text-balance text-zinc-900 sm:text-5xl lg:text-6xl lg:leading-[1.05]">
               {t(
                 "landing.hero.title",
                 "Vienkārša komandas uzdevumu pārvaldība mūsdienīgām komandām",
               )}
             </h1>
-            <p className="mt-4 max-w-lg text-lg leading-7 text-zinc-500">
+            <p className="mt-5 max-w-lg text-lg leading-8 text-zinc-600">
               {t(
                 "landing.hero.subtitle",
                 "{name} palīdz visai komandai redzēt sarakstus, uzdevumus un cilvēkus vienā darbvietā — ar statusu, termiņiem un atbildīgajiem, nevis tabulās un čatā.",
@@ -84,7 +84,7 @@ export function LandingPage({ productName }: { productName: string }) {
             <div className="mt-8 flex flex-wrap gap-3">
               <Link
                 href={signupHref}
-                className="inline-flex min-h-11 items-center rounded-2xl bg-zinc-900 px-5 text-sm font-semibold text-white transition hover:bg-zinc-700"
+                className="inline-flex min-h-12 items-center rounded-2xl bg-gradient-to-br from-emerald-500 to-emerald-600 px-6 text-sm font-semibold text-white shadow-lg shadow-emerald-500/25 transition hover:from-emerald-400 hover:to-emerald-500 hover:shadow-xl hover:shadow-emerald-500/30"
               >
                 {t("landing.hero.cta_signup", "Sākt bez maksas")}
               </Link>
@@ -95,40 +95,47 @@ export function LandingPage({ productName }: { productName: string }) {
                   revealLandingHash("features");
                   scrollToHashIdWhenReady("features");
                 }}
-                className="inline-flex min-h-11 items-center rounded-2xl border border-zinc-200 bg-white/80 px-5 text-sm font-semibold text-zinc-800 transition hover:bg-white"
+                className="inline-flex min-h-12 items-center rounded-2xl border border-zinc-200 bg-white px-6 text-sm font-semibold text-zinc-800 shadow-sm transition hover:border-zinc-300 hover:shadow-md"
               >
                 {t("landing.hero.cta_how", "Skatīt, kā tas darbojas")}
               </a>
             </div>
-            <p className="mt-4 text-sm text-zinc-400">
+            <p className="mt-5 inline-flex items-center gap-2 text-sm text-zinc-500">
+              <i className="fas fa-circle-check text-emerald-500" aria-hidden="true" />
               {t("landing.hero.trust", "Bez instalēšanas. Sāc ar e-pastu.")}
             </p>
 
-            <div className="mt-10 flex flex-wrap gap-6 text-sm">
-              <div>
-                <p className="font-semibold text-zinc-900">
+            <div className="mt-10 grid gap-4 sm:grid-cols-2">
+              <div className="border-l-2 border-emerald-500 pl-4">
+                <p className="text-sm font-semibold text-zinc-900">
                   {t("landing.hero.stat_status_title", "Darāms, procesā, gatavs")}
                 </p>
-                <p className="mt-0.5 text-zinc-500">
+                <p className="mt-1 text-sm leading-6 text-zinc-500">
                   {t(
                     "landing.hero.stat_status",
                     "Viena tāfele visai dienai, nevis pieci rīki.",
                   )}
                 </p>
               </div>
-              <div>
-                <p className="font-semibold text-zinc-900">
+              <div className="border-l-2 border-emerald-500 pl-4">
+                <p className="text-sm font-semibold text-zinc-900">
                   {t("landing.hero.stat_together_title", "Cilvēki pie darba")}
                 </p>
-                <p className="mt-0.5 text-zinc-500">
+                <p className="mt-1 text-sm leading-6 text-zinc-500">
                   {t(content.heroTogether.key, content.heroTogether.fallback)}
                 </p>
               </div>
             </div>
           </div>
 
-          <div className="pb-10 lg:pb-6">
-            <LandingAppPreview />
+          <div className="relative pb-10 lg:pb-6">
+            <div
+              className="pointer-events-none absolute -inset-8 rounded-full bg-emerald-400/20 blur-3xl"
+              aria-hidden="true"
+            />
+            <div className="landing-preview-tilt relative">
+              <LandingAppPreview />
+            </div>
           </div>
         </div>
       </section>

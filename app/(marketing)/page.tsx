@@ -24,6 +24,11 @@ export async function generateMetadata(): Promise<Metadata> {
       name,
     ),
     description: t(
+      "landing.seo.meta_description",
+      "{name}: komandas uzdevumi, projekti un termiņi vienā darbvietā. Skaidri statusi un atbildīgie. Sāc bez maksas — bez instalēšanas.",
+      name,
+    ),
+    ogDescription: t(
       "landing.seo.description",
       "{name} ir komandas uzdevumu pārvaldības rīks mazām un augošām komandām. Plāno uzdevumus, projektus un termiņus vienā darbvietā — bez liekas sarežģītības.",
       name,

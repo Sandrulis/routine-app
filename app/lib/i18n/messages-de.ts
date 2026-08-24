@@ -7,6 +7,7 @@ export const de: Record<string, string> = {
   "site.footer.rights": "© {year} {SYSTEM_NAME}",
   "landing.seo.title": "{name} — Einfache Software für Team-Aufgabenverwaltung",
   "landing.seo.description": "{name} ist Software für Team-Aufgabenverwaltung. Plane Aufgaben, Projekte und Personen in einem Arbeitsbereich — mit Status, Fälligkeiten und Zuständigen.",
+  "landing.seo.meta_description": "{name}: Team-Aufgaben, Projekte und Fristen in einem Arbeitsbereich. Klare Status und Zuständige. Kostenlos starten — ohne Installation.",
   "landing.seo.keywords": "software team aufgabenverwaltung, aufgabenverwaltung software, team zusammenarbeit software, projektmanagement software, arbeitsverwaltung software, aufgaben tracking software",
   "landing.hero.title": "Einfache Team-Aufgabenverwaltung für moderne Teams",
   "landing.hero.subtitle": "{name} hilft dem ganzen Team, Listen, Aufgaben und Personen in einem Arbeitsbereich zu sehen — mit Status, Fälligkeiten und Zuständigen, nicht verstreut über Tabellen und Chat.",

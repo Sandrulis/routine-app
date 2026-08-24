@@ -7,6 +7,7 @@ export const sv: Record<string, string> = {
   "site.footer.rights": "© {year} {SYSTEM_NAME}",
   "landing.seo.title": "{name} — Enkel programvara för teamuppgiftshantering",
   "landing.seo.description": "{name} är programvara för teamuppgiftshantering. Planera uppgifter, projekt och personer i en arbetsyta — med status, deadlines och ansvariga.",
+  "landing.seo.meta_description": "{name}: teamuppgifter, projekt och deadlines i en arbetsyta. Tydliga statusar och ansvariga. Kom igång gratis — utan installation.",
   "landing.seo.keywords": "programvara för teamuppgiftshantering, uppgiftshantering, teamarbete, projektledning, arbetshantering, uppgiftsspårning",
   "landing.hero.title": "Enkel teamuppgiftshantering för moderna team",
   "landing.hero.subtitle": "{name} hjälper hela teamet att se listor, uppgifter och personer i en arbetsyta — med status, deadlines och ansvariga, inte utspritt över kalkylark och chatt.",

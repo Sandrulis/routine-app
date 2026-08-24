@@ -14,6 +14,7 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "landing.seo.title": "{name} — vienkārša komandas uzdevumu pārvaldība",
     "landing.seo.description":
       "{name} ir komandas uzdevumu pārvaldības rīks. Plāno uzdevumus, projektus un cilvēkus vienā darbvietā — ar statusu, termiņiem un atbildīgajiem.",
+    "landing.seo.meta_description": "{name}: komandas uzdevumi, projekti un termiņi vienā darbvietā. Skaidri statusi un atbildīgie. Sāc bez maksas — bez instalēšanas.",
     "landing.seo.keywords":
       "komandas uzdevumu pārvaldība, uzdevumu pārvaldības programma, projektu vadība, darba pārvaldība, uzdevumu uzskaite, komandas sadarbība",
     "landing.hero.title": "Vienkārša komandas uzdevumu pārvaldība mūsdienīgām komandām",
@@ -2072,6 +2073,7 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "landing.seo.title": "{name} — Simple Team Task Management Software",
     "landing.seo.description":
       "{name} is team task management software for tasks, projects and people in one workspace. Status, due dates and owners stay with the work — without the usual complexity.",
+    "landing.seo.meta_description": "{name}: team tasks, projects and deadlines in one workspace. Clear owners, statuses and due dates. Start free — no install required.",
     "landing.seo.keywords":
       "team task management software, task management software, team collaboration software, project management software, work management software, task tracking software",
     "landing.hero.title": "Simple team task management for modern teams",

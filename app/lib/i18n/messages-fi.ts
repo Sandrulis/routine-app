@@ -7,6 +7,7 @@ export const fi: Record<string, string> = {
   "site.footer.rights": "© {year} {SYSTEM_NAME}",
   "landing.seo.title": "{name} — Yksinkertainen tiimin tehtävienhallinta",
   "landing.seo.description": "{name} on tiimin tehtävienhallintaohjelmisto. Suunnittele tehtävät, projektit ja ihmiset yhdessä työtilassa — statuksen, määräaikojen ja vastuuhenkilöiden kanssa.",
+  "landing.seo.meta_description": "{name}: tiimin tehtävät, projektit ja määräajat yhdessä työtilassa. Selkeät tilat ja vastuuhenkilöt. Aloita ilmaiseksi — ilman asennusta.",
   "landing.seo.keywords": "tiimin tehtävienhallinta, tehtävienhallintaohjelmisto, tiimin yhteistyöohjelmisto, projektinhallintaohjelmisto, työn hallinta, tehtävien seuranta",
   "landing.hero.title": "Yksinkertainen tiimin tehtävienhallinta nykyaikaisille tiimeille",
   "landing.hero.subtitle": "{name} auttaa koko tiimiä näkemään listat, tehtävät ja ihmiset yhdessä työtilassa — statuksen, määräaikojen ja vastuuhenkilöiden kanssa, ei hajallaan taulukoissa ja chatissa.",

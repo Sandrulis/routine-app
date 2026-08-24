@@ -92,7 +92,7 @@ export function LandingAppPreview() {
 
   return (
     <div className="landing-preview-frame relative" aria-hidden="true">
-      <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-[0_24px_60px_rgba(24,24,27,0.14)]">
+      <div className="overflow-hidden rounded-4xl border border-zinc-200/80 bg-white shadow-[0_40px_90px_-24px_rgba(16,24,40,0.35),0_8px_24px_-12px_rgba(16,185,129,0.25)] ring-1 ring-zinc-900/5">
         <div className="flex items-center gap-2 border-b border-zinc-100 bg-zinc-50 px-3 py-2">
           <span className="size-2 rounded-full bg-zinc-300" />
           <span className="size-2 rounded-full bg-zinc-300" />

@@ -7,6 +7,7 @@ export const pl: Record<string, string> = {
   "site.footer.rights": "© {year} {SYSTEM_NAME}",
   "landing.seo.title": "{name} — Proste oprogramowanie do zarządzania zadaniami zespołu",
   "landing.seo.description": "{name} to oprogramowanie do zarządzania zadaniami zespołu. Planuj zadania, projekty i osoby w jednej przestrzeni — ze statusem, terminami i odpowiedzialnymi.",
+  "landing.seo.meta_description": "{name}: zadania zespołu, projekty i terminy w jednej przestrzeni. Jasne statusy i osoby odpowiedzialne. Zacznij za darmo — bez instalacji.",
   "landing.seo.keywords": "oprogramowanie do zarządzania zadaniami zespołu, oprogramowanie do zarządzania zadaniami, oprogramowanie do współpracy zespołowej, oprogramowanie do zarządzania projektami, oprogramowanie do zarządzania pracą, oprogramowanie do śledzenia zadań",
   "landing.hero.title": "Proste zarządzanie zadaniami zespołu dla nowoczesnych zespołów",
   "landing.hero.subtitle": "{name} pomaga całemu zespołowi widzieć listy, zadania i osoby w jednej przestrzeni — ze statusem, terminami i odpowiedzialnymi, nie w arkuszach i czacie.",

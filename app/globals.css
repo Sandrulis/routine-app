@@ -101,6 +101,34 @@ button:disabled,
   display: none;
 }
 
+/*
+ * Hero mockup depth. The tilt lives on a wrapper because
+ * `.landing-preview-frame` already animates `transform`.
+ */
+.landing-preview-tilt {
+  transform: perspective(1800px) rotateY(-8deg) rotateX(3deg);
+  transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.landing-preview-tilt:hover {
+  transform: perspective(1800px) rotateY(-2deg) rotateX(1deg) scale(1.015);
+}
+
+@media (max-width: 1023px) {
+  .landing-preview-tilt,
+  .landing-preview-tilt:hover {
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-preview-tilt,
+  .landing-preview-tilt:hover {
+    transform: none;
+    transition: none;
+  }
+}
+
 @keyframes landing-float {
   0%,
   100% {

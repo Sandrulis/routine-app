@@ -59,6 +59,8 @@ export async function canonicalMetadata(
     title?: string;
     titleAbsolute?: string;
     description?: string;
+    /** Share text for Open Graph and Twitter. Falls back to `description`. */
+    ogDescription?: string;
     languageCode?: LanguageCode;
     index?: boolean;
   },
@@ -69,6 +71,7 @@ export async function canonicalMetadata(
   const languages = hreflangMap(path);
   const title = extras?.titleAbsolute || extras?.title;
   const images = shareImages(title || "TASQIN");
+  const shareDescription = extras?.ogDescription ?? extras?.description;
 
   return {
     ...(extras?.titleAbsolute
@@ -89,13 +92,13 @@ export async function canonicalMetadata(
       alternateLocale: ogAlternateLocales(languageCode),
       images: images.openGraph,
       ...(title ? { title } : {}),
-      ...(extras?.description ? { description: extras.description } : {}),
+      ...(shareDescription ? { description: shareDescription } : {}),
     },
     twitter: {
       card: "summary_large_image",
       images: images.twitter,
       ...(title ? { title } : {}),
-      ...(extras?.description ? { description: extras.description } : {}),
+      ...(shareDescription ? { description: shareDescription } : {}),
     },
   };
 }

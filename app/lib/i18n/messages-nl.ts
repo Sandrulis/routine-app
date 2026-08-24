@@ -7,6 +7,7 @@ export const nl: Record<string, string> = {
   "site.footer.rights": "© {year} {SYSTEM_NAME}",
   "landing.seo.title": "{name} — Eenvoudige software voor teamtaakbeheer",
   "landing.seo.description": "{name} is software voor teamtaakbeheer. Plan taken, projecten en mensen in één werkruimte — met status, deadlines en eigenaren.",
+  "landing.seo.meta_description": "{name}: teamtaken, projecten en deadlines in één werkruimte. Duidelijke statussen en eigenaren. Start gratis — zonder installatie.",
   "landing.seo.keywords": "team taakbeheer software, taakbeheer software, team samenwerking software, projectmanagement software, werkbeheer software, taakvolg software",
   "landing.hero.title": "Eenvoudig teamtaakbeheer voor moderne teams",
   "landing.hero.subtitle": "{name} helpt het hele team lijsten, taken en mensen in één werkruimte te zien — met status, deadlines en eigenaren, niet verspreid over sheets en chat.",

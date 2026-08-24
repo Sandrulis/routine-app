@@ -7,6 +7,7 @@ export const es: Record<string, string> = {
   "site.footer.rights": "© {year} {SYSTEM_NAME}",
   "landing.seo.title": "{name} — Software sencillo de gestión de tareas de equipo",
   "landing.seo.description": "{name} es un software de gestión de tareas de equipo para equipos pequeños y en crecimiento. Planifica tareas, proyectos y plazos en un solo espacio de trabajo, sin la complejidad de siempre.",
+  "landing.seo.meta_description": "{name}: tareas de equipo, proyectos y plazos en un solo espacio. Estados y responsables claros. Empieza gratis — sin instalación.",
   "landing.seo.keywords": "software de gestión de tareas de equipo, software de gestión de tareas, software de colaboración en equipo, software de gestión de proyectos, software de gestión del trabajo, software de seguimiento de tareas",
   "landing.hero.title": "Gestión de tareas de equipo sin complicaciones",
   "landing.hero.subtitle": "{name} ayuda a todo el equipo a ver qué hay que hacer hoy. Tareas, proyectos, personas y plazos: en un solo sitio, no repartidos entre hojas y chats.",

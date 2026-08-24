@@ -10,7 +10,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
       const localized = localePath(path, language.code);
       return {
         url: absoluteUrl(localized),
-        lastModified: new Date(),
         changeFrequency: path === "/" ? "weekly" : "monthly",
         priority: path === "/" ? 1 : 0.5,
         alternates: { languages },

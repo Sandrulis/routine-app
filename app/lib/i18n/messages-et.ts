@@ -7,6 +7,7 @@ export const et: Record<string, string> = {
   "site.footer.rights": "© {year} {SYSTEM_NAME}",
   "landing.seo.title": "{name} — lihtne meeskonna ülesannete haldustarkvara",
   "landing.seo.description": "{name} on meeskonna ülesannete haldustarkvara. Plaani ülesandeid, projekte ja inimesi ühes tööruumis — staatuse, tähtaegade ja vastutajatega.",
+  "landing.seo.meta_description": "{name}: meeskonna ülesanded, projektid ja tähtajad ühes tööruumis. Selged staatused ja vastutajad. Alusta tasuta — ilma paigalduseta.",
   "landing.seo.keywords": "meeskonna ülesannete haldustarkvara, ülesannete haldustarkvara, meeskonnatöö tarkvara, projektijuhtimise tarkvara, tööde haldustarkvara, ülesannete jälgimise tarkvara",
   "landing.hero.title": "Lihtne meeskonna ülesannete haldus nüüdisaegsetele meeskondadele",
   "landing.hero.subtitle": "{name} aitab kogu meeskonnal näha loendeid, ülesandeid ja inimesi ühes tööruumis — staatuse, tähtaegade ja vastutajatega, mitte laiali tabelites ja vestluses.",

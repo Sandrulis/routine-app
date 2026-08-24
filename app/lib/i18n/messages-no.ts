@@ -7,6 +7,7 @@ export const no: Record<string, string> = {
   "site.footer.rights": "© {year} {SYSTEM_NAME}",
   "landing.seo.title": "{name} — Enkel programvare for oppgavestyring i team",
   "landing.seo.description": "{name} er programvare for oppgavestyring i team. Planlegg oppgaver, prosjekter og personer i ett arbeidsområde — med status, frister og ansvarlige.",
+  "landing.seo.meta_description": "{name}: teamoppgaver, prosjekter og frister i ett arbeidsområde. Tydelige statuser og ansvarlige. Kom i gang gratis — uten installasjon.",
   "landing.seo.keywords": "programvare for oppgavestyring i team, oppgavestyring, samarbeidsverktøy for team, prosjektstyringsverktøy, arbeidsstyring, oppgavesporing",
   "landing.hero.title": "Enkel oppgavestyring i team for moderne team",
   "landing.hero.subtitle": "{name} hjelper hele teamet å se lister, oppgaver og personer i ett arbeidsområde — med status, frister og ansvarlige, ikke spredt over ark og chat.",

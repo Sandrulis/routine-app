@@ -7,6 +7,7 @@ export const fr: Record<string, string> = {
   "site.footer.rights": "© {year} {SYSTEM_NAME}",
   "landing.seo.title": "{name} — Logiciel simple de gestion des tâches d'équipe",
   "landing.seo.description": "{name} est un logiciel de gestion des tâches d'équipe. Planifie les tâches, les projets et les personnes dans un seul espace — avec statut, échéances et responsables.",
+  "landing.seo.meta_description": "{name} : tâches d'équipe, projets et échéances dans un seul espace. Statuts et responsables clairs. Commence gratuitement — sans installation.",
   "landing.seo.keywords": "logiciel de gestion des tâches d'équipe, logiciel de gestion des tâches, logiciel de collaboration d'équipe, logiciel de gestion de projet, logiciel de gestion du travail, logiciel de suivi des tâches",
   "landing.hero.title": "Gestion simple des tâches d'équipe pour les équipes modernes",
   "landing.hero.subtitle": "{name} aide toute l'équipe à voir les listes, les tâches et les personnes dans un seul espace — avec statut, échéances et responsables, pas éparpillés entre tableurs et discussions.",

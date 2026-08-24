@@ -7,6 +7,7 @@ export const lt: Record<string, string> = {
   "site.footer.rights": "© {year} {SYSTEM_NAME}",
   "landing.seo.title": "{name} — Paprasta komandos užduočių valdymo programa",
   "landing.seo.description": "{name} yra komandos užduočių valdymo programa. Planuokite užduotis, projektus ir žmones vienoje darbo vietoje — su būsena, terminais ir atsakingaisiais.",
+  "landing.seo.meta_description": "{name}: komandos užduotys, projektai ir terminai vienoje darbo vietoje. Aiškios būsenos ir atsakingieji. Pradėk nemokamai — be diegimo.",
   "landing.seo.keywords": "komandos užduočių valdymas, užduočių valdymo programa, komandinio darbo programa, projektų valdymas, darbų valdymas, užduočių sekimas",
   "landing.hero.title": "Paprastas komandos užduočių valdymas šiuolaikinėms komandoms",
   "landing.hero.subtitle": "{name} padeda visai komandai matyti sąrašus, užduotis ir žmones vienoje darbo vietoje — su būsena, terminais ir atsakingaisiais, o ne išbarstytus lentelėse ir pokalbiuose.",

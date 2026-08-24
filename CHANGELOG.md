@@ -4,6 +4,12 @@
 
 - (none)
 
+## v0.2.32
+
+- Sākumlapas vizuālais dizains: zaļš akcents (CTA, ikonas), kartīšu grid 2/3 kolonnās, dziļāks hero mockup ar glow un perspektīvu, kontrastaināka tipogrāfija un sekciju fonu ritms
+- BUJ akordeons kā atsevišķas kartītes ar atvērtā stāvokļa akcentu
+- SEO: `SoftwareApplication` bezmaksas `offers`, `Organization` `sameAs`, atsevišķs meta apraksts no og:description (15 valodās), sitemap bez `lastModified`
+
 ## v0.2.31
 
 - Google bez komandas: Turnstile botu pārbaude modālī (ne formā); labots vienreizējā tokena dubultā verify

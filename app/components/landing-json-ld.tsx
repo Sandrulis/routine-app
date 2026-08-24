@@ -6,6 +6,7 @@ import { getSiteSettings } from "@/app/lib/site-admin/repository";
 import { htmlLang, localePath } from "@/app/lib/seo/locale-path";
 import { OG_IMAGE_PATH, OG_IMAGE_SIZE } from "@/app/lib/seo/share-image";
 import { absoluteUrl } from "@/app/lib/seo/site-url";
+import { socialProfileUrls } from "@/app/lib/seo/social-links";
 
 function httpUrl(value: string | null | undefined): string | null {
   if (!value) return null;
@@ -42,6 +43,8 @@ export async function LandingJsonLd() {
     },
   }));
 
+  const sameAs = socialProfileUrls();
+
   const organization = {
     "@type": "Organization",
     "@id": organizationId,
@@ -54,6 +57,7 @@ export async function LandingJsonLd() {
       height: OG_IMAGE_SIZE.height,
     },
     image: logoUrl,
+    ...(sameAs.length > 0 ? { sameAs } : {}),
   };
 
   const jsonLd = {
@@ -79,6 +83,14 @@ export async function LandingJsonLd() {
         description,
         inLanguage: language,
         publisher: { "@id": organizationId },
+        offers: {
+          "@type": "Offer",
+          price: "0",
+          priceCurrency: "EUR",
+          availability: "https://schema.org/InStock",
+          // Landing page, not /signup — signup is robots-disallowed.
+          url,
+        },
       },
       {
         "@type": "FAQPage",

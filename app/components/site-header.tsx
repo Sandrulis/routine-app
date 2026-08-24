@@ -97,7 +97,7 @@ export function SiteHeader({
             {isReady && user ? (
               <Link
                 href="/dashboard"
-                className="rounded-lg bg-zinc-900 px-3 py-2 text-sm font-semibold text-white transition hover:bg-zinc-700"
+                className="rounded-lg bg-gradient-to-br from-emerald-500 to-emerald-600 px-3 py-2 text-sm font-semibold text-white shadow-sm shadow-emerald-500/25 transition hover:from-emerald-400 hover:to-emerald-500"
               >
                 {t("auth.open_app", "Atvērt lietotni")}
               </Link>
@@ -112,7 +112,7 @@ export function SiteHeader({
                 {signupEnabled ? (
                   <Link
                     href={signupHref}
-                    className="rounded-lg bg-zinc-900 px-3 py-2 text-sm font-semibold text-white transition hover:bg-zinc-700"
+                    className="rounded-lg bg-gradient-to-br from-emerald-500 to-emerald-600 px-3 py-2 text-sm font-semibold text-white shadow-sm shadow-emerald-500/25 transition hover:from-emerald-400 hover:to-emerald-500"
                   >
                     {t("auth.signup.title", "Reģistrēties")}
                   </Link>

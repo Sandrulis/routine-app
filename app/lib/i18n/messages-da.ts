@@ -7,6 +7,7 @@ export const da: Record<string, string> = {
   "site.footer.rights": "© {year} {SYSTEM_NAME}",
   "landing.seo.title": "{name} — Enkel software til teamopgavestyring",
   "landing.seo.description": "{name} er software til teamopgavestyring. Planlæg opgaver, projekter og personer i ét arbejdsområde — med status, frister og ansvarlige.",
+  "landing.seo.meta_description": "{name}: teamopgaver, projekter og frister i ét arbejdsområde. Klare statusser og ansvarlige. Kom gratis i gang — uden installation.",
   "landing.seo.keywords": "software til teamopgavestyring, opgavestyringssoftware, samarbejdssoftware til teams, projektstyringssoftware, arbejdshåndteringssoftware, software til opgavesporing",
   "landing.hero.title": "Enkel teamopgavestyring til moderne teams",
   "landing.hero.subtitle": "{name} hjælper hele teamet med at se lister, opgaver og personer i ét arbejdsområde — med status, frister og ansvarlige, ikke spredt over ark og chat.",

@@ -7,6 +7,7 @@ export const it: Record<string, string> = {
   "site.footer.rights": "© {year} {SYSTEM_NAME}",
   "landing.seo.title": "{name} — Software semplice per la gestione delle attività di team",
   "landing.seo.description": "{name} è un software per la gestione delle attività di team. Pianifica attività, progetti e persone in un unico spazio — con stato, scadenze e responsabili.",
+  "landing.seo.meta_description": "{name}: attività del team, progetti e scadenze in un unico spazio. Stati e responsabili chiari. Inizia gratis — senza installazione.",
   "landing.seo.keywords": "software gestione attività di team, gestione attività, collaborazione di team, gestione progetti, gestione del lavoro, tracciamento attività",
   "landing.hero.title": "Gestione semplice delle attività di team per team moderni",
   "landing.hero.subtitle": "{name} aiuta tutto il team a vedere elenchi, attività e persone in un unico spazio — con stato, scadenze e responsabili, non sparsi tra fogli e chat.",
