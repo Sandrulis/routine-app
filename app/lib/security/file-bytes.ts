@@ -1,3 +1,5 @@
+import { fileExtensionFromName } from "@/app/lib/file-types";
+
 const UNSAFE_INLINE_EXTENSIONS = new Set(["html", "htm", "svg", "xml", "xhtml"]);
 
 type MagicMatch = { mime: string; bytes: number[][] };
@@ -45,10 +47,7 @@ export function looksLikeHtml(bytes: Uint8Array): boolean {
 }
 
 export function fileExtensionOf(name: string) {
-  const trimmed = name.trim().toLowerCase();
-  const dot = trimmed.lastIndexOf(".");
-  if (dot < 0 || dot === trimmed.length - 1) return "";
-  return trimmed.slice(dot + 1);
+  return fileExtensionFromName(name);
 }
 
 export function isUnsafeInlineFile(name: string, mimeType: string) {

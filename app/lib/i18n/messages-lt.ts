@@ -1400,7 +1400,7 @@ export const lt: Record<string, string> = {
   "extension.gmail.check_all": "Pažymėti visus",
   "extension.gmail.email_always": "Laiško turinys (.txt) yra neprivalomas.",
   "extension.gmail.email_body": "Laiško turinys (.txt)",
-  "extension.gmail.email_body_hint": "Pažymėkite, jei norite pridėti ir laiško tekstą.",
+  "extension.gmail.email_body_hint": "Nuimkite varnelę, jei nenorite pridėti laiško teksto.",
   "extension.gmail.too_large": "{size} — per didelis (>25 MB)",
   "extension.gmail.empty": "Čia nieko nėra",
   "extension.gmail.load_lists": "Įkeliami sąrašai…",

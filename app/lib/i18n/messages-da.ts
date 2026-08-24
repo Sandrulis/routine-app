@@ -1400,7 +1400,7 @@ export const da: Record<string, string> = {
   "extension.gmail.check_all": "Markér alle",
   "extension.gmail.email_always": "E-mailindhold (.txt) er valgfrit.",
   "extension.gmail.email_body": "E-mailindhold (.txt)",
-  "extension.gmail.email_body_hint": "Markér, hvis du også vil vedhæfte e-mailteksten.",
+  "extension.gmail.email_body_hint": "Fjern markeringen, hvis du ikke vil vedhæfte e-mailteksten.",
   "extension.gmail.too_large": "{size} — for stor (>25 MB)",
   "extension.gmail.empty": "Intet her",
   "extension.gmail.load_lists": "Indlæser lister…",

@@ -4,6 +4,7 @@ import {
   mimeFromFileName,
   renameKeepingExtension,
 } from "@/app/lib/file-types";
+import { addThousandSeparators } from "@/app/lib/format/numbers";
 
 export type ListFile = {
   id: string;
@@ -81,12 +82,6 @@ export function fileIconColor(name: string): string {
   return getFileIconDisplay(name).color;
 }
 
-function groupThousands(value: string): string {
-  const [integer, fraction] = value.split(".");
-  const grouped = integer.replace(/\B(?=(\d{3})+(?!\d))/g, " ");
-  return fraction === undefined ? grouped : `${grouped}.${fraction}`;
-}
-
 export function fileStoredBytes(file: { size: number }): number {
   const size = Number(file.size);
   return Number.isFinite(size) && size > 0 ? Math.round(size) : 0;
@@ -127,20 +122,20 @@ export function sumFileStorageBuckets(
 
 export function formatFileSize(bytes: number): string {
   const size = Number.isFinite(bytes) ? Math.max(0, bytes) : 0;
-  if (size < 1024) return `${groupThousands(String(Math.round(size)))} B`;
+  if (size < 1024) return `${addThousandSeparators(String(Math.round(size)))} B`;
   if (size < 1024 * 1024) {
     const kb = size / 1024;
     const value = kb >= 100 ? kb.toFixed(0) : kb.toFixed(1);
-    return `${groupThousands(value)} KB`;
+    return `${addThousandSeparators(value)} KB`;
   }
   if (size < 1024 * 1024 * 1024) {
     const mb = size / (1024 * 1024);
     const value = mb >= 100 ? mb.toFixed(0) : mb.toFixed(1);
-    return `${groupThousands(value)} MB`;
+    return `${addThousandSeparators(value)} MB`;
   }
   const gb = size / (1024 * 1024 * 1024);
   const value = gb >= 100 ? gb.toFixed(0) : gb.toFixed(1);
-  return `${groupThousands(value)} GB`;
+  return `${addThousandSeparators(value)} GB`;
 }
 
 export function nextItemSortOrder(items: Array<{ sortOrder: number }>): number {

@@ -1400,7 +1400,7 @@ export const fr: Record<string, string> = {
   "extension.gmail.check_all": "Tout cocher",
   "extension.gmail.email_always": "Le contenu de l’e-mail (.txt) est facultatif.",
   "extension.gmail.email_body": "Contenu de l’e-mail (.txt)",
-  "extension.gmail.email_body_hint": "Coche si tu veux aussi joindre le texte de l’e-mail.",
+  "extension.gmail.email_body_hint": "Décoche si tu ne veux pas joindre le texte de l’e-mail.",
   "extension.gmail.too_large": "{size} — trop volumineux (>25 Mo)",
   "extension.gmail.empty": "Rien ici",
   "extension.gmail.load_lists": "Chargement des listes…",

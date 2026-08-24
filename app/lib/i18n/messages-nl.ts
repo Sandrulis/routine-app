@@ -1400,7 +1400,7 @@ export const nl: Record<string, string> = {
   "extension.gmail.check_all": "Alles aanvinken",
   "extension.gmail.email_always": "E-mailinhoud (.txt) is optioneel.",
   "extension.gmail.email_body": "E-mailinhoud (.txt)",
-  "extension.gmail.email_body_hint": "Vink aan als je ook de e-mailtekst wilt toevoegen.",
+  "extension.gmail.email_body_hint": "Vink uit als je de e-mailtekst niet wilt toevoegen.",
   "extension.gmail.too_large": "{size} — te groot (>25 MB)",
   "extension.gmail.empty": "Niets hier",
   "extension.gmail.load_lists": "Lijsten laden…",

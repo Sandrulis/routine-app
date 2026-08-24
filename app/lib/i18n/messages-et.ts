@@ -1400,7 +1400,7 @@ export const et: Record<string, string> = {
   "extension.gmail.check_all": "Märgi kõik",
   "extension.gmail.email_always": "Meili sisu (.txt) on valikuline.",
   "extension.gmail.email_body": "Meili sisu (.txt)",
-  "extension.gmail.email_body_hint": "Märgi, kui soovid lisada ka meili teksti.",
+  "extension.gmail.email_body_hint": "Eemalda linnuke, kui sa ei soovi meili teksti lisada.",
   "extension.gmail.too_large": "{size} — liiga suur (>25 MB)",
   "extension.gmail.empty": "Siin pole midagi",
   "extension.gmail.load_lists": "Nimekirjade laadimine…",

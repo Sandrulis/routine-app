@@ -17,6 +17,7 @@ import {
   isSupabaseAdminConfigured,
   isSupabaseConfigured,
 } from "@/app/lib/supabase/env";
+import { parseCookieHeader } from "@/app/lib/http/parse-cookie-header";
 import { ensureCurrentUserProfile } from "@/app/lib/users/ensure-profile";
 
 export type OAuthSignInProfile = {
@@ -25,29 +26,6 @@ export type OAuthSignInProfile = {
   avatarUrl: string;
   provider: "google" | "microsoft";
 };
-
-function parseCookieHeader(header: string | null) {
-  if (!header) return [];
-
-  return header.split(";").flatMap((part) => {
-    const trimmed = part.trim();
-    const separator = trimmed.indexOf("=");
-    if (separator < 0) return [];
-
-    const rawName = trimmed.slice(0, separator);
-    const rawValue = trimmed.slice(separator + 1);
-    try {
-      return [
-        {
-          name: decodeURIComponent(rawName),
-          value: decodeURIComponent(rawValue),
-        },
-      ];
-    } catch {
-      return [{ name: rawName, value: rawValue }];
-    }
-  });
-}
 
 function isExistingUserError(message: string) {
   const normalized = message.toLowerCase();

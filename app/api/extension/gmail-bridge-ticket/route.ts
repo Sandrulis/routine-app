@@ -48,16 +48,15 @@ export async function POST(request: Request) {
       );
     }
 
-    let body: { accessToken?: string; refreshToken?: string } = {};
+    let body: { refreshToken?: string } = {};
     try {
       body = (await request.json()) as typeof body;
     } catch {
       body = {};
     }
 
-    const accessToken = String(body.accessToken || "").trim();
     const refreshToken = String(body.refreshToken || "").trim();
-    if (!accessToken || !refreshToken) {
+    if (!refreshToken) {
       return extensionJson(
         request,
         { ok: false, error: "errors.extension_auth_required" },
@@ -65,21 +64,7 @@ export async function POST(request: Request) {
       );
     }
 
-    // Ensure the submitted access token belongs to this authenticated user.
-    const {
-      data: { user: tokenUser },
-      error: tokenError,
-    } = await auth.supabase.auth.getUser(accessToken);
-    if (tokenError || !tokenUser || tokenUser.id !== auth.user.id) {
-      return extensionJson(
-        request,
-        { ok: false, error: "errors.extension_auth_required" },
-        { status: 401 },
-      );
-    }
-
     const ticket = createGmailBridgeTicket({
-      accessToken,
       refreshToken,
       userId: auth.user.id,
     });

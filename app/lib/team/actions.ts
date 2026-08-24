@@ -29,12 +29,9 @@ import {
   sendTeamInviteEmail,
   teamInvitePublicUrl,
 } from "@/app/lib/team/send-invite-email";
+import type { ActionResult } from "@/app/lib/actions/action-result";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-type ActionResult<T = undefined> =
-  | ({ ok: true } & (T extends undefined ? object : { data: T }))
-  | { ok: false; error: string };
 
 function createInvitationToken(): string {
   return randomBytes(24).toString("base64url");

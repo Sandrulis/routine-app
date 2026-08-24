@@ -5,6 +5,7 @@ import {
   resolveStatusCatalogs,
   sortTasksLikeNavTree,
 } from "@/app/lib/list-statuses";
+import { parseIdList, parseStatusGroupMap } from "@/app/lib/lists";
 import type { TaskStatusSummary } from "@/app/lib/site-admin/types";
 
 export type ExtensionBrowseList = {
@@ -30,24 +31,6 @@ export type ExtensionBrowseSubtask = {
   listId: string;
   parentId: string;
 };
-
-function parseIdList(value: unknown): string[] {
-  if (!Array.isArray(value)) return [];
-  return value.filter(
-    (item): item is string => typeof item === "string" && item.length > 0,
-  );
-}
-
-function parseGroupOverrides(value: unknown): Record<string, string> {
-  if (!value || typeof value !== "object" || Array.isArray(value)) return {};
-  const out: Record<string, string> = {};
-  for (const [id, groupKey] of Object.entries(
-    value as Record<string, unknown>,
-  )) {
-    if (typeof groupKey === "string" && groupKey.trim()) out[id] = groupKey;
-  }
-  return out;
-}
 
 async function loadSystemStatuses(
   supabase: SupabaseClient,
@@ -270,14 +253,14 @@ export async function listExtensionSubtasksForTask(
     list: {
       hiddenStatusIds: parseIdList(listRow?.hidden_status_ids),
       statusOrder: parseIdList(listRow?.status_order),
-      statusGroupOverrides: parseGroupOverrides(
+      statusGroupOverrides: parseStatusGroupMap(
         listRow?.status_group_overrides,
       ),
     },
     parentTask: {
       hiddenStatusIds: parseIdList(parent?.hidden_status_ids),
       statusOrder: parseIdList(parent?.status_order),
-      statusGroupOverrides: parseGroupOverrides(
+      statusGroupOverrides: parseStatusGroupMap(
         parent?.status_group_overrides,
       ),
     },

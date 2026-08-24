@@ -38,6 +38,7 @@ export function LoginForm({
   const [pending, setPending] = useState(false);
   const { remember, updateRemember } = useRememberMe();
   const oauthEnabled = googleSignInEnabled || microsoftSignInEnabled;
+  const oauthReturnPath = getSafeRedirectPath(searchParams.get("next"));
 
   useEffect(() => {
     const error = searchParams.get("error");
@@ -113,6 +114,7 @@ export function LoginForm({
         <GoogleAuthButton
           disabled={pending}
           rememberMe={remember}
+          returnPath={oauthReturnPath}
           errorPage="login"
         />
       ) : null}
@@ -120,6 +122,7 @@ export function LoginForm({
         <MicrosoftAuthButton
           disabled={pending}
           rememberMe={remember}
+          returnPath={oauthReturnPath}
           errorPage="login"
         />
       ) : null}

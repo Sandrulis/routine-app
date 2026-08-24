@@ -4,10 +4,7 @@ import { useState } from "react";
 import { authSecondaryButtonClassName } from "@/app/components/auth-form-styles";
 import { useFeedbackToast } from "@/app/components/feedback-toast-provider";
 import { useTranslations } from "@/app/components/translations-provider";
-import { startGoogleSignInAction } from "@/app/lib/integrations/google-oauth/actions";
-import { startMicrosoftSignInAction } from "@/app/lib/integrations/microsoft-oauth/actions";
 import { writeRememberSessionPreference } from "@/app/lib/auth/remember-session";
-import { translateActionError } from "@/app/lib/i18n/action-errors";
 import type { OAuthLoginErrorPage } from "@/app/lib/auth/oauth-login-state";
 
 function GoogleIcon() {
@@ -74,10 +71,10 @@ export function GoogleAuthButton({
   onBeforeSignIn,
 }: OAuthButtonProps) {
   const { t } = useTranslations();
-  const { showFeedback, clearFeedback } = useFeedbackToast();
+  const { clearFeedback } = useFeedbackToast();
   const [pending, setPending] = useState(false);
 
-  async function handleClick() {
+  function handleClick() {
     if (onBeforeSignIn && !onBeforeSignIn()) {
       return;
     }
@@ -86,29 +83,18 @@ export function GoogleAuthButton({
     setPending(true);
     writeRememberSessionPreference(rememberMe);
 
-    const result = await startGoogleSignInAction({
-      origin: window.location.origin,
-      returnPath,
-      errorPage,
-    });
-
-    if (result.ok) {
-      window.location.href = result.data.url;
-      return;
+    const params = new URLSearchParams({ next: returnPath });
+    if (errorPage !== "login") {
+      params.set("errorPage", errorPage);
     }
-
-    setPending(false);
-    showFeedback({
-      type: "error",
-      text: translateActionError(t, result.error),
-    });
+    window.location.assign(`/auth/google-oauth/sign-in?${params.toString()}`);
   }
 
   return (
     <button
       type="button"
       disabled={disabled || pending}
-      onClick={() => void handleClick()}
+      onClick={handleClick}
       className={authSecondaryButtonClassName}
     >
       <GoogleIcon />
@@ -127,10 +113,10 @@ export function MicrosoftAuthButton({
   onBeforeSignIn,
 }: OAuthButtonProps) {
   const { t } = useTranslations();
-  const { showFeedback, clearFeedback } = useFeedbackToast();
+  const { clearFeedback } = useFeedbackToast();
   const [pending, setPending] = useState(false);
 
-  async function handleClick() {
+  function handleClick() {
     if (onBeforeSignIn && !onBeforeSignIn()) {
       return;
     }
@@ -139,29 +125,18 @@ export function MicrosoftAuthButton({
     setPending(true);
     writeRememberSessionPreference(rememberMe);
 
-    const result = await startMicrosoftSignInAction({
-      origin: window.location.origin,
-      returnPath,
-      errorPage,
-    });
-
-    if (result.ok) {
-      window.location.href = result.data.url;
-      return;
+    const params = new URLSearchParams({ next: returnPath });
+    if (errorPage !== "login") {
+      params.set("errorPage", errorPage);
     }
-
-    setPending(false);
-    showFeedback({
-      type: "error",
-      text: translateActionError(t, result.error),
-    });
+    window.location.assign(`/auth/microsoft-oauth/sign-in?${params.toString()}`);
   }
 
   return (
     <button
       type="button"
       disabled={disabled || pending}
-      onClick={() => void handleClick()}
+      onClick={handleClick}
       className={authSecondaryButtonClassName}
     >
       <MicrosoftIcon />

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/app/lib/auth/get-current-user";
+import { parsePathParts } from "@/app/lib/cloud-storage/parse-path-parts";
 import { FRONTEND_MODULE_KEYS } from "@/app/lib/frontend-modules/keys";
 import { isFrontendModuleEnabled } from "@/app/lib/frontend-modules/repository";
 import { mimeFromFileName } from "@/app/lib/file-types";
@@ -12,17 +13,6 @@ import { logError } from "@/app/lib/security/log-error";
 import { consumeRateLimit } from "@/app/lib/security/rate-limit";
 
 export const runtime = "nodejs";
-
-function parsePathParts(raw: FormDataEntryValue | null) {
-  if (typeof raw !== "string" || !raw.trim()) return [];
-  try {
-    const parsed = JSON.parse(raw) as unknown;
-    if (!Array.isArray(parsed)) return [];
-    return parsed.filter((item): item is string => typeof item === "string");
-  } catch {
-    return [];
-  }
-}
 
 export async function POST(request: Request) {
   const [onedriveEnabled, filesEnabled] = await Promise.all([

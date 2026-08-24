@@ -10,15 +10,15 @@ import type {
   CalendarIntegrationSummary,
   CalendarProvider,
 } from "@/app/lib/calendar/types";
-
-type ActionOk = { ok: true; data: CalendarIntegrationSummary };
-type ActionResult = ActionOk | { ok: false; error: string };
+import type { ActionResult } from "@/app/lib/actions/action-result";
 
 function isCalendarProvider(value: string | null): value is CalendarProvider {
   return value === "apple" || value === "google";
 }
 
-export async function fetchCalendarIntegrationAction(): Promise<ActionResult> {
+export async function fetchCalendarIntegrationAction(): Promise<
+  ActionResult<CalendarIntegrationSummary>
+> {
   const user = await getCurrentUser();
   if (!user) {
     return { ok: false, error: "errors.auth_required" };
@@ -37,7 +37,7 @@ export async function fetchCalendarIntegrationAction(): Promise<ActionResult> {
 export async function saveCalendarIntegrationAction(input: {
   enabled: boolean;
   provider: CalendarProvider | null;
-}): Promise<ActionResult> {
+}): Promise<ActionResult<CalendarIntegrationSummary>> {
   const user = await getCurrentUser();
   if (!user) {
     return { ok: false, error: "errors.auth_required" };
@@ -61,7 +61,9 @@ export async function saveCalendarIntegrationAction(input: {
   }
 }
 
-export async function regenerateCalendarFeedTokenAction(): Promise<ActionResult> {
+export async function regenerateCalendarFeedTokenAction(): Promise<
+  ActionResult<CalendarIntegrationSummary>
+> {
   const user = await getCurrentUser();
   if (!user) {
     return { ok: false, error: "errors.auth_required" };

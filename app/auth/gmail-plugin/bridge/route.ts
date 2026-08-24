@@ -12,6 +12,7 @@ import {
   GMAIL_PLUGIN_DONE_PATH,
   GMAIL_PLUGIN_START_PATH,
 } from "@/app/lib/extension/gmail-oauth";
+import { parseCookieHeader } from "@/app/lib/http/parse-cookie-header";
 import {
   getSupabasePublicEnv,
   isSupabaseConfigured,
@@ -19,25 +20,32 @@ import {
 
 export const runtime = "nodejs";
 
-function parseCookieHeader(header: string | null) {
-  if (!header) return [];
-  return header.split(";").flatMap((part) => {
-    const trimmed = part.trim();
-    const separator = trimmed.indexOf("=");
-    if (separator < 0) return [];
-    const rawName = trimmed.slice(0, separator);
-    const rawValue = trimmed.slice(separator + 1);
-    try {
-      return [
-        {
-          name: decodeURIComponent(rawName),
-          value: decodeURIComponent(rawValue),
-        },
-      ];
-    } catch {
-      return [{ name: rawName, value: rawValue }];
-    }
-  });
+async function refreshWithToken(
+  env: { url: string; anonKey: string },
+  refreshToken: string,
+) {
+  const response = await fetch(
+    `${env.url}/auth/v1/token?grant_type=refresh_token`,
+    {
+      method: "POST",
+      headers: {
+        apikey: env.anonKey,
+        Authorization: `Bearer ${env.anonKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ refresh_token: refreshToken }),
+    },
+  );
+  if (!response.ok) return null;
+  const data = (await response.json().catch(() => null)) as {
+    access_token?: string;
+    refresh_token?: string;
+  } | null;
+  if (!data?.access_token) return null;
+  return {
+    accessToken: data.access_token,
+    refreshToken: data.refresh_token || refreshToken,
+  };
 }
 
 export async function GET(request: Request) {
@@ -54,6 +62,9 @@ export async function GET(request: Request) {
 
   const ticket = parseGmailBridgeTicket(searchParams.get("t"));
   if (!ticket) return fail;
+
+  const refreshed = await refreshWithToken(env, ticket.refreshToken);
+  if (!refreshed) return fail;
 
   const redirectResponse = NextResponse.redirect(
     new URL(GMAIL_PLUGIN_START_PATH, oauthOrigin),
@@ -89,8 +100,8 @@ export async function GET(request: Request) {
   });
 
   const { data, error } = await supabase.auth.setSession({
-    access_token: ticket.accessToken,
-    refresh_token: ticket.refreshToken,
+    access_token: refreshed.accessToken,
+    refresh_token: refreshed.refreshToken,
   });
   if (error || !data.session || data.session.user.id !== ticket.userId) {
     return fail;

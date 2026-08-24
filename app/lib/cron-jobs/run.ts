@@ -9,6 +9,7 @@ import {
   type ListStatus,
   type WorkTaskStatusDef,
 } from "@/app/lib/list-statuses";
+import { parseIdList, parseStatusGroupMap } from "@/app/lib/lists";
 import {
   createNotificationId,
   type AppNotification,
@@ -70,28 +71,12 @@ function todayUtcDate(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
-function parseIdList(value: unknown): string[] {
-  if (!Array.isArray(value)) return [];
-  return value.filter(
-    (item): item is string => typeof item === "string" && item.length > 0,
-  );
-}
-
-function parseGroupOverrides(value: unknown): Record<string, string> {
-  if (!value || typeof value !== "object" || Array.isArray(value)) return {};
-  const overrides: Record<string, string> = {};
-  for (const [id, group] of Object.entries(value as Record<string, unknown>)) {
-    if (typeof group === "string" && group.trim()) overrides[id] = group;
-  }
-  return overrides;
-}
-
 function layoutSource(row: LayoutRow | undefined) {
   if (!row) return null;
   return {
     hiddenStatusIds: parseIdList(row.hidden_status_ids),
     statusOrder: parseIdList(row.status_order),
-    statusGroupOverrides: parseGroupOverrides(row.status_group_overrides),
+    statusGroupOverrides: parseStatusGroupMap(row.status_group_overrides),
   };
 }
 

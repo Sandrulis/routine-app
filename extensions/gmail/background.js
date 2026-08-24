@@ -1577,42 +1577,74 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         await getAccessToken(appBase);
         const stored = await readStoredSession();
         const session = stored?.session;
-        if (!session?.access_token || !session?.refresh_token) {
+        if (!session?.access_token) {
           sendResponse({ ok: false, error: "errors.extension_auth_required" });
           return;
         }
         await syncBrowserSessionCookies(appBase);
-        const ticketResult = await apiFetch("/api/extension/gmail-bridge-ticket", {
-          method: "POST",
-          body: JSON.stringify({
-            accessToken: session.access_token,
-            refreshToken: session.refresh_token,
-          }),
-        });
-        const ticket = ticketResult?.data?.ticket;
-        if (!ticketResult?.ok || !ticket) {
-          sendResponse({
-            ok: false,
-            error:
-              ticketResult?.data?.error ||
-              ticketResult?.error ||
-              "errors.extension_gmail_auth",
-          });
+
+        let connectUrl = `${appBase}/auth/gmail-plugin/start`;
+        let usedBridge = false;
+        if (session.refresh_token) {
+          try {
+            const ticketResult = await apiFetch(
+              "/api/extension/gmail-bridge-ticket",
+              {
+                method: "POST",
+                body: JSON.stringify({
+                  refreshToken: session.refresh_token,
+                }),
+              },
+            );
+            const ticket = ticketResult?.data?.ticket;
+            if (ticketResult?.ok && ticketResult?.data?.ok !== false && ticket) {
+              const bridgePath =
+                ticketResult.data.bridgePath || "/auth/gmail-plugin/bridge";
+              connectUrl = buildConnectGmailBridgeUrl(
+                appBase,
+                bridgePath,
+                ticket,
+              );
+              usedBridge = true;
+            }
+          } catch {
+            // fall through to /start (cookies may already be synced)
+          }
+        }
+
+        let tab;
+        try {
+          tab = await chrome.tabs.create({ url: connectUrl, active: true });
+        } catch {
+          sendResponse({ ok: false, error: "errors.extension_gmail_auth" });
           return;
         }
-        const bridgePath =
-          ticketResult.data.connectGmailBridgePath ||
-          ticketResult.data.bridgePath ||
-          "/auth/gmail-plugin/bridge";
-        const tab = await chrome.tabs.create({
-          url: buildConnectGmailBridgeUrl(appBase, bridgePath, ticket),
-        });
-        const doneUrl = await waitForTabMatch(tab.id, isPluginLoginDoneUrl);
+        if (!tab?.id) {
+          sendResponse({ ok: false, error: "errors.extension_gmail_auth" });
+          return;
+        }
+
+        const doneUrl = await waitForTabMatch(
+          tab.id,
+          (url) =>
+            isPluginLoginDoneUrl(url) ||
+            (!usedBridge && url.includes("/login") && url.includes("next=")),
+        );
         if (!doneUrl || doneUrl.includes("error=")) {
           sendResponse({ ok: false, error: "errors.extension_gmail_auth" });
           return;
         }
-        await chrome.storage.local.remove(["gmailAccessToken", "gmailTokenExpiresAt"]);
+        if (doneUrl.includes("/login")) {
+          sendResponse({
+            ok: false,
+            error: "errors.extension_auth_required",
+          });
+          return;
+        }
+        await chrome.storage.local.remove([
+          "gmailAccessToken",
+          "gmailTokenExpiresAt",
+        ]);
         const after = await sessionResponse();
         sendResponse({
           ok: Boolean(after?.data?.gmailConnected),
@@ -1673,6 +1705,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                     mimeType: "",
                   }))
                 : null;
+        const includeEmailBody = message.includeEmailBody !== false;
+        const wantsFileAttachments =
+          selectedAttachments === null ||
+          (Array.isArray(selectedAttachments) &&
+            selectedAttachments.length > 0);
         let email = {
           subject: String(message.email?.subject || ""),
           from: String(message.email?.from || ""),
@@ -1686,7 +1723,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         let skippedDownloads = [];
 
         const tabId = sender.tab?.id;
-        if (gmailMessageId || gmailThreadId) {
+        const scrapedEnough =
+          Boolean(email.subject || email.body || email.bodyHtml);
+
+        if (wantsFileAttachments && (gmailMessageId || gmailThreadId)) {
           try {
             const bundle = await fetchGmailMessageBundle(
               gmailMessageId,
@@ -1705,7 +1745,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
               permalink: bundle.email.permalink || email.permalink,
             };
             attachmentFiles = bundle.attachments;
-            skippedDownloads = Array.isArray(bundle.skipped) ? bundle.skipped : [];
+            skippedDownloads = Array.isArray(bundle.skipped)
+              ? bundle.skipped
+              : [];
           } catch (error) {
             sendResponse({
               ok: false,
@@ -1716,21 +1758,37 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             });
             return;
           }
-        } else {
+        } else if (includeEmailBody && scrapedEnough) {
+          // Email text only from Gmail DOM — no Gmail OAuth needed.
+        } else if (!gmailMessageId && !gmailThreadId) {
           sendResponse({
             ok: false,
             error: "errors.extension_gmail_message_id",
           });
           return;
+        } else if (!includeEmailBody && !wantsFileAttachments) {
+          sendResponse({
+            ok: false,
+            error: "errors.extension_nothing_attached",
+          });
+          return;
+        } else {
+          // Need Gmail API for body enrichment but OAuth may fail — try scrape-only.
+          if (!includeEmailBody || !scrapedEnough) {
+            sendResponse({
+              ok: false,
+              error: "errors.extension_gmail_auth",
+            });
+            return;
+          }
         }
 
         postAttachProgress(tabId, {
           key: "extension.gmail.progress_upload",
-          params: { count: 1 + attachmentFiles.length },
+          params: { count: (includeEmailBody ? 1 : 0) + attachmentFiles.length },
           percent: 78,
         });
 
-        const includeEmailBody = message.includeEmailBody !== false;
         const result = await apiFetch("/api/extension/attach-email", {
           method: "POST",
           body: JSON.stringify({

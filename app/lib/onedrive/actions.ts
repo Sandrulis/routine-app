@@ -1,6 +1,8 @@
 "use server";
 
 import { cookies } from "next/headers";
+import type { ActionResult } from "@/app/lib/actions/action-result";
+import { resolveOAuthOrigin } from "@/app/lib/auth/oauth-origin";
 import { getCurrentUser } from "@/app/lib/auth/get-current-user";
 import { FRONTEND_MODULE_KEYS } from "@/app/lib/frontend-modules/keys";
 import { isFrontendModuleEnabled } from "@/app/lib/frontend-modules/repository";
@@ -24,10 +26,6 @@ import {
   type OneDriveStatus,
 } from "@/app/lib/onedrive/repository";
 
-type ActionResult<T = undefined> =
-  | ({ ok: true } & (T extends undefined ? object : { data: T }))
-  | { ok: false; error: string };
-
 async function requireOneDriveModules() {
   const [onedrive, files] = await Promise.all([
     isFrontendModuleEnabled(FRONTEND_MODULE_KEYS.onedrive),
@@ -37,22 +35,6 @@ async function requireOneDriveModules() {
     return { ok: false as const, error: "errors.onedrive_module_disabled" };
   }
   return { ok: true as const };
-}
-
-function resolveOAuthOrigin(clientOrigin: string) {
-  const allowed = process.env.NEXT_PUBLIC_SITE_URL?.trim();
-  const trimmed = clientOrigin.trim().replace(/\/$/, "");
-  if (process.env.NODE_ENV === "development" && trimmed.startsWith("http")) {
-    return trimmed;
-  }
-  if (allowed) {
-    try {
-      return new URL(allowed).origin;
-    } catch {
-      return "";
-    }
-  }
-  return trimmed.startsWith("http") ? trimmed : "";
 }
 
 export async function getTeamOneDriveStatusAction(

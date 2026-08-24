@@ -16,13 +16,7 @@ import {
   type FeedbackKind,
 } from "@/app/lib/feedback/actions";
 import { translateActionError } from "@/app/lib/i18n/action-errors";
-
-function formatVoteCount(value: number): string {
-  return String(Math.max(0, Math.trunc(value))).replace(
-    /\B(?=(\d{3})+(?!\d))/g,
-    " ",
-  );
-}
+import { formatInteger } from "@/app/lib/format/numbers";
 
 export function SiteFeedbackModals({
   kind,
@@ -443,7 +437,7 @@ function FeatureRequestModal({
                     >
                       <i className="fas fa-chevron-up text-[12px]" aria-hidden="true" />
                       <span className="mt-0.5 tabular-nums">
-                        {formatVoteCount(item.voteCount)}
+                        {formatInteger(item.voteCount)}
                       </span>
                     </button>
                   </div>
@@ -482,7 +476,7 @@ function FeatureRequestModal({
                 <i className="fas fa-chevron-up text-[12px]" aria-hidden="true" />
                 {t("feedback.feature.upvote", "Balsot")}
                 <span className="tabular-nums">
-                  {formatVoteCount(selected.voteCount)}
+                  {formatInteger(selected.voteCount)}
                 </span>
               </button>
             </div>

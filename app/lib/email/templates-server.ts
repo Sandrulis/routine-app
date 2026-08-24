@@ -1,4 +1,5 @@
 import { LANGUAGE_CODES } from "@/app/lib/i18n/language";
+import { parseLocalizedValues } from "@/app/lib/i18n/localized-values";
 import {
   listSiteLanguages,
   updateSiteTranslation,
@@ -13,19 +14,6 @@ import {
   fallbackFor,
   type EmailTemplateDraft,
 } from "@/app/lib/email/templates";
-
-function parseValues(raw: unknown): Record<string, string> {
-  if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
-    return {};
-  }
-  const out: Record<string, string> = {};
-  for (const [code, value] of Object.entries(raw as Record<string, unknown>)) {
-    if (typeof value === "string") {
-      out[code] = value;
-    }
-  }
-  return out;
-}
 
 export async function listEmailTemplateDrafts(
   languages?: SiteLanguageSummary[],
@@ -54,7 +42,7 @@ export async function listEmailTemplateDrafts(
       const key =
         typeof row.translation_key === "string" ? row.translation_key : "";
       if (!key) continue;
-      valuesByKey.set(key, parseValues(row.values));
+      valuesByKey.set(key, parseLocalizedValues(row.values));
     }
   }
 

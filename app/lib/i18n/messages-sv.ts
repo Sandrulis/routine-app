@@ -1400,7 +1400,7 @@ export const sv: Record<string, string> = {
   "extension.gmail.check_all": "Check all",
   "extension.gmail.email_always": "E-postinnehåll (.txt) är valfritt.",
   "extension.gmail.email_body": "E-postinnehåll (.txt)",
-  "extension.gmail.email_body_hint": "Markera om du också vill bifoga e-posttexten.",
+  "extension.gmail.email_body_hint": "Avmarkera om du inte vill bifoga e-posttexten.",
   "extension.gmail.too_large": "{size} — too large (>25 MB)",
   "extension.gmail.empty": "Nothing here",
   "extension.gmail.load_lists": "Loading lists…",

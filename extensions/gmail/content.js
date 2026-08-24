@@ -73,7 +73,7 @@
   "extension.gmail.check_all": "Atzīmēt visus",
   "extension.gmail.email_always": "E-pasta saturs (.txt) ir izvēles iespēja.",
   "extension.gmail.email_body": "E-pasta saturs (.txt)",
-  "extension.gmail.email_body_hint": "Atzīmē, ja vēlies pievienot arī e-pasta tekstu.",
+  "extension.gmail.email_body_hint": "Noņem atzīmi, ja e-pasta tekstu nevēlies pievienot.",
   "extension.gmail.too_large": "{size} — pārāk liels (>25 MB)",
   "extension.gmail.empty": "Šeit nav ierakstu",
   "extension.gmail.load_lists": "Ielādē sarakstus…",
@@ -342,7 +342,7 @@ function scrapeEmailFallback() {
 
 function ensureUi() {
   const existing = document.getElementById("routine-gmail-root");
-  if (existing?.dataset?.routineUi === "11") {
+  if (existing?.dataset?.routineUi === "12") {
     existing.querySelector("#routine-gmail-fab")?.remove();
     return;
   }
@@ -350,7 +350,7 @@ function ensureUi() {
 
   const root = document.createElement("div");
   root.id = "routine-gmail-root";
-  root.dataset.routineUi = "11";
+  root.dataset.routineUi = "12";
   root.innerHTML = `
     <div id="routine-gmail-modal" hidden>
       <div class="routine-gmail-backdrop" data-close="1"></div>
@@ -527,7 +527,14 @@ function ensureUi() {
     attachmentsSection.hidden = false;
     const reconnect = Boolean(options.reconnect);
     const retry = Boolean(options.retry);
-    attachList.innerHTML = `<li class="routine-gmail-empty">${message}</li>`;
+    attachList.innerHTML = "";
+    ensureEmailBodyOption();
+    if (message) {
+      const msgLi = document.createElement("li");
+      msgLi.className = "routine-gmail-empty";
+      msgLi.textContent = message;
+      attachList.appendChild(msgLi);
+    }
     if (reconnect) {
       const li = document.createElement("li");
       li.className = "routine-gmail-empty";
@@ -539,6 +546,7 @@ function ensureUi() {
         event.preventDefault();
         void (async () => {
           setBusy(true, t("extension.gmail.options.connecting"));
+          setFeedback("");
           const result = await send("routine.connectGmail");
           setBusy(false);
           if (result?.ok) {
@@ -554,13 +562,11 @@ function ensureUi() {
       li.appendChild(link);
       attachList.appendChild(li);
     }
+    updateAttToggleLabel();
     if (retry) {
       attToggleBtn.hidden = false;
       attToggleBtn.dataset.mode = "retry";
       attToggleBtn.textContent = t("extension.gmail.attachments_retry");
-    } else {
-      attToggleBtn.hidden = true;
-      attToggleBtn.dataset.mode = "toggle";
     }
   }
 

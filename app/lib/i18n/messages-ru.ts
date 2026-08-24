@@ -1805,7 +1805,7 @@ export const ru: Record<string, string> = {
   "extension.gmail.check_all": "Отметить все",
   "extension.gmail.email_always": "Текст письма (.txt) необязателен.",
   "extension.gmail.email_body": "Текст письма (.txt)",
-  "extension.gmail.email_body_hint": "Отметьте, если нужно также прикрепить текст письма.",
+  "extension.gmail.email_body_hint": "Снимите галочку, если не нужно прикреплять текст письма.",
   "extension.gmail.too_large": "{size} — слишком большой (>25 МБ)",
   "extension.gmail.empty": "Здесь ничего нет",
   "extension.gmail.load_lists": "Загрузка списков…",

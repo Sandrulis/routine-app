@@ -10,6 +10,7 @@ import {
   type UniqueIdentifier,
 } from "@dnd-kit/core";
 import type { SortingStrategy } from "@dnd-kit/sortable";
+import { pointerYFromEvent } from "@/app/lib/dnd/pointer-y-from-event";
 
 const STATUS_GROUP_PREFIX = "status-group:";
 
@@ -42,19 +43,6 @@ export const groupedStatusCollisionDetection: CollisionDetection = (args) => {
   if (statusHit) return [statusHit];
   return closestCenter(args);
 };
-
-function pointerYFromEvent(event: DragMoveEvent | DragEndEvent): number | null {
-  const activator = event.activatorEvent;
-  if (
-    activator &&
-    "clientY" in activator &&
-    typeof (activator as PointerEvent).clientY === "number"
-  ) {
-    return (activator as PointerEvent).clientY + event.delta.y;
-  }
-  const translated = event.active.rect.current.translated;
-  return translated ? translated.top + translated.height / 2 : null;
-}
 
 export function dropHintFromEvent(
   event: DragMoveEvent | DragEndEvent,

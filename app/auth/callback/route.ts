@@ -12,6 +12,7 @@ import {
   getSupabasePublicEnv,
   isSupabaseConfigured,
 } from "@/app/lib/supabase/env";
+import { parseCookieHeader } from "@/app/lib/http/parse-cookie-header";
 import { ensureCurrentUserProfile } from "@/app/lib/users/ensure-profile";
 
 const ALLOWED_ORIGIN = process.env.NEXT_PUBLIC_SITE_URL?.trim();
@@ -37,29 +38,6 @@ function resolveRedirectOrigin(
   }
 
   return origin;
-}
-
-function parseCookieHeader(header: string | null) {
-  if (!header) return [];
-
-  return header.split(";").flatMap((part) => {
-    const trimmed = part.trim();
-    const separator = trimmed.indexOf("=");
-    if (separator < 0) return [];
-
-    const rawName = trimmed.slice(0, separator);
-    const rawValue = trimmed.slice(separator + 1);
-    try {
-      return [
-        {
-          name: decodeURIComponent(rawName),
-          value: decodeURIComponent(rawValue),
-        },
-      ];
-    } catch {
-      return [{ name: rawName, value: rawValue }];
-    }
-  });
 }
 
 export async function GET(request: Request) {

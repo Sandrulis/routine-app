@@ -1,4 +1,5 @@
 import { randomBytes } from "node:crypto";
+import { oauthCookieOptions } from "@/app/lib/auth/oauth-cookie-options";
 import {
   GOOGLE_OAUTH_CALLBACK_PATH,
   getGoogleOAuthCredentials,
@@ -24,13 +25,7 @@ export type GmailPluginOAuthState = {
 };
 
 export function gmailPluginOAuthCookieOptions(maxAgeSeconds: number) {
-  return {
-    httpOnly: true,
-    sameSite: "lax" as const,
-    secure: process.env.NODE_ENV === "production",
-    path: "/",
-    maxAge: maxAgeSeconds,
-  };
+  return oauthCookieOptions(maxAgeSeconds);
 }
 
 export function createGmailPluginOAuthState(userId: string): GmailPluginOAuthState {

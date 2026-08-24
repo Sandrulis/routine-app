@@ -39,7 +39,7 @@ export function parseIdList(value: unknown): string[] {
   );
 }
 
-function parseStatusGroupMap(value: unknown): Record<string, string> {
+export function parseStatusGroupMap(value: unknown): Record<string, string> {
   if (!value || typeof value !== "object" || Array.isArray(value)) return {};
   const result: Record<string, string> = {};
   for (const [id, group] of Object.entries(value as Record<string, unknown>)) {

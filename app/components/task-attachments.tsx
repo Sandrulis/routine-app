@@ -12,6 +12,7 @@ import { OverflowTooltip, Tooltip } from "@/app/components/tooltip";
 import { useFeedbackToast } from "@/app/components/feedback-toast-provider";
 import { useTranslations } from "@/app/components/translations-provider";
 import { useFileTypes } from "@/app/lib/file-types-context";
+import { fileExtensionFromName } from "@/app/lib/file-types";
 import { formatFileSize } from "@/app/lib/list-files";
 
 export type AttachmentItem = {
@@ -22,12 +23,8 @@ export type AttachmentItem = {
   previewUrl?: string | null;
 };
 
-function fileExtension(name: string) {
-  return name.split(".").pop()?.toLowerCase() ?? "";
-}
-
 function overlayIconDisplay(name: string, mimeType: string, getFileIconDisplay: ReturnType<typeof useFileTypes>["getFileIconDisplay"]) {
-  const extension = fileExtension(name);
+  const extension = fileExtensionFromName(name);
   if (extension === "html" || extension === "htm" || mimeType === "text/html") {
     return { icon: "fas fa-envelope", color: "#52525b" };
   }

@@ -16,10 +16,7 @@ import type {
   SimpleIntegrationStatus,
 } from "@/app/lib/integrations/types";
 import { requireAdmin } from "@/app/lib/users/require-admin";
-
-type ActionResult<T = undefined> =
-  | ({ ok: true } & (T extends undefined ? object : { data: T }))
-  | { ok: false; error: string };
+import type { ActionResult } from "@/app/lib/actions/action-result";
 
 function refreshIntegrations() {
   revalidatePath("/admin/integrations");

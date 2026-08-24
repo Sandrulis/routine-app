@@ -1400,7 +1400,7 @@ export const de: Record<string, string> = {
   "extension.gmail.check_all": "Alle auswählen",
   "extension.gmail.email_always": "E-Mail-Inhalt (.txt) ist optional.",
   "extension.gmail.email_body": "E-Mail-Inhalt (.txt)",
-  "extension.gmail.email_body_hint": "Aktiviere dies, wenn du auch den E-Mail-Text anhängen willst.",
+  "extension.gmail.email_body_hint": "Deaktiviere dies, wenn du den E-Mail-Text nicht anhängen willst.",
   "extension.gmail.too_large": "{size} — zu groß (>25 MB)",
   "extension.gmail.empty": "Nichts hier",
   "extension.gmail.load_lists": "Listen werden geladen…",

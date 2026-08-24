@@ -1809,7 +1809,7 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "extension.gmail.email_always": "E-pasta saturs (.txt) ir izvēles iespēja.",
     "extension.gmail.email_body": "E-pasta saturs (.txt)",
     "extension.gmail.email_body_hint":
-      "Atzīmē, ja vēlies pievienot arī e-pasta tekstu.",
+      "Noņem atzīmi, ja e-pasta tekstu nevēlies pievienot.",
     "extension.gmail.too_large": "{size} — pārāk liels (>25 MB)",
     "extension.gmail.empty": "Šeit nav ierakstu",
     "extension.gmail.load_lists": "Ielādē sarakstus…",
@@ -3793,7 +3793,7 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "extension.gmail.email_always": "Email content (.txt) is optional.",
     "extension.gmail.email_body": "Email content (.txt)",
     "extension.gmail.email_body_hint":
-      "Check this if you also want to attach the email text.",
+      "Uncheck if you do not want to attach the email text.",
     "extension.gmail.too_large": "{size} — too large (>25 MB)",
     "extension.gmail.empty": "Nothing here",
     "extension.gmail.load_lists": "Loading lists…",

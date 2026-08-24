@@ -1400,7 +1400,7 @@ export const pl: Record<string, string> = {
   "extension.gmail.check_all": "Zaznacz wszystkie",
   "extension.gmail.email_always": "Treść e-maila (.txt) jest opcjonalna.",
   "extension.gmail.email_body": "Treść e-maila (.txt)",
-  "extension.gmail.email_body_hint": "Zaznacz, jeśli chcesz też dołączyć tekst e-maila.",
+  "extension.gmail.email_body_hint": "Odznacz, jeśli nie chcesz dołączać tekstu e-maila.",
   "extension.gmail.too_large": "{size} — za duży (>25 MB)",
   "extension.gmail.empty": "Nic tu nie ma",
   "extension.gmail.load_lists": "Ładowanie list…",

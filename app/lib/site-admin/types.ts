@@ -158,6 +158,6 @@ export type SystemDefaultRoleInput = {
   permissions: TeamPermissionSet;
 };
 
-export type ActionResult = { ok: true } | { ok: false; error: string };
+export type { ActionResult } from "@/app/lib/actions/action-result";
 
 export type TranslationDictionary = Record<string, string>;

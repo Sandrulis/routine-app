@@ -19,7 +19,13 @@ import {
   OWNER_TEAM_ROLE,
 } from "@/app/lib/team";
 import { DEFAULT_LIST_COLOR, randomListColorId } from "@/app/lib/lists";
-import { groupWouldBeEmpty, isSingletonStatusGroup } from "@/app/lib/list-statuses";
+import {
+  groupWouldBeEmpty,
+  isSingletonStatusGroup,
+  normalizeStatusLabels,
+  parseStatusLabels,
+  primaryStatusLabel,
+} from "@/app/lib/list-statuses";
 import {
   isValidFileColorInput,
   isValidFileExtensionInput,
@@ -1066,36 +1072,6 @@ type TaskStatusRow = {
   sort_order: number;
   group_key: string;
 };
-
-function parseStatusLabels(value: unknown): Record<string, string> {
-  if (!value || typeof value !== "object" || Array.isArray(value)) {
-    return {};
-  }
-
-  const labels: Record<string, string> = {};
-  for (const [code, text] of Object.entries(value as Record<string, unknown>)) {
-    if (typeof text === "string" && text.trim()) {
-      labels[code] = text.trim();
-    }
-  }
-  return labels;
-}
-
-function normalizeStatusLabels(input: Record<string, string>): Record<string, string> {
-  const labels: Record<string, string> = {};
-  for (const [code, text] of Object.entries(input)) {
-    const trimmed = text.trim();
-    if (trimmed) labels[code] = trimmed;
-  }
-  return labels;
-}
-
-function primaryStatusLabel(
-  labels: Record<string, string>,
-  fallbackLabel = "",
-): string {
-  return labels.lv?.trim() || Object.values(labels)[0]?.trim() || fallbackLabel.trim();
-}
 
 function mapTaskStatusRow(row: TaskStatusRow): TaskStatusSummary {
   const labels = parseStatusLabels(row.labels);

@@ -33,6 +33,7 @@ import {
   useSortable,
   type SortingStrategy,
 } from "@dnd-kit/sortable";
+import { pointerYFromEvent } from "@/app/lib/dnd/pointer-y-from-event";
 import type { NavTreeDropIntent, NavTreeItemData } from "@/app/lib/nav-tree-move";
 
 type NavTreeDragState = {
@@ -92,19 +93,6 @@ const navTreeCollision: CollisionDetection = (args) => {
     return leftArea - rightArea;
   });
 };
-
-function pointerYFromEvent(event: DragMoveEvent | DragEndEvent): number | null {
-  const activator = event.activatorEvent;
-  if (
-    activator &&
-    "clientY" in activator &&
-    typeof (activator as PointerEvent).clientY === "number"
-  ) {
-    return (activator as PointerEvent).clientY + event.delta.y;
-  }
-  const translated = event.active.rect.current.translated;
-  return translated ? translated.top + translated.height / 2 : null;
-}
 
 function dropIntent(
   overRect: { top: number; height: number },

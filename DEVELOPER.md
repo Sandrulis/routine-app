@@ -11,6 +11,28 @@
 - Datumi UI: `useDisplayPreferences().formatDate()` / `formatDateTime()`. Efektīvās preferences: lietotāja (`users.week_start_day`, `date_format`, `date_separator`, `time_format`) ja norādītas, citādi `site_settings`. Noklusējums: pirmdiena, `d.m.Y`, `.`, 24 h. DB paliek ISO `YYYY-MM-DD`.
 - Favicon: `app/layout.tsx` `<head>` + `generateMetadata.icons` no `siteHeadIconUrl` (`favicon_url` → `logo_url` → iniciāļu SVG ar `logo_color`).
 - Document title: `lapas nosaukums | sistēmas nosaukums` (`app/lib/document-title.ts`). Fallback nosaukums `DEFAULT_SYSTEM_NAME` ir **TASQIN** (cookie, repo un esošo Drive/OneDrive mapju ceļi paliek `Routine`). Root `generateMetadata.title.template`. Katrai `(app)` un mārketinga lapai `generateMetadata` (`app/lib/page-metadata.ts`); dinamiskajiem maršrutiem DB vaicājumi `document-title-server.ts`. Next.js pēc ielādes vairs nepārraksta title ar tikai sistēmas nosaukumu.
+- Skaitļu formatēšana UI: `app/lib/format/numbers.ts` — `addThousandSeparators`, `formatInteger`, `formatEuro`; maksas plānu cenas caur `formatPlanEuro` (`payment-plans/helpers.ts`).
+
+## Kopīgie helperi
+
+Atkārtotas utilītas ir centralizētas — jaunām funkcijām vispirms pārbaudi, vai kanons jau eksistē:
+
+| Modulis | Funkcijas | Lietojums |
+|---|---|---|
+| `actions/action-result.ts` | `ActionResult<T>` | Server action atbildes (`ok` / `error`) |
+| `auth/oauth-cookie-options.ts` | `oauthCookieOptions` | httpOnly OAuth state cookies (Drive, OneDrive, Gmail, admin configure) |
+| `auth/oauth-origin.ts` | `resolveOAuthOrigin` | OAuth redirect origin no klienta / `NEXT_PUBLIC_SITE_URL` |
+| `cloud-storage/sanitize-folder-path.ts` | `sanitizeCloudFolderPath`, `LEGACY_CLOUD_FOLDER` | Drive/OneDrive mapju ceļi |
+| `cloud-storage/parse-path-parts.ts` | `parsePathParts` | Upload route FormData JSON ceļi |
+| `dnd/pointer-y-from-event.ts` | `pointerYFromEvent` | `@dnd-kit` drop līnija (koks, uzdevumu tabula) |
+| `format/numbers.ts` | `addThousandSeparators`, `formatInteger`, `formatEuro` | Tūkstošu atdalītājs (atstarpe) |
+| `http/parse-cookie-header.ts` | `parseCookieHeader` | Server `Cookie` header parsēšana |
+| `i18n/localized-values.ts` | `parseLocalizedValues`, `normalizeLocalizedValues`, `resolveLocalizedValue`, `emptyLocalizedValuesForCodes` | Valodu vērtību `Record<string, string>` (plāni, e-pasti, admin formas) |
+| `lists.ts` | `parseIdList`, `parseStatusGroupMap` | ID masīvi un statusu grupu overrides no JSON |
+| `list-statuses.ts` | `parseStatusLabels`, `normalizeStatusLabels`, `primaryStatusLabel` | Statusu etiķetes (admin + saraksti) |
+| `file-types.ts` | `fileExtensionFromName` | Paplašinājums no faila nosaukuma (UI + security caur `fileExtensionOf`) |
+
+Provider-specifiskie OAuth moduļi (`google-drive/`, `onedrive/`, `integrations/*-oauth/`) joprojām ir atsevišķi; kopīgās cookie/origin utilītas ir augstāk.
 
 ## Sānjosla
 
@@ -61,7 +83,7 @@ Route group `app/(marketing)/` - bez sānjoslas. Galvene `SiteHeader` (sistēmas
 | `/terms` | Lietošanas noteikumi |
 | `/cookies` | Sīkdatņu politika + iestatījumu poga |
 
-Auth: `/login` un `/signup` metodes (e-pasts, Google, Microsoft) nāk no RPC `public_sign_in_methods()` (`080`, `getPublicSignInMethods`) ar anon atslēgu — tikai `is_configured AND is_enabled` karogi, bez noslēpumiem. Service role login pogām nav vajadzīgs. E-pasta Ienākt iet caur Supabase `signInWithPassword` ar IP+e-pasta rate limit **un tikai ja Resend ir konfigurēts un aktīvs** (`isEmailPasswordAuthEnabled` vispirms RPC `email`, citādi From + API Key). Reģistrācija: `generateLink({ type: "signup" })` + HTML e-pasts no admin šablona `signup` (`sendSignupConfirmationEmail`); apstiprinājums `/auth/confirm?token_hash&type=signup` (`verifyOtp`). Uzaicinājuma signup: `/signup?invite={token}` ar Vārds/Uzvārds, bloķētu e-pastu un `account_exists` preview (`085`). Paroles lauki: `PasswordInput` (rādīt/paslēpt). Paroles atjaunošana: `generateLink({ type: "recovery" })` + šablons `password_reset`; saite ved uz `/auth/confirm` ar `next=/update-password`. Esošam apstiprinātam e-pastam signup un nezināmam e-pastam reset joprojām rāda vispārīgu veiksmi (nav enumerācijas). Bez Resend: e-pasta lauki nav, galvenē nav Reģistrēties, loginā nav signup saites un Atcerēties mani, `/signup` `redirect("/login")`; server actions atgriež `errors.auth_email_disabled`. **Turpināt ar Google** / **Turpināt ar Microsoft** paliek neatkarīgi (admin **Integrācijas** OAuth, `/auth/google-oauth/callback`, `/auth/microsoft-oauth/callback`), nevis Supabase Google provider - pēc profila no Google/Microsoft tiek izveidots vai atrasts Supabase Auth lietotājs un sesija. Microsoft pieprasa verificētu e-pastu (OIDC / `id_token`, bez `userPrincipalName`). Pogas rādās tikai ja attiecīgā integrācija ir konfigurēta un **Aktīva**. Signupā OAuth **neprasa** noteikumu ķeksīti (tas paliek tikai e-pasta reģistrācijai). **Atcerēties mani** rādās tikai `/login` e-pasta formā; pēc noklusējuma izslēgts: bez ķeksīša sesija līdz pārlūka aizvēršanai; ar ķeksi 30 dienas (`httpOnly: false`, lai browser Supabase klients lasītu cookie; production HTTPS `Secure`). Ielogotam `proxy` `/`, `/login`, `/signup` un `/forgot-password` novirza uz `/dashboard`; neautentificēts lietotājs no aizsargātiem app ceļiem uz `/login`; landing `app/(marketing)/page.tsx` arī `redirect("/dashboard")`, ja ir sesija. Iziet ved uz `/`. Publiskajā galvenē ielogotam rādās **Atvērt lietotni**. MFA (TOTP) ir opcija `/settings/profile` visiem; ja faktoram ir `verified` un sesija nav `aal2`, lietotne rāda `MfaVerifyModal` pirms app čaulas. `is_admin` pie `/admin` bez MFA tiek novirzīts enroll (`?mfa=required`); ar MFA, bet bez AAL2 - admin modālis. Paroles maiņa (`updatePasswordAction`) prasa `getCurrentUser` (CI `actions.ts` auth-guard).
+Auth: `/login` un `/signup` metodes (e-pasts, Google, Microsoft) nāk no RPC `public_sign_in_methods()` (`080`, `getPublicSignInMethods`) ar anon atslēgu — tikai `is_configured AND is_enabled` karogi, bez noslēpumiem. Service role login pogām nav vajadzīgs. E-pasta Ienākt iet caur Supabase `signInWithPassword` ar IP+e-pasta rate limit **un tikai ja Resend ir konfigurēts un aktīvs** (`isEmailPasswordAuthEnabled` vispirms RPC `email`, citādi From + API Key). Reģistrācija: `generateLink({ type: "signup" })` + HTML e-pasts no admin šablona `signup` (`sendSignupConfirmationEmail`); apstiprinājums `/auth/confirm?token_hash&type=signup` (`verifyOtp`). Uzaicinājuma signup: `/signup?invite={token}` ar Vārds/Uzvārds, bloķētu e-pastu un `account_exists` preview (`085`). Paroles lauki: `PasswordInput` (rādīt/paslēpt). Paroles atjaunošana: `generateLink({ type: "recovery" })` + šablons `password_reset`; saite ved uz `/auth/confirm` ar `next=/update-password`. Esošam apstiprinātam e-pastam signup un nezināmam e-pastam reset joprojām rāda vispārīgu veiksmi (nav enumerācijas). Bez Resend: e-pasta lauki nav, galvenē nav Reģistrēties, loginā nav signup saites un Atcerēties mani, `/signup` `redirect("/login")`; server actions atgriež `errors.auth_email_disabled`. **Turpināt ar Google** / **Turpināt ar Microsoft** paliek neatkarīgi (admin **Integrācijas** OAuth): pogas ved uz GET `/auth/google-oauth/sign-in?next=…` / `/auth/microsoft-oauth/sign-in?next=…` (login forma nodod `?next=` no URL); callback `/auth/google-oauth/callback`, `/auth/microsoft-oauth/callback` — pēc profila no Google/Microsoft tiek izveidots vai atrasts Supabase Auth lietotājs un sesija. Microsoft pieprasa verificētu e-pastu (OIDC / `id_token`, bez `userPrincipalName`). Pogas rādās tikai ja attiecīgā integrācija ir konfigurēta un **Aktīva**. Signupā OAuth **neprasa** noteikumu ķeksīti (tas paliek tikai e-pasta reģistrācijai). **Atcerēties mani** rādās tikai `/login` e-pasta formā; pēc noklusējuma izslēgts: bez ķeksīša sesija līdz pārlūka aizvēršanai; ar ķeksi 30 dienas (`httpOnly: false`, lai browser Supabase klients lasītu cookie; production HTTPS `Secure`). Ielogotam `proxy` `/`, `/login`, `/signup` un `/forgot-password` novirza uz `/dashboard`; neautentificēts lietotājs no aizsargātiem app ceļiem uz `/login`; landing `app/(marketing)/page.tsx` arī `redirect("/dashboard")`, ja ir sesija. Iziet ved uz `/`. Publiskajā galvenē ielogotam rādās **Atvērt lietotni**. MFA (TOTP) ir opcija `/settings/profile` visiem; ja faktoram ir `verified` un sesija nav `aal2`, lietotne rāda `MfaVerifyModal` pirms app čaulas. `is_admin` pie `/admin` bez MFA tiek novirzīts enroll (`?mfa=required`); ar MFA, bet bez AAL2 - admin modālis. Paroles maiņa (`updatePasswordAction`) prasa `getCurrentUser` (CI `actions.ts` auth-guard).
 
 Legal teksti: `app/lib/legal/documents.ts`. Privātuma pārziņa e-pasts nāk no `site_settings.legal_email` (`getPrivacyPolicyContent(t, settings.legalEmail)`); tukšs lauks izlaiž kontakta teikumu. Tā pati adrese saņem sānjoslas kļūdu ziņojumus, funkciju pieprasījumus un atsauksmes (`submitUserFeedbackAction`). UI: `LegalDocumentView` ar **Saturs** sānjoslu (`sticky` zem galvenes): klikšķis ritina uz sadaļu, josla paliek redzama visā dokumentā.
 
@@ -175,7 +197,7 @@ Globāli feature flagi tabulā `public.site_frontend_modules` (`module_key` + `i
 | `module_private_list` | `ListFormModal` rāda **Privāts saraksts** slēdzi un biedru/lomu izvēli | Slēdzis pazūd; visi `work_lists.is_private` kļūst `false` (RPC `publish_all_private_work_lists`); UI tos rāda kā publiskus |
 | `module_file_upload` | Augšupielāde kokā, apakšuzdevumos, mapes **Faili** logs, sānjoslas **Failu vieta** | Nav upload; esošie faili kokā un apakšuzdevumā slēpti; Failu logs izņemts no window order; Failu vieta pazūd; faila URL redirect |
 | `module_google_drive` | Komandas `...` → **Google Drive Integrācija**; `/team/google-drive`; faili uz Drive (noklusējumā bez servera `content`, opcionāli spoguļojums); admin slēdzis ieslēdzams tikai ja Google OAuth integrācija ir konfigurēta un ieslēgta | Izvēlnes opcijas nav; maršruts redirect uz `/dashboard`; Drive sync nenotiek. Prasa arī `module_file_upload` |
-| `module_gmail_plugin` | Gmail Chrome spraudnis (`extensions/gmail` `0.4.13`): sesija, komandu pārslēgšana, e-pasta pievienošana. **Turpināt ar Google** → `/auth/gmail-plugin/login` (ne `/login`). **Atjaunot Gmail** → ticket bridge `/auth/gmail-plugin/bridge?t=…` → `/start` (Gmail OAuth). Admin slēdzis tikai ja Google OAuth ir ieslēgts. Gmail OAuth tokeni `user_gmail_connections` (service role). Redirect `/auth/google-oauth/callback` | Spraudnis rāda, ka modulis izslēgts |
+| `module_gmail_plugin` | Gmail Chrome spraudnis (`extensions/gmail` `0.4.15`): sesija, komandu pārslēgšana, e-pasta pievienošana. **Turpināt ar Google** → `/auth/gmail-plugin/login` (ne `/login`). **Atjaunot Gmail** → ticket bridge `/auth/gmail-plugin/bridge?t=…` → `/start` (Gmail OAuth); production vajag `INTEGRATION_SECRETS_KEY`. Admin slēdzis tikai ja Google OAuth ir ieslēgts. Gmail OAuth tokeni `user_gmail_connections` (service role). Redirect `/auth/google-oauth/callback` | Spraudnis rāda, ka modulis izslēgts |
 | `module_onedrive` | Komandas `...` → **OneDrive Integrācija**; `/team/onedrive`; pēc faila pievienošanas kopija uz OneDrive, ja komanda ir pieslēgusi kontu. Admin slēdzis ieslēdzams tikai ja Microsoft OAuth integrācija ir konfigurēta un ieslēgta | Izvēlnes opcijas nav; maršruts redirect uz `/dashboard`; OneDrive sync nenotiek. Prasa arī `module_file_upload` |
 | `module_checklist` | Check List lietojams; slēgto statusu bloķē nepabeigti punkti | Sadaļa vienmēr sakļauta (`forceCollapsed`); slēgto statusu **nebloķē** |
 | `module_automations` | Saraksta `...` → **Automatizācijas**; `lists-store` izpilda statusa/čeklistes/apakšuzdevumu noteikumus | Izvēlnes opcijas nav; esošie noteikumi **neizpildās** |
@@ -190,7 +212,7 @@ Plūsma: `GET /calendar/{token}.ics` (`app/calendar/[token]/route.ts`). Apple: `
 
 ## Maksas plāni
 
-Admin apakšizvēlne (`admin-submenu.tsx`, `is_admin`) → `/admin/payment-plans` (`admin-payment-plans-form.tsx`). CRUD un iestatījumi: `admin/actions.ts` + `app/lib/payment-plans/` (`helpers.ts`, `repository.ts`). Cenas UI: `formatPlanEuro` (atstarpe kā tūkstošu atdalītājs).
+Admin apakšizvēlne (`admin-submenu.tsx`, `is_admin`) → `/admin/payment-plans` (`admin-payment-plans-form.tsx`). CRUD un iestatījumi: `admin/actions.ts` + `app/lib/payment-plans/` (`helpers.ts`, `repository.ts`). Cenas UI: `formatPlanEuro` → `formatEuro` no `app/lib/format/numbers.ts` (atstarpe kā tūkstošu atdalītājs).
 
 | Iestatījums | Kur | Uzvedība |
 |---|---|---|
@@ -454,6 +476,13 @@ app/
     member-last-online.tsx        # Tiešsaistes zīme
     team-todo-board.tsx           # Komandas kanban (nav Sākuma lapa)
   lib/
+    actions/action-result.ts      # ActionResult<T> server action atbildēm
+    auth/oauth-cookie-options.ts  # Kopīgs httpOnly OAuth cookie options
+    auth/oauth-origin.ts          # resolveOAuthOrigin
+    cloud-storage/                # sanitizeCloudFolderPath, parsePathParts (Drive/OneDrive upload)
+    dnd/pointer-y-from-event.ts   # @dnd-kit pointer Y drop hintiem
+    format/numbers.ts             # addThousandSeparators, formatInteger, formatEuro
+    http/parse-cookie-header.ts   # Server Cookie header → {name, value}[]
     consent/cookie-consent.ts     # Piekrišanas modelis
     document-title.ts             # Pārlūka cilnes formāts `lapa | sistēma`
     document-title-server.ts      # DB nosaukumi dinamiskajam generateMetadata
@@ -464,7 +493,7 @@ app/
     extension/                    # CORS, cookie, sesija, Gmail OAuth/connection, i18n
     cron-jobs/                    # tipi, repository, timezone (8:00/9:00, 1000 user batch), executeCronJob
     legal/documents.ts            # Privacy / terms / cookies teksti
-    lists.ts                      # Sarakstu/uzdevumu tipi, krāsas, location PATH, `workProgressById` / `listProgress`
+    lists.ts                      # Sarakstu/uzdevumu tipi, krāsas, location PATH, parseIdList, parseStatusGroupMap, `workProgressById` / `listProgress`
     task-checklists.ts            # Čeklistu tipi, progress, incomplete helper
     list-statuses.ts              # Saraksta statusu tipi un kataloga merge
     list-automations.ts           # Automatizāciju tipi, mapRow, activeFolderCreatedTemplateAutomations
@@ -511,6 +540,7 @@ app/
     i18n/messages-*.ts            # ru, de, fr, es, nl, da, no, fi, pl, lt, et, it, sv katalogi
     i18n/_catalog/                # JSON avots extra valodām
     i18n/interpolate.ts           # `{param}` aizvietošana (klienta bundle)
+    i18n/localized-values.ts      # parseLocalizedValues, resolveLocalizedValue, …
     i18n/                          # language, server overlay + table klientam
     site-admin/                   # Admin CRUD repository, tipi
     supabase/                     # env, browser/server/admin klienti, session refresh
@@ -524,11 +554,13 @@ app/
     users/admin-audit.ts          # admin_audit_events
     users/use-is-admin.tsx        # is_admin RPC + profils klientā
     security/                     # rate-limit, secret-box, file-bytes, log-error, hash-token
-app/auth/gmail-plugin/            # login (Google OAuth ielogošanās) / start / done; callback aliases vai `/auth/google-oauth/callback`
+app/auth/gmail-plugin/            # login (Google OAuth ielogošanās) / bridge / start / done; callback aliases vai `/auth/google-oauth/callback`
 app/api/extension/                # config, session, login, refresh, gmail-access, gmail-bridge-ticket, browse, attach-email; CORS `extension/cors.ts`
 app/api/cron/                     # GET/POST `/api/cron/[jobKey]` — token auth, stundas batch atgādinājumi
 app/auth/callback/route.ts        # E-pasta magic link / PKCE code → session
+app/auth/google-oauth/sign-in/route.ts # GET Google login/signup sākums (`?next=`, `?errorPage=`)
 app/auth/google-oauth/callback/route.ts # Google login, admin konfigurācija, Gmail spraudnis
+app/auth/microsoft-oauth/sign-in/route.ts # GET Microsoft login/signup sākums
 app/auth/microsoft-oauth/callback/route.ts # Microsoft login + admin konfigurācija
 app/auth/google-drive/callback/route.ts # Drive OAuth code → team refresh token
 app/auth/onedrive/callback/route.ts # OneDrive OAuth code → team refresh token
@@ -667,7 +699,7 @@ Kad `module_onedrive` un `module_file_upload` ir ieslēgti, komandas `...` rāda
 
 ## Chrome extension (Gmail)
 
-Mapē `extensions/gmail` — unpacked Chrome MV3 (`manifest` `0.4.13`). Popup: balta kartīte, avatars, vārds/uzvārds, e-pasts, **Iziet** tikai ikona augšējā labajā stūrī, centrēts loading, komandu pārslēgšana, Drive brīdinājums zem select, Gmail statuss kā ikona ar tooltip; bez URL/Client ID ievades; `12px` noapaļojums, `{SYSTEM_NAME}` no `getExtensionStrings(language, systemName)`. Zinātie origini (`KNOWN_SITE_ORIGINS` / `APP_ORIGIN_CANDIDATES`): `https://www.tasqin.com` (pirmais), `https://tasqin.com`, `http://localhost:3120`. **`getAppBase()`:** ja ir derīga sesija kādā originā — to izmanto; bez sesijas (Login) preferē production, ne `localhost`, pat ja lokālais serveris atbild uz `/api/extension/config`. Sesija ir spraudņa paša: `chrome.storage.local` (`extensionAuth` + `refresh_token`), API ar Bearer un `credentials: omit`. Vietnes cookie tikai bootstrap, ja storage tukšs un lietotājs nav izgājis no spraudņa; **Iziet** spraudnī nenoņem vietnes cookies. Cookie bootstrap lasa arī Supabase `base64-` chunked `sb-*-auth-token`. Alarm ~45 min atjauno access tokenu (~30 dienas). Custom login (`POST /api/extension/login` ar `remember: true`) vai Google (`GET /auth/gmail-plugin/login` → Google konta izvēle → `/auth/gmail-plugin/done?logged_in=1`; `plugin-auth.js` uz done lapas nosūta cookie spraudnim, background gaida sesiju arī ja popup aizveras, nevis atver `/login`, kas ielogotam aizmet uz dashboard). Publisks `GET /api/extension/config` (logo, valoda, vai e-pasts/Google ieslēgts, `loginPath`). Ja Gmail nav savienots, **Savienot Gmail** (`/auth/gmail-plugin/start`) iet caur to pašu `/auth/google-oauth/callback` kā login (vecais `/auth/gmail-plugin/callback` paliek aliases); tokeni `user_gmail_connections` (service role, RLS deny). Komandai bez Google Drive — popup rāda sarkanu brīdinājumu un Gmailā TASQIN pogas nav. Ja Drive ir pieslēgts, Gmailā inline logo poga → modālis → saraksts / mape / uzdevums → apakšuzdevums. E-pasts un pielikumi caur **Gmail API** (`gmail.readonly`, piekļuves tokens no `GET /api/extension/gmail-access`); limīts 25 MB. Sesijas access tokenu spraudnis atjauno ar `POST /api/extension/refresh` (tāpēc vairs “neizmet” pēc ~1 h). `proxy` `/api/extension/` apstrādā CORS (OPTIONS 204); kanoniskā hosta 301 šos ceļus izlaiž. UI valoda no sesijas. Sk. `extensions/gmail/README.md`.
+Mapē `extensions/gmail` — unpacked Chrome MV3 (`manifest` `0.4.15`). Popup: balta kartīte, avatars, vārds/uzvārds, e-pasts, **Iziet** tikai ikona augšējā labajā stūrī, centrēts loading, komandu pārslēgšana, Drive brīdinājums zem select, Gmail statuss kā ikona ar tooltip; bez URL/Client ID ievades; `12px` noapaļojums, `{SYSTEM_NAME}` no `getExtensionStrings(language, systemName)`. **Ikona** (`icons/icon{16,48,128}.png`) ir statiska — noklusējums kā vietnes favicon bez logo (`logo_color` black, `#18181b`); pārģenerēt: `node extensions/gmail/scripts/generate-icons.mjs` (opcija `--color midnight` u.c.). Zinātie origini (`KNOWN_SITE_ORIGINS` / `APP_ORIGIN_CANDIDATES`): `https://www.tasqin.com` (pirmais), `https://tasqin.com`, `http://localhost:3120`. **`getAppBase()`:** ja ir derīga sesija kādā originā — to izmanto; bez sesijas (Login) preferē production, ne `localhost`, pat ja lokālais serveris atbild uz `/api/extension/config`. Sesija ir spraudņa paša: `chrome.storage.local` (`extensionAuth` + `refresh_token`), API ar Bearer un `credentials: omit`. Vietnes cookie tikai bootstrap, ja storage tukšs un lietotājs nav izgājis no spraudņa; **Iziet** spraudnī nenoņem vietnes cookies. Cookie bootstrap lasa arī Supabase `base64-` chunked `sb-*-auth-token`. Alarm ~45 min atjauno access tokenu (~30 dienas). Custom login (`POST /api/extension/login` ar `remember: true`) vai Google (`GET /auth/gmail-plugin/login` → Google konta izvēle → `/auth/gmail-plugin/done?logged_in=1`; `plugin-auth.js` uz done lapas nosūta cookie spraudnim, background gaida sesiju arī ja popup aizveras, nevis atver `/login`, kas ielogotam aizmet uz dashboard). **Atjaunot Gmail:** `POST /api/extension/gmail-bridge-ticket` → `GET /auth/gmail-plugin/bridge?t=…` iestata pārlūka sesiju → `/auth/gmail-plugin/start` (Gmail OAuth). Ja bridge neizdodas, fallback `/start` + cookie sync; ja nonāk pie `/login?next=/auth/gmail-plugin/start`, login OAuth nodod `next` atpakaļ pie Gmail OAuth. Publisks `GET /api/extension/config` (logo, valoda, vai e-pasts/Google ieslēgts, `loginPath`). Ja Gmail nav savienots, **Savienot Gmail** (`/auth/gmail-plugin/start`) iet caur to pašu `/auth/google-oauth/callback` kā login (vecais `/auth/gmail-plugin/callback` paliek aliases); tokeni `user_gmail_connections` (service role, RLS deny). Komandai bez Google Drive — popup rāda sarkanu brīdinājumu un Gmailā TASQIN pogas nav. Ja Drive ir pieslēgts, Gmailā inline logo poga → modālis → saraksts / mape / uzdevums → apakšuzdevums. E-pasts un pielikumi caur **Gmail API** (`gmail.readonly`, piekļuves tokens no `GET /api/extension/gmail-access`); limīts 25 MB. Sesijas access tokenu spraudnis atjauno ar `POST /api/extension/refresh` (tāpēc vairs “neizmet” pēc ~1 h). `proxy` `/api/extension/` apstrādā CORS (OPTIONS 204); kanoniskā hosta 301 šos ceļus izlaiž. UI valoda no sesijas. Sk. `extensions/gmail/README.md`.
 
 **CORS.** Chrome bloķē `fetch` no `chrome-extension://<id>`, ja atbildē nav `Access-Control-Allow-Origin`. `app/lib/extension/cors.ts` atspoguļo jebkuru derīgu 32 simbolu extension ID (`[a-p]{32}`); CORS nav piekļuves kontrole — privātie maršruti joprojām prasa Bearer. `CHROME_EXTENSION_IDS` / `NEXT_PUBLIC_CHROME_EXTENSION_IDS` netiek lasīti. Apex `tasqin.com` Vercel 308 uz `www.tasqin.com` **bez** CORS galvenēm; `canonicalHostRedirectRules()` izlaiž `/api/extension/*`, un `proxy.ts` `/api/extension/*` pievieno CORS (OPTIONS 204, kļūdām arī). Spraudnis **nekad** neizsauc apex — pārraksta uz `www.tasqin.com` (`preferLiveOrigin`, `redirect: "manual"`).
 

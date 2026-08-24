@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { parsePathParts } from "@/app/lib/cloud-storage/parse-path-parts";
 import { getCurrentUser } from "@/app/lib/auth/get-current-user";
 import { FRONTEND_MODULE_KEYS } from "@/app/lib/frontend-modules/keys";
 import { isFrontendModuleEnabled } from "@/app/lib/frontend-modules/repository";
@@ -12,17 +13,6 @@ import { consumeRateLimit } from "@/app/lib/security/rate-limit";
 import { requestClientIp } from "@/app/lib/security/client-ip";
 
 export const runtime = "nodejs";
-
-function parsePathParts(raw: FormDataEntryValue | null) {
-  if (typeof raw !== "string" || !raw.trim()) return [];
-  try {
-    const parsed = JSON.parse(raw) as unknown;
-    if (!Array.isArray(parsed)) return [];
-    return parsed.filter((item): item is string => typeof item === "string");
-  } catch {
-    return [];
-  }
-}
 
 export async function POST(request: Request) {
   const [driveEnabled, filesEnabled] = await Promise.all([

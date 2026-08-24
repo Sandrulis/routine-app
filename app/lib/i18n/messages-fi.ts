@@ -1400,7 +1400,7 @@ export const fi: Record<string, string> = {
   "extension.gmail.check_all": "Valitse kaikki",
   "extension.gmail.email_always": "Sähköpostin sisältö (.txt) on valinnainen.",
   "extension.gmail.email_body": "Sähköpostin sisältö (.txt)",
-  "extension.gmail.email_body_hint": "Valitse, jos haluat liittää myös sähköpostin tekstin.",
+  "extension.gmail.email_body_hint": "Poista valinta, jos et halua liittää sähköpostin tekstiä.",
   "extension.gmail.too_large": "{size} — liian suuri (>25 Mt)",
   "extension.gmail.empty": "Täällä ei ole mitään",
   "extension.gmail.load_lists": "Ladataan listoja…",

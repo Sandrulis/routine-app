@@ -9,6 +9,7 @@ import type {
 } from "@/app/lib/frontend-modules/types";
 import { isGoogleSignInEnabled } from "@/app/lib/integrations/google-oauth/repository";
 import { isMicrosoftOAuthEnabled } from "@/app/lib/integrations/microsoft-oauth/repository";
+import type { ActionResult } from "@/app/lib/actions/action-result";
 
 export type { FrontendModuleSummary } from "@/app/lib/frontend-modules/types";
 
@@ -22,8 +23,6 @@ type FrontendModuleRow = {
   created_at: string;
   updated_at: string;
 };
-
-type ActionResult = { ok: true } | { ok: false; error: string };
 
 function mapFrontendModuleRow(row: FrontendModuleRow): FrontendModuleSummary {
   return {

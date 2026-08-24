@@ -4,6 +4,12 @@
 
 - (none)
 
+## v0.2.22
+
+- Kopīgi helperi: atkārtotas utilītas apvienotas `app/lib/` (skat. DEVELOPER.md → Kopīgie helperi); uzvedība lietotājam nemainās
+- Gmail spraudnis `0.4.15`: login ar `?next=` atgriež pie Gmail OAuth; Google/Microsoft OAuth caur GET `/auth/*/sign-in` (ne server action)
+- Ticket bridge `/auth/gmail-plugin/bridge`; statiska ikona ar `logo_color` noklusējumu (black); `extensions/gmail/scripts/generate-icons.mjs`
+
 ## v0.2.21
 
 - Gmail spraudnis `0.4.13`: Gmail OAuth caur īsu ticket bridge (bez tokeniem URL), atjaunojams savienojums, tīkla kļūdu tulkojums

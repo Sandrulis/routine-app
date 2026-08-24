@@ -14,6 +14,7 @@ import {
 } from "@/app/lib/payment-plans/helpers";
 import { createClient as createUserServerClient } from "@/app/lib/supabase/server";
 import { isSupabaseConfigured } from "@/app/lib/supabase/env";
+import type { ActionResult } from "@/app/lib/actions/action-result";
 
 export type {
   EarlyBirdAvailability,
@@ -58,8 +59,6 @@ type PlanModuleRow = {
   plan_id: string;
   module_key: string;
 };
-
-type ActionResult = { ok: true } | { ok: false; error: string };
 
 const PLAN_KEY_PATTERN = /^[a-z0-9._:-]+$/;
 

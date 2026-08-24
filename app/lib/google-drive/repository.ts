@@ -8,9 +8,10 @@ import {
   isEncryptedSecret,
   persistSecret,
 } from "@/app/lib/security/secret-box";
-
-/** Existing Drive folders were created under this name. Do not rename in reads. */
-const LEGACY_CLOUD_FOLDER = "Routine";
+import {
+  LEGACY_CLOUD_FOLDER,
+  sanitizeCloudFolderPath,
+} from "@/app/lib/cloud-storage/sanitize-folder-path";
 
 export type GoogleDriveStatus = {
   configured: boolean;
@@ -76,12 +77,7 @@ function mapSecretRow(row: IntegrationRow): GoogleDriveSecretRow {
 }
 
 export function sanitizeDriveFolderPath(value: string) {
-  const parts = value
-    .split("/")
-    .map((part) => part.trim())
-    .filter(Boolean)
-    .filter((part) => part !== "." && part !== "..");
-  return parts.join("/") || LEGACY_CLOUD_FOLDER;
+  return sanitizeCloudFolderPath(value);
 }
 
 export async function assertTeamMember(teamId: string, userId: string) {

@@ -1,4 +1,5 @@
 import { randomBytes } from "node:crypto";
+import { oauthCookieOptions } from "@/app/lib/auth/oauth-cookie-options";
 import {
   GOOGLE_DRIVE_CALLBACK_PATH,
   GOOGLE_DRIVE_OAUTH_COOKIE,
@@ -12,13 +13,7 @@ export type GoogleDriveOAuthState = {
 };
 
 export function googleDriveOAuthCookieOptions(maxAgeSeconds: number) {
-  return {
-    httpOnly: true,
-    sameSite: "lax" as const,
-    secure: process.env.NODE_ENV === "production",
-    path: "/",
-    maxAge: maxAgeSeconds,
-  };
+  return oauthCookieOptions(maxAgeSeconds);
 }
 
 export function createGoogleDriveOAuthState(teamId: string): GoogleDriveOAuthState {

@@ -28,7 +28,7 @@ Nav jāievada Routine URL vai OAuth Client ID. Spraudnis sauc [https://www.tasqi
 3. Izvēlies **saraksts** → (mape) → **uzdevums** → **apakšuzdevums**
 4. Zem saraksta atzīmē pielikumus (checkbox) → **Pievienot**
 
-Ja pielikumi neredzami vai rāda OAuth kļūdu: Chrome → `chrome://extensions` → TASQIN - Gmail → **Reload** (versija `0.4.13`), tad Gmail cilnē **F5**. Spraudņa popup → **Atjaunot Gmail savienojumu** (tas nav tas pats, kas «Turpināt ar Google»). Modālī zem saraksta jābūt sadaļai **Pielikumi**.
+Ja pielikumi neredzami vai rāda OAuth kļūdu: Chrome → `chrome://extensions` → TASQIN - Gmail → **Reload** (versija `0.4.15`), tad Gmail cilnē **F5**. Spraudņa popup → **Atjaunot Gmail savienojumu** (tas nav tas pats, kas «Turpināt ar Google»). Modālī zem saraksta jābūt sadaļai **Pielikumi**.
 
 Apakšuzdevumu saraksts (3. solis) ir tajā pašā statusa secībā kā sānjosla un uzdevuma UI: aktīvie pirms “nav sākts”, slēgtie netiek rādīti.
 
@@ -45,7 +45,12 @@ Popup ir balta kartīte: avatars, vārds un uzvārds, e-pasts, **Iziet** tikai k
 - `GET /api/extension/gmail-access`
 - `GET /api/extension/browse`
 - `GET /api/extension/subtasks?q=`
-- `POST /api/extension/gmail-bridge-ticket
-- `POST /api/extension/attach-email``
+- `POST /api/extension/gmail-bridge-ticket`
+- `POST /api/extension/attach-email`
+- `GET /auth/gmail-plugin/bridge?t=…` → sesija pārlūkā → `/auth/gmail-plugin/start` (Gmail OAuth)
 - `GET /auth/gmail-plugin/login` → Google OAuth (`/auth/google-oauth/callback`) → `/auth/gmail-plugin/done?logged_in=1`
 - `GET /auth/gmail-plugin/start` → Google OAuth (`/auth/google-oauth/callback`) → `/auth/gmail-plugin/done`
+
+## Ikona
+
+Chrome spraudņa ikona ir statiski PNG (`icons/`). Noklusējums atbilst vietnes favicon bez augšupielādēta logo (`logo_color` black). Pārģenerēt: `node extensions/gmail/scripts/generate-icons.mjs` (opcija `--color midnight`).
