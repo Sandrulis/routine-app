@@ -1689,7 +1689,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         await syncBrowserSessionCookies(appBase);
 
         let connectUrl = `${appBase}/auth/gmail-plugin/start`;
-        let usedBridge = false;
         if (session.refresh_token) {
           try {
             const ticketResult = await apiFetch(
@@ -1710,7 +1709,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                 bridgePath,
                 ticket,
               );
-              usedBridge = true;
             }
           } catch {
             // fall through to /start (cookies may already be synced)
@@ -1729,33 +1727,31 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           return;
         }
 
-        const doneUrl = await waitForTabMatch(
-          tab.id,
-          (url) =>
-            isPluginLoginDoneUrl(url) ||
-            (!usedBridge && url.includes("/login") && url.includes("next=")),
-        );
+        // Wait for Gmail OAuth done (not plugin login done, not intermediate /login).
+        const doneUrl = await waitForTabMatch(tab.id, (url) => {
+          if (!url.includes("/auth/gmail-plugin/done")) return false;
+          return url.includes("connected=1") || url.includes("error=");
+        });
         if (!doneUrl || doneUrl.includes("error=")) {
           sendResponse({ ok: false, error: "errors.extension_gmail_auth" });
-          return;
-        }
-        if (doneUrl.includes("/login")) {
-          sendResponse({
-            ok: false,
-            error: "errors.extension_auth_required",
-          });
           return;
         }
         await chrome.storage.local.remove([
           "gmailAccessToken",
           "gmailTokenExpiresAt",
         ]);
-        const after = await sessionResponse();
+        let connected = false;
+        for (let attempt = 0; attempt < 8; attempt += 1) {
+          const after = await sessionResponse();
+          if (after?.data?.gmailConnected) {
+            connected = true;
+            break;
+          }
+          await new Promise((resolve) => setTimeout(resolve, 400));
+        }
         sendResponse({
-          ok: Boolean(after?.data?.gmailConnected),
-          error: after?.data?.gmailConnected
-            ? undefined
-            : "errors.extension_gmail_auth",
+          ok: connected,
+          error: connected ? undefined : "errors.extension_gmail_auth",
         });
         return;
       }

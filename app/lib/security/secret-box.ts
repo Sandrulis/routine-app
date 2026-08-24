@@ -35,12 +35,22 @@ function decryptMaterials() {
 function requireEncryptMaterial() {
   const dedicated = dedicatedKey();
   if (dedicated) return dedicated;
+  const service = readEnv("SUPABASE_SERVICE_ROLE_KEY")?.trim() || "";
+  if (service) {
+    if (process.env.NODE_ENV === "production") {
+      logError(
+        "encryptSecret",
+        "INTEGRATION_SECRETS_KEY missing; falling back to SUPABASE_SERVICE_ROLE_KEY",
+      );
+    }
+    return service;
+  }
   if (process.env.NODE_ENV === "production") {
     throw new Error(
       "INTEGRATION_SECRETS_KEY is required in production to encrypt integration secrets",
     );
   }
-  return readEnv("SUPABASE_SERVICE_ROLE_KEY")?.trim() || DEV_FALLBACK;
+  return DEV_FALLBACK;
 }
 
 function keyFromMaterial(raw: string) {

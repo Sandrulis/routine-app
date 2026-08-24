@@ -4,6 +4,10 @@
 
 - (none)
 
+## v0.2.27
+
+- Gmail savienojums: tokeni vairs netiek «saglabāti» kā tukši bez šifrēšanas atslēgas; spraudnis `0.4.18` gaida `connected=1` (ne login done)
+
 ## v0.2.26
 
 - CI: `bootstrap-session` maršruts izmanto `getExtensionAuth` (security-smoke auth pārbaude)

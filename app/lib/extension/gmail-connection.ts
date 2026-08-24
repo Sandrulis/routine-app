@@ -91,11 +91,20 @@ export async function saveUserGmailConnection(input: {
   const expiresAt = new Date(
     Date.now() + Math.max(30, input.expiresIn) * 1000,
   ).toISOString();
+  const encryptedRefresh = persistSecret(refreshToken);
+  const encryptedAccess = persistSecret(input.accessToken);
+  if (!encryptedRefresh || !encryptedAccess) {
+    logError(
+      "saveUserGmailConnection failed",
+      "Could not encrypt Gmail tokens (check INTEGRATION_SECRETS_KEY)",
+    );
+    return { ok: false as const, error: "errors.extension_gmail_auth" };
+  }
   const { error } = await admin.from("user_gmail_connections").upsert({
     user_id: input.userId,
     google_email: input.googleEmail.trim(),
-    refresh_token: persistSecret(refreshToken),
-    access_token: persistSecret(input.accessToken),
+    refresh_token: encryptedRefresh,
+    access_token: encryptedAccess,
     access_token_expires_at: expiresAt,
     connected_at: new Date().toISOString(),
   });

@@ -67,8 +67,9 @@ export default async function GmailPluginDonePage({
   }
 
   const loggedIn = wantsLogin && hasBrowserSession;
-  const connected = wantsConnect && hasBrowserSession;
-  const sessionMissing = (wantsLogin || wantsConnect) && !hasBrowserSession;
+  // Gmail connection is stored server-side; success does not depend on browser cookies.
+  const connected = wantsConnect;
+  const sessionMissing = wantsLogin && !hasBrowserSession;
   const title = sessionMissing
     ? t("extension.gmail.login_done.error_title", "Neizdevās ienākt")
     : loggedIn
