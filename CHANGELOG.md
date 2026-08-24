@@ -4,6 +4,10 @@
 
 - (none)
 
+## v0.2.28
+
+- Gmail spraudnis `0.4.19`: boot teksts «Ielādē…»; Gmail savienojums kā maza ikona ar tooltip (sarkana, ja nav savienots)
+
 ## v0.2.27
 
 - Gmail savienojums: tokeni vairs netiek «saglabāti» kā tukši bez šifrēšanas atslēgas; spraudnis `0.4.18` gaida `connected=1` (ne login done)

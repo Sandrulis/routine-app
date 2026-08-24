@@ -1445,7 +1445,7 @@
   "extension.gmail.gmail_connected": "Gmail tilsluttet: {email}",
   "extension.gmail.plugin_disabled": "Gmail-pluginnet er slået fra. Slå det til under Administration → Moduler.",
   "extension.gmail.login_failed": "Kunne ikke logge ind.",
-  "extension.gmail.checking_app": "Leder efter {SYSTEM_NAME}…",
+  "extension.gmail.checking_app": "Indlæser {SYSTEM_NAME}…",
   "extension.gmail.login_done.title": "Logget ind på {SYSTEM_NAME}",
   "extension.gmail.login_done.body": "Du kan lukke dette vindue og vende tilbage til pluginnet.",
   "extension.gmail.login_done.error_title": "Kunne ikke logge ind",

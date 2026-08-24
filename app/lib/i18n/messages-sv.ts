@@ -1453,7 +1453,7 @@ export const sv: Record<string, string> = {
   "extension.gmail.gmail_connected": "Gmail connected: {email}",
   "extension.gmail.plugin_disabled": "The Gmail plugin is disabled. Turn it on in Administration → Modules.",
   "extension.gmail.login_failed": "Could not sign in.",
-  "extension.gmail.checking_app": "Looking for {SYSTEM_NAME}…",
+  "extension.gmail.checking_app": "Laddar {SYSTEM_NAME}…",
   "extension.gmail.login_done.title": "Inloggad på {SYSTEM_NAME}",
   "extension.gmail.login_done.body": "Du kan stänga det här fönstret och gå tillbaka till tillägget.",
   "extension.gmail.login_done.error_title": "Kunde inte logga in",

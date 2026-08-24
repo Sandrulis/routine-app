@@ -1864,7 +1864,7 @@ export const ru: Record<string, string> = {
   "extension.gmail.plugin_disabled":
     "Плагин Gmail выключен. Включите его в Администрирование → Модули.",
   "extension.gmail.login_failed": "Не удалось войти.",
-  "extension.gmail.checking_app": "Поиск {SYSTEM_NAME}…",
+  "extension.gmail.checking_app": "Загрузка {SYSTEM_NAME}…",
   "extension.gmail.login_done.title": "Вход в {SYSTEM_NAME} выполнен",
   "extension.gmail.login_done.body":
     "Можно закрыть это окно и вернуться в плагин.",

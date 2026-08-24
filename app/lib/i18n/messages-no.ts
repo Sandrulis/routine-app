@@ -1453,7 +1453,7 @@ export const no: Record<string, string> = {
   "extension.gmail.gmail_connected": "Gmail tilkoblet: {email}",
   "extension.gmail.plugin_disabled": "Gmail-tillegget er slått av. Slå det på under Administrasjon → Moduler.",
   "extension.gmail.login_failed": "Kunne ikke logge inn.",
-  "extension.gmail.checking_app": "Ser etter {SYSTEM_NAME}…",
+  "extension.gmail.checking_app": "Laster {SYSTEM_NAME}…",
   "extension.gmail.login_done.title": "Logget inn på {SYSTEM_NAME}",
   "extension.gmail.login_done.body": "Du kan lukke dette vinduet og gå tilbake til tillegget.",
   "extension.gmail.login_done.error_title": "Kunne ikke logge inn",

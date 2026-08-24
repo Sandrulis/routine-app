@@ -1453,7 +1453,7 @@ export const fr: Record<string, string> = {
   "extension.gmail.gmail_connected": "Gmail connecté : {email}",
   "extension.gmail.plugin_disabled": "Le plugin Gmail est désactivé. Active-le dans Administration → Modules.",
   "extension.gmail.login_failed": "Impossible de se connecter.",
-  "extension.gmail.checking_app": "Recherche de {SYSTEM_NAME}…",
+  "extension.gmail.checking_app": "Chargement de {SYSTEM_NAME}…",
   "extension.gmail.login_done.title": "Connecté à {SYSTEM_NAME}",
   "extension.gmail.login_done.body": "Tu peux fermer cette fenêtre et revenir au plugin.",
   "extension.gmail.login_done.error_title": "Impossible de se connecter",

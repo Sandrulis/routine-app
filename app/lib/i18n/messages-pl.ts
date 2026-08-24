@@ -1453,7 +1453,7 @@ export const pl: Record<string, string> = {
   "extension.gmail.gmail_connected": "Gmail połączony: {email}",
   "extension.gmail.plugin_disabled": "Wtyczka Gmail jest wyłączona. Włącz ją w Administracja → Moduły.",
   "extension.gmail.login_failed": "Nie udało się zalogować.",
-  "extension.gmail.checking_app": "Szukanie {SYSTEM_NAME}…",
+  "extension.gmail.checking_app": "Ładowanie {SYSTEM_NAME}…",
   "extension.gmail.login_done.title": "Zalogowano do {SYSTEM_NAME}",
   "extension.gmail.login_done.body": "Możesz zamknąć to okno i wrócić do wtyczki.",
   "extension.gmail.login_done.error_title": "Nie udało się zalogować",

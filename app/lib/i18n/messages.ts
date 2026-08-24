@@ -1870,7 +1870,7 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "extension.gmail.plugin_disabled":
       "Gmail spraudnis sistēmā ir izslēgts. Ieslēdz to Administrācija → Moduļi.",
     "extension.gmail.login_failed": "Neizdevās ienākt.",
-    "extension.gmail.checking_app": "Meklē {SYSTEM_NAME}…",
+    "extension.gmail.checking_app": "Ielādē {SYSTEM_NAME}…",
     "extension.gmail.login_done.title": "Ienāci {SYSTEM_NAME}",
     "extension.gmail.login_done.body":
       "Vari aizvērt šo logu un atgriezties spraudnī.",
@@ -3856,7 +3856,7 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "extension.gmail.plugin_disabled":
       "The Gmail plugin is disabled. Turn it on in Administration → Modules.",
     "extension.gmail.login_failed": "Could not sign in.",
-    "extension.gmail.checking_app": "Looking for {SYSTEM_NAME}…",
+    "extension.gmail.checking_app": "Loading {SYSTEM_NAME}…",
     "extension.gmail.login_done.title": "Signed in to {SYSTEM_NAME}",
     "extension.gmail.login_done.body":
       "You can close this window and return to the plugin.",

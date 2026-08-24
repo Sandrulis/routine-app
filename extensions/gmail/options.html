@@ -40,8 +40,7 @@
         background: #0d9488;
       }
       #googleWrap button,
-      #passwordLogin,
-      #connectGmail {
+      #passwordLogin {
         width: 100%;
       }
       #googleWrap { margin-bottom: 10px; }
@@ -168,7 +167,7 @@
         gap: 4px;
         flex-shrink: 0;
       }
-      .gmail-badge {
+      .gmail-action {
         position: relative;
         width: 28px;
         height: 28px;
@@ -179,14 +178,24 @@
         display: inline-flex;
         align-items: center;
         justify-content: center;
+        flex-shrink: 0;
       }
-      .gmail-badge:hover:not(:disabled),
-      .gmail-badge:focus-visible {
+      .gmail-action:hover:not(:disabled),
+      .gmail-action:focus-visible {
         background: #d1fae5;
         color: #065f46;
       }
-      .gmail-badge svg { width: 16px; height: 16px; display: block; }
-      .gmail-badge .tip {
+      .gmail-action.needs-attention {
+        background: #fef2f2;
+        color: #b91c1c;
+      }
+      .gmail-action.needs-attention:hover:not(:disabled),
+      .gmail-action.needs-attention:focus-visible {
+        background: #fee2e2;
+        color: #991b1b;
+      }
+      .gmail-action svg { width: 16px; height: 16px; display: block; }
+      .gmail-action .tip {
         position: absolute;
         top: calc(100% + 6px);
         right: 0;
@@ -207,8 +216,8 @@
         transform: translateY(-2px);
         box-shadow: 0 8px 20px rgba(15, 23, 42, 0.18);
       }
-      .gmail-badge:hover .tip,
-      .gmail-badge:focus-visible .tip {
+      .gmail-action:hover .tip,
+      .gmail-action:focus-visible .tip {
         opacity: 1;
         transform: none;
       }
@@ -240,8 +249,6 @@
         font-weight: 500;
       }
       .banner.warn { background: #fef2f2; color: #b91c1c; }
-      .banner.hint { background: #f8fafc; color: #475569; font-weight: 400; }
-      .actions { margin-top: 8px; }
       #status { margin: 8px 12px 12px; }
       #status:empty { display: none; }
       .ok { color: #047857; }
@@ -282,14 +289,9 @@
           </div>
         </div>
         <div class="header-actions">
-          <button type="button" id="gmailBadge" class="gmail-badge hidden">
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path fill="#EA4335" d="M20.5 6.2 12 12.1 3.5 6.2A2 2 0 0 1 4.7 5h14.6a2 2 0 0 1 1.2 1.2Z"/>
-              <path fill="#4285F4" d="M3 7.1V17a2 2 0 0 0 2 2h.8V9.4L3 7.1Z"/>
-              <path fill="#34A853" d="M18.2 19H19a2 2 0 0 0 2-2V7.1l-2.8 2.3V19Z"/>
-              <path fill="#FBBC05" d="M5.8 19h12.4V9.4L12 13.6 5.8 9.4V19Z"/>
-            </svg>
-            <span id="gmailTip" class="tip" role="tooltip"></span>
+          <button type="button" id="connectGmail" class="gmail-action" aria-describedby="connectGmailTip">
+            <svg id="connectGmailIcon" viewBox="0 0 24 24" fill="none" aria-hidden="true"></svg>
+            <span id="connectGmailTip" class="tip" role="tooltip"></span>
           </button>
           <button type="button" id="signOut" class="sign-out">
             <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
@@ -303,11 +305,7 @@
         <select id="team"></select>
       </div>
       <p id="driveWarn" class="banner warn hidden"></p>
-      <p id="gmailStatus" class="banner hint hidden"></p>
       <p id="pluginWarn" class="banner warn hidden"></p>
-      <div id="connectWrap" class="actions hidden">
-        <button type="button" id="connectGmail"></button>
-      </div>
     </div>
     <p id="status"></p>
     <script src="options.js"></script>

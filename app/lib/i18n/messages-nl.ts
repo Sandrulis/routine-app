@@ -1453,7 +1453,7 @@ export const nl: Record<string, string> = {
   "extension.gmail.gmail_connected": "Gmail gekoppeld: {email}",
   "extension.gmail.plugin_disabled": "De Gmail-plugin is uitgeschakeld. Zet die aan in Beheer → Modules.",
   "extension.gmail.login_failed": "Inloggen is mislukt.",
-  "extension.gmail.checking_app": "{SYSTEM_NAME} zoeken…",
+  "extension.gmail.checking_app": "{SYSTEM_NAME} laden…",
   "extension.gmail.login_done.title": "Ingelogd bij {SYSTEM_NAME}",
   "extension.gmail.login_done.body": "Je kunt dit venster sluiten en teruggaan naar de plugin.",
   "extension.gmail.login_done.error_title": "Inloggen is mislukt",

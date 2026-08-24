@@ -1454,7 +1454,7 @@ export const es: Record<string, string> = {
   "extension.gmail.gmail_connected": "Gmail conectado: {email}",
   "extension.gmail.plugin_disabled": "El complemento de Gmail está desactivado. Actívalo en Administración → Módulos.",
   "extension.gmail.login_failed": "No se ha podido iniciar sesión.",
-  "extension.gmail.checking_app": "Buscando {SYSTEM_NAME}…",
+  "extension.gmail.checking_app": "Cargando {SYSTEM_NAME}…",
   "extension.gmail.login_done.title": "Has iniciado sesión en {SYSTEM_NAME}",
   "extension.gmail.login_done.body": "Puedes cerrar esta ventana y volver al complemento.",
   "extension.gmail.login_done.error_title": "No se ha podido iniciar sesión",

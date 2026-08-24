@@ -1445,7 +1445,7 @@
   "extension.gmail.gmail_connected": "Gmail ühendatud: {email}",
   "extension.gmail.plugin_disabled": "Gmail'i plugin on välja lülitatud. Lülita see sisse jaotises Haldus → Moodulid.",
   "extension.gmail.login_failed": "Sisselogimine ebaõnnestus.",
-  "extension.gmail.checking_app": "{SYSTEM_NAME}i otsimine…",
+  "extension.gmail.checking_app": "{SYSTEM_NAME}i laadimine…",
   "extension.gmail.login_done.title": "Sisselogitud {SYSTEM_NAME}i",
   "extension.gmail.login_done.body": "Võid selle akna sulgeda ja pluginasse naasta.",
   "extension.gmail.login_done.error_title": "Sisselogimine ebaõnnestus",

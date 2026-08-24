@@ -1453,7 +1453,7 @@ export const fi: Record<string, string> = {
   "extension.gmail.gmail_connected": "Gmail yhdistetty: {email}",
   "extension.gmail.plugin_disabled": "Gmail-lisäosa on pois käytöstä. Ota se käyttöön kohdassa Hallinta → Moduulit.",
   "extension.gmail.login_failed": "Kirjautuminen epäonnistui.",
-  "extension.gmail.checking_app": "Etsitään {SYSTEM_NAME}-palvelua…",
+  "extension.gmail.checking_app": "Ladataan {SYSTEM_NAME}…",
   "extension.gmail.login_done.title": "Kirjautunut {SYSTEM_NAME}-palveluun",
   "extension.gmail.login_done.body": "Voit sulkea tämän ikkunan ja palata lisäosaan.",
   "extension.gmail.login_done.error_title": "Kirjautuminen epäonnistui",

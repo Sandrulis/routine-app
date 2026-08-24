@@ -1,5 +1,5 @@
 const FALLBACK = {
-  "extension.gmail.checking_app": "Meklē TASQIN…",
+  "extension.gmail.checking_app": "Ielādē {SYSTEM_NAME}…",
   "extension.gmail.checking_session": "Pārbauda TASQIN sesiju…",
   "auth.login.title": "Ienākt",
   "auth.google.continue": "Turpināt ar Google",
@@ -153,19 +153,20 @@ function renderAccount(session) {
 
   const gmailConnected = Boolean(session.gmailConnected);
   const gmailEmail = session.gmailEmail || user.email || "";
-  const gmailLabel = t("extension.gmail.gmail_connected", { email: gmailEmail });
-  $("gmailBadge").classList.toggle("hidden", !gmailConnected);
-  $("gmailTip").textContent = gmailLabel;
-  $("gmailBadge").title = gmailLabel;
-  $("gmailBadge").setAttribute("aria-label", gmailLabel);
-  $("gmailStatus").textContent = gmailConnected
-    ? t("extension.gmail.reconnect_gmail_hint")
-    : t("extension.gmail.connect_gmail_hint");
-  $("gmailStatus").classList.remove("hidden");
-  $("connectWrap").classList.remove("hidden");
-  $("connectGmail").textContent = gmailConnected
+  const connectLabel = gmailConnected
     ? t("extension.gmail.reconnect_gmail")
     : t("extension.gmail.connect_gmail");
+  const connectTip = gmailConnected
+    ? `${t("extension.gmail.gmail_connected", { email: gmailEmail })}. ${t("extension.gmail.reconnect_gmail_hint")}`
+    : `${connectLabel}. ${t("extension.gmail.connect_gmail_hint")}`;
+  const connectBtn = $("connectGmail");
+  connectBtn.classList.toggle("needs-attention", !gmailConnected);
+  connectBtn.title = connectTip;
+  connectBtn.setAttribute("aria-label", connectLabel);
+  $("connectGmailTip").textContent = connectTip;
+  $("connectGmailIcon").innerHTML = gmailConnected
+    ? '<path fill="#EA4335" d="M20.5 6.2 12 12.1 3.5 6.2A2 2 0 0 1 4.7 5h14.6a2 2 0 0 1 1.2 1.2Z"/><path fill="#4285F4" d="M3 7.1V17a2 2 0 0 0 2 2h.8V9.4L3 7.1Z"/><path fill="#34A853" d="M18.2 19H19a2 2 0 0 0 2-2V7.1l-2.8 2.3V19Z"/><path fill="#FBBC05" d="M5.8 19h12.4V9.4L12 13.6 5.8 9.4V19Z"/>'
+    : '<path d="M4 7.5V17a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5M4 7.5 12 13l8-5.5M4 7.5 12 4l8 3.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M16.5 15.5v3M15 17h3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>';
 
   const pluginOn = session.gmailPluginEnabled !== false;
   $("pluginWarn").classList.toggle("hidden", pluginOn);

@@ -1453,7 +1453,7 @@ export const lt: Record<string, string> = {
   "extension.gmail.gmail_connected": "Gmail prijungtas: {email}",
   "extension.gmail.plugin_disabled": "Gmail papildinys išjungtas. Įjunkite jį Administravimas → Moduliai.",
   "extension.gmail.login_failed": "Nepavyko prisijungti.",
-  "extension.gmail.checking_app": "Ieškoma {SYSTEM_NAME}…",
+  "extension.gmail.checking_app": "Įkeliama {SYSTEM_NAME}…",
   "extension.gmail.login_done.title": "Prisijungta prie {SYSTEM_NAME}",
   "extension.gmail.login_done.body": "Galite uždaryti šį langą ir grįžti į papildinį.",
   "extension.gmail.login_done.error_title": "Nepavyko prisijungti",
