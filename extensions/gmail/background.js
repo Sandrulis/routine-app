@@ -1338,9 +1338,13 @@ function isPluginLoginDoneUrl(url) {
   );
 }
 
-async function captureSessionFromDone(url, cookieHeader) {
+async function captureSessionFromDone(url, cookieHeader, directSession) {
   const origin = preferLiveOrigin(parseOrigin(url));
   if (!origin) return "";
+  if (directSession?.access_token) {
+    await rememberSession(origin, directSession);
+    return (await getAccessToken(origin)) ? origin : "";
+  }
   if (cookieHeader) {
     const fromPage = sessionFromAuthCookieList(cookiesFromHeader(cookieHeader));
     if (fromPage.session?.access_token) {
@@ -1480,7 +1484,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           return;
         }
         await markPluginSignedIn();
-        const origin = await captureSessionFromDone(url, message.cookieHeader);
+        const origin = await captureSessionFromDone(
+          url,
+          message.cookieHeader,
+          message.session,
+        );
         sendResponse({ ok: Boolean(origin) });
         return;
       }

@@ -4,6 +4,10 @@
 
 - (none)
 
+## v0.2.24
+
+- Gmail spraudnis `0.4.16`: sesija no OAuth done lapas caur `GET /api/extension/bootstrap-session` (uzticamāk nekā tikai cookies)
+
 ## v0.2.23
 
 - Labots HTTP 500 OAuth maršrutos production: integrāciju secret migrācija vairs nemest kļūdu bez `INTEGRATION_SECRETS_KEY`
