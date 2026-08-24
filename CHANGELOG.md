@@ -4,6 +4,10 @@
 
 - (none)
 
+## v0.2.25
+
+- Gmail spraudnis `0.4.17`: OAuth done lapā vienreizējs bootstrap ticket + `POST /api/extension/bootstrap-from-ticket`; «Ienāci» tikai ar reālu sesiju; labāka sesijas nodošana spraudnim
+
 ## v0.2.24
 
 - Gmail spraudnis `0.4.16`: sesija no OAuth done lapas caur `GET /api/extension/bootstrap-session` (uzticamāk nekā tikai cookies)

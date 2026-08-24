@@ -1877,6 +1877,8 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "extension.gmail.login_done.error_title": "Neizdevās ienākt",
     "extension.gmail.login_done.error_body":
       "Mēģini vēlreiz no Gmail spraudņa.",
+    "extension.gmail.login_done.session_missing":
+      "Pārlūkā nav aktīvas sesijas. Mēģini vēlreiz no Gmail spraudņa.",
     "extension.gmail.done.title": "Gmail savienots",
     "extension.gmail.done.body":
       "Gmail ir pieslēgts {SYSTEM_NAME}. Vari aizvērt šo logu un atgriezties spraudnī.",
@@ -3861,6 +3863,8 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "extension.gmail.login_done.error_title": "Could not sign in",
     "extension.gmail.login_done.error_body":
       "Try again from the Gmail plugin.",
+    "extension.gmail.login_done.session_missing":
+      "No active browser session. Try again from the Gmail plugin.",
     "extension.gmail.done.title": "Gmail connected",
     "extension.gmail.done.body":
       "Gmail is connected to {SYSTEM_NAME}. You can close this window and return to the plugin.",

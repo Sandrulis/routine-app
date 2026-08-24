@@ -50,6 +50,12 @@ function preferLiveOrigin(origin) {
   return parsed;
 }
 
+function originsEquivalent(a, b) {
+  const left = preferLiveOrigin(a);
+  const right = preferLiveOrigin(b);
+  return Boolean(left && right && left === right);
+}
+
 /** Prefer www over apex so we don't hit a CORS-blocked 301 to the canonical host. */
 function originsWithWwwFirst(origin) {
   const parsed = parseOrigin(origin);
@@ -676,16 +682,16 @@ async function importSessionFromKnownCookies(preferredOrigin) {
 }
 
 async function getAccessToken(appBase) {
-  const origin = parseOrigin(appBase);
+  const origin = preferLiveOrigin(parseOrigin(appBase));
   const stored = await readStoredSession();
-  const storedOrigin = parseOrigin(stored?.appBase);
+  const storedOrigin = preferLiveOrigin(parseOrigin(stored?.appBase));
   const storedSession =
-    stored && storedOrigin === origin ? stored.session : null;
+    stored && originsEquivalent(stored.appBase, origin) ? stored.session : null;
 
-  const fromStored = await resolveAccessToken(appBase, storedSession, null);
+  const fromStored = await resolveAccessToken(origin, storedSession, null);
   if (fromStored) return fromStored;
 
-  if (stored?.session && storedOrigin && storedOrigin !== origin) {
+  if (stored?.session && storedOrigin && !originsEquivalent(storedOrigin, origin)) {
     const fromStoredHost = await resolveAccessToken(
       storedOrigin,
       stored.session,
@@ -1338,13 +1344,77 @@ function isPluginLoginDoneUrl(url) {
   );
 }
 
-async function captureSessionFromDone(url, cookieHeader, directSession) {
+async function fetchBootstrapFromTicket(origin, ticket) {
+  const base = preferLiveOrigin(parseOrigin(origin));
+  const value = String(ticket || "").trim();
+  if (!base || !value) return null;
+  try {
+    const response = await fetch(`${base}/api/extension/bootstrap-from-ticket`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "omit",
+      redirect: "manual",
+      body: JSON.stringify({ ticket: value }),
+    });
+    if (response.status >= 300 && response.status < 400) return null;
+    const data = await response.json().catch(() => null);
+    if (data?.ok && data?.session?.access_token) return data.session;
+  } catch {
+    return null;
+  }
+  return null;
+}
+
+async function readBootstrapTicketFromTab(tabId) {
+  if (!chrome.scripting?.executeScript) return "";
+  try {
+    const [{ result }] = await chrome.scripting.executeScript({
+      target: { tabId },
+      func: () =>
+        document
+          .querySelector("[data-routine-bootstrap-ticket]")
+          ?.getAttribute("data-routine-bootstrap-ticket") || "",
+    });
+    return String(result || "").trim();
+  } catch {
+    return "";
+  }
+}
+
+async function captureSessionFromDone(
+  url,
+  cookieHeader,
+  directSession,
+  bootstrapTicket,
+  tabId,
+) {
   const origin = preferLiveOrigin(parseOrigin(url));
   if (!origin) return "";
-  if (directSession?.access_token) {
-    await rememberSession(origin, directSession);
-    return (await getAccessToken(origin)) ? origin : "";
+
+  let session = directSession;
+  if (!session?.access_token) {
+    const ticket =
+      String(bootstrapTicket || "").trim() ||
+      (tabId ? await readBootstrapTicketFromTab(tabId) : "");
+    if (ticket) {
+      session = await fetchBootstrapFromTicket(origin, ticket);
+    }
   }
+
+  if (session?.access_token) {
+    await rememberSession(origin, session);
+    if (sessionUsable(session)) return origin;
+    if (await getAccessToken(origin)) return origin;
+    const stored = await readStoredSession();
+    if (
+      stored?.session?.access_token &&
+      originsEquivalent(stored.appBase, origin)
+    ) {
+      return origin;
+    }
+    return "";
+  }
+
   if (cookieHeader) {
     const fromPage = sessionFromAuthCookieList(cookiesFromHeader(cookieHeader));
     if (fromPage.session?.access_token) {
@@ -1352,7 +1422,15 @@ async function captureSessionFromDone(url, cookieHeader, directSession) {
     }
   }
   await importSessionFromKnownCookies(origin);
-  return (await getAccessToken(origin)) ? origin : "";
+  if (await getAccessToken(origin)) return origin;
+  const stored = await readStoredSession();
+  if (
+    stored?.session?.access_token &&
+    originsEquivalent(stored.appBase, origin)
+  ) {
+    return origin;
+  }
+  return "";
 }
 
 async function waitForPluginSession(tabId, preferredOrigin, timeoutMs = 180000) {
@@ -1368,7 +1446,10 @@ async function waitForPluginSession(tabId, preferredOrigin, timeoutMs = 180000) 
       sawError = true;
       return;
     }
-    void captureSessionFromDone(url);
+    void (async () => {
+      await markPluginSignedIn();
+      await captureSessionFromDone(url, "", null, "", tabId);
+    })();
   };
   chrome.tabs.onUpdated.addListener(onUpdated);
   try {
@@ -1382,7 +1463,13 @@ async function waitForPluginSession(tabId, preferredOrigin, timeoutMs = 180000) 
         if (url.includes("/auth/gmail-plugin/done")) {
           sawDone = true;
           if (url.includes("error=")) return "";
-          const ready = await captureSessionFromDone(url);
+          const ready = await captureSessionFromDone(
+            url,
+            "",
+            null,
+            "",
+            tabId,
+          );
           if (ready) return ready;
         }
       } catch {
@@ -1457,8 +1544,8 @@ if (chrome.tabs?.onUpdated) {
     const url = String(changeInfo.url || tab?.url || "");
     if (!isPluginLoginDoneUrl(url) || url.includes("error=")) return;
     void (async () => {
-      if (!(await pluginCookieImportAllowed())) return;
-      await captureSessionFromDone(url);
+      await markPluginSignedIn();
+      await captureSessionFromDone(url, "", null, "", tabId);
     })();
   });
 }
@@ -1484,10 +1571,20 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           return;
         }
         await markPluginSignedIn();
+        let session = message.session;
+        if (!session?.access_token && message.bootstrapTicket) {
+          const pageOrigin = preferLiveOrigin(parseOrigin(url));
+          session = await fetchBootstrapFromTicket(
+            pageOrigin,
+            message.bootstrapTicket,
+          );
+        }
         const origin = await captureSessionFromDone(
           url,
           message.cookieHeader,
-          message.session,
+          session,
+          message.bootstrapTicket,
+          sender.tab?.id,
         );
         sendResponse({ ok: Boolean(origin) });
         return;
