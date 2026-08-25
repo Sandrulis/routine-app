@@ -4,6 +4,10 @@
 
 - (none)
 
+## v0.2.35
+
+- Gmail spraudnis `0.4.24`: jauns apakšuzdevums no e-pasta (modālis, atbildīgā meklēšana); izveide tikai ar **Pievienot** un pielikumiem
+
 ## v0.2.34
 
 - Maksas plānu katalogs: bezmaksas (`free`, vienmēr aktīvs) un maksas (`paid`) plāni visās valodās; moduļus un cenas var pielabot adminā

@@ -25,12 +25,12 @@ Nav jāievada Routine URL vai OAuth Client ID. Spraudnis sauc [https://www.tasqi
 
 1. Atver e-pastu Gmailā (pilns skats)
 2. Nospied **Routine** pogu e-pasta skatā
-3. Izvēlies **saraksts** → (mape) → **uzdevums** → **apakšuzdevums**
+3. Izvēlies **saraksts** → (mape) → **uzdevums** → **apakšuzdevums** (vai **Jauns apakšuzdevums** atver jaunu modāli: nosaukums, pēc izvēles sākums, termiņš, atbildīgais ar meklēšanu, apraksts). Jaunais apakšuzdevums TASQIN parādās tikai pēc **Pievienot** ar izvēlētajiem pielikumiem.
 4. Zem saraksta atzīmē pielikumus (checkbox) → **Pievienot**
 
-Ja pielikumi neredzami vai rāda OAuth kļūdu: Chrome → `chrome://extensions` → TASQIN - Gmail → **Reload** (versija `0.4.15`), tad Gmail cilnē **F5**. Spraudņa popup → **Atjaunot Gmail savienojumu** (tas nav tas pats, kas «Turpināt ar Google»). Modālī zem saraksta jābūt sadaļai **Pielikumi**.
+Ja pielikumi neredzami vai rāda OAuth kļūdu: Chrome → `chrome://extensions` → TASQIN - Gmail → **Reload** (versija `0.4.24`), tad Gmail cilnē **F5**. Spraudņa popup → **Atjaunot Gmail savienojumu** (tas nav tas pats, kas «Turpināt ar Google»). Modālī zem saraksta jābūt sadaļai **Pielikumi**.
 
-Apakšuzdevumu saraksts (3. solis) ir tajā pašā statusa secībā kā sānjosla un uzdevuma UI: aktīvie pirms “nav sākts”, slēgtie netiek rādīti.
+Apakšuzdevumu saraksts (3. solis) ir tajā pašā statusa secībā kā sānjosla un uzdevuma UI: aktīvie pirms “nav sākts”, slēgtie netiek rādīti. Rāda arī uzdevumus bez esošiem apakšuzdevumiem, lai varētu izveidot jaunu.
 
 Ja pēc spraudņa Reload Gmailā rādās kļūda par pārstartētu spraudni — pārlādē Gmail lapu (F5). Tas nav Google Drive problēma.
 
@@ -45,6 +45,7 @@ Popup ir balta kartīte: avatars, vārds un uzvārds, e-pasts, **Iziet** tikai k
 - `GET /api/extension/gmail-access`
 - `GET /api/extension/browse`
 - `GET /api/extension/subtasks?q=`
+- `POST /api/extension/subtasks`
 - `POST /api/extension/gmail-bridge-ticket`
 - `POST /api/extension/attach-email`
 - `GET /auth/gmail-plugin/bridge?t=…` → sesija pārlūkā → `/auth/gmail-plugin/start` (Gmail OAuth)

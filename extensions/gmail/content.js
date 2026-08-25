@@ -16,6 +16,7 @@
   "actions.add": "Pievienot",
   "actions.save": "Saglabāt",
   "actions.close": "Aizvērt",
+  "actions.delete": "Dzēst",
   "errors.auth_required":
     "Ienāc TASQIN spraudnī. Sesija paliek aptuveni 30 dienas, arī ja lapa ir aizvērta.",
   "errors.extension_auth_required":
@@ -88,6 +89,24 @@
   "extension.gmail.load_subtasks": "Ielādē apakšuzdevumus…",
   "extension.gmail.load_subtasks_failed": "Neizdevās ielādēt apakšuzdevumus",
   "extension.gmail.no_subtasks": "Nav atvērtu apakšuzdevumu",
+  "extension.gmail.step_new_subtask": "3. Jauns apakšuzdevums",
+  "subtasks.add.title": "Jauns apakšuzdevums",
+  "subtasks.created": "Apakšuzdevums pievienots.",
+  "subtasks.fields.title_placeholder": "Apakšuzdevuma nosaukums",
+  "tasks.fields.title": "Nosaukums",
+  "tasks.fields.start_date": "Sākums",
+  "tasks.fields.description_placeholder": "Īss uzdevuma apraksts",
+  "todo.fields.due_date": "Termiņš",
+  "todo.fields.assignee": "Atbildīgais",
+  "todo.fields.unassigned": "Nepiešķirts",
+  "common.description": "Apraksts",
+  "actions.cancel": "Atcelt",
+  "actions.continue": "Turpināt",
+  "lists.fields.icon_search": "Meklēt...",
+  "team.roles.list": "Lomas",
+  "errors.extension_title_required": "Ievadi apakšuzdevuma nosaukumu.",
+  "errors.extension_create_failed": "Neizdevās pievienot apakšuzdevumu.",
+  "errors.extension_create_forbidden": "Nav tiesību pievienot apakšuzdevumu.",
   "extension.gmail.email_label": "E-pasts: {subject}",
   "extension.gmail.open_email": "Atver e-pastu Gmailā, tad pievieno.",
   "extension.gmail.checking_session": "Pārbauda TASQIN sesiju…",
@@ -154,6 +173,7 @@ const ICONS = {
   folder: `<svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path fill="currentColor" d="M1.5 3.5A1.5 1.5 0 0 1 3 2h3.2l1.2 1.5H13A1.5 1.5 0 0 1 14.5 5v7A1.5 1.5 0 0 1 13 13.5H3A1.5 1.5 0 0 1 1.5 12V3.5z"/></svg>`,
   task: `<svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path fill="currentColor" d="M3 2.5h10A1.5 1.5 0 0 1 14.5 4v8A1.5 1.5 0 0 1 13 13.5H3A1.5 1.5 0 0 1 1.5 12V4A1.5 1.5 0 0 1 3 2.5zm1.2 3.2 1.6 1.6 3.8-3.8.9.9-4.7 4.7-2.5-2.5.9-.9z"/></svg>`,
   subtask: `<svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><circle cx="8" cy="8" r="2.4" fill="currentColor"/></svg>`,
+  plus: `<svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path fill="currentColor" d="M7.25 2.5h1.5v4.75H13.5v1.5H8.75V13.5h-1.5V8.75H2.5v-1.5h4.75V2.5z"/></svg>`,
 };
 
 function send(type, payload = {}) {
@@ -342,7 +362,7 @@ function scrapeEmailFallback() {
 
 function ensureUi() {
   const existing = document.getElementById("routine-gmail-root");
-  if (existing?.dataset?.routineUi === "12") {
+  if (existing?.dataset?.routineUi === "17") {
     existing.querySelector("#routine-gmail-fab")?.remove();
     return;
   }
@@ -350,20 +370,21 @@ function ensureUi() {
 
   const root = document.createElement("div");
   root.id = "routine-gmail-root";
-  root.dataset.routineUi = "12";
+  root.dataset.routineUi = "17";
   root.innerHTML = `
     <div id="routine-gmail-modal" hidden>
       <div class="routine-gmail-backdrop" data-close="1"></div>
       <div class="routine-gmail-panel" role="dialog" aria-modal="true">
         <header>
           <strong id="routine-gmail-title"></strong>
-          <button type="button" class="routine-gmail-x" data-close="1" aria-label="">×</button>
+          <button type="button" class="routine-gmail-x" id="routine-gmail-close" data-close="1" aria-label="">×</button>
         </header>
         <div id="routine-gmail-feedback" class="routine-gmail-feedback" hidden role="status" aria-live="polite"></div>
         <div id="routine-gmail-picker" class="routine-gmail-picker">
           <p id="routine-gmail-meta" class="routine-gmail-meta"></p>
           <div id="routine-gmail-crumbs" class="routine-gmail-crumbs" hidden></div>
           <p id="routine-gmail-step" class="routine-gmail-label"></p>
+          <button type="button" id="routine-gmail-new-subtask" class="routine-gmail-new-subtask" hidden></button>
           <ul id="routine-gmail-results"></ul>
           <section id="routine-gmail-attachments" class="routine-gmail-attachments" hidden>
             <div class="routine-gmail-attachments-head">
@@ -380,6 +401,45 @@ function ensureUi() {
             <span class="routine-gmail-btn-label"></span>
           </button>
         </footer>
+        <div id="routine-gmail-create-modal" class="routine-gmail-create-modal" hidden>
+          <header>
+            <strong id="routine-gmail-create-heading"></strong>
+            <button type="button" class="routine-gmail-x" id="routine-gmail-create-x" aria-label="">×</button>
+          </header>
+          <div id="routine-gmail-create-feedback" class="routine-gmail-feedback" hidden role="status" aria-live="polite"></div>
+          <form id="routine-gmail-create" class="routine-gmail-create">
+            <label class="routine-gmail-field">
+              <span id="routine-gmail-create-title-label"></span>
+              <input type="text" id="routine-gmail-create-title" autocomplete="off" />
+            </label>
+            <div class="routine-gmail-create-dates">
+              <label class="routine-gmail-field">
+                <span id="routine-gmail-create-start-label"></span>
+                <input type="date" id="routine-gmail-create-start" />
+              </label>
+              <label class="routine-gmail-field">
+                <span id="routine-gmail-create-due-label"></span>
+                <input type="date" id="routine-gmail-create-due" />
+              </label>
+            </div>
+            <label class="routine-gmail-field">
+              <span id="routine-gmail-create-assignee-label"></span>
+              <div class="routine-gmail-assignee-combo">
+                <input type="text" id="routine-gmail-create-assignee-query" autocomplete="off" />
+                <ul id="routine-gmail-create-assignee-hints" class="routine-gmail-assignee-hints" hidden></ul>
+              </div>
+              <div id="routine-gmail-create-assignee-badges" class="routine-gmail-assignee-badges"></div>
+            </label>
+            <label class="routine-gmail-field">
+              <span id="routine-gmail-create-desc-label"></span>
+              <textarea id="routine-gmail-create-desc" rows="3"></textarea>
+            </label>
+          </form>
+          <footer class="routine-gmail-footer">
+            <button type="button" id="routine-gmail-create-cancel" class="routine-gmail-back"></button>
+            <button type="submit" form="routine-gmail-create" id="routine-gmail-create-submit"></button>
+          </footer>
+        </div>
         <div id="routine-gmail-busy" class="routine-gmail-busy" hidden>
           <div class="routine-gmail-spinner" aria-hidden="true"></div>
           <p id="routine-gmail-busy-text" class="routine-gmail-busy-text"></p>
@@ -409,10 +469,25 @@ function ensureUi() {
   const progressWrap = root.querySelector("#routine-gmail-progress");
   const progressBar = root.querySelector("#routine-gmail-progress-bar");
   const progressCount = root.querySelector("#routine-gmail-progress-count");
-  const closeBtn = root.querySelector(".routine-gmail-x");
+  const closeBtn = root.querySelector("#routine-gmail-close");
   const attachmentsSection = root.querySelector("#routine-gmail-attachments");
   const attachList = root.querySelector("#routine-gmail-attach-list");
   const attToggleBtn = root.querySelector("#routine-gmail-att-toggle");
+  const createModal = root.querySelector("#routine-gmail-create-modal");
+  const createForm = root.querySelector("#routine-gmail-create");
+  const createFeedback = root.querySelector("#routine-gmail-create-feedback");
+  const createHeading = root.querySelector("#routine-gmail-create-heading");
+  const createTitle = root.querySelector("#routine-gmail-create-title");
+  const createStart = root.querySelector("#routine-gmail-create-start");
+  const createDue = root.querySelector("#routine-gmail-create-due");
+  const createAssigneeQuery = root.querySelector("#routine-gmail-create-assignee-query");
+  const createAssigneeHints = root.querySelector("#routine-gmail-create-assignee-hints");
+  const createAssigneeBadges = root.querySelector("#routine-gmail-create-assignee-badges");
+  const createDesc = root.querySelector("#routine-gmail-create-desc");
+  const createSubmit = root.querySelector("#routine-gmail-create-submit");
+  const createCancel = root.querySelector("#routine-gmail-create-cancel");
+  const createCloseBtn = root.querySelector("#routine-gmail-create-x");
+  const newSubtaskBtn = root.querySelector("#routine-gmail-new-subtask");
 
   /** @type {{ type: 'lists' } | { type: 'items', listId: string, listName: string, parentId: string | null, trail: {id:string,title:string,kind:string}[] } | { type: 'subtasks', listId: string, listName: string, parentId: string, parentTitle: string, trail: {id:string,title:string,kind:string}[] }} */
   let view = { type: "lists" };
@@ -423,18 +498,47 @@ function ensureUi() {
   /** @type {{ attachmentId: string, name: string, mimeType?: string, size: number, tooLarge?: boolean }[]} */
   let attachmentOptions = [];
   let listedGmailMessageId = "";
+  let creatingSubtask = false;
+  const DRAFT_ID = "__draft__";
+  /** @type {{ id: string, title: string }[]} */
+  let subtaskRowsCache = [];
+  /** @type {null | { title: string, description: string, startDate: string, dueDate: string, assignees: { id: string, name: string, kind: 'member' | 'role' }[] }} */
+  let draftSubtask = null;
+  /** @type {{ id: string, name: string, kind: 'member' | 'role' }[]} */
+  let assigneeOptions = [];
+  /** @type {{ id: string, name: string, kind: 'member' | 'role' }[]} */
+  let selectedAssignees = [];
 
   function applyStaticLabels() {
     const titleEl = root.querySelector("#routine-gmail-title");
     if (titleEl) titleEl.textContent = t("extension.gmail.title");
     closeBtn.setAttribute("aria-label", t("actions.close"));
     closeBtn.title = t("actions.close");
+    createCloseBtn.setAttribute("aria-label", t("actions.close"));
+    createCloseBtn.title = t("actions.close");
+    createHeading.textContent = t("subtasks.add.title");
+    createCancel.textContent = t("actions.cancel");
     backBtn.textContent = t("extension.gmail.back");
     if (!isBusy) attachLabel.textContent = t("actions.add");
     const attLabel = root.querySelector("#routine-gmail-att-label");
     if (attLabel) attLabel.textContent = t("extension.gmail.attachments");
     const attHint = root.querySelector("#routine-gmail-att-hint");
     if (attHint) attHint.textContent = t("extension.gmail.email_body_hint");
+    const titleLabel = root.querySelector("#routine-gmail-create-title-label");
+    if (titleLabel) titleLabel.textContent = t("tasks.fields.title");
+    createTitle.placeholder = t("subtasks.fields.title_placeholder");
+    const startLabel = root.querySelector("#routine-gmail-create-start-label");
+    if (startLabel) startLabel.textContent = t("tasks.fields.start_date");
+    const dueLabel = root.querySelector("#routine-gmail-create-due-label");
+    if (dueLabel) dueLabel.textContent = t("todo.fields.due_date");
+    const assigneeLabel = root.querySelector("#routine-gmail-create-assignee-label");
+    if (assigneeLabel) assigneeLabel.textContent = t("todo.fields.assignee");
+    createAssigneeQuery.placeholder = t("lists.fields.icon_search");
+    const descLabel = root.querySelector("#routine-gmail-create-desc-label");
+    if (descLabel) descLabel.textContent = t("common.description");
+    createDesc.placeholder = t("tasks.fields.description_placeholder");
+    createSubmit.textContent = t("actions.continue");
+    newSubtaskBtn.innerHTML = `${ICONS.plus} <span>${t("subtasks.add.title")}</span>`;
     panel.setAttribute("lang", languageCode);
     for (const btn of document.querySelectorAll(`[${INLINE_BTN_ATTR}="1"]`)) {
       btn.title = t("extension.gmail.add_to_routine");
@@ -486,10 +590,22 @@ function ensureUi() {
     closeBtn.disabled = busy;
     backBtn.disabled = busy;
     attToggleBtn.disabled = busy;
-    attachBtn.disabled = busy || !selectedId;
+    attachBtn.disabled = busy || creatingSubtask || !selectedId;
     attachLabel.textContent = busy ? t("extension.gmail.waiting") : t("actions.add");
     modal.classList.toggle("is-busy", busy);
     panel.classList.toggle("is-busy", busy);
+    createTitle.disabled = busy;
+    createStart.disabled = busy;
+    createDue.disabled = busy;
+    createAssigneeQuery.disabled = busy;
+    createDesc.disabled = busy;
+    createSubmit.disabled = busy;
+    createCancel.disabled = busy;
+    createCloseBtn.disabled = busy;
+    newSubtaskBtn.disabled = busy;
+    for (const btn of createAssigneeBadges.querySelectorAll("button")) {
+      btn.disabled = busy;
+    }
     for (const row of results.querySelectorAll("li")) {
       row.classList.toggle("is-disabled", busy);
     }
@@ -504,8 +620,17 @@ function ensureUi() {
   function resetPicker() {
     view = { type: "lists" };
     selectedId = null;
+    creatingSubtask = false;
+    draftSubtask = null;
+    subtaskRowsCache = [];
+    assigneeOptions = [];
+    selectedAssignees = [];
+    newSubtaskBtn.hidden = true;
     attachBtn.disabled = true;
+    attachBtn.hidden = false;
     results.innerHTML = "";
+    results.hidden = false;
+    createModal.hidden = true;
     crumbsEl.hidden = true;
     crumbsEl.innerHTML = "";
     backBtn.hidden = true;
@@ -705,6 +830,7 @@ function ensureUi() {
   function closeModal() {
     if (isBusy) return;
     clearCloseTimer();
+    hideCreateForm();
     modal.hidden = true;
     setFeedback("");
     setBusy(false);
@@ -808,7 +934,228 @@ function ensureUi() {
     } else stepEl.textContent = t("extension.gmail.step_subtasks");
   }
 
+  function assigneeMatchesQuery(item, query) {
+    const q = query.trim().toLowerCase();
+    if (!q) return true;
+    const hay = `${item.name} ${item.email || ""} ${item.kind === "role" ? t("team.roles.list") : ""}`.toLowerCase();
+    return hay.includes(q);
+  }
+
+  function hideAssigneeHints() {
+    createAssigneeHints.hidden = true;
+    createAssigneeHints.classList.remove("is-open");
+    createAssigneeHints.innerHTML = "";
+  }
+
+  function renderAssigneeHints() {
+    const query = createAssigneeQuery.value;
+    const selected = new Set(selectedAssignees.map((item) => item.id));
+    const matches = assigneeOptions.filter(
+      (item) => !selected.has(item.id) && assigneeMatchesQuery(item, query),
+    );
+    createAssigneeHints.innerHTML = "";
+    if (!matches.length) {
+      const empty = document.createElement("li");
+      empty.className = "routine-gmail-assignee-empty";
+      empty.textContent = t("extension.gmail.empty");
+      createAssigneeHints.appendChild(empty);
+      createAssigneeHints.hidden = false;
+      createAssigneeHints.classList.add("is-open");
+      return;
+    }
+    for (const item of matches.slice(0, 20)) {
+      const li = document.createElement("li");
+      li.tabIndex = 0;
+      const title = document.createElement("span");
+      title.className = "routine-gmail-assignee-hint-name";
+      title.textContent = item.name;
+      li.appendChild(title);
+      if (item.kind === "role") {
+        const meta = document.createElement("span");
+        meta.className = "routine-gmail-assignee-hint-meta";
+        meta.textContent = t("team.roles.list");
+        li.appendChild(meta);
+      } else if (item.email) {
+        const meta = document.createElement("span");
+        meta.className = "routine-gmail-assignee-hint-meta";
+        meta.textContent = item.email;
+        li.appendChild(meta);
+      }
+      li.addEventListener("mousedown", (event) => {
+        event.preventDefault();
+        addAssignee(item);
+      });
+      createAssigneeHints.appendChild(li);
+    }
+    createAssigneeHints.hidden = false;
+    createAssigneeHints.classList.add("is-open");
+  }
+
+  function renderAssigneeBadges() {
+    createAssigneeBadges.innerHTML = "";
+    for (const item of selectedAssignees) {
+      const badge = document.createElement("span");
+      badge.className = "routine-gmail-assignee-badge";
+      const label = document.createElement("span");
+      label.textContent = item.name;
+      const remove = document.createElement("button");
+      remove.type = "button";
+      remove.setAttribute("aria-label", t("actions.close"));
+      remove.title = t("actions.close");
+      remove.textContent = "×";
+      remove.disabled = isBusy;
+      remove.addEventListener("click", () => {
+        if (isBusy) return;
+        selectedAssignees = selectedAssignees.filter((row) => row.id !== item.id);
+        renderAssigneeBadges();
+        if (createAssigneeQuery.value.trim()) renderAssigneeHints();
+      });
+      badge.appendChild(label);
+      badge.appendChild(remove);
+      createAssigneeBadges.appendChild(badge);
+    }
+  }
+
+  function addAssignee(item) {
+    if (selectedAssignees.some((row) => row.id === item.id)) return;
+    selectedAssignees = [...selectedAssignees, item];
+    createAssigneeQuery.value = "";
+    hideAssigneeHints();
+    renderAssigneeBadges();
+    createAssigneeQuery.focus();
+  }
+
+  function resetCreateForm() {
+    createTitle.value = "";
+    createStart.value = "";
+    createDue.value = "";
+    createAssigneeQuery.value = "";
+    createDesc.value = "";
+    selectedAssignees = [];
+    hideAssigneeHints();
+    renderAssigneeBadges();
+  }
+
+  function fillCreateFormFromDraft() {
+    if (!draftSubtask) {
+      resetCreateForm();
+      return;
+    }
+    createTitle.value = draftSubtask.title;
+    createStart.value = draftSubtask.startDate;
+    createDue.value = draftSubtask.dueDate;
+    createDesc.value = draftSubtask.description;
+    createAssigneeQuery.value = "";
+    selectedAssignees = [...draftSubtask.assignees];
+    hideAssigneeHints();
+    renderAssigneeBadges();
+  }
+
+  function syncNewSubtaskButton() {
+    const show = view.type === "subtasks" && !creatingSubtask;
+    newSubtaskBtn.hidden = !show;
+    newSubtaskBtn.disabled = isBusy;
+  }
+
+  function setCreateFeedback(text, variant) {
+    if (!text) {
+      createFeedback.hidden = true;
+      createFeedback.textContent = "";
+      return;
+    }
+    createFeedback.hidden = false;
+    createFeedback.textContent = text;
+    createFeedback.className = `routine-gmail-feedback is-${variant || "info"}`;
+  }
+
+  function hideCreateForm() {
+    creatingSubtask = false;
+    createModal.hidden = true;
+    hideAssigneeHints();
+    setCreateFeedback("");
+    if (view.type === "subtasks") {
+      attachBtn.disabled = isBusy || !selectedId;
+      backBtn.hidden = false;
+    }
+    syncNewSubtaskButton();
+  }
+
+  async function ensureAssignees() {
+    const team = selectedTeamFromSession(session);
+    const result = await send("routine.browse", {
+      step: "assignees",
+      parentId: view.type === "subtasks" ? view.parentId : "",
+      teamId: team?.id || "",
+    });
+    if (Array.isArray(result?.data?.assignees)) {
+      assigneeOptions = result.data.assignees;
+    }
+  }
+
+  function showCreateForm() {
+    creatingSubtask = true;
+    fillCreateFormFromDraft();
+    setCreateFeedback("");
+    createModal.hidden = false;
+    syncNewSubtaskButton();
+    createTitle.focus();
+    void (async () => {
+      await ensureAssignees();
+      if (creatingSubtask && document.activeElement === createAssigneeQuery) {
+        renderAssigneeHints();
+      }
+    })();
+  }
+
+  function discardDraft(selectId) {
+    draftSubtask = null;
+    paintSubtaskList(selectId || null);
+  }
+
+  function selectSubtaskRow(id) {
+    selectedId = id || null;
+    attachBtn.disabled = isBusy || creatingSubtask || !selectedId;
+    for (const node of results.querySelectorAll("li")) {
+      node.classList.toggle("is-selected", Boolean(id) && node.dataset.id === id);
+    }
+  }
+
+  function paintSubtaskList(selectId) {
+    const rows = subtaskRowsCache.map((item) => ({
+      id: item.id,
+      title: item.title,
+      kind: "subtask",
+      hint: "",
+    }));
+    if (draftSubtask) {
+      rows.unshift({
+        id: DRAFT_ID,
+        title: draftSubtask.title,
+        kind: "plus",
+        hint: t("subtasks.add.title"),
+      });
+    }
+    if (!rows.length) {
+      emptyRow(t("extension.gmail.no_subtasks"));
+      selectSubtaskRow(null);
+      return;
+    }
+    renderSelectable(rows, (row) => {
+      if (row.id !== DRAFT_ID && draftSubtask) {
+        discardDraft(row.id);
+        return;
+      }
+      selectSubtaskRow(row.id);
+    });
+    const pickId =
+      selectId && rows.some((row) => row.id === selectId)
+        ? selectId
+        : null;
+    if (pickId) selectSubtaskRow(pickId);
+  }
+
   function emptyRow(text) {
+    results.hidden = false;
     results.innerHTML = `<li class="routine-gmail-empty">${text}</li>`;
   }
 
@@ -816,6 +1163,7 @@ function ensureUi() {
     if (kind === "folder") return ICONS.folder;
     if (kind === "task") return ICONS.task;
     if (kind === "subtask") return ICONS.subtask;
+    if (kind === "plus") return ICONS.plus;
     if (kind === "list") return ICONS.list;
     return "";
   }
@@ -886,6 +1234,7 @@ function ensureUi() {
   }
 
   function renderSelectable(rows, onPick) {
+    results.hidden = false;
     results.innerHTML = "";
     selectedId = null;
     attachBtn.disabled = true;
@@ -896,6 +1245,8 @@ function ensureUi() {
     for (const row of rows) {
       const li = document.createElement("li");
       li.tabIndex = 0;
+      if (row.id) li.dataset.id = row.id;
+      if (row.kind === "plus") li.classList.add("routine-gmail-draft-row");
       li.innerHTML = `
         <span class="routine-gmail-row-main">
           <span class="routine-gmail-row-icon"></span>
@@ -906,6 +1257,21 @@ function ensureUi() {
       li.querySelector(".routine-gmail-row-icon").innerHTML = kindIcon(row.kind);
       li.querySelector(".title").textContent = row.title;
       li.querySelector(".path").textContent = row.hint || "";
+      if (row.kind === "plus") {
+        const remove = document.createElement("button");
+        remove.type = "button";
+        remove.className = "routine-gmail-draft-remove";
+        remove.setAttribute("aria-label", t("actions.delete"));
+        remove.title = t("actions.delete");
+        remove.textContent = "×";
+        remove.addEventListener("click", (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          if (isBusy) return;
+          discardDraft(selectedId === DRAFT_ID ? null : selectedId);
+        });
+        li.querySelector(".routine-gmail-row-main").appendChild(remove);
+      }
       li.addEventListener("click", () => {
         if (isBusy) return;
         onPick(row, li);
@@ -917,6 +1283,9 @@ function ensureUi() {
   async function loadLists() {
     view = { type: "lists" };
     selectedId = null;
+    draftSubtask = null;
+    subtaskRowsCache = [];
+    hideCreateForm();
     attachBtn.disabled = true;
     renderCrumbs();
     setStepLabel();
@@ -954,6 +1323,9 @@ function ensureUi() {
   async function loadItems() {
     if (view.type !== "items") return;
     selectedId = null;
+    draftSubtask = null;
+    subtaskRowsCache = [];
+    hideCreateForm();
     attachBtn.disabled = true;
     renderCrumbs();
     setStepLabel();
@@ -1018,49 +1390,42 @@ function ensureUi() {
     );
   }
 
-  async function loadSubtasks() {
+  async function loadSubtasks(selectId) {
     if (view.type !== "subtasks") return;
     selectedId = null;
+    hideCreateForm();
     attachBtn.disabled = true;
     renderCrumbs();
     setStepLabel();
     setBusy(true, t("extension.gmail.load_subtasks"));
+    const team = selectedTeamFromSession(session);
     const result = await send("routine.browse", {
       step: "subtasks",
       parentId: view.parentId,
+      teamId: team?.id || "",
     });
     setBusy(false);
     if (!result?.ok || !result.data?.ok) {
       setFeedback(tError(result?.data?.error || result?.error), "error");
       emptyRow(t("extension.gmail.load_subtasks_failed"));
+      syncNewSubtaskButton();
       return;
     }
     setFeedback("");
-    const subtasks = result.data.subtasks || [];
-    if (!subtasks.length) {
-      emptyRow(t("extension.gmail.no_subtasks"));
-      return;
-    }
-    renderSelectable(
-      subtasks.map((item) => ({
-        id: item.id,
-        title: item.title,
-        kind: "subtask",
-        hint: "",
-        raw: item,
-      })),
-      (row, li) => {
-        selectedId = row.id;
-        for (const node of results.querySelectorAll("li")) {
-          node.classList.toggle("is-selected", node === li);
-        }
-        attachBtn.disabled = false;
-      },
-    );
+    subtaskRowsCache = result.data.subtasks || [];
+    assigneeOptions = Array.isArray(result.data.assignees)
+      ? result.data.assignees
+      : [];
+    paintSubtaskList(selectId);
+    syncNewSubtaskButton();
   }
 
   async function goBack() {
     if (isBusy) return;
+    if (creatingSubtask) {
+      hideCreateForm();
+      return;
+    }
     if (view.type === "subtasks") {
       const folders = view.trail.filter((t) => t.kind === "folder");
       view = {
@@ -1270,6 +1635,76 @@ function ensureUi() {
     void goBack();
   });
 
+  newSubtaskBtn.addEventListener("click", () => {
+    if (isBusy || view.type !== "subtasks") return;
+    showCreateForm();
+  });
+
+  createForm.addEventListener("submit", (event) => {
+    event.preventDefault();
+    if (isBusy || !creatingSubtask || view.type !== "subtasks") return;
+    const title = createTitle.value.trim();
+    if (!title) {
+      setCreateFeedback(t("errors.extension_title_required"), "error");
+      createTitle.focus();
+      return;
+    }
+    draftSubtask = {
+      title,
+      description: createDesc.value.trim(),
+      startDate: createStart.value.trim(),
+      dueDate: createDue.value.trim(),
+      assignees: [...selectedAssignees],
+    };
+    hideCreateForm();
+    paintSubtaskList(DRAFT_ID);
+  });
+
+  createAssigneeQuery.addEventListener("input", () => {
+    renderAssigneeHints();
+  });
+  createAssigneeQuery.addEventListener("focus", () => {
+    renderAssigneeHints();
+  });
+  createAssigneeQuery.addEventListener("keydown", (event) => {
+    if (event.key !== "Enter") return;
+    event.preventDefault();
+    const first = createAssigneeHints.querySelector("li:not(.routine-gmail-assignee-empty)");
+    if (first) first.dispatchEvent(new Event("mousedown"));
+  });
+  createModal.addEventListener("mousedown", (event) => {
+    const target = event.target;
+    if (
+      target === createAssigneeQuery ||
+      createAssigneeHints.contains(target)
+    ) {
+      return;
+    }
+    hideAssigneeHints();
+  });
+
+  createCancel.addEventListener("click", () => {
+    if (isBusy) return;
+    hideCreateForm();
+  });
+
+  createCloseBtn.addEventListener("click", () => {
+    if (isBusy) return;
+    hideCreateForm();
+  });
+
+  modal.addEventListener("keydown", (event) => {
+    if (event.key !== "Escape") return;
+    if (isBusy || !creatingSubtask) return;
+    event.preventDefault();
+    event.stopPropagation();
+    if (!createAssigneeHints.hidden) {
+      hideAssigneeHints();
+      return;
+    }
+    hideCreateForm();
+  });
+
   attToggleBtn.addEventListener("click", () => {
     if (isBusy) return;
     if (attToggleBtn.dataset.mode === "retry") {
@@ -1301,12 +1736,50 @@ function ensureUi() {
       setFeedback(tError("errors.extension_nothing_attached"), "error");
       return;
     }
+
+    let taskId = selectedId;
+    if (taskId === DRAFT_ID) {
+      if (!draftSubtask || view.type !== "subtasks") {
+        setFeedback(tError("errors.extension_task_required"), "error");
+        return;
+      }
+      setBusy(true, t("extension.gmail.processing"));
+      const created = await send("routine.createSubtask", {
+        parentId: view.parentId,
+        title: draftSubtask.title,
+        description: draftSubtask.description,
+        startDate: draftSubtask.startDate,
+        dueDate: draftSubtask.dueDate,
+        assigneeIds: draftSubtask.assignees.map((item) => item.id),
+      });
+      if (!created?.ok || !created.data?.ok) {
+        setBusy(false);
+        setFeedback(
+          tError(
+            created?.data?.error ||
+              created?.error ||
+              "errors.extension_create_failed",
+          ),
+          "error",
+        );
+        return;
+      }
+      taskId = created.data.subtask?.id || "";
+      if (!taskId) {
+        setBusy(false);
+        setFeedback(tError("errors.extension_create_failed"), "error");
+        return;
+      }
+      draftSubtask = null;
+      selectedId = taskId;
+    }
+
     setBusy(true, t("extension.gmail.loading_gmail"), 4);
 
     let result;
     try {
       result = await send("routine.attachEmail", {
-        taskId: selectedId,
+        taskId,
         gmailMessageId: listedGmailMessageId || messageId,
         gmailThreadId: threadId,
         email,

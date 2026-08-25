@@ -189,7 +189,7 @@ export async function listExtensionTreeItems(
         hasSubtasks: kind === "task" && hasSubtasks.has(id),
       } satisfies ExtensionBrowseItem;
     })
-    .filter((item) => item.kind === "folder" || item.hasSubtasks);
+    .filter((item) => item.kind === "folder" || item.kind === "task");
 }
 
 export async function listExtensionSubtasksForTask(

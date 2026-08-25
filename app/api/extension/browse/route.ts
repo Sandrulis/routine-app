@@ -8,6 +8,10 @@ import {
   extensionJson,
   extensionOptionsResponse,
 } from "@/app/lib/extension/cors";
+import {
+  canCreateExtensionSubtask,
+  listExtensionAssignees,
+} from "@/app/lib/extension/create-subtask";
 import { logError } from "@/app/lib/security/log-error";
 
 export const runtime = "nodejs";
@@ -62,6 +66,29 @@ export async function GET(request: Request) {
       });
     }
 
+    if (step === "assignees") {
+      const parentId = (url.searchParams.get("parentId") || "").trim();
+      const teamIdParam = (url.searchParams.get("teamId") || "").trim();
+      let teamId = teamIdParam;
+      if (parentId) {
+        const { data: parent } = await auth.supabase
+          .from("work_tasks")
+          .select("team_id")
+          .eq("id", parentId)
+          .maybeSingle();
+        teamId = String(parent?.team_id || teamId || "");
+      }
+      const assignees = teamId
+        ? await listExtensionAssignees(auth.supabase, teamId)
+        : [];
+      return extensionJson(request, {
+        ok: true,
+        step: "assignees",
+        teamId,
+        assignees,
+      });
+    }
+
     if (step === "subtasks") {
       const parentId = (url.searchParams.get("parentId") || "").trim();
       if (!parentId) {
@@ -75,11 +102,30 @@ export async function GET(request: Request) {
         auth.supabase,
         parentId,
       );
+      const { data: parent } = await auth.supabase
+        .from("work_tasks")
+        .select("team_id, list_id")
+        .eq("id", parentId)
+        .maybeSingle();
+      const parentListId = String(parent?.list_id || subtasks[0]?.listId || "");
+      const teamId = String(
+        parent?.team_id || url.searchParams.get("teamId") || "",
+      );
+      const [canCreate, assignees] = await Promise.all([
+        parentListId
+          ? canCreateExtensionSubtask(auth.supabase, parentListId)
+          : Promise.resolve(false),
+        teamId
+          ? listExtensionAssignees(auth.supabase, teamId)
+          : Promise.resolve([]),
+      ]);
       return extensionJson(request, {
         ok: true,
         step: "subtasks",
         parentId,
         subtasks,
+        canCreate,
+        assignees,
       });
     }
 

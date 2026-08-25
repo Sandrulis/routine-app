@@ -1677,6 +1677,23 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         sendResponse(result);
         return;
       }
+      if (message?.type === "routine.createSubtask") {
+        const result = await apiFetch("/api/extension/subtasks", {
+          method: "POST",
+          body: JSON.stringify({
+            parentId: String(message.parentId || ""),
+            title: String(message.title || ""),
+            description: String(message.description || ""),
+            startDate: String(message.startDate || ""),
+            dueDate: String(message.dueDate || ""),
+            assigneeIds: Array.isArray(message.assigneeIds)
+              ? message.assigneeIds
+              : [],
+          }),
+        });
+        sendResponse(result);
+        return;
+      }
       if (message?.type === "routine.connectGmail") {
         const appBase = preferLiveOrigin(await getAppBase()) || DEFAULT_APP_BASE;
         await getAccessToken(appBase);
