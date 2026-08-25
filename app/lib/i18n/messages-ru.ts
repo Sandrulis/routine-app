@@ -1503,6 +1503,8 @@ export const ru: Record<string, string> = {
   "todo.fields.title_placeholder": "Название задачи",
   "todo.fields.description_placeholder": "Краткое описание",
   "todo.fields.assignee": "Ответственный",
+  "todo.fields.people": "Пользователи",
+  "todo.fields.groups": "Группы пользователей",
   "todo.fields.unassigned": "Не назначено",
   "todo.fields.due_date": "Срок",
   "dates.today": "Сегодня",

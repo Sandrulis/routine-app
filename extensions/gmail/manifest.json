@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "TASQIN - Gmail",
   "description": "Pievieno Gmail e-pastu TASQIN apakšuzdevumam.",
-  "version": "0.4.24",
+  "version": "0.4.27",
   "permissions": ["storage", "cookies", "tabs", "alarms", "scripting"],
   "host_permissions": [
     "https://tasqin.com/*",

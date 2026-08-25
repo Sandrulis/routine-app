@@ -1147,6 +1147,8 @@ export const fi: Record<string, string> = {
   "todo.fields.title_placeholder": "Tehtävän otsikko",
   "todo.fields.description_placeholder": "Lyhyt kuvaus",
   "todo.fields.assignee": "Vastuuhenkilö",
+  "todo.fields.people": "Käyttäjät",
+  "todo.fields.groups": "Käyttäjäryhmät",
   "todo.fields.unassigned": "Ei vastuuhenkilöä",
   "todo.fields.due_date": "Määräpäivä",
   "dates.today": "Tänään",

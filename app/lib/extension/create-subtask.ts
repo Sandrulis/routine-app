@@ -1,4 +1,5 @@
 import type { SupabaseClient, User } from "@supabase/supabase-js";
+import { listExtensionStatusesForTask } from "@/app/lib/extension/browse";
 import { createTaskId } from "@/app/lib/lists";
 import { createNotificationId } from "@/app/lib/notifications";
 import { logError } from "@/app/lib/security/log-error";
@@ -59,6 +60,23 @@ async function insertActivityRow(
   }
 }
 
+function looksLikeEmail(value: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
+}
+
+function personDisplayName(
+  memberName: string,
+  email: string,
+  profileName: string,
+): string {
+  const profile = profileName.trim();
+  const member = memberName.trim();
+  const mail = email.trim();
+  if (profile && !looksLikeEmail(profile)) return profile;
+  if (member && !looksLikeEmail(member)) return member;
+  return profile || member || mail;
+}
+
 export async function listExtensionAssignees(
   supabase: SupabaseClient,
   teamId: string,
@@ -66,7 +84,7 @@ export async function listExtensionAssignees(
   const [{ data: members }, { data: roles }] = await Promise.all([
     supabase
       .from("team_members")
-      .select("id, name, email")
+      .select("id, name, email, user_id")
       .eq("team_id", teamId)
       .order("name", { ascending: true }),
     supabase
@@ -77,14 +95,43 @@ export async function listExtensionAssignees(
       .order("name", { ascending: true }),
   ]);
 
+  const userIds = [
+    ...new Set(
+      (members ?? [])
+        .map((row) => String(row.user_id || "").trim())
+        .filter(Boolean),
+    ),
+  ];
+  const profileNames = new Map<string, string>();
+  if (userIds.length > 0) {
+    const { data: profiles } = await supabase
+      .from("users")
+      .select("id, name")
+      .in("id", userIds);
+    for (const row of profiles ?? []) {
+      const id = String(row.id || "").trim();
+      const name = String(row.name || "").trim();
+      if (id && name) profileNames.set(id, name);
+    }
+  }
+
   const people: ExtensionAssigneeOption[] = (members ?? [])
-    .map((row) => ({
-      id: String(row.id || "").trim(),
-      name: String(row.name || "").trim() || String(row.email || "").trim(),
-      email: String(row.email || "").trim(),
-      kind: "member" as const,
-    }))
-    .filter((row) => row.id && row.name);
+    .map((row) => {
+      const email = String(row.email || "").trim();
+      const userId = String(row.user_id || "").trim();
+      return {
+        id: String(row.id || "").trim(),
+        name: personDisplayName(
+          String(row.name || ""),
+          email,
+          profileNames.get(userId) || "",
+        ),
+        email,
+        kind: "member" as const,
+      };
+    })
+    .filter((row) => row.id && row.name)
+    .sort((left, right) => left.name.localeCompare(right.name, "lv"));
 
   const roleOptions: ExtensionAssigneeOption[] = (roles ?? [])
     .map((row) => ({
@@ -121,6 +168,7 @@ export async function createExtensionSubtask(input: {
   startDate?: string | null;
   dueDate?: string | null;
   assigneeIds?: string[];
+  status?: string | null;
 }): Promise<
   | { ok: true; subtask: ExtensionCreatedSubtask }
   | { ok: false; error: string; status: number }
@@ -177,6 +225,23 @@ export async function createExtensionSubtask(input: {
   const startDate = dateOrNull(input.startDate);
   const dueDate = dateOrNull(input.dueDate);
   const description = String(input.description || "").trim().slice(0, 8000);
+  const requestedStatus = String(input.status || "").trim();
+  const statusCatalog = await listExtensionStatusesForTask(
+    input.supabase,
+    parentId,
+    "lv",
+  );
+  const allowedStatusIds = new Set(
+    statusCatalog.statuses.map((item) => item.id),
+  );
+  const status =
+    allowedStatusIds.size === 0
+      ? requestedStatus && /^[\w.-]{1,80}$/.test(requestedStatus)
+        ? requestedStatus
+        : "todo"
+      : allowedStatusIds.has(requestedStatus)
+        ? requestedStatus
+        : statusCatalog.defaultStatus;
   const createdAt = new Date().toISOString();
   const id = createTaskId();
 
@@ -199,7 +264,7 @@ export async function createExtensionSubtask(input: {
     kind: "subtask",
     title,
     description,
-    status: "todo",
+    status,
     status_changed_at: createdAt,
     deleted_at: null,
     archived_at: null,

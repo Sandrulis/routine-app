@@ -1689,6 +1689,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             assigneeIds: Array.isArray(message.assigneeIds)
               ? message.assigneeIds
               : [],
+            status: String(message.status || ""),
           }),
         });
         sendResponse(result);

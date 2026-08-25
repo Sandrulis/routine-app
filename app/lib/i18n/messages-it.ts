@@ -1147,6 +1147,8 @@ export const it: Record<string, string> = {
   "todo.fields.title_placeholder": "Task title",
   "todo.fields.description_placeholder": "Short description",
   "todo.fields.assignee": "Assignee",
+  "todo.fields.people": "People",
+  "todo.fields.groups": "User groups",
   "todo.fields.unassigned": "Unassigned",
   "todo.fields.due_date": "Due date",
   "dates.today": "Today",

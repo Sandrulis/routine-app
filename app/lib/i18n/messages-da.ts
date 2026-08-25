@@ -1147,6 +1147,8 @@ export const da: Record<string, string> = {
   "todo.fields.title_placeholder": "Opgavetitel",
   "todo.fields.description_placeholder": "Kort beskrivelse",
   "todo.fields.assignee": "Tildelt",
+  "todo.fields.people": "Personer",
+  "todo.fields.groups": "Brugergrupper",
   "todo.fields.unassigned": "Ikke tildelt",
   "todo.fields.due_date": "Frist",
   "dates.today": "I dag",

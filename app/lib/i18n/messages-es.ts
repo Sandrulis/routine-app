@@ -1148,6 +1148,8 @@ export const es: Record<string, string> = {
   "todo.fields.title_placeholder": "Título de la tarea",
   "todo.fields.description_placeholder": "Descripción breve",
   "todo.fields.assignee": "Asignado",
+  "todo.fields.people": "Personas",
+  "todo.fields.groups": "Grupos de usuarios",
   "todo.fields.unassigned": "Sin asignar",
   "todo.fields.due_date": "Fecha de vencimiento",
   "dates.today": "Hoy",

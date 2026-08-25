@@ -488,54 +488,269 @@
   gap: 10px;
 }
 
+.routine-gmail-status-pill {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  align-self: flex-start;
+  min-height: 32px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 6px;
+  background: #a1a1aa;
+  color: #fff;
+  cursor: pointer;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  line-height: 1;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.routine-gmail-status-pill:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.routine-gmail-status-picker {
+  display: none;
+  flex-direction: column;
+  width: 17.5rem;
+  max-width: 100%;
+  max-height: 22rem;
+  margin: 6px 0 0;
+  overflow: hidden;
+  background: #fff;
+  border-radius: 6px;
+  box-shadow: 0 12px 40px rgba(15, 23, 42, 0.16);
+  outline: 1px solid rgba(228, 228, 231, 0.85);
+}
+
+.routine-gmail-status-picker.is-open {
+  display: flex !important;
+}
+
+.routine-gmail-status-picker[hidden] {
+  display: none !important;
+}
+
+.routine-gmail-status-search-wrap {
+  padding: 8px;
+}
+
+.routine-gmail-status-search-wrap input {
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 36px;
+  border: 1px solid #e4e4e7;
+  border-radius: 6px;
+  background: #fff;
+  color: #18181b;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 8px 12px;
+  outline: none;
+}
+
+.routine-gmail-status-search-wrap input:focus {
+  border-color: #34d399;
+  box-shadow: 0 0 0 2px #d1fae5;
+}
+
+.routine-gmail-status-groups {
+  min-height: 0;
+  flex: 1 1 auto;
+  overflow: auto;
+  padding: 0 0 8px;
+}
+
+.routine-gmail-status-empty {
+  margin: 0;
+  padding: 24px 12px;
+  text-align: center;
+  color: #a1a1aa;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.routine-gmail-status-group.is-next {
+  margin-top: 4px;
+  border-top: 1px solid #f4f4f5;
+  padding-top: 4px;
+}
+
+.routine-gmail-status-group-label {
+  margin: 0;
+  padding: 6px 12px;
+  color: #a1a1aa;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.routine-gmail-status-option {
+  display: flex !important;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  box-sizing: border-box;
+  border: 0;
+  background: transparent;
+  color: #3f3f46;
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  line-height: 1.2;
+  text-align: left;
+  text-transform: uppercase;
+  padding: 6px 12px;
+}
+
+.routine-gmail-status-option:hover {
+  background: #fafafa;
+}
+
+.routine-gmail-status-option.is-selected {
+  background: #f4f4f5;
+  color: #18181b;
+}
+
+.routine-gmail-status-option span:not(.routine-gmail-status-glyph):not(.routine-gmail-status-check) {
+  min-width: 0;
+  flex: 1 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.routine-gmail-status-check {
+  display: inline-flex !important;
+  color: #27272a;
+  flex-shrink: 0;
+}
+
+.routine-gmail-status-glyph {
+  display: inline-flex !important;
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  box-sizing: border-box;
+}
+
+.routine-gmail-status-glyph.is-not-started {
+  border-radius: 999px;
+  border: 2px dashed;
+}
+
+.routine-gmail-status-glyph.is-active {
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  border: 2px solid;
+}
+
+.routine-gmail-status-glyph.is-active span {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+}
+
+.routine-gmail-status-glyph.is-closed {
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  color: #fff;
+}
+
 .routine-gmail-assignee-combo {
   position: relative;
 }
 
-.routine-gmail-assignee-hints {
+#routine-gmail-create-assignee-query:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 1px #2563eb;
+}
+
+#routine-gmail-root .routine-gmail-assignee-hints {
+  position: static;
+  z-index: auto;
   display: none;
   flex-direction: column;
-  gap: 2px;
+  gap: 0;
   width: 100%;
   box-sizing: border-box;
   margin: 6px 0 0;
-  padding: 4px;
+  padding: 4px 0;
   list-style: none;
-  max-height: 180px;
+  max-height: 200px;
   overflow: auto;
   background: #fff;
   border: 1px solid #e2e8f0;
   border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12);
 }
 
-.routine-gmail-assignee-hints.is-open {
+#routine-gmail-root .routine-gmail-assignee-hints.is-open {
   display: flex !important;
 }
 
-.routine-gmail-assignee-hints[hidden] {
+#routine-gmail-root .routine-gmail-assignee-hints[hidden] {
   display: none !important;
 }
 
-.routine-gmail-assignee-hints li {
+#routine-gmail-root .routine-gmail-assignee-hints li {
   display: flex !important;
   flex-direction: column;
   gap: 1px;
   padding: 8px 10px;
-  border-radius: 8px;
+  border-radius: 0;
   cursor: pointer;
   color: #0f172a;
   font-size: 13px;
   font-weight: 600;
 }
 
-.routine-gmail-assignee-hints li:hover {
+#routine-gmail-root .routine-gmail-assignee-hints li:hover,
+#routine-gmail-root .routine-gmail-assignee-hints li.is-active {
   background: #f0fdfa;
 }
 
-.routine-gmail-assignee-hints li.routine-gmail-assignee-empty {
+#routine-gmail-root .routine-gmail-assignee-hints li.routine-gmail-assignee-heading {
+  cursor: default;
+  font-size: 11px;
+  font-weight: 500;
+  color: #94a3b8;
+  padding: 8px 10px 4px;
+  background: transparent;
+}
+
+#routine-gmail-root .routine-gmail-assignee-hints li.routine-gmail-assignee-heading:hover {
+  background: transparent;
+}
+
+#routine-gmail-root .routine-gmail-assignee-hints li.routine-gmail-assignee-empty {
   cursor: default;
   font-weight: 500;
   color: #64748b;
+}
+
+.routine-gmail-assignee-hint-name,
+.routine-gmail-assignee-hint-meta {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#routine-gmail-root .routine-gmail-assignee-hints mark {
+  background: #ccfbf1;
+  color: inherit;
+  font: inherit;
+  padding: 0;
 }
 
 .routine-gmail-assignee-hint-meta {
@@ -590,6 +805,15 @@
 .routine-gmail-assignee-badge button:disabled {
   cursor: not-allowed;
   opacity: 0.5;
+}
+
+.routine-gmail-assignee-badge.is-group {
+  background: #f1f5f9;
+  color: #334155;
+}
+
+.routine-gmail-assignee-badge.is-group button:hover {
+  background: rgba(15, 23, 42, 0.08);
 }
 
 #routine-gmail-create-submit {
@@ -753,6 +977,8 @@
   margin-top: 0;
   border-top: 1px solid #f1f5f9;
   flex-shrink: 0;
+  position: relative;
+  z-index: 1;
 }
 
 .routine-gmail-back {

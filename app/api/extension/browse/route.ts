@@ -1,6 +1,7 @@
 import { getExtensionAuth } from "@/app/lib/extension/auth";
 import {
   listExtensionLists,
+  listExtensionStatusesForTask,
   listExtensionSubtasksForTask,
   listExtensionTreeItems,
 } from "@/app/lib/extension/browse";
@@ -12,6 +13,8 @@ import {
   canCreateExtensionSubtask,
   listExtensionAssignees,
 } from "@/app/lib/extension/create-subtask";
+import { resolveExtensionLanguageCode } from "@/app/lib/extension/i18n";
+import { DEFAULT_LANGUAGE } from "@/app/lib/i18n/language";
 import { logError } from "@/app/lib/security/log-error";
 
 export const runtime = "nodejs";
@@ -98,10 +101,13 @@ export async function GET(request: Request) {
           { status: 400 },
         );
       }
-      const subtasks = await listExtensionSubtasksForTask(
-        auth.supabase,
-        parentId,
-      );
+      const languageCode =
+        (await resolveExtensionLanguageCode(auth.supabase, auth.user.id)) ||
+        DEFAULT_LANGUAGE;
+      const [subtasks, statusCatalog] = await Promise.all([
+        listExtensionSubtasksForTask(auth.supabase, parentId),
+        listExtensionStatusesForTask(auth.supabase, parentId, languageCode),
+      ]);
       const { data: parent } = await auth.supabase
         .from("work_tasks")
         .select("team_id, list_id")
@@ -126,6 +132,8 @@ export async function GET(request: Request) {
         subtasks,
         canCreate,
         assignees,
+        statuses: statusCatalog.statuses,
+        defaultStatus: statusCatalog.defaultStatus,
       });
     }
 

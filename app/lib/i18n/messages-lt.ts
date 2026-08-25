@@ -1147,6 +1147,8 @@ export const lt: Record<string, string> = {
   "todo.fields.title_placeholder": "Užduoties pavadinimas",
   "todo.fields.description_placeholder": "Trumpas aprašymas",
   "todo.fields.assignee": "Atsakingasis",
+  "todo.fields.people": "Naudotojai",
+  "todo.fields.groups": "Naudotojų grupės",
   "todo.fields.unassigned": "Nepriskirta",
   "todo.fields.due_date": "Terminas",
   "dates.today": "Šiandien",

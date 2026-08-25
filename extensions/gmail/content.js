@@ -98,11 +98,21 @@
   "tasks.fields.description_placeholder": "Īss uzdevuma apraksts",
   "todo.fields.due_date": "Termiņš",
   "todo.fields.assignee": "Atbildīgais",
+  "todo.fields.people": "Lietotāji",
+  "todo.fields.groups": "Lietotāju grupas",
   "todo.fields.unassigned": "Nepiešķirts",
   "common.description": "Apraksts",
   "actions.cancel": "Atcelt",
   "actions.continue": "Turpināt",
   "lists.fields.icon_search": "Meklēt...",
+  "subtasks.table.status": "Statuss",
+  "status.search.empty": "Nav atbilstošu statusu.",
+  "status.group.not_started": "Nav sākts",
+  "status.group.active": "Aktīvs",
+  "status.group.closed": "Slēgts",
+  "todo.columns.todo": "Darāms",
+  "todo.columns.in_progress": "Procesā",
+  "todo.columns.done": "Gatavs",
   "team.roles.list": "Lomas",
   "errors.extension_title_required": "Ievadi apakšuzdevuma nosaukumu.",
   "errors.extension_create_failed": "Neizdevās pievienot apakšuzdevumu.",
@@ -362,7 +372,7 @@ function scrapeEmailFallback() {
 
 function ensureUi() {
   const existing = document.getElementById("routine-gmail-root");
-  if (existing?.dataset?.routineUi === "17") {
+  if (existing?.dataset?.routineUi === "20") {
     existing.querySelector("#routine-gmail-fab")?.remove();
     return;
   }
@@ -370,7 +380,7 @@ function ensureUi() {
 
   const root = document.createElement("div");
   root.id = "routine-gmail-root";
-  root.dataset.routineUi = "17";
+  root.dataset.routineUi = "20";
   root.innerHTML = `
     <div id="routine-gmail-modal" hidden>
       <div class="routine-gmail-backdrop" data-close="1"></div>
@@ -422,14 +432,26 @@ function ensureUi() {
                 <input type="date" id="routine-gmail-create-due" />
               </label>
             </div>
-            <label class="routine-gmail-field">
+            <div class="routine-gmail-field">
+              <span id="routine-gmail-create-status-label"></span>
+              <button type="button" id="routine-gmail-create-status" class="routine-gmail-status-pill" aria-haspopup="listbox" aria-expanded="false">
+                <span id="routine-gmail-create-status-text"></span>
+              </button>
+              <div id="routine-gmail-status-picker" class="routine-gmail-status-picker" hidden role="listbox">
+                <div class="routine-gmail-status-search-wrap">
+                  <input type="search" id="routine-gmail-status-search" autocomplete="off" />
+                </div>
+                <div id="routine-gmail-status-groups" class="routine-gmail-status-groups"></div>
+              </div>
+            </div>
+            <div class="routine-gmail-field">
               <span id="routine-gmail-create-assignee-label"></span>
               <div class="routine-gmail-assignee-combo">
-                <input type="text" id="routine-gmail-create-assignee-query" autocomplete="off" />
-                <ul id="routine-gmail-create-assignee-hints" class="routine-gmail-assignee-hints" hidden></ul>
+                <input type="text" id="routine-gmail-create-assignee-query" autocomplete="off" aria-autocomplete="list" aria-haspopup="listbox" aria-expanded="false" />
+                <ul id="routine-gmail-create-assignee-hints" class="routine-gmail-assignee-hints" hidden role="listbox"></ul>
               </div>
               <div id="routine-gmail-create-assignee-badges" class="routine-gmail-assignee-badges"></div>
-            </label>
+            </div>
             <label class="routine-gmail-field">
               <span id="routine-gmail-create-desc-label"></span>
               <textarea id="routine-gmail-create-desc" rows="3"></textarea>
@@ -480,6 +502,11 @@ function ensureUi() {
   const createTitle = root.querySelector("#routine-gmail-create-title");
   const createStart = root.querySelector("#routine-gmail-create-start");
   const createDue = root.querySelector("#routine-gmail-create-due");
+  const createStatusBtn = root.querySelector("#routine-gmail-create-status");
+  const createStatusText = root.querySelector("#routine-gmail-create-status-text");
+  const createStatusPicker = root.querySelector("#routine-gmail-status-picker");
+  const createStatusSearch = root.querySelector("#routine-gmail-status-search");
+  const createStatusGroups = root.querySelector("#routine-gmail-status-groups");
   const createAssigneeQuery = root.querySelector("#routine-gmail-create-assignee-query");
   const createAssigneeHints = root.querySelector("#routine-gmail-create-assignee-hints");
   const createAssigneeBadges = root.querySelector("#routine-gmail-create-assignee-badges");
@@ -502,12 +529,18 @@ function ensureUi() {
   const DRAFT_ID = "__draft__";
   /** @type {{ id: string, title: string }[]} */
   let subtaskRowsCache = [];
-  /** @type {null | { title: string, description: string, startDate: string, dueDate: string, assignees: { id: string, name: string, kind: 'member' | 'role' }[] }} */
+  /** @type {null | { title: string, description: string, startDate: string, dueDate: string, status: string, assignees: { id: string, name: string, kind: 'member' | 'role' }[] }} */
   let draftSubtask = null;
   /** @type {{ id: string, name: string, kind: 'member' | 'role' }[]} */
   let assigneeOptions = [];
   /** @type {{ id: string, name: string, kind: 'member' | 'role' }[]} */
   let selectedAssignees = [];
+  let assigneeHintIndex = 0;
+  let assigneesLoading = false;
+  /** @type {{ id: string, label: string, color: string, groupKey: 'not_started' | 'active' | 'closed' }[]} */
+  let statusOptions = [];
+  let defaultStatusId = "todo";
+  let selectedStatusId = "todo";
 
   function applyStaticLabels() {
     const titleEl = root.querySelector("#routine-gmail-title");
@@ -531,14 +564,24 @@ function ensureUi() {
     if (startLabel) startLabel.textContent = t("tasks.fields.start_date");
     const dueLabel = root.querySelector("#routine-gmail-create-due-label");
     if (dueLabel) dueLabel.textContent = t("todo.fields.due_date");
+    const statusLabel = root.querySelector("#routine-gmail-create-status-label");
+    if (statusLabel) statusLabel.textContent = t("subtasks.table.status");
+    createStatusSearch.placeholder = t("lists.fields.icon_search");
+    createStatusBtn.setAttribute("aria-label", t("subtasks.table.status"));
     const assigneeLabel = root.querySelector("#routine-gmail-create-assignee-label");
     if (assigneeLabel) assigneeLabel.textContent = t("todo.fields.assignee");
     createAssigneeQuery.placeholder = t("lists.fields.icon_search");
+    createAssigneeQuery.setAttribute(
+      "aria-controls",
+      "routine-gmail-create-assignee-hints",
+    );
+    createAssigneeHints.setAttribute("aria-label", t("todo.fields.assignee"));
     const descLabel = root.querySelector("#routine-gmail-create-desc-label");
     if (descLabel) descLabel.textContent = t("common.description");
     createDesc.placeholder = t("tasks.fields.description_placeholder");
     createSubmit.textContent = t("actions.continue");
     newSubtaskBtn.innerHTML = `${ICONS.plus} <span>${t("subtasks.add.title")}</span>`;
+    paintStatusPill();
     panel.setAttribute("lang", languageCode);
     for (const btn of document.querySelectorAll(`[${INLINE_BTN_ATTR}="1"]`)) {
       btn.title = t("extension.gmail.add_to_routine");
@@ -597,6 +640,8 @@ function ensureUi() {
     createTitle.disabled = busy;
     createStart.disabled = busy;
     createDue.disabled = busy;
+    createStatusBtn.disabled = busy;
+    createStatusSearch.disabled = busy;
     createAssigneeQuery.disabled = busy;
     createDesc.disabled = busy;
     createSubmit.disabled = busy;
@@ -625,6 +670,12 @@ function ensureUi() {
     subtaskRowsCache = [];
     assigneeOptions = [];
     selectedAssignees = [];
+    assigneesLoading = false;
+    statusOptions = [];
+    defaultStatusId = "todo";
+    selectedStatusId = "todo";
+    hideStatusPicker();
+    hideAssigneeHints();
     newSubtaskBtn.hidden = true;
     attachBtn.disabled = true;
     attachBtn.hidden = false;
@@ -935,16 +986,83 @@ function ensureUi() {
   }
 
   function assigneeMatchesQuery(item, query) {
-    const q = query.trim().toLowerCase();
-    if (!q) return true;
+    const tokens = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
+    if (!tokens.length) return true;
     const hay = `${item.name} ${item.email || ""} ${item.kind === "role" ? t("team.roles.list") : ""}`.toLowerCase();
-    return hay.includes(q);
+    return tokens.every((token) => hay.includes(token));
+  }
+
+  function appendHighlightedText(parent, text, query) {
+    const needle = query.trim();
+    if (!needle) {
+      parent.textContent = text;
+      return;
+    }
+    const lower = text.toLowerCase();
+    const match = needle.toLowerCase();
+    const index = lower.indexOf(match);
+    if (index < 0) {
+      parent.textContent = text;
+      return;
+    }
+    parent.appendChild(document.createTextNode(text.slice(0, index)));
+    const mark = document.createElement("mark");
+    mark.textContent = text.slice(index, index + needle.length);
+    parent.appendChild(mark);
+    parent.appendChild(document.createTextNode(text.slice(index + needle.length)));
+  }
+
+  function assigneeHintItems() {
+    return [...createAssigneeHints.querySelectorAll("li[data-id]")];
+  }
+
+  function setAssigneeHintIndex(next) {
+    const items = assigneeHintItems();
+    if (!items.length) {
+      assigneeHintIndex = 0;
+      return;
+    }
+    assigneeHintIndex = ((next % items.length) + items.length) % items.length;
+    items.forEach((item, index) => {
+      item.classList.toggle("is-active", index === assigneeHintIndex);
+    });
+    items[assigneeHintIndex].scrollIntoView({ block: "nearest" });
   }
 
   function hideAssigneeHints() {
     createAssigneeHints.hidden = true;
     createAssigneeHints.classList.remove("is-open");
     createAssigneeHints.innerHTML = "";
+    createAssigneeQuery.setAttribute("aria-expanded", "false");
+    assigneeHintIndex = 0;
+  }
+
+  function appendAssigneeHeading(label) {
+    const heading = document.createElement("li");
+    heading.className = "routine-gmail-assignee-heading";
+    heading.textContent = label;
+    createAssigneeHints.appendChild(heading);
+  }
+
+  function appendAssigneeOption(item, query) {
+    const li = document.createElement("li");
+    li.dataset.id = item.id;
+    li.setAttribute("role", "option");
+    const title = document.createElement("span");
+    title.className = "routine-gmail-assignee-hint-name";
+    appendHighlightedText(title, item.name, query);
+    li.appendChild(title);
+    if (item.kind === "member" && item.email && item.email !== item.name) {
+      const meta = document.createElement("span");
+      meta.className = "routine-gmail-assignee-hint-meta";
+      appendHighlightedText(meta, item.email, query);
+      li.appendChild(meta);
+    }
+    li.addEventListener("mousedown", (event) => {
+      event.preventDefault();
+      addAssignee(item);
+    });
+    createAssigneeHints.appendChild(li);
   }
 
   function renderAssigneeHints() {
@@ -953,49 +1071,56 @@ function ensureUi() {
     const matches = assigneeOptions.filter(
       (item) => !selected.has(item.id) && assigneeMatchesQuery(item, query),
     );
+    const people = matches.filter((item) => item.kind === "member");
+    const groups = matches.filter((item) => item.kind === "role");
     createAssigneeHints.innerHTML = "";
-    if (!matches.length) {
+    if (assigneesLoading && !assigneeOptions.length) {
+      const empty = document.createElement("li");
+      empty.className = "routine-gmail-assignee-empty";
+      empty.textContent = t("extension.gmail.loading");
+      createAssigneeHints.appendChild(empty);
+    } else if (!people.length && !groups.length) {
       const empty = document.createElement("li");
       empty.className = "routine-gmail-assignee-empty";
       empty.textContent = t("extension.gmail.empty");
       createAssigneeHints.appendChild(empty);
-      createAssigneeHints.hidden = false;
-      createAssigneeHints.classList.add("is-open");
-      return;
-    }
-    for (const item of matches.slice(0, 20)) {
-      const li = document.createElement("li");
-      li.tabIndex = 0;
-      const title = document.createElement("span");
-      title.className = "routine-gmail-assignee-hint-name";
-      title.textContent = item.name;
-      li.appendChild(title);
-      if (item.kind === "role") {
-        const meta = document.createElement("span");
-        meta.className = "routine-gmail-assignee-hint-meta";
-        meta.textContent = t("team.roles.list");
-        li.appendChild(meta);
-      } else if (item.email) {
-        const meta = document.createElement("span");
-        meta.className = "routine-gmail-assignee-hint-meta";
-        meta.textContent = item.email;
-        li.appendChild(meta);
+    } else {
+      if (people.length) {
+        appendAssigneeHeading(t("todo.fields.people"));
+        for (const item of people.slice(0, 20)) appendAssigneeOption(item, query);
       }
-      li.addEventListener("mousedown", (event) => {
-        event.preventDefault();
-        addAssignee(item);
-      });
-      createAssigneeHints.appendChild(li);
+      if (groups.length) {
+        appendAssigneeHeading(t("todo.fields.groups"));
+        for (const item of groups.slice(0, 20)) appendAssigneeOption(item, query);
+      }
     }
     createAssigneeHints.hidden = false;
     createAssigneeHints.classList.add("is-open");
+    createAssigneeQuery.setAttribute("aria-expanded", "true");
+    setAssigneeHintIndex(0);
+  }
+
+  async function openAssigneeHints() {
+    hideStatusPicker();
+    renderAssigneeHints();
+    if (assigneeOptions.length) return;
+    assigneesLoading = true;
+    renderAssigneeHints();
+    await ensureAssignees();
+    assigneesLoading = false;
+    if (document.activeElement === createAssigneeQuery && creatingSubtask) {
+      renderAssigneeHints();
+    }
   }
 
   function renderAssigneeBadges() {
     createAssigneeBadges.innerHTML = "";
     for (const item of selectedAssignees) {
       const badge = document.createElement("span");
-      badge.className = "routine-gmail-assignee-badge";
+      badge.className =
+        item.kind === "role"
+          ? "routine-gmail-assignee-badge is-group"
+          : "routine-gmail-assignee-badge";
       const label = document.createElement("span");
       label.textContent = item.name;
       const remove = document.createElement("button");
@@ -1008,7 +1133,9 @@ function ensureUi() {
         if (isBusy) return;
         selectedAssignees = selectedAssignees.filter((row) => row.id !== item.id);
         renderAssigneeBadges();
-        if (createAssigneeQuery.value.trim()) renderAssigneeHints();
+        if (createAssigneeQuery.value.trim() || document.activeElement === createAssigneeQuery) {
+          renderAssigneeHints();
+        }
       });
       badge.appendChild(label);
       badge.appendChild(remove);
@@ -1020,9 +1147,161 @@ function ensureUi() {
     if (selectedAssignees.some((row) => row.id === item.id)) return;
     selectedAssignees = [...selectedAssignees, item];
     createAssigneeQuery.value = "";
-    hideAssigneeHints();
     renderAssigneeBadges();
     createAssigneeQuery.focus();
+    renderAssigneeHints();
+  }
+
+  function fallbackStatuses() {
+    return [
+      {
+        id: "todo",
+        label: t("todo.columns.todo"),
+        color: "#a1a1aa",
+        groupKey: "not_started",
+      },
+      {
+        id: "in_progress",
+        label: t("todo.columns.in_progress"),
+        color: "#f97316",
+        groupKey: "active",
+      },
+      {
+        id: "done",
+        label: t("todo.columns.done"),
+        color: "#10b981",
+        groupKey: "closed",
+      },
+    ];
+  }
+
+  function statusCatalog() {
+    return statusOptions.length ? statusOptions : fallbackStatuses();
+  }
+
+  function findStatus(id) {
+    const catalog = statusCatalog();
+    return (
+      catalog.find((row) => row.id === id) ||
+      catalog[0] || {
+        id: id || "todo",
+        label: id || t("todo.columns.todo"),
+        color: "#a1a1aa",
+        groupKey: "not_started",
+      }
+    );
+  }
+
+  function statusGlyphHtml(color, groupKey) {
+    const fill = color || "#a1a1aa";
+    if (groupKey === "closed") {
+      const glyph = document.createElement("span");
+      glyph.className = "routine-gmail-status-glyph is-closed";
+      glyph.style.backgroundColor = fill;
+      glyph.innerHTML =
+        '<svg viewBox="0 0 16 16" width="8" height="8" aria-hidden="true"><path fill="currentColor" d="M6.2 11.2 3.4 8.4l1.1-1.1 1.7 1.7 4.3-4.3 1.1 1.1z"/></svg>';
+      return glyph;
+    }
+    if (groupKey === "active") {
+      const glyph = document.createElement("span");
+      glyph.className = "routine-gmail-status-glyph is-active";
+      glyph.style.borderColor = fill;
+      const dot = document.createElement("span");
+      dot.style.backgroundColor = fill;
+      glyph.appendChild(dot);
+      return glyph;
+    }
+    const glyph = document.createElement("span");
+    glyph.className = "routine-gmail-status-glyph is-not-started";
+    glyph.style.borderColor = fill;
+    return glyph;
+  }
+
+  function paintStatusPill() {
+    const row = findStatus(selectedStatusId);
+    selectedStatusId = row.id;
+    createStatusText.textContent = row.label;
+    createStatusBtn.style.backgroundColor = row.color || "#a1a1aa";
+    createStatusBtn.style.color = "#fff";
+  }
+
+  function hideStatusPicker() {
+    createStatusPicker.hidden = true;
+    createStatusPicker.classList.remove("is-open");
+    createStatusBtn.setAttribute("aria-expanded", "false");
+    createStatusSearch.value = "";
+  }
+
+  function renderStatusGroups() {
+    const needle = createStatusSearch.value.trim().toLowerCase();
+    const groups = [
+      { id: "not_started", label: t("status.group.not_started") },
+      { id: "active", label: t("status.group.active") },
+      { id: "closed", label: t("status.group.closed") },
+    ]
+      .map((group) => ({
+        ...group,
+        statuses: statusCatalog().filter(
+          (row) =>
+            row.groupKey === group.id &&
+            (!needle || row.label.toLowerCase().includes(needle)),
+        ),
+      }))
+      .filter((group) => group.statuses.length > 0);
+
+    createStatusGroups.innerHTML = "";
+    if (!groups.length) {
+      const empty = document.createElement("p");
+      empty.className = "routine-gmail-status-empty";
+      empty.textContent = t("status.search.empty");
+      createStatusGroups.appendChild(empty);
+      return;
+    }
+
+    groups.forEach((group, index) => {
+      const wrap = document.createElement("div");
+      wrap.className = index > 0 ? "routine-gmail-status-group is-next" : "routine-gmail-status-group";
+      const heading = document.createElement("p");
+      heading.className = "routine-gmail-status-group-label";
+      heading.textContent = group.label;
+      wrap.appendChild(heading);
+      for (const item of group.statuses) {
+        const option = document.createElement("button");
+        option.type = "button";
+        option.className = "routine-gmail-status-option";
+        option.setAttribute("role", "option");
+        const selected = item.id === selectedStatusId;
+        option.setAttribute("aria-selected", selected ? "true" : "false");
+        if (selected) option.classList.add("is-selected");
+        option.appendChild(statusGlyphHtml(item.color, item.groupKey));
+        const label = document.createElement("span");
+        label.textContent = item.label;
+        option.appendChild(label);
+        if (selected) {
+          const check = document.createElement("span");
+          check.className = "routine-gmail-status-check";
+          check.innerHTML =
+            '<svg viewBox="0 0 16 16" width="11" height="11" aria-hidden="true"><path fill="currentColor" d="M6.2 11.2 3.4 8.4l1.1-1.1 1.7 1.7 4.3-4.3 1.1 1.1z"/></svg>';
+          option.appendChild(check);
+        }
+        option.addEventListener("click", () => {
+          selectedStatusId = item.id;
+          paintStatusPill();
+          hideStatusPicker();
+        });
+        wrap.appendChild(option);
+      }
+      createStatusGroups.appendChild(wrap);
+    });
+  }
+
+  function showStatusPicker() {
+    hideAssigneeHints();
+    createStatusPicker.hidden = false;
+    createStatusPicker.classList.add("is-open");
+    createStatusBtn.setAttribute("aria-expanded", "true");
+    renderStatusGroups();
+    createStatusSearch.focus();
   }
 
   function resetCreateForm() {
@@ -1032,8 +1311,11 @@ function ensureUi() {
     createAssigneeQuery.value = "";
     createDesc.value = "";
     selectedAssignees = [];
+    selectedStatusId = defaultStatusId || statusCatalog()[0]?.id || "todo";
     hideAssigneeHints();
+    hideStatusPicker();
     renderAssigneeBadges();
+    paintStatusPill();
   }
 
   function fillCreateFormFromDraft() {
@@ -1047,8 +1329,11 @@ function ensureUi() {
     createDesc.value = draftSubtask.description;
     createAssigneeQuery.value = "";
     selectedAssignees = [...draftSubtask.assignees];
+    selectedStatusId = draftSubtask.status || defaultStatusId || "todo";
     hideAssigneeHints();
+    hideStatusPicker();
     renderAssigneeBadges();
+    paintStatusPill();
   }
 
   function syncNewSubtaskButton() {
@@ -1072,6 +1357,7 @@ function ensureUi() {
     creatingSubtask = false;
     createModal.hidden = true;
     hideAssigneeHints();
+    hideStatusPicker();
     setCreateFeedback("");
     if (view.type === "subtasks") {
       attachBtn.disabled = isBusy || !selectedId;
@@ -1416,6 +1702,26 @@ function ensureUi() {
     assigneeOptions = Array.isArray(result.data.assignees)
       ? result.data.assignees
       : [];
+    statusOptions = Array.isArray(result.data.statuses)
+      ? result.data.statuses
+          .filter((row) => row && typeof row.id === "string" && row.id.trim())
+          .map((row) => ({
+            id: String(row.id).trim(),
+            label: String(row.label || row.id).trim() || String(row.id),
+            color: String(row.color || "#71717a"),
+            groupKey:
+              row.groupKey === "not_started" ||
+              row.groupKey === "active" ||
+              row.groupKey === "closed"
+                ? row.groupKey
+                : "active",
+          }))
+      : [];
+    defaultStatusId = String(result.data.defaultStatus || "").trim() || "todo";
+    if (!statusCatalog().some((row) => row.id === defaultStatusId)) {
+      defaultStatusId = statusCatalog()[0]?.id || "todo";
+    }
+    selectedStatusId = defaultStatusId;
     paintSubtaskList(selectId);
     syncNewSubtaskButton();
   }
@@ -1654,23 +1960,58 @@ function ensureUi() {
       description: createDesc.value.trim(),
       startDate: createStart.value.trim(),
       dueDate: createDue.value.trim(),
+      status: selectedStatusId,
       assignees: [...selectedAssignees],
     };
     hideCreateForm();
     paintSubtaskList(DRAFT_ID);
   });
 
+  createStatusBtn.addEventListener("click", () => {
+    if (isBusy) return;
+    if (createStatusPicker.classList.contains("is-open")) {
+      hideStatusPicker();
+      return;
+    }
+    showStatusPicker();
+  });
+  createStatusSearch.addEventListener("input", () => {
+    renderStatusGroups();
+  });
+  createStatusSearch.addEventListener("keydown", (event) => {
+    if (event.key === "Enter") event.preventDefault();
+  });
+
   createAssigneeQuery.addEventListener("input", () => {
     renderAssigneeHints();
   });
   createAssigneeQuery.addEventListener("focus", () => {
-    renderAssigneeHints();
+    void openAssigneeHints();
   });
   createAssigneeQuery.addEventListener("keydown", (event) => {
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      if (createAssigneeHints.hidden) {
+        void openAssigneeHints();
+        return;
+      }
+      setAssigneeHintIndex(assigneeHintIndex + 1);
+      return;
+    }
+    if (event.key === "ArrowUp") {
+      event.preventDefault();
+      if (createAssigneeHints.hidden) {
+        void openAssigneeHints();
+        return;
+      }
+      setAssigneeHintIndex(assigneeHintIndex - 1);
+      return;
+    }
     if (event.key !== "Enter") return;
     event.preventDefault();
-    const first = createAssigneeHints.querySelector("li:not(.routine-gmail-assignee-empty)");
-    if (first) first.dispatchEvent(new Event("mousedown"));
+    const items = assigneeHintItems();
+    const active = items[assigneeHintIndex] || items[0];
+    if (active) active.dispatchEvent(new Event("mousedown"));
   });
   createModal.addEventListener("mousedown", (event) => {
     const target = event.target;
@@ -1681,6 +2022,14 @@ function ensureUi() {
       return;
     }
     hideAssigneeHints();
+    if (
+      target === createStatusBtn ||
+      createStatusBtn.contains(target) ||
+      createStatusPicker.contains(target)
+    ) {
+      return;
+    }
+    hideStatusPicker();
   });
 
   createCancel.addEventListener("click", () => {
@@ -1698,6 +2047,10 @@ function ensureUi() {
     if (isBusy || !creatingSubtask) return;
     event.preventDefault();
     event.stopPropagation();
+    if (!createStatusPicker.hidden) {
+      hideStatusPicker();
+      return;
+    }
     if (!createAssigneeHints.hidden) {
       hideAssigneeHints();
       return;
@@ -1750,6 +2103,7 @@ function ensureUi() {
         description: draftSubtask.description,
         startDate: draftSubtask.startDate,
         dueDate: draftSubtask.dueDate,
+        status: draftSubtask.status || "todo",
         assigneeIds: draftSubtask.assignees.map((item) => item.id),
       });
       if (!created?.ok || !created.data?.ok) {

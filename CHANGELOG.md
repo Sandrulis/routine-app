@@ -4,6 +4,10 @@
 
 - (none)
 
+## v0.2.36
+
+- Gmail spraudnis `0.4.27`: jauna apakšuzdevuma statuss ar sistēmas picker; atbildīgie ar live-search hintiem (lietotāji un grupas), birkā vārds uzvārds
+
 ## v0.2.35
 
 - Gmail spraudnis `0.4.24`: jauns apakšuzdevums no e-pasta (modālis, atbildīgā meklēšana); izveide tikai ar **Pievienot** un pielikumiem

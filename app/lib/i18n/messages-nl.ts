@@ -1147,6 +1147,8 @@ export const nl: Record<string, string> = {
   "todo.fields.title_placeholder": "Taaktitel",
   "todo.fields.description_placeholder": "Korte beschrijving",
   "todo.fields.assignee": "Toegewezen aan",
+  "todo.fields.people": "Personen",
+  "todo.fields.groups": "Gebruikersgroepen",
   "todo.fields.unassigned": "Niet toegewezen",
   "todo.fields.due_date": "Deadline",
   "dates.today": "Vandaag",

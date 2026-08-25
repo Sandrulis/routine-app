@@ -1147,6 +1147,8 @@ export const et: Record<string, string> = {
   "todo.fields.title_placeholder": "Ülesande pealkiri",
   "todo.fields.description_placeholder": "Lühike kirjeldus",
   "todo.fields.assignee": "Vastutaja",
+  "todo.fields.people": "Kasutajad",
+  "todo.fields.groups": "Kasutajagrupid",
   "todo.fields.unassigned": "Määramata",
   "todo.fields.due_date": "Tähtaeg",
   "dates.today": "Täna",

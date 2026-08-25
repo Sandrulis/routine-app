@@ -102,6 +102,7 @@ export async function POST(request: Request) {
       startDate: String(body.startDate || ""),
       dueDate: String(body.dueDate || ""),
       assigneeIds: Array.isArray(body.assigneeIds) ? body.assigneeIds : [],
+      status: String(body.status || ""),
     });
     if (!result.ok) {
       return extensionJson(
