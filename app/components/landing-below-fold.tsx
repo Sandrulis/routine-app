@@ -168,13 +168,15 @@ export function LandingBelowFold({ productName }: { productName: string }) {
                 key={feature.id}
                 className="rounded-4xl border border-zinc-200/70 bg-white p-4 shadow-sm transition duration-200 hover:-translate-y-1 hover:border-emerald-300/70 hover:shadow-lg hover:shadow-emerald-600/10 sm:p-6"
               >
-                <span className="inline-flex size-10 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500 to-emerald-600 text-white shadow-md shadow-emerald-600/20 sm:size-11">
-                  <i className={`${feature.icon} text-sm`} aria-hidden="true" />
-                </span>
-                <h3 className="mt-4 text-base font-semibold text-zinc-900 sm:text-lg">
-                  {t(feature.titleKey, feature.titleFallback)}
-                </h3>
-                <p className="mt-2 text-sm leading-6 text-zinc-600">
+                <div className="flex items-center gap-3">
+                  <span className="inline-flex size-10 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500 to-emerald-600 text-white shadow-md shadow-emerald-600/20 sm:size-11">
+                    <i className={`${feature.icon} text-sm`} aria-hidden="true" />
+                  </span>
+                  <h3 className="text-base font-semibold text-zinc-900 sm:text-lg">
+                    {t(feature.titleKey, feature.titleFallback)}
+                  </h3>
+                </div>
+                <p className="mt-3 text-sm leading-6 text-zinc-600">
                   {t(feature.descriptionKey, feature.descriptionFallback, name)}
                 </p>
               </article>
@@ -200,13 +202,15 @@ export function LandingBelowFold({ productName }: { productName: string }) {
                 key={audience.titleKey}
                 className="rounded-4xl border border-zinc-200/70 bg-zinc-50/70 p-4 transition duration-200 hover:-translate-y-1 hover:border-emerald-300/70 hover:bg-white hover:shadow-lg hover:shadow-emerald-600/10 sm:p-5"
               >
-                <span className="inline-flex size-10 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-700 sm:size-11">
-                  <i className={`${audience.icon} text-sm`} aria-hidden="true" />
-                </span>
-                <h3 className="mt-4 text-base font-semibold text-zinc-900">
-                  {t(audience.titleKey, audience.titleFallback)}
-                </h3>
-                <p className="mt-2 text-sm leading-6 text-zinc-600">
+                <div className="flex items-center gap-3">
+                  <span className="inline-flex size-10 shrink-0 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-700 sm:size-11">
+                    <i className={`${audience.icon} text-sm`} aria-hidden="true" />
+                  </span>
+                  <h3 className="text-base font-semibold text-zinc-900">
+                    {t(audience.titleKey, audience.titleFallback)}
+                  </h3>
+                </div>
+                <p className="mt-3 text-sm leading-6 text-zinc-600">
                   {t(audience.descriptionKey, audience.descriptionFallback)}
                 </p>
               </article>
@@ -232,13 +236,15 @@ export function LandingBelowFold({ productName }: { productName: string }) {
                 key={step.titleKey}
                 className="rounded-4xl border border-emerald-100 bg-white/80 p-6 shadow-sm backdrop-blur-sm transition duration-200 hover:-translate-y-1 hover:border-emerald-300/70 hover:bg-white hover:shadow-lg hover:shadow-emerald-600/10"
               >
-                <span className="inline-flex size-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500 to-emerald-600 text-base font-bold text-white shadow-md shadow-emerald-600/20">
-                  {index + 1}
-                </span>
-                <h3 className="mt-4 text-base font-semibold text-zinc-900 sm:text-lg">
-                  {t(step.titleKey, step.titleFallback)}
-                </h3>
-                <p className="mt-2 text-sm leading-6 text-zinc-600">
+                <div className="flex items-center gap-3">
+                  <span className="inline-flex size-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500 to-emerald-600 text-base font-bold text-white shadow-md shadow-emerald-600/20">
+                    {index + 1}
+                  </span>
+                  <h3 className="text-base font-semibold text-zinc-900 sm:text-lg">
+                    {t(step.titleKey, step.titleFallback)}
+                  </h3>
+                </div>
+                <p className="mt-3 text-sm leading-6 text-zinc-600">
                   {t(step.descriptionKey, step.descriptionFallback)}
                 </p>
               </article>

@@ -4,6 +4,10 @@
 
 - (none)
 
+## v0.2.33
+
+- Sākumlapas kartītēs nosaukumi blakus ikonai (fīčas, auditorijas, soļi)
+
 ## v0.2.32
 
 - Sākumlapas vizuālais dizains: zaļš akcents (CTA, ikonas), kartīšu grid 2/3 kolonnās, dziļāks hero mockup ar glow un perspektīvu, kontrastaināka tipogrāfija un sekciju fonu ritms
