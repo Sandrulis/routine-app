@@ -230,7 +230,7 @@ async function getAppBase() {
     await chrome.storage.sync.set({
       appBaseUrl: origin,
       authCookieName: config.authCookieName || "",
-      loginPath: config.loginPath || "/login",
+      loginPath: config.loginPath || "/auth/gmail-plugin/login",
       canonicalOrigin: canonical,
     });
     return origin;
@@ -1629,7 +1629,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         const wantGoogle = message.google === true;
         const loginPath = wantGoogle
           ? "/auth/gmail-plugin/login"
-          : stored.loginPath || "/login";
+          : stored.loginPath || "/auth/gmail-plugin/login";
         const tabOrigin =
           preferLiveOrigin(
             parseOrigin(stored.canonicalOrigin) || parseOrigin(appBase),

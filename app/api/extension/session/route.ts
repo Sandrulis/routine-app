@@ -47,7 +47,7 @@ async function branding() {
   return {
     systemName: settings.systemName,
     logoUrl,
-    loginPath: "/login",
+    loginPath: "/auth/gmail-plugin/login",
   };
 }
 
@@ -84,7 +84,7 @@ export async function GET(request: Request) {
     strings,
     emailPasswordEnabled,
     googleSignInEnabled,
-    loginPath: googleSignInEnabled ? GMAIL_PLUGIN_LOGIN_PATH : "/login",
+    loginPath: GMAIL_PLUGIN_LOGIN_PATH,
     connectGmailPath: GMAIL_PLUGIN_START_PATH,
     connectGmailBridgePath: GMAIL_PLUGIN_BRIDGE_PATH,
   };

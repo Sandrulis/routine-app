@@ -71,7 +71,7 @@ export async function GET(request: Request) {
     authCookieName: supabaseAuthCookieName(),
     systemName: settings.systemName,
     logoUrl,
-    loginPath: googleSignInEnabled ? GMAIL_PLUGIN_LOGIN_PATH : "/login",
+    loginPath: GMAIL_PLUGIN_LOGIN_PATH,
     connectGmailPath: GMAIL_PLUGIN_START_PATH,
     connectGmailBridgePath: GMAIL_PLUGIN_BRIDGE_PATH,
     languageCode,

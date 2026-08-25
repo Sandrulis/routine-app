@@ -4,6 +4,10 @@
 
 - (none)
 
+## v0.2.39
+
+- Gmail spraudnis `0.4.30`: **Turpināt ar Google** iet tieši uz Google OAuth, nevis tasqin.com `/login`
+
 ## v0.2.38
 
 - Gmail spraudnis `0.4.29`: ielogošanās paliek tikai ar servera apstiprinātu sesiju; nederīgs saglabātais tokens tiek izmests

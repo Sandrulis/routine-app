@@ -380,7 +380,7 @@ function ensureUi() {
 
   const root = document.createElement("div");
   root.id = "routine-gmail-root";
-  root.dataset.routineUi = "22";
+  root.dataset.routineUi = "23";
   root.innerHTML = `
     <div id="routine-gmail-modal" hidden>
       <div class="routine-gmail-backdrop" data-close="1"></div>
@@ -1786,8 +1786,7 @@ function ensureUi() {
     }
     if (!sessionResult?.data?.authenticated) {
       const appBase = sessionResult?.appBase || "https://www.tasqin.com";
-      const loginPath =
-        sessionResult?.data?.loginPath || "/auth/gmail-plugin/login";
+      const loginPath = "/auth/gmail-plugin/login";
       setResultMode(true);
       setFeedback(tError("errors.extension_auth_required"), "error");
       feedback.insertAdjacentHTML(
