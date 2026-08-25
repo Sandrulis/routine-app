@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { createClient } from "@/app/lib/supabase/server";
 import { createGmailBridgeTicket } from "@/app/lib/extension/gmail-bridge-ticket";
+import { sessionFromRequestCookies } from "@/app/lib/extension/session-from-cookies";
 import { getServerTranslations } from "@/app/lib/i18n/server";
 import { translatedPageMetadata } from "@/app/lib/page-metadata";
 
@@ -48,18 +49,23 @@ export default async function GmailPluginDonePage({
     try {
       const supabase = await createClient();
       const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      if (
-        session?.access_token &&
-        session.refresh_token &&
-        session.user?.id
-      ) {
-        hasBrowserSession = true;
-        bootstrapTicket = tryCreateBootstrapTicket({
-          refreshToken: session.refresh_token,
-          userId: session.user.id,
-        });
+        data: { user },
+      } = await supabase.auth.getUser();
+      hasBrowserSession = Boolean(user?.id);
+      if (user?.id) {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+        const refreshToken =
+          session?.refresh_token ||
+          (await sessionFromRequestCookies())?.refresh_token ||
+          "";
+        if (refreshToken) {
+          bootstrapTicket = tryCreateBootstrapTicket({
+            refreshToken,
+            userId: user.id,
+          });
+        }
       }
     } catch {
       hasBrowserSession = false;

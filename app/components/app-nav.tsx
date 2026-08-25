@@ -1424,9 +1424,6 @@ export function AppNav() {
             setOpenedSubtaskId(null);
           }
         }}
-        onCreated={(task) => {
-          expandTree(task.parentId ?? task.listId);
-        }}
       />
 
       <ListFormModal

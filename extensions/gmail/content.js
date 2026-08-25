@@ -372,7 +372,7 @@ function scrapeEmailFallback() {
 
 function ensureUi() {
   const existing = document.getElementById("routine-gmail-root");
-  if (existing?.dataset?.routineUi === "20") {
+  if (existing?.dataset?.routineUi === "21") {
     existing.querySelector("#routine-gmail-fab")?.remove();
     return;
   }
@@ -380,7 +380,7 @@ function ensureUi() {
 
   const root = document.createElement("div");
   root.id = "routine-gmail-root";
-  root.dataset.routineUi = "20";
+  root.dataset.routineUi = "21";
   root.innerHTML = `
     <div id="routine-gmail-modal" hidden>
       <div class="routine-gmail-backdrop" data-close="1"></div>

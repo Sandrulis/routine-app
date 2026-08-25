@@ -4,6 +4,7 @@ import {
   extensionJson,
   extensionOptionsResponse,
 } from "@/app/lib/extension/cors";
+import { sessionFromRequestCookies } from "@/app/lib/extension/session-from-cookies";
 import { requestClientIp } from "@/app/lib/security/client-ip";
 import { consumeRateLimit } from "@/app/lib/security/rate-limit";
 import { isSupabaseConfigured } from "@/app/lib/supabase/env";
@@ -48,9 +49,24 @@ export async function GET(request: Request) {
 
   const {
     data: { session },
-    error,
   } = await auth.supabase.auth.getSession();
-  if (error || !session?.access_token) {
+
+  let accessToken = session?.access_token || "";
+  let refreshToken = session?.refresh_token || "";
+  let expiresAt = session?.expires_at;
+  let expiresIn = session?.expires_in;
+
+  if (!refreshToken) {
+    const fromCookies = await sessionFromRequestCookies();
+    if (fromCookies?.access_token) {
+      accessToken = accessToken || fromCookies.access_token;
+      refreshToken = fromCookies.refresh_token || refreshToken;
+      expiresAt = expiresAt ?? fromCookies.expires_at;
+      expiresIn = expiresIn ?? fromCookies.expires_in;
+    }
+  }
+
+  if (!accessToken) {
     return extensionJson(
       request,
       { ok: false, error: "errors.auth_required" },
@@ -62,11 +78,11 @@ export async function GET(request: Request) {
     ok: true,
     authCookieName: supabaseAuthCookieName(),
     session: {
-      access_token: session.access_token,
-      refresh_token: session.refresh_token,
-      expires_at: session.expires_at,
-      expires_in: session.expires_in,
-      token_type: session.token_type,
+      access_token: accessToken,
+      refresh_token: refreshToken,
+      expires_at: expiresAt,
+      expires_in: expiresIn,
+      token_type: session?.token_type,
     },
   });
 }

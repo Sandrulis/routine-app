@@ -4,6 +4,11 @@
 
 - (none)
 
+## v0.2.37
+
+- Gmail spraudnis `0.4.28`: ielogošanās vairs nepazaudē sesiju (ticket vienreiz, nav localhost JWT uz www)
+- Sānjoslas koks paliek aizvērts, pievienojot apakšuzdevumu aizvērtam uzdevumam
+
 ## v0.2.36
 
 - Gmail spraudnis `0.4.27`: jauna apakšuzdevuma statuss ar sistēmas picker; atbildīgie ar live-search hintiem (lietotāji un grupas), birkā vārds uzvārds
