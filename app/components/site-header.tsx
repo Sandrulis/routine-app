@@ -19,11 +19,13 @@ export function SiteHeader({
   logoColor = DEFAULT_SITE_LOGO_COLOR,
   systemName = null,
   signupEnabled = false,
+  showPricingNav = false,
 }: {
   logoUrl?: string | null;
   logoColor?: string | null;
   systemName?: string | null;
   signupEnabled?: boolean;
+  showPricingNav?: boolean;
 }) {
   const pathname = usePathname();
   const { t, languageCode } = useTranslations();
@@ -85,6 +87,15 @@ export function SiteHeader({
               >
                 {t("site.nav.features", "Iespējas")}
               </a>
+              {showPricingNav ? (
+                <a
+                  href={`${homeHref}#pricing`}
+                  onClickCapture={(event) => onLandingHashClick(event, "pricing")}
+                  className="rounded-lg px-3 py-2 text-sm font-medium text-zinc-600 transition hover:bg-zinc-100 hover:text-zinc-900"
+                >
+                  {t("site.nav.pricing", "Cenas")}
+                </a>
+              ) : null}
               <a
                 href={`${homeHref}#faq`}
                 onClickCapture={(event) => onLandingHashClick(event, "faq")}

@@ -167,7 +167,7 @@ export default function TeamPage() {
       await refreshTeams();
       showFeedback({
         type: "success",
-        text: t("team.member.removed", "Biedrs noņemts no komandas."),
+        text: t("team.member.removed", "Lietotājs noņemts no komandas."),
       });
       setRemoveTarget(null);
     } finally {
@@ -182,7 +182,7 @@ export default function TeamPage() {
         title={t("nav.team", "Komanda")}
         subtitle={t(
           "team.page.subtitle",
-          "Visi komandas biedri. Uzaicini jaunu biedru ar pluszīmi.",
+          "Visi komandas lietotāji. Uzaicini jaunu lietotāju ar pluszīmi.",
         )}
         actions={
           currentTeam && canInvite ? (
@@ -203,7 +203,7 @@ export default function TeamPage() {
           ) : members.length === 0 ? (
             <div className="rounded-3xl border border-dashed border-zinc-200 bg-white px-6 py-12 text-center text-sm text-zinc-500">
               {currentTeam
-                ? t("team.empty", "Komandā vēl nav biedru.")
+                ? t("team.empty", "Komandā vēl nav lietotāju.")
                 : t("teams.required.empty_members", "Vispirms izveido komandu.")}
             </div>
           ) : (
@@ -381,7 +381,7 @@ export default function TeamPage() {
         onOpenChange={(open) => {
           if (!open && pendingAction !== "remove") setRemoveTarget(null);
         }}
-        title={t("team.member.remove_confirm_title", "Noņemt biedru?")}
+        title={t("team.member.remove_confirm_title", "Noņemt lietotāju?")}
         description={t(
           "team.member.remove_confirm_description",
           "{name} zaudēs piekļuvi komandai.",

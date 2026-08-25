@@ -1,6 +1,8 @@
 "use server";
 
 import { getCurrentUser } from "@/app/lib/auth/get-current-user";
+import { FRONTEND_MODULE_KEYS } from "@/app/lib/frontend-modules/keys";
+import { isFrontendModuleEnabled } from "@/app/lib/frontend-modules/repository";
 import { buildSimpleEmailHtml } from "@/app/lib/email/build-email-html";
 import { refreshTaskForwardDeliveryStatuses } from "@/app/lib/email/resend-delivery";
 import {
@@ -329,6 +331,13 @@ export async function forwardTaskFileAction(input: {
   }
   if (!(await isResendEnabled())) {
     return { ok: false, error: "errors.integrations_resend_not_enabled" };
+  }
+  const [sendFileOn, filesOn] = await Promise.all([
+    isFrontendModuleEnabled(FRONTEND_MODULE_KEYS.sendFile),
+    isFrontendModuleEnabled(FRONTEND_MODULE_KEYS.fileUpload),
+  ]);
+  if (!sendFileOn || !filesOn) {
+    return { ok: false, error: "errors.files_forward_module_disabled" };
   }
 
   const to = input.to.trim().toLowerCase();

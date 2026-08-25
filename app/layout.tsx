@@ -130,7 +130,7 @@ export default async function RootLayout({
   );
 
   return (
-    <html lang={htmlLang(languageCode)} className={`${geistSans.variable} h-full`}>
+    <html lang={htmlLang(languageCode)} className={`${geistSans.variable} h-full`} suppressHydrationWarning>
       <head>
         <link rel="icon" href={headIcon} type={brandImageMime(headIcon)} />
         <link rel="shortcut icon" href={headIcon} />
@@ -138,7 +138,7 @@ export default async function RootLayout({
           <link rel="apple-touch-icon" href={settings.logoUrl} />
         ) : null}
       </head>
-      <body className="min-h-dvh">
+      <body className="min-h-dvh" suppressHydrationWarning>
         {sentry ? (
           <SentryInit dsn={sentry.dsn} environment={sentry.environment} />
         ) : null}

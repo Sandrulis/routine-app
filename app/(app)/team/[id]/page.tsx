@@ -10,7 +10,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { id } = await params;
   const name = await fetchTeamMemberName(id);
-  return resolvedPageMetadata(name, "team.detail.missing", "Biedrs nav atrasts");
+  return resolvedPageMetadata(name, "team.detail.missing", "Lietotājs nav atrasts");
 }
 
 export default async function TeamMemberRoute({

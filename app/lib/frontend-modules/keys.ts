@@ -3,6 +3,7 @@ import type { TeamActionPermissionKey, TeamNavPermissionKey } from "@/app/lib/te
 export const FRONTEND_MODULE_KEYS = {
   privateList: "module_private_list",
   fileUpload: "module_file_upload",
+  sendFile: "module_send_file",
   googleDrive: "module_google_drive",
   gmailPlugin: "module_gmail_plugin",
   onedrive: "module_onedrive",
@@ -48,6 +49,9 @@ export function knownFrontendModuleLabel(
   }
   if (moduleKey === FRONTEND_MODULE_KEYS.fileUpload) {
     return { key: "team.access.actions.files_upload", fallback: "Augšupielādēt failus" };
+  }
+  if (moduleKey === FRONTEND_MODULE_KEYS.sendFile) {
+    return { key: "files.forward", fallback: "Pārsūtīt failu" };
   }
   if (moduleKey === FRONTEND_MODULE_KEYS.googleDrive) {
     return { key: "nav.google_drive", fallback: "Google Drive Integrācija" };

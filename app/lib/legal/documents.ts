@@ -89,7 +89,7 @@ export function getPrivacyPolicyContent(
           {
             key: "legal.privacy.data.p2",
             fallback:
-              "Komandas un darba dati: komandas nosaukums, biedru vārdi, e-pasti un lomas, saraksti, uzdevumi, apakšuzdevumi, statusi, termiņi, piezīmes, pielikumu nosaukumi un saturs, ko tu vai tava komanda ievada sistēmā.",
+              "Komandas un darba dati: komandas nosaukums, lietotāju vārdi, e-pasti un lomas, saraksti, uzdevumi, apakšuzdevumi, statusi, termiņi, piezīmes, pielikumu nosaukumi un saturs, ko tu vai tava komanda ievada sistēmā.",
           },
           {
             key: "legal.privacy.data.p3",

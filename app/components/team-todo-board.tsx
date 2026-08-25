@@ -388,7 +388,7 @@ function TodoTaskModal({
     mode === "create"
       ? t(
           "todo.add.description",
-          "Ieraksti nosaukumu un piešķir darbu komandas biedram.",
+          "Ieraksti nosaukumu un piešķir darbu komandas lietotājam.",
         )
       : t("todo.edit.description", "Atjauno uzdevuma datus.");
 

@@ -9,6 +9,7 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "app.subtitle": "Komandas darāmo darbu saraksts",
     "site.back_home": "Uz sākumu",
     "site.nav.features": "Iespējas",
+    "site.nav.pricing": "Cenas",
     "site.nav.faq": "BUJ",
     "site.footer.rights": "© {year} {SYSTEM_NAME}",
     "landing.seo.title": "{name} — vienkārša komandas uzdevumu pārvaldība",
@@ -67,15 +68,15 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
       "Projekti, klienti un mapes vienā kokā. Katram uzdevumam ir statuss, termiņš un atbildīgais — nevis vēl viena Excel tabula.",
     "landing.features.team.title": "Visa komanda redz to pašu",
     "landing.features.team.description":
-      "Uzaicini komandas biedrus, piešķir darbus un zini, kas ir tiešsaistē. Nav jāmeklē čatā, kur palika fails vai kurš ko sola.",
+      "Uzaicini komandas lietotājus, piešķir darbus un zini, kas ir tiešsaistē. Nav jāmeklē čatā, kur palika fails vai kurš ko sola.",
     "landing.features.team.description_no_files":
-      "Uzaicini komandas biedrus, piešķir darbus un zini, kas ir tiešsaistē. Nav jāmeklē čatā, kurš ko sola.",
+      "Uzaicini komandas lietotājus, piešķir darbus un zini, kas ir tiešsaistē. Nav jāmeklē čatā, kurš ko sola.",
     "landing.features.dashboard.title": "Sākums ir dienas tāfele",
     "landing.features.dashboard.description":
       "Atverot {name}, redzi darāmo, procesā un gatavo. Vilc kartītes un turi fokusu uz to, kas jāpabeidz šodien.",
     "landing.features.private_list.title": "Privāti saraksti",
     "landing.features.private_list.description":
-      "Paslēp sarakstu no pārējās komandas. Redz tikai tu un izvēlētie komandas biedri vai lomas.",
+      "Paslēp sarakstu no pārējās komandas. Redz tikai tu un izvēlētie komandas lietotāji vai lomas.",
     "landing.features.templates.title": "Šabloni",
     "landing.features.templates.description":
       "Saglabā atkārtojamu darbu kā šablonu un izveido jaunu mapi ar gatavu struktūru.",
@@ -104,6 +105,9 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "landing.features.gmail.title": "Gmail spraudnis",
     "landing.features.gmail.description":
       "No Gmail pievieno e-pastu un pielikumus pie uzdevuma, lai sarakste paliktu pie darba.",
+    "landing.features.send_file.title": "Pārsūtīt failu",
+    "landing.features.send_file.description":
+      "No apakšuzdevuma faila izvēlnes nosūti dokumentu e-pastā, lai saņēmējs iegūst pielikumu bez koplietotas mapes.",
     "landing.audiences.title": "Veidots komandām, kurām jāpaveic darbs",
     "landing.audiences.subtitle":
       "Vienkārša darbvieta mazām komandām, aģentūrām un uzņēmumiem, kas aug.",
@@ -128,7 +132,7 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
       "Reģistrējies ar e-pastu. Nekādas instalēšanas, nekādu garu iestatījumu pirms pirmā saraksta.",
     "landing.how.step2.title": "Saliec komandu un darbu",
     "landing.how.step2.description":
-      "Uzaicini komandas biedrus, izveido sarakstus projektiem vai klientiem un sadali uzdevumus ar termiņiem.",
+      "Uzaicini komandas lietotājus, izveido sarakstus projektiem vai klientiem un sadali uzdevumus ar termiņiem.",
     "landing.how.step3.title": "Dari un redzi, kas gatavs",
     "landing.how.step3.description":
       "Katru rītu atver Sākumu. Tur ir dienas bilde: kas vēl jādara, kas ir procesā un kas jau aizvērts.",
@@ -152,10 +156,13 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
       "Jā. Izveido sarakstus projektiem vai klientiem, sadali tos uzdevumos, piešķir atbildīgos un seko statusam no darāmā līdz gatavam.",
     "landing.faq.invite.question": "Vai varu uzaicināt komandu?",
     "landing.faq.invite.answer":
-      "Jā. Uzaicini komandas biedrus, piešķir uzdevumus un redzi, kas ir tiešsaistē. Visi strādā vienā darbvietā.",
+      "Jā. Uzaicini komandas lietotājus, piešķir uzdevumus un redzi, kas ir tiešsaistē. Visi strādā vienā darbvietā.",
     "landing.faq.files.question": "Vai varu pievienot failus uzdevumiem?",
     "landing.faq.files.answer":
       "Jā. Dokumentus pievieno tieši pie uzdevuma, lai faili paliek pie darba, nevis e-pastā vai atsevišķā mapē.",
+    "landing.faq.send_file.question": "Vai varu nosūtīt failu e-pastā?",
+    "landing.faq.send_file.answer":
+      "Jā. Apakšuzdevuma faila izvēlnē ir Pārsūtīt failu — dokuments tiek nosūtīts e-pastā kā pielikums.",
     "landing.faq.drive.question": "Vai {name} savienojas ar Google Drive?",
     "landing.faq.drive.answer":
       "Jā. Failus var glabāt Google Drive un atvērt no saraksta, neizejot no {name}.",
@@ -165,6 +172,22 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "landing.faq.free.question": "Vai varu sākt bez maksas?",
     "landing.faq.free.answer":
       "Jā. Izveido kontu un sāc darbu bez instalēšanas. Nav nedēļas ilgas ieviešanas.",
+    "landing.faq.free.answer_plans":
+      "Jā. Bezmaksas plāns ļauj sākt bez kartes. Salīdzinājumu ar maksas plānu skatiet sadaļā Cenas.",
+    "landing.faq.plans.question": "Kāda ir atšķirība starp plāniem?",
+    "landing.faq.plans.answer":
+      "Bezmaksas plānam ir ierobežots lietotāju skaits un funkcijas. Maksas plāns ir cena par lietotāju un iekļauj pieejamos moduļus. Salīdzinājumu skatiet sadaļā Cenas.",
+    "landing.pricing.title": "Plāni un cenas",
+    "landing.pricing.subtitle":
+      "Bezmaksas plānam ir ierobežojumi. Maksas plāns ir cena par lietotāju, bez limita.",
+    "landing.pricing.members_up_to": "{count}",
+    "landing.pricing.members_unlimited": "Bez limita",
+    "landing.pricing.compare.title": "Salīdzinājums",
+    "landing.pricing.compare.members": "Komandas lietotāji",
+    "landing.pricing.included": "Iekļauts",
+    "landing.pricing.not_included": "Nav iekļauts",
+    "landing.pricing.recommended": "Ieteicamais",
+    "landing.pricing.trial": "{days} dienu izmēģinājums",
     "landing.cta.title": "Sāc vadīt komandas darbu jau šodien",
     "landing.cta.subtitle":
       "Reģistrējies, uzaicini komandu un izveido pirmo sarakstu. Bez instalēšanas un bez nedēļas ilgas ieviešanas.",
@@ -260,7 +283,7 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "legal.privacy.data.p1":
       "Konta dati: vārds, e-pasta adrese, parole (glabājam tikai jaucējkodu), valodas izvēle un profila iestatījumi.",
     "legal.privacy.data.p2":
-      "Komandas un darba dati: komandas nosaukums, biedru vārdi, e-pasti un lomas, saraksti, uzdevumi, apakšuzdevumi, statusi, termiņi, piezīmes, pielikumu nosaukumi un saturs, ko tu vai tava komanda ievada sistēmā.",
+      "Komandas un darba dati: komandas nosaukums, lietotāju vārdi, e-pasti un lomas, saraksti, uzdevumi, apakšuzdevumi, statusi, termiņi, piezīmes, pielikumu nosaukumi un saturs, ko tu vai tava komanda ievada sistēmā.",
     "legal.privacy.data.p3":
       "Tehniskie dati: pieslēgšanās laiks, IP adrese, pārlūka un ierīces informācija, kā arī žurnāli, kas nepieciešami drošībai un kļūdu novēršanai.",
     "legal.privacy.data.p4":
@@ -655,7 +678,8 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "site_payment_plans.list.title": "Plāni",
     "site_payment_plans.list.empty": "Vēl nav izveidots neviens maksas plāns.",
     "site_payment_plans.list.prices": "Cenas",
-    "site_payment_plans.list.members": "Biedri",
+    "site_payment_plans.list.members": "Lietotāji",
+    "site_payment_plans.list.per_user": "par lietotāju",
     "site_payment_plans.list.early_bird_prices": "Early Bird",
     "site_payment_plans.actions.add": "Pievienot plānu",
     "site_payment_plans.form.create_title": "Jauns maksas plāns",
@@ -670,21 +694,23 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "site_payment_plans.list.free": "Bezmaksas",
     "site_payment_plans.form.modules": "Moduļi šajā plānā",
     "site_payment_plans.form.modules_empty": "Nav globāli ieslēgtu frontend moduļu.",
-    "site_payment_plans.form.max_members": "Maks. biedru skaits",
+    "site_payment_plans.form.max_members": "Maks. lietotāju skaits",
     "site_payment_plans.form.max_members_hint":
-      "Cik komandas biedru drīkst būt šajā plānā.",
-    "site_payment_plans.form.prices": "Cenas (EUR)",
+      "Cik komandas lietotāju drīkst būt šajā bezmaksas plānā.",
+    "site_payment_plans.form.prices": "Cenas par vienu lietotāju (EUR)",
     "site_payment_plans.form.prices_hint":
-      "Aizpildi tikai piedāvātos periodus. Tukšs periods landing lapā netiek rādīts. Decimālatdalītājs ir punkts, piemēram 29.00.",
+      "Cena ir par vienu lietotāju. Aizpildi tikai piedāvātos periodus. Tukšs periods landing lapā netiek rādīts. Decimālatdalītājs ir punkts, piemēram 9.00.",
     "site_payment_plans.form.price_month": "Mēnesis",
     "site_payment_plans.form.price_quarter": "Ceturksnis",
     "site_payment_plans.form.price_year": "Gads",
-    "site_payment_plans.form.early_bird_prices": "Early Bird cenas (EUR)",
+    "site_payment_plans.form.early_bird_prices":
+      "Early Bird cenas par vienu lietotāju (EUR)",
     "site_payment_plans.form.early_bird_prices_hint":
-      "Šīs cenas attiecas uz komandām ar Early Bird statusu. Tukšus periodus vari atstāt tukšus.",
+      "Šīs cenas attiecas uz komandām ar Early Bird statusu un arī ir par vienu lietotāju. Tukšus periodus vari atstāt tukšus.",
     "site_payment_plans.period.month_short": "/ mēn.",
     "site_payment_plans.period.quarter_short": "/ cet.",
     "site_payment_plans.period.year_short": "/ gadā",
+    "site_payment_plans.period.per_user": "/ lietotājs",
     "site_payment_plans.feedback.created": "Maksas plāns izveidots.",
     "site_payment_plans.feedback.saved": "Maksas plāns saglabāts.",
     "site_payment_plans.feedback.deleted": "Maksas plāns dzēsts.",
@@ -741,14 +767,15 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "admin.users.last_seen_never": "Vēl nav ienācis",
     "admin.users.no_team": "Nav komandā",
     "admin.teams.empty": "Nav nevienas komandas.",
-    "admin.teams.members": "Biedri",
+    "admin.teams.members": "Lietotāji",
     "admin.teams.plan.column": "Plāns",
     "admin.teams.plan.action": "Maksas plāns",
     "admin.teams.plan.title": "Komandas maksas plāns",
     "admin.teams.plan.team_label": "Komanda",
     "admin.teams.plan.field_plan": "Plāns",
     "admin.teams.plan.plan_none": "Bez plāna",
-    "admin.teams.plan.plan_summary": "Līdz {maxMembers} biedriem · {moduleCount} moduļi",
+    "admin.teams.plan.plan_summary": "Līdz {maxMembers} lietotājiem · {moduleCount} moduļi",
+    "admin.teams.plan.plan_summary_paid": "{moduleCount} moduļi · cena par lietotāju",
     "admin.teams.plan.field_until": "Derīgs līdz",
     "admin.teams.plan.until_hint": "Tukšs = bez beigu datuma. Formāts: YYYY-MM-DD.",
     "admin.teams.plan.free_hint":
@@ -759,11 +786,11 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "admin.teams.plan.saved": "Komandas plāns saglabāts.",
     "admin.teams.plan.status_required":
       "Norādi vismaz vienu statusu: samaksāts vai izmēģinājums.",
-    "admin.teams.members.description": "Komandas biedru saraksts.",
-    "admin.teams.members.loading": "Ielādē biedrus…",
-    "admin.teams.members.count": "{count} biedri",
-    "admin.teams.members.empty": "Nav biedru.",
-    "admin.teams.members.load_failed": "Neizdevās ielādēt biedrus.",
+    "admin.teams.members.description": "Komandas lietotāju saraksts.",
+    "admin.teams.members.loading": "Ielādē lietotājus…",
+    "admin.teams.members.count": "{count} lietotāji",
+    "admin.teams.members.empty": "Nav lietotāju.",
+    "admin.teams.members.load_failed": "Neizdevās ielādēt lietotājus.",
     "admin.teams.form.description": "Norādi komandas nosaukumu un izskatu.",
     "admin.teams.delete.confirm_prefix": "Vai tiešām dzēst komandu",
     "admin.teams.delete.confirm_suffix":
@@ -918,10 +945,10 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "nav.drag": "Pārvietot",
     "breadcrumb.label": "Ceļš",
     "team.page.subtitle":
-      "Visi komandas biedri. Uzaicini jaunu biedru ar pluszīmi.",
-    "team.invite.title": "Uzaicināt biedru",
+      "Visi komandas lietotāji. Uzaicini jaunu lietotāju ar pluszīmi.",
+    "team.invite.title": "Uzaicināt lietotāju",
     "team.invite.description":
-      "Ieraksti e-pastu un izvēlies lomu. Biedrs aizpildīs profilu pie pirmās ielogošanās.",
+      "Ieraksti e-pastu un izvēlies lomu. Lietotājs aizpildīs profilu pie pirmās ielogošanās.",
     "team.invite.resend_required":
       "Jauns e-pasts prasa ieslēgtu Resend integrāciju. Esošs lietotājs saņems paziņojumu lietotnē.",
     "team.invite.button": "Uzaicināt",
@@ -939,9 +966,9 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "team.invited_no_email":
       "Uzaicinājums saglabāts. E-pasts netika nosūtīts — nosūti linku manuāli.",
     "team.member.remove": "Noņemt no komandas",
-    "team.member.remove_confirm_title": "Noņemt biedru?",
+    "team.member.remove_confirm_title": "Noņemt lietotāju?",
     "team.member.remove_confirm_description": "{name} zaudēs piekļuvi komandai.",
-    "team.member.removed": "Biedrs noņemts no komandas.",
+    "team.member.removed": "Lietotājs noņemts no komandas.",
     "team.member.leave": "Pamest komandu",
     "team.member.leave_title": "Pamest komandu",
     "team.member.leave_description": "Tu zaudēsi piekļuvi komandai {team}.",
@@ -961,7 +988,7 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "team.fields.email_placeholder": "vards@uznemums.lv",
     "team.fields.role": "Loma",
     "team.fields.role_placeholder": "Piemēram, izstrādātājs",
-    "team.empty": "Komandā vēl nav biedru.",
+    "team.empty": "Komandā vēl nav lietotāju.",
     "team.online.now": "Tiešsaistē",
     "team.online.last": "Pēdējoreiz tiešsaistē",
     "team.online.minutes": "{count} min",
@@ -970,11 +997,11 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "team.online.months": "{count} m",
     "team.invited": "Uzaicinājums nosūtīts.",
     "team.roles.title": "Komandas lomas",
-    "team.roles.menu_description": "Sadali biedrus pa lomām",
+    "team.roles.menu_description": "Sadali lietotājus pa lomām",
     "team.roles.access_tooltip": "Pieejas pašai lomai",
-    "team.roles.description": "Izveido lomas un sadali komandas biedrus pa tām.",
+    "team.roles.description": "Izveido lomas un sadali komandas lietotājus pa tām.",
     "team.roles.list": "Lomas",
-    "team.roles.member": "Biedrs",
+    "team.roles.member": "Lietotājs",
     "team.roles.new_placeholder": "Jaunas lomas nosaukums",
     "team.roles.empty": "Nav nevienas lomas.",
     "team.roles.owner_only": "Lomas var mainīt tikai komandas īpašnieks.",
@@ -984,7 +1011,7 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "team.roles.feedback.deleted": "Loma dzēsta.",
     "team.roles.delete.title": "Dzēst lomu?",
     "team.roles.delete.description":
-      "Loma “{name}” tiks dzēsta. Biedri tiks pārcelti uz lomu Biedrs.",
+      "Loma “{name}” tiks dzēsta. Lietotāji tiks pārcelti uz lomu Lietotājs.",
     "team.roles.delete.system_disabled": "Sistēmas lomu nevar dzēst",
     "team.access.title": "Komandas lomu pieejas",
     "team.access.menu_description": "Norādi katrai lomai savu pieeju",
@@ -1002,8 +1029,8 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "team.access.actions.tasks_manage": "Pārvaldīt uzdevumus",
     "team.access.actions.files_upload": "Augšupielādēt failus",
     "team.access.actions.templates_manage": "Pārvaldīt šablonus",
-    "team.access.actions.team_invite": "Uzaicināt biedrus",
-    "team.access.actions.team_members_remove": "Noņemt biedrus",
+    "team.access.actions.team_invite": "Uzaicināt lietotājus",
+    "team.access.actions.team_members_remove": "Noņemt lietotājus",
     "team.access.actions.team_roles": "Pārvaldīt komandas lomas",
     "team.access.actions.team_permissions": "Pārvaldīt lomu pieejas",
     "team.access.actions.team_settings_edit": "Labot komandas datus",
@@ -1016,10 +1043,10 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "team.access.feedback.saved": "Lomas pieejas saglabātas.",
     "team.access.denied": "Tev nav pieejas šai sadaļai.",
     "team.back": "Atpakaļ uz komandu",
-    "team.detail.loading": "Ielādē biedru",
-    "team.detail.missing": "Biedrs nav atrasts",
-    "team.detail.missing_description": "Šis komandas biedrs vairs nav pieejams.",
-    "team.detail.placeholder": "Biedra profilu šeit pielāgosi nākamajā solī.",
+    "team.detail.loading": "Ielādē lietotāju",
+    "team.detail.missing": "Lietotājs nav atrasts",
+    "team.detail.missing_description": "Šis komandas lietotājs vairs nav pieejams.",
+    "team.detail.placeholder": "Lietotāja profilu šeit pielāgosi nākamajā solī.",
     "lists.page.subtitle":
       "Saraksti, piemēram Projekti un Klienti. Zem tiem ir uzdevumi.",
     "lists.overview.subtitle":
@@ -1041,7 +1068,7 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
       "Šos statusus definē sistēma. Tos var izmantot visos sarakstos.",
     "lists.statuses.custom": "Saraksta statusi",
     "lists.statuses.custom.hint":
-      "Tikai šajā sarakstā. Redzami komandas biedriem.",
+      "Tikai šajā sarakstā. Redzami komandas lietotājiem.",
     "lists.statuses.custom.empty": "Vēl nav saraksta statusu.",
     "lists.statuses.form.description":
       "Norādi statusa nosaukumu, krāsu un grupu.",
@@ -1094,7 +1121,7 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "lists.automations.subtasks_status.description":
       "Kad visi apakšuzdevumi ir slēgti, automātiski maina vecāka uzdevuma statusu.",
     "lists.automations.needs_statuses_and_members":
-      "Sarakstam jābūt statusiem un komandas biedriem.",
+      "Sarakstam jābūt statusiem un komandas lietotājiem.",
     "lists.automations.needs_statuses":
       "Sarakstam jābūt vismaz vienam statusam.",
     "dashboard.subtitle": "Tavi uzdevumi un darbs pa sarakstiem.",
@@ -1158,18 +1185,18 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "lists.empty": "Vēl nav sarakstu.",
     "lists.created": "Saraksts pievienots.",
     "lists.private.label": "Privāts saraksts",
-    "lists.private.description": "Redzams tikai tev un izvēlētajiem biedriem vai lomām.",
+    "lists.private.description": "Redzams tikai tev un izvēlētajiem lietotājiem vai lomām.",
     "lists.private.viewers": "Kas var skatīt",
     "lists.private.creator_included": "Tu (izveidotājs) vienmēr redzi šo sarakstu.",
-    "lists.private.roles_hint": "Visi biedri ar izvēlēto lomu var skatīt sarakstu.",
-    "lists.private.members": "Biedri",
-    "lists.private.no_members": "Komandā nav citu pieslēgtu biedru.",
+    "lists.private.roles_hint": "Visi lietotāji ar izvēlēto lomu var skatīt sarakstu.",
+    "lists.private.members": "Lietotāji",
+    "lists.private.no_members": "Komandā nav citu pieslēgtu lietotāju.",
     "lists.access.default": "Noklusējuma pieeja",
     "lists.access.customize_roles": "Pielāgot katrai lomai",
     "lists.access.customize_roles.hint":
       "Ieslēdz, lai katrai lomai norādītu citu pieeju. Noklusējuma pieeja tad vairs nav globāla.",
     "lists.access.roles_hint":
-      "Katrai lomai norādi, ko tās biedri drīkst darīt šajā sarakstā.",
+      "Katrai lomai norādi, ko tās lietotāji drīkst darīt šajā sarakstā.",
     "lists.access.none": "Nav pieejas",
     "lists.access.full_edit": "Pilna labošana",
     "lists.access.full_edit.hint":
@@ -1523,7 +1550,7 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "todo.empty.in_progress": "Pārvelc darbu šeit, kad tas ir sākts.",
     "todo.empty.done": "Pabeigtie darbi parādīsies šeit.",
     "todo.add.title": "Jauns uzdevums",
-    "todo.add.description": "Ieraksti nosaukumu un piešķir darbu komandas biedram.",
+    "todo.add.description": "Ieraksti nosaukumu un piešķir darbu komandas lietotājam.",
     "todo.edit.title": "Labot uzdevumu",
     "todo.edit.description": "Atjauno uzdevuma datus.",
     "todo.fields.title": "Nosaukums",
@@ -1759,6 +1786,7 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "errors.files_forward_too_large": "Fails ir pārāk liels, lai nosūtītu e-pastā (maks. 25 MB).",
     "errors.files_forward_subject_required": "Ievadi e-pasta tēmu.",
     "errors.files_forward_reply_to_missing": "Tavam kontam nav derīgas e-pasta adreses atbildei (Reply-To).",
+    "errors.files_forward_module_disabled": "Failu pārsūtīšana e-pastā nav ieslēgta.",
     "errors.user_exists": "Lietotājs ar šo e-pastu jau eksistē.",
     "errors.user_create_failed": "Neizdevās izveidot lietotāju.",
     "errors.user_profile_failed": "Neizdevās saglabāt lietotāja profilu.",
@@ -1949,13 +1977,13 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "errors.auth_microsoft_disabled":
       "Microsoft pieslēgšanās nav ieslēgta. Ieslēdz Microsoft OAuth Administrācija → Integrācijas.",
     "errors.auth_microsoft_failed": "Neizdevās pieslēgties ar Microsoft.",
-    "errors.team_invite_forbidden": "Nav tiesību uzaicināt biedrus.",
-    "errors.team_invite_already_member": "Šis e-pasts jau ir komandas biedrs.",
+    "errors.team_invite_forbidden": "Nav tiesību uzaicināt lietotājus.",
+    "errors.team_invite_already_member": "Šis e-pasts jau ir komandas lietotājs.",
     "errors.team_invite_already_pending": "Uzaicinājums šim e-pastam jau gaida apstiprinājumu.",
     "errors.team_invite_failed": "Neizdevās nosūtīt uzaicinājumu.",
     "errors.team_invite_email_failed": "Neizdevās nosūtīt uzaicinājuma e-pastu.",
     "errors.team_invite_email_not_configured":
-      "Jaunu komandas biedru ar e-pastu var uzaicināt tikai tad, ja Resend integrācija ir ieslēgta.",
+      "Jaunu komandas lietotāju ar e-pastu var uzaicināt tikai tad, ja Resend integrācija ir ieslēgta.",
     "errors.clipboard_failed": "Neizdevās nokopēt linku.",
     "errors.calendar_load_failed": "Neizdevās ielādēt kalendāra integrāciju.",
     "errors.calendar_save_failed": "Neizdevās saglabāt kalendāra integrāciju.",
@@ -1968,8 +1996,8 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "errors.team_invite_accept_failed": "Neizdevās apstiprināt uzaicinājumu.",
     "errors.team_invite_reject_failed": "Neizdevās noraidīt uzaicinājumu.",
     "errors.team_invite_not_pending": "Uzaicinājums vairs nav gaidīšanas stāvoklī.",
-    "errors.team_member_remove_failed": "Neizdevās noņemt biedru.",
-    "errors.team_member_remove_forbidden": "Nav tiesību noņemt šo biedru.",
+    "errors.team_member_remove_failed": "Neizdevās noņemt lietotāju.",
+    "errors.team_member_remove_forbidden": "Nav tiesību noņemt šo lietotāju.",
     "errors.team_member_leave_owner":
       "Komandas īpašnieks nevar pamest komandu. Vispirms nodod īpašumtiesības.",
     "unsaved_changes.title": "Doties prom nesaglabājot?",
@@ -2056,7 +2084,7 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "errors.payment_plan_id_required": "Plāns nav norādīts.",
     "errors.payment_plan_modules_save_failed": "Neizdevās saglabāt plāna moduļus.",
     "errors.payment_plan_max_members_invalid":
-      "Norādi derīgu biedru skaitu (no 1 līdz 10 000).",
+      "Norādi derīgu lietotāju skaitu (no 1 līdz 10 000).",
     "errors.team_payment_plan_save_failed": "Neizdevās saglabāt komandas plānu.",
     "errors.early_bird_limit_reached": "Early Bird slotu limits ir sasniegts.",
     "errors.payment_plans_enable_save_failed":
@@ -2080,6 +2108,7 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "app.subtitle": "Team to-do list",
     "site.back_home": "Back to home",
     "site.nav.features": "Features",
+    "site.nav.pricing": "Pricing",
     "site.nav.faq": "FAQ",
     "site.footer.rights": "© {year} {SYSTEM_NAME}",
     "landing.seo.title": "{name} — Simple Team Task Management Software",
@@ -2138,15 +2167,15 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
       "Projects, clients and folders in one tree. Every task has a status, due date and owner, not another spreadsheet.",
     "landing.features.team.title": "The whole team sees the same picture",
     "landing.features.team.description":
-      "Invite teammates, assign work and see who is online. No more hunting chat for a file or a promise.",
+      "Invite team users, assign work and see who is online. No more hunting chat for a file or a promise.",
     "landing.features.team.description_no_files":
-      "Invite teammates, assign work and see who is online. No more hunting chat for a promise.",
+      "Invite team users, assign work and see who is online. No more hunting chat for a promise.",
     "landing.features.dashboard.title": "Home is your daily board",
     "landing.features.dashboard.description":
       "Open {name} and see to do, in progress and done. Drag cards and keep focus on what must ship today.",
     "landing.features.private_list.title": "Private lists",
     "landing.features.private_list.description":
-      "Hide a list from the rest of the team. Only you and selected members or roles can see it.",
+      "Hide a list from the rest of the team. Only you and selected users or roles can see it.",
     "landing.features.templates.title": "Templates",
     "landing.features.templates.description":
       "Save repeating work as a template and create a new folder with the structure ready.",
@@ -2175,6 +2204,9 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "landing.features.gmail.title": "Gmail plugin",
     "landing.features.gmail.description":
       "Add an email and its attachments from Gmail to a task, so the thread stays with the work.",
+    "landing.features.send_file.title": "Forward files",
+    "landing.features.send_file.description":
+      "Send a subtask file by email from the file menu, so the recipient gets the attachment without a shared folder.",
     "landing.audiences.title": "Built for teams that need to get work done",
     "landing.audiences.subtitle":
       "A simple workspace for small teams, agencies and businesses that are growing.",
@@ -2198,7 +2230,7 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
       "Sign up with email. No install, no long setup before the first list.",
     "landing.how.step2.title": "Set up the team and the work",
     "landing.how.step2.description":
-      "Invite teammates, create lists for projects or clients, and split tasks with due dates.",
+      "Invite team users, create lists for projects or clients, and split tasks with due dates.",
     "landing.how.step3.title": "Do the work and see what is done",
     "landing.how.step3.description":
       "Open Home every morning. That is the day's picture: still to do, in progress and already closed.",
@@ -2222,10 +2254,13 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
       "Yes. Create lists for projects or clients, break them into tasks, assign owners and follow status from to do to done.",
     "landing.faq.invite.question": "Can I invite my team?",
     "landing.faq.invite.answer":
-      "Yes. Invite teammates, assign tasks and see who is online. Everyone works in the same workspace.",
+      "Yes. Invite team users, assign tasks and see who is online. Everyone works in the same workspace.",
     "landing.faq.files.question": "Can I attach files to tasks?",
     "landing.faq.files.answer":
       "Yes. Add documents on the task itself, so files stay with the work instead of in email or a separate folder.",
+    "landing.faq.send_file.question": "Can I send a file by email?",
+    "landing.faq.send_file.answer":
+      "Yes. The subtask file menu has Forward file — the document is sent by email as an attachment.",
     "landing.faq.drive.question": "Does {name} connect to Google Drive?",
     "landing.faq.drive.answer":
       "Yes. You can store files in Google Drive and open them from the list without leaving {name}.",
@@ -2235,6 +2270,22 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "landing.faq.free.question": "Can I start for free?",
     "landing.faq.free.answer":
       "Yes. Create an account and start working. No install and no week-long rollout.",
+    "landing.faq.free.answer_plans":
+      "Yes. The free plan lets you start without a card. Compare it with the paid plan in Pricing.",
+    "landing.faq.plans.question": "What's the difference between the plans?",
+    "landing.faq.plans.answer":
+      "The free plan has a user cap and fewer features. The paid plan is priced per user and includes the available modules. See the comparison in Pricing.",
+    "landing.pricing.title": "Plans and pricing",
+    "landing.pricing.subtitle":
+      "The free plan has limits. The paid plan is priced per user, with no user cap.",
+    "landing.pricing.members_up_to": "{count}",
+    "landing.pricing.members_unlimited": "No limit",
+    "landing.pricing.compare.title": "Compare plans",
+    "landing.pricing.compare.members": "Team users",
+    "landing.pricing.included": "Included",
+    "landing.pricing.not_included": "Not included",
+    "landing.pricing.recommended": "Recommended",
+    "landing.pricing.trial": "{days}-day trial",
     "landing.cta.title": "Start managing your team's work today",
     "landing.cta.subtitle":
       "Sign up, invite the team and create the first list. No install and no week-long rollout.",
@@ -2329,7 +2380,7 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "legal.privacy.data.p1":
       "Account data: name, email address, password (stored only as a hash), language choice and profile settings.",
     "legal.privacy.data.p2":
-      "Team and work data: team name, member names, emails and roles, lists, tasks, subtasks, statuses, due dates, notes, attachment names and content that you or your team enter in the system.",
+      "Team and work data: team name, user names, emails and roles, lists, tasks, subtasks, statuses, due dates, notes, attachment names and content that you or your team enter in the system.",
     "legal.privacy.data.p3":
       "Technical data: sign-in time, IP address, browser and device information, and logs needed for security and debugging.",
     "legal.privacy.data.p4":
@@ -2720,7 +2771,8 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "site_payment_plans.list.title": "Plans",
     "site_payment_plans.list.empty": "No payment plans yet.",
     "site_payment_plans.list.prices": "Prices",
-    "site_payment_plans.list.members": "Members",
+    "site_payment_plans.list.members": "Users",
+    "site_payment_plans.list.per_user": "per user",
     "site_payment_plans.list.early_bird_prices": "Early Bird",
     "site_payment_plans.actions.add": "Add plan",
     "site_payment_plans.form.create_title": "New payment plan",
@@ -2735,21 +2787,22 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "site_payment_plans.list.free": "Free",
     "site_payment_plans.form.modules": "Modules in this plan",
     "site_payment_plans.form.modules_empty": "No globally enabled frontend modules.",
-    "site_payment_plans.form.max_members": "Max team members",
+    "site_payment_plans.form.max_members": "Max team users",
     "site_payment_plans.form.max_members_hint":
-      "How many team members are allowed on this plan.",
-    "site_payment_plans.form.prices": "Prices (EUR)",
+      "How many team users are allowed on this free plan.",
+    "site_payment_plans.form.prices": "Prices per user (EUR)",
     "site_payment_plans.form.prices_hint":
-      "Fill only the periods you offer. Empty periods are hidden on the landing page. Use a dot as decimal separator, e.g. 29.00.",
+      "The price is per user. Fill only the periods you offer. Empty periods are hidden on the landing page. Use a dot as decimal separator, e.g. 9.00.",
     "site_payment_plans.form.price_month": "Month",
     "site_payment_plans.form.price_quarter": "Quarter",
     "site_payment_plans.form.price_year": "Year",
-    "site_payment_plans.form.early_bird_prices": "Early Bird prices (EUR)",
+    "site_payment_plans.form.early_bird_prices": "Early Bird prices per user (EUR)",
     "site_payment_plans.form.early_bird_prices_hint":
-      "These prices apply to teams with Early Bird status. You can leave unused periods empty.",
+      "These prices apply to teams with Early Bird status and are also per user. You can leave unused periods empty.",
     "site_payment_plans.period.month_short": "/ mo",
     "site_payment_plans.period.quarter_short": "/ qtr",
     "site_payment_plans.period.year_short": "/ yr",
+    "site_payment_plans.period.per_user": "/ user",
     "site_payment_plans.feedback.created": "Payment plan created.",
     "site_payment_plans.feedback.saved": "Payment plan saved.",
     "site_payment_plans.feedback.deleted": "Payment plan deleted.",
@@ -2805,14 +2858,15 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "admin.users.last_seen_never": "Has not signed in yet",
     "admin.users.no_team": "Not in a team",
     "admin.teams.empty": "No teams yet.",
-    "admin.teams.members": "Members",
+    "admin.teams.members": "Users",
     "admin.teams.plan.column": "Plan",
     "admin.teams.plan.action": "Payment plan",
     "admin.teams.plan.title": "Team payment plan",
     "admin.teams.plan.team_label": "Team",
     "admin.teams.plan.field_plan": "Plan",
     "admin.teams.plan.plan_none": "No plan",
-    "admin.teams.plan.plan_summary": "Up to {maxMembers} members · {moduleCount} modules",
+    "admin.teams.plan.plan_summary": "Up to {maxMembers} users · {moduleCount} modules",
+    "admin.teams.plan.plan_summary_paid": "{moduleCount} modules · priced per user",
     "admin.teams.plan.field_until": "Valid until",
     "admin.teams.plan.until_hint": "Leave empty for no end date. Format: YYYY-MM-DD.",
     "admin.teams.plan.free_hint":
@@ -2823,11 +2877,11 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "admin.teams.plan.saved": "Team plan saved.",
     "admin.teams.plan.status_required":
       "Select at least one status: paid or trial.",
-    "admin.teams.members.description": "Team member list.",
-    "admin.teams.members.loading": "Loading members…",
-    "admin.teams.members.count": "{count} members",
-    "admin.teams.members.empty": "No members.",
-    "admin.teams.members.load_failed": "Failed to load members.",
+    "admin.teams.members.description": "Team user list.",
+    "admin.teams.members.loading": "Loading users…",
+    "admin.teams.members.count": "{count} users",
+    "admin.teams.members.empty": "No users.",
+    "admin.teams.members.load_failed": "Failed to load users.",
     "admin.teams.form.description": "Set the team name and appearance.",
     "admin.teams.delete.confirm_prefix": "Delete team",
     "admin.teams.delete.confirm_suffix":
@@ -2980,8 +3034,8 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "nav.more": "More",
     "nav.drag": "Move",
     "breadcrumb.label": "Path",
-    "team.page.subtitle": "All teammates. Invite a new member with the plus icon.",
-    "team.invite.title": "Invite teammate",
+    "team.page.subtitle": "All team users. Invite a new user with the plus icon.",
+    "team.invite.title": "Invite team user",
     "team.invite.description":
       "Enter an email and choose a role. They will complete their profile on first sign-in.",
     "team.invite.resend_required":
@@ -3001,9 +3055,9 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "team.invited_no_email":
       "Invitation saved. Email was not sent — share the link manually.",
     "team.member.remove": "Remove from team",
-    "team.member.remove_confirm_title": "Remove member?",
+    "team.member.remove_confirm_title": "Remove user?",
     "team.member.remove_confirm_description": "{name} will lose access to the team.",
-    "team.member.removed": "Member removed from the team.",
+    "team.member.removed": "User removed from the team.",
     "team.member.leave": "Leave team",
     "team.member.leave_title": "Leave team",
     "team.member.leave_description": "You will lose access to {team}.",
@@ -3023,7 +3077,7 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "team.fields.email_placeholder": "name@company.com",
     "team.fields.role": "Role",
     "team.fields.role_placeholder": "For example, developer",
-    "team.empty": "No team members yet.",
+    "team.empty": "No team users yet.",
     "team.online.now": "Online",
     "team.online.last": "Last online",
     "team.online.minutes": "{count} min",
@@ -3032,11 +3086,11 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "team.online.months": "{count} m",
     "team.invited": "Invitation sent.",
     "team.roles.title": "Team roles",
-    "team.roles.menu_description": "Assign members to roles",
+    "team.roles.menu_description": "Assign users to roles",
     "team.roles.access_tooltip": "Access for this role",
-    "team.roles.description": "Create roles and assign team members to them.",
+    "team.roles.description": "Create roles and assign team users to them.",
     "team.roles.list": "Roles",
-    "team.roles.member": "Member",
+    "team.roles.member": "User",
     "team.roles.new_placeholder": "New role name",
     "team.roles.empty": "No roles yet.",
     "team.roles.owner_only": "Only the team owner can change roles.",
@@ -3046,7 +3100,7 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "team.roles.feedback.deleted": "Role deleted.",
     "team.roles.delete.title": "Delete role?",
     "team.roles.delete.description":
-      "Role “{name}” will be deleted. Members will be moved to Member.",
+      "Role “{name}” will be deleted. Users will be moved to User.",
     "team.roles.delete.system_disabled": "System roles cannot be deleted",
     "team.access.title": "Team role access",
     "team.access.menu_description": "Set access for each role",
@@ -3064,8 +3118,8 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "team.access.actions.tasks_manage": "Manage tasks",
     "team.access.actions.files_upload": "Upload files",
     "team.access.actions.templates_manage": "Manage templates",
-    "team.access.actions.team_invite": "Invite members",
-    "team.access.actions.team_members_remove": "Remove members",
+    "team.access.actions.team_invite": "Invite users",
+    "team.access.actions.team_members_remove": "Remove users",
     "team.access.actions.team_roles": "Manage team roles",
     "team.access.actions.team_permissions": "Manage role access",
     "team.access.actions.team_settings_edit": "Edit team details",
@@ -3077,11 +3131,11 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "team.access.feedback.saved": "Role access saved.",
     "team.access.denied": "You do not have access to this section.",
     "team.back": "Back to team",
-    "team.detail.loading": "Loading teammate",
-    "team.detail.missing": "Teammate not found",
-    "team.detail.missing_description": "This teammate is no longer available.",
+    "team.detail.loading": "Loading team user",
+    "team.detail.missing": "Team user not found",
+    "team.detail.missing_description": "This team user is no longer available.",
     "team.detail.placeholder":
-      "You can customize the teammate profile in the next step.",
+      "You can customize the team user profile in the next step.",
     "lists.page.subtitle":
       "Lists such as Projects and Clients. Tasks live under each list.",
     "lists.overview.subtitle": "A summary of all tasks and subtasks.",
@@ -3102,7 +3156,7 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
       "These statuses are defined by the system. They can be used in every list.",
     "lists.statuses.custom": "List statuses",
     "lists.statuses.custom.hint":
-      "Only in this list. Visible to team members.",
+      "Only in this list. Visible to team users.",
     "lists.statuses.custom.empty": "No list statuses yet.",
     "lists.statuses.form.description":
       "Enter the status name, color, and group.",
@@ -3155,7 +3209,7 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "lists.automations.subtasks_status.description":
       "When all subtasks are closed, automatically change the parent task's status.",
     "lists.automations.needs_statuses_and_members":
-      "The list needs statuses and team members configured.",
+      "The list needs statuses and team users configured.",
     "lists.automations.needs_statuses":
       "The list needs at least one status configured.",
     "dashboard.subtitle": "Your tasks and work grouped by lists.",
@@ -3219,12 +3273,12 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "lists.empty": "No lists yet.",
     "lists.created": "List added.",
     "lists.private.label": "Private list",
-    "lists.private.description": "Visible only to you and selected members or roles.",
+    "lists.private.description": "Visible only to you and selected users or roles.",
     "lists.private.viewers": "Who can view",
     "lists.private.creator_included": "You (creator) always have access.",
     "lists.private.roles_hint": "Everyone with a selected role can view this list.",
-    "lists.private.members": "Members",
-    "lists.private.no_members": "No other connected team members.",
+    "lists.private.members": "Users",
+    "lists.private.no_members": "No other connected team users.",
     "lists.access.default": "Default permission",
     "lists.access.customize_roles": "Customize by role",
     "lists.access.customize_roles.hint":
@@ -3281,7 +3335,7 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "google_drive.not_configured":
       "Google OAuth integration is not configured (Administration → Integrations).",
     "google_drive.configure_owner_only":
-      "Only the team owner or a member who can edit team settings can change this integration.",
+      "Only the team owner or a user who can edit team settings can change this integration.",
     "google_drive.disconnect": "Disconnect Google account",
     "google_drive.disconnect.title": "Disconnect Google account?",
     "google_drive.disconnect.description":
@@ -3313,7 +3367,7 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "onedrive.not_configured":
       "Microsoft OAuth is not configured (Administration → Integrations).",
     "onedrive.configure_owner_only":
-      "Only the team owner or a member who can edit team settings can change this integration.",
+      "Only the team owner or a user who can edit team settings can change this integration.",
     "onedrive.disconnect": "Disconnect Microsoft account",
     "onedrive.disconnect.title": "Disconnect Microsoft account?",
     "onedrive.disconnect.description":
@@ -3575,7 +3629,7 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "todo.empty.in_progress": "Drop a task here when work starts.",
     "todo.empty.done": "Completed tasks will appear here.",
     "todo.add.title": "New task",
-    "todo.add.description": "Enter a title and assign the task to a teammate.",
+    "todo.add.description": "Enter a title and assign the task to a team user.",
     "todo.edit.title": "Edit task",
     "todo.edit.description": "Update the task details.",
     "todo.fields.title": "Title",
@@ -3808,6 +3862,7 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "errors.files_forward_too_large": "The file is too large to send by email (max 25 MB).",
     "errors.files_forward_subject_required": "Enter an email subject.",
     "errors.files_forward_reply_to_missing": "Your account does not have a valid email address for Reply-To.",
+    "errors.files_forward_module_disabled": "Sending files by email is not enabled.",
     "errors.user_exists": "A user with this email already exists.",
     "errors.user_create_failed": "Could not create the user.",
     "errors.user_profile_failed": "Could not save the user profile.",
@@ -3997,13 +4052,13 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "errors.auth_microsoft_disabled":
       "Microsoft sign-in is not enabled. Turn on Microsoft OAuth in Administration → Integrations.",
     "errors.auth_microsoft_failed": "Could not sign in with Microsoft.",
-    "errors.team_invite_forbidden": "You do not have permission to invite members.",
-    "errors.team_invite_already_member": "This email is already a team member.",
+    "errors.team_invite_forbidden": "You do not have permission to invite users.",
+    "errors.team_invite_already_member": "This email is already a team user.",
     "errors.team_invite_already_pending": "An invitation for this email is already pending.",
     "errors.team_invite_failed": "Could not send the invitation.",
     "errors.team_invite_email_failed": "Could not send the invitation email.",
     "errors.team_invite_email_not_configured":
-      "You can invite a new teammate by email only when the Resend integration is enabled.",
+      "You can invite a new team user by email only when the Resend integration is enabled.",
     "errors.clipboard_failed": "Could not copy the link.",
     "errors.calendar_load_failed": "Could not load calendar integration.",
     "errors.calendar_save_failed": "Could not save calendar integration.",
@@ -4016,8 +4071,8 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "errors.team_invite_accept_failed": "Could not accept the invitation.",
     "errors.team_invite_reject_failed": "Could not decline the invitation.",
     "errors.team_invite_not_pending": "This invitation is no longer pending.",
-    "errors.team_member_remove_failed": "Could not remove the member.",
-    "errors.team_member_remove_forbidden": "You do not have permission to remove this member.",
+    "errors.team_member_remove_failed": "Could not remove the user.",
+    "errors.team_member_remove_forbidden": "You do not have permission to remove this user.",
     "errors.team_member_leave_owner":
       "Team owners cannot leave. Transfer ownership first.",
     "unsaved_changes.title": "Leave without saving?",
@@ -4103,7 +4158,7 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "errors.payment_plan_id_required": "Plan is not specified.",
     "errors.payment_plan_modules_save_failed": "Could not save plan modules.",
     "errors.payment_plan_max_members_invalid":
-      "Enter a valid member limit (1 to 10,000).",
+      "Enter a valid user limit (1 to 10,000).",
     "errors.team_payment_plan_save_failed": "Could not save the team plan.",
     "errors.early_bird_limit_reached": "Early Bird slot limit has been reached.",
     "errors.payment_plans_enable_save_failed": "Could not save the payment plans setting.",

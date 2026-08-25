@@ -264,6 +264,7 @@ export function SubtaskDetailModal({
   const { isAdmin } = useIsAdmin();
   const { isEnabled: isModuleEnabled } = useFrontendModules();
   const fileUploadsEnabled = isModuleEnabled(FRONTEND_MODULE_KEYS.fileUpload);
+  const sendFileEnabled = isModuleEnabled(FRONTEND_MODULE_KEYS.sendFile);
   const checklistsEnabled = isModuleEnabled(FRONTEND_MODULE_KEYS.checklist);
   const [draft, setDraft] = useState<SubtaskDraft>(emptyDraft);
   const [createdTaskId, setCreatedTaskId] = useState<string | null>(null);
@@ -1163,7 +1164,7 @@ export function SubtaskDetailModal({
                 Boolean(uploadProgress) ||
                 (isCreate ? !access.canCreateTasks : !access.canEditTasks)
               }
-              forwardEnabled={resendEnabled}
+              forwardEnabled={resendEnabled && sendFileEnabled}
               onAdd={(selected) => {
                 void handleAddAttachments(selected);
               }}
@@ -1250,7 +1251,7 @@ export function SubtaskDetailModal({
                                 "E-pasts netika piegādāts. Pārbaudi adresi un nosūti vēlreiz.",
                               )}
                             </p>
-                            {resendEnabled ? (
+                            {resendEnabled && sendFileEnabled ? (
                               <button
                                 type="button"
                                 onClick={() => requestForwardAgainFromHistory(item)}

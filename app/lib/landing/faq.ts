@@ -10,6 +10,7 @@ export type LandingFaqItem = {
 
 export function resolveLandingFaqItems(
   isEnabled: (moduleKey: string) => boolean,
+  options?: { showPricing?: boolean },
 ): LandingFaqItem[] {
   const items: LandingFaqItem[] = [
     {
@@ -58,7 +59,7 @@ export function resolveLandingFaqItems(
       questionFallback: "Vai varu uzaicināt komandu?",
       answerKey: "landing.faq.invite.answer",
       answerFallback:
-        "Jā. Uzaicini komandas biedrus, piešķir uzdevumus un redzi, kas ir tiešsaistē. Visi strādā vienā darbvietā.",
+        "Jā. Uzaicini komandas lietotājus, piešķir uzdevumus un redzi, kas ir tiešsaistē. Visi strādā vienā darbvietā.",
     },
   ];
 
@@ -70,6 +71,20 @@ export function resolveLandingFaqItems(
       answerKey: "landing.faq.files.answer",
       answerFallback:
         "Jā. Dokumentus pievieno tieši pie uzdevuma, lai faili paliek pie darba, nevis e-pastā vai atsevišķā mapē.",
+    });
+  }
+
+  if (
+    isEnabled(FRONTEND_MODULE_KEYS.fileUpload) &&
+    isEnabled(FRONTEND_MODULE_KEYS.sendFile)
+  ) {
+    items.push({
+      id: "send_file",
+      questionKey: "landing.faq.send_file.question",
+      questionFallback: "Vai varu nosūtīt failu e-pastā?",
+      answerKey: "landing.faq.send_file.answer",
+      answerFallback:
+        "Jā. Apakšuzdevuma faila izvēlnē ir Pārsūtīt failu — dokuments tiek nosūtīts e-pastā kā pielikums.",
     });
   }
 
@@ -99,13 +114,27 @@ export function resolveLandingFaqItems(
     });
   }
 
+  if (options?.showPricing) {
+    items.push({
+      id: "plans",
+      questionKey: "landing.faq.plans.question",
+      questionFallback: "Kāda ir atšķirība starp plāniem?",
+      answerKey: "landing.faq.plans.answer",
+      answerFallback:
+        "Bezmaksas plānam ir ierobežots lietotāju skaits un funkcijas. Maksas plāns ir cena par lietotāju un iekļauj pieejamos moduļus. Salīdzinājumu skatiet sadaļā Cenas.",
+    });
+  }
+
   items.push({
     id: "free",
     questionKey: "landing.faq.free.question",
     questionFallback: "Vai varu sākt bez maksas?",
-    answerKey: "landing.faq.free.answer",
-    answerFallback:
-      "Jā. Izveido kontu un sāc darbu bez instalēšanas. Nav nedēļas ilgas ieviešanas.",
+    answerKey: options?.showPricing
+      ? "landing.faq.free.answer_plans"
+      : "landing.faq.free.answer",
+    answerFallback: options?.showPricing
+      ? "Jā. Bezmaksas plāns ļauj sākt bez kartes. Salīdzinājumu ar maksas plānu skatiet sadaļā Cenas."
+      : "Jā. Izveido kontu un sāc darbu bez instalēšanas. Nav nedēļas ilgas ieviešanas.",
   });
 
   return items;

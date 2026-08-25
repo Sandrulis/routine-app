@@ -46,14 +46,14 @@ const CORE_TEAM_WITH_FILES: LandingFeature = {
   titleFallback: "Visa komanda redz to pašu",
   descriptionKey: "landing.features.team.description",
   descriptionFallback:
-    "Uzaicini komandas biedrus, piešķir darbus un zini, kas ir tiešsaistē. Nav jāmeklē čatā, kur palika fails vai kurš ko sola.",
+    "Uzaicini komandas lietotājus, piešķir darbus un zini, kas ir tiešsaistē. Nav jāmeklē čatā, kur palika fails vai kurš ko sola.",
 };
 
 const CORE_TEAM_NO_FILES: LandingFeature = {
   ...CORE_TEAM_WITH_FILES,
   descriptionKey: "landing.features.team.description_no_files",
   descriptionFallback:
-    "Uzaicini komandas biedrus, piešķir darbus un zini, kas ir tiešsaistē. Nav jāmeklē čatā, kurš ko sola.",
+    "Uzaicini komandas lietotājus, piešķir darbus un zini, kas ir tiešsaistē. Nav jāmeklē čatā, kurš ko sola.",
 };
 
 const CORE_DASHBOARD: LandingFeature = {
@@ -107,6 +107,44 @@ function calendarFeature(isEnabled: (moduleKey: string) => boolean): LandingFeat
   };
 }
 
+/** Whether a payment plan includes a landing feature card (core features are always included). */
+export function planIncludesLandingFeature(
+  planModuleKeys: Iterable<string>,
+  featureId: string,
+): boolean {
+  const keys = new Set(planModuleKeys);
+  const has = (moduleKey: string) => keys.has(moduleKey);
+
+  switch (featureId) {
+    case "lists":
+    case "team":
+    case "dashboard":
+      return true;
+    case "private_list":
+      return has(FRONTEND_MODULE_KEYS.privateList);
+    case "templates":
+      return has(FRONTEND_MODULE_KEYS.templates);
+    case "automations":
+      return has(FRONTEND_MODULE_KEYS.automations);
+    case "files":
+      return has(FRONTEND_MODULE_KEYS.fileUpload);
+    case "send_file":
+      return has(FRONTEND_MODULE_KEYS.fileUpload) && has(FRONTEND_MODULE_KEYS.sendFile);
+    case "checklist":
+      return has(FRONTEND_MODULE_KEYS.checklist);
+    case "calendar":
+      return isCalendarIntegrationVisible(has);
+    case "google_drive":
+      return has(FRONTEND_MODULE_KEYS.fileUpload) && has(FRONTEND_MODULE_KEYS.googleDrive);
+    case "onedrive":
+      return has(FRONTEND_MODULE_KEYS.fileUpload) && has(FRONTEND_MODULE_KEYS.onedrive);
+    case "gmail":
+      return has(FRONTEND_MODULE_KEYS.gmailPlugin);
+    default:
+      return false;
+  }
+}
+
 export function resolveLandingPageContent(
   isEnabled: (moduleKey: string) => boolean,
 ): LandingPageContent {
@@ -125,7 +163,7 @@ export function resolveLandingPageContent(
       titleFallback: "Privāti saraksti",
       descriptionKey: "landing.features.private_list.description",
       descriptionFallback:
-        "Paslēp sarakstu no pārējās komandas. Redz tikai tu un izvēlētie komandas biedri vai lomas.",
+        "Paslēp sarakstu no pārējās komandas. Redz tikai tu un izvēlētie komandas lietotāji vai lomas.",
     });
   }
 
@@ -162,6 +200,18 @@ export function resolveLandingPageContent(
       descriptionKey: "landing.features.files.description",
       descriptionFallback:
         "Pievieno dokumentus tieši pie darba. Nav jāmeklē pielikums e-pastā vai koplietotā mapē.",
+    });
+  }
+
+  if (filesOn && isEnabled(FRONTEND_MODULE_KEYS.sendFile)) {
+    features.push({
+      id: "send_file",
+      icon: "fas fa-paper-plane",
+      titleKey: "landing.features.send_file.title",
+      titleFallback: "Pārsūtīt failu",
+      descriptionKey: "landing.features.send_file.description",
+      descriptionFallback:
+        "No apakšuzdevuma faila izvēlnes nosūti dokumentu e-pastā, lai saņēmējs iegūst pielikumu bez koplietotas mapes.",
     });
   }
 

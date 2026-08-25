@@ -50,7 +50,7 @@ export function TaskAttachments({
   onRename: (id: string) => void;
   onRemove: (id: string) => void;
   onForward?: (id: string) => void;
-  /** Show “Forward file” when Resend is enabled. */
+  /** Show “Forward file” when Resend and module_send_file are enabled. */
   forwardEnabled?: boolean;
   disabled?: boolean;
   accept?: string;

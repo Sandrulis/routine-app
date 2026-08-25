@@ -136,7 +136,7 @@ export function AdminTeamsManager({
             <thead className="bg-zinc-50 text-left text-[11px] font-semibold uppercase tracking-wider text-zinc-400">
               <tr>
                 <th className="px-5 py-3">{t("lists.fields.name", "Nosaukums")}</th>
-                <th className="px-5 py-3">{t("admin.teams.members", "Biedri")}</th>
+                <th className="px-5 py-3">{t("admin.teams.members", "Lietotāji")}</th>
                 <th className="px-5 py-3">{t("admin.teams.plan.column", "Plāns")}</th>
                 <th className="px-5 py-3 text-right">{t("common.actions", "Darbības")}</th>
               </tr>

@@ -123,7 +123,7 @@ export function TeamMemberPage({ memberId }: { memberId: string }) {
         type: "success",
         text: isSelf
           ? t("team.member.left", "Tu pameti komandu.")
-          : t("team.member.removed", "Biedrs noņemts no komandas."),
+          : t("team.member.removed", "Lietotājs noņemts no komandas."),
       });
       router.push(isSelf ? "/" : "/team");
     } finally {
@@ -135,8 +135,8 @@ export function TeamMemberPage({ memberId }: { memberId: string }) {
   if (!isReady) {
     return (
       <SectionPage
-        title={t("team.detail.loading", "Ielādē biedru")}
-        subtitle={t("team.page.subtitle", "Visi komandas biedri.")}
+        title={t("team.detail.loading", "Ielādē lietotāju")}
+        subtitle={t("team.page.subtitle", "Visi komandas lietotāji.")}
       >
         <LoadingState />
       </SectionPage>
@@ -146,10 +146,10 @@ export function TeamMemberPage({ memberId }: { memberId: string }) {
   if (!member) {
     return (
       <SectionPage
-        title={t("team.detail.missing", "Biedrs nav atrasts")}
+        title={t("team.detail.missing", "Lietotājs nav atrasts")}
         subtitle={t(
           "team.detail.missing_description",
-          "Šis komandas biedrs vairs nav pieejams.",
+          "Šis komandas lietotājs vairs nav pieejams.",
         )}
       >
         <Link
@@ -253,7 +253,7 @@ export function TeamMemberPage({ memberId }: { memberId: string }) {
       <ConfirmModal
         open={removeConfirmOpen}
         onOpenChange={setRemoveConfirmOpen}
-        title={t("team.member.remove_confirm_title", "Noņemt biedru?")}
+        title={t("team.member.remove_confirm_title", "Noņemt lietotāju?")}
         description={t(
           "team.member.remove_confirm_description",
           "{name} zaudēs piekļuvi komandai.",

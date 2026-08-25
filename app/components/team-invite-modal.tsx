@@ -57,10 +57,10 @@ export function TeamInviteModal({
     <AppModal
       open={open}
       onOpenChange={onOpenChange}
-      title={t("team.invite.title", "Uzaicināt biedru")}
+      title={t("team.invite.title", "Uzaicināt lietotāju")}
       description={t(
         "team.invite.description",
-        "Ieraksti e-pastu un izvēlies lomu. Biedrs aizpildīs profilu pie pirmās ielogošanās.",
+        "Ieraksti e-pastu un izvēlies lomu. Lietotājs aizpildīs profilu pie pirmās ielogošanās.",
       )}
       dirty={dirty}
       panelMaxWidthClassName={appModalWidePanelMaxWidthClassName}

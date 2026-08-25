@@ -4,6 +4,13 @@
 
 - (none)
 
+## v0.2.40
+
+- Kad maksas plāni ir ieslēgti, landing rāda **Cenas** (`#pricing`): plānu kartītes, salīdzinājums un JSON-LD piedāvājumi
+- Maksas plāns ir cena par lietotāju bez lietotāju limita; bezmaksas plānam paliek `max_members`
+- UI: komandas cilvēki ir **lietotāji**, ne biedri
+- `module_send_file`: apakšuzdevuma faila `...` rāda **Pārsūtīt failu**; landing fīča un FAQ, ja modulis ir ieslēgts
+
 ## v0.2.39
 
 - Gmail spraudnis `0.4.30`: **Turpināt ar Google** iet tieši uz Google OAuth, nevis tasqin.com `/login`

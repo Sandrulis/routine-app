@@ -15,7 +15,7 @@ export type PaymentPlanSummary = {
   descriptionValues: LocalizedValues;
   moduleKeys: string[];
   isFree: boolean;
-  maxMembers: number;
+  maxMembers: number | null;
   priceMonth: number;
   priceQuarter: number;
   priceYear: number;
@@ -33,7 +33,7 @@ export type PaymentPlanInput = {
   descriptionValues: LocalizedValues;
   moduleKeys: string[];
   isFree: boolean;
-  maxMembers: number | string;
+  maxMembers?: number | string | null;
   priceMonth: number | string;
   priceQuarter: number | string;
   priceYear: number | string;
@@ -74,6 +74,20 @@ export function parsePaymentPlanMaxMembers(value: unknown): number | null {
     return null;
   }
   return parsed;
+}
+
+export function resolvePlanMaxMembersForSave(
+  isFree: boolean,
+  value: unknown,
+): { ok: true; maxMembers: number | null } | { ok: false } {
+  if (!isFree) {
+    return { ok: true, maxMembers: null };
+  }
+  const parsed = parsePaymentPlanMaxMembers(value);
+  if (parsed === null) {
+    return { ok: false };
+  }
+  return { ok: true, maxMembers: parsed };
 }
 
 export function parsePaymentPlanPrice(value: unknown): number | null {

@@ -347,7 +347,7 @@ export function ListFormModal({
               <p className="mt-0.5 text-xs text-zinc-500">
                 {t(
                   "lists.access.roles_hint",
-                  "Katrai lomai norādi, ko tās biedri drīkst darīt šajā sarakstā.",
+                  "Katrai lomai norādi, ko tās lietotāji drīkst darīt šajā sarakstā.",
                 )}
               </p>
               {roles.length > 0 ? (
@@ -435,7 +435,7 @@ export function ListFormModal({
             <p className="mt-0.5 text-xs text-zinc-500">
               {t(
                 "lists.private.description",
-                "Redzams tikai tev un izvēlētajiem biedriem vai lomām.",
+                "Redzams tikai tev un izvēlētajiem lietotājiem vai lomām.",
               )}
             </p>
           </div>
@@ -464,7 +464,7 @@ export function ListFormModal({
           <div className="space-y-3 rounded-xl border border-zinc-200 p-3">
             <div>
               <p className="text-sm font-medium text-zinc-800">
-                {t("lists.private.members", "Biedri")}
+                {t("lists.private.members", "Lietotāji")}
               </p>
               <p className="mt-0.5 text-xs text-zinc-500">
                 {t(
@@ -502,7 +502,7 @@ export function ListFormModal({
               <p className="text-sm text-zinc-500">
                 {t(
                   "lists.private.no_members",
-                  "Komandā nav citu pieslēgtu biedru.",
+                  "Komandā nav citu pieslēgtu lietotāju.",
                 )}
               </p>
             )}

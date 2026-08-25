@@ -56,6 +56,7 @@ Tikai tad, ja nozīme vai konteksts atšķiras (cits EN/RU teksts vai specifisks
 - Kopīgi statusi/lomas: `status.active`, `roles.admin`
 - Kļūdas no servera: atgriez **atslēgu** (`errors.user_not_found`) un UI rādi ar `translateActionError(t, error)`
 - Sadaļas teksts tikai unikālam saturam
+- Komandas cilvēki ir **lietotāji**, nevis biedri: `komandas lietotājs` (EN *team user*), ne `komandas biedrs` / *team member*. Loma `team.roles.member` UI ir **Lietotājs** / *User*. Fallback tekstos un katalogos nelieto `biedrs` (un citu valodu ekvivalentu *member* / *Mitglied* u.c. šai nozīmei).
 
 ## DB overlay
 

@@ -6,6 +6,14 @@ import { LandingJsonLd } from "@/app/components/landing-json-ld";
 import { getCurrentUser } from "@/app/lib/auth/get-current-user";
 import { resolveSystemName } from "@/app/lib/document-title";
 import { getServerTranslations } from "@/app/lib/i18n/server";
+import { shouldShowLandingPricing } from "@/app/lib/landing/pricing";
+import {
+  getEarlyBirdSettings,
+  getPaymentPlansEnabledCached,
+  getTrialSettings,
+  isEarlyBirdOfferAvailable,
+  listPaymentPlansCached,
+} from "@/app/lib/payment-plans/repository";
 import { canonicalMetadata } from "@/app/lib/seo/metadata";
 import { isCrawlerUserAgent } from "@/app/lib/seo/crawler";
 import { getSiteSettings } from "@/app/lib/site-admin/repository";
@@ -37,21 +45,39 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function HomePage() {
-  const [user, { t }, settings] = await Promise.all([
-    getCurrentUser(),
-    getServerTranslations(),
-    getSiteSettings(),
-  ]);
+  const [user, { t }, settings, paymentPlansEnabled, plans, earlyBird, trial] =
+    await Promise.all([
+      getCurrentUser(),
+      getServerTranslations(),
+      getSiteSettings(),
+      getPaymentPlansEnabledCached(),
+      listPaymentPlansCached(),
+      getEarlyBirdSettings(),
+      getTrialSettings(),
+    ]);
   if (user && !isCrawlerUserAgent((await headers()).get("user-agent"))) {
     redirect("/dashboard");
   }
 
   const productName = resolveSystemName(settings.systemName, t("app.name", "{SYSTEM_NAME}"));
+  const showPricing = shouldShowLandingPricing(paymentPlansEnabled, plans);
 
   return (
     <>
       <LandingJsonLd />
-      <LandingPage productName={productName} />
+      <LandingPage
+        productName={productName}
+        pricing={
+          showPricing
+            ? {
+                plans,
+                earlyBirdAvailable: isEarlyBirdOfferAvailable(earlyBird),
+                trialPlanId: trial.trialPlanId,
+                trialDays: trial.trialDays,
+              }
+            : null
+        }
+      />
     </>
   );
 }

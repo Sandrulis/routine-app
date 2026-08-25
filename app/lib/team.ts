@@ -210,7 +210,7 @@ export function teamRankLabel(
     return t("teams.rank.owner", "Īpašnieks");
   }
   if (trimmed === MEMBER_TEAM_ROLE) {
-    return t("team.roles.member", "Biedrs");
+    return t("team.roles.member", "Lietotājs");
   }
   const fromCatalog = roles?.find(
     (item) => item.slug === trimmed || item.id === trimmed,
@@ -316,7 +316,7 @@ export function defaultTeamRoles(teamId: string): TeamRole[] {
       id: defaultTeamRoleId(teamId, "member"),
       teamId,
       slug: MEMBER_TEAM_ROLE,
-      name: "Biedrs",
+      name: "Lietotājs",
       sortOrder: 1,
       isSystem: true,
       permissions: createMemberTeamPermissions(),

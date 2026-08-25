@@ -125,11 +125,11 @@ export const TEAM_ACTION_PERMISSION_LABELS: Record<
   },
   "team.invite": {
     key: "team.access.actions.team_invite",
-    fallback: "Uzaicināt biedrus",
+    fallback: "Uzaicināt lietotājus",
   },
   "team.members.remove": {
     key: "team.access.actions.team_members_remove",
-    fallback: "Noņemt biedrus",
+    fallback: "Noņemt lietotājus",
   },
   "team.roles.manage": {
     key: "team.access.actions.team_roles",

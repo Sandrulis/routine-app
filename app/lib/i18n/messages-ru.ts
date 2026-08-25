@@ -3,6 +3,7 @@ export const ru: Record<string, string> = {
   "app.subtitle": "Командный список задач",
   "site.back_home": "На главную",
   "site.nav.features": "Возможности",
+  "site.nav.pricing": "Цены",
   "site.nav.faq": "Вопросы",
   "site.footer.rights": "© {year} {SYSTEM_NAME}",
   "landing.seo.title": "{name} — простое управление задачами команды",
@@ -69,7 +70,7 @@ export const ru: Record<string, string> = {
     "Откройте {name} и увидите, что нужно сделать, что в работе и что готово. Перетаскивайте карточки и держите фокус на том, что должно быть закончено сегодня.",
   "landing.features.private_list.title": "Приватные списки",
   "landing.features.private_list.description":
-    "Скройте список от остальной команды. Его видите только вы и выбранные участники или роли.",
+    "Скройте список от остальной команды. Его видите только вы и выбранные пользователи или роли.",
   "landing.features.templates.title": "Шаблоны",
   "landing.features.templates.description":
     "Сохраните повторяющуюся работу как шаблон и создайте новую папку с готовой структурой.",
@@ -98,6 +99,9 @@ export const ru: Record<string, string> = {
   "landing.features.gmail.title": "Плагин Gmail",
   "landing.features.gmail.description":
     "Из Gmail добавляйте письмо и вложения к задаче, чтобы переписка оставалась при работе.",
+  "landing.features.send_file.title": "Переслать файл",
+  "landing.features.send_file.description":
+    "Из меню файла в подзадаче отправьте документ по e-mail, чтобы получатель получил вложение без общей папки.",
   "landing.audiences.title": "Для команд, которым нужно делать работу",
   "landing.audiences.subtitle":
     "Простое рабочее пространство для небольших команд, агентств и растущих компаний.",
@@ -149,6 +153,9 @@ export const ru: Record<string, string> = {
   "landing.faq.files.question": "Можно ли прикреплять файлы к задачам?",
   "landing.faq.files.answer":
     "Да. Документы добавляются прямо к задаче, чтобы файлы оставались при работе, а не в почте или отдельной папке.",
+  "landing.faq.send_file.question": "Можно ли отправить файл по e-mail?",
+  "landing.faq.send_file.answer":
+    "Да. В меню файла подзадачи есть Переслать файл — документ отправляется по e-mail как вложение.",
   "landing.faq.drive.question": "Есть ли связь с Google Drive?",
   "landing.faq.drive.answer":
     "Да. Файлы можно хранить в Google Drive и открывать из списка, не выходя из {name}.",
@@ -158,6 +165,22 @@ export const ru: Record<string, string> = {
   "landing.faq.free.question": "Можно ли начать бесплатно?",
   "landing.faq.free.answer":
     "Да. Создайте аккаунт и начните работу. Без установки и без внедрения на неделю.",
+  "landing.faq.free.answer_plans":
+    "Да. Бесплатный план позволяет начать без карты. Сравнение с платным планом — в разделе Цены.",
+  "landing.faq.plans.question": "Чем отличаются планы?",
+  "landing.faq.plans.answer":
+    "У бесплатного плана ограниченное число пользователей и функций. Платный план тарифицируется за пользователя и включает доступные модули. Сравнение смотрите в разделе Цены.",
+  "landing.pricing.title": "Планы и цены",
+  "landing.pricing.subtitle":
+    "У бесплатного плана есть ограничения. Платный план — цена за пользователя, без лимита пользователей.",
+  "landing.pricing.members_up_to": "{count}",
+  "landing.pricing.members_unlimited": "Без лимита",
+  "landing.pricing.compare.title": "Сравнение",
+  "landing.pricing.compare.members": "Пользователи команды",
+  "landing.pricing.included": "Включено",
+  "landing.pricing.not_included": "Не включено",
+  "landing.pricing.recommended": "Рекомендуем",
+  "landing.pricing.trial": "Пробный период {days} дн.",
   "landing.cta.title": "Начните управлять работой команды сегодня",
   "landing.cta.subtitle":
     "Зарегистрируйтесь, пригласите команду и создайте первый список. Без установки и без внедрения на неделю.",
@@ -254,7 +277,7 @@ export const ru: Record<string, string> = {
   "legal.privacy.data.p1":
     "Данные учётной записи: имя, адрес электронной почты, пароль (храним только в виде хеша), выбранный язык и настройки профиля.",
   "legal.privacy.data.p2":
-    "Данные команды и работы: название команды, имена участников, адреса электронной почты и роли, списки, задачи, подзадачи, статусы, сроки, заметки, имена вложений и содержимое, которое вы или ваша команда вносите в систему.",
+    "Данные команды и работы: название команды, имена пользователей, адреса электронной почты и роли, списки, задачи, подзадачи, статусы, сроки, заметки, имена вложений и содержимое, которое вы или ваша команда вносите в систему.",
   "legal.privacy.data.p3":
     "Технические данные: время входа, IP-адрес, сведения о браузере и устройстве, а также журналы, необходимые для безопасности и устранения ошибок.",
   "legal.privacy.data.p4":
@@ -639,6 +662,8 @@ export const ru: Record<string, string> = {
   "site_payment_plans.list.title": "Планы",
   "site_payment_plans.list.empty": "Тарифных планов пока нет.",
   "site_payment_plans.list.prices": "Цены",
+  "site_payment_plans.list.members": "Пользователи",
+  "site_payment_plans.list.per_user": "за пользователя",
   "site_payment_plans.list.early_bird_prices": "Early Bird",
   "site_payment_plans.actions.add": "Добавить план",
   "site_payment_plans.form.create_title": "Новый тарифный план",
@@ -651,20 +676,24 @@ export const ru: Record<string, string> = {
   "site_payment_plans.form.is_free_hint": "Всегда доступен без оплаты. Цены указывать не нужно, и план для команды не истекает.",
   "site_payment_plans.list.free": "Бесплатный",
   "admin.teams.plan.free_hint": "Бесплатный план всегда активен. Статус оплаты и дату окончания указывать не нужно.",
+  "admin.teams.plan.plan_summary_paid": "{moduleCount} модулей · цена за пользователя",
   "site_payment_plans.form.modules": "Модули в этом плане",
   "site_payment_plans.form.modules_empty": "Нет глобально включённых frontend-модулей.",
-  "site_payment_plans.form.prices": "Цены (EUR)",
+  "site_payment_plans.form.max_members": "Макс. число пользователей",
+  "site_payment_plans.form.max_members_hint": "Сколько пользователей команды допускается в этом бесплатном плане.",
+  "site_payment_plans.form.prices": "Цены за одного пользователя (EUR)",
   "site_payment_plans.form.prices_hint":
-    "Заполните только предлагаемые периоды. Пустые периоды на landing page не показываются. Десятичный разделитель — точка, например 29.00.",
+    "Цена указана за одного пользователя. Заполните только предлагаемые периоды. Пустые периоды на landing page не показываются. Десятичный разделитель — точка, например 9.00.",
   "site_payment_plans.form.price_month": "Месяц",
   "site_payment_plans.form.price_quarter": "Квартал",
   "site_payment_plans.form.price_year": "Год",
-  "site_payment_plans.form.early_bird_prices": "Цены Early Bird (EUR)",
+  "site_payment_plans.form.early_bird_prices": "Цены Early Bird за одного пользователя (EUR)",
   "site_payment_plans.form.early_bird_prices_hint":
-    "Эти цены применяются к командам со статусом Early Bird. Неиспользуемые периоды можно оставить пустыми.",
+    "Эти цены применяются к командам со статусом Early Bird и также указаны за одного пользователя. Неиспользуемые периоды можно оставить пустыми.",
   "site_payment_plans.period.month_short": "/ мес.",
   "site_payment_plans.period.quarter_short": "/ кв.",
   "site_payment_plans.period.year_short": "/ год",
+  "site_payment_plans.period.per_user": "/ польз.",
   "site_payment_plans.feedback.created": "Тарифный план создан.",
   "site_payment_plans.feedback.saved": "Тарифный план сохранён.",
   "site_payment_plans.feedback.deleted": "Тарифный план удалён.",
@@ -721,12 +750,12 @@ export const ru: Record<string, string> = {
   "admin.users.last_seen_never": "Ещё не входил",
   "admin.users.no_team": "Нет в команде",
   "admin.teams.empty": "Пока нет ни одной команды.",
-  "admin.teams.members": "Участники",
-  "admin.teams.members.description": "Список участников команды.",
-  "admin.teams.members.loading": "Загрузка участников…",
-  "admin.teams.members.count": "{count} участников",
-  "admin.teams.members.empty": "Нет участников.",
-  "admin.teams.members.load_failed": "Не удалось загрузить участников.",
+  "admin.teams.members": "Пользователи",
+  "admin.teams.members.description": "Список пользователей команды.",
+  "admin.teams.members.loading": "Загрузка пользователей…",
+  "admin.teams.members.count": "{count} пользователей",
+  "admin.teams.members.empty": "Нет пользователей.",
+  "admin.teams.members.load_failed": "Не удалось загрузить пользователей.",
   "admin.teams.form.description": "Укажите название и оформление команды.",
   "admin.teams.delete.confirm_prefix": "Действительно удалить команду",
   "admin.teams.delete.confirm_suffix":
@@ -884,10 +913,10 @@ export const ru: Record<string, string> = {
   "nav.drag": "Переместить",
   "breadcrumb.label": "Путь",
   "team.page.subtitle":
-    "Все участники команды. Пригласите нового участника значком плюса.",
-  "team.invite.title": "Пригласить участника",
+    "Все пользователи команды. Пригласите нового пользователя значком плюса.",
+  "team.invite.title": "Пригласить пользователя",
   "team.invite.description":
-    "Введите e-mail и выберите роль. Участник заполнит профиль при первом входе.",
+    "Введите e-mail и выберите роль. Пользователь заполнит профиль при первом входе.",
   "team.invite.resend_required":
     "Новый e-mail требует включённую интеграцию Resend. Существующий пользователь получит уведомление в приложении.",
   "team.invite.button": "Пригласить",
@@ -905,9 +934,9 @@ export const ru: Record<string, string> = {
   "team.invited_no_email":
     "Приглашение сохранено. E-mail не отправлен — отправьте ссылку вручную.",
   "team.member.remove": "Удалить из команды",
-  "team.member.remove_confirm_title": "Удалить участника?",
+  "team.member.remove_confirm_title": "Удалить пользователя?",
   "team.member.remove_confirm_description": "{name} потеряет доступ к команде.",
-  "team.member.removed": "Участник удалён из команды.",
+  "team.member.removed": "Пользователь удалён из команды.",
   "team.member.leave": "Покинуть команду",
   "team.member.leave_title": "Покинуть команду",
   "team.member.leave_description": "Вы потеряете доступ к команде {team}.",
@@ -927,7 +956,7 @@ export const ru: Record<string, string> = {
   "team.fields.email_placeholder": "name@company.com",
   "team.fields.role": "Роль",
   "team.fields.role_placeholder": "Например, разработчик",
-  "team.empty": "В команде пока нет участников.",
+  "team.empty": "В команде пока нет пользователей.",
   "team.online.now": "В сети",
   "team.online.last": "Последний раз в сети",
   "team.online.minutes": "{count} мин",
@@ -936,11 +965,11 @@ export const ru: Record<string, string> = {
   "team.online.months": "{count} мес",
   "team.invited": "Приглашение отправлено.",
   "team.roles.title": "Роли команды",
-  "team.roles.menu_description": "Распределите участников по ролям",
+  "team.roles.menu_description": "Распределите пользователей по ролям",
   "team.roles.access_tooltip": "Доступ этой роли",
-  "team.roles.description": "Создайте роли и распределите по ним участников команды.",
+  "team.roles.description": "Создайте роли и распределите по ним пользователей команды.",
   "team.roles.list": "Роли",
-  "team.roles.member": "Участник",
+  "team.roles.member": "Пользователь",
   "team.roles.new_placeholder": "Название новой роли",
   "team.roles.empty": "Ролей пока нет.",
   "team.roles.owner_only": "Роли может менять только владелец команды.",
@@ -950,7 +979,7 @@ export const ru: Record<string, string> = {
   "team.roles.feedback.deleted": "Роль удалена.",
   "team.roles.delete.title": "Удалить роль?",
   "team.roles.delete.description":
-    "Роль “{name}” будет удалена. Участники будут переведены в роль Участник.",
+    "Роль “{name}” будет удалена. Пользователи будут переведены в роль Пользователь.",
   "team.roles.delete.system_disabled": "Системную роль нельзя удалить",
   "team.access.title": "Доступ ролей команды",
   "team.access.menu_description": "Настройте доступ для каждой роли",
@@ -968,8 +997,8 @@ export const ru: Record<string, string> = {
   "team.access.actions.tasks_manage": "Управлять задачами",
   "team.access.actions.files_upload": "Загружать файлы",
   "team.access.actions.templates_manage": "Управлять шаблонами",
-  "team.access.actions.team_invite": "Приглашать участников",
-  "team.access.actions.team_members_remove": "Удалять участников",
+  "team.access.actions.team_invite": "Приглашать пользователей",
+  "team.access.actions.team_members_remove": "Удалять пользователей",
   "team.access.actions.team_roles": "Управлять ролями команды",
   "team.access.actions.team_permissions": "Управлять доступом ролей",
   "team.access.actions.team_settings_edit": "Изменять данные команды",
@@ -981,12 +1010,12 @@ export const ru: Record<string, string> = {
   "team.access.feedback.saved": "Доступ роли сохранён.",
   "team.access.denied": "У вас нет доступа к этому разделу.",
   "team.back": "Назад к команде",
-  "team.detail.loading": "Загрузка участника",
-  "team.detail.missing": "Участник не найден",
+  "team.detail.loading": "Загрузка пользователя",
+  "team.detail.missing": "Пользователь не найден",
   "team.detail.missing_description":
-    "Этот участник команды больше недоступен.",
+    "Этот пользователь команды больше недоступен.",
   "team.detail.placeholder":
-    "Профиль участника можно будет настроить на следующем шаге.",
+    "Профиль пользователя можно будет настроить на следующем шаге.",
   "lists.page.subtitle":
     "Списки, например Проекты и Клиенты. Под ними находятся задачи.",
   "lists.overview.subtitle": "Сводка по всем задачам и подзадачам.",
@@ -1007,7 +1036,7 @@ export const ru: Record<string, string> = {
     "Эти статусы задаёт система. Их можно использовать во всех списках.",
   "lists.statuses.custom": "Статусы списка",
   "lists.statuses.custom.hint":
-    "Только в этом списке. Видны участникам команды.",
+    "Только в этом списке. Видны пользователям команды.",
   "lists.statuses.custom.empty": "Пока нет статусов списка.",
   "lists.statuses.form.description":
     "Укажите название статуса, цвет и группу.",
@@ -1060,7 +1089,7 @@ export const ru: Record<string, string> = {
   "lists.automations.subtasks_status.description":
     "Когда все подзадачи закрыты, автоматически меняется статус родительской задачи.",
   "lists.automations.needs_statuses_and_members":
-    "В списке должны быть статусы и участники команды.",
+    "В списке должны быть статусы и пользователи команды.",
   "lists.automations.needs_statuses":
     "В списке должен быть хотя бы один статус.",
   "dashboard.subtitle": "Ваши задачи и работа по спискам.",
@@ -1124,18 +1153,18 @@ export const ru: Record<string, string> = {
   "lists.empty": "Пока нет списков.",
   "lists.created": "Список добавлен.",
   "lists.private.label": "Приватный список",
-  "lists.private.description": "Виден только вам и выбранным участникам или ролям.",
+  "lists.private.description": "Виден только вам и выбранным пользователям или ролям.",
   "lists.private.viewers": "Кто может просматривать",
   "lists.private.creator_included": "Вы (создатель) всегда видите этот список.",
-  "lists.private.roles_hint": "Все участники с выбранной ролью могут видеть список.",
-  "lists.private.members": "Участники",
-  "lists.private.no_members": "В команде нет других подключённых участников.",
+  "lists.private.roles_hint": "Все пользователи с выбранной ролью могут видеть список.",
+  "lists.private.members": "Пользователи",
+  "lists.private.no_members": "В команде нет других подключённых пользователей.",
   "lists.access.default": "Доступ по умолчанию",
   "lists.access.customize_roles": "Настроить для каждой роли",
   "lists.access.customize_roles.hint":
     "Включите, чтобы задать отдельный доступ для каждой роли. Глобальный доступ по умолчанию тогда скрывается.",
   "lists.access.roles_hint":
-    "Для каждой роли укажите, что её участники могут делать в этом списке.",
+    "Для каждой роли укажите, что её пользователи могут делать в этом списке.",
   "lists.access.none": "Нет доступа",
   "lists.access.full_edit": "Полное редактирование",
   "lists.access.full_edit.hint":
@@ -1190,7 +1219,7 @@ export const ru: Record<string, string> = {
   "google_drive.not_configured":
     "Интеграция Google OAuth не настроена (Администрирование → Интеграции).",
   "google_drive.configure_owner_only":
-    "Интеграцию может менять только владелец команды или участник с правом править данные команды.",
+    "Интеграцию может менять только владелец команды или пользователь с правом править данные команды.",
   "google_drive.disconnect": "Отключить аккаунт Google",
   "google_drive.disconnect.title": "Отключить аккаунт Google?",
   "google_drive.disconnect.description":
@@ -1222,7 +1251,7 @@ export const ru: Record<string, string> = {
   "onedrive.not_configured":
     "В системе не настроен Microsoft OAuth (Администрирование → Интеграции).",
   "onedrive.configure_owner_only":
-    "Интеграцию может менять только владелец команды или участник с правом править данные команды.",
+    "Интеграцию может менять только владелец команды или пользователь с правом править данные команды.",
   "onedrive.disconnect": "Отключить аккаунт Microsoft",
   "onedrive.disconnect.title": "Отключить аккаунт Microsoft?",
   "onedrive.disconnect.description":
@@ -1496,7 +1525,7 @@ export const ru: Record<string, string> = {
   "todo.empty.done": "Завершённые задачи появятся здесь.",
   "todo.add.title": "Новая задача",
   "todo.add.description":
-    "Введите название и назначьте задачу участнику команды.",
+    "Введите название и назначьте задачу пользователю команды.",
   "todo.edit.title": "Изменить задачу",
   "todo.edit.description": "Обновите данные задачи.",
   "todo.fields.title": "Название",
@@ -1733,6 +1762,7 @@ export const ru: Record<string, string> = {
   "errors.files_forward_too_large": "Файл слишком большой для отправки по e-mail (макс. 25 МБ).",
   "errors.files_forward_subject_required": "Введите тему письма.",
   "errors.files_forward_reply_to_missing": "У вашей учётной записи нет действительного e-mail для Reply-To.",
+  "errors.files_forward_module_disabled": "Отправка файлов по e-mail не включена.",
   "errors.user_exists": "Пользователь с этой почтой уже существует.",
   "errors.user_create_failed": "Не удалось создать пользователя.",
   "errors.user_profile_failed": "Не удалось сохранить профиль пользователя.",
@@ -1914,13 +1944,13 @@ export const ru: Record<string, string> = {
   "errors.auth_microsoft_disabled":
     "Вход через Microsoft не включён. Включите Microsoft OAuth в Администрирование → Интеграции.",
   "errors.auth_microsoft_failed": "Не удалось войти через Microsoft.",
-  "errors.team_invite_forbidden": "Нет прав приглашать участников.",
-  "errors.team_invite_already_member": "Этот e-mail уже участник команды.",
+  "errors.team_invite_forbidden": "Нет прав приглашать пользователей.",
+  "errors.team_invite_already_member": "Этот e-mail уже пользователь команды.",
   "errors.team_invite_already_pending": "Приглашение для этого e-mail уже ожидает ответа.",
   "errors.team_invite_failed": "Не удалось отправить приглашение.",
   "errors.team_invite_email_failed": "Не удалось отправить e-mail с приглашением.",
   "errors.team_invite_email_not_configured":
-    "Пригласить нового участника по e-mail можно только при включённой интеграции Resend.",
+    "Пригласить нового пользователя по e-mail можно только при включённой интеграции Resend.",
   "errors.clipboard_failed": "Не удалось скопировать ссылку.",
   "errors.calendar_load_failed": "Не удалось загрузить интеграцию календаря.",
   "errors.calendar_save_failed": "Не удалось сохранить интеграцию календаря.",
@@ -1933,8 +1963,8 @@ export const ru: Record<string, string> = {
   "errors.team_invite_accept_failed": "Не удалось принять приглашение.",
   "errors.team_invite_reject_failed": "Не удалось отклонить приглашение.",
   "errors.team_invite_not_pending": "Приглашение больше не ожидает ответа.",
-  "errors.team_member_remove_failed": "Не удалось удалить участника.",
-  "errors.team_member_remove_forbidden": "Нет прав удалить этого участника.",
+  "errors.team_member_remove_failed": "Не удалось удалить пользователя.",
+  "errors.team_member_remove_forbidden": "Нет прав удалить этого пользователя.",
   "errors.team_member_leave_owner":
     "Владелец команды не может покинуть команду. Сначала передайте права владельца.",
   "unsaved_changes.title": "Уйти без сохранения?",

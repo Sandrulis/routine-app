@@ -2,6 +2,16 @@ import { getServerTranslations } from "@/app/lib/i18n/server";
 import { resolveSystemName } from "@/app/lib/document-title";
 import { getEnabledFrontendModuleKeys } from "@/app/lib/frontend-modules/repository";
 import { resolveLandingFaqItems } from "@/app/lib/landing/faq";
+import { shouldShowLandingPricing } from "@/app/lib/landing/pricing";
+import {
+  getPaymentPlanPriceForPeriod,
+  getPaymentPlansEnabledCached,
+  isEarlyBirdOfferAvailable,
+  listAvailablePaymentPlanBillingPeriods,
+  listPaymentPlansCached,
+  resolveLocalizedValue,
+  getEarlyBirdSettings,
+} from "@/app/lib/payment-plans/repository";
 import { getSiteSettings } from "@/app/lib/site-admin/repository";
 import { htmlLang, localePath } from "@/app/lib/seo/locale-path";
 import { OG_IMAGE_PATH, OG_IMAGE_SIZE } from "@/app/lib/seo/share-image";
@@ -14,10 +24,20 @@ function httpUrl(value: string | null | undefined): string | null {
 }
 
 export async function LandingJsonLd() {
-  const [{ languageCode, t }, settings, enabledKeys] = await Promise.all([
+  const [
+    { languageCode, t },
+    settings,
+    enabledKeys,
+    paymentPlansEnabled,
+    plans,
+    earlyBird,
+  ] = await Promise.all([
     getServerTranslations(),
     getSiteSettings(),
     getEnabledFrontendModuleKeys(),
+    getPaymentPlansEnabledCached(),
+    listPaymentPlansCached(),
+    getEarlyBirdSettings(),
   ]);
   const enabled = new Set(enabledKeys);
   const isEnabled = (moduleKey: string) => enabled.has(moduleKey);
@@ -34,7 +54,8 @@ export async function LandingJsonLd() {
   const logoUrl = httpUrl(settings.logoUrl) ?? absoluteUrl(OG_IMAGE_PATH);
   const organizationId = `${homeUrl}#organization`;
   const websiteId = `${url}#website`;
-  const faqItems = resolveLandingFaqItems(isEnabled).map((item) => ({
+  const showPricing = shouldShowLandingPricing(paymentPlansEnabled, plans);
+  const faqItems = resolveLandingFaqItems(isEnabled, { showPricing }).map((item) => ({
     "@type": "Question",
     name: t(item.questionKey, item.questionFallback, name),
     acceptedAnswer: {
@@ -44,6 +65,39 @@ export async function LandingJsonLd() {
   }));
 
   const sameAs = socialProfileUrls();
+  const earlyBirdAvailable = isEarlyBirdOfferAvailable(earlyBird);
+  const billingPeriods = listAvailablePaymentPlanBillingPeriods(plans, {
+    earlyBird: earlyBirdAvailable,
+  });
+  const offerPeriod = billingPeriods[0] ?? "month";
+  const offers = showPricing
+    ? plans.map((plan) => {
+        const regular = getPaymentPlanPriceForPeriod(plan, offerPeriod);
+        const early = earlyBirdAvailable
+          ? getPaymentPlanPriceForPeriod(plan, offerPeriod, { earlyBird: true })
+          : 0;
+        const price = plan.isFree
+          ? 0
+          : early > 0 && early < regular
+            ? early
+            : regular;
+        return {
+          "@type": "Offer",
+          name: resolveLocalizedValue(plan.nameValues, languageCode),
+          price: String(price),
+          priceCurrency: "EUR",
+          availability: "https://schema.org/InStock",
+          url: `${url}#pricing`,
+        };
+      })
+    : {
+        "@type": "Offer",
+        price: "0",
+        priceCurrency: "EUR",
+        availability: "https://schema.org/InStock",
+        // Landing page, not /signup — signup is robots-disallowed.
+        url,
+      };
 
   const organization = {
     "@type": "Organization",
@@ -83,14 +137,7 @@ export async function LandingJsonLd() {
         description,
         inLanguage: language,
         publisher: { "@id": organizationId },
-        offers: {
-          "@type": "Offer",
-          price: "0",
-          priceCurrency: "EUR",
-          availability: "https://schema.org/InStock",
-          // Landing page, not /signup — signup is robots-disallowed.
-          url,
-        },
+        offers,
       },
       {
         "@type": "FAQPage",

@@ -66,8 +66,8 @@ export function AdminTeamMembersModal({
     <AppModal
       open={open}
       onOpenChange={onOpenChange}
-      title={team?.name ?? t("admin.teams.members", "Biedri")}
-      description={t("admin.teams.members.description", "Komandas biedru saraksts.")}
+      title={team?.name ?? t("admin.teams.members", "Lietotāji")}
+      description={t("admin.teams.members.description", "Komandas lietotāju saraksts.")}
       panelMaxWidthClassName="max-w-lg"
     >
       {team ? (
@@ -83,8 +83,8 @@ export function AdminTeamMembersModal({
               <p className="truncate font-semibold text-zinc-900">{team.name}</p>
               <p className="text-sm text-zinc-500">
                 {loading
-                  ? t("admin.teams.members.loading", "Ielādē biedrus…")
-                  : t("admin.teams.members.count", "{count} biedri", {
+                  ? t("admin.teams.members.loading", "Ielādē lietotājus…")
+                  : t("admin.teams.members.count", "{count} lietotāji", {
                       count: members.length,
                     })}
               </p>
@@ -95,11 +95,11 @@ export function AdminTeamMembersModal({
             <LoadingState compact className="justify-center py-8" />
           ) : loadFailed ? (
             <p className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-              {t("admin.teams.members.load_failed", "Neizdevās ielādēt biedrus.")}
+              {t("admin.teams.members.load_failed", "Neizdevās ielādēt lietotājus.")}
             </p>
           ) : members.length === 0 ? (
             <p className="rounded-xl border border-zinc-200 px-4 py-8 text-center text-sm text-zinc-500">
-              {t("admin.teams.members.empty", "Nav biedru.")}
+              {t("admin.teams.members.empty", "Nav lietotāju.")}
             </p>
           ) : (
             <ul className="divide-y divide-zinc-100 rounded-xl border border-zinc-200">

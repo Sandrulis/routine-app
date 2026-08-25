@@ -184,7 +184,7 @@ export function PageBreadcrumb() {
         items.push({
           href: `/team/${parts[1]}`,
           label: teamReady
-            ? (member?.name ?? t("team.detail.missing", "Biedrs nav atrasts"))
+            ? (member?.name ?? t("team.detail.missing", "Lietotājs nav atrasts"))
             : loadingLabel,
           icon: member ? (
             <UserAvatar member={member} size="xs" />

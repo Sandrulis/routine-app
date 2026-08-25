@@ -1285,7 +1285,7 @@ export function AppNav() {
             iconToneClassName="bg-violet-100 text-violet-700"
             label={t("nav.team", "Komanda")}
             addLabel={t("team.invite.button", "Uzaicināt")}
-            addAriaLabel={t("team.invite.title", "Uzaicināt biedru")}
+            addAriaLabel={t("team.invite.title", "Uzaicināt lietotāju")}
             expanded={isExpanded("team", true)}
             isParentActive={isTeam}
             onToggle={() => toggleTree("team", true)}
@@ -1327,7 +1327,7 @@ export function AppNav() {
             ) : (
               <p className="px-2 py-1.5 text-[12px] text-zinc-400">
                 {currentTeam
-                  ? t("team.empty", "Komandā vēl nav biedru.")
+                  ? t("team.empty", "Komandā vēl nav lietotāju.")
                   : t("teams.required.empty_members", "Vispirms izveido komandu.")}
               </p>
             )
@@ -1466,7 +1466,7 @@ export function AppNav() {
                   title: t("team.roles.title", "Komandas lomas"),
                   description: t(
                     "team.roles.menu_description",
-                    "Sadali biedrus pa lomām",
+                    "Sadali lietotājus pa lomām",
                   ),
                 },
               ]

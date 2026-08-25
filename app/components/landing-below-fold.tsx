@@ -2,10 +2,12 @@
 
 import { useMemo } from "react";
 import Link from "next/link";
+import { LandingPricing } from "@/app/components/landing-pricing";
 import { useTranslations } from "@/app/components/translations-provider";
 import { useFrontendModules } from "@/app/lib/frontend-modules/context";
 import { resolveLandingFaqItems } from "@/app/lib/landing/faq";
 import { resolveLandingPageContent } from "@/app/lib/landing/features";
+import type { LandingPricingData } from "@/app/lib/landing/pricing";
 import { localePath } from "@/app/lib/seo/locale-path";
 
 const STEPS = [
@@ -21,7 +23,7 @@ const STEPS = [
     titleFallback: "Saliec komandu un darbu",
     descriptionKey: "landing.how.step2.description",
     descriptionFallback:
-      "Uzaicini komandas biedrus, izveido sarakstus projektiem vai klientiem un sadali uzdevumus ar termiņiem.",
+      "Uzaicini komandas lietotājus, izveido sarakstus projektiem vai klientiem un sadali uzdevumus ar termiņiem.",
   },
   {
     titleKey: "landing.how.step3.title",
@@ -95,16 +97,23 @@ const AUDIENCES = [
   },
 ] as const;
 
-export function LandingBelowFold({ productName }: { productName: string }) {
+export function LandingBelowFold({
+  productName,
+  pricing = null,
+}: {
+  productName: string;
+  pricing?: LandingPricingData | null;
+}) {
   const { t, languageCode } = useTranslations();
   const { isEnabled } = useFrontendModules();
+  const showPricing = Boolean(pricing?.plans.length);
   const content = useMemo(
     () => resolveLandingPageContent(isEnabled),
     [isEnabled],
   );
   const faqItems = useMemo(
-    () => resolveLandingFaqItems(isEnabled),
-    [isEnabled],
+    () => resolveLandingFaqItems(isEnabled, { showPricing }),
+    [isEnabled, showPricing],
   );
   const name = { name: productName };
   const signupHref = localePath("/signup", languageCode);
@@ -252,6 +261,10 @@ export function LandingBelowFold({ productName }: { productName: string }) {
           </div>
         </div>
       </section>
+
+      {pricing ? (
+        <LandingPricing pricing={pricing} signupHref={signupHref} />
+      ) : null}
 
       <section className="scroll-mt-20 bg-white" id="faq">
         <div className="mx-auto max-w-6xl px-4 py-20 sm:px-6">

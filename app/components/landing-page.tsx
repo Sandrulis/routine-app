@@ -8,6 +8,7 @@ import { LANDING_REVEAL_EVENT } from "@/app/components/lazy-on-visible";
 import { useTranslations } from "@/app/components/translations-provider";
 import { useFrontendModules } from "@/app/lib/frontend-modules/context";
 import { resolveLandingPageContent } from "@/app/lib/landing/features";
+import type { LandingPricingData } from "@/app/lib/landing/pricing";
 import { localePath } from "@/app/lib/seo/locale-path";
 import { scrollToHashIdWhenReady } from "@/app/lib/smooth-scroll";
 
@@ -28,12 +29,18 @@ const LandingAppPreview = dynamic(
 );
 
 function revealLandingHash(id: string) {
-  if (id === "features" || id === "faq") {
+  if (id === "features" || id === "pricing" || id === "faq") {
     window.dispatchEvent(new Event(LANDING_REVEAL_EVENT));
   }
 }
 
-export function LandingPage({ productName }: { productName: string }) {
+export function LandingPage({
+  productName,
+  pricing = null,
+}: {
+  productName: string;
+  pricing?: LandingPricingData | null;
+}) {
   const { t, languageCode } = useTranslations();
   const { isEnabled } = useFrontendModules();
   const content = useMemo(
@@ -140,7 +147,7 @@ export function LandingPage({ productName }: { productName: string }) {
         </div>
       </section>
 
-      <LandingBelowFold productName={productName} />
+      <LandingBelowFold productName={productName} pricing={pricing} />
     </div>
   );
 }

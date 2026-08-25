@@ -8,6 +8,7 @@ import {
   parseLocalizedValues,
   parsePaymentPlanPrice,
   parsePaymentPlanMaxMembers,
+  resolvePlanMaxMembersForSave,
   type EarlyBirdAvailability,
   type EarlyBirdSettings,
   type PaymentPlanInput,
@@ -53,7 +54,7 @@ type PaymentPlanRow = {
   early_bird_price_month: number | string | null;
   early_bird_price_quarter: number | string | null;
   early_bird_price_year: number | string | null;
-  max_members: number;
+  max_members: number | null;
   sort_order: number;
   created_at: string;
   updated_at: string;
@@ -95,7 +96,10 @@ function mapPaymentPlanRow(
     moduleKeys,
     isFree: row.is_free === true,
     maxMembers:
-      parsePaymentPlanMaxMembers(row.max_members) ?? DEFAULT_PLAN_MEMBERS,
+      row.max_members == null
+        ? null
+        : (parsePaymentPlanMaxMembers(row.max_members) ??
+          (row.is_free === true ? DEFAULT_PLAN_MEMBERS : null)),
     priceMonth: parsePaymentPlanPrice(row.price_month) ?? 0,
     priceQuarter: parsePaymentPlanPrice(row.price_quarter) ?? 0,
     priceYear: parsePaymentPlanPrice(row.price_year) ?? 0,
@@ -409,6 +413,9 @@ export async function listPaymentPlans(): Promise<PaymentPlanSummary[]> {
   );
 }
 
+/** Per-request cache for public landing / layout reads. Do not use inside plan mutations. */
+export const listPaymentPlansCached = cache(listPaymentPlans);
+
 async function replacePlanModules(
   planId: string,
   moduleKeys: string[],
@@ -445,10 +452,6 @@ async function replacePlanModules(
   return { ok: true };
 }
 
-function normalizePlanMaxMembers(value: unknown): number | null {
-  return parsePaymentPlanMaxMembers(value);
-}
-
 export async function createPaymentPlan(
   input: PaymentPlanInput,
 ): Promise<{ ok: true; plan: PaymentPlanSummary } | { ok: false; error: string }> {
@@ -468,8 +471,11 @@ export async function createPaymentPlan(
     return pricesResult;
   }
 
-  const maxMembers = normalizePlanMaxMembers(input.maxMembers);
-  if (maxMembers === null) {
+  const maxMembersResult = resolvePlanMaxMembersForSave(
+    input.isFree === true,
+    input.maxMembers,
+  );
+  if (!maxMembersResult.ok) {
     return { ok: false, error: "errors.payment_plan_max_members_invalid" };
   }
 
@@ -490,7 +496,7 @@ export async function createPaymentPlan(
       description_values: normalizeLocalizedValues(input.descriptionValues),
       is_free: input.isFree === true,
       sort_order: nextSortOrder,
-      max_members: maxMembers,
+      max_members: maxMembersResult.maxMembers,
       ...pricesResult.prices,
     })
     .select(PLAN_SELECT)
@@ -542,8 +548,11 @@ export async function updatePaymentPlan(
     return pricesResult;
   }
 
-  const maxMembers = normalizePlanMaxMembers(input.maxMembers);
-  if (maxMembers === null) {
+  const maxMembersResult = resolvePlanMaxMembersForSave(
+    input.isFree === true,
+    input.maxMembers,
+  );
+  if (!maxMembersResult.ok) {
     return { ok: false, error: "errors.payment_plan_max_members_invalid" };
   }
 
@@ -559,7 +568,7 @@ export async function updatePaymentPlan(
       name_values: nameValues,
       description_values: normalizeLocalizedValues(input.descriptionValues),
       is_free: input.isFree === true,
-      max_members: maxMembers,
+      max_members: maxMembersResult.maxMembers,
       ...pricesResult.prices,
     })
     .eq("id", trimmedId);

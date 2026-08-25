@@ -191,14 +191,22 @@ export function AdminTeamPlanModal({
 
           {selectedPlan ? (
             <p className="rounded-xl border border-zinc-100 bg-zinc-50 px-4 py-3 text-xs text-zinc-600">
-              {t(
-                "admin.teams.plan.plan_summary",
-                "Līdz {maxMembers} biedriem · {moduleCount} moduļi",
-                {
-                  maxMembers: selectedPlan.maxMembers,
-                  moduleCount: selectedPlan.moduleKeys.length,
-                },
-              )}
+              {selectedPlan.isFree
+                ? t(
+                    "admin.teams.plan.plan_summary",
+                    "Līdz {maxMembers} lietotājiem · {moduleCount} moduļi",
+                    {
+                      maxMembers: selectedPlan.maxMembers ?? 0,
+                      moduleCount: selectedPlan.moduleKeys.length,
+                    },
+                  )
+                : t(
+                    "admin.teams.plan.plan_summary_paid",
+                    "{moduleCount} moduļi · cena par lietotāju",
+                    {
+                      moduleCount: selectedPlan.moduleKeys.length,
+                    },
+                  )}
             </p>
           ) : null}
 

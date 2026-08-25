@@ -187,7 +187,7 @@ export function ListAutomationsModal({
               </RuleCard>
             ))}
             {statusesForList.length === 0 || members.length === 0 ? (
-              <EmptyHint text={t("lists.automations.needs_statuses_and_members", "Sarakstam jābūt statusiem un komandas biedriem.")} />
+              <EmptyHint text={t("lists.automations.needs_statuses_and_members", "Sarakstam jābūt statusiem un komandas lietotājiem.")} />
             ) : (
               <AddButton label={t("lists.automations.add_rule", "Pievienot noteikumu")} onClick={handleAddStatusAssign} />
             )}

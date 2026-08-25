@@ -27,6 +27,7 @@ import {
   MIN_TRIAL_DAYS,
   MAX_PLAN_MEMBERS,
   MIN_PLAN_MEMBERS,
+  DEFAULT_PLAN_MEMBERS,
   resolveLocalizedValue,
   type EarlyBirdAvailability,
   type LocalizedValues,
@@ -117,7 +118,7 @@ function draftFromPlan(
     descriptionValues: mergeValues(languages, plan.descriptionValues),
     moduleKeys: [...plan.moduleKeys],
     isFree: plan.isFree,
-    maxMembers: String(plan.maxMembers),
+    maxMembers: plan.maxMembers == null ? "" : String(plan.maxMembers),
     priceMonth: priceToInput(plan.priceMonth),
     priceQuarter: priceToInput(plan.priceQuarter),
     priceYear: priceToInput(plan.priceYear),
@@ -152,6 +153,17 @@ function moduleLabel(
   if (known) return t(known.key, known.fallback);
   const translated = t(`frontend_modules.label.${moduleKey}`, "").trim();
   return translated || moduleKey;
+}
+
+function pricePeriodLabel(
+  t: ReturnType<typeof useTranslations>["t"],
+  periodKey: string,
+  periodFallback: string,
+): string {
+  return `${t(periodKey, periodFallback)} ${t(
+    "site_payment_plans.period.per_user",
+    "/ lietotājs",
+  )}`;
 }
 
 export function AdminPaymentPlansForm({
@@ -407,20 +419,23 @@ export function AdminPaymentPlansForm({
       }
     }
 
-    const parsedMaxMembers = Number.parseInt(draft.maxMembers.trim(), 10);
-    if (
-      !Number.isFinite(parsedMaxMembers) ||
-      parsedMaxMembers < MIN_PLAN_MEMBERS ||
-      parsedMaxMembers > MAX_PLAN_MEMBERS
-    ) {
-      showFeedback({
-        type: "error",
-        text: t(
-          "errors.payment_plan_max_members_invalid",
-          "Norādi derīgu biedru skaitu (no 1 līdz 10 000).",
-        ),
-      });
-      return;
+    let parsedMaxMembers: number | null = null;
+    if (draft.isFree) {
+      parsedMaxMembers = Number.parseInt(draft.maxMembers.trim(), 10);
+      if (
+        !Number.isFinite(parsedMaxMembers) ||
+        parsedMaxMembers < MIN_PLAN_MEMBERS ||
+        parsedMaxMembers > MAX_PLAN_MEMBERS
+      ) {
+        showFeedback({
+          type: "error",
+          text: t(
+            "errors.payment_plan_max_members_invalid",
+            "Norādi derīgu lietotāju skaitu (no 1 līdz 10 000).",
+          ),
+        });
+        return;
+      }
     }
 
     startTransition(async () => {
@@ -724,7 +739,7 @@ export function AdminPaymentPlansForm({
                   {t("site_payment_plans.form.name", "Nosaukums")}
                 </th>
                 <th className="px-5 py-3">
-                  {t("site_payment_plans.list.members", "Biedri")}
+                  {t("site_payment_plans.list.members", "Lietotāji")}
                 </th>
                 <th className="px-5 py-3">
                   {t("site_payment_plans.list.prices", "Cenas")}
@@ -764,7 +779,12 @@ export function AdminPaymentPlansForm({
                         </p>
                       </td>
                       <td className="px-5 py-4 text-zinc-600 tabular-nums">
-                        {plan.maxMembers}
+                        {plan.isFree
+                          ? (plan.maxMembers ?? "—")
+                          : t(
+                              "site_payment_plans.list.per_user",
+                              "par lietotāju",
+                            )}
                       </td>
                       <td className="px-5 py-4 text-xs tabular-nums text-zinc-600">
                         {plan.isFree ? (
@@ -775,7 +795,8 @@ export function AdminPaymentPlansForm({
                         {!plan.isFree && plan.priceMonth > 0 ? (
                           <p>
                             {formatPlanEuro(plan.priceMonth)}{" "}
-                            {t(
+                            {pricePeriodLabel(
+                              t,
                               "site_payment_plans.period.month_short",
                               "/ mēn.",
                             )}
@@ -784,7 +805,8 @@ export function AdminPaymentPlansForm({
                         {!plan.isFree && plan.priceQuarter > 0 ? (
                           <p className={plan.priceMonth > 0 ? "mt-0.5" : undefined}>
                             {formatPlanEuro(plan.priceQuarter)}{" "}
-                            {t(
+                            {pricePeriodLabel(
+                              t,
                               "site_payment_plans.period.quarter_short",
                               "/ cet.",
                             )}
@@ -799,7 +821,8 @@ export function AdminPaymentPlansForm({
                             }
                           >
                             {formatPlanEuro(plan.priceYear)}{" "}
-                            {t(
+                            {pricePeriodLabel(
+                              t,
                               "site_payment_plans.period.year_short",
                               "/ gadā",
                             )}
@@ -819,7 +842,8 @@ export function AdminPaymentPlansForm({
                             {plan.earlyBirdPriceMonth > 0 ? (
                               <p className="mt-0.5">
                                 {formatPlanEuro(plan.earlyBirdPriceMonth)}{" "}
-                                {t(
+                                {pricePeriodLabel(
+                                  t,
                                   "site_payment_plans.period.month_short",
                                   "/ mēn.",
                                 )}
@@ -828,7 +852,8 @@ export function AdminPaymentPlansForm({
                             {plan.earlyBirdPriceQuarter > 0 ? (
                               <p className="mt-0.5">
                                 {formatPlanEuro(plan.earlyBirdPriceQuarter)}{" "}
-                                {t(
+                                {pricePeriodLabel(
+                                  t,
                                   "site_payment_plans.period.quarter_short",
                                   "/ cet.",
                                 )}
@@ -837,7 +862,8 @@ export function AdminPaymentPlansForm({
                             {plan.earlyBirdPriceYear > 0 ? (
                               <p className="mt-0.5">
                                 {formatPlanEuro(plan.earlyBirdPriceYear)}{" "}
-                                {t(
+                                {pricePeriodLabel(
+                                  t,
                                   "site_payment_plans.period.year_short",
                                   "/ gadā",
                                 )}
@@ -1022,49 +1048,60 @@ export function AdminPaymentPlansForm({
               disabled={isBusy}
               label={t("site_payment_plans.form.is_free", "Bezmaksas plāns")}
               onChange={(next) =>
-                setDraft((current) => ({ ...current, isFree: next }))
+                setDraft((current) => ({
+                  ...current,
+                  isFree: next,
+                  ...(next && !current.maxMembers.trim()
+                    ? { maxMembers: String(DEFAULT_PLAN_MEMBERS) }
+                    : {}),
+                }))
               }
             />
           </div>
 
-          <label className="block">
-            <span className="text-sm font-medium text-zinc-800">
-              {t("site_payment_plans.form.max_members", "Maks. biedru skaits")}
-            </span>
-            <input
-              type="number"
-              inputMode="numeric"
-              min={MIN_PLAN_MEMBERS}
-              max={MAX_PLAN_MEMBERS}
-              step={1}
-              value={draft.maxMembers}
-              onChange={(event) =>
-                setDraft((current) => ({
-                  ...current,
-                  maxMembers: event.target.value,
-                }))
-              }
-              className={`${fieldClassName} tabular-nums`}
-              disabled={isBusy}
-            />
-            <span className="mt-1 block text-xs text-zinc-500">
-              {t(
-                "site_payment_plans.form.max_members_hint",
-                "Cik komandas biedru drīkst būt šajā plānā.",
-              )}
-            </span>
-          </label>
+          {draft.isFree ? (
+            <label className="block">
+              <span className="text-sm font-medium text-zinc-800">
+                {t("site_payment_plans.form.max_members", "Maks. lietotāju skaits")}
+              </span>
+              <input
+                type="number"
+                inputMode="numeric"
+                min={MIN_PLAN_MEMBERS}
+                max={MAX_PLAN_MEMBERS}
+                step={1}
+                value={draft.maxMembers}
+                onChange={(event) =>
+                  setDraft((current) => ({
+                    ...current,
+                    maxMembers: event.target.value,
+                  }))
+                }
+                className={`${fieldClassName} tabular-nums`}
+                disabled={isBusy}
+              />
+              <span className="mt-1 block text-xs text-zinc-500">
+                {t(
+                  "site_payment_plans.form.max_members_hint",
+                  "Cik komandas lietotāju drīkst būt šajā bezmaksas plānā.",
+                )}
+              </span>
+            </label>
+          ) : null}
 
           {!draft.isFree ? (
             <>
           <div>
             <p className="text-sm font-medium text-zinc-800">
-              {t("site_payment_plans.form.prices", "Cenas (EUR)")}
+              {t(
+                "site_payment_plans.form.prices",
+                "Cenas par vienu lietotāju (EUR)",
+              )}
             </p>
             <p className="mt-1 text-xs text-zinc-500">
               {t(
                 "site_payment_plans.form.prices_hint",
-                "Aizpildi tikai piedāvātos periodus. Tukšs periods landing lapā netiek rādīts. Decimālatdalītājs ir punkts, piemēram 29.00.",
+                "Cena ir par vienu lietotāju. Aizpildi tikai piedāvātos periodus. Tukšs periods landing lapā netiek rādīts. Decimālatdalītājs ir punkts, piemēram 9.00.",
               )}
             </p>
             <div className="mt-2 grid gap-3 sm:grid-cols-3">
@@ -1132,13 +1169,13 @@ export function AdminPaymentPlansForm({
             <p className="text-sm font-medium text-zinc-800">
               {t(
                 "site_payment_plans.form.early_bird_prices",
-                "Early Bird cenas (EUR)",
+                "Early Bird cenas par vienu lietotāju (EUR)",
               )}
             </p>
             <p className="mt-1 text-xs text-zinc-500">
               {t(
                 "site_payment_plans.form.early_bird_prices_hint",
-                "Šīs cenas attiecas uz komandām ar Early Bird statusu. Tukšus periodus vari atstāt tukšus.",
+                "Šīs cenas attiecas uz komandām ar Early Bird statusu un arī ir par vienu lietotāju. Tukšus periodus vari atstāt tukšus.",
               )}
             </p>
             <div className="mt-2 grid gap-3 sm:grid-cols-3">

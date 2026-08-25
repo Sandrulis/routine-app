@@ -23,7 +23,7 @@ export function LazyOnVisible({
 
     const reveal = () => setVisible(true);
     const hash = window.location.hash.replace(/^#/, "");
-    if (hash === "features" || hash === "faq") {
+    if (hash === "features" || hash === "pricing" || hash === "faq") {
       reveal();
       return;
     }

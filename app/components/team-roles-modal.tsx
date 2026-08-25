@@ -226,7 +226,7 @@ export function TeamRolesModal({
         title={t("team.roles.title", "Komandas lomas")}
         description={t(
           "team.roles.description",
-          "Izveido lomas un sadali komandas biedrus pa tām.",
+          "Izveido lomas un sadali komandas lietotājus pa tām.",
         )}
         dirty={isDirty}
         panelMaxWidthClassName={appModalExtraWidePanelMaxWidthClassName}
@@ -425,7 +425,7 @@ export function TeamRolesModal({
         title={t("team.roles.delete.title", "Dzēst lomu?")}
         description={t(
           "team.roles.delete.description",
-          "Loma “{name}” tiks dzēsta. Biedri tiks pārcelti uz lomu Biedrs.",
+          "Loma “{name}” tiks dzēsta. Lietotāji tiks pārcelti uz lomu Lietotājs.",
           { name: deleteRole ? roleLabel(deleteRole) : "" },
         )}
         confirmLabel={t("actions.delete", "Dzēst")}
