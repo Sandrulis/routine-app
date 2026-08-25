@@ -410,16 +410,16 @@ function sessionExpired(session) {
   const expiresAtMs = Number(session.expires_at)
     ? Number(session.expires_at) * 1000
     : 0;
-  if (expiresAtMs && expiresAtMs < Date.now() + 60_000) return true;
+  if (expiresAtMs) return expiresAtMs < Date.now() + 60_000;
   try {
     const payload = JSON.parse(
       atob(session.access_token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/")),
     );
-    if (payload?.exp && payload.exp * 1000 < Date.now() + 60_000) return true;
+    if (payload?.exp) return payload.exp * 1000 < Date.now() + 60_000;
   } catch {
-    // ignore
+    // unreadable JWT
   }
-  return false;
+  return true;
 }
 
 async function listCookiesForOrigin(appBase) {
@@ -633,17 +633,6 @@ async function refreshSession(appBase, session) {
   }
 }
 
-function jwtStillValid(session) {
-  try {
-    const payload = JSON.parse(
-      atob(session.access_token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/")),
-    );
-    return Boolean(payload?.exp && payload.exp * 1000 > Date.now() + 5000);
-  } catch {
-    return false;
-  }
-}
-
 async function resolveAccessToken(appBase, session, fallback) {
   if (!session?.access_token) return null;
   if (!sessionExpired(session)) {
@@ -655,13 +644,6 @@ async function resolveAccessToken(appBase, session, fallback) {
   }
   const refreshed = await refreshSession(appBase, session);
   if (refreshed?.access_token) return refreshed.access_token;
-  if (jwtStillValid(session)) {
-    await rememberSession(
-      appBase,
-      mergeSessionPreserveRefresh(session, fallback),
-    );
-    return session.access_token;
-  }
   return null;
 }
 
@@ -671,7 +653,10 @@ async function importSessionFromKnownCookies(preferredOrigin) {
     ...(await originsFromAuthCookies()),
     ...APP_ORIGIN_CANDIDATES.filter((origin) => !isLocalOrigin(origin)),
   ]);
+  const preferProduction =
+    preferredOrigin && !isLocalOrigin(preferLiveOrigin(preferredOrigin));
   for (const origin of expandOrigins(origins)) {
+    if (preferProduction && isLocalOrigin(origin)) continue;
     const { session } = await readSessionFromCookies(origin);
     if (sessionUsable(session)) {
       await rememberSession(origin, session);
@@ -1299,6 +1284,16 @@ async function getSelectedTeamId(teams) {
 
 async function sessionResponse() {
   const result = await apiFetch("/api/extension/session");
+  if (
+    result?.status === 200 &&
+    result?.data &&
+    result.data.authenticated !== true
+  ) {
+    const stored = await readStoredSession();
+    if (stored?.session?.access_token) {
+      await clearStoredSession();
+    }
+  }
   if (result?.data) {
     const teams = Array.isArray(result.data.teams) ? result.data.teams : [];
     const selectedTeamId = await getSelectedTeamId(teams);
@@ -1359,17 +1354,13 @@ async function fetchBootstrapFromTicket(origin, ticket) {
           body: JSON.stringify({ ticket: value }),
         },
       );
-      if (response.status >= 300 && response.status < 400) {
-        bootstrapFromTicketCache.set(value, null);
-        return null;
-      }
+      if (response.status >= 300 && response.status < 400) return null;
       const data = await response.json().catch(() => null);
       const session =
         data?.ok && data?.session?.access_token ? data.session : null;
-      bootstrapFromTicketCache.set(value, session);
+      if (session) bootstrapFromTicketCache.set(value, session);
       return session;
     } catch {
-      bootstrapFromTicketCache.set(value, null);
       return null;
     } finally {
       bootstrapFromTicketInFlight.delete(value);
@@ -1421,7 +1412,7 @@ async function captureSessionFromDone(
   const already = await usableStoredSessionOrigin(origin);
   if (already) return already;
 
-  let session = directSession?.refresh_token ? directSession : null;
+  let session = directSession?.access_token ? directSession : null;
   if (!session?.access_token) {
     const ticket =
       String(bootstrapTicket || "").trim() ||
@@ -1487,11 +1478,13 @@ async function waitForPluginSession(tabId, preferredOrigin, timeoutMs = 180000) 
   chrome.tabs.onUpdated.addListener(onUpdated);
   try {
     while (Date.now() - started < timeoutMs) {
-      const readyStored = await usableStoredSessionOrigin(preferredOrigin);
-      if (readyStored) return readyStored;
-      const imported = await importSessionFromKnownCookies(preferredOrigin);
-      if (imported && (await getAccessToken(imported))) return imported;
       if (sawError) return "";
+      const readyStored = await usableStoredSessionOrigin(preferredOrigin);
+      if (readyStored) {
+        const check = await apiFetch("/api/extension/session");
+        if (check?.data?.authenticated) return readyStored;
+        await clearStoredSession();
+      }
       try {
         const tab = await chrome.tabs.get(tabId);
         const url = String(tab.url || tab.pendingUrl || "");
@@ -1505,22 +1498,25 @@ async function waitForPluginSession(tabId, preferredOrigin, timeoutMs = 180000) 
             "",
             tabId,
           );
-          if (ready) return ready;
+          if (ready) {
+            const check = await apiFetch("/api/extension/session");
+            if (check?.data?.authenticated) return ready;
+          }
         }
       } catch {
-        const readyAfterClose = await usableStoredSessionOrigin(preferredOrigin);
-        if (readyAfterClose) return readyAfterClose;
-        const importedAfterClose =
-          (await importSessionFromKnownCookies(preferredOrigin)) || "";
-        if (importedAfterClose && (await getAccessToken(importedAfterClose))) {
-          return importedAfterClose;
-        }
         if (!sawDone) return "";
+        const readyAfterClose = await usableStoredSessionOrigin(preferredOrigin);
+        if (readyAfterClose) {
+          const check = await apiFetch("/api/extension/session");
+          if (check?.data?.authenticated) return readyAfterClose;
+        }
         await new Promise((resolve) => setTimeout(resolve, 600));
         const retryStored = await usableStoredSessionOrigin(preferredOrigin);
-        if (retryStored) return retryStored;
-        const retry = await importSessionFromKnownCookies(preferredOrigin);
-        return retry && (await getAccessToken(retry)) ? retry : "";
+        if (retryStored) {
+          const check = await apiFetch("/api/extension/session");
+          if (check?.data?.authenticated) return retryStored;
+        }
+        return "";
       }
       await new Promise((resolve) => setTimeout(resolve, 400));
     }
@@ -1619,8 +1615,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         const appBase = await getAppBase();
         const imported = await importSessionFromKnownCookies(appBase);
         if (imported && (await getAccessToken(imported))) {
-          sendResponse({ ok: true });
-          return;
+          const check = await apiFetch("/api/extension/session");
+          if (check?.data?.authenticated) {
+            sendResponse({ ok: true });
+            return;
+          }
+          await clearStoredSession();
         }
         const stored = await chrome.storage.sync.get([
           "loginPath",
@@ -1642,10 +1642,19 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           return;
         }
         const readyOrigin = await waitForPluginSession(tab.id, tabOrigin);
-        const token = readyOrigin ? await getAccessToken(readyOrigin) : null;
+        if (!readyOrigin || !(await getAccessToken(readyOrigin))) {
+          sendResponse({
+            ok: false,
+            error: "extension.gmail.login_failed",
+          });
+          return;
+        }
+        const loggedIn = await apiFetch("/api/extension/session");
         sendResponse({
-          ok: Boolean(token),
-          error: token ? undefined : "extension.gmail.login_failed",
+          ok: Boolean(loggedIn?.data?.authenticated),
+          error: loggedIn?.data?.authenticated
+            ? undefined
+            : "extension.gmail.login_failed",
         });
         return;
       }

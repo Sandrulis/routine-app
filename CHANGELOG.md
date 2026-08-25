@@ -4,6 +4,10 @@
 
 - (none)
 
+## v0.2.38
+
+- Gmail spraudnis `0.4.29`: ielogošanās paliek tikai ar servera apstiprinātu sesiju; nederīgs saglabātais tokens tiek izmests
+
 ## v0.2.37
 
 - Gmail spraudnis `0.4.28`: ielogošanās vairs nepazaudē sesiju (ticket vienreiz, nav localhost JWT uz www)
