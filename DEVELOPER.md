@@ -219,10 +219,10 @@ Admin apakšizvēlne (`admin-submenu.tsx`, `is_admin`) → `/admin/payment-plans
 | Ieslēgt maksas plānus | `site_settings.payment_plans_enabled` | Toggle; **ieslēgts** — komandas frontend moduļi no aktīvā plāna; **izslēgts** — visi globāli ieslēgtie moduļi visām komandām |
 | Izmēģinājums | `trial_plan_id` + `trial_days` (1–365) | Plāns jaunām komandām; piešķiršana reģistrācijā vēl nav pieslēgta |
 | Early Bird | `early_bird_limit` | 0 = izslēgts; piešķirto skaits = `teams.payment_plan_is_early_bird` |
-| Katalogs | `site_payment_plans` | `name_values` / `description_values` visās sistēmas valodās; `max_members` (`093`, 1–10 000); opcionālas mēneša / ceturkšņa / gada cenas (tukšs = 0); Early Bird cenas |
+| Katalogs | `site_payment_plans` | `name_values` / `description_values` visās sistēmas valodās; `is_free` (`094`, vienmēr aktīvs bez maksas); `max_members` (`093`, 1–10 000); opcionālas mēneša / ceturkšņa / gada cenas (tukšs = 0); Early Bird cenas. Seed: `free`, `paid` |
 | Moduļi plānā | `site_payment_plan_modules` | Atzīmē tikai globāli ieslēgtos `site_frontend_modules` |
 
-Komandai kolonnas `payment_plan_id` / `payment_plan_until` / `payment_plan_paid` / `payment_plan_is_trial` / `payment_plan_is_early_bird` (`062`). Piešķiršana: `/admin/teams` (`AdminTeamPlanModal` + `updateAdminTeamPaymentPlanAction`). Aktīvs plāns = ir `plan_id` un (`paid` **vai** `is_trial`) un `until` tukšs vai ≥ šodien. App layout ielādē globālos moduļus + plānu katalogu; `TeamScopedFrontendModules` filtrē pēc `currentTeam.paymentPlan`. Biedru limita enforcement pie uzaicināšanas vēl nav. Tabulas SELECT `anon`/`authenticated`; raksta tikai admin (`current_user_is_admin`).
+Komandai kolonnas `payment_plan_id` / `payment_plan_until` / `payment_plan_paid` / `payment_plan_is_trial` / `payment_plan_is_early_bird` (`062`). Piešķiršana: `/admin/teams` (`AdminTeamPlanModal` + `updateAdminTeamPaymentPlanAction`). Aktīvs plāns = kataloga `is_free`, vai ir `plan_id` un (`paid` **vai** `is_trial`) un `until` tukšs vai ≥ šodien. App layout ielādē globālos moduļus + plānu katalogu; `TeamScopedFrontendModules` filtrē pēc `currentTeam.paymentPlan`. Biedru limita enforcement pie uzaicināšanas vēl nav. Tabulas SELECT `anon`/`authenticated`; raksta tikai admin (`current_user_is_admin`).
 
 ## Paziņojumi
 
@@ -569,7 +569,7 @@ app/auth/microsoft-oauth/callback/route.ts # Microsoft login + admin konfigurāc
 app/auth/google-drive/callback/route.ts # Drive OAuth code → team refresh token
 app/auth/onedrive/callback/route.ts # OneDrive OAuth code → team refresh token
 scripts/                          # audit-check.mjs, apply-migrations.mjs, test-supabase.mjs, sync-i18n-catalogs.mjs
-supabase/migrations/              # 001–093: shēma, admin, work data, Drive, drošība, ielādes ātrums, e-pasta šabloni, Gmail spraudnis, publiskie login karogi, extra valodas, legal_email, invite preview `account_exists`, `file_forwarded` vēsture, Resend email id indekss, user feedback + feature votes, cron jobs, hashed tokeni, timezone batchi, Turnstile, payment plan max_members
+supabase/migrations/              # 001–094: shēma, admin, work data, Drive, drošība, ielādes ātrums, e-pasta šabloni, Gmail spraudnis, publiskie login karogi, extra valodas, legal_email, invite preview `account_exists`, `file_forwarded` vēsture, Resend email id indekss, user feedback + feature votes, cron jobs, hashed tokeni, timezone batchi, Turnstile, payment plan max_members, free/paid plānu seed
 .github/workflows/                # secret-scan.yml, security-audit.yml, security-smoke.yml
 .gitleaks.toml                    # default rules + i18n translation key allowlist
 .cursor/rules/                    # README bump, commits
@@ -731,7 +731,7 @@ RLS (`005_work_data.sql`): `authenticated` drīkst SELECT/INSERT/UPDATE/DELETE t
 | `site_cron_jobs` | Cron darbi (`subtask_start_reminder`, `subtask_due_reminder`): ieslēgts, hashed `secret_token`, pēdējā palaišana (`089`); RLS deny authenticated |
 | `site_user_feedback` | Lietotāju kļūdu ziņojumi, funkciju pieprasījumi un atsauksmes (`kind`, `title`, `body`, `vote_count`; `088`); SELECT: `feature` visiem authenticated, pārējie tikai autoram |
 | `site_feature_votes` | Funkciju pieprasījumu UP balsis (`request_id` + `user_id`); RPC `toggle_feature_vote` (`088`) |
-| `site_payment_plans` | Maksas plānu katalogs (nosaukumi visās valodās, cenas, Early Bird cenas, `max_members` `093`) |
+| `site_payment_plans` | Maksas plānu katalogs (nosaukumi visās valodās, `is_free` `094`, cenas, Early Bird cenas, `max_members` `093`; seed `free` / `paid`) |
 | `site_payment_plan_modules` | Frontend moduļi katrā plānā |
 | `site_integrations` | Sistēmas integrācijas (`google_oauth`, `microsoft_oauth`, `resend`, `umami`, `sentry`): credentials, konfigurēts/ieslēgts (`067`–`069`); RLS deny authenticated; publiskie login karogi `public_sign_in_methods()` (`080`) |
 | `list_statuses` | Komandas statusi vienam sarakstam (`lsts-…`) |

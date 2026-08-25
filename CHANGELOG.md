@@ -4,6 +4,10 @@
 
 - (none)
 
+## v0.2.34
+
+- Maksas plānu katalogs: bezmaksas (`free`, vienmēr aktīvs) un maksas (`paid`) plāni visās valodās; moduļus un cenas var pielabot adminā
+
 ## v0.2.33
 
 - Sākumlapas kartītēs nosaukumi blakus ikonai (fīčas, auditorijas, soļi)

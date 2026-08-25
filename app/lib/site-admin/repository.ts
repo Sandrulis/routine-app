@@ -603,8 +603,29 @@ export async function updateAdminTeamPaymentPlan(
 
   if (planId) {
     const plans = await listPaymentPlans();
-    if (!plans.some((plan) => plan.id === planId)) {
+    const assigned = plans.find((plan) => plan.id === planId);
+    if (!assigned) {
       return { ok: false, error: "errors.payment_plan_not_found" };
+    }
+    if (assigned.isFree) {
+      const supabase = await getSessionClient();
+      const { error } = await supabase
+        .from("teams")
+        .update({
+          payment_plan_id: planId,
+          payment_plan_until: null,
+          payment_plan_paid: false,
+          payment_plan_is_trial: false,
+          payment_plan_is_early_bird: false,
+        })
+        .eq("id", trimmedTeamId);
+
+      if (error) {
+        console.error("updateAdminTeamPaymentPlan failed:", error.message);
+        return { ok: false, error: "errors.team_payment_plan_save_failed" };
+      }
+
+      return { ok: true };
     }
   }
 

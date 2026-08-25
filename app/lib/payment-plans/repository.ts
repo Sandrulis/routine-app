@@ -46,6 +46,7 @@ type PaymentPlanRow = {
   plan_key: string;
   name_values: unknown;
   description_values: unknown;
+  is_free: boolean | null;
   price_month: number | string | null;
   price_quarter: number | string | null;
   price_year: number | string | null;
@@ -66,7 +67,7 @@ type PlanModuleRow = {
 const PLAN_KEY_PATTERN = /^[a-z0-9._:-]+$/;
 
 const PLAN_SELECT =
-  "id, plan_key, name_values, description_values, price_month, price_quarter, price_year, early_bird_price_month, early_bird_price_quarter, early_bird_price_year, max_members, sort_order, created_at, updated_at";
+  "id, plan_key, name_values, description_values, is_free, price_month, price_quarter, price_year, early_bird_price_month, early_bird_price_quarter, early_bird_price_year, max_members, sort_order, created_at, updated_at";
 
 function normalizePlanKey(value: string): string {
   return value.trim().toLowerCase();
@@ -92,6 +93,7 @@ function mapPaymentPlanRow(
     nameValues: parseLocalizedValues(row.name_values),
     descriptionValues: parseLocalizedValues(row.description_values),
     moduleKeys,
+    isFree: row.is_free === true,
     maxMembers:
       parsePaymentPlanMaxMembers(row.max_members) ?? DEFAULT_PLAN_MEMBERS,
     priceMonth: parsePaymentPlanPrice(row.price_month) ?? 0,
@@ -144,8 +146,18 @@ function normalizePlanPrices(input: PaymentPlanInput):
     return { ok: false, error: "errors.payment_plan_price_invalid" };
   }
 
-  if (priceMonth <= 0 && priceQuarter <= 0 && priceYear <= 0) {
-    return { ok: false, error: "errors.payment_plan_price_period_required" };
+  if (input.isFree) {
+    return {
+      ok: true,
+      prices: {
+        price_month: 0,
+        price_quarter: 0,
+        price_year: 0,
+        early_bird_price_month: 0,
+        early_bird_price_quarter: 0,
+        early_bird_price_year: 0,
+      },
+    };
   }
 
   return {
@@ -476,6 +488,7 @@ export async function createPaymentPlan(
       plan_key: planKey,
       name_values: nameValues,
       description_values: normalizeLocalizedValues(input.descriptionValues),
+      is_free: input.isFree === true,
       sort_order: nextSortOrder,
       max_members: maxMembers,
       ...pricesResult.prices,
@@ -545,6 +558,7 @@ export async function updatePaymentPlan(
       plan_key: planKey,
       name_values: nameValues,
       description_values: normalizeLocalizedValues(input.descriptionValues),
+      is_free: input.isFree === true,
       max_members: maxMembers,
       ...pricesResult.prices,
     })

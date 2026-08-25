@@ -18,6 +18,7 @@ import type {
 type PaymentPlanModuleSnapshot = {
   id: string;
   moduleKeys: string[];
+  isFree?: boolean;
 };
 
 export function AppProviders({

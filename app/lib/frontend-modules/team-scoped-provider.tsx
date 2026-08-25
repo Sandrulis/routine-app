@@ -6,6 +6,7 @@ import {
   useFrontendModules,
 } from "@/app/lib/frontend-modules/context";
 import {
+  buildFreePlanIds,
   buildPlanModuleKeysMap,
   resolveEffectiveFrontendModuleKeys,
 } from "@/app/lib/payment-plans/team-plan";
@@ -14,6 +15,7 @@ import { useTeam } from "@/app/lib/team-store";
 type PaymentPlanModuleSnapshot = {
   id: string;
   moduleKeys: string[];
+  isFree?: boolean;
 };
 
 export function TeamScopedFrontendModules({
@@ -32,6 +34,7 @@ export function TeamScopedFrontendModules({
     () => buildPlanModuleKeysMap(plans),
     [plans],
   );
+  const freePlanIds = useMemo(() => buildFreePlanIds(plans), [plans]);
 
   const effectiveKeys = useMemo(
     () =>
@@ -40,12 +43,14 @@ export function TeamScopedFrontendModules({
         paymentPlansEnabled,
         teamPlan: currentTeam?.paymentPlan,
         planModuleKeysByPlanId,
+        freePlanIds,
       }),
     [
       currentTeam?.paymentPlan,
       globalEnabledKeys,
       paymentPlansEnabled,
       planModuleKeysByPlanId,
+      freePlanIds,
     ],
   );
 

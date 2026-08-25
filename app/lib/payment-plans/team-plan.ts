@@ -7,9 +7,13 @@ export function todayIsoDate(): string {
 export function isTeamPaymentPlanActive(
   plan: TeamPaymentPlanState | null | undefined,
   todayIso: string = todayIsoDate(),
+  options?: { isFree?: boolean },
 ): boolean {
   if (!plan?.planId) {
     return false;
+  }
+  if (options?.isFree) {
+    return true;
   }
   if (!plan.isTrial && !plan.paid) {
     return false;
@@ -26,6 +30,7 @@ export function resolveEffectiveFrontendModuleKeys(input: {
   paymentPlansEnabled: boolean;
   teamPlan: TeamPaymentPlanState | null | undefined;
   planModuleKeysByPlanId: ReadonlyMap<string, readonly string[]>;
+  freePlanIds?: ReadonlySet<string>;
   todayIso?: string;
 }): string[] {
   const globalKeys = [...input.globalEnabledKeys];
@@ -34,7 +39,10 @@ export function resolveEffectiveFrontendModuleKeys(input: {
     return globalKeys;
   }
 
-  if (!isTeamPaymentPlanActive(input.teamPlan, input.todayIso)) {
+  const isFree = Boolean(
+    input.teamPlan?.planId && input.freePlanIds?.has(input.teamPlan.planId),
+  );
+  if (!isTeamPaymentPlanActive(input.teamPlan, input.todayIso, { isFree })) {
     return [];
   }
 
@@ -51,4 +59,12 @@ export function buildPlanModuleKeysMap(
   plans: Array<{ id: string; moduleKeys: string[] }>,
 ): Map<string, string[]> {
   return new Map(plans.map((plan) => [plan.id, [...plan.moduleKeys]]));
+}
+
+export function buildFreePlanIds(
+  plans: Array<{ id: string; isFree?: boolean }>,
+): Set<string> {
+  return new Set(
+    plans.filter((plan) => plan.isFree === true).map((plan) => plan.id),
+  );
 }

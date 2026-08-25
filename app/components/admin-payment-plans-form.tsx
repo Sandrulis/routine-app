@@ -81,6 +81,7 @@ type PlanDraft = {
   nameValues: LocalizedValues;
   descriptionValues: LocalizedValues;
   moduleKeys: string[];
+  isFree: boolean;
   maxMembers: string;
   priceMonth: string;
   priceQuarter: string;
@@ -100,6 +101,7 @@ function draftFromPlan(
       nameValues: emptyValues(languages),
       descriptionValues: emptyValues(languages),
       moduleKeys: [],
+      isFree: false,
       maxMembers: "",
       priceMonth: "",
       priceQuarter: "",
@@ -114,6 +116,7 @@ function draftFromPlan(
     nameValues: mergeValues(languages, plan.nameValues),
     descriptionValues: mergeValues(languages, plan.descriptionValues),
     moduleKeys: [...plan.moduleKeys],
+    isFree: plan.isFree,
     maxMembers: String(plan.maxMembers),
     priceMonth: priceToInput(plan.priceMonth),
     priceQuarter: priceToInput(plan.priceQuarter),
@@ -130,6 +133,7 @@ function draftsEqual(left: PlanDraft, right: PlanDraft): boolean {
     valuesEqual(left.nameValues, right.nameValues) &&
     valuesEqual(left.descriptionValues, right.descriptionValues) &&
     moduleKeysEqual(left.moduleKeys, right.moduleKeys) &&
+    left.isFree === right.isFree &&
     left.maxMembers.trim() === right.maxMembers.trim() &&
     left.priceMonth.trim() === right.priceMonth.trim() &&
     left.priceQuarter.trim() === right.priceQuarter.trim() &&
@@ -403,25 +407,6 @@ export function AdminPaymentPlansForm({
       }
     }
 
-    const hasRegularPeriod =
-      Number(draft.priceMonth.trim().replace(/\s/g, "").replace(",", ".") || 0) >
-        0 ||
-      Number(
-        draft.priceQuarter.trim().replace(/\s/g, "").replace(",", ".") || 0,
-      ) > 0 ||
-      Number(draft.priceYear.trim().replace(/\s/g, "").replace(",", ".") || 0) >
-        0;
-    if (!hasRegularPeriod) {
-      showFeedback({
-        type: "error",
-        text: t(
-          "errors.payment_plan_price_period_required",
-          "Norādi vismaz vienu perioda cenu (mēnesis, ceturksnis vai gads).",
-        ),
-      });
-      return;
-    }
-
     const parsedMaxMembers = Number.parseInt(draft.maxMembers.trim(), 10);
     if (
       !Number.isFinite(parsedMaxMembers) ||
@@ -445,6 +430,7 @@ export function AdminPaymentPlansForm({
         nameValues: draft.nameValues,
         descriptionValues: draft.descriptionValues,
         moduleKeys: draft.moduleKeys,
+        isFree: draft.isFree,
         maxMembers: parsedMaxMembers,
         priceMonth: draft.priceMonth,
         priceQuarter: draft.priceQuarter,
@@ -781,7 +767,12 @@ export function AdminPaymentPlansForm({
                         {plan.maxMembers}
                       </td>
                       <td className="px-5 py-4 text-xs tabular-nums text-zinc-600">
-                        {plan.priceMonth > 0 ? (
+                        {plan.isFree ? (
+                          <p>
+                            {t("site_payment_plans.list.free", "Bezmaksas")}
+                          </p>
+                        ) : null}
+                        {!plan.isFree && plan.priceMonth > 0 ? (
                           <p>
                             {formatPlanEuro(plan.priceMonth)}{" "}
                             {t(
@@ -790,7 +781,7 @@ export function AdminPaymentPlansForm({
                             )}
                           </p>
                         ) : null}
-                        {plan.priceQuarter > 0 ? (
+                        {!plan.isFree && plan.priceQuarter > 0 ? (
                           <p className={plan.priceMonth > 0 ? "mt-0.5" : undefined}>
                             {formatPlanEuro(plan.priceQuarter)}{" "}
                             {t(
@@ -799,7 +790,7 @@ export function AdminPaymentPlansForm({
                             )}
                           </p>
                         ) : null}
-                        {plan.priceYear > 0 ? (
+                        {!plan.isFree && plan.priceYear > 0 ? (
                           <p
                             className={
                               plan.priceMonth > 0 || plan.priceQuarter > 0
@@ -814,9 +805,10 @@ export function AdminPaymentPlansForm({
                             )}
                           </p>
                         ) : null}
-                        {plan.earlyBirdPriceMonth > 0 ||
+                        {!plan.isFree &&
+                        (plan.earlyBirdPriceMonth > 0 ||
                         plan.earlyBirdPriceQuarter > 0 ||
-                        plan.earlyBirdPriceYear > 0 ? (
+                        plan.earlyBirdPriceYear > 0) ? (
                           <>
                             <p className="mt-2 text-[11px] font-semibold uppercase tracking-wider text-zinc-400">
                               {t(
@@ -1013,6 +1005,28 @@ export function AdminPaymentPlansForm({
             />
           </label>
 
+          <div className="flex items-start justify-between gap-4 rounded-xl border border-zinc-200 px-4 py-3">
+            <div className="min-w-0">
+              <p className="text-sm font-medium text-zinc-800">
+                {t("site_payment_plans.form.is_free", "Bezmaksas plāns")}
+              </p>
+              <p className="mt-1 text-xs text-zinc-500">
+                {t(
+                  "site_payment_plans.form.is_free_hint",
+                  "Vienmēr pieejams bez maksas. Cenas nav jānorāda, un komandai šis plāns nebeidzas.",
+                )}
+              </p>
+            </div>
+            <ToggleSwitch
+              checked={draft.isFree}
+              disabled={isBusy}
+              label={t("site_payment_plans.form.is_free", "Bezmaksas plāns")}
+              onChange={(next) =>
+                setDraft((current) => ({ ...current, isFree: next }))
+              }
+            />
+          </div>
+
           <label className="block">
             <span className="text-sm font-medium text-zinc-800">
               {t("site_payment_plans.form.max_members", "Maks. biedru skaits")}
@@ -1041,6 +1055,8 @@ export function AdminPaymentPlansForm({
             </span>
           </label>
 
+          {!draft.isFree ? (
+            <>
           <div>
             <p className="text-sm font-medium text-zinc-800">
               {t("site_payment_plans.form.prices", "Cenas (EUR)")}
@@ -1185,6 +1201,8 @@ export function AdminPaymentPlansForm({
               </label>
             </div>
           </div>
+            </>
+          ) : null}
 
           <div>
             <p className="text-sm font-medium text-zinc-800">

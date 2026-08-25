@@ -90,7 +90,7 @@ export function AdminTeamPlanModal({
     if (!team || !dirty || isPending) return;
     clearFeedback();
 
-    if (draft.planId && !draft.paid && !draft.isTrial) {
+    if (draft.planId && !selectedPlan?.isFree && !draft.paid && !draft.isTrial) {
       showFeedback({
         type: "error",
         text: t(
@@ -149,12 +149,22 @@ export function AdminTeamPlanModal({
             </span>
             <select
               value={draft.planId ?? ""}
-              onChange={(event) =>
+              onChange={(event) => {
+                const nextId = event.target.value || null;
+                const nextPlan = plans.find((plan) => plan.id === nextId);
                 setDraft((current) => ({
                   ...current,
-                  planId: event.target.value || null,
-                }))
-              }
+                  planId: nextId,
+                  ...(nextPlan?.isFree
+                    ? {
+                        until: "",
+                        paid: false,
+                        isTrial: false,
+                        isEarlyBird: false,
+                      }
+                    : {}),
+                }));
+              }}
               disabled={isPending}
               className={`${fieldClassName} appearance-none disabled:cursor-not-allowed disabled:opacity-60`}
             >
@@ -170,6 +180,15 @@ export function AdminTeamPlanModal({
             </select>
           </label>
 
+          {selectedPlan?.isFree ? (
+            <p className="rounded-xl border border-zinc-100 bg-zinc-50 px-4 py-3 text-xs text-zinc-600">
+              {t(
+                "admin.teams.plan.free_hint",
+                "Bezmaksas plāns ir vienmēr aktīvs. Samaksa un termiņš nav jānorāda.",
+              )}
+            </p>
+          ) : null}
+
           {selectedPlan ? (
             <p className="rounded-xl border border-zinc-100 bg-zinc-50 px-4 py-3 text-xs text-zinc-600">
               {t(
@@ -183,6 +202,8 @@ export function AdminTeamPlanModal({
             </p>
           ) : null}
 
+          {selectedPlan && !selectedPlan.isFree ? (
+            <>
           <label className="block">
             <span className="text-sm font-medium text-zinc-800">
               {t("admin.teams.plan.field_until", "Derīgs līdz")}
@@ -236,6 +257,8 @@ export function AdminTeamPlanModal({
               </li>
             ))}
           </ul>
+            </>
+          ) : null}
 
           <div className="flex justify-end gap-2 border-t border-zinc-100 pt-4">
             <button

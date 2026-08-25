@@ -664,6 +664,10 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "site_payment_plans.form.key_hint": "Piemērs: starter, pro, enterprise",
     "site_payment_plans.form.name": "Nosaukums",
     "site_payment_plans.form.description": "Apraksts",
+    "site_payment_plans.form.is_free": "Bezmaksas plāns",
+    "site_payment_plans.form.is_free_hint":
+      "Vienmēr pieejams bez maksas. Cenas nav jānorāda, un komandai šis plāns nebeidzas.",
+    "site_payment_plans.list.free": "Bezmaksas",
     "site_payment_plans.form.modules": "Moduļi šajā plānā",
     "site_payment_plans.form.modules_empty": "Nav globāli ieslēgtu frontend moduļu.",
     "site_payment_plans.form.max_members": "Maks. biedru skaits",
@@ -747,6 +751,8 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "admin.teams.plan.plan_summary": "Līdz {maxMembers} biedriem · {moduleCount} moduļi",
     "admin.teams.plan.field_until": "Derīgs līdz",
     "admin.teams.plan.until_hint": "Tukšs = bez beigu datuma. Formāts: YYYY-MM-DD.",
+    "admin.teams.plan.free_hint":
+      "Bezmaksas plāns ir vienmēr aktīvs. Samaksa un termiņš nav jānorāda.",
     "admin.teams.plan.paid": "Samaksāts",
     "admin.teams.plan.trial": "Izmēģinājums",
     "admin.teams.plan.early_bird": "Early Bird",
@@ -2717,6 +2723,10 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "site_payment_plans.form.key_hint": "Example: starter, pro, enterprise",
     "site_payment_plans.form.name": "Name",
     "site_payment_plans.form.description": "Description",
+    "site_payment_plans.form.is_free": "Free plan",
+    "site_payment_plans.form.is_free_hint":
+      "Always available at no cost. Prices are not required, and the plan does not expire for the team.",
+    "site_payment_plans.list.free": "Free",
     "site_payment_plans.form.modules": "Modules in this plan",
     "site_payment_plans.form.modules_empty": "No globally enabled frontend modules.",
     "site_payment_plans.form.max_members": "Max team members",
@@ -2799,6 +2809,8 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "admin.teams.plan.plan_summary": "Up to {maxMembers} members · {moduleCount} modules",
     "admin.teams.plan.field_until": "Valid until",
     "admin.teams.plan.until_hint": "Leave empty for no end date. Format: YYYY-MM-DD.",
+    "admin.teams.plan.free_hint":
+      "A free plan is always active. Payment status and an end date are not required.",
     "admin.teams.plan.paid": "Paid",
     "admin.teams.plan.trial": "Trial",
     "admin.teams.plan.early_bird": "Early Bird",

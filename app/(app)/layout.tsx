@@ -54,6 +54,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
       paymentPlans={paymentPlans.map((plan) => ({
         id: plan.id,
         moduleKeys: plan.moduleKeys,
+        isFree: plan.isFree,
       }))}
     >
       {children}

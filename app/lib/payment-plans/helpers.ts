@@ -14,6 +14,7 @@ export type PaymentPlanSummary = {
   nameValues: LocalizedValues;
   descriptionValues: LocalizedValues;
   moduleKeys: string[];
+  isFree: boolean;
   maxMembers: number;
   priceMonth: number;
   priceQuarter: number;
@@ -31,6 +32,7 @@ export type PaymentPlanInput = {
   nameValues: LocalizedValues;
   descriptionValues: LocalizedValues;
   moduleKeys: string[];
+  isFree: boolean;
   maxMembers: number | string;
   priceMonth: number | string;
   priceQuarter: number | string;
