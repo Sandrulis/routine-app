@@ -7,15 +7,26 @@ alwaysApply: true
 
 UI tekstiem izmanto `t(key, fallback, params)`. Fallback kodā ir drošības teksts latviešu valodā, nevis pilns tulkojumu katalogs.
 
-Sistēmas valodas: **`lv`**, **`en`**, **`ru`**, **`de`**, **`fr`**, **`es`**, **`nl`**, **`da`**, **`no`**, **`fi`**, **`pl`**, **`lt`**, **`et`**, **`it`**, **`sv`**. Katalogs dzīvo **`app/lib/i18n/messages.ts`** (lv, en) un **`app/lib/i18n/messages-{code}.ts`** (pārējās valodas). `site_translations` ir tikai **overlay** (admin labojumi) - **neiesevo** visus key datubāzē.
+Sistēmas valodas: **`lv`**, **`en`**, **`ru`**, **`de`**, **`fr`**, **`es`**, **`nl`**, **`da`**, **`no`**, **`fi`**, **`pl`**, **`lt`**, **`et`**, **`it`**, **`sv`**.
+
+| Avots | Valodas |
+|---|---|
+| `app/lib/i18n/messages.ts` | `lv` + `en` (kanons) |
+| `app/lib/i18n/_catalog/{code}.json` | pārējās valodas |
+| `app/lib/i18n/messages-{code}.ts` | ģenerēts no JSON — **neredigē ar roku** |
+
+`site_translations` ir tikai **overlay** (admin labojumi) - **neiesevo** visus key datubāzē.
 
 ## Jauni vai mainīti UI teksti
 
-Kad pievieno vai maina lietotājam redzamu tekstu:
+Kad pievieno vai maina lietotājam redzamu tekstu, **tajā pašā izmaiņā**:
 
-- kodā izmanto `t(key, fallback, params)`;
-- tajā pašā izmaiņā pievieno vai atjaunina atslēgu **visās sistēmas valodās** (`messages.ts` lv+en un katrs `messages-{code}.ts`);
-- nedrīkst atstāt hardcoded UI tekstu bez `t(...)`.
+1. kodā `t(key, fallback, params)`;
+2. atslēga **`messages.ts`** ar `lv` un `en`;
+3. tā pati atslēga **katrā** `_catalog/{code}.json` ar īstu tulkojumu (ne angļu kopiju, izņemot īpašvārdus: Cloudflare, Turnstile, Early Bird, Site Key);
+4. palaid **`npm run i18n:check`** — tas pārbauda, ka visām valodām ir visas atslēgas un vienādi `{placeholder}` vārdi, un pārģenerē `messages-*.ts`.
+
+Bez `i18n:check` uzdevums nav pabeigts. CI (`security-smoke`) krīt, ja kāda valoda atpaliek.
 
 ## Nedublēt vienādas vērtības
 

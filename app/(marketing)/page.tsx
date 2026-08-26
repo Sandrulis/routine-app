@@ -13,6 +13,7 @@ import {
   getTrialSettings,
   isEarlyBirdOfferAvailable,
   listPaymentPlansCached,
+  remainingEarlyBirdSeats,
 } from "@/app/lib/payment-plans/repository";
 import { canonicalMetadata } from "@/app/lib/seo/metadata";
 import { isCrawlerUserAgent } from "@/app/lib/seo/crawler";
@@ -72,6 +73,8 @@ export default async function HomePage() {
             ? {
                 plans,
                 earlyBirdAvailable: isEarlyBirdOfferAvailable(earlyBird),
+                earlyBirdRemaining: remainingEarlyBirdSeats(earlyBird),
+                earlyBirdLimit: earlyBird.limit,
                 trialPlanId: trial.trialPlanId,
                 trialDays: trial.trialDays,
               }

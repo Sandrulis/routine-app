@@ -16,10 +16,11 @@ When the user asks to **commit**, **push**, **update GitHub**, or similar, every
 2. Read the final version from `package.json` — that is the tag for the commit message.
 3. **Verify the code** — run before `git commit` (fix failures; do not commit broken releases):
    ```bash
+   npm run i18n:check
    npm run typecheck
    npm run build
    ```
-   - `typecheck` and `build` **must pass**.
+   - `i18n:check`, `typecheck` and `build` **must pass**.
    - Run `npm run lint` too; fix **errors** (warnings alone are not a blocker unless the user asks for zero warnings).
    - If a check fails, fix the issue and re-run — never push a release that does not build.
 
@@ -56,5 +57,5 @@ GitHub security checks on every push. v0.1.0
 
 - Include `CHANGELOG.md`, `README.md`, `DEVELOPER.md` and `package.json` in the same commit when they were updated for this release.
 - Do not push unless the user explicitly asks.
-- Re-run `npm run typecheck` and `npm run build` if code changed after the last successful check and before push.
+- Re-run `npm run i18n:check`, `npm run typecheck` and `npm run build` if code changed after the last successful check and before push.
 - GitHub Actions run secret scan, dependency audit and a security smoke build on push — local checks above still are the first release gate.

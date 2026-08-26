@@ -19,7 +19,7 @@ Nav jāievada Routine URL vai OAuth Client ID. Spraudnis sauc [https://www.tasqi
 
 1. `chrome://extensions` → Developer mode → **Load unpacked** → `extensions/gmail`
 2. Pēc koda izmaiņām: **Reload** uz paplašinājuma kartītes, tad **F5** Gmail cilnē (citādi vecais content script met `Extension context invalidated`)
-3. Popup: ienāc ar Google vai e-pastu/paroli (custom login). **Turpināt ar Google** atver Google konta izvēli (`/auth/gmail-plugin/login`), ne vispārīgo `/login` lapu (tā ielogotam lietotājam aizmet uz dashboard un spraudnis paliek ārā). Pēc apstiprinājuma `plugin-auth.js` uz `/auth/gmail-plugin/done` nodod sesiju spraudnim (arī `base64-` cookie); vari aizvērt cilni un atvērt spraudni - sesija ir `chrome.storage.local`. Login API un OAuth preferē production (`www` / `tasqin.com`), ne `localhost` (arī ja lokālais serveris skrien). Ja Gmail nav savienots, nospied **Savienot Gmail** - tas saglabā savienojumu arī Routine
+3. Popup: ienāc ar Google vai e-pastu/paroli (custom login). **Turpināt ar Google** atver Google konta izvēli (`/auth/gmail-plugin/login`), ne vispārīgo `/login` lapu (tā ielogotam lietotājam aizmet uz dashboard un spraudnis paliek ārā). Pēc apstiprinājuma done lapa vispirms rāda «Pagaidi, kamēr spraudnis saņem sesiju…»; «Vari aizvērt» parādās tikai pēc spraudņa ACK. `plugin-auth.js` nodod ticket backgroundam (vienreizējs `POST /api/extension/bootstrap-from-ticket`). Ja atver popup, kamēr done cilne vēl ir atvērta, tas pagaida sesiju, nevis uzreiz rāda login. Login API un OAuth preferē production (`www` / `tasqin.com`), ne `localhost` (arī ja lokālais serveris skrien). Ja Gmail nav savienots, nospied **Savienot Gmail** - tas saglabā savienojumu arī Routine
 
 ## Lietošana
 
@@ -28,7 +28,7 @@ Nav jāievada Routine URL vai OAuth Client ID. Spraudnis sauc [https://www.tasqi
 3. Izvēlies **saraksts** → (mape) → **uzdevums** → **apakšuzdevums** (vai **Jauns apakšuzdevums** atver jaunu modāli: nosaukums, pēc izvēles sākums, termiņš, statuss, atbildīgais ar live-search hintiem, apraksts). Jaunais apakšuzdevums TASQIN parādās tikai pēc **Pievienot** ar izvēlētajiem pielikumiem.
 4. Zem saraksta atzīmē pielikumus (checkbox) → **Pievienot**
 
-Ja pielikumi neredzami vai rāda OAuth kļūdu: Chrome → `chrome://extensions` → TASQIN - Gmail → **Reload** (versija `0.4.30`), tad Gmail cilnē **F5**. Spraudņa popup → **Atjaunot Gmail savienojumu** (tas nav tas pats, kas «Turpināt ar Google»). Modālī zem saraksta jābūt sadaļai **Pielikumi**.
+Ja pielikumi neredzami vai rāda OAuth kļūdu: Chrome → `chrome://extensions` → TASQIN - Gmail → **Reload** (versija `0.4.31`), tad Gmail cilnē **F5**. Spraudņa popup → **Atjaunot Gmail savienojumu** (tas nav tas pats, kas «Turpināt ar Google»). Modālī zem saraksta jābūt sadaļai **Pielikumi**.
 
 Apakšuzdevumu saraksts (3. solis) ir tajā pašā statusa secībā kā sānjosla un uzdevuma UI: aktīvie pirms “nav sākts”, slēgtie netiek rādīti. Rāda arī uzdevumus bez esošiem apakšuzdevumiem, lai varētu izveidot jaunu.
 

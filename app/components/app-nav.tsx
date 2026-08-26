@@ -70,6 +70,8 @@ import {
 } from "@/app/lib/list-files";
 import { useListFiles } from "@/app/lib/use-list-files";
 import { useTeam } from "@/app/lib/team-store";
+import { useStartTeamInvite } from "@/app/lib/billing/use-start-team-invite";
+import { usePaymentPlansEnabled } from "@/app/lib/payment-plans/context";
 import { useIsAdmin } from "@/app/lib/users/use-is-admin";
 import {
   resolveStatusCatalogs,
@@ -88,8 +90,9 @@ import {
   resolveEffectiveListAccess,
 } from "@/app/lib/list-access";
 import {
-  canInviteTeamMembers,
   canManageTeamSettings,
+  canOpenTeamPage,
+  canEditTeamSettings,
   confirmedTeamMembers,
   hasTeamActionPermission,
   hasTeamNavPermission,
@@ -580,6 +583,7 @@ export function AppNav() {
   const sidebarMembers = useMemo(() => confirmedTeamMembers(members), [members]);
   const { isAdmin } = useIsAdmin();
   const { isEnabled: isModuleEnabled } = useFrontendModules();
+  const paymentPlansEnabled = usePaymentPlansEnabled();
   const fileUploadsEnabled = isModuleEnabled(FRONTEND_MODULE_KEYS.fileUpload);
   const checklistsEnabled = isModuleEnabled(FRONTEND_MODULE_KEYS.checklist);
   const { statuses } = useTaskStatuses();
@@ -699,13 +703,15 @@ export function AppNav() {
   );
   const canSeeLists = hasTeamNavPermission(currentUser, roles, isAdmin, "lists");
   const canSeeTeam = hasTeamNavPermission(currentUser, roles, isAdmin, "team");
+  const canOpenTeam = canOpenTeamPage(currentUser, roles, isAdmin);
   const canCreateLists = hasTeamActionPermission(
     currentUser,
     roles,
     isAdmin,
     "lists.create",
   );
-  const canInviteMembers = canInviteTeamMembers(currentUser, roles, isAdmin);
+  const { canInvite: canInviteMembers, startInvite, handleInviteError } =
+    useStartTeamInvite();
   const canManageRoles = canManageTeamSettings(
     currentUser,
     roles,
@@ -723,6 +729,9 @@ export function AppNav() {
     canSeeTeam &&
     isModuleEnabled(FRONTEND_MODULE_KEYS.onedrive) &&
     isModuleEnabled(FRONTEND_MODULE_KEYS.fileUpload);
+  const canSeeBilling =
+    paymentPlansEnabled &&
+    canEditTeamSettings(currentUser, roles, isAdmin);
   const canManageListStatuses = hasTeamActionPermission(
     currentUser,
     roles,
@@ -736,7 +745,8 @@ export function AppNav() {
       isAdmin,
       "lists.automations.manage",
     ) && isModuleEnabled(FRONTEND_MODULE_KEYS.automations);
-  const showTeamMenu = canManageRoles || canSeeTemplates || canSeeGoogleDrive || canSeeOneDrive;
+  const showTeamMenu =
+    canManageRoles || canSeeTemplates || canSeeGoogleDrive || canSeeOneDrive;
 
   function accessForListId(listId: string) {
     return accessForList(lists.find((item) => item.id === listId));
@@ -764,9 +774,9 @@ export function AppNav() {
   }
 
   const isHome = pathname === "/dashboard";
+  const isBilling = pathname === "/team/billing";
   const isTeam =
-    pathname === "/team" ||
-    pathname.startsWith("/team/") ||
+    ((pathname === "/team" || pathname.startsWith("/team/")) && !isBilling) ||
     pathname.startsWith("/templates");
   const storageUsage = useMemo(() => {
     return sumFileStorageBuckets([...storedFiles, ...allTaskFiles]);
@@ -1278,19 +1288,21 @@ export function AppNav() {
           </NavTreeSection>
           ) : null}
 
-          {canSeeTeam ? (
+          {currentTeam || canSeeTeam ? (
           <NavTreeSection
-            href="/team"
+            href={canOpenTeam ? "/team" : undefined}
             icon="fas fa-users"
             iconToneClassName="bg-violet-100 text-violet-700"
             label={t("nav.team", "Komanda")}
             addLabel={t("team.invite.button", "Uzaicināt")}
             addAriaLabel={t("team.invite.title", "Uzaicināt lietotāju")}
             expanded={isExpanded("team", true)}
-            isParentActive={isTeam}
+            isParentActive={isTeam && canOpenTeam}
             onToggle={() => toggleTree("team", true)}
             onAdd={
-              currentTeam && canInviteMembers ? () => setInviteOpen(true) : undefined
+              currentTeam && canInviteMembers
+                ? () => startInvite(() => setInviteOpen(true))
+                : undefined
             }
             moreOpen={teamMenuAnchor !== null}
             onMore={
@@ -1300,16 +1312,12 @@ export function AppNav() {
             }
           >
             {teamReady ? (
-              currentTeam && sidebarMembers.length > 0 ? (
+              <>
+              {currentTeam && sidebarMembers.length > 0 ? (
               sidebarMembers.map((member) => {
                 const href = `/team/${member.id}`;
-                return (
-                  <Link
-                    key={member.id}
-                    href={href}
-                    prefetch={false}
-                    className={rowClassName(pathname === href)}
-                  >
+                const row = (
+                  <>
                     <UserAvatar member={member} size="xs" />
                     <OverflowTooltip label={memberDisplayName(member)} className="min-w-0 flex-1">
                       <span className="block min-w-0 truncate">{memberDisplayName(member)}</span>
@@ -1321,6 +1329,26 @@ export function AppNav() {
                           : member.lastOnlineAt
                       }
                     />
+                  </>
+                );
+                if (!canOpenTeam) {
+                  return (
+                    <div
+                      key={member.id}
+                      className="flex h-8 w-full min-w-0 items-center gap-1.5 rounded-md px-1.5 text-[13px] text-zinc-700"
+                    >
+                      {row}
+                    </div>
+                  );
+                }
+                return (
+                  <Link
+                    key={member.id}
+                    href={href}
+                    prefetch={false}
+                    className={rowClassName(pathname === href)}
+                  >
+                    {row}
                   </Link>
                 );
               })
@@ -1330,11 +1358,27 @@ export function AppNav() {
                   ? t("team.empty", "Komandā vēl nav lietotāju.")
                   : t("teams.required.empty_members", "Vispirms izveido komandu.")}
               </p>
-            )
+            )}
+              </>
             ) : (
               <LoadingState compact />
             )}
           </NavTreeSection>
+          ) : null}
+
+          {canSeeBilling ? (
+            <Link
+              href="/team/billing"
+              prefetch={false}
+              className={rowClassName(isBilling)}
+            >
+              <span className="inline-flex size-5 shrink-0 items-center justify-center rounded-[2.5px] bg-emerald-100 text-emerald-700">
+                <i className="fas fa-credit-card text-[10px]" aria-hidden="true" />
+              </span>
+              <span className="min-w-0 flex-1 truncate">
+                {t("nav.billing", "Abonementi")}
+              </span>
+            </Link>
           ) : null}
         </nav>
 
@@ -1997,12 +2041,12 @@ export function AppNav() {
             });
             router.push(`/team/${member.id}`);
           } catch (error) {
+            const message =
+              error instanceof Error ? error.message : "errors.team_invite_failed";
+            handleInviteError(message);
             showFeedback({
-              type: "error",
-              text: translateActionError(
-                t,
-                error instanceof Error ? error.message : "errors.team_invite_failed",
-              ),
+              type: message === "errors.team_invite_pay_first" ? "info" : "error",
+              text: translateActionError(t, message),
             });
           }
         }}

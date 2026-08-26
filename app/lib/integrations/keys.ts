@@ -5,6 +5,7 @@ export const SITE_INTEGRATION_KEYS = {
   umami: "umami",
   sentry: "sentry",
   turnstile: "turnstile",
+  stripe: "stripe",
 } as const;
 
 export type SiteIntegrationKey =
@@ -15,6 +16,7 @@ export const SIMPLE_SITE_INTEGRATION_KEYS = [
   SITE_INTEGRATION_KEYS.umami,
   SITE_INTEGRATION_KEYS.sentry,
   SITE_INTEGRATION_KEYS.turnstile,
+  SITE_INTEGRATION_KEYS.stripe,
 ] as const;
 
 export type SimpleSiteIntegrationKey =

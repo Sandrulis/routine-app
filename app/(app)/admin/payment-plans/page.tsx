@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { AdminPaymentPlansForm } from "@/app/components/admin-payment-plans-form";
 import { listFrontendModules } from "@/app/lib/frontend-modules/repository";
 import { translatedPageMetadata } from "@/app/lib/page-metadata";
+import { isStripeEnabled } from "@/app/lib/integrations/stripe/client";
 import {
   getEarlyBirdSettings,
   getTrialSettings,
@@ -19,9 +20,10 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function AdminPaymentPlansPage() {
   await requireAdmin();
-  const [enabled, plans, modules, languages, trial, earlyBird] =
+  const [enabled, stripeEnabled, plans, modules, languages, trial, earlyBird] =
     await Promise.all([
       isPaymentPlansEnabled(),
+      isStripeEnabled(),
       listPaymentPlans(),
       listFrontendModules(),
       listSiteLanguages(),
@@ -32,6 +34,7 @@ export default async function AdminPaymentPlansPage() {
   return (
     <AdminPaymentPlansForm
       initialEnabled={enabled}
+      stripeEnabled={stripeEnabled}
       initialPlans={plans}
       initialTrial={trial}
       initialEarlyBird={earlyBird}

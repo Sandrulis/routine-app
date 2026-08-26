@@ -35,6 +35,7 @@ export function AdminIntegrationsPage({
   initialResend,
   initialUmami,
   initialSentry,
+  initialStripe,
 }: {
   initialGoogleOAuth: GoogleOAuthIntegrationStatus;
   initialMicrosoftOAuth: MicrosoftOAuthIntegrationStatus;
@@ -42,6 +43,7 @@ export function AdminIntegrationsPage({
   initialResend: SimpleIntegrationStatus;
   initialUmami: SimpleIntegrationStatus;
   initialSentry: SimpleIntegrationStatus;
+  initialStripe: SimpleIntegrationStatus;
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -801,6 +803,7 @@ export function AdminIntegrationsPage({
         initialResend={initialResend}
         initialUmami={initialUmami}
         initialSentry={initialSentry}
+        initialStripe={initialStripe}
         onDirtyChange={setApiDirty}
       />
 

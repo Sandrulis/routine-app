@@ -71,10 +71,7 @@ import type {
   FileTypeExtensionInput,
   FileTypeExtensionSummary,
 } from "@/app/lib/site-admin/types";
-import {
-  getEarlyBirdSettings,
-  listPaymentPlans,
-} from "@/app/lib/payment-plans/repository";
+import { listPaymentPlans } from "@/app/lib/payment-plans/repository";
 
 const LANGUAGE_CODE_RE = /^[a-z]{2}(-[A-Z]{2})?$/;
 const TRANSLATION_KEY_RE = /^[a-zA-Z0-9_.:-]+$/;
@@ -126,6 +123,7 @@ type TeamRow = {
   payment_plan_paid?: boolean | null;
   payment_plan_is_trial?: boolean | null;
   payment_plan_is_early_bird?: boolean | null;
+  early_bird_seat_count?: number | null;
 };
 
 type LanguageRow = {
@@ -429,7 +427,7 @@ export const listAdminTeams = cache(async function listAdminTeams(): Promise<Adm
   const { data: teams, error } = await supabase
     .from("teams")
     .select(
-      "id, name, initials, icon, color, logo_url, created_at, payment_plan_id, payment_plan_until, payment_plan_paid, payment_plan_is_trial, payment_plan_is_early_bird",
+      "id, name, initials, icon, color, logo_url, created_at, payment_plan_id, payment_plan_until, payment_plan_paid, payment_plan_is_trial, payment_plan_is_early_bird, early_bird_seat_count",
     )
     .order("created_at", { ascending: true });
 
@@ -465,6 +463,7 @@ export const listAdminTeams = cache(async function listAdminTeams(): Promise<Adm
     paymentPlanPaid: row.payment_plan_paid === true,
     paymentPlanIsTrial: row.payment_plan_is_trial === true,
     paymentPlanIsEarlyBird: row.payment_plan_is_early_bird === true,
+    earlyBirdSeatCount: Math.max(0, Math.trunc(Number(row.early_bird_seat_count) || 0)),
   }));
 });
 
@@ -617,6 +616,7 @@ export async function updateAdminTeamPaymentPlan(
           payment_plan_paid: false,
           payment_plan_is_trial: false,
           payment_plan_is_early_bird: false,
+          early_bird_seat_count: 0,
         })
         .eq("id", trimmedTeamId);
 
@@ -629,23 +629,6 @@ export async function updateAdminTeamPaymentPlan(
     }
   }
 
-  if (input.isEarlyBird) {
-    const [{ limit, claimed }, teams] = await Promise.all([
-      getEarlyBirdSettings(),
-      listAdminTeams(),
-    ]);
-    const teamAlreadyEarlyBird = teams.some(
-      (team) => team.id === trimmedTeamId && team.paymentPlanIsEarlyBird,
-    );
-    if (
-      limit > 0 &&
-      !teamAlreadyEarlyBird &&
-      claimed >= limit
-    ) {
-      return { ok: false, error: "errors.early_bird_limit_reached" };
-    }
-  }
-
   const supabase = await getSessionClient();
   const { error } = await supabase
     .from("teams")
@@ -654,7 +637,6 @@ export async function updateAdminTeamPaymentPlan(
       payment_plan_until: until,
       payment_plan_paid: input.paid === true,
       payment_plan_is_trial: input.isTrial === true,
-      payment_plan_is_early_bird: input.isEarlyBird === true,
     })
     .eq("id", trimmedTeamId);
 

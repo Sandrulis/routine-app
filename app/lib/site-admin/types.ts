@@ -40,6 +40,7 @@ export type AdminTeamSummary = {
   paymentPlanPaid: boolean;
   paymentPlanIsTrial: boolean;
   paymentPlanIsEarlyBird: boolean;
+  earlyBirdSeatCount: number;
 };
 
 export type AdminTeamPaymentPlanInput = {

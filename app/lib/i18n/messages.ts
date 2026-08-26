@@ -188,6 +188,7 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "landing.pricing.not_included": "Nav iekļauts",
     "landing.pricing.recommended": "Ieteicamais",
     "landing.pricing.trial": "{days} dienu izmēģinājums",
+    "landing.pricing.early_bird_left": "Early Bird: {remaining} / {limit}",
     "landing.cta.title": "Sāc vadīt komandas darbu jau šodien",
     "landing.cta.subtitle":
       "Reģistrējies, uzaicini komandu un izveido pirmo sarakstu. Bez instalēšanas un bez nedēļas ilgas ieviešanas.",
@@ -354,7 +355,7 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
       "Ja likums neļauj izslēgt atbildību, mūsu atbildība ir ierobežota ar summu, ko tu esi samaksājis par {SYSTEM_NAME} pēdējo 12 mēnešu laikā, vai 100 EUR, ja maksa nav bijusi.",
     "legal.terms.termination.title": "7. Izbeigšana",
     "legal.terms.termination.p1":
-      "Tu vari pārtraukt lietošanu un dzēst kontu jebkurā laikā. Mēs varam slēgt kontu, ja tu būtiski pārkāp šos noteikumus vai ja pakalpojumu pārtraucam.",
+      "Tu vari pārtraukt {SYSTEM_NAME} lietošanu un dzēst kontu jebkurā laikā. Mēs varam slēgt kontu, ja tu būtiski pārkāp šos noteikumus vai ja pakalpojumu pārtraucam.",
     "legal.terms.law.title": "8. Piemērojamie tiesību akti",
     "legal.terms.law.p1":
       "Noteikumiem piemērojami Latvijas Republikas tiesību akti. Strīdus vispirms risināsim sarunās. Ja tas neizdodas, strīds ir piekritīgs Latvijas tiesām, ja vien patērētāja aizsardzības normas nenosaka citādi.",
@@ -419,6 +420,7 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "nav.google_drive": "Google Drive Integrācija",
     "nav.gmail_plugin": "Gmail spraudnis",
     "nav.onedrive": "OneDrive Integrācija",
+    "nav.billing": "Abonementi",
     "nav.settings": "Uzstādījumi",
     "nav.modules": "Moduļi",
     "nav.storage.used": "Failu vieta",
@@ -585,6 +587,32 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "integrations.resend.aria.enabled": "Resend integrācija ieslēgta",
     "integrations.resend.feedback.credentials_saved": "Resend dati saglabāti.",
     "integrations.resend.feedback.reset": "Resend konfigurācija notīrīta.",
+    "integrations.stripe.title": "Stripe",
+    "integrations.stripe.description":
+      "Vietu norēķini: viena komandas abonements, jaunie lietotāji pēc samaksas.",
+    "integrations.stripe.publishable_key": "Publishable key",
+    "integrations.stripe.publishable_key_placeholder": "pk_live_… vai pk_test_…",
+    "integrations.stripe.publishable_hint":
+      "Publiskā atslēga no Stripe Dashboard. Sākas ar pk_.",
+    "integrations.stripe.secret_key": "Secret key",
+    "integrations.stripe.secret_key_placeholder": "sk_live_… vai sk_test_…",
+    "integrations.stripe.secret_key_placeholder_saved":
+      "Saglabāts — atstāj tukšu, ja nemaina",
+    "integrations.stripe.webhook_secret": "Webhook signing secret",
+    "integrations.stripe.webhook_secret_placeholder": "whsec_…",
+    "integrations.stripe.webhook_secret_placeholder_saved":
+      "Saglabāts — atstāj tukšu, ja nemaina",
+    "integrations.stripe.webhook_url_hint":
+      "Stripe Dashboard webhook URL: {url}",
+    "integrations.stripe.hint":
+      "Kad integrācija ir aktīva, komandas maksā par vietām Stripe Checkout un abonementā. Webhook notikumi: checkout.session.completed, invoice.created, invoice.paid, invoice.payment_failed, customer.subscription.updated, customer.subscription.deleted.",
+    "integrations.stripe.reset": "Notīrīt konfigurāciju",
+    "integrations.stripe.reset.confirm_title": "Notīrīt Stripe konfigurāciju?",
+    "integrations.stripe.reset.confirm_description":
+      "Stripe atslēgas tiks dzēstas un vietu norēķini tiks izslēgti.",
+    "integrations.stripe.aria.enabled": "Stripe integrācija ieslēgta",
+    "integrations.stripe.feedback.credentials_saved": "Stripe dati saglabāti.",
+    "integrations.stripe.feedback.reset": "Stripe konfigurācija notīrīta.",
     "integrations.umami.title": "Umami",
     "integrations.umami.description":
       "Anonīma lapu statistika. Aktīvam skripts tiek ielādēts head daļā pēc statistikas piekrišanas.",
@@ -668,6 +696,21 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "errors.integrations_sentry_dsn_required": "Ievadi Sentry DSN.",
     "errors.integrations_turnstile_site_key_required": "Ievadi Turnstile Site Key.",
     "errors.integrations_turnstile_secret_key_required": "Ievadi Turnstile Secret Key.",
+    "errors.integrations_stripe_publishable_required": "Ievadi Stripe Publishable key.",
+    "errors.integrations_stripe_secret_required": "Ievadi Stripe Secret key.",
+    "errors.integrations_stripe_webhook_required": "Ievadi Stripe webhook signing secret.",
+    "errors.integrations_stripe_not_enabled": "Stripe integrācija nav ieslēgta.",
+    "errors.integrations_stripe_invalid_key":
+      "Stripe atslēga nav derīga. Administrators to labo Integrācijās.",
+    "errors.integrations_stripe_checkout_failed": "Neizdevās izveidot Stripe maksājumu.",
+    "errors.billing_forbidden": "Nav tiesību pārvaldīt komandas norēķinus.",
+    "errors.billing_not_configured": "Maksas plāni sistēmā nav ieslēgti.",
+    "errors.billing_no_paid_plan": "Izvēlies maksas plānu ar cenu.",
+    "errors.billing_already_subscribed": "Komandai jau ir Stripe abonements.",
+    "errors.billing_no_subscription": "Vispirms sāc komandas abonementu.",
+    "errors.billing_no_pending_seats": "Nav vietu, kas gaida samaksu.",
+    "errors.billing_only_free_seat":
+      "Komandas vadītāja vieta ir bez maksas. Pievieno maksas vietu, lai uzaicinātu citus.",
     "site_payment_plans.page.subtitle":
       "Ieslēdz maksas plānus un piešķir frontend moduļus katram plānam",
     "site_payment_plans.enable.section": "Maksas plāni",
@@ -675,6 +718,8 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
       "Kad ieslēgts, komandas redz tikai tās moduļus, kas iekļauti aktīvajā maksas plānā. Kad izslēgts, visi globāli ieslēgtie moduļi ir pieejami visām komandām.",
     "site_payment_plans.enable.label": "Ieslēgt maksas plānus",
     "site_payment_plans.enable.saved": "Maksas plānu iestatījums saglabāts.",
+    "site_payment_plans.enable.stripe_required":
+      "Maksas plānus var ieslēgt tikai tad, ja Stripe integrācija ir nokonfigurēta un ieslēgta.",
     "site_payment_plans.list.title": "Plāni",
     "site_payment_plans.list.empty": "Vēl nav izveidots neviens maksas plāns.",
     "site_payment_plans.list.prices": "Cenas",
@@ -706,7 +751,7 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "site_payment_plans.form.early_bird_prices":
       "Early Bird cenas par vienu lietotāju (EUR)",
     "site_payment_plans.form.early_bird_prices_hint":
-      "Šīs cenas attiecas uz komandām ar Early Bird statusu un arī ir par vienu lietotāju. Tukšus periodus vari atstāt tukšus.",
+      "Šīs cenas attiecas uz Early Bird vietām un arī ir par vienu lietotāju. Tukšus periodus vari atstāt tukšus.",
     "site_payment_plans.period.month_short": "/ mēn.",
     "site_payment_plans.period.quarter_short": "/ cet.",
     "site_payment_plans.period.year_short": "/ gadā",
@@ -727,10 +772,10 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "site_payment_plans.trial.saved": "Izmēģinājuma iestatījumi saglabāti.",
     "site_payment_plans.early_bird.section": "Early Bird",
     "site_payment_plans.early_bird.hint":
-      "Kopīgs limīts, cik komandām var piešķirt Early Bird cenas. Piešķiršana notiek manuāli komandu sarakstā. 0 - Early Bird izslēgts.",
-    "site_payment_plans.early_bird.field_limit": "Slotu skaits",
-    "site_payment_plans.early_bird.claimed": "Piešķirts: {claimed} / {limit}",
-    "site_payment_plans.early_bird.claimed_off": "Piešķirts: {claimed} (izslēgts)",
+      "Kopīgs limīts Early Bird vietām (ne komandām). Vieta kļūst Early Bird pirkuma brīdī, ja poolā vēl ir vietas. Ja lietotāju noņem un līdz cikla beigām vietu neaizpilda, Early Bird vieta pazūd un neatgriežas poolā. 0 - Early Bird izslēgts.",
+    "site_payment_plans.early_bird.field_limit": "Vietu skaits",
+    "site_payment_plans.early_bird.claimed": "Izmantotas vietas: {claimed} / {limit}",
+    "site_payment_plans.early_bird.claimed_off": "Izmantotas vietas: {claimed} (izslēgts)",
     "site_payment_plans.early_bird.saved": "Early Bird limīts saglabāts.",
     "frontend_modules.create.title": "Jauns modulis",
     "frontend_modules.create.description":
@@ -783,6 +828,7 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "admin.teams.plan.paid": "Samaksāts",
     "admin.teams.plan.trial": "Izmēģinājums",
     "admin.teams.plan.early_bird": "Early Bird",
+    "admin.teams.plan.early_bird_seats": "Early Bird vietas: {count}",
     "admin.teams.plan.saved": "Komandas plāns saglabāts.",
     "admin.teams.plan.status_required":
       "Norādi vismaz vienu statusu: samaksāts vai izmēģinājums.",
@@ -956,6 +1002,11 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "team.invite.accepted": "Uzaicinājums apstiprināts.",
     "team.invite.rejected": "Uzaicinājums noraidīts.",
     "team.invite.pending": "Gaida apstiprinājumu",
+    "team.invite.pending_payment": "Gaida samaksu",
+    "team.invite.saved_awaiting_payment":
+      "Uzaicinājums saglabāts. Lietotājs saņems piekļuvi pēc vietas samaksas.",
+    "team.invite.awaiting_payment_page":
+      "Komanda vēl nav apmaksājusi vietu. Uzaicinājumu varēs apstiprināt pēc samaksas.",
     "team.invite.resend": "Sūtīt uzaicinājumu vēlreiz",
     "team.invite.resending": "Sūta…",
     "team.invite.resent": "Uzaicinājums nosūtīts vēlreiz.",
@@ -984,6 +1035,50 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
       "Pieraksties ar e-pastu {email}, lai apstiprinātu uzaicinājumu.",
     "team.invite.page.accept": "Pievienoties komandai",
     "team.invite.page.reject": "Noraidīt uzaicinājumu",
+    "team.billing.menu_description":
+      "Vietas, rēķini un samaksa par jauniem lietotājiem",
+    "team.billing.title": "Abonementi",
+    "team.billing.subtitle":
+      "Apmaksātās vietas komandai. Jaunais lietotājs piekļūst tikai pēc apmaksātas vietas.",
+    "team.billing.plans_disabled": "Maksas plāni sistēmā nav ieslēgti.",
+    "team.billing.stripe_disabled":
+      "Stripe nav ieslēgts. Administrators to konfigurē Integrācijās.",
+    "team.billing.past_due":
+      "Pēdējais rēķins nav apmaksāts. Stripe mēģinās vēlreiz; pēc termiņa maksas plāns tiks deaktivizēts.",
+    "team.billing.seats_paid": "Apmaksātās vietas",
+    "team.billing.seats_occupied": "Aizņemtās vietas",
+    "team.billing.seats_open": "Atvērtās vietas",
+    "team.billing.seats_pending": "Gaida samaksu",
+    "team.billing.per_seat": "lietotājs",
+    "team.billing.choose_plan": "Izvēlies maksas plānu",
+    "team.billing.next_invoice": "Nākamais rēķins",
+    "team.billing.pending_list": "Lietotāji, kas gaida samaksu",
+    "team.billing.prorata_hint":
+      "Aptuveni {amount} līdz nākamajam ciklam, pēc tam viena ikmēneša iemaksa visām vietām.",
+    "team.billing.no_pending": "Nav vietu, kas gaida samaksu.",
+    "team.billing.choose_period": "Periods",
+    "team.billing.pay_pending": "Samaksāt {count} vietas",
+    "team.billing.pay_subscribe": "Sākt abonementu",
+    "team.billing.period.year": "Gads",
+    "team.billing.period.quarter": "Ceturksnis",
+    "team.billing.period.month": "Mēnesis",
+    "team.billing.checkout_success":
+      "Maksājums saņemts. Vietas tiks atvērtas pēc apstiprinājuma.",
+    "team.billing.checkout_cancel": "Maksājums atcelts.",
+    "team.billing.open_seat_banner":
+      "Komandā ir {count} brīva apmaksāta vieta. Tās vietā var uzaicināt citu lietotāju.",
+    "team.billing.open_seat_banner_until":
+      "Komandā ir {count} brīva apmaksāta vieta līdz {until}. Tās vietā var uzaicināt citu lietotāju.",
+    "team.billing.open_seat_invite": "Uzaicināt",
+    "team.billing.buy_extra": "Iegādāties 1 vietu",
+    "team.billing.open_until_hint":
+      "Brīvās vietas paliek līdz {until}. Ja tās neaizpilda, nākamajā rēķinā maksā tikai par aizņemtajām vietām.",
+    "team.billing.extra_prorata":
+      "Aptuveni {amount} līdz nākamajam ciklam par vienu vietu.",
+    "team.billing.extra_renewal_hint":
+      "Ja līdz cikla beigām vieta paliek tukša, nākamajā rēķinā tā vairs nav.",
+    "team.billing.free_owner_seat":
+      "Komandas vadītāja vieta ir bez maksas. Maksā tikai par vietām virs 1.",
     "team.fields.name_placeholder": "Vārds un uzvārds",
     "team.fields.email_placeholder": "vards@uznemums.lv",
     "team.fields.role": "Loma",
@@ -1628,6 +1723,14 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
       "{name} uzaicināja tevi pievienoties komandai “{team}”",
     "notifications.item.team_invite_rejected":
       "{email} noraidīja uzaicinājumu pievienoties komandai “{team}”",
+    "notifications.item.seat_open":
+      "Komandā ir brīva apmaksāta vieta līdz {until}. Tās vietā var uzaicināt citu lietotāju.",
+    "notifications.item.seat_open_no_date":
+      "Komandā ir brīva apmaksāta vieta. Tās vietā var uzaicināt citu lietotāju.",
+    "notifications.item.billing_due":
+      "No nākamā mēneša ({until}) būs jāmaksā par komandas lietotājiem.",
+    "notifications.item.billing_due_no_date":
+      "No nākamā mēneša būs jāmaksā par komandas lietotājiem.",
     "notifications.settings.title": "Paziņojumu uzstādījumi",
     "notifications.settings.description":
       "Izvēlies, par kādiem notikumiem saņemt paziņojumus zvaniņa izvēlnē.",
@@ -1670,6 +1773,12 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
       "Noraidīts komandas uzaicinājums",
     "notifications.settings.kind.team_invite_rejected.hint":
       "Kad kāds noraida tavu komandas uzaicinājumu.",
+    "notifications.settings.kind.seat_open": "Brīva apmaksāta vieta",
+    "notifications.settings.kind.seat_open.hint":
+      "Kad komandā paliek brīva apmaksāta vieta līdz cikla beigām.",
+    "notifications.settings.kind.billing_due": "Maksas par komandas lietotājiem",
+    "notifications.settings.kind.billing_due.hint":
+      "Kad sistēma ieslēdz maksas plānus un nākamajā mēnesī jāmaksā par lietotājiem virs 1.",
     "user_menu.label": "Lietotāja izvēlne",
     "user_menu.heading": "Konts",
     "user_menu.notifications": "Paziņojumu uzstādījumi",
@@ -1960,6 +2069,8 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "extension.gmail.login_done.title": "Ienāci {SYSTEM_NAME}",
     "extension.gmail.login_done.body":
       "Vari aizvērt šo logu un atgriezties spraudnī.",
+    "extension.gmail.handoff.waiting":
+      "Pagaidi, kamēr spraudnis saņem sesiju…",
     "extension.gmail.login_done.error_title": "Neizdevās ienākt",
     "extension.gmail.login_done.error_body":
       "Mēģini vēlreiz no Gmail spraudņa.",
@@ -1996,6 +2107,13 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "errors.team_invite_accept_failed": "Neizdevās apstiprināt uzaicinājumu.",
     "errors.team_invite_reject_failed": "Neizdevās noraidīt uzaicinājumu.",
     "errors.team_invite_not_pending": "Uzaicinājums vairs nav gaidīšanas stāvoklī.",
+    "errors.team_invite_seat_limit":
+      "Bezmaksas plānā ir sasniegts lietotāju skaita limits.",
+    "errors.team_invite_awaiting_payment":
+      "Uzaicinājumu var apstiprināt tikai pēc vietas samaksas.",
+    "errors.team_invite_pay_first":
+      "Vispirms samaksā par vietu, tad uzaicini lietotāju.",
+    "errors.team_page_forbidden": "Nav pieejas komandas lapai.",
     "errors.team_member_remove_failed": "Neizdevās noņemt lietotāju.",
     "errors.team_member_remove_forbidden": "Nav tiesību noņemt šo lietotāju.",
     "errors.team_member_leave_owner":
@@ -2076,7 +2194,7 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "errors.payment_plan_price_invalid":
       "Ievadi derīgu cenu (0 vai vairāk) aizpildītajiem periodiem.",
     "errors.payment_plan_price_period_required":
-      "Norādi vismaz vienu perioda cenu (mēnesis, ceturksnis vai gads).",
+      "Norādi vismaz vienu perioda cenu (mēnesis vai gads).",
     "errors.payment_plan_create_failed": "Neizdevās izveidot maksas plānu.",
     "errors.payment_plan_save_failed": "Neizdevās saglabāt maksas plānu.",
     "errors.payment_plan_delete_failed": "Neizdevās dzēst maksas plānu.",
@@ -2089,6 +2207,8 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "errors.early_bird_limit_reached": "Early Bird slotu limits ir sasniegts.",
     "errors.payment_plans_enable_save_failed":
       "Neizdevās saglabāt maksas plānu iestatījumu.",
+    "errors.payment_plans_stripe_required":
+      "Maksas plānus var ieslēgt tikai tad, ja Stripe integrācija ir nokonfigurēta un ieslēgta.",
     "errors.trial_days_invalid": "Ievadi izmēģinājuma dienu skaitu no 1 līdz 365.",
     "errors.trial_settings_save_failed": "Neizdevās saglabāt izmēģinājuma iestatījumus.",
     "errors.early_bird_limit_invalid":
@@ -2286,6 +2406,7 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "landing.pricing.not_included": "Not included",
     "landing.pricing.recommended": "Recommended",
     "landing.pricing.trial": "{days}-day trial",
+    "landing.pricing.early_bird_left": "Early Bird: {remaining} / {limit}",
     "landing.cta.title": "Start managing your team's work today",
     "landing.cta.subtitle":
       "Sign up, invite the team and create the first list. No install and no week-long rollout.",
@@ -2516,6 +2637,7 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "nav.google_drive": "Google Drive Integration",
     "nav.gmail_plugin": "Gmail plugin",
     "nav.onedrive": "OneDrive Integration",
+    "nav.billing": "Subscriptions",
     "nav.settings": "Settings",
     "nav.modules": "Modules",
     "nav.storage.used": "File storage",
@@ -2678,6 +2800,32 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "integrations.resend.aria.enabled": "Resend integration enabled",
     "integrations.resend.feedback.credentials_saved": "Resend credentials saved.",
     "integrations.resend.feedback.reset": "Resend configuration cleared.",
+    "integrations.stripe.title": "Stripe",
+    "integrations.stripe.description":
+      "Seat billing: one team subscription, new users after payment.",
+    "integrations.stripe.publishable_key": "Publishable key",
+    "integrations.stripe.publishable_key_placeholder": "pk_live_… or pk_test_…",
+    "integrations.stripe.publishable_hint":
+      "Publishable key from the Stripe Dashboard. Starts with pk_.",
+    "integrations.stripe.secret_key": "Secret key",
+    "integrations.stripe.secret_key_placeholder": "sk_live_… or sk_test_…",
+    "integrations.stripe.secret_key_placeholder_saved":
+      "Saved — leave blank to keep unchanged",
+    "integrations.stripe.webhook_secret": "Webhook signing secret",
+    "integrations.stripe.webhook_secret_placeholder": "whsec_…",
+    "integrations.stripe.webhook_secret_placeholder_saved":
+      "Saved — leave blank to keep unchanged",
+    "integrations.stripe.webhook_url_hint":
+      "Stripe Dashboard webhook URL: {url}",
+    "integrations.stripe.hint":
+      "When the integration is active, teams pay for seats with Stripe Checkout and a subscription. Webhook events: checkout.session.completed, invoice.created, invoice.paid, invoice.payment_failed, customer.subscription.updated, customer.subscription.deleted.",
+    "integrations.stripe.reset": "Clear configuration",
+    "integrations.stripe.reset.confirm_title": "Clear Stripe configuration?",
+    "integrations.stripe.reset.confirm_description":
+      "Stripe keys will be deleted and seat billing will be turned off.",
+    "integrations.stripe.aria.enabled": "Stripe integration enabled",
+    "integrations.stripe.feedback.credentials_saved": "Stripe credentials saved.",
+    "integrations.stripe.feedback.reset": "Stripe configuration cleared.",
     "integrations.umami.title": "Umami",
     "integrations.umami.description":
       "Anonymous page analytics. When active, the script loads in the page head after analytics consent.",
@@ -2761,6 +2909,21 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "errors.integrations_sentry_dsn_required": "Enter the Sentry DSN.",
     "errors.integrations_turnstile_site_key_required": "Enter the Turnstile Site Key.",
     "errors.integrations_turnstile_secret_key_required": "Enter the Turnstile Secret Key.",
+    "errors.integrations_stripe_publishable_required": "Enter the Stripe Publishable key.",
+    "errors.integrations_stripe_secret_required": "Enter the Stripe Secret key.",
+    "errors.integrations_stripe_webhook_required": "Enter the Stripe webhook signing secret.",
+    "errors.integrations_stripe_not_enabled": "Stripe integration is not enabled.",
+    "errors.integrations_stripe_invalid_key":
+      "The Stripe API key is invalid. An administrator must fix it in Integrations.",
+    "errors.integrations_stripe_checkout_failed": "Could not create a Stripe payment.",
+    "errors.billing_forbidden": "You do not have permission to manage team billing.",
+    "errors.billing_not_configured": "Payment plans are not enabled on this system.",
+    "errors.billing_no_paid_plan": "Choose a paid plan with a price.",
+    "errors.billing_already_subscribed": "This team already has a Stripe subscription.",
+    "errors.billing_no_subscription": "Start a team subscription first.",
+    "errors.billing_no_pending_seats": "There are no seats waiting for payment.",
+    "errors.billing_only_free_seat":
+      "The team owner's seat is free. Buy a paid seat to invite others.",
     "site_payment_plans.page.subtitle":
       "Enable payment plans and assign frontend modules to each plan",
     "site_payment_plans.enable.section": "Payment plans",
@@ -2768,6 +2931,8 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
       "When enabled, teams only see modules included in their active payment plan. When disabled, all globally enabled modules are available to every team.",
     "site_payment_plans.enable.label": "Enable payment plans",
     "site_payment_plans.enable.saved": "Payment plans setting saved.",
+    "site_payment_plans.enable.stripe_required":
+      "Payment plans can be turned on only after the Stripe integration is configured and enabled.",
     "site_payment_plans.list.title": "Plans",
     "site_payment_plans.list.empty": "No payment plans yet.",
     "site_payment_plans.list.prices": "Prices",
@@ -2798,7 +2963,7 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "site_payment_plans.form.price_year": "Year",
     "site_payment_plans.form.early_bird_prices": "Early Bird prices per user (EUR)",
     "site_payment_plans.form.early_bird_prices_hint":
-      "These prices apply to teams with Early Bird status and are also per user. You can leave unused periods empty.",
+      "These prices apply to Early Bird seats and are also per user. You can leave unused periods empty.",
     "site_payment_plans.period.month_short": "/ mo",
     "site_payment_plans.period.quarter_short": "/ qtr",
     "site_payment_plans.period.year_short": "/ yr",
@@ -2819,10 +2984,10 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "site_payment_plans.trial.saved": "Trial settings saved.",
     "site_payment_plans.early_bird.section": "Early Bird",
     "site_payment_plans.early_bird.hint":
-      "Shared limit for how many teams can get Early Bird pricing. Assignment is manual on the teams list. 0 disables Early Bird.",
-    "site_payment_plans.early_bird.field_limit": "Slot limit",
-    "site_payment_plans.early_bird.claimed": "Claimed: {claimed} / {limit}",
-    "site_payment_plans.early_bird.claimed_off": "Claimed: {claimed} (off)",
+      "Global limit of Early Bird seats (not teams). A purchased seat is Early Bird if seats remain in the pool. If a user is removed and the seat is not filled before the cycle ends, that Early Bird seat is lost and does not return to the pool. 0 disables Early Bird.",
+    "site_payment_plans.early_bird.field_limit": "Seat count",
+    "site_payment_plans.early_bird.claimed": "Used seats: {claimed} / {limit}",
+    "site_payment_plans.early_bird.claimed_off": "Used seats: {claimed} (off)",
     "site_payment_plans.early_bird.saved": "Early Bird limit saved.",
     "frontend_modules.create.title": "New module",
     "frontend_modules.create.description":
@@ -2874,6 +3039,7 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "admin.teams.plan.paid": "Paid",
     "admin.teams.plan.trial": "Trial",
     "admin.teams.plan.early_bird": "Early Bird",
+    "admin.teams.plan.early_bird_seats": "Early Bird seats: {count}",
     "admin.teams.plan.saved": "Team plan saved.",
     "admin.teams.plan.status_required":
       "Select at least one status: paid or trial.",
@@ -3045,6 +3211,11 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "team.invite.accepted": "Invitation accepted.",
     "team.invite.rejected": "Invitation declined.",
     "team.invite.pending": "Awaiting confirmation",
+    "team.invite.pending_payment": "Awaiting payment",
+    "team.invite.saved_awaiting_payment":
+      "Invitation saved. The user will get access after the seat is paid.",
+    "team.invite.awaiting_payment_page":
+      "The team has not paid for a seat yet. You can accept the invitation after payment.",
     "team.invite.resend": "Resend invitation",
     "team.invite.resending": "Sending…",
     "team.invite.resent": "Invitation sent again.",
@@ -3073,6 +3244,50 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
       "Sign in with {email} to accept this invitation.",
     "team.invite.page.accept": "Join team",
     "team.invite.page.reject": "Decline invitation",
+    "team.billing.menu_description":
+      "Seats, invoices and payment for new users",
+    "team.billing.title": "Subscriptions",
+    "team.billing.subtitle":
+      "Paid seats for the team. New users get access only after a paid seat.",
+    "team.billing.plans_disabled": "Payment plans are not enabled on this system.",
+    "team.billing.stripe_disabled":
+      "Stripe is not enabled. An administrator configures it in Integrations.",
+    "team.billing.past_due":
+      "The last invoice was not paid. Stripe will retry; after the deadline the paid plan will be deactivated.",
+    "team.billing.seats_paid": "Paid seats",
+    "team.billing.seats_occupied": "Occupied seats",
+    "team.billing.seats_open": "Open seats",
+    "team.billing.seats_pending": "Awaiting payment",
+    "team.billing.per_seat": "user",
+    "team.billing.choose_plan": "Choose a paid plan",
+    "team.billing.next_invoice": "Next invoice",
+    "team.billing.pending_list": "Users waiting for payment",
+    "team.billing.prorata_hint":
+      "About {amount} until the next cycle, then one monthly charge for all seats.",
+    "team.billing.no_pending": "No seats are waiting for payment.",
+    "team.billing.choose_period": "Period",
+    "team.billing.pay_pending": "Pay for {count} seats",
+    "team.billing.pay_subscribe": "Start subscription",
+    "team.billing.period.year": "Year",
+    "team.billing.period.quarter": "Quarter",
+    "team.billing.period.month": "Month",
+    "team.billing.checkout_success":
+      "Payment received. Seats will unlock after confirmation.",
+    "team.billing.checkout_cancel": "Payment cancelled.",
+    "team.billing.open_seat_banner":
+      "The team has {count} paid seat still available. You can invite someone else into it.",
+    "team.billing.open_seat_banner_until":
+      "The team has {count} paid seat still available until {until}. You can invite someone else into it.",
+    "team.billing.open_seat_invite": "Invite",
+    "team.billing.buy_extra": "Buy 1 extra seat",
+    "team.billing.open_until_hint":
+      "Open seats stay until {until}. If they are not filled, the next invoice charges for occupied seats only.",
+    "team.billing.extra_prorata":
+      "About {amount} until the next cycle for one extra seat.",
+    "team.billing.extra_renewal_hint":
+      "If the extra seat is still empty at the end of the cycle, the next invoice will not include it.",
+    "team.billing.free_owner_seat":
+      "The team owner's seat is free. You pay only for seats above 1.",
     "team.fields.name_placeholder": "Full name",
     "team.fields.email_placeholder": "name@company.com",
     "team.fields.role": "Role",
@@ -3706,6 +3921,14 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
       "{name} invited you to join the team “{team}”",
     "notifications.item.team_invite_rejected":
       "{email} declined the invitation to join “{team}”",
+    "notifications.item.seat_open":
+      "A paid team seat is free until {until}. You can invite someone else into it.",
+    "notifications.item.seat_open_no_date":
+      "A paid team seat is free. You can invite someone else into it.",
+    "notifications.item.billing_due":
+      "From next month ({until}) you will pay for team users.",
+    "notifications.item.billing_due_no_date":
+      "From next month you will pay for team users.",
     "notifications.settings.title": "Notification settings",
     "notifications.settings.description":
       "Choose which events appear in the bell menu.",
@@ -3746,6 +3969,12 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "notifications.settings.kind.team_invite_rejected": "Invitation declined",
     "notifications.settings.kind.team_invite_rejected.hint":
       "When someone declines your team invitation.",
+    "notifications.settings.kind.seat_open": "Open paid seat",
+    "notifications.settings.kind.seat_open.hint":
+      "When a paid team seat stays available until the end of the billing cycle.",
+    "notifications.settings.kind.billing_due": "Team user billing",
+    "notifications.settings.kind.billing_due.hint":
+      "When paid plans are turned on and next month you will pay for users above 1.",
     "user_menu.label": "User menu",
     "user_menu.heading": "Account",
     "user_menu.notifications": "Notification settings",
@@ -4035,6 +4264,8 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "extension.gmail.login_done.title": "Signed in to {SYSTEM_NAME}",
     "extension.gmail.login_done.body":
       "You can close this window and return to the plugin.",
+    "extension.gmail.handoff.waiting":
+      "Wait until the plugin has received the session…",
     "extension.gmail.login_done.error_title": "Could not sign in",
     "extension.gmail.login_done.error_body":
       "Try again from the Gmail plugin.",
@@ -4071,6 +4302,13 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "errors.team_invite_accept_failed": "Could not accept the invitation.",
     "errors.team_invite_reject_failed": "Could not decline the invitation.",
     "errors.team_invite_not_pending": "This invitation is no longer pending.",
+    "errors.team_invite_seat_limit":
+      "The free plan user limit has been reached.",
+    "errors.team_invite_awaiting_payment":
+      "This invitation can be accepted only after the seat is paid.",
+    "errors.team_invite_pay_first":
+      "Pay for a seat first, then invite the user.",
+    "errors.team_page_forbidden": "You do not have access to the team page.",
     "errors.team_member_remove_failed": "Could not remove the user.",
     "errors.team_member_remove_forbidden": "You do not have permission to remove this user.",
     "errors.team_member_leave_owner":
@@ -4150,7 +4388,7 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "errors.payment_plan_price_invalid":
       "Enter a valid price (0 or more) for each filled billing period.",
     "errors.payment_plan_price_period_required":
-      "Enter at least one billing period price (month, quarter, or year).",
+      "Enter at least one billing period price (month or year).",
     "errors.payment_plan_create_failed": "Could not create the payment plan.",
     "errors.payment_plan_save_failed": "Could not save the payment plan.",
     "errors.payment_plan_delete_failed": "Could not delete the payment plan.",
@@ -4162,6 +4400,8 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "errors.team_payment_plan_save_failed": "Could not save the team plan.",
     "errors.early_bird_limit_reached": "Early Bird slot limit has been reached.",
     "errors.payment_plans_enable_save_failed": "Could not save the payment plans setting.",
+    "errors.payment_plans_stripe_required":
+      "Payment plans can be turned on only after the Stripe integration is configured and enabled.",
     "errors.trial_days_invalid": "Enter a trial length between 1 and 365 days.",
     "errors.trial_settings_save_failed": "Could not save trial settings.",
     "errors.early_bird_limit_invalid": "Enter a valid Early Bird slot limit (0 or more).",

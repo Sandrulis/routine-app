@@ -6,6 +6,7 @@ import { AppModal } from "@/app/components/app-modal";
 import { ToggleSwitch } from "@/app/components/toggle-switch";
 import { useFeedbackToast } from "@/app/components/feedback-toast-provider";
 import { useTranslations } from "@/app/components/translations-provider";
+import { formatInteger } from "@/app/lib/format/numbers";
 import { translateActionError } from "@/app/lib/i18n/action-errors";
 import {
   resolveLocalizedValue,
@@ -22,7 +23,6 @@ type PlanDraft = {
   until: string;
   paid: boolean;
   isTrial: boolean;
-  isEarlyBird: boolean;
 };
 
 function draftFromTeam(team: AdminTeamSummary): PlanDraft {
@@ -31,7 +31,6 @@ function draftFromTeam(team: AdminTeamSummary): PlanDraft {
     until: toDateInputValue(team.paymentPlanUntil),
     paid: team.paymentPlanPaid,
     isTrial: team.paymentPlanIsTrial,
-    isEarlyBird: team.paymentPlanIsEarlyBird,
   };
 }
 
@@ -40,8 +39,7 @@ function draftsEqual(left: PlanDraft, right: PlanDraft): boolean {
     left.planId === right.planId &&
     left.until.trim() === right.until.trim() &&
     left.paid === right.paid &&
-    left.isTrial === right.isTrial &&
-    left.isEarlyBird === right.isEarlyBird
+    left.isTrial === right.isTrial
   );
 }
 
@@ -66,7 +64,6 @@ export function AdminTeamPlanModal({
       until: "",
       paid: false,
       isTrial: false,
-      isEarlyBird: false,
     },
   );
   const [savedDraft, setSavedDraft] = useState<PlanDraft>(draft);
@@ -107,7 +104,7 @@ export function AdminTeamPlanModal({
         until: draft.until.trim() || null,
         paid: draft.paid,
         isTrial: draft.isTrial,
-        isEarlyBird: draft.isEarlyBird,
+        isEarlyBird: false,
       });
 
       if (!result.ok) {
@@ -160,7 +157,6 @@ export function AdminTeamPlanModal({
                         until: "",
                         paid: false,
                         isTrial: false,
-                        isEarlyBird: false,
                       }
                     : {}),
                 }));
@@ -242,11 +238,6 @@ export function AdminTeamPlanModal({
                   t("admin.teams.plan.trial", "Izmēģinājums"),
                   draft.isTrial,
                 ],
-                [
-                  "isEarlyBird",
-                  t("admin.teams.plan.early_bird", "Early Bird"),
-                  draft.isEarlyBird,
-                ],
               ] as const
             ).map(([key, label, checked]) => (
               <li
@@ -265,6 +256,13 @@ export function AdminTeamPlanModal({
               </li>
             ))}
           </ul>
+          <p className="rounded-xl border border-zinc-100 bg-zinc-50 px-4 py-3 text-xs text-zinc-600">
+            {t(
+              "admin.teams.plan.early_bird_seats",
+              "Early Bird vietas: {count}",
+              { count: formatInteger(team.earlyBirdSeatCount) },
+            )}
+          </p>
             </>
           ) : null}
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, useTransition } from "react";
+import Link from "next/link";
 import {
   createPaymentPlanAction,
   deletePaymentPlanAction,
@@ -168,6 +169,7 @@ function pricePeriodLabel(
 
 export function AdminPaymentPlansForm({
   initialEnabled,
+  stripeEnabled = false,
   initialPlans,
   initialTrial,
   initialEarlyBird,
@@ -175,6 +177,7 @@ export function AdminPaymentPlansForm({
   languages,
 }: {
   initialEnabled: boolean;
+  stripeEnabled?: boolean;
   initialPlans: PaymentPlanSummary[];
   initialTrial: TrialSettings;
   initialEarlyBird: EarlyBirdAvailability;
@@ -298,6 +301,13 @@ export function AdminPaymentPlansForm({
 
   function handleEnabledToggle(nextEnabled: boolean) {
     clearFeedback();
+    if (nextEnabled && !stripeEnabled) {
+      showFeedback({
+        type: "error",
+        text: translateActionError(t, "errors.payment_plans_stripe_required"),
+      });
+      return;
+    }
     const previous = enabled;
     setEnabled(nextEnabled);
 
@@ -397,10 +407,8 @@ export function AdminPaymentPlansForm({
 
     const priceFields = [
       draft.priceMonth,
-      draft.priceQuarter,
       draft.priceYear,
       draft.earlyBirdPriceMonth,
-      draft.earlyBirdPriceQuarter,
       draft.earlyBirdPriceYear,
     ];
     for (const field of priceFields) {
@@ -448,10 +456,10 @@ export function AdminPaymentPlansForm({
         isFree: draft.isFree,
         maxMembers: parsedMaxMembers,
         priceMonth: draft.priceMonth,
-        priceQuarter: draft.priceQuarter,
+        priceQuarter: "0",
         priceYear: draft.priceYear,
         earlyBirdPriceMonth: draft.earlyBirdPriceMonth,
-        earlyBirdPriceQuarter: draft.earlyBirdPriceQuarter,
+        earlyBirdPriceQuarter: "0",
         earlyBirdPriceYear: draft.earlyBirdPriceYear,
       };
       const result = editingPlan
@@ -543,6 +551,20 @@ export function AdminPaymentPlansForm({
                 "Kad ieslēgts, komandas redz tikai tās moduļus, kas iekļauti aktīvajā maksas plānā. Kad izslēgts, visi globāli ieslēgtie moduļi ir pieejami visām komandām.",
               )}
             </p>
+            {!stripeEnabled ? (
+              <p className="mt-2 text-xs text-amber-800">
+                {t(
+                  "site_payment_plans.enable.stripe_required",
+                  "Maksas plānus var ieslēgt tikai tad, ja Stripe integrācija ir nokonfigurēta un ieslēgta.",
+                )}{" "}
+                <Link
+                  href="/admin/integrations"
+                  className="font-medium text-zinc-900 underline decoration-zinc-300 underline-offset-2 hover:decoration-zinc-500"
+                >
+                  {t("admin.nav.integrations", "Integrācijas")}
+                </Link>
+              </p>
+            ) : null}
           </div>
           <div className="flex items-center gap-3">
             <span className="text-sm text-zinc-700">
@@ -550,7 +572,7 @@ export function AdminPaymentPlansForm({
             </span>
             <ToggleSwitch
               checked={enabled}
-              disabled={isBusy}
+              disabled={isBusy || (!stripeEnabled && !enabled)}
               label={t(
                 "site_payment_plans.enable.label",
                 "Ieslēgt maksas plānus",
@@ -655,7 +677,7 @@ export function AdminPaymentPlansForm({
         <p className="mt-1 text-xs text-zinc-500">
           {t(
             "site_payment_plans.early_bird.hint",
-            "Kopīgs limīts, cik komandām var piešķirt Early Bird cenas. Piešķiršana notiek manuāli komandu sarakstā. 0 - Early Bird izslēgts.",
+            "Kopīgs limīts Early Bird vietām (ne komandām). Vieta kļūst Early Bird pirkuma brīdī, ja poolā vēl ir vietas. Ja lietotāju noņem un līdz cikla beigām vietu neaizpilda, Early Bird vieta pazūd un neatgriežas poolā. 0 - Early Bird izslēgts.",
           )}
         </p>
 
@@ -664,7 +686,7 @@ export function AdminPaymentPlansForm({
             <span className="text-sm font-medium text-zinc-800">
               {t(
                 "site_payment_plans.early_bird.field_limit",
-                "Slotu skaits",
+                "Vietu skaits",
               )}
             </span>
             <input
@@ -683,7 +705,7 @@ export function AdminPaymentPlansForm({
               {savedEarlyBirdLimit > 0
                 ? t(
                     "site_payment_plans.early_bird.claimed",
-                    "Piešķirts: {claimed} / {limit}",
+                    "Izmantotas vietas: {claimed} / {limit}",
                     {
                       claimed: earlyBirdClaimed,
                       limit: savedEarlyBirdLimit,
@@ -691,7 +713,7 @@ export function AdminPaymentPlansForm({
                   )
                 : t(
                     "site_payment_plans.early_bird.claimed_off",
-                    "Piešķirts: {claimed} (izslēgts)",
+                    "Izmantotas vietas: {claimed} (izslēgts)",
                     { claimed: earlyBirdClaimed },
                   )}
             </p>
@@ -802,22 +824,10 @@ export function AdminPaymentPlansForm({
                             )}
                           </p>
                         ) : null}
-                        {!plan.isFree && plan.priceQuarter > 0 ? (
-                          <p className={plan.priceMonth > 0 ? "mt-0.5" : undefined}>
-                            {formatPlanEuro(plan.priceQuarter)}{" "}
-                            {pricePeriodLabel(
-                              t,
-                              "site_payment_plans.period.quarter_short",
-                              "/ cet.",
-                            )}
-                          </p>
-                        ) : null}
                         {!plan.isFree && plan.priceYear > 0 ? (
                           <p
                             className={
-                              plan.priceMonth > 0 || plan.priceQuarter > 0
-                                ? "mt-0.5"
-                                : undefined
+                              plan.priceMonth > 0 ? "mt-0.5" : undefined
                             }
                           >
                             {formatPlanEuro(plan.priceYear)}{" "}
@@ -830,7 +840,6 @@ export function AdminPaymentPlansForm({
                         ) : null}
                         {!plan.isFree &&
                         (plan.earlyBirdPriceMonth > 0 ||
-                        plan.earlyBirdPriceQuarter > 0 ||
                         plan.earlyBirdPriceYear > 0) ? (
                           <>
                             <p className="mt-2 text-[11px] font-semibold uppercase tracking-wider text-zinc-400">
@@ -846,16 +855,6 @@ export function AdminPaymentPlansForm({
                                   t,
                                   "site_payment_plans.period.month_short",
                                   "/ mēn.",
-                                )}
-                              </p>
-                            ) : null}
-                            {plan.earlyBirdPriceQuarter > 0 ? (
-                              <p className="mt-0.5">
-                                {formatPlanEuro(plan.earlyBirdPriceQuarter)}{" "}
-                                {pricePeriodLabel(
-                                  t,
-                                  "site_payment_plans.period.quarter_short",
-                                  "/ cet.",
                                 )}
                               </p>
                             ) : null}
@@ -1104,7 +1103,7 @@ export function AdminPaymentPlansForm({
                 "Cena ir par vienu lietotāju. Aizpildi tikai piedāvātos periodus. Tukšs periods landing lapā netiek rādīts. Decimālatdalītājs ir punkts, piemēram 9.00.",
               )}
             </p>
-            <div className="mt-2 grid gap-3 sm:grid-cols-3">
+            <div className="mt-2 grid gap-3 sm:grid-cols-2">
               <label className="block">
                 <span className="text-xs font-medium text-zinc-600">
                   {t("site_payment_plans.form.price_month", "Mēnesis")}
@@ -1117,25 +1116,6 @@ export function AdminPaymentPlansForm({
                     setDraft((current) => ({
                       ...current,
                       priceMonth: event.target.value,
-                    }))
-                  }
-                  className={`${fieldClassName} tabular-nums`}
-                  placeholder="0.00"
-                  disabled={isBusy}
-                />
-              </label>
-              <label className="block">
-                <span className="text-xs font-medium text-zinc-600">
-                  {t("site_payment_plans.form.price_quarter", "Ceturksnis")}
-                </span>
-                <input
-                  type="text"
-                  inputMode="decimal"
-                  value={draft.priceQuarter}
-                  onChange={(event) =>
-                    setDraft((current) => ({
-                      ...current,
-                      priceQuarter: event.target.value,
                     }))
                   }
                   className={`${fieldClassName} tabular-nums`}
@@ -1175,10 +1155,10 @@ export function AdminPaymentPlansForm({
             <p className="mt-1 text-xs text-zinc-500">
               {t(
                 "site_payment_plans.form.early_bird_prices_hint",
-                "Šīs cenas attiecas uz komandām ar Early Bird statusu un arī ir par vienu lietotāju. Tukšus periodus vari atstāt tukšus.",
+                "Šīs cenas attiecas uz Early Bird vietām un arī ir par vienu lietotāju. Tukšus periodus vari atstāt tukšus.",
               )}
             </p>
-            <div className="mt-2 grid gap-3 sm:grid-cols-3">
+            <div className="mt-2 grid gap-3 sm:grid-cols-2">
               <label className="block">
                 <span className="text-xs font-medium text-zinc-600">
                   {t("site_payment_plans.form.price_month", "Mēnesis")}
@@ -1191,25 +1171,6 @@ export function AdminPaymentPlansForm({
                     setDraft((current) => ({
                       ...current,
                       earlyBirdPriceMonth: event.target.value,
-                    }))
-                  }
-                  className={`${fieldClassName} tabular-nums`}
-                  placeholder="0.00"
-                  disabled={isBusy}
-                />
-              </label>
-              <label className="block">
-                <span className="text-xs font-medium text-zinc-600">
-                  {t("site_payment_plans.form.price_quarter", "Ceturksnis")}
-                </span>
-                <input
-                  type="text"
-                  inputMode="decimal"
-                  value={draft.earlyBirdPriceQuarter}
-                  onChange={(event) =>
-                    setDraft((current) => ({
-                      ...current,
-                      earlyBirdPriceQuarter: event.target.value,
                     }))
                   }
                   className={`${fieldClassName} tabular-nums`}

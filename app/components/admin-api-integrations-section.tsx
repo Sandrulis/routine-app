@@ -14,9 +14,10 @@ import {
   setSimpleIntegrationEnabledAction,
 } from "@/app/lib/integrations/simple/actions";
 import { DEFAULT_UMAMI_SCRIPT_URL } from "@/app/lib/integrations/simple/definitions";
+import { stripeWebhookUrl } from "@/app/lib/billing/urls";
 import type { SimpleIntegrationStatus } from "@/app/lib/integrations/types";
 
-type ApiIntegrationKind = "turnstile" | "resend" | "umami" | "sentry";
+type ApiIntegrationKind = "turnstile" | "resend" | "umami" | "sentry" | "stripe";
 
 type DraftState = {
   status: SimpleIntegrationStatus;
@@ -38,11 +39,13 @@ function createDraft(status: SimpleIntegrationStatus): DraftState {
   };
 }
 
-function isDraftDirty(draft: DraftState) {
+function isDraftDirty(draft: DraftState, replyToIsSecret = false) {
   const credentialsDirty =
     draft.clientId.trim() !== draft.status.clientId ||
-    draft.replyToEmail.trim() !== draft.status.replyToEmail ||
-    draft.clientSecret.trim().length > 0;
+    draft.clientSecret.trim().length > 0 ||
+    (replyToIsSecret
+      ? draft.replyToEmail.trim().length > 0
+      : draft.replyToEmail.trim() !== draft.status.replyToEmail);
   const enabledDirty =
     draft.status.configured && draft.enabled !== draft.status.enabled;
   return credentialsDirty || enabledDirty;
@@ -53,12 +56,14 @@ export function AdminApiIntegrationsSection({
   initialResend,
   initialUmami,
   initialSentry,
+  initialStripe,
   onDirtyChange,
 }: {
   initialTurnstile: SimpleIntegrationStatus;
   initialResend: SimpleIntegrationStatus;
   initialUmami: SimpleIntegrationStatus;
   initialSentry: SimpleIntegrationStatus;
+  initialStripe: SimpleIntegrationStatus;
   onDirtyChange?: (dirty: boolean) => void;
 }) {
   const router = useRouter();
@@ -68,6 +73,7 @@ export function AdminApiIntegrationsSection({
   const [resend, setResend] = useState(() => createDraft(initialResend));
   const [umami, setUmami] = useState(() => createDraft(initialUmami));
   const [sentry, setSentry] = useState(() => createDraft(initialSentry));
+  const [stripe, setStripe] = useState(() => createDraft(initialStripe));
   const [resetTarget, setResetTarget] = useState<ApiIntegrationKind | null>(null);
   const [pendingKey, setPendingKey] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -77,7 +83,8 @@ export function AdminApiIntegrationsSection({
     isDraftDirty(turnstile) ||
     isDraftDirty(resend) ||
     isDraftDirty(umami) ||
-    isDraftDirty(sentry);
+    isDraftDirty(sentry) ||
+    isDraftDirty(stripe, true);
 
   useEffect(() => {
     setTurnstile(createDraft(initialTurnstile));
@@ -94,6 +101,10 @@ export function AdminApiIntegrationsSection({
   useEffect(() => {
     setSentry(createDraft(initialSentry));
   }, [initialSentry]);
+
+  useEffect(() => {
+    setStripe(createDraft(initialStripe));
+  }, [initialStripe]);
 
   useEffect(() => {
     onDirtyChange?.(isDirty);
@@ -131,25 +142,42 @@ export function AdminApiIntegrationsSection({
     }
   }, [sentry.clientId, sentry.clientSecret, sentry.enabled, sentry.status]);
 
+  useEffect(() => {
+    if (isDraftDirty(stripe, true)) {
+      setStripe((current) =>
+        current.expanded ? current : { ...current, expanded: true },
+      );
+    }
+  }, [
+    stripe.clientId,
+    stripe.clientSecret,
+    stripe.replyToEmail,
+    stripe.enabled,
+    stripe.status,
+  ]);
+
   function draftFor(kind: ApiIntegrationKind) {
     if (kind === "turnstile") return turnstile;
     if (kind === "resend") return resend;
     if (kind === "umami") return umami;
-    return sentry;
+    if (kind === "sentry") return sentry;
+    return stripe;
   }
 
   function setDraft(kind: ApiIntegrationKind, updater: (current: DraftState) => DraftState) {
     if (kind === "turnstile") setTurnstile(updater);
     else if (kind === "resend") setResend(updater);
     else if (kind === "umami") setUmami(updater);
-    else setSentry(updater);
+    else if (kind === "sentry") setSentry(updater);
+    else setStripe(updater);
   }
 
   function integrationKey(kind: ApiIntegrationKind) {
     if (kind === "turnstile") return SITE_INTEGRATION_KEYS.turnstile;
     if (kind === "resend") return SITE_INTEGRATION_KEYS.resend;
     if (kind === "umami") return SITE_INTEGRATION_KEYS.umami;
-    return SITE_INTEGRATION_KEYS.sentry;
+    if (kind === "sentry") return SITE_INTEGRATION_KEYS.sentry;
+    return SITE_INTEGRATION_KEYS.stripe;
   }
 
   function handleSave(kind: ApiIntegrationKind, event: React.FormEvent) {
@@ -161,7 +189,7 @@ export function AdminApiIntegrationsSection({
       const result = await saveSimpleIntegrationCredentialsAction(integrationKey(kind), {
         clientId: draft.clientId,
         clientSecret: draft.clientSecret,
-        replyToEmail: kind === "resend" ? draft.replyToEmail : undefined,
+        replyToEmail: kind === "resend" || kind === "stripe" ? draft.replyToEmail : undefined,
       });
       setPendingKey(null);
       if (!result.ok) {
@@ -478,6 +506,122 @@ export function AdminApiIntegrationsSection({
       );
     }
 
+    if (kind === "stripe") {
+      const webhookUrl = stripeWebhookUrl();
+      return (
+        <form onSubmit={(event) => handleSave("stripe", event)} className="space-y-4">
+          <div>
+            <label
+              htmlFor="stripe-publishable-key"
+              className="block text-sm font-medium text-zinc-700"
+            >
+              {t("integrations.stripe.publishable_key", "Publishable key")}
+            </label>
+            <input
+              id="stripe-publishable-key"
+              value={draft.clientId}
+              onChange={(event) => {
+                setStripe((current) => ({ ...current, clientId: event.target.value }));
+                clearFeedback();
+              }}
+              disabled={isBusy}
+              placeholder={t(
+                "integrations.stripe.publishable_key_placeholder",
+                "pk_live_… vai pk_test_…",
+              )}
+              className="mt-1.5 w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 font-mono text-sm text-zinc-900 outline-none transition placeholder:font-sans placeholder:text-zinc-400 focus:border-zinc-400 disabled:cursor-not-allowed disabled:bg-zinc-50"
+              autoComplete="off"
+              spellCheck={false}
+            />
+            <p className="mt-1.5 text-xs text-zinc-500">
+              {t(
+                "integrations.stripe.publishable_hint",
+                "Publiskā atslēga no Stripe Dashboard. Sākas ar pk_.",
+              )}
+            </p>
+          </div>
+          <div>
+            <label
+              htmlFor="stripe-secret-key"
+              className="block text-sm font-medium text-zinc-700"
+            >
+              {t("integrations.stripe.secret_key", "Secret key")}
+            </label>
+            <input
+              id="stripe-secret-key"
+              type="password"
+              value={draft.clientSecret}
+              onChange={(event) => {
+                setStripe((current) => ({
+                  ...current,
+                  clientSecret: event.target.value,
+                }));
+                clearFeedback();
+              }}
+              disabled={isBusy}
+              placeholder={
+                draft.status.hasClientSecret
+                  ? t(
+                      "integrations.stripe.secret_key_placeholder_saved",
+                      "Saglabāts — atstāj tukšu, ja nemaina",
+                    )
+                  : t("integrations.stripe.secret_key_placeholder", "sk_live_… vai sk_test_…")
+              }
+              className="mt-1.5 w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 font-mono text-sm text-zinc-900 outline-none transition placeholder:font-sans placeholder:text-zinc-400 focus:border-zinc-400 disabled:cursor-not-allowed disabled:bg-zinc-50"
+              autoComplete="off"
+              spellCheck={false}
+            />
+          </div>
+          <div>
+            <label
+              htmlFor="stripe-webhook-secret"
+              className="block text-sm font-medium text-zinc-700"
+            >
+              {t("integrations.stripe.webhook_secret", "Webhook signing secret")}
+            </label>
+            <input
+              id="stripe-webhook-secret"
+              type="password"
+              value={draft.replyToEmail}
+              onChange={(event) => {
+                setStripe((current) => ({
+                  ...current,
+                  replyToEmail: event.target.value,
+                }));
+                clearFeedback();
+              }}
+              disabled={isBusy}
+              placeholder={
+                draft.status.hasWebhookSecret
+                  ? t(
+                      "integrations.stripe.webhook_secret_placeholder_saved",
+                      "Saglabāts — atstāj tukšu, ja nemaina",
+                    )
+                  : t("integrations.stripe.webhook_secret_placeholder", "whsec_…")
+              }
+              className="mt-1.5 w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 font-mono text-sm text-zinc-900 outline-none transition placeholder:font-sans placeholder:text-zinc-400 focus:border-zinc-400 disabled:cursor-not-allowed disabled:bg-zinc-50"
+              autoComplete="off"
+              spellCheck={false}
+            />
+            <p className="mt-1.5 text-xs text-zinc-500">
+              {t(
+                "integrations.stripe.webhook_url_hint",
+                "Stripe Dashboard webhook URL: {url}",
+                { url: webhookUrl },
+              )}
+            </p>
+          </div>
+          <p className="text-xs text-zinc-500">
+            {t(
+              "integrations.stripe.hint",
+              "Kad integrācija ir aktīva, komandas maksā par vietām Stripe Checkout un abonementā. Webhook notikumi: checkout.session.completed, invoice.created, invoice.paid, invoice.payment_failed, customer.subscription.updated, customer.subscription.deleted.",
+            )}
+          </p>
+          {renderFooter("stripe", credentialsDirty)}
+        </form>
+      );
+    }
+
     return (
       <form onSubmit={(event) => handleSave("sentry", event)} className="space-y-4">
         <div>
@@ -576,7 +720,9 @@ export function AdminApiIntegrationsSection({
       ? t("integrations.resend.reset.confirm_title", "Notīrīt Resend konfigurāciju?")
       : resetTarget === "umami"
         ? t("integrations.umami.reset.confirm_title", "Notīrīt Umami konfigurāciju?")
-        : t("integrations.sentry.reset.confirm_title", "Notīrīt Sentry konfigurāciju?");
+        : resetTarget === "stripe"
+          ? t("integrations.stripe.reset.confirm_title", "Notīrīt Stripe konfigurāciju?")
+          : t("integrations.sentry.reset.confirm_title", "Notīrīt Sentry konfigurāciju?");
 
   const resetDescription =
     resetTarget === "turnstile"
@@ -594,10 +740,15 @@ export function AdminApiIntegrationsSection({
             "integrations.umami.reset.confirm_description",
             "Website ID tiks dzēsts un Umami skripts vairs netiks ielādēts.",
           )
-        : t(
-            "integrations.sentry.reset.confirm_description",
-            "DSN tiks dzēsts un Sentry kļūdu uzskaite tiks izslēgta.",
-          );
+        : resetTarget === "stripe"
+          ? t(
+              "integrations.stripe.reset.confirm_description",
+              "Stripe atslēgas tiks dzēstas un vietu norēķini tiks izslēgti.",
+            )
+          : t(
+              "integrations.sentry.reset.confirm_description",
+              "DSN tiks dzēsts un Sentry kļūdu uzskaite tiks izslēgta.",
+            );
 
   return (
     <>
@@ -691,6 +842,29 @@ export function AdminApiIntegrationsSection({
         isBusy={isBusy}
       >
         {renderFields("sentry")}
+      </AdminIntegrationCard>
+
+      <AdminIntegrationCard
+        panelId="stripe"
+        title={t("integrations.stripe.title", "Stripe")}
+        description={t(
+          "integrations.stripe.description",
+          "Vietu norēķini: viena komandas abonements, jaunie lietotāji pēc samaksas.",
+        )}
+        configured={stripe.status.configured}
+        expanded={stripe.expanded}
+        onExpandedChange={(expanded) =>
+          setStripe((current) => ({ ...current, expanded }))
+        }
+        enabled={stripe.enabled}
+        onEnabledChange={(enabled) => handleEnabledToggle("stripe", enabled)}
+        enabledAriaLabel={t(
+          "integrations.stripe.aria.enabled",
+          "Stripe integrācija ieslēgta",
+        )}
+        isBusy={isBusy}
+      >
+        {renderFields("stripe")}
       </AdminIntegrationCard>
 
       <ConfirmModal

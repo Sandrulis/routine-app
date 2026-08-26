@@ -4,6 +4,7 @@ import { createGmailBridgeTicket } from "@/app/lib/extension/gmail-bridge-ticket
 import { sessionFromRequestCookies } from "@/app/lib/extension/session-from-cookies";
 import { getServerTranslations } from "@/app/lib/i18n/server";
 import { translatedPageMetadata } from "@/app/lib/page-metadata";
+import { GmailPluginHandoffBody } from "./handoff-status";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -85,30 +86,40 @@ export default async function GmailPluginDonePage({
         : loginFlow
           ? t("extension.gmail.login_done.error_title", "Neizdevās ienākt")
           : t("extension.gmail.done.error_title", "Neizdevās savienot Gmail");
+  const readyBody = loggedIn
+    ? t(
+        "extension.gmail.login_done.body",
+        "Vari aizvērt šo logu un atgriezties spraudnī.",
+      )
+    : connected
+      ? t(
+          "extension.gmail.done.body",
+          "Gmail ir pieslēgts {SYSTEM_NAME}. Vari aizvērt šo logu un atgriezties spraudnī.",
+        )
+      : "";
+  const waitingBody =
+    loggedIn || connected
+      ? t(
+          "extension.gmail.handoff.waiting",
+          "Pagaidi, kamēr spraudnis saņem sesiju…",
+        )
+      : "";
   const body = sessionMissing
     ? t(
         "extension.gmail.login_done.session_missing",
         "Pārlūkā nav aktīvas sesijas. Mēģini vēlreiz no Gmail spraudņa.",
       )
-    : loggedIn
-      ? t(
-          "extension.gmail.login_done.body",
-          "Vari aizvērt šo logu un atgriezties spraudnī.",
-        )
-      : connected
+    : loggedIn || connected
+      ? readyBody
+      : loginFlow
         ? t(
-            "extension.gmail.done.body",
-            "Gmail ir pieslēgts {SYSTEM_NAME}. Vari aizvērt šo logu un atgriezties spraudnī.",
+            "extension.gmail.login_done.error_body",
+            "Mēģini vēlreiz no Gmail spraudņa.",
           )
-        : loginFlow
-          ? t(
-              "extension.gmail.login_done.error_body",
-              "Mēģini vēlreiz no Gmail spraudņa.",
-            )
-          : t(
-              "extension.gmail.done.error_body",
-              "Mēģini vēlreiz no Gmail spraudņa. Pārliecinies, ka Google OAuth un Gmail API ir ieslēgti.",
-            );
+        : t(
+            "extension.gmail.done.error_body",
+            "Mēģini vēlreiz no Gmail spraudņa. Pārliecinies, ka Google OAuth un Gmail API ir ieslēgti.",
+          );
 
   const pluginState = sessionMissing
     ? "error"
@@ -129,7 +140,11 @@ export default async function GmailPluginDonePage({
         : {})}
     >
       <h1 className="text-2xl font-semibold text-zinc-900">{title}</h1>
-      <p className="mt-3 text-sm text-zinc-600">{body}</p>
+      {waitingBody && readyBody ? (
+        <GmailPluginHandoffBody waiting={waitingBody} ready={readyBody} />
+      ) : (
+        <p className="mt-3 text-sm text-zinc-600">{body}</p>
+      )}
     </main>
   );
 }

@@ -19,6 +19,10 @@ import {
   resendFromValidationError,
   resendReplyToValidationError,
 } from "@/app/lib/integrations/resend/from-email";
+import {
+  looksLikeStripePublishableKey,
+  looksLikeStripeSecretKey,
+} from "@/app/lib/integrations/stripe/keys";
 import type {
   SimpleIntegrationCredentialsInput,
   SimpleIntegrationStatus,
@@ -35,6 +39,15 @@ type IntegrationRow = {
 
 function definitionFor(key: SimpleSiteIntegrationKey): SimpleIntegrationDefinition {
   return SIMPLE_INTEGRATION_DEFINITIONS[key];
+}
+
+function decryptStoredWebhookSecret(stored: string | undefined) {
+  const trimmed = stored?.trim() ?? "";
+  if (!trimmed) return "";
+  if (isEncryptedSecret(trimmed)) {
+    return decryptSecret(trimmed);
+  }
+  return trimmed;
 }
 
 function readEnvValue(name: string | undefined) {
@@ -86,6 +99,12 @@ export async function fetchSimpleIntegrationStatus(
   );
   const configured = row?.is_configured === true;
   const enabled = configured && row?.is_enabled === true;
+  const webhookSecret =
+    key === SITE_INTEGRATION_KEYS.stripe
+      ? decryptStoredWebhookSecret(row?.configured_account_email)
+      : "";
+  const envWebhookSecret =
+    key === SITE_INTEGRATION_KEYS.stripe ? readEnvValue("STRIPE_WEBHOOK_SECRET") : "";
 
   return {
     integrationKey: key,
@@ -93,7 +112,11 @@ export async function fetchSimpleIntegrationStatus(
     hasClientSecret,
     configured,
     enabled,
-    replyToEmail: row?.configured_account_email?.trim() ?? "",
+    replyToEmail:
+      key === SITE_INTEGRATION_KEYS.stripe
+        ? ""
+        : (row?.configured_account_email?.trim() ?? ""),
+    hasWebhookSecret: Boolean(webhookSecret || envWebhookSecret),
   };
 }
 
@@ -122,10 +145,20 @@ export async function getSimpleIntegrationCredentials(
     return null;
   }
 
+  const replyToEmail =
+    key === SITE_INTEGRATION_KEYS.stripe
+      ? decryptStoredWebhookSecret(row?.configured_account_email) ||
+        readEnvValue("STRIPE_WEBHOOK_SECRET")
+      : (row?.configured_account_email?.trim() ?? "");
+
+  if (key === SITE_INTEGRATION_KEYS.stripe && !replyToEmail) {
+    return null;
+  }
+
   return {
     clientId,
     clientSecret,
-    replyToEmail: row?.configured_account_email?.trim() ?? "",
+    replyToEmail,
   };
 }
 
@@ -171,6 +204,18 @@ export async function saveSimpleIntegrationCredentials(
     }
   }
 
+  if (key === SITE_INTEGRATION_KEYS.stripe) {
+    const existingWebhook = decryptStoredWebhookSecret(row?.configured_account_email);
+    const envWebhook = readEnvValue("STRIPE_WEBHOOK_SECRET");
+    replyToEmail = (input.replyToEmail ?? "").trim() || existingWebhook || envWebhook;
+    if (!replyToEmail) {
+      return { ok: false as const, error: "errors.integrations_stripe_webhook_required" };
+    }
+    if (!looksLikeStripePublishableKey(clientId)) {
+      return { ok: false as const, error: "errors.integrations_stripe_publishable_required" };
+    }
+  }
+
   let nextSecret = existingSecret;
   if (clientSecretInput) {
     nextSecret = clientSecretInput;
@@ -185,6 +230,10 @@ export async function saveSimpleIntegrationCredentials(
     return { ok: false as const, error: definition.missingClientSecretError };
   }
 
+  if (key === SITE_INTEGRATION_KEYS.stripe && nextSecret && !looksLikeStripeSecretKey(nextSecret)) {
+    return { ok: false as const, error: "errors.integrations_stripe_invalid_key" };
+  }
+
   const configured = hasRequiredCredentials(definition, clientId, hasSecret);
   const admin = createAdminClient();
   const patch: Record<string, unknown> = {
@@ -195,6 +244,10 @@ export async function saveSimpleIntegrationCredentials(
 
   if (key === SITE_INTEGRATION_KEYS.resend) {
     patch.configured_account_email = replyToEmail;
+  }
+
+  if (key === SITE_INTEGRATION_KEYS.stripe && replyToEmail) {
+    patch.configured_account_email = persistSecret(replyToEmail) || replyToEmail;
   }
 
   if (clientSecretInput || (!existingSecret && nextSecret)) {

@@ -32,6 +32,7 @@ export default function InviteTokenPage({
     inviterName: string;
     email: string;
     accountExists: boolean;
+    awaitingPayment: boolean;
   } | null>(null);
 
   useEffect(() => {
@@ -54,6 +55,7 @@ export default function InviteTokenPage({
 
   useEffect(() => {
     if (!authReady || loading || !token || !invite || user) return;
+    if (invite.awaitingPayment) return;
     if (!invite.accountExists) {
       router.replace(`/signup?invite=${encodeURIComponent(token)}`);
     }
@@ -130,7 +132,7 @@ export default function InviteTokenPage({
     );
   }
 
-  if (!user && !invite.accountExists) {
+  if (!user && !invite.accountExists && !invite.awaitingPayment) {
     return (
       <div className="px-4 py-16">
         <LoadingState className="justify-center" />
@@ -154,7 +156,7 @@ export default function InviteTokenPage({
           )}
         </p>
 
-        {!user ? (
+        {!user && !invite.awaitingPayment ? (
           <div className="mt-6 space-y-4">
             <p className="text-sm text-zinc-500">
               {t(
@@ -171,6 +173,32 @@ export default function InviteTokenPage({
                 {t("auth.login.title", "Ienākt")}
               </Link>
             </div>
+          </div>
+        ) : invite.awaitingPayment ? (
+          <div className="mt-6 space-y-4">
+            <p className="text-sm text-zinc-500">
+              {t(
+                "team.invite.awaiting_payment_page",
+                "Komanda vēl nav apmaksājusi vietu. Uzaicinājumu varēs apstiprināt pēc samaksas.",
+              )}
+            </p>
+            {user ? (
+              <button
+                type="button"
+                disabled={pending}
+                onClick={() => void handleReject()}
+                className="inline-flex min-h-10 items-center justify-center rounded-2xl bg-zinc-100 px-4 text-sm font-semibold text-zinc-700 transition hover:bg-zinc-200 disabled:opacity-60"
+              >
+                {t("team.invite.page.reject", "Noraidīt uzaicinājumu")}
+              </button>
+            ) : (
+              <Link
+                href="/dashboard"
+                className="inline-flex min-h-10 items-center justify-center rounded-2xl bg-zinc-100 px-4 text-sm font-semibold text-zinc-700"
+              >
+                {t("nav.home", "Sākums")}
+              </Link>
+            )}
           </div>
         ) : (
           <div className="mt-6 flex flex-wrap gap-2">

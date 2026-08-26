@@ -17,13 +17,15 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function AdminIntegrationsRoute() {
   await requireAdmin();
   const siteOrigin = process.env.NEXT_PUBLIC_SITE_URL?.trim() ?? "";
-  const [googleOAuth, microsoftOAuth, turnstile, resend, umami, sentry] = await Promise.all([
+  const [googleOAuth, microsoftOAuth, turnstile, resend, umami, sentry, stripe] =
+    await Promise.all([
     fetchGoogleOAuthIntegrationStatus(siteOrigin),
     fetchMicrosoftOAuthIntegrationStatus(siteOrigin),
     fetchSimpleIntegrationStatus(SITE_INTEGRATION_KEYS.turnstile),
     fetchSimpleIntegrationStatus(SITE_INTEGRATION_KEYS.resend),
     fetchSimpleIntegrationStatus(SITE_INTEGRATION_KEYS.umami),
     fetchSimpleIntegrationStatus(SITE_INTEGRATION_KEYS.sentry),
+    fetchSimpleIntegrationStatus(SITE_INTEGRATION_KEYS.stripe),
   ]);
 
   return (
@@ -35,6 +37,7 @@ export default async function AdminIntegrationsRoute() {
         initialResend={resend}
         initialUmami={umami}
         initialSentry={sentry}
+        initialStripe={stripe}
       />
     </Suspense>
   );

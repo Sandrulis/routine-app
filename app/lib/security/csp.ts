@@ -53,7 +53,7 @@ export function buildContentSecurityPolicy(nonce: string) {
     `frame-src 'self' blob: ${turnstile}`,
     "object-src 'none'",
     "base-uri 'self'",
-    "form-action 'self'",
+    "form-action 'self' https://checkout.stripe.com https://billing.stripe.com https://invoice.stripe.com",
     "frame-ancestors 'none'",
   ].join("; ");
 }

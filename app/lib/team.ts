@@ -20,6 +20,7 @@ export type TeamMember = {
   lastOnlineAt: string | null;
   avatarUrl?: string | null;
   userId?: string | null;
+  seatStatus?: "active" | "pending_payment";
 };
 
 export type TeamRole = {
@@ -101,6 +102,14 @@ export function canInviteTeamMembers(
   return hasTeamActionPermission(currentUser, roles, isAdmin, "team.invite");
 }
 
+export function canOpenTeamPage(
+  currentUser: Pick<TeamMember, "role" | "roleId">,
+  roles: TeamRole[],
+  isAdmin: boolean,
+): boolean {
+  return hasTeamNavPermission(currentUser, roles, isAdmin, "team");
+}
+
 export function canRemoveTeamMembers(
   currentUser: Pick<TeamMember, "role" | "roleId">,
   roles: TeamRole[],
@@ -137,6 +146,12 @@ export function isPendingTeamMember(
   member: Pick<TeamMember, "userId">,
 ): boolean {
   return !member.userId;
+}
+
+export function isAwaitingPaymentSeat(
+  member: Pick<TeamMember, "seatStatus" | "userId">,
+): boolean {
+  return !member.userId && member.seatStatus === "pending_payment";
 }
 
 export function confirmedTeamMembers(members: TeamMember[]): TeamMember[] {
@@ -348,6 +363,8 @@ export type WorkTeam = {
   color: string;
   logoUrl: string | null;
   paymentPlan: TeamPaymentPlanState;
+  paidSeatCount: number;
+  billingCycleEnd: string | null;
 };
 
 export const TEAMS_STORAGE_KEY = "routine-app-teams";
@@ -449,7 +466,17 @@ export function normalizeStoredTeams(value: unknown): WorkTeam[] | null {
           : DEFAULT_LIST_COLOR;
       const logoUrl =
         "logoUrl" in item && isTeamLogoUrl(item.logoUrl) ? item.logoUrl : null;
-      return { id, name, initials, icon, color, logoUrl, paymentPlan: EMPTY_TEAM_PAYMENT_PLAN };
+      return {
+        id,
+        name,
+        initials,
+        icon,
+        color,
+        logoUrl,
+        paymentPlan: EMPTY_TEAM_PAYMENT_PLAN,
+        paidSeatCount: 0,
+        billingCycleEnd: null as string | null,
+      };
     })
     .filter((item): item is WorkTeam => item !== null);
 

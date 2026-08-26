@@ -3,6 +3,8 @@ import type { PaymentPlanSummary } from "@/app/lib/payment-plans/helpers";
 export type LandingPricingData = {
   plans: PaymentPlanSummary[];
   earlyBirdAvailable: boolean;
+  earlyBirdRemaining: number;
+  earlyBirdLimit: number;
   trialPlanId: string | null;
   trialDays: number;
 };

@@ -39,6 +39,8 @@ const NOTIFICATION_FALLBACK: Record<NotificationKind, string> = {
   team_invite: "{name} uzaicināja tevi pievienoties komandai “{team}”",
   team_invite_rejected:
     "{email} noraidīja uzaicinājumu pievienoties komandai “{team}”",
+  seat_open: "Komandā ir brīva apmaksāta vieta līdz {until}.",
+  billing_due: "No nākamā mēneša ({until}) būs jāmaksā par komandas lietotājiem.",
 };
 
 function catalogText(languageCode: string, key: string, fallback: string): string {
@@ -61,6 +63,7 @@ function notificationMessage(
     team: item.taskTitle,
     email: item.href ?? "",
     assignee: "",
+    until: item.taskTitle,
   });
 }
 

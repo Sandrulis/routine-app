@@ -20,16 +20,20 @@ import {
   resendTeamInvitationAction,
 } from "@/app/lib/team/actions";
 import {
-  canInviteTeamMembers,
   canLeaveTeam,
+  canOpenTeamPage,
   canRemoveTeamMember,
+  canEditTeamSettings,
   isPendingTeamMember,
+  isAwaitingPaymentSeat,
   memberDisplayName,
   MEMBER_TEAM_ROLE,
   teamRankLabel,
   type TeamMember,
 } from "@/app/lib/team";
+import { useStartTeamInvite } from "@/app/lib/billing/use-start-team-invite";
 import { useTeam } from "@/app/lib/team-store";
+import { NOTIFICATIONS_CHANGE_EVENT } from "@/app/lib/notifications";
 import { useIsAdmin } from "@/app/lib/users/use-is-admin";
 
 type PendingAction = "resend" | "remove" | "copy" | "leave" | null;
@@ -54,7 +58,8 @@ export default function TeamPage() {
   const [leaveConfirmOpen, setLeaveConfirmOpen] = useState(false);
 
   const isBusy = pendingAction !== null;
-  const canInvite = canInviteTeamMembers(currentUser, roles, isAdmin);
+  const canOpenTeam = canOpenTeamPage(currentUser, roles, isAdmin);
+  const { canInvite, startInvite, handleInviteError } = useStartTeamInvite();
   const selfMember =
     members.find(
       (member) =>
@@ -165,6 +170,7 @@ export default function TeamPage() {
         return;
       }
       await refreshTeams();
+      window.dispatchEvent(new Event(NOTIFICATIONS_CHANGE_EVENT));
       showFeedback({
         type: "success",
         text: t("team.member.removed", "Lietotājs noņemts no komandas."),
@@ -174,6 +180,25 @@ export default function TeamPage() {
       setPendingMemberId(null);
       setPendingAction(null);
     }
+  }
+
+  if (isReady && !canOpenTeam) {
+    return (
+      <SectionPage
+        title={t("nav.team", "Komanda")}
+        subtitle={t(
+          "errors.team_page_forbidden",
+          "Nav pieejas komandas lapai.",
+        )}
+      >
+        <Link
+          href="/dashboard"
+          className="inline-flex min-h-10 items-center rounded-2xl bg-zinc-100 px-4 text-sm font-semibold text-zinc-700 transition hover:bg-zinc-200"
+        >
+          {t("nav.home", "Sākums")}
+        </Link>
+      </SectionPage>
+    );
   }
 
   return (
@@ -188,7 +213,7 @@ export default function TeamPage() {
           currentTeam && canInvite ? (
             <button
               type="button"
-              onClick={() => setInviteOpen(true)}
+              onClick={() => startInvite(() => setInviteOpen(true))}
               className="inline-flex min-h-10 items-center justify-center gap-2 rounded-2xl bg-blue-700 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-800"
             >
               <i className="fas fa-plus text-xs" aria-hidden="true" />
@@ -209,6 +234,7 @@ export default function TeamPage() {
           ) : (
             members.map((member) => {
               const pending = isPendingTeamMember(member);
+              const awaitingPayment = isAwaitingPaymentSeat(member);
               const canManage = canRemoveTeamMember(
                 currentUser,
                 member,
@@ -217,6 +243,19 @@ export default function TeamPage() {
               );
               const canLeave = canLeaveTeam(currentUser, member, roles);
               const memberBusy = isBusy && pendingMemberId === member.id;
+              const removeButton = canManage ? (
+                <IconActionButton
+                  label={t("team.member.remove", "Noņemt no komandas")}
+                  icon={
+                    memberBusy && pendingAction === "remove"
+                      ? "fas fa-spinner fa-spin"
+                      : "fas fa-user-minus"
+                  }
+                  variant="delete"
+                  disabled={isBusy}
+                  onClick={() => setRemoveTarget(member)}
+                />
+              ) : null;
 
               return (
                 <div
@@ -236,7 +275,9 @@ export default function TeamPage() {
                         {[
                           teamRankLabel(member.role, t, roles),
                           pending
-                            ? t("team.invite.pending", "Gaida apstiprinājumu")
+                            ? awaitingPayment
+                              ? t("team.invite.pending_payment", "Gaida samaksu")
+                              : t("team.invite.pending", "Gaida apstiprinājumu")
                             : null,
                           member.email,
                         ]
@@ -248,6 +289,8 @@ export default function TeamPage() {
 
                   {pending && canManage ? (
                     <div className="flex shrink-0 items-center gap-1">
+                      {awaitingPayment ? null : (
+                        <>
                       <IconActionButton
                         label={t("team.invite.copy_link", "Kopēt uzaicinājuma linku")}
                         icon={
@@ -270,17 +313,9 @@ export default function TeamPage() {
                         disabled={isBusy}
                         onClick={() => void handleResend(member)}
                       />
-                      <IconActionButton
-                        label={t("team.member.remove", "Noņemt no komandas")}
-                        icon={
-                          memberBusy && pendingAction === "remove"
-                            ? "fas fa-spinner fa-spin"
-                            : "fas fa-trash"
-                        }
-                        variant="delete"
-                        disabled={isBusy}
-                        onClick={() => setRemoveTarget(member)}
-                      />
+                        </>
+                      )}
+                      {removeButton}
                     </div>
                   ) : canLeave ? (
                     <div className="flex shrink-0 items-center gap-1">
@@ -297,7 +332,10 @@ export default function TeamPage() {
                       />
                     </div>
                   ) : (
-                    <MemberLastOnline lastOnlineAt={member.lastOnlineAt} />
+                    <div className="flex shrink-0 items-center gap-1">
+                      {removeButton}
+                      <MemberLastOnline lastOnlineAt={member.lastOnlineAt} />
+                    </div>
                   )}
                 </div>
               );
@@ -329,6 +367,20 @@ export default function TeamPage() {
               }
 
               await refreshTeams();
+              if (result.data.awaitingPayment) {
+                showFeedback({
+                  type: "info",
+                  text: t(
+                    "team.invite.saved_awaiting_payment",
+                    "Uzaicinājums saglabāts. Lietotājs saņems piekļuvi pēc vietas samaksas.",
+                  ),
+                });
+                setInviteOpen(false);
+                if (canEditTeamSettings(currentUser, roles, isAdmin)) {
+                  router.push("/team/billing");
+                }
+                return;
+              }
               showFeedback({
                 type: result.data.emailSent
                   ? "success"
@@ -347,12 +399,12 @@ export default function TeamPage() {
               setInviteOpen(false);
               router.push(`/team/${result.data.memberId}`);
             } catch (error) {
+              const message =
+                error instanceof Error ? error.message : "errors.team_invite_failed";
+              handleInviteError(message);
               showFeedback({
-                type: "error",
-                text: translateActionError(
-                  t,
-                  error instanceof Error ? error.message : "errors.team_invite_failed",
-                ),
+                type: message === "errors.team_invite_pay_first" ? "info" : "error",
+                text: translateActionError(t, message),
               });
             }
           }}

@@ -33,12 +33,13 @@ export type MicrosoftOAuthCredentialsInput = {
 };
 
 export type SimpleIntegrationStatus = {
-  integrationKey: "resend" | "umami" | "sentry" | "turnstile";
+  integrationKey: "resend" | "umami" | "sentry" | "turnstile" | "stripe";
   clientId: string;
   hasClientSecret: boolean;
   configured: boolean;
   enabled: boolean;
   replyToEmail: string;
+  hasWebhookSecret?: boolean;
 };
 
 export type SimpleIntegrationCredentialsInput = {

@@ -7,6 +7,7 @@ import { LoadingState } from "@/app/components/loading-state";
 import { NotificationSettingsModal } from "@/app/components/notification-settings-modal";
 import { useNow } from "@/app/components/now-provider";
 import { VirtualWindow } from "@/app/components/virtual-window";
+import { useDisplayPreferences } from "@/app/components/display-preferences-provider";
 import { useFeedbackToast } from "@/app/components/feedback-toast-provider";
 import { useTranslations } from "@/app/components/translations-provider";
 import { UserAvatar } from "@/app/components/user-avatar";
@@ -29,8 +30,35 @@ function notificationText(
   recipientName: string,
   currentUserId: string,
   t: (key: string, fallback: string, params?: Record<string, string>) => string,
+  untilLabel: string,
 ) {
   const params = { name: actorName, task: item.taskTitle, assignee: recipientName, team: item.taskTitle };
+  if (item.kind === "seat_open") {
+    if (untilLabel) {
+      return t(
+        "notifications.item.seat_open",
+        "Komandā ir brīva apmaksāta vieta līdz {until}. Tās vietā var uzaicināt citu lietotāju.",
+        { until: untilLabel },
+      );
+    }
+    return t(
+      "notifications.item.seat_open_no_date",
+      "Komandā ir brīva apmaksāta vieta. Tās vietā var uzaicināt citu lietotāju.",
+    );
+  }
+  if (item.kind === "billing_due") {
+    if (untilLabel) {
+      return t(
+        "notifications.item.billing_due",
+        "No nākamā mēneša ({until}) būs jāmaksā par komandas lietotājiem.",
+        { until: untilLabel },
+      );
+    }
+    return t(
+      "notifications.item.billing_due_no_date",
+      "No nākamā mēneša būs jāmaksā par komandas lietotājiem.",
+    );
+  }
   if (item.kind === "team_invite") {
     return t(
       "notifications.item.team_invite",
@@ -118,6 +146,7 @@ export function NotificationsMenu() {
   const router = useRouter();
   const menuRef = useRef<HTMLDivElement | null>(null);
   const { t } = useTranslations();
+  const { formatDate } = useDisplayPreferences();
   const { showFeedback } = useFeedbackToast();
   const { user: authUser } = useAuthSession();
   const { members, currentUser, refreshTeams } = useTeam();
@@ -301,6 +330,7 @@ export function NotificationsMenu() {
                             recipient?.name ?? "",
                             currentUser.id,
                             t,
+                            item.taskTitle.trim() ? formatDate(item.taskTitle) : "",
                           )}
                         </span>
                         <span className="mt-0.5 block text-[11px] tabular-nums text-zinc-400">
@@ -378,6 +408,7 @@ export function NotificationsMenu() {
                             recipient?.name ?? "",
                             currentUser.id,
                             t,
+                            item.taskTitle.trim() ? formatDate(item.taskTitle) : "",
                           )}
                         </span>
                         <span className="mt-0.5 block text-[11px] tabular-nums text-zinc-400">
@@ -429,8 +460,25 @@ export function NotificationsMenu() {
                     {actor ? (
                       <UserAvatar member={actor} size="sm" />
                     ) : (
-                      <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-amber-100 text-amber-700">
-                        <i className="fas fa-clock text-[11px]" aria-hidden="true" />
+                      <span
+                        className={`inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full ${
+                          item.kind === "seat_open"
+                            ? "bg-emerald-100 text-emerald-700"
+                            : item.kind === "billing_due"
+                              ? "bg-emerald-100 text-emerald-700"
+                              : "bg-amber-100 text-amber-700"
+                        }`}
+                      >
+                        <i
+                          className={`fas ${
+                            item.kind === "seat_open"
+                              ? "fa-user-check"
+                              : item.kind === "billing_due"
+                                ? "fa-credit-card"
+                                : "fa-clock"
+                          } text-[11px]`}
+                          aria-hidden="true"
+                        />
                       </span>
                     )}
                     <span className="min-w-0 flex-1">
@@ -447,6 +495,7 @@ export function NotificationsMenu() {
                           recipient?.name ?? "",
                           currentUser.id,
                           t,
+                          item.taskTitle.trim() ? formatDate(item.taskTitle) : "",
                         )}
                       </span>
                       <span className="mt-0.5 block text-[11px] tabular-nums text-zinc-400">

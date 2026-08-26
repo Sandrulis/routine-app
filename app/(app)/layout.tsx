@@ -4,6 +4,7 @@ import { AppProviders } from "@/app/components/app-providers";
 import { MfaVerifyModal } from "@/app/components/mfa-verify-modal";
 import { getMfaGate } from "@/app/lib/auth/mfa";
 import { getEnabledFrontendModuleKeys } from "@/app/lib/frontend-modules/repository";
+import { stripeInvalidKeyNoticeForCurrentAdmin } from "@/app/lib/integrations/stripe/notice";
 import {
   getPaymentPlansEnabledCached,
   listPaymentPlans,
@@ -36,13 +37,21 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
     }
   }
 
-  const [taskStatuses, fileTypeExtensions, enabledFrontendModuleKeys, paymentPlansEnabled, paymentPlans] =
+  const [
+    taskStatuses,
+    fileTypeExtensions,
+    enabledFrontendModuleKeys,
+    paymentPlansEnabled,
+    paymentPlans,
+    stripeKeyInvalid,
+  ] =
     await Promise.all([
       listTaskStatuses(),
       listFileTypeExtensions(),
       getEnabledFrontendModuleKeys(),
       getPaymentPlansEnabledCached(),
       listPaymentPlans(),
+      stripeInvalidKeyNoticeForCurrentAdmin(),
     ]);
 
   return (
@@ -56,6 +65,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
         moduleKeys: plan.moduleKeys,
         isFree: plan.isFree,
       }))}
+      stripeKeyInvalid={stripeKeyInvalid}
     >
       {children}
     </AppProviders>

@@ -20,3 +20,11 @@ export const TeamOneDrivePageLazy = dynamic(
     })),
   { ssr: false, loading },
 );
+
+export const TeamBillingPageLazy = dynamic(
+  () =>
+    import("@/app/components/team-billing-page").then((mod) => ({
+      default: mod.TeamBillingPage,
+    })),
+  { ssr: false, loading },
+);

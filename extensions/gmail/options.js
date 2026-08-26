@@ -177,15 +177,33 @@ async function refreshUi() {
   $("boot").classList.remove("hidden");
   $("login").classList.add("hidden");
   $("account").classList.add("hidden");
-  const result = await send("routine.getSession");
-  const session = result?.data || null;
+
+  const deadline = Date.now() + 15000;
+  let result = await send("routine.getSession");
+  let session = result?.data || null;
   applySessionI18n(session);
   applyLabels();
+
+  while (
+    !session?.authenticated &&
+    session?.handoffPending &&
+    Date.now() < deadline
+  ) {
+    $("boot").textContent = t("extension.gmail.checking_session");
+    await new Promise((resolve) => setTimeout(resolve, 400));
+    result = await send("routine.getSession");
+    session = result?.data || null;
+    applySessionI18n(session);
+  }
+
   $("boot").classList.add("hidden");
 
   if (!session?.authenticated) {
     $("login").classList.remove("hidden");
-    $("googleWrap").classList.toggle("hidden", session?.googleSignInEnabled === false);
+    $("googleWrap").classList.toggle(
+      "hidden",
+      session?.googleSignInEnabled === false,
+    );
     $("passwordWrap").classList.toggle(
       "hidden",
       session?.emailPasswordEnabled === false,

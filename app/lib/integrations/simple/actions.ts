@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import {
   isSimpleSiteIntegrationKey,
+  SITE_INTEGRATION_KEYS,
   type SimpleSiteIntegrationKey,
 } from "@/app/lib/integrations/keys";
 import {
@@ -15,11 +16,18 @@ import type {
   SimpleIntegrationCredentialsInput,
   SimpleIntegrationStatus,
 } from "@/app/lib/integrations/types";
+import { setPaymentPlansEnabled } from "@/app/lib/payment-plans/repository";
 import { requireAdmin } from "@/app/lib/users/require-admin";
 import type { ActionResult } from "@/app/lib/actions/action-result";
 
+async function disablePaymentPlansIfStripeOff(key: SimpleSiteIntegrationKey) {
+  if (key !== SITE_INTEGRATION_KEYS.stripe) return;
+  await setPaymentPlansEnabled(false);
+}
+
 function refreshIntegrations() {
   revalidatePath("/admin/integrations");
+  revalidatePath("/admin/payment-plans");
   revalidatePath("/admin/settings");
   revalidatePath("/admin", "layout");
   revalidatePath("/", "layout");
@@ -65,7 +73,10 @@ export async function setSimpleIntegrationEnabledAction(
     return { ok: false, error: "errors.integrations_save_failed" };
   }
   const result = await setSimpleIntegrationEnabled(parsed, enabled);
-  if (result.ok) refreshIntegrations();
+  if (result.ok) {
+    if (!enabled) await disablePaymentPlansIfStripeOff(parsed);
+    refreshIntegrations();
+  }
   return result;
 }
 
@@ -78,6 +89,9 @@ export async function resetSimpleIntegrationAction(
     return { ok: false, error: "errors.integrations_reset_failed" };
   }
   const result = await resetSimpleIntegration(parsed);
-  if (result.ok) refreshIntegrations();
+  if (result.ok) {
+    await disablePaymentPlansIfStripeOff(parsed);
+    refreshIntegrations();
+  }
   return result;
 }

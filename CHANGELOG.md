@@ -4,6 +4,25 @@
 
 - (none)
 
+## v0.2.41
+
+- Visās 15 sistēmas valodās ir pilns tulkojumu komplekts; `npm run i18n:check` CI krīt, ja kāda atslēga vai `{placeholder}` atpaliek
+- Nederīga Stripe atslēga rāda globālu baneri tikai sistēmas administratoriem (`is_admin`), ne komandas vadītājiem; saite uz Integrācijām
+- Gmail spraudnis `0.4.31`: pēc Google ielogošanās nesaka aizvērt cilni, kamēr spraudnis nav saņēmis sesiju; popup pagaida, ja done lapa vēl ir atvērta
+- `/team` sarakstā noņemšanas poga arī apstiprinātiem komandas lietotājiem, ja lomai ir pieeja `team.members.remove` (ne īpašnieku un ne sevi); poga pa kreisi no tiešsaistes zīmes
+- Noklusējuma `member` lomai šī pieeja paliek izslēgta; īpašniekam un sistēmas adminam tā ir
+- Sānjoslas komandas koks paliek redzams; klikšķis uz **Komanda** un lietotājiem atver `/team` tikai ar `nav.team`; `+` tikai ar `team.invite`; `...` tikai ar lomām, veidnēm vai Drive
+- `/team` un cita lietotāja `/team/[id]` bez `nav.team` rāda pieejas kļūdu; savu lapu var atvērt
+- Maksas plānā bez brīvas vietas uzaicinājums netiek izveidots: vispirms **Iegādāties 1 vietu** `/team/billing`
+- Stripe vietu norēķini (`/team/billing`): samaksa pirms piekļuves; noņemšana atstāj brīvu apmaksātu vietu līdz cikla beigām (vadītājam baneris un zvaniņa `seat_open`)
+- Kad maksas plāni ir ieslēgti, komandas vadītājam sānjoslā **aiz** Komanda rādās **Abonementi** (ne iekš koka); var iegādāties 1 vietu, un neizmantotā vieta nākamajā ciklā vairs nav
+- Komandas vadītāja vieta ir bez maksas; maksā tikai par vietām virs 1
+- Kad sistēma ieslēdz maksas plānus, komandām ar vairākiem lietotājiem vadītājs saņem paziņojumu par nākamā mēneša maksu un saiti uz `/team/billing`; pieejamās Early Bird vietas piešķir automātiski
+- Nederīga Stripe atslēga vairs nesalauž checkout - rāda kļūdu, ne runtime crash
+- Maksas plānus var ieslēgt tikai ar konfigurētu un ieslēgtu Stripe; jauns checkout tikai mēnesim un gadam (bez ceturkšņa)
+- Landing `#pricing` kartītes vienādā augstumā: pogas vienā līnijā; Early Bird un izmēģinājums kā birkas pie nosaukuma; bezmaksas plāns rāda `€ 0` un lietotāju limitu ar parakstu
+- Early Bird ir globāls vietu pool (`early_bird_limit` / `early_bird_claimed`): iegādātā vieta ir Early Bird, kamēr poolā ir vietas; neizmantota vieta cikla beigās pazūd un neatgriežas poolā; landing rāda atlicis / kopējais skaits
+
 ## v0.2.40
 
 - Kad maksas plāni ir ieslēgti, landing rāda **Cenas** (`#pricing`): plānu kartītes, salīdzinājums un JSON-LD piedāvājumi

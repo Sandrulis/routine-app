@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { mapUserDisplay } from "@/app/lib/auth/map-user-display";
+import { notifyTeamsPaymentPlansEnabled } from "@/app/lib/billing/enable-payment-plans";
 import {
   setCronJobEnabled,
 } from "@/app/lib/cron-jobs/repository";
@@ -352,7 +353,12 @@ export async function deleteFrontendModuleAction(moduleKey: string) {
 export async function setPaymentPlansEnabledAction(enabled: boolean) {
   await requireAdmin({ action: "admin.billing.toggle" });
   const result = await setPaymentPlansEnabled(enabled);
-  if (result.ok) refreshAdmin();
+  if (result.ok) {
+    refreshAdmin();
+    if (enabled) {
+      await notifyTeamsPaymentPlansEnabled();
+    }
+  }
   return result;
 }
 

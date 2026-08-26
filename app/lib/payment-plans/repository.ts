@@ -9,14 +9,17 @@ import {
   parsePaymentPlanPrice,
   parsePaymentPlanMaxMembers,
   resolvePlanMaxMembersForSave,
+  remainingEarlyBirdSeats,
   type EarlyBirdAvailability,
   type EarlyBirdSettings,
   type PaymentPlanInput,
   type PaymentPlanSummary,
   type TrialSettings,
 } from "@/app/lib/payment-plans/helpers";
+import { isStripeEnabled } from "@/app/lib/integrations/stripe/client";
 import { createClient as createUserServerClient } from "@/app/lib/supabase/server";
-import { isSupabaseConfigured } from "@/app/lib/supabase/env";
+import { isSupabaseConfigured, isSupabaseAdminConfigured } from "@/app/lib/supabase/env";
+import { createAdminClient } from "@/app/lib/supabase/admin";
 import type { ActionResult } from "@/app/lib/actions/action-result";
 
 export type {
@@ -36,6 +39,7 @@ export {
   formatPlanEuro,
   getPaymentPlanPriceForPeriod,
   isEarlyBirdOfferAvailable,
+  remainingEarlyBirdSeats,
   listAvailablePaymentPlanBillingPeriods,
   parsePaymentPlanPrice,
   resolveLocalizedValue,
@@ -164,14 +168,18 @@ function normalizePlanPrices(input: PaymentPlanInput):
     };
   }
 
+  if (priceMonth <= 0 && priceYear <= 0) {
+    return { ok: false, error: "errors.payment_plan_price_period_required" };
+  }
+
   return {
     ok: true,
     prices: {
       price_month: priceMonth,
-      price_quarter: priceQuarter,
+      price_quarter: 0,
       price_year: priceYear,
       early_bird_price_month: earlyBirdPriceMonth,
-      early_bird_price_quarter: earlyBirdPriceQuarter,
+      early_bird_price_quarter: 0,
       early_bird_price_year: earlyBirdPriceYear,
     },
   };
@@ -199,7 +207,10 @@ export async function isPaymentPlansEnabled(): Promise<boolean> {
   if (error || !data) {
     return false;
   }
-  return data.payment_plans_enabled === true;
+  if (data.payment_plans_enabled !== true) {
+    return false;
+  }
+  return isStripeEnabled();
 }
 
 export const getPaymentPlansEnabledCached = cache(isPaymentPlansEnabled);
@@ -209,6 +220,9 @@ export async function setPaymentPlansEnabled(
 ): Promise<ActionResult> {
   if (!isSupabaseConfigured()) {
     return { ok: false, error: "errors.db_not_configured" };
+  }
+  if (enabled && !(await isStripeEnabled())) {
+    return { ok: false, error: "errors.payment_plans_stripe_required" };
   }
   const supabase = await createUserServerClient();
   const { error } = await supabase.from("site_settings").upsert(
@@ -293,19 +307,33 @@ export async function saveTrialSettings(
   return { ok: true };
 }
 
-export async function countEarlyBirdTeams(): Promise<number> {
-  if (!isSupabaseConfigured()) {
+export async function claimEarlyBirdSeats(count: number): Promise<number> {
+  const seats = Math.max(0, Math.trunc(count));
+  if (seats < 1 || !isSupabaseAdminConfigured()) return 0;
+  const admin = createAdminClient();
+  const { data, error } = await admin
+    .from("site_settings")
+    .select("early_bird_limit, early_bird_claimed")
+    .eq("id", 1)
+    .maybeSingle();
+  if (error || !data) return 0;
+  const limit = Math.max(0, Math.trunc(Number(data.early_bird_limit) || 0));
+  const claimed = Math.max(0, Math.trunc(Number(data.early_bird_claimed) || 0));
+  const remaining = remainingEarlyBirdSeats({ limit, claimed });
+  const added = Math.min(seats, remaining);
+  if (added < 1) return 0;
+  const { data: updated, error: updateError } = await admin
+    .from("site_settings")
+    .update({ early_bird_claimed: claimed + added })
+    .eq("id", 1)
+    .eq("early_bird_claimed", claimed)
+    .select("id");
+  if (updateError) {
+    console.error("claimEarlyBirdSeats failed:", updateError.message);
     return 0;
   }
-  const supabase = await createUserServerClient();
-  const { count, error } = await supabase
-    .from("teams")
-    .select("id", { count: "exact", head: true })
-    .eq("payment_plan_is_early_bird", true);
-  if (error || count == null) {
-    return 0;
-  }
-  return count;
+  if (!updated?.length) return 0;
+  return added;
 }
 
 export const getEarlyBirdSettings = cache(
@@ -315,24 +343,30 @@ export const getEarlyBirdSettings = cache(
     }
 
     const supabase = await createUserServerClient();
-    const [{ data, error }, claimed] = await Promise.all([
-      supabase
-        .from("site_settings")
-        .select("early_bird_limit")
-        .eq("id", 1)
-        .maybeSingle(),
-      countEarlyBirdTeams(),
-    ]);
+    const { data, error } = await supabase
+      .from("site_settings")
+      .select("early_bird_limit, early_bird_claimed")
+      .eq("id", 1)
+      .maybeSingle();
 
     if (error || !data) {
-      return { limit: 0, claimed };
+      return { limit: 0, claimed: 0 };
     }
 
-    const raw = data.early_bird_limit;
-    const parsed =
-      typeof raw === "number" ? raw : Number.parseInt(String(raw ?? ""), 10);
+    const rawLimit = data.early_bird_limit;
+    const parsedLimit =
+      typeof rawLimit === "number" ? rawLimit : Number.parseInt(String(rawLimit ?? ""), 10);
     const limit =
-      Number.isFinite(parsed) && parsed >= 0 ? Math.trunc(parsed) : 0;
+      Number.isFinite(parsedLimit) && parsedLimit >= 0 ? Math.trunc(parsedLimit) : 0;
+    const rawClaimed = data.early_bird_claimed;
+    const parsedClaimed =
+      typeof rawClaimed === "number"
+        ? rawClaimed
+        : Number.parseInt(String(rawClaimed ?? ""), 10);
+    const claimed =
+      Number.isFinite(parsedClaimed) && parsedClaimed >= 0
+        ? Math.trunc(parsedClaimed)
+        : 0;
 
     return { limit, claimed };
   },

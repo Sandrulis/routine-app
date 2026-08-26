@@ -22,6 +22,8 @@ import {
   OWNER_TEAM_ROLE,
   toneForIndex,
 } from "@/app/lib/team";
+import { isPendingPaymentSeat } from "@/app/lib/billing/seats";
+import { notifyOpenPaidSeats } from "@/app/lib/billing/open-seat-notice";
 import { isResendEnabled } from "@/app/lib/integrations/resend/client";
 import { normalizeTeamPermissionSet } from "@/app/lib/team-permissions";
 import {
@@ -29,6 +31,7 @@ import {
   sendTeamInviteEmail,
   teamInvitePublicUrl,
 } from "@/app/lib/team/send-invite-email";
+import { resolveInviteSeatDecision } from "@/app/lib/billing/invite-gate";
 import type { ActionResult } from "@/app/lib/actions/action-result";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -252,7 +255,15 @@ export async function inviteTeamMemberAction(input: {
   teamId: string;
   email: string;
   roleId: string;
-}): Promise<ActionResult<{ memberId: string; inviteUrl: string; emailSent: boolean; emailError?: string }>> {
+}): Promise<
+  ActionResult<{
+    memberId: string;
+    inviteUrl: string;
+    emailSent: boolean;
+    emailError?: string;
+    awaitingPayment: boolean;
+  }>
+> {
   const user = await getCurrentUser();
   if (!user) {
     return { ok: false, error: "errors.auth_required" };
@@ -276,6 +287,12 @@ export async function inviteTeamMemberAction(input: {
   if (!access.ok) {
     return access;
   }
+
+  const seatDecision = await resolveInviteSeatDecision(teamId);
+  if (!seatDecision.ok) {
+    return seatDecision;
+  }
+  const awaitingPayment = seatDecision.seatStatus === "pending_payment";
 
   const supabase = await createClient();
 
@@ -357,7 +374,7 @@ export async function inviteTeamMemberAction(input: {
 
   const pendingName = existingUser?.name?.trim() ?? "";
 
-  if (!(await isResendEnabled())) {
+  if (!awaitingPayment && !(await isResendEnabled())) {
     const previewAuthId = existingUser?.id
       ? existingUser.id
       : await resolveAuthUserIdByEmail(null, email);
@@ -377,6 +394,7 @@ export async function inviteTeamMemberAction(input: {
     tone_class_name: toneForIndex(count ?? 0),
     avatar_url: null,
     last_online_at: null,
+    seat_status: seatDecision.seatStatus,
   });
 
   if (memberInsertError) {
@@ -414,7 +432,7 @@ export async function inviteTeamMemberAction(input: {
       .eq("id", invitationId);
   }
 
-  if (targetUserId) {
+  if (targetUserId && !awaitingPayment) {
     const notificationResult = await ensureTeamInviteNotification({
       supabase,
       teamId,
@@ -431,29 +449,31 @@ export async function inviteTeamMemberAction(input: {
 
   let emailSent = false;
   let emailError: string | undefined;
-  const inviterName = mapUserDisplay(user).name || user.email || "";
-  const { data: inviterProfile } = await supabase
-    .from("users")
-    .select("language_code")
-    .eq("id", user.id)
-    .maybeSingle();
-  const emailResult = await sendTeamInviteEmail({
-    email,
-    token,
-    teamName: teamRow.name,
-    inviterName,
-    recipientName: pendingName || undefined,
-    languageCode: inviterProfile?.language_code,
-  });
-  if (!emailResult.ok) {
-    if (!targetUserId) {
-      await rollbackPendingInvite(supabase, invitationId, memberId);
-      return emailResult;
+  if (!awaitingPayment) {
+    const inviterName = mapUserDisplay(user).name || user.email || "";
+    const { data: inviterProfile } = await supabase
+      .from("users")
+      .select("language_code")
+      .eq("id", user.id)
+      .maybeSingle();
+    const emailResult = await sendTeamInviteEmail({
+      email,
+      token,
+      teamName: teamRow.name,
+      inviterName,
+      recipientName: pendingName || undefined,
+      languageCode: inviterProfile?.language_code,
+    });
+    if (!emailResult.ok) {
+      if (!targetUserId) {
+        await rollbackPendingInvite(supabase, invitationId, memberId);
+        return emailResult;
+      }
+      emailError = emailResult.error;
+      logError("Invite email failed but user exists in-app, keeping invitation", emailResult.error);
+    } else {
+      emailSent = emailResult.emailSent;
     }
-    emailError = emailResult.error;
-    logError("Invite email failed but user exists in-app, keeping invitation", emailResult.error);
-  } else {
-    emailSent = emailResult.emailSent;
   }
 
   revalidatePath("/", "layout");
@@ -461,9 +481,10 @@ export async function inviteTeamMemberAction(input: {
     ok: true,
     data: {
       memberId,
-      inviteUrl: teamInvitePublicUrl(token),
+      inviteUrl: awaitingPayment ? "" : teamInvitePublicUrl(token),
       emailSent,
       emailError,
+      awaitingPayment,
     },
   };
 }
@@ -497,6 +518,9 @@ export async function acceptTeamInvitationAction(
     }
     if (message.includes("invitation_forbidden")) {
       return { ok: false, error: "errors.team_invite_forbidden" };
+    }
+    if (message.includes("invitation_payment_required")) {
+      return { ok: false, error: "errors.team_invite_awaiting_payment" };
     }
     return { ok: false, error: "errors.team_invite_accept_failed" };
   }
@@ -560,6 +584,9 @@ export async function acceptTeamInvitationByTokenAction(
     if (message.includes("invitation_forbidden")) {
       return { ok: false, error: "errors.team_invite_forbidden" };
     }
+    if (message.includes("invitation_payment_required")) {
+      return { ok: false, error: "errors.team_invite_awaiting_payment" };
+    }
     return { ok: false, error: "errors.team_invite_accept_failed" };
   }
 
@@ -587,7 +614,7 @@ export async function resendTeamInvitationAction(
 
   const { data: member, error: memberError } = await supabase
     .from("team_members")
-    .select("id, team_id, user_id, email")
+    .select("id, team_id, user_id, email, seat_status")
     .eq("id", trimmedMemberId)
     .maybeSingle();
 
@@ -597,6 +624,10 @@ export async function resendTeamInvitationAction(
 
   if (member.user_id) {
     return { ok: false, error: "errors.team_invite_not_pending" };
+  }
+
+  if (member.seat_status === "pending_payment") {
+    return { ok: false, error: "errors.team_invite_awaiting_payment" };
   }
 
   const access = await assertCanInvite(member.team_id, user.id);
@@ -713,7 +744,7 @@ export async function getTeamInviteLinkAction(
   const supabase = await createClient();
   const { data: member, error: memberError } = await supabase
     .from("team_members")
-    .select("id, team_id, user_id")
+    .select("id, team_id, user_id, seat_status")
     .eq("id", trimmedMemberId)
     .maybeSingle();
 
@@ -723,6 +754,10 @@ export async function getTeamInviteLinkAction(
 
   if (member.user_id) {
     return { ok: false, error: "errors.team_invite_not_pending" };
+  }
+
+  if (member.seat_status === "pending_payment") {
+    return { ok: false, error: "errors.team_invite_awaiting_payment" };
   }
 
   const access = await assertCanInvite(member.team_id, user.id);
@@ -771,7 +806,7 @@ export async function removeTeamMemberAction(
 
   const { data: member, error: memberError } = await supabase
     .from("team_members")
-    .select("id, team_id, user_id, role")
+    .select("id, team_id, user_id, role, seat_status")
     .eq("id", trimmedMemberId)
     .maybeSingle();
 
@@ -818,6 +853,17 @@ export async function removeTeamMemberAction(
     return { ok: false, error: "errors.team_member_remove_failed" };
   }
 
+  if (!isPendingPaymentSeat(member.seat_status)) {
+    try {
+      await notifyOpenPaidSeats(member.team_id);
+    } catch (error) {
+      logError(
+        "notifyOpenPaidSeats",
+        error instanceof Error ? error.message : "failed",
+      );
+    }
+  }
+
   revalidatePath("/", "layout");
   return { ok: true };
 }
@@ -829,6 +875,7 @@ export async function getTeamInvitationByTokenAction(token: string): Promise<
     inviterName: string;
     email: string;
     accountExists: boolean;
+    awaitingPayment: boolean;
   }>
 > {
   if (!isSupabaseConfigured()) {
@@ -862,6 +909,7 @@ export async function getTeamInvitationByTokenAction(token: string): Promise<
       inviterName: String(row.inviter_name ?? ""),
       email: String(row.email ?? ""),
       accountExists: Boolean(row.account_exists),
+      awaitingPayment: Boolean(row.awaiting_payment),
     },
   };
 }
@@ -897,14 +945,14 @@ export async function getInviteSignupContextAction(token: string): Promise<
   const tokenHash = sha256Hex(trimmed);
   let { data: invitation, error } = await admin
     .from("team_invitations")
-    .select("id, email, invited_user_id, status, team_id, invited_by_member_id")
+    .select("id, email, invited_user_id, status, team_id, invited_by_member_id, member_id")
     .eq("token_hash", tokenHash)
     .eq("status", "pending")
     .maybeSingle();
   if (!invitation) {
     const fallback = await admin
       .from("team_invitations")
-      .select("id, email, invited_user_id, status, team_id, invited_by_member_id")
+      .select("id, email, invited_user_id, status, team_id, invited_by_member_id, member_id")
       .eq("token", trimmed)
       .eq("status", "pending")
       .maybeSingle();
@@ -925,6 +973,15 @@ export async function getInviteSignupContextAction(token: string): Promise<
 
   if (invitation.invited_user_id) {
     return { ok: false, error: "errors.team_invite_account_exists" };
+  }
+
+  const { data: seatRow } = await admin
+    .from("team_members")
+    .select("seat_status")
+    .eq("id", invitation.member_id)
+    .maybeSingle();
+  if (seatRow?.seat_status === "pending_payment") {
+    return { ok: false, error: "errors.team_invite_awaiting_payment" };
   }
 
   const { data: existingUser } = await admin

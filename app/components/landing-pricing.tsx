@@ -69,7 +69,7 @@ export function LandingPricing({
     () => resolveLandingPageContent(isEnabled),
     [isEnabled],
   );
-  const { plans, earlyBirdAvailable, trialPlanId, trialDays } = pricing;
+  const { plans, earlyBirdAvailable, earlyBirdRemaining, earlyBirdLimit, trialPlanId, trialDays } = pricing;
   const availablePeriods = useMemo(
     () =>
       listAvailablePaymentPlanBillingPeriods(plans, {
@@ -100,6 +100,18 @@ export function LandingPricing({
             "Bezmaksas plānam ir ierobežojumi. Maksas plāns ir cena par lietotāju, bez limita.",
           )}
         </p>
+        {earlyBirdLimit > 0 ? (
+          <p className="mt-3 text-sm font-medium text-emerald-800">
+            {t(
+              "landing.pricing.early_bird_left",
+              "Early Bird: {remaining} / {limit}",
+              {
+                remaining: formatInteger(earlyBirdRemaining),
+                limit: formatInteger(earlyBirdLimit),
+              },
+            )}
+          </p>
+        ) : null}
 
         {availablePeriods.length > 1 ? (
           <div
@@ -129,7 +141,7 @@ export function LandingPricing({
         ) : null}
 
         <div
-          className={`mt-10 grid gap-4 ${
+          className={`mt-10 grid items-stretch gap-4 ${
             plans.length === 1
               ? "md:max-w-md"
               : plans.length === 2
@@ -155,10 +167,15 @@ export function LandingPricing({
             const isTrialPlan =
               trialPlanId === plan.id && trialDays > 0 && !plan.isFree;
 
+            const periodHint = t(
+              PERIOD_SHORT[selectedPeriod].key,
+              PERIOD_SHORT[selectedPeriod].fallback,
+            );
+
             return (
               <article
                 key={plan.id}
-                className={`flex flex-col rounded-4xl border p-6 shadow-sm transition duration-200 ${
+                className={`flex h-full flex-col rounded-4xl border p-6 shadow-sm transition duration-200 ${
                   isRecommended
                     ? "border-emerald-300/80 bg-gradient-to-br from-emerald-50/80 to-white ring-1 ring-emerald-500/15 hover:shadow-lg hover:shadow-emerald-600/10"
                     : "border-zinc-200/70 bg-zinc-50/50 hover:border-zinc-300 hover:bg-white hover:shadow-lg"
@@ -171,65 +188,71 @@ export function LandingPricing({
                       {t("landing.pricing.recommended", "Ieteicamais")}
                     </span>
                   ) : null}
+                  {showEarly ? (
+                    <span className="rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold tracking-wide text-emerald-800 uppercase">
+                      {t("site_payment_plans.early_bird.section", "Early Bird")}
+                    </span>
+                  ) : null}
+                  {isTrialPlan ? (
+                    <span className="rounded-full bg-white px-2.5 py-0.5 text-xs font-semibold text-emerald-800 ring-1 ring-emerald-200">
+                      {t("landing.pricing.trial", "{days} dienu izmēģinājums", {
+                        days: formatInteger(trialDays),
+                      })}
+                    </span>
+                  ) : null}
                 </div>
-                {description ? (
-                  <p className="mt-2 text-sm leading-6 text-zinc-600">{description}</p>
-                ) : null}
+                <p className="mt-2 min-h-12 text-sm leading-6 text-zinc-600">
+                  {description || "\u00a0"}
+                </p>
 
                 <div className="mt-5">
+                  <p
+                    className={`text-sm ${
+                      showEarly ? "text-zinc-400 line-through" : "invisible"
+                    }`}
+                  >
+                    {showEarly ? formatPlanEuro(regular) : "\u00a0"}
+                  </p>
                   {plan.isFree ? (
                     <p className="text-3xl font-bold tracking-tight text-zinc-900">
-                      {t("site_payment_plans.list.free", "Bezmaksas")}
+                      {formatPlanEuro(0)}
+                      <span className="ml-1 text-base font-semibold text-zinc-500">
+                        {periodHint}
+                      </span>
                     </p>
                   ) : displayPrice > 0 ? (
-                    <div>
-                      {showEarly ? (
-                        <p className="text-sm text-zinc-400 line-through">
-                          {formatPlanEuro(regular)}
-                        </p>
-                      ) : null}
-                      <p className="text-3xl font-bold tracking-tight text-zinc-900">
-                        {formatPlanEuro(displayPrice)}
-                        <span className="ml-1 text-base font-semibold text-zinc-500">
-                          {t(
-                            PERIOD_SHORT[selectedPeriod].key,
-                            PERIOD_SHORT[selectedPeriod].fallback,
-                          )}{" "}
-                          {t("site_payment_plans.period.per_user", "/ lietotājs")}
-                        </span>
-                      </p>
-                      {showEarly ? (
-                        <p className="mt-1 text-xs font-semibold tracking-wide text-emerald-700 uppercase">
-                          {t("site_payment_plans.early_bird.section", "Early Bird")}
-                        </p>
-                      ) : null}
-                    </div>
+                    <p className="text-3xl font-bold tracking-tight text-zinc-900">
+                      {formatPlanEuro(displayPrice)}
+                      <span className="ml-1 text-base font-semibold text-zinc-500">
+                        {periodHint}{" "}
+                        {t("site_payment_plans.period.per_user", "/ lietotājs")}
+                      </span>
+                    </p>
                   ) : (
                     <p className="text-3xl font-bold tracking-tight text-zinc-900">—</p>
                   )}
                 </div>
 
-                <p className="mt-3 text-sm font-medium text-zinc-700">
-                  {membersLabel(plan, t)}
+                <p className="mt-3 text-sm text-zinc-600">
+                  {t("landing.pricing.compare.members", "Komandas lietotāji")}
+                  {": "}
+                  <span className="font-medium text-zinc-800">
+                    {membersLabel(plan, t)}
+                  </span>
                 </p>
-                {isTrialPlan ? (
-                  <p className="mt-1 text-sm text-emerald-700">
-                    {t("landing.pricing.trial", "{days} dienu izmēģinājums", {
-                      days: formatInteger(trialDays),
-                    })}
-                  </p>
-                ) : null}
 
-                <Link
-                  href={signupHref}
-                  className={`mt-6 inline-flex min-h-11 items-center justify-center rounded-2xl px-5 text-sm font-semibold transition ${
-                    isRecommended
-                      ? "bg-gradient-to-br from-emerald-500 to-emerald-600 text-white shadow-md shadow-emerald-500/25 hover:from-emerald-400 hover:to-emerald-500"
-                      : "border border-zinc-200 bg-white text-zinc-800 hover:border-zinc-300 hover:shadow-sm"
-                  }`}
-                >
-                  {t("landing.hero.cta_signup", "Sākt bez maksas")}
-                </Link>
+                <div className="mt-auto pt-6">
+                  <Link
+                    href={signupHref}
+                    className={`inline-flex min-h-11 w-full items-center justify-center rounded-2xl px-5 text-sm font-semibold transition ${
+                      isRecommended
+                        ? "bg-gradient-to-br from-emerald-500 to-emerald-600 text-white shadow-md shadow-emerald-500/25 hover:from-emerald-400 hover:to-emerald-500"
+                        : "border border-zinc-200 bg-white text-zinc-800 hover:border-zinc-300 hover:shadow-sm"
+                    }`}
+                  >
+                    {t("landing.hero.cta_signup", "Sākt bez maksas")}
+                  </Link>
+                </div>
               </article>
             );
           })}

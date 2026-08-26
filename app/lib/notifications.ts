@@ -10,7 +10,9 @@ export type NotificationKind =
   | "status_changed"
   | "task_updated"
   | "team_invite"
-  | "team_invite_rejected";
+  | "team_invite_rejected"
+  | "seat_open"
+  | "billing_due";
 
 export type AppNotification = {
   id: string;
@@ -39,6 +41,8 @@ const NOTIFICATION_KINDS: NotificationKind[] = [
   "task_updated",
   "team_invite",
   "team_invite_rejected",
+  "seat_open",
+  "billing_due",
 ];
 
 export function createNotificationId(): string {

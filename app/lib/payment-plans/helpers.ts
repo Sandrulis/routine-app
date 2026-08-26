@@ -134,7 +134,7 @@ export function getPaymentPlanPriceForPeriod(
   return plan.priceMonth;
 }
 
-const BILLING_PERIODS: PaymentPlanBillingPeriod[] = ["month", "quarter", "year"];
+const BILLING_PERIODS: PaymentPlanBillingPeriod[] = ["month", "year"];
 
 export function paymentPlanHasPriceForPeriod(
   plan: Pick<
@@ -180,7 +180,29 @@ export function listAvailablePaymentPlanBillingPeriods(
 export function isEarlyBirdOfferAvailable(
   availability: Pick<EarlyBirdAvailability, "limit" | "claimed">,
 ): boolean {
-  return availability.limit > 0 && availability.claimed < availability.limit;
+  return remainingEarlyBirdSeats(availability) > 0;
+}
+
+export function remainingEarlyBirdSeats(
+  availability: Pick<EarlyBirdAvailability, "limit" | "claimed">,
+) {
+  if (availability.limit <= 0) return 0;
+  return Math.max(0, Math.trunc(availability.limit) - Math.max(0, Math.trunc(availability.claimed)));
+}
+
+export function splitEarlyBirdPurchase(quantity: number, remaining: number) {
+  const seats = Math.max(0, Math.trunc(quantity));
+  const earlyBird = Math.min(seats, Math.max(0, Math.trunc(remaining)));
+  return { earlyBird, regular: seats - earlyBird };
+}
+
+export function keptEarlyBirdSeatsAfterRenewal(input: {
+  occupiedSeatCount: number;
+  earlyBirdSeatCount: number;
+}) {
+  const occupied = Math.max(0, Math.trunc(input.occupiedSeatCount));
+  const currentEarlyBird = Math.max(0, Math.trunc(input.earlyBirdSeatCount));
+  return Math.min(currentEarlyBird, occupied);
 }
 
 export function addDaysToTodayIso(days: number, todayIso?: string): string {

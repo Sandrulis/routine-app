@@ -359,6 +359,8 @@ export function TeamProvider({ children }: { children: ReactNode }) {
         color: input.color ?? randomListColorId(),
         logoUrl: input.logoUrl ?? null,
         paymentPlan: { ...EMPTY_TEAM_PAYMENT_PLAN },
+        paidSeatCount: 0,
+        billingCycleEnd: null,
       };
 
       const owner = authUser

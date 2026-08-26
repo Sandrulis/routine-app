@@ -58,4 +58,13 @@ export const SIMPLE_INTEGRATION_DEFINITIONS: Record<
     missingClientIdError: "errors.integrations_turnstile_site_key_required",
     missingClientSecretError: "errors.integrations_turnstile_secret_key_required",
   },
+  [SITE_INTEGRATION_KEYS.stripe]: {
+    key: SITE_INTEGRATION_KEYS.stripe,
+    requireClientId: true,
+    requireClientSecret: true,
+    envClientId: "STRIPE_PUBLISHABLE_KEY",
+    envClientSecret: "STRIPE_SECRET_KEY",
+    missingClientIdError: "errors.integrations_stripe_publishable_required",
+    missingClientSecretError: "errors.integrations_stripe_secret_required",
+  },
 };

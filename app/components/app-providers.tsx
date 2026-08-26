@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { AppShell } from "@/app/components/app-shell";
 import { FileViewerProvider } from "@/app/components/file-viewer-provider";
 import { TeamScopedFrontendModules } from "@/app/lib/frontend-modules/team-scoped-provider";
+import { PaymentPlansEnabledProvider } from "@/app/lib/payment-plans/context";
 import { FileTypesProvider } from "@/app/lib/file-types-context";
 import { ListsProvider } from "@/app/lib/lists-store";
 import { TemplatesProvider } from "@/app/lib/templates-store";
@@ -28,6 +29,7 @@ export function AppProviders({
   enabledFrontendModuleKeys = [],
   paymentPlansEnabled = false,
   paymentPlans = [],
+  stripeKeyInvalid = false,
 }: {
   children: ReactNode;
   taskStatuses?: TaskStatusSummary[];
@@ -35,10 +37,15 @@ export function AppProviders({
   enabledFrontendModuleKeys?: string[];
   paymentPlansEnabled?: boolean;
   paymentPlans?: PaymentPlanModuleSnapshot[];
+  stripeKeyInvalid?: boolean;
 }) {
   return (
     <TeamProvider>
       <AdminProvider>
+        <PaymentPlansEnabledProvider
+          enabled={paymentPlansEnabled}
+          freePlanIds={paymentPlans.filter((plan) => plan.isFree).map((plan) => plan.id)}
+        >
         <TeamScopedFrontendModules
           globalEnabledKeys={enabledFrontendModuleKeys}
           paymentPlansEnabled={paymentPlansEnabled}
@@ -49,13 +56,14 @@ export function AppProviders({
               <TemplatesProvider>
                 <ListsProvider>
                   <FileViewerProvider>
-                    <AppShell>{children}</AppShell>
+                    <AppShell stripeKeyInvalid={stripeKeyInvalid}>{children}</AppShell>
                   </FileViewerProvider>
                 </ListsProvider>
               </TemplatesProvider>
             </FileTypesProvider>
           </TaskStatusesProvider>
         </TeamScopedFrontendModules>
+        </PaymentPlansEnabledProvider>
       </AdminProvider>
     </TeamProvider>
   );

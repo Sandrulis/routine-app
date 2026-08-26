@@ -1283,11 +1283,21 @@ async function getSelectedTeamId(teams) {
 }
 
 async function sessionResponse() {
+  const existing = await readStoredSession();
+  const alreadyAuthed =
+    sessionUsable(existing?.session) &&
+    Boolean(await getAccessToken(existing.appBase));
+  if (!alreadyAuthed) {
+    await tryCaptureFromOpenDoneTabs();
+  }
+
   const result = await apiFetch("/api/extension/session");
+  const doneTabs = await findOpenPluginDoneTabs();
   if (
     result?.status === 200 &&
     result?.data &&
-    result.data.authenticated !== true
+    result.data.authenticated !== true &&
+    doneTabs.length === 0
   ) {
     const stored = await readStoredSession();
     if (stored?.session?.access_token) {
@@ -1295,6 +1305,7 @@ async function sessionResponse() {
     }
   }
   if (result?.data) {
+    result.data.handoffPending = doneTabs.length > 0;
     const teams = Array.isArray(result.data.teams) ? result.data.teams : [];
     const selectedTeamId = await getSelectedTeamId(teams);
     if (selectedTeamId) {
@@ -1387,6 +1398,36 @@ async function readBootstrapTicketFromTab(tabId) {
   }
 }
 
+async function waitForBootstrapTicketFromTab(tabId, attempts = 15) {
+  for (let i = 0; i < attempts; i += 1) {
+    const ticket = await readBootstrapTicketFromTab(tabId);
+    if (ticket) return ticket;
+    await new Promise((resolve) => setTimeout(resolve, 200));
+  }
+  return "";
+}
+
+async function findOpenPluginDoneTabs() {
+  try {
+    const tabs = await chrome.tabs.query({});
+    return tabs.filter((tab) => {
+      const url = String(tab.url || "");
+      return isPluginLoginDoneUrl(url) && !url.includes("error=");
+    });
+  } catch {
+    return [];
+  }
+}
+
+async function tryCaptureFromOpenDoneTabs() {
+  const tabs = await findOpenPluginDoneTabs();
+  for (const tab of tabs) {
+    const origin = await captureSessionFromDone(tab.url, "", null, "", tab.id);
+    if (origin && (await getAccessToken(origin))) return origin;
+  }
+  return "";
+}
+
 async function usableStoredSessionOrigin(preferredOrigin) {
   const stored = await readStoredSession();
   if (!stored || !sessionUsable(stored.session)) return "";
@@ -1416,10 +1457,14 @@ async function captureSessionFromDone(
   if (!session?.access_token) {
     const ticket =
       String(bootstrapTicket || "").trim() ||
-      (tabId ? await readBootstrapTicketFromTab(tabId) : "");
+      (tabId ? await waitForBootstrapTicketFromTab(tabId) : "");
     if (ticket) {
       session = await fetchBootstrapFromTicket(origin, ticket);
     }
+  }
+  if (!session?.access_token) {
+    const raced = await usableStoredSessionOrigin(origin);
+    if (raced) return raced;
   }
   if (!session?.access_token && directSession?.access_token) {
     session = directSession;
@@ -1483,7 +1528,6 @@ async function waitForPluginSession(tabId, preferredOrigin, timeoutMs = 180000) 
       if (readyStored) {
         const check = await apiFetch("/api/extension/session");
         if (check?.data?.authenticated) return readyStored;
-        await clearStoredSession();
       }
       try {
         const tab = await chrome.tabs.get(tabId);

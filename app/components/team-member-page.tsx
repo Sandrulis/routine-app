@@ -17,14 +17,17 @@ import {
 } from "@/app/lib/team/actions";
 import {
   canLeaveTeam,
+  canOpenTeamPage,
   canRemoveTeamMember,
   isPendingTeamMember,
+  isAwaitingPaymentSeat,
   isSelfTeamMember,
   memberDisplayName,
   teamRankLabel,
 } from "@/app/lib/team";
 import { TeamLeaveSection } from "@/app/components/team-leave-section";
 import { useTeam } from "@/app/lib/team-store";
+import { NOTIFICATIONS_CHANGE_EVENT } from "@/app/lib/notifications";
 import { useIsAdmin } from "@/app/lib/users/use-is-admin";
 
 type PendingAction = "resend" | "remove" | "copy" | null;
@@ -41,11 +44,13 @@ export function TeamMemberPage({ memberId }: { memberId: string }) {
 
   const isBusy = pendingAction !== null;
   const isPending = member ? isPendingTeamMember(member) : false;
+  const awaitingPayment = member ? isAwaitingPaymentSeat(member) : false;
   const canManageMember = member
     ? canRemoveTeamMember(currentUser, member, roles, isAdmin)
     : false;
   const canLeave = member ? canLeaveTeam(currentUser, member, roles) : false;
   const isSelf = member ? isSelfTeamMember(currentUser, member) : false;
+  const canOpenTeam = canOpenTeamPage(currentUser, roles, isAdmin);
 
   async function handleResend() {
     if (isBusy || !member) return;
@@ -119,6 +124,7 @@ export function TeamMemberPage({ memberId }: { memberId: string }) {
         return;
       }
       await refreshTeams();
+      window.dispatchEvent(new Event(NOTIFICATIONS_CHANGE_EVENT));
       showFeedback({
         type: "success",
         text: isSelf
@@ -139,6 +145,25 @@ export function TeamMemberPage({ memberId }: { memberId: string }) {
         subtitle={t("team.page.subtitle", "Visi komandas lietotāji.")}
       >
         <LoadingState />
+      </SectionPage>
+    );
+  }
+
+  if (!canOpenTeam && !isSelf) {
+    return (
+      <SectionPage
+        title={t("nav.team", "Komanda")}
+        subtitle={t(
+          "errors.team_page_forbidden",
+          "Nav pieejas komandas lapai.",
+        )}
+      >
+        <Link
+          href="/dashboard"
+          className="inline-flex min-h-10 items-center rounded-2xl bg-zinc-100 px-4 text-sm font-semibold text-zinc-700 transition hover:bg-zinc-200"
+        >
+          {t("nav.home", "Sākums")}
+        </Link>
       </SectionPage>
     );
   }
@@ -177,7 +202,9 @@ export function TeamMemberPage({ memberId }: { memberId: string }) {
               {member.email ? <p>{member.email}</p> : null}
               {isPending ? (
                 <p className="mt-2 inline-flex rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-800">
-                  {t("team.invite.pending", "Gaida apstiprinājumu")}
+                  {awaitingPayment
+                    ? t("team.invite.pending_payment", "Gaida samaksu")
+                    : t("team.invite.pending", "Gaida apstiprinājumu")}
                 </p>
               ) : null}
             </div>
@@ -187,7 +214,7 @@ export function TeamMemberPage({ memberId }: { memberId: string }) {
 
           {canManageMember ? (
             <div className="flex flex-wrap gap-3">
-              {isPending ? (
+              {isPending && !awaitingPayment ? (
                 <>
                   <button
                     type="button"

@@ -153,6 +153,7 @@ export function memberToRow(teamId: string, member: TeamMember) {
     tone_class_name: member.toneClassName,
     avatar_url: member.avatarUrl ?? null,
     last_online_at: member.lastOnlineAt,
+    seat_status: member.seatStatus === "pending_payment" ? "pending_payment" : "active",
   };
 }
 
@@ -168,7 +169,10 @@ function teamFromRow(row: {
   payment_plan_paid?: boolean | null;
   payment_plan_is_trial?: boolean | null;
   payment_plan_is_early_bird?: boolean | null;
+  paid_seat_count?: number | null;
+  billing_cycle_end?: string | null;
 }): WorkTeam {
+  const paidSeatCount = Number(row.paid_seat_count);
   return {
     id: row.id,
     name: row.name,
@@ -189,6 +193,11 @@ function teamFromRow(row: {
       isTrial: row.payment_plan_is_trial === true,
       isEarlyBird: row.payment_plan_is_early_bird === true,
     },
+    paidSeatCount: Number.isFinite(paidSeatCount) ? Math.max(0, Math.trunc(paidSeatCount)) : 0,
+    billingCycleEnd:
+      typeof row.billing_cycle_end === "string" && row.billing_cycle_end.trim()
+        ? row.billing_cycle_end.slice(0, 10)
+        : null,
   };
 }
 
@@ -202,6 +211,7 @@ function memberFromRow(row: {
   tone_class_name: string;
   avatar_url: string | null;
   last_online_at: string | null;
+  seat_status?: string | null;
 }): TeamMember {
   return {
     id: row.id,
@@ -214,6 +224,7 @@ function memberFromRow(row: {
     toneClassName: row.tone_class_name,
     lastOnlineAt: row.last_online_at,
     avatarUrl: row.avatar_url,
+    seatStatus: row.seat_status === "pending_payment" ? "pending_payment" : "active",
   };
 }
 
@@ -254,7 +265,7 @@ export async function fetchUserTeams(): Promise<{
       supabase
         .from("teams")
         .select(
-          "id, name, initials, icon, color, logo_url, created_at, payment_plan_id, payment_plan_until, payment_plan_paid, payment_plan_is_trial, payment_plan_is_early_bird",
+          "id, name, initials, icon, color, logo_url, created_at, payment_plan_id, payment_plan_until, payment_plan_paid, payment_plan_is_trial, payment_plan_is_early_bird, paid_seat_count, billing_cycle_end",
         )
         .in("id", chunk)
         .order("created_at", { ascending: true }),
@@ -263,7 +274,7 @@ export async function fetchUserTeams(): Promise<{
       supabase
         .from("team_members")
         .select(
-          "id, team_id, user_id, email, name, role, role_id, tone_class_name, avatar_url, last_online_at",
+          "id, team_id, user_id, email, name, role, role_id, tone_class_name, avatar_url, last_online_at, seat_status",
         )
         .in("team_id", chunk),
     ),

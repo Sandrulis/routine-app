@@ -14,6 +14,8 @@ export const NOTIFICATION_PREFERENCE_KINDS: NotificationPreferenceKind[] = [
   "start",
   "team_invite",
   "team_invite_rejected",
+  "seat_open",
+  "billing_due",
 ];
 
 export type NotificationPreferences = Record<
@@ -33,6 +35,8 @@ export function defaultNotificationPreferences(): NotificationPreferences {
     start: true,
     team_invite: true,
     team_invite_rejected: true,
+    seat_open: true,
+    billing_due: true,
   };
 }
 
@@ -84,6 +88,8 @@ export function preferenceFallbackForKind(
     start: "Jāuzsāk apakšuzdevums",
     team_invite: "Komandas uzaicinājums",
     team_invite_rejected: "Noraidīts komandas uzaicinājums",
+    seat_open: "Brīva apmaksāta vieta",
+    billing_due: "Maksas par komandas lietotājiem",
   };
   return fallbacks[kind];
 }
@@ -103,6 +109,9 @@ export function preferenceHintForKind(
     start: "Atgādinājums, ka jāuzsāk apakšuzdevums.",
     team_invite: "Kad uzaicina pievienoties komandai.",
     team_invite_rejected: "Kad kāds noraida tavu komandas uzaicinājumu.",
+    seat_open: "Kad komandā paliek brīva apmaksāta vieta līdz cikla beigām.",
+    billing_due:
+      "Kad sistēma ieslēdz maksas plānus un nākamajā mēnesī jāmaksā par lietotājiem virs 1.",
   };
   return hints[kind];
 }

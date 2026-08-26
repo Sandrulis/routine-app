@@ -1,6 +1,6 @@
 {
   "name": "routine-app",
-  "version": "0.2.40",
+  "version": "0.2.41",
   "private": true,
   "engines": {
     "node": "22.x"
@@ -11,6 +11,7 @@
     "start": "node --max-http-header-size=65536 ./node_modules/next/dist/bin/next start -p 3120",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
+    "i18n:check": "node scripts/sync-i18n-catalogs.mjs",
     "audit:check": "node scripts/audit-check.mjs",
     "db:migrate": "node scripts/apply-migrations.mjs",
     "db:test": "node scripts/test-supabase.mjs"
@@ -26,6 +27,7 @@
     "next": "16.2.12",
     "react": "19.2.4",
     "react-dom": "19.2.4",
+    "stripe": "^22.5.0",
     "svix": "^2.0.0"
   },
   "devDependencies": {

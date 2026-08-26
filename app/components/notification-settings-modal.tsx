@@ -51,7 +51,7 @@ const PREFERENCE_GROUPS: PreferenceGroup[] = [
     labelFallback: "Komanda",
     icon: "fa-user-group",
     iconColor: "text-violet-500",
-    kinds: ["team_invite", "team_invite_rejected"],
+    kinds: ["team_invite", "team_invite_rejected", "seat_open", "billing_due"],
   },
 ];
 
@@ -66,6 +66,8 @@ const KIND_ICONS: Record<NotificationPreferenceKind, string> = {
   start: "fa-play",
   team_invite: "fa-envelope",
   team_invite_rejected: "fa-user-xmark",
+  seat_open: "fa-user-check",
+  billing_due: "fa-credit-card",
 };
 
 function GroupSection({
