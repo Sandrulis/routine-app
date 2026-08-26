@@ -13,8 +13,11 @@ import { useFeedbackToast } from "@/app/components/feedback-toast-provider";
 import { AuthDivider, GoogleAuthButton, MicrosoftAuthButton } from "@/app/components/google-auth-button";
 import { LoadingState } from "@/app/components/loading-state";
 import { PasswordInput } from "@/app/components/password-input";
+import { PasswordStrengthMeter } from "@/app/components/password-strength-meter";
 import { useTranslations } from "@/app/components/translations-provider";
 import { signUpWithPasswordAction } from "@/app/lib/auth/actions";
+import { generateStrongPassword } from "@/app/lib/auth/generate-strong-password";
+import { isPasswordStrongEnough } from "@/app/lib/auth/password-strength";
 import { translateActionError } from "@/app/lib/i18n/action-errors";
 import { getSafeRedirectPath } from "@/app/lib/security/safe-redirect-path";
 import { getInviteSignupContextAction } from "@/app/lib/team/actions";
@@ -46,6 +49,14 @@ export function SignupForm({
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  /** Suggested password still shown as plain text until the user edits a field. */
+  const [suggestionPlain, setSuggestionPlain] = useState(false);
+  const [passwordVisible, setPasswordVisible] = useState(false);
+  const [confirmVisible, setConfirmVisible] = useState(false);
+  /** After a suggested fill, the first password edit must empty confirm. */
+  const clearConfirmOnPasswordEditRef = useRef(false);
+  /** Ignore browser re-filling confirm right after we clear it. */
+  const ignoreConfirmRefillRef = useRef(false);
   const [accepted, setAccepted] = useState(false);
   const [pending, setPending] = useState(false);
   const [inviteLoading, setInviteLoading] = useState(Boolean(inviteToken));
@@ -66,6 +77,23 @@ export function SignupForm({
   function getTurnstileToken() {
     return turnstileRef.current?.getToken() ?? null;
   }
+
+  function applySuggestedPassword() {
+    const next = generateStrongPassword(16);
+    setPassword(next);
+    setConfirmPassword(next);
+    setSuggestionPlain(true);
+    setPasswordVisible(true);
+    setConfirmVisible(true);
+    clearConfirmOnPasswordEditRef.current = true;
+  }
+
+  useEffect(() => {
+    if (!emailPasswordEnabled) return;
+    applySuggestedPassword();
+    // Fill once when the email/password form is available.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional mount/enable fill
+  }, [emailPasswordEnabled]);
 
   useEffect(() => {
     if (googlePending && turnstileSiteKey) {
@@ -191,6 +219,17 @@ export function SignupForm({
       showFeedback({
         type: "error",
         text: t("auth.signup.password_short", "Parolei jābūt vismaz 8 zīmēm."),
+      });
+      return;
+    }
+
+    if (!isPasswordStrongEnough(password)) {
+      showFeedback({
+        type: "error",
+        text: t(
+          "auth.signup.password_too_weak",
+          "Parole ir pārāk vāja. Izmanto lielos un mazos burtus, ciparus un speciālo zīmi.",
+        ),
       });
       return;
     }
@@ -361,19 +400,61 @@ export function SignupForm({
             />
           </label>
 
-          <label className="block">
-            <span className="text-sm font-semibold text-zinc-700">
-              {t("auth.fields.password", "Parole")}
-            </span>
-            <PasswordInput
-              required
-              autoComplete="new-password"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              className="mt-2"
-              inputClassName={authInputFieldClassName}
-            />
-          </label>
+          <div className="block">
+            <label className="block">
+              <span className="text-sm font-semibold text-zinc-700">
+                {t("auth.fields.password", "Parole")}
+              </span>
+              <PasswordInput
+                required
+                autoComplete="new-password"
+                value={password}
+                visible={passwordVisible}
+                onVisibleChange={setPasswordVisible}
+                onChange={(event) => {
+                  const next = event.target.value;
+                  setPassword(next);
+                  if (
+                    !event.nativeEvent.isTrusted ||
+                    !clearConfirmOnPasswordEditRef.current
+                  ) {
+                    return;
+                  }
+                  // User started typing their own password — confirm must be empty.
+                  clearConfirmOnPasswordEditRef.current = false;
+                  ignoreConfirmRefillRef.current = true;
+                  setConfirmPassword("");
+                  setConfirmVisible(false);
+                  setSuggestionPlain(false);
+                  setPasswordVisible(false);
+                  window.setTimeout(() => {
+                    ignoreConfirmRefillRef.current = false;
+                  }, 100);
+                }}
+                className="mt-2"
+                inputClassName={authInputFieldClassName}
+              />
+            </label>
+            <PasswordStrengthMeter password={password} />
+            {suggestionPlain ? (
+              <p className="mt-2 text-xs text-zinc-500">
+                {t(
+                  "auth.signup.password_suggested_hint",
+                  "Spēcīga parole ir aizpildīta. Vari labot vai izvēlēties citu.",
+                )}
+              </p>
+            ) : null}
+            <button
+              type="button"
+              onClick={applySuggestedPassword}
+              className="mt-1.5 text-left text-xs font-semibold text-zinc-700 underline decoration-zinc-300 underline-offset-2 transition hover:text-zinc-900"
+            >
+              {t(
+                "auth.signup.password_suggest",
+                "Piedāvāt citu spēcīgu paroli",
+              )}
+            </button>
+          </div>
 
           <label className="block">
             <span className="text-sm font-semibold text-zinc-700">
@@ -383,7 +464,19 @@ export function SignupForm({
               required
               autoComplete="new-password"
               value={confirmPassword}
-              onChange={(event) => setConfirmPassword(event.target.value)}
+              visible={confirmVisible}
+              onVisibleChange={setConfirmVisible}
+              onChange={(event) => {
+                const next = event.target.value;
+                if (ignoreConfirmRefillRef.current && next !== "") {
+                  return;
+                }
+                setConfirmPassword(next);
+                if (suggestionPlain && event.nativeEvent.isTrusted) {
+                  setSuggestionPlain(false);
+                  setConfirmVisible(false);
+                }
+              }}
               className="mt-2"
               inputClassName={authInputFieldClassName}
             />

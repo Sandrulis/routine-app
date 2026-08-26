@@ -20,6 +20,7 @@ import {
   registerWithEmailPassword,
   requestPasswordResetEmail,
 } from "@/app/lib/auth/email-password";
+import { isPasswordStrongEnough } from "@/app/lib/auth/password-strength";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -121,6 +122,9 @@ export async function signUpWithPasswordAction(input: {
   if (password.length < 8) {
     return { ok: false, error: "auth.signup.password_short" };
   }
+  if (!isPasswordStrongEnough(password)) {
+    return { ok: false, error: "auth.signup.password_too_weak" };
+  }
   const blocked = await guardAuth("signup", email, {
     turnstileToken: input.turnstileToken,
     requireTurnstile: true,
@@ -180,6 +184,9 @@ export async function updatePasswordAction(input: {
 }): Promise<AuthResult> {
   if (input.password.length < 8) {
     return { ok: false, error: "auth.signup.password_short" };
+  }
+  if (!isPasswordStrongEnough(input.password)) {
+    return { ok: false, error: "auth.signup.password_too_weak" };
   }
   if (!isSupabaseConfigured()) {
     return { ok: false, error: "errors.db_not_configured" };

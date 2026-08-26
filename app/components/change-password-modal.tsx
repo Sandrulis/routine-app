@@ -7,7 +7,9 @@ import {
 } from "@/app/components/app-modal";
 import { useFeedbackToast } from "@/app/components/feedback-toast-provider";
 import { PasswordInput } from "@/app/components/password-input";
+import { PasswordStrengthMeter } from "@/app/components/password-strength-meter";
 import { useTranslations } from "@/app/components/translations-provider";
+import { isPasswordStrongEnough } from "@/app/lib/auth/password-strength";
 import { createClient } from "@/app/lib/supabase/client";
 import { isSupabaseConfigured } from "@/app/lib/supabase/env";
 
@@ -44,6 +46,7 @@ export function ChangePasswordModal({
     !pending &&
     currentPassword.length > 0 &&
     nextPassword.length >= 8 &&
+    isPasswordStrongEnough(nextPassword) &&
     passwordsMatch &&
     nextPassword !== currentPassword;
 
@@ -55,6 +58,17 @@ export function ChangePasswordModal({
       showFeedback({
         type: "error",
         text: t("auth.signup.password_short", "Parolei jābūt vismaz 8 zīmēm."),
+      });
+      return;
+    }
+
+    if (!isPasswordStrongEnough(nextPassword)) {
+      showFeedback({
+        type: "error",
+        text: t(
+          "auth.signup.password_too_weak",
+          "Parole ir pārāk vāja. Izmanto lielos un mazos burtus, ciparus un speciālo zīmi.",
+        ),
       });
       return;
     }
@@ -183,6 +197,7 @@ export function ChangePasswordModal({
             className="mt-2"
             inputClassName={passwordFieldClassName}
           />
+          <PasswordStrengthMeter password={nextPassword} />
         </div>
         <div>
           <label

@@ -4,6 +4,12 @@
 
 - (none)
 
+## v0.3.2
+
+- E-pasta reģistrācijā automātiski piedāvā spēcīgu paroli (16 zīmes) ar iespēju ģenerēt citu
+- Paroles stipruma josla (Ļoti vāja → Stipra); signup un paroles maiņa prasa vismaz Vidēju (serverī un UI)
+- Kad lietotājs sāk rakstīt savu paroli, atkārtotās paroles lauks automātiski tiek notīrīts
+
 ## v0.3.1
 
 - Vietnes **Iziet** (un MFA atcelšana) lieto Supabase `signOut({ scope: "local" })`, lai neatceltu Gmail spraudņa `refresh_token` / `chrome.storage` sesiju

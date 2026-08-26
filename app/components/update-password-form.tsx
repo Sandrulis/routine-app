@@ -9,8 +9,10 @@ import {
 } from "@/app/components/auth-form-styles";
 import { useFeedbackToast } from "@/app/components/feedback-toast-provider";
 import { PasswordInput } from "@/app/components/password-input";
+import { PasswordStrengthMeter } from "@/app/components/password-strength-meter";
 import { useTranslations } from "@/app/components/translations-provider";
 import { updatePasswordAction } from "@/app/lib/auth/actions";
+import { isPasswordStrongEnough } from "@/app/lib/auth/password-strength";
 import { translateActionError } from "@/app/lib/i18n/action-errors";
 
 export function UpdatePasswordForm() {
@@ -28,6 +30,16 @@ export function UpdatePasswordForm() {
       showFeedback({
         type: "error",
         text: t("auth.signup.password_short", "Parolei jābūt vismaz 8 zīmēm."),
+      });
+      return;
+    }
+    if (!isPasswordStrongEnough(password)) {
+      showFeedback({
+        type: "error",
+        text: t(
+          "auth.signup.password_too_weak",
+          "Parole ir pārāk vāja. Izmanto lielos un mazos burtus, ciparus un speciālo zīmi.",
+        ),
       });
       return;
     }
@@ -81,6 +93,7 @@ export function UpdatePasswordForm() {
           className="mt-2"
           inputClassName={authInputFieldClassName}
         />
+        <PasswordStrengthMeter password={password} />
       </label>
       <label className="block">
         <span className="text-sm font-semibold text-zinc-700">
