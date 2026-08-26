@@ -4,6 +4,14 @@
 
 - (none)
 
+## v0.3.0
+
+- Komandas vietu norēķini ar Stripe (`/team/billing`): vadītāja vieta bez maksas, samaksa pirms uzaicinājuma, Early Bird pool, `billing_due` / `seat_open`
+- Pilns tulkojumu komplekts visās 15 valodās; `npm run i18n:check` CI; noklusējuma lomu nosaukumi visās valodās (`member` = Lietotājs)
+- Google/Microsoft OAuth ielaiž esošu kontu ar to pašu verificēto e-pastu; Turnstile Google bez komandas
+- Uzdevuma galvenē `+` atver jauna apakšuzdevuma modāli; 404 → `/dashboard`
+- Komandas pieejas: `nav.team` / uzaicināt / noņemt; Stripe admin baneris un CI webhook/secret scan labojumi
+
 ## v0.2.41
 
 - Uzdevuma galvenē aiz nosaukuma un arhīva pogas ir `+`, kas atver jauna apakšuzdevuma modāli
