@@ -39,8 +39,8 @@ import {
   cloneTeamPermissions,
   createFullTeamPermissions,
   createMemberTeamPermissions,
+  TEAM_ACTION_PERMISSION_KEYS,
   type TeamActionPermissionKey,
-  type TeamNavPermissionKey,
   type TeamPermissionSet,
 } from "@/app/lib/team-permissions";
 import type {
@@ -134,24 +134,15 @@ export function AdminRolesManager({
     setModalOpen(true);
   }
 
-  function updateNav(key: TeamNavPermissionKey, enabled: boolean) {
+  function updateAction(
+    updates: Partial<Record<TeamActionPermissionKey, boolean>>,
+  ) {
     if (isOwnerRole) return;
     setDraft((current) => ({
       ...current,
       permissions: {
         ...current.permissions,
-        nav: { ...current.permissions.nav, [key]: enabled },
-      },
-    }));
-  }
-
-  function updateAction(key: TeamActionPermissionKey, enabled: boolean) {
-    if (isOwnerRole) return;
-    setDraft((current) => ({
-      ...current,
-      permissions: {
-        ...current.permissions,
-        actions: { ...current.permissions.actions, [key]: enabled },
+        actions: { ...current.permissions.actions, ...updates },
       },
     }));
   }
@@ -257,7 +248,7 @@ export function AdminRolesManager({
                 <tr>
                   <th className="w-10 px-3 py-3" />
                   <th className="px-5 py-3">{t("admin.statuses.label", "Nosaukums")}</th>
-                  <th className="px-5 py-3">{t("team.access.nav", "Sadaļas")}</th>
+                  <th className="px-5 py-3">{t("team.access.column", "Pieejas")}</th>
                   <th className="px-5 py-3 text-right">{t("common.actions", "Darbības")}</th>
                 </tr>
               </thead>
@@ -354,7 +345,6 @@ export function AdminRolesManager({
                 isOwnerRole ? createFullTeamPermissions(true) : draft.permissions
               }
               disabled={isOwnerRole}
-              onNavChange={updateNav}
               onActionChange={updateAction}
             />
 
@@ -419,8 +409,10 @@ function SortableRoleRow({
     transition,
     isDragging,
   } = useSortable({ id: role.id, disabled });
-  const navCount = Object.values(role.permissions.nav).filter(Boolean).length;
-  const navTotal = Object.keys(role.permissions.nav).length;
+  const actionCount = TEAM_ACTION_PERMISSION_KEYS.filter(
+    (key) => role.permissions.actions[key],
+  ).length;
+  const actionTotal = TEAM_ACTION_PERMISSION_KEYS.length;
 
   return (
     <tr
@@ -460,8 +452,8 @@ function SortableRoleRow({
       </td>
       <td className="px-5 py-4 text-sm text-zinc-600">
         {t("admin.roles.nav_count", "{count} no {total}", {
-          count: navCount,
-          total: navTotal,
+          count: actionCount,
+          total: actionTotal,
         })}
       </td>
       <td className="px-5 py-4">

@@ -14,6 +14,7 @@ import {
   type WorkTask,
 } from "@/app/lib/lists";
 import { useLists } from "@/app/lib/lists-store";
+import { canArchiveWorkItem } from "@/app/lib/team";
 import { useTeam } from "@/app/lib/team-store";
 
 export function workItemArchiveFeedback(
@@ -41,8 +42,9 @@ export function WorkItemArchiveButton({ task }: { task: WorkTask }) {
   const canEdit = list
     ? resolveEffectiveListAccess(list, currentUser, roles, isAdmin).canEditTasks
     : false;
+  const canArchive = canArchiveWorkItem(task, currentUser, roles, isAdmin);
 
-  if (!canEdit || isWorkSubtask(task)) return null;
+  if (!canEdit || !canArchive || isWorkSubtask(task)) return null;
 
   const archived = isWorkItemArchived(task);
 

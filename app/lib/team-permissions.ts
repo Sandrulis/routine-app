@@ -1,10 +1,4 @@
-export const TEAM_NAV_PERMISSION_KEYS = [
-  "dashboard",
-  "lists",
-  "team",
-  "templates",
-  "settings",
-] as const;
+export const TEAM_NAV_PERMISSION_KEYS = [] as const;
 
 export type TeamNavPermissionKey = (typeof TEAM_NAV_PERMISSION_KEYS)[number];
 
@@ -15,15 +9,26 @@ export const TEAM_ACTION_PERMISSION_KEYS = [
   "lists.statuses.manage",
   "lists.automations.manage",
   "tasks.manage",
+  "subtasks.status.change",
+  "folders.create",
+  "folders.archive",
+  "tasks.archive",
+  "lists.archive.view",
+  "subtasks.archive.view",
   "files.upload",
+  "files.upload.subtask",
+  "files.view",
+  "files.forward",
+  "team.options",
   "templates.manage",
   "team.invite",
   "team.members.remove",
   "team.roles.manage",
   "team.permissions.manage",
   "team.settings.edit",
+  "team.integrations.google_drive",
+  "team.integrations.onedrive",
   "team.delete",
-  "settings.save",
 ] as const;
 
 export type TeamActionPermissionKey =
@@ -37,13 +42,7 @@ export type TeamPermissionSet = {
 export const TEAM_NAV_PERMISSION_LABELS: Record<
   TeamNavPermissionKey,
   { key: string; fallback: string }
-> = {
-  dashboard: { key: "nav.home", fallback: "Sākums" },
-  lists: { key: "nav.lists", fallback: "Saraksts" },
-  team: { key: "nav.team", fallback: "Komanda" },
-  templates: { key: "nav.templates", fallback: "Šabloni" },
-  settings: { key: "nav.settings", fallback: "Uzstādījumi" },
-};
+> = {};
 
 export const TEAM_ACTION_PERMISSION_GROUPS: {
   titleKey: string;
@@ -58,20 +57,26 @@ export const TEAM_ACTION_PERMISSION_GROUPS: {
       "lists.edit",
       "lists.delete",
       "tasks.manage",
+      "subtasks.status.change",
+      "folders.create",
+      "folders.archive",
+      "tasks.archive",
+      "lists.archive.view",
+      "subtasks.archive.view",
       "lists.statuses.manage",
       "lists.automations.manage",
       "files.upload",
+      "files.upload.subtask",
+      "files.view",
+      "files.forward",
     ],
-  },
-  {
-    titleKey: "team.access.groups.templates",
-    title: "Šabloni",
-    keys: ["templates.manage"],
   },
   {
     titleKey: "nav.team",
     title: "Komanda",
     keys: [
+      "team.options",
+      "templates.manage",
       "team.invite",
       "team.members.remove",
       "team.roles.manage",
@@ -81,9 +86,12 @@ export const TEAM_ACTION_PERMISSION_GROUPS: {
     ],
   },
   {
-    titleKey: "nav.settings",
-    title: "Uzstādījumi",
-    keys: ["settings.save"],
+    titleKey: "team.access.groups.integrations",
+    title: "Komandas integrācijas",
+    keys: [
+      "team.integrations.google_drive",
+      "team.integrations.onedrive",
+    ],
   },
 ];
 
@@ -115,9 +123,49 @@ export const TEAM_ACTION_PERMISSION_LABELS: Record<
     key: "team.access.actions.tasks_manage",
     fallback: "Pārvaldīt uzdevumus",
   },
+  "subtasks.status.change": {
+    key: "team.access.actions.subtasks_status_change",
+    fallback: "Mainīt statusu apakšuzdevumam",
+  },
+  "folders.create": {
+    key: "team.access.actions.folders_create",
+    fallback: "Pievienot mapi / apakšmapes",
+  },
+  "folders.archive": {
+    key: "team.access.actions.folders_archive",
+    fallback: "Arhivēt mapes",
+  },
+  "tasks.archive": {
+    key: "team.access.actions.tasks_archive",
+    fallback: "Arhivēt uzdevumus",
+  },
+  "lists.archive.view": {
+    key: "team.access.actions.lists_archive_view",
+    fallback: "Apskatīt Saraksta arhīvu",
+  },
+  "subtasks.archive.view": {
+    key: "team.access.actions.subtasks_archive_view",
+    fallback: "Apskatīt Apakšuzdevumu arhīvu",
+  },
   "files.upload": {
     key: "team.access.actions.files_upload",
     fallback: "Augšupielādēt failus",
+  },
+  "files.upload.subtask": {
+    key: "team.access.actions.files_upload_subtask",
+    fallback: "Augšupielādēt apakšuzdevumam pielikumus",
+  },
+  "files.view": {
+    key: "team.access.actions.files_view",
+    fallback: "Apskatīt Pielikumus",
+  },
+  "files.forward": {
+    key: "team.access.actions.files_forward",
+    fallback: "Pārsūtīt pielikumus",
+  },
+  "team.options": {
+    key: "team.access.actions.team_options",
+    fallback: "Komandas opcijas",
   },
   "templates.manage": {
     key: "team.access.actions.templates_manage",
@@ -143,21 +191,23 @@ export const TEAM_ACTION_PERMISSION_LABELS: Record<
     key: "team.access.actions.team_settings_edit",
     fallback: "Labot komandas datus",
   },
+  "team.integrations.google_drive": {
+    key: "team.access.actions.team_integrations_google_drive",
+    fallback: "Pārvaldīt Google Drive",
+  },
+  "team.integrations.onedrive": {
+    key: "team.access.actions.team_integrations_onedrive",
+    fallback: "Pārvaldīt OneDrive",
+  },
   "team.delete": {
     key: "team.access.actions.team_delete",
     fallback: "Dzēst komandu",
-  },
-  "settings.save": {
-    key: "team.access.actions.settings_save",
-    fallback: "Saglabāt uzstādījumus",
   },
 };
 
 export function createFullTeamPermissions(enabled = true): TeamPermissionSet {
   return {
-    nav: Object.fromEntries(
-      TEAM_NAV_PERMISSION_KEYS.map((key) => [key, enabled]),
-    ) as Record<TeamNavPermissionKey, boolean>,
+    nav: {} as Record<TeamNavPermissionKey, boolean>,
     actions: Object.fromEntries(
       TEAM_ACTION_PERMISSION_KEYS.map((key) => [key, enabled]),
     ) as Record<TeamActionPermissionKey, boolean>,
@@ -172,6 +222,8 @@ export function createMemberTeamPermissions(): TeamPermissionSet {
   permissions.actions["team.roles.manage"] = false;
   permissions.actions["team.permissions.manage"] = false;
   permissions.actions["team.settings.edit"] = false;
+  permissions.actions["team.integrations.google_drive"] = false;
+  permissions.actions["team.integrations.onedrive"] = false;
   permissions.actions["team.delete"] = false;
   permissions.actions["team.members.remove"] = false;
   return permissions;
@@ -188,16 +240,38 @@ export function normalizeTeamPermissionSet(value: unknown): TeamPermissionSet {
     actions?: Record<string, boolean>;
   };
 
-  for (const key of TEAM_NAV_PERMISSION_KEYS) {
-    if (typeof record.nav?.[key] === "boolean") {
-      full.nav[key] = record.nav[key];
-    }
-  }
-
   for (const key of TEAM_ACTION_PERMISSION_KEYS) {
     if (typeof record.actions?.[key] === "boolean") {
       full.actions[key] = record.actions[key];
     }
+  }
+
+  // Legacy: folders.archive.view → subtasks.archive.view
+  if (
+    !full.actions["subtasks.archive.view"] &&
+    record.actions?.["folders.archive.view"] === true
+  ) {
+    full.actions["subtasks.archive.view"] = true;
+  }
+
+  // Legacy: nav.templates → templates.manage
+  if (
+    !full.actions["templates.manage"] &&
+    record.nav?.templates === true
+  ) {
+    full.actions["templates.manage"] = true;
+  }
+
+  // Legacy: nav.team or former menu abilities → team.options
+  if (
+    !full.actions["team.options"] &&
+    (record.nav?.team === true ||
+      record.actions?.["templates.manage"] === true ||
+      record.actions?.["team.roles.manage"] === true ||
+      record.actions?.["team.integrations.google_drive"] === true ||
+      record.actions?.["team.integrations.onedrive"] === true)
+  ) {
+    full.actions["team.options"] = true;
   }
 
   return full;

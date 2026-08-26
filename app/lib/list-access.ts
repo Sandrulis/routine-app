@@ -1,7 +1,6 @@
 import {
   currentTeamRole,
   hasTeamActionPermission,
-  hasTeamNavPermission,
   OWNER_TEAM_ROLE,
   type TeamMember,
   type TeamRole,
@@ -165,19 +164,6 @@ export function applyTeamPermissionsToListAccess(
   roles: TeamRole[],
   isAdmin: boolean,
 ): ListAccessCapabilities {
-  if (!hasTeamNavPermission(currentUser, roles, isAdmin, "lists")) {
-    return {
-      level: null,
-      canView: false,
-      canComment: false,
-      canChangeStatus: false,
-      canEditTasks: false,
-      canCreateTasks: false,
-      canEditList: false,
-      canDeleteList: false,
-    };
-  }
-
   return {
     ...access,
     canEditList:
@@ -194,8 +180,12 @@ export function applyTeamPermissionsToListAccess(
       hasTeamActionPermission(currentUser, roles, isAdmin, "tasks.manage"),
     canChangeStatus:
       access.canChangeStatus &&
-      (hasTeamActionPermission(currentUser, roles, isAdmin, "tasks.manage") ||
-        access.canComment),
+      hasTeamActionPermission(
+        currentUser,
+        roles,
+        isAdmin,
+        "subtasks.status.change",
+      ),
     canComment: access.canComment,
     canView: access.canView,
   };

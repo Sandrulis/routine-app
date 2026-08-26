@@ -103,11 +103,19 @@ export function canInviteTeamMembers(
 }
 
 export function canOpenTeamPage(
+  _currentUser: Pick<TeamMember, "role" | "roleId">,
+  _roles: TeamRole[],
+  _isAdmin: boolean,
+): boolean {
+  return true;
+}
+
+export function canUseTeamOptions(
   currentUser: Pick<TeamMember, "role" | "roleId">,
   roles: TeamRole[],
   isAdmin: boolean,
 ): boolean {
-  return hasTeamNavPermission(currentUser, roles, isAdmin, "team");
+  return hasTeamActionPermission(currentUser, roles, isAdmin, "team.options");
 }
 
 export function canRemoveTeamMembers(
@@ -126,6 +134,32 @@ export function canEditTeamSettings(
   return hasTeamActionPermission(currentUser, roles, isAdmin, "team.settings.edit");
 }
 
+export function canConfigureTeamGoogleDrive(
+  currentUser: Pick<TeamMember, "role" | "roleId">,
+  roles: TeamRole[],
+  isAdmin: boolean,
+): boolean {
+  return hasTeamActionPermission(
+    currentUser,
+    roles,
+    isAdmin,
+    "team.integrations.google_drive",
+  );
+}
+
+export function canConfigureTeamOneDrive(
+  currentUser: Pick<TeamMember, "role" | "roleId">,
+  roles: TeamRole[],
+  isAdmin: boolean,
+): boolean {
+  return hasTeamActionPermission(
+    currentUser,
+    roles,
+    isAdmin,
+    "team.integrations.onedrive",
+  );
+}
+
 export function canDeleteTeam(
   currentUser: Pick<TeamMember, "role" | "roleId">,
   roles: TeamRole[],
@@ -140,6 +174,97 @@ export function canManageTemplates(
   isAdmin: boolean,
 ): boolean {
   return hasTeamActionPermission(currentUser, roles, isAdmin, "templates.manage");
+}
+
+export function canCreateFolders(
+  currentUser: Pick<TeamMember, "role" | "roleId">,
+  roles: TeamRole[],
+  isAdmin: boolean,
+): boolean {
+  return hasTeamActionPermission(currentUser, roles, isAdmin, "folders.create");
+}
+
+export function canArchiveFolders(
+  currentUser: Pick<TeamMember, "role" | "roleId">,
+  roles: TeamRole[],
+  isAdmin: boolean,
+): boolean {
+  return hasTeamActionPermission(currentUser, roles, isAdmin, "folders.archive");
+}
+
+export function canArchiveTasks(
+  currentUser: Pick<TeamMember, "role" | "roleId">,
+  roles: TeamRole[],
+  isAdmin: boolean,
+): boolean {
+  return hasTeamActionPermission(currentUser, roles, isAdmin, "tasks.archive");
+}
+
+export function canViewListArchive(
+  currentUser: Pick<TeamMember, "role" | "roleId">,
+  roles: TeamRole[],
+  isAdmin: boolean,
+): boolean {
+  return hasTeamActionPermission(
+    currentUser,
+    roles,
+    isAdmin,
+    "lists.archive.view",
+  );
+}
+
+export function canViewSubtaskArchive(
+  currentUser: Pick<TeamMember, "role" | "roleId">,
+  roles: TeamRole[],
+  isAdmin: boolean,
+): boolean {
+  return hasTeamActionPermission(
+    currentUser,
+    roles,
+    isAdmin,
+    "subtasks.archive.view",
+  );
+}
+
+export function canUploadSubtaskFiles(
+  currentUser: Pick<TeamMember, "role" | "roleId">,
+  roles: TeamRole[],
+  isAdmin: boolean,
+): boolean {
+  return hasTeamActionPermission(
+    currentUser,
+    roles,
+    isAdmin,
+    "files.upload.subtask",
+  );
+}
+
+export function canViewAttachments(
+  currentUser: Pick<TeamMember, "role" | "roleId">,
+  roles: TeamRole[],
+  isAdmin: boolean,
+): boolean {
+  return hasTeamActionPermission(currentUser, roles, isAdmin, "files.view");
+}
+
+export function canForwardAttachments(
+  currentUser: Pick<TeamMember, "role" | "roleId">,
+  roles: TeamRole[],
+  isAdmin: boolean,
+): boolean {
+  return hasTeamActionPermission(currentUser, roles, isAdmin, "files.forward");
+}
+
+export function canArchiveWorkItem(
+  task: { kind: string },
+  currentUser: Pick<TeamMember, "role" | "roleId">,
+  roles: TeamRole[],
+  isAdmin: boolean,
+): boolean {
+  if (task.kind === "subtask") return false;
+  return task.kind === "folder"
+    ? canArchiveFolders(currentUser, roles, isAdmin)
+    : canArchiveTasks(currentUser, roles, isAdmin);
 }
 
 export function isPendingTeamMember(

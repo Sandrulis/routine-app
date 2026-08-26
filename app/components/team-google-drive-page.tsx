@@ -17,7 +17,7 @@ import {
   startGoogleDriveOAuthAction,
 } from "@/app/lib/google-drive/actions";
 import type { GoogleDriveStatus } from "@/app/lib/google-drive/repository";
-import { canEditTeamSettings } from "@/app/lib/team";
+import { canConfigureTeamGoogleDrive } from "@/app/lib/team";
 import { useTeam } from "@/app/lib/team-store";
 import { useIsAdmin } from "@/app/lib/users/use-is-admin";
 import { DEFAULT_SYSTEM_NAME } from "@/app/lib/document-title";
@@ -39,7 +39,7 @@ export function TeamGoogleDrivePage() {
   const { showFeedback, clearFeedback } = useFeedbackToast();
   const { currentTeam, currentUser, roles, isReady } = useTeam();
   const { isAdmin } = useIsAdmin();
-  const canConfigureUi = canEditTeamSettings(currentUser, roles, isAdmin);
+  const canConfigureUi = canConfigureTeamGoogleDrive(currentUser, roles, isAdmin);
   const [status, setStatus] = useState<GoogleDriveStatus>(emptyStatus);
   const [folderPath, setFolderPath] = useState(DEFAULT_SYSTEM_NAME);
   const [enabled, setEnabled] = useState(false);

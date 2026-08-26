@@ -78,6 +78,11 @@ import {
 } from "@/app/lib/task-checklists";
 import { useTaskStatuses } from "@/app/lib/task-statuses";
 import { isListStatusGroup } from "@/app/lib/list-statuses";
+import {
+  canForwardAttachments,
+  canUploadSubtaskFiles,
+  canViewAttachments,
+} from "@/app/lib/team";
 
 async function fileToBase64(file: File): Promise<string> {
   const dataUrl = await new Promise<string>((resolve, reject) => {
@@ -264,7 +269,17 @@ export function SubtaskDetailModal({
   const { isAdmin } = useIsAdmin();
   const { isEnabled: isModuleEnabled } = useFrontendModules();
   const fileUploadsEnabled = isModuleEnabled(FRONTEND_MODULE_KEYS.fileUpload);
+  const canUploadAttachments =
+    fileUploadsEnabled &&
+    canUploadSubtaskFiles(currentUser, roles, isAdmin);
+  const canViewFiles =
+    fileUploadsEnabled && canViewAttachments(currentUser, roles, isAdmin);
+  const showAttachments = canViewFiles || canUploadAttachments;
   const sendFileEnabled = isModuleEnabled(FRONTEND_MODULE_KEYS.sendFile);
+  const canForwardFiles =
+    showAttachments &&
+    sendFileEnabled &&
+    canForwardAttachments(currentUser, roles, isAdmin);
   const checklistsEnabled = isModuleEnabled(FRONTEND_MODULE_KEYS.checklist);
   const [draft, setDraft] = useState<SubtaskDraft>(emptyDraft);
   const [createdTaskId, setCreatedTaskId] = useState<string | null>(null);
@@ -503,7 +518,7 @@ export function SubtaskDetailModal({
   }
 
   async function handleAddAttachments(selected: File[]) {
-    if (!fileUploadsEnabled) return;
+    if (!canUploadAttachments) return;
     if (isCreate ? !access.canCreateTasks : !access.canEditTasks) return;
     if (uploadProgress) return;
     if (task) {
@@ -1141,17 +1156,19 @@ export function SubtaskDetailModal({
               />
             ) : null}
 
-            {fileUploadsEnabled ? (
+            {showAttachments ? (
             <TaskAttachments
               key={`attachments-${task?.id ?? "create"}`}
               files={[
-                ...files.map((file) => ({
-                  id: file.id,
-                  name: file.name,
-                  mimeType: file.mimeType,
-                  size: file.size,
-                  previewUrl: taskFilePreviewUrl(file),
-                })),
+                ...(canViewFiles
+                  ? files.map((file) => ({
+                      id: file.id,
+                      name: file.name,
+                      mimeType: file.mimeType,
+                      size: file.size,
+                      previewUrl: taskFilePreviewUrl(file),
+                    }))
+                  : []),
                 ...pendingFiles.map((item) => ({
                   id: item.id,
                   name: item.name,
@@ -1164,7 +1181,8 @@ export function SubtaskDetailModal({
                 Boolean(uploadProgress) ||
                 (isCreate ? !access.canCreateTasks : !access.canEditTasks)
               }
-              forwardEnabled={resendEnabled && sendFileEnabled}
+              canUpload={canUploadAttachments && !Boolean(uploadProgress)}
+              forwardEnabled={resendEnabled && canForwardFiles}
               onAdd={(selected) => {
                 void handleAddAttachments(selected);
               }}
@@ -1251,7 +1269,7 @@ export function SubtaskDetailModal({
                                 "E-pasts netika piegādāts. Pārbaudi adresi un nosūti vēlreiz.",
                               )}
                             </p>
-                            {resendEnabled && sendFileEnabled ? (
+                            {resendEnabled && canForwardFiles ? (
                               <button
                                 type="button"
                                 onClick={() => requestForwardAgainFromHistory(item)}

@@ -1113,22 +1113,37 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "team.access.description":
       "Katrai lomai norādi, kuras sadaļas un darbības ir pieejamas.",
     "team.access.nav": "Sadaļas",
+    "team.access.column": "Pieejas",
     "team.access.toggle_all": "Visas pieejas: {section}",
     "team.access.groups.lists": "Saraksti un uzdevumi",
     "team.access.groups.templates": "Šabloni",
+    "team.access.groups.integrations": "Komandas integrācijas",
     "team.access.actions.lists_create": "Veidot sarakstus",
     "team.access.actions.lists_edit": "Labot sarakstus",
     "team.access.actions.lists_delete": "Dzēst sarakstus",
     "team.access.actions.lists_statuses": "Pārvaldīt saraksta statusus",
     "team.access.actions.lists_automations": "Pārvaldīt automatizācijas",
     "team.access.actions.tasks_manage": "Pārvaldīt uzdevumus",
+    "team.access.actions.subtasks_status_change": "Mainīt statusu apakšuzdevumam",
+    "team.access.actions.folders_create": "Pievienot mapi / apakšmapes",
+    "team.access.actions.folders_archive": "Arhivēt mapes",
+    "team.access.actions.tasks_archive": "Arhivēt uzdevumus",
+    "team.access.actions.lists_archive_view": "Apskatīt Saraksta arhīvu",
+    "team.access.actions.subtasks_archive_view": "Apskatīt Apakšuzdevumu arhīvu",
     "team.access.actions.files_upload": "Augšupielādēt failus",
+    "team.access.actions.files_upload_subtask":
+      "Augšupielādēt apakšuzdevumam pielikumus",
+    "team.access.actions.files_view": "Apskatīt Pielikumus",
+    "team.access.actions.files_forward": "Pārsūtīt pielikumus",
+    "team.access.actions.team_options": "Komandas opcijas",
     "team.access.actions.templates_manage": "Pārvaldīt šablonus",
     "team.access.actions.team_invite": "Uzaicināt lietotājus",
     "team.access.actions.team_members_remove": "Noņemt lietotājus",
     "team.access.actions.team_roles": "Pārvaldīt komandas lomas",
     "team.access.actions.team_permissions": "Pārvaldīt lomu pieejas",
     "team.access.actions.team_settings_edit": "Labot komandas datus",
+    "team.access.actions.team_integrations_google_drive": "Pārvaldīt Google Drive",
+    "team.access.actions.team_integrations_onedrive": "Pārvaldīt OneDrive",
     "team.access.actions.team_delete": "Dzēst komandu",
     "team.access.actions.settings_save": "Saglabāt uzstādījumus",
     "team.access.owner_locked":
@@ -1344,7 +1359,7 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "google_drive.not_configured":
       "Google OAuth integrācija nav konfigurēta (Administrācija → Integrācijas).",
     "google_drive.configure_owner_only":
-      "Integrāciju var mainīt tikai komandas īpašnieks vai lietotājs ar tiesībām labot komandas datus.",
+      "Integrāciju var mainīt tikai ar pieeju «Pārvaldīt Google Drive» (vai īpašnieks / sistēmas admin).",
     "google_drive.disconnect": "Atvienot Google kontu",
     "google_drive.disconnect.title": "Atvienot Google kontu?",
     "google_drive.disconnect.description":
@@ -1376,7 +1391,7 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "onedrive.not_configured":
       "Sistēmā nav iestatīts Microsoft OAuth (Administrācija → Integrācijas).",
     "onedrive.configure_owner_only":
-      "Integrāciju var mainīt tikai komandas īpašnieks vai lietotājs ar tiesībām labot komandas datus.",
+      "Integrāciju var mainīt tikai ar pieeju «Pārvaldīt OneDrive» (vai īpašnieks / sistēmas admin).",
     "onedrive.disconnect": "Atvienot Microsoft kontu",
     "onedrive.disconnect.title": "Atvienot Microsoft kontu?",
     "onedrive.disconnect.description":
@@ -1896,6 +1911,7 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "errors.files_forward_subject_required": "Ievadi e-pasta tēmu.",
     "errors.files_forward_reply_to_missing": "Tavam kontam nav derīgas e-pasta adreses atbildei (Reply-To).",
     "errors.files_forward_module_disabled": "Failu pārsūtīšana e-pastā nav ieslēgta.",
+    "errors.files_forward_forbidden": "Tev nav pieejas pārsūtīt pielikumus.",
     "errors.user_exists": "Lietotājs ar šo e-pastu jau eksistē.",
     "errors.user_create_failed": "Neizdevās izveidot lietotāju.",
     "errors.user_profile_failed": "Neizdevās saglabāt lietotāja profilu.",
@@ -1962,6 +1978,8 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "errors.extension_nothing_attached": "Nekas netika pievienots.",
     "errors.extension_search_failed": "Neizdevās meklēt apakšuzdevumus.",
     "errors.extension_uploads_disabled": "Failu augšupielāde ir izslēgta.",
+    "errors.extension_subtask_upload_forbidden":
+      "Tev nav pieejas pievienot pielikumus apakšuzdevumam.",
     "errors.extension_invalid_body": "Nederīgs pieprasījums.",
     "errors.extension_task_required": "Izvēlies apakšuzdevumu.",
     "errors.extension_title_required": "Ievadi apakšuzdevuma nosaukumu.",
@@ -3322,22 +3340,37 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "team.access.description":
       "Choose which sections and actions each role can use.",
     "team.access.nav": "Sections",
+    "team.access.column": "Access",
     "team.access.toggle_all": "All access: {section}",
     "team.access.groups.lists": "Lists and tasks",
     "team.access.groups.templates": "Templates",
+    "team.access.groups.integrations": "Team integrations",
     "team.access.actions.lists_create": "Create lists",
     "team.access.actions.lists_edit": "Edit lists",
     "team.access.actions.lists_delete": "Delete lists",
     "team.access.actions.lists_statuses": "Manage list statuses",
     "team.access.actions.lists_automations": "Manage automations",
     "team.access.actions.tasks_manage": "Manage tasks",
+    "team.access.actions.subtasks_status_change": "Change subtask status",
+    "team.access.actions.folders_create": "Add folder / subfolders",
+    "team.access.actions.folders_archive": "Archive folders",
+    "team.access.actions.tasks_archive": "Archive tasks",
+    "team.access.actions.lists_archive_view": "View list archive",
+    "team.access.actions.subtasks_archive_view": "View subtask archive",
     "team.access.actions.files_upload": "Upload files",
+    "team.access.actions.files_upload_subtask":
+      "Upload attachments to subtasks",
+    "team.access.actions.files_view": "View attachments",
+    "team.access.actions.files_forward": "Forward attachments",
+    "team.access.actions.team_options": "Team options",
     "team.access.actions.templates_manage": "Manage templates",
     "team.access.actions.team_invite": "Invite users",
     "team.access.actions.team_members_remove": "Remove users",
     "team.access.actions.team_roles": "Manage team roles",
     "team.access.actions.team_permissions": "Manage role access",
     "team.access.actions.team_settings_edit": "Edit team details",
+    "team.access.actions.team_integrations_google_drive": "Manage Google Drive",
+    "team.access.actions.team_integrations_onedrive": "Manage OneDrive",
     "team.access.actions.team_delete": "Delete team",
     "team.access.actions.settings_save": "Save settings",
     "team.access.owner_locked":
@@ -3550,7 +3583,7 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "google_drive.not_configured":
       "Google OAuth integration is not configured (Administration → Integrations).",
     "google_drive.configure_owner_only":
-      "Only the team owner or a user who can edit team settings can change this integration.",
+      "Only users with the Manage Google Drive permission can change this integration (or the owner / system admin).",
     "google_drive.disconnect": "Disconnect Google account",
     "google_drive.disconnect.title": "Disconnect Google account?",
     "google_drive.disconnect.description":
@@ -3582,7 +3615,7 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "onedrive.not_configured":
       "Microsoft OAuth is not configured (Administration → Integrations).",
     "onedrive.configure_owner_only":
-      "Only the team owner or a user who can edit team settings can change this integration.",
+      "Only users with the Manage OneDrive permission can change this integration (or the owner / system admin).",
     "onedrive.disconnect": "Disconnect Microsoft account",
     "onedrive.disconnect.title": "Disconnect Microsoft account?",
     "onedrive.disconnect.description":
@@ -4092,6 +4125,8 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "errors.files_forward_subject_required": "Enter an email subject.",
     "errors.files_forward_reply_to_missing": "Your account does not have a valid email address for Reply-To.",
     "errors.files_forward_module_disabled": "Sending files by email is not enabled.",
+    "errors.files_forward_forbidden":
+      "You do not have permission to forward attachments.",
     "errors.user_exists": "A user with this email already exists.",
     "errors.user_create_failed": "Could not create the user.",
     "errors.user_profile_failed": "Could not save the user profile.",
@@ -4157,6 +4192,8 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "errors.extension_nothing_attached": "Nothing was attached.",
     "errors.extension_search_failed": "Could not search subtasks.",
     "errors.extension_uploads_disabled": "File upload is disabled.",
+    "errors.extension_subtask_upload_forbidden":
+      "You do not have permission to attach files to a subtask.",
     "errors.extension_invalid_body": "Invalid request body.",
     "errors.extension_task_required": "Select a subtask.",
     "errors.extension_title_required": "Enter a subtask title.",

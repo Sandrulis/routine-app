@@ -11,7 +11,7 @@ import { useFeedbackToast } from "@/app/components/feedback-toast-provider";
 import { useTranslations } from "@/app/components/translations-provider";
 import { templateRootItems } from "@/app/lib/templates";
 import { useTemplates } from "@/app/lib/templates-store";
-import { canManageTemplates, hasTeamNavPermission } from "@/app/lib/team";
+import { canManageTemplates } from "@/app/lib/team";
 import { useTeam } from "@/app/lib/team-store";
 import { useIsAdmin } from "@/app/lib/users/use-is-admin";
 
@@ -21,12 +21,6 @@ export function TemplatesPage() {
   const { showFeedback } = useFeedbackToast();
   const { currentTeam, currentUser, roles } = useTeam();
   const { isAdmin } = useIsAdmin();
-  const canViewTemplates = hasTeamNavPermission(
-    currentUser,
-    roles,
-    isAdmin,
-    "templates",
-  );
   const canManage = canManageTemplates(currentUser, roles, isAdmin);
   const { templates, items, addTemplate, deleteTemplate, isReady } = useTemplates();
   const [createOpen, setCreateOpen] = useState(false);
@@ -55,7 +49,7 @@ export function TemplatesPage() {
     >
       {!isReady ? (
         <LoadingState />
-      ) : !canViewTemplates ? (
+      ) : !canManage ? (
         <div className="rounded-3xl border border-dashed border-zinc-200 bg-white px-6 py-12 text-center text-sm text-zinc-500">
           {t("team.access.denied", "Tev nav pieejas šai sadaļai.")}
         </div>

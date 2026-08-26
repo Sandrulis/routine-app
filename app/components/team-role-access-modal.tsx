@@ -54,19 +54,15 @@ export function TeamRoleAccessModal({
     [roles, selectedRole, t],
   );
 
-  function persistNav(key: keyof typeof permissions.nav, enabled: boolean) {
+  function persistAction(
+    updates: Partial<
+      Record<keyof NonNullable<typeof permissions>["actions"], boolean>
+    >,
+  ) {
     if (!selectedRole || isOwnerRole || !permissions) return;
     updateRolePermissions(selectedRole.id, {
       ...permissions,
-      nav: { ...permissions.nav, [key]: enabled },
-    });
-  }
-
-  function persistAction(key: keyof typeof permissions.actions, enabled: boolean) {
-    if (!selectedRole || isOwnerRole || !permissions) return;
-    updateRolePermissions(selectedRole.id, {
-      ...permissions,
-      actions: { ...permissions.actions, [key]: enabled },
+      actions: { ...permissions.actions, ...updates },
     });
   }
 
@@ -103,7 +99,6 @@ export function TeamRoleAccessModal({
             <TeamPermissionFields
               value={permissions}
               disabled={!canManage || isOwnerRole}
-              onNavChange={persistNav}
               onActionChange={persistAction}
             />
           </fieldset>

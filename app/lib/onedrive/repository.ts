@@ -111,7 +111,7 @@ export async function assertCanConfigureOneDrive(teamId: string, userId: string)
   const permissions = normalizeTeamPermissionSet(
     (roleRow as { permissions?: unknown } | null)?.permissions,
   );
-  if (!permissions.actions["team.settings.edit"]) {
+  if (!permissions.actions["team.integrations.onedrive"]) {
     return { ok: false as const, error: "errors.onedrive_forbidden" };
   }
   return { ok: true as const };

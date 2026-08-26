@@ -12,7 +12,7 @@ import {
   type WorkTemplateItem,
 } from "@/app/lib/templates";
 import { useTemplates } from "@/app/lib/templates-store";
-import { canManageTemplates, hasTeamNavPermission } from "@/app/lib/team";
+import { canManageTemplates } from "@/app/lib/team";
 import { useTeam } from "@/app/lib/team-store";
 import { useIsAdmin } from "@/app/lib/users/use-is-admin";
 
@@ -49,12 +49,6 @@ export function TemplateDetailPage({ templateId }: { templateId: string }) {
   const { templates, items: allItems, saveTemplate, isReady } = useTemplates();
   const { currentUser, roles } = useTeam();
   const { isAdmin } = useIsAdmin();
-  const canViewTemplates = hasTeamNavPermission(
-    currentUser,
-    roles,
-    isAdmin,
-    "templates",
-  );
   const canManage = canManageTemplates(currentUser, roles, isAdmin);
   const template = templates.find((item) => item.id === templateId) ?? null;
   const storedItems = allItems.filter((item) => item.templateId === templateId);
@@ -205,7 +199,7 @@ export function TemplateDetailPage({ templateId }: { templateId: string }) {
     );
   }
 
-  if (!canViewTemplates) {
+  if (!canManage) {
     return (
       <SectionPage
         title={t("nav.templates", "Šabloni")}

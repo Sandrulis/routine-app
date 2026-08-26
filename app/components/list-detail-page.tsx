@@ -20,6 +20,7 @@ import {
 } from "@/app/lib/list-access";
 import { WorkProgressLabel } from "@/app/components/work-progress";
 import { useTaskStatuses } from "@/app/lib/task-statuses";
+import { canViewListArchive } from "@/app/lib/team";
 
 export function ListDetailPage({ listId }: { listId: string }) {
   const { t } = useTranslations();
@@ -33,8 +34,12 @@ export function ListDetailPage({ listId }: { listId: string }) {
   );
   const [openedSubtaskId, setOpenedSubtaskId] = useState<string | null>(null);
   const [archiveOpen, setArchiveOpen] = useState(false);
+  const canViewArchive = canViewListArchive(currentUser, roles, isAdmin);
   const list = lists.find((item) => item.id === listId) ?? null;
-  const tasks = archiveOpen ? archivedListTasks(listId) : listTasks(listId);
+  const tasks =
+    archiveOpen && canViewArchive
+      ? archivedListTasks(listId)
+      : listTasks(listId);
   const listAccess = list
     ? resolveEffectiveListAccess(list, currentUser, roles, isAdmin)
     : resolveEffectiveListAccess(null, currentUser, roles, isAdmin);
@@ -90,14 +95,14 @@ export function ListDetailPage({ listId }: { listId: string }) {
         </span>
       }
       subtitle={
-        archiveOpen
+        archiveOpen && canViewArchive
           ? t("lists.archive.subtitle", "Arhivētie uzdevumi un mapes.")
           : list.description ||
             t("lists.detail.empty_description", "Šim sarakstam vēl nav apraksta.")
       }
       actions={
         <div className="flex items-center gap-2">
-          {listAccess.canCreateTasks && !archiveOpen ? (
+          {listAccess.canCreateTasks && !(archiveOpen && canViewArchive) ? (
             <button
               type="button"
               onClick={(event) =>
@@ -114,13 +119,15 @@ export function ListDetailPage({ listId }: { listId: string }) {
               {t("create.menu.title", "Izveidot")}
             </button>
           ) : null}
-          <IconActionButton
-            label={t("subtasks.archive", "Arhīvs")}
-            icon="fas fa-archive"
-            variant="muted"
-            pressed={archiveOpen}
-            onClick={() => setArchiveOpen((current) => !current)}
-          />
+          {canViewArchive ? (
+            <IconActionButton
+              label={t("subtasks.archive", "Arhīvs")}
+              icon="fas fa-archive"
+              variant="muted"
+              pressed={archiveOpen}
+              onClick={() => setArchiveOpen((current) => !current)}
+            />
+          ) : null}
         </div>
       }
     >
@@ -128,7 +135,7 @@ export function ListDetailPage({ listId }: { listId: string }) {
         listId={list.id}
         listName={list.name}
         tasks={tasks}
-        archivedView={archiveOpen}
+        archivedView={archiveOpen && canViewArchive}
         onOpenTask={(task) => {
           if (isWorkSubtask(task)) {
             setOpenedSubtaskId(task.id);

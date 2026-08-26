@@ -41,6 +41,7 @@ export function TaskAttachments({
   onForward,
   forwardEnabled = false,
   disabled = false,
+  canUpload = true,
   accept,
 }: {
   files: AttachmentItem[];
@@ -53,6 +54,8 @@ export function TaskAttachments({
   /** Show “Forward file” when Resend and module_send_file are enabled. */
   forwardEnabled?: boolean;
   disabled?: boolean;
+  /** When false, hide/disable the drop zone only (view/delete may still work). */
+  canUpload?: boolean;
   accept?: string;
 }) {
   const { t } = useTranslations();
@@ -75,7 +78,7 @@ export function TaskAttachments({
   }, [files.length]);
 
   function addFromList(list: FileList | File[] | null) {
-    if (disabled) return;
+    if (!canUpload || disabled) return;
     const selected = Array.from(list ?? []).filter((file) => file.size >= 0);
     if (selected.length === 0) return;
     const { allowed, rejected } = filterAllowedFiles(selected);
@@ -96,7 +99,7 @@ export function TaskAttachments({
   function handleDragEnter(event: DragEvent<HTMLLabelElement>) {
     event.preventDefault();
     event.stopPropagation();
-    if (disabled) return;
+    if (!canUpload || disabled) return;
     dragCountRef.current += 1;
     setDragging(true);
   }
@@ -143,45 +146,47 @@ export function TaskAttachments({
 
       {expanded ? (
         <div className="mt-3 space-y-3">
-          <div>
-            <label
-              className={`flex min-h-16 cursor-pointer items-center justify-center rounded-2xl border border-dashed px-4 py-4 text-center text-sm transition ${
-                dragging
-                  ? "border-blue-400 bg-blue-50 text-blue-700"
-                  : "border-zinc-300 bg-white text-zinc-500 hover:border-zinc-400"
-              } ${disabled ? "cursor-not-allowed opacity-60" : ""}`}
-              onDragEnter={handleDragEnter}
-              onDragOver={handleDragOver}
-              onDragLeave={handleDragLeave}
-              onDrop={handleDrop}
-            >
-              <input
-                ref={inputRef}
-                type="file"
-                multiple
-                accept={fileAccept}
-                disabled={disabled}
-                className="hidden"
-                onChange={(event) => {
-                  addFromList(event.target.files);
-                  event.target.value = "";
-                }}
-              />
-              <span>
-                {t("subtasks.attachments.drop", "Ievelc failus šeit vai")}{" "}
-                <span className="font-medium text-zinc-700 underline decoration-dotted underline-offset-4">
-                  {t("subtasks.attachments.browse", "pārlūko")}
+          {canUpload ? (
+            <div>
+              <label
+                className={`flex min-h-16 cursor-pointer items-center justify-center rounded-2xl border border-dashed px-4 py-4 text-center text-sm transition ${
+                  dragging
+                    ? "border-blue-400 bg-blue-50 text-blue-700"
+                    : "border-zinc-300 bg-white text-zinc-500 hover:border-zinc-400"
+                } ${disabled ? "cursor-not-allowed opacity-60" : ""}`}
+                onDragEnter={handleDragEnter}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+              >
+                <input
+                  ref={inputRef}
+                  type="file"
+                  multiple
+                  accept={fileAccept}
+                  disabled={disabled}
+                  className="hidden"
+                  onChange={(event) => {
+                    addFromList(event.target.files);
+                    event.target.value = "";
+                  }}
+                />
+                <span>
+                  {t("subtasks.attachments.drop", "Ievelc failus šeit vai")}{" "}
+                  <span className="font-medium text-zinc-700 underline decoration-dotted underline-offset-4">
+                    {t("subtasks.attachments.browse", "pārlūko")}
+                  </span>
                 </span>
-              </span>
-            </label>
-            <p className="mt-2 text-xs text-zinc-500">
-              {t(
-                "files.upload.allowed_types",
-                "Atļautie failu tipi: {types}",
-                { types: extensionsLabel },
-              )}
-            </p>
-          </div>
+              </label>
+              <p className="mt-2 text-xs text-zinc-500">
+                {t(
+                  "files.upload.allowed_types",
+                  "Atļautie failu tipi: {types}",
+                  { types: extensionsLabel },
+                )}
+              </p>
+            </div>
+          ) : null}
 
           {files.length > 0 ? (
             <ul className="flex flex-wrap gap-3">

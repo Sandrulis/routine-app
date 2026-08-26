@@ -17,7 +17,7 @@ import {
   startOneDriveOAuthAction,
 } from "@/app/lib/onedrive/actions";
 import type { OneDriveStatus } from "@/app/lib/onedrive/repository";
-import { canEditTeamSettings } from "@/app/lib/team";
+import { canConfigureTeamOneDrive } from "@/app/lib/team";
 import { useTeam } from "@/app/lib/team-store";
 import { useIsAdmin } from "@/app/lib/users/use-is-admin";
 import { DEFAULT_SYSTEM_NAME } from "@/app/lib/document-title";
@@ -38,7 +38,7 @@ export function TeamOneDrivePage() {
   const { showFeedback, clearFeedback } = useFeedbackToast();
   const { currentTeam, currentUser, roles, isReady } = useTeam();
   const { isAdmin } = useIsAdmin();
-  const canConfigureUi = canEditTeamSettings(currentUser, roles, isAdmin);
+  const canConfigureUi = canConfigureTeamOneDrive(currentUser, roles, isAdmin);
   const [status, setStatus] = useState<OneDriveStatus>(emptyStatus);
   const [folderPath, setFolderPath] = useState(DEFAULT_SYSTEM_NAME);
   const [enabled, setEnabled] = useState(false);

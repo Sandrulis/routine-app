@@ -97,7 +97,7 @@ import type { TaskFile } from "@/app/lib/task-activity";
 import { useLists } from "@/app/lib/lists-store";
 import { useListFiles } from "@/app/lib/use-list-files";
 import { useTeam } from "@/app/lib/team-store";
-import { hasTeamActionPermission } from "@/app/lib/team";
+import { canViewAttachments, hasTeamActionPermission } from "@/app/lib/team";
 import { useIsAdmin } from "@/app/lib/users/use-is-admin";
 import {
   resolveEffectiveListAccess,
@@ -497,10 +497,15 @@ function OverviewSubtaskRow({
   const { t } = useTranslations();
   const { colorFor, statuses } = useTaskStatuses(listId);
   const { taskFiles } = useLists();
+  const { currentUser, roles } = useTeam();
+  const { isAdmin } = useIsAdmin();
   const { isEnabled: isModuleEnabled } = useFrontendModules();
   const fileUploadsEnabled = isModuleEnabled(FRONTEND_MODULE_KEYS.fileUpload);
+  const canViewFiles = canViewAttachments(currentUser, roles, isAdmin);
   const hasAttachments =
-    fileUploadsEnabled && taskFiles(task.id).length > 0;
+    fileUploadsEnabled &&
+    canViewFiles &&
+    taskFiles(task.id).length > 0;
   const done = isClosedTaskStatus(task.status, statuses);
   const statusColor = colorFor(task.status);
   const {

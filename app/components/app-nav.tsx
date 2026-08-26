@@ -93,9 +93,12 @@ import {
   canManageTeamSettings,
   canOpenTeamPage,
   canEditTeamSettings,
+  canConfigureTeamGoogleDrive,
+  canConfigureTeamOneDrive,
+  canUseTeamOptions,
+  canArchiveWorkItem,
   confirmedTeamMembers,
   hasTeamActionPermission,
-  hasTeamNavPermission,
   memberDisplayName,
 } from "@/app/lib/team";
 
@@ -695,14 +698,6 @@ export function AppNav() {
     return resolveEffectiveListAccess(list, currentUser, roles, isAdmin);
   }
 
-  const canSeeDashboard = hasTeamNavPermission(
-    currentUser,
-    roles,
-    isAdmin,
-    "dashboard",
-  );
-  const canSeeLists = hasTeamNavPermission(currentUser, roles, isAdmin, "lists");
-  const canSeeTeam = hasTeamNavPermission(currentUser, roles, isAdmin, "team");
   const canOpenTeam = canOpenTeamPage(currentUser, roles, isAdmin);
   const canCreateLists = hasTeamActionPermission(
     currentUser,
@@ -719,14 +714,18 @@ export function AppNav() {
     "team.roles.manage",
   );
   const canSeeTemplates =
-    hasTeamNavPermission(currentUser, roles, isAdmin, "templates") &&
-    isModuleEnabled(FRONTEND_MODULE_KEYS.templates);
+    hasTeamActionPermission(
+      currentUser,
+      roles,
+      isAdmin,
+      "templates.manage",
+    ) && isModuleEnabled(FRONTEND_MODULE_KEYS.templates);
   const canSeeGoogleDrive =
-    canSeeTeam &&
+    canConfigureTeamGoogleDrive(currentUser, roles, isAdmin) &&
     isModuleEnabled(FRONTEND_MODULE_KEYS.googleDrive) &&
     isModuleEnabled(FRONTEND_MODULE_KEYS.fileUpload);
   const canSeeOneDrive =
-    canSeeTeam &&
+    canConfigureTeamOneDrive(currentUser, roles, isAdmin) &&
     isModuleEnabled(FRONTEND_MODULE_KEYS.onedrive) &&
     isModuleEnabled(FRONTEND_MODULE_KEYS.fileUpload);
   const canSeeBilling =
@@ -746,7 +745,8 @@ export function AppNav() {
       "lists.automations.manage",
     ) && isModuleEnabled(FRONTEND_MODULE_KEYS.automations);
   const showTeamMenu =
-    canManageRoles || canSeeTemplates || canSeeGoogleDrive || canSeeOneDrive;
+    canUseTeamOptions(currentUser, roles, isAdmin) &&
+    (canManageRoles || canSeeTemplates || canSeeGoogleDrive || canSeeOneDrive);
 
   function accessForListId(listId: string) {
     return accessForList(lists.find((item) => item.id === listId));
@@ -1154,16 +1154,13 @@ export function AppNav() {
         <TeamSwitcher />
 
         <nav className="min-h-0 flex-1 space-y-0.5 overflow-x-visible overflow-y-auto px-2 pb-3 [scrollbar-width:thin] [scrollbar-color:rgb(212_212_216)_transparent]">
-          {canSeeDashboard ? (
-            <Link href="/dashboard" className={rowClassName(isHome)}>
-              <span className="inline-flex size-5 shrink-0 items-center justify-center text-zinc-500">
-                <i className="fas fa-house text-[12px]" aria-hidden="true" />
-              </span>
-              <span>{t("nav.home", "Sākums")}</span>
-            </Link>
-          ) : null}
+          <Link href="/dashboard" className={rowClassName(isHome)}>
+            <span className="inline-flex size-5 shrink-0 items-center justify-center text-zinc-500">
+              <i className="fas fa-house text-[12px]" aria-hidden="true" />
+            </span>
+            <span>{t("nav.home", "Sākums")}</span>
+          </Link>
 
-          {canSeeLists ? (
           <NavTreeSection
             href="/lists"
             icon="fas fa-list-ul"
@@ -1286,9 +1283,8 @@ export function AppNav() {
               <LoadingState compact />
             )}
           </NavTreeSection>
-          ) : null}
 
-          {currentTeam || canSeeTeam ? (
+          {currentTeam ? (
           <NavTreeSection
             href={canOpenTeam ? "/team" : undefined}
             icon="fas fa-users"
@@ -1668,55 +1664,67 @@ export function AppNav() {
                       ]
                     : []),
                 ]
-              : itemMenuAccess.canEditTasks
-                ? [
-                    {
-                      id: "edit",
-                      icon: "fas fa-pen",
-                      title: t("actions.edit", "Labot"),
-                    },
-                    ...(itemMenuTask && isWorkSubtask(itemMenuTask)
-                      ? [
-                          {
-                            id: "status",
-                            icon: "fas fa-circle-dot",
-                            title: t("subtasks.table.status", "Statuss"),
-                          },
-                        ]
-                      : []),
-                    ...(itemMenuTask &&
-                    itemMenuTask.kind === "task" &&
-                    canManageListStatuses
-                      ? [
-                          {
-                            id: "statuses",
-                            icon: "fas fa-circle-dot",
-                            title: t("tasks.statuses.title", "Statusi"),
-                            description: t(
-                              "tasks.statuses.menu_description",
-                              "Uzdevuma apakšuzdevumu statusi",
-                            ),
-                          },
-                        ]
-                      : []),
-                    ...(itemMenuTask && !isWorkSubtask(itemMenuTask)
-                      ? [
-                          {
-                            id: "archive",
-                            icon: "fas fa-folder-open",
-                            title: t("actions.archive", "Arhivēt"),
-                          },
-                        ]
-                      : []),
-                    {
-                      id: "delete",
-                      icon: "fas fa-trash",
-                      title: t("actions.delete", "Dzēst"),
-                      danger: true,
-                      dividerBefore: true,
-                    },
-                  ]
-                : []
+              : [
+                  ...(itemMenuAccess.canEditTasks
+                    ? [
+                        {
+                          id: "edit",
+                          icon: "fas fa-pen",
+                          title: t("actions.edit", "Labot"),
+                        },
+                      ]
+                    : []),
+                  ...(itemMenuTask &&
+                  isWorkSubtask(itemMenuTask) &&
+                  itemMenuAccess.canChangeStatus
+                    ? [
+                        {
+                          id: "status",
+                          icon: "fas fa-circle-dot",
+                          title: t("subtasks.table.status", "Statuss"),
+                        },
+                      ]
+                    : []),
+                  ...(itemMenuTask &&
+                  itemMenuTask.kind === "task" &&
+                  itemMenuAccess.canEditTasks &&
+                  canManageListStatuses
+                    ? [
+                        {
+                          id: "statuses",
+                          icon: "fas fa-circle-dot",
+                          title: t("tasks.statuses.title", "Statusi"),
+                          description: t(
+                            "tasks.statuses.menu_description",
+                            "Uzdevuma apakšuzdevumu statusi",
+                          ),
+                        },
+                      ]
+                    : []),
+                  ...(itemMenuTask &&
+                  itemMenuAccess.canEditTasks &&
+                  !isWorkSubtask(itemMenuTask) &&
+                  canArchiveWorkItem(itemMenuTask, currentUser, roles, isAdmin)
+                    ? [
+                        {
+                          id: "archive",
+                          icon: "fas fa-folder-open",
+                          title: t("actions.archive", "Arhivēt"),
+                        },
+                      ]
+                    : []),
+                  ...(itemMenuAccess.canEditTasks
+                    ? [
+                        {
+                          id: "delete",
+                          icon: "fas fa-trash",
+                          title: t("actions.delete", "Dzēst"),
+                          danger: true,
+                          dividerBefore: true,
+                        },
+                      ]
+                    : []),
+                ]
         }
         onClose={() => setItemMenu(null)}
         onSelect={(id) => {
@@ -1736,7 +1744,11 @@ export function AppNav() {
               : null;
           setItemMenu(null);
           if (id === "status") {
-            if (task && isWorkSubtask(task)) {
+            if (
+              task &&
+              isWorkSubtask(task) &&
+              accessForListId(task.listId).canChangeStatus
+            ) {
               setStatusPicker({
                 taskId: task.id,
                 anchor: {
@@ -1779,7 +1791,12 @@ export function AppNav() {
             if (task) setDeleteTarget({ kind: "task", task });
             if (file) setDeleteTarget({ kind: "file", file });
           }
-          if (id === "archive" && task && !isWorkSubtask(task)) {
+          if (
+            id === "archive" &&
+            task &&
+            !isWorkSubtask(task) &&
+            canArchiveWorkItem(task, currentUser, roles, isAdmin)
+          ) {
             setWorkItemArchived(task.id, true);
             showFeedback({
               type: "success",
@@ -1804,6 +1821,12 @@ export function AppNav() {
         }
         onSelect={(next) => {
           if (!statusPickerTask) return;
+          if (
+            isWorkSubtask(statusPickerTask) &&
+            !accessForListId(statusPickerTask.listId).canChangeStatus
+          ) {
+            return;
+          }
           updateTask(statusPickerTask.id, { status: next });
         }}
         onClose={() => setStatusPicker(null)}

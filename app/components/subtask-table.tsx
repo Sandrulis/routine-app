@@ -48,7 +48,7 @@ import { isListStatusGroup, type ListStatusGroup } from "@/app/lib/list-statuses
 import { FRONTEND_MODULE_KEYS } from "@/app/lib/frontend-modules/keys";
 import { useFrontendModules } from "@/app/lib/frontend-modules/context";
 import { useLists } from "@/app/lib/lists-store";
-import { teamRankLabel } from "@/app/lib/team";
+import { canViewAttachments, teamRankLabel } from "@/app/lib/team";
 import { useTeam } from "@/app/lib/team-store";
 import { useIsAdmin } from "@/app/lib/users/use-is-admin";
 import {
@@ -1006,11 +1006,15 @@ function SortableSubtaskRow({
 }) {
   const { t } = useTranslations();
   const { taskFiles } = useLists();
+  const { currentUser, roles } = useTeam();
+  const { isAdmin } = useIsAdmin();
   const { isEnabled: isModuleEnabled } = useFrontendModules();
   const checklistsEnabled = isModuleEnabled(FRONTEND_MODULE_KEYS.checklist);
   const fileUploadsEnabled = isModuleEnabled(FRONTEND_MODULE_KEYS.fileUpload);
   const hasAttachments =
-    fileUploadsEnabled && taskFiles(task.id).length > 0;
+    fileUploadsEnabled &&
+    canViewAttachments(currentUser, roles, isAdmin) &&
+    taskFiles(task.id).length > 0;
   const { colorFor, statuses, groupKeyFor } = useTaskStatuses(listId, parentTaskId);
   const deleted = isTaskDeleted(task);
   const closed = isClosedTaskStatus(task.status, statuses);

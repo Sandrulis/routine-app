@@ -23,9 +23,7 @@ export const KNOWN_FRONTEND_MODULE_KEYS = Object.values(FRONTEND_MODULE_KEYS);
 /** Nav permission keys gated by a frontend module. */
 export const NAV_FRONTEND_MODULE_KEYS: Partial<
   Record<TeamNavPermissionKey, FrontendModuleKey>
-> = {
-  templates: FRONTEND_MODULE_KEYS.templates,
-};
+> = {};
 
 /** Action permission keys gated by a frontend module. */
 export const ACTION_FRONTEND_MODULE_KEYS: Partial<
@@ -33,6 +31,10 @@ export const ACTION_FRONTEND_MODULE_KEYS: Partial<
 > = {
   "lists.automations.manage": FRONTEND_MODULE_KEYS.automations,
   "files.upload": FRONTEND_MODULE_KEYS.fileUpload,
+  "files.upload.subtask": FRONTEND_MODULE_KEYS.fileUpload,
+  "files.view": FRONTEND_MODULE_KEYS.fileUpload,
+  "files.forward": FRONTEND_MODULE_KEYS.sendFile,
+  "templates.manage": FRONTEND_MODULE_KEYS.templates,
 };
 
 export function knownFrontendModuleLabel(

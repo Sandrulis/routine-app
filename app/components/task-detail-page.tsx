@@ -23,6 +23,7 @@ import {
 import { WorkItemArchiveButton } from "@/app/components/work-item-archive-button";
 import { WorkProgressLabel } from "@/app/components/work-progress";
 import { useTaskStatuses } from "@/app/lib/task-statuses";
+import { canViewSubtaskArchive } from "@/app/lib/team";
 
 const ListWindowsBoard = dynamic(
   () =>
@@ -50,6 +51,7 @@ export function TaskDetailPage({
   const [createSubtaskOpen, setCreateSubtaskOpen] = useState(false);
   const [boardSubtaskId, setBoardSubtaskId] = useState<string | null>(null);
   const [archiveOpen, setArchiveOpen] = useState(false);
+  const canViewArchive = canViewSubtaskArchive(currentUser, roles, isAdmin);
   const list = lists.find((item) => item.id === listId) ?? null;
   const listAccess = list
     ? resolveEffectiveListAccess(list, currentUser, roles, isAdmin)
@@ -148,7 +150,7 @@ export function TaskDetailPage({
               {t("create.menu.title", "Izveidot")}
             </button>
           ) : undefined
-        ) : (
+        ) : canViewArchive ? (
           <IconActionButton
             label={t("subtasks.archive", "Arhīvs")}
             icon="fas fa-archive"
@@ -156,7 +158,7 @@ export function TaskDetailPage({
             pressed={archiveOpen}
             onClick={() => setArchiveOpen((current) => !current)}
           />
-        )
+        ) : undefined
       }
     >
       {isFolder ? (
@@ -171,7 +173,7 @@ export function TaskDetailPage({
           <GroupedSubtaskTables
             listId={list.id}
             tasks={children}
-            includeClosed={archiveOpen}
+            includeClosed={archiveOpen && canViewArchive}
             onOpenTask={(task) => {
               router.push(`/lists/${list.id}/tasks/${task.id}`);
             }}

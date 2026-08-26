@@ -15,6 +15,7 @@ import {
 import { textLooksLikeHtml } from "@/app/lib/email-file-preview";
 import { GOOGLE_DRIVE_UPLOAD_MAX_BYTES } from "@/app/lib/google-drive/env";
 import { uploadTeamFileToGoogleDrive } from "@/app/lib/google-drive/uploader";
+import { assertTeamActionPermission } from "@/app/lib/team/assert-team-action";
 import type { User, SupabaseClient } from "@supabase/supabase-js";
 
 /** Extension uploads follow Drive max (25 MB); DB content stays ≤ 1.5 MB. */
@@ -259,6 +260,17 @@ export async function attachFilesToSubtask(input: {
   }
 
   const teamId = task.team_id as string;
+  const allowed = await assertTeamActionPermission(
+    input.supabase,
+    teamId,
+    input.user.id,
+    "files.upload.subtask",
+    "errors.extension_subtask_upload_forbidden",
+  );
+  if (!allowed.ok) {
+    return { ok: false, error: allowed.error, status: 403 };
+  }
+
   const pathParts = await drivePathPartsForSubtask(input.supabase, {
     id: task.id as string,
     title: String(task.title || ""),

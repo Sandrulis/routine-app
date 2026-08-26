@@ -25,6 +25,7 @@ export const EXTENSION_I18N_KEYS = [
   "errors.extension_nothing_attached",
   "errors.extension_search_failed",
   "errors.extension_uploads_disabled",
+  "errors.extension_subtask_upload_forbidden",
   "errors.extension_invalid_body",
   "errors.extension_task_required",
   "errors.extension_title_required",

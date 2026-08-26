@@ -38,6 +38,8 @@
   "errors.extension_nothing_attached": "Nekas netika pievienots.",
   "errors.extension_search_failed": "Meklēšana neizdevās.",
   "errors.extension_uploads_disabled": "Failu augšupielāde TASQIN ir izslēgta.",
+  "errors.extension_subtask_upload_forbidden":
+    "Tev nav pieejas pievienot pielikumus apakšuzdevumam.",
   "errors.extension_invalid_body": "Nederīgs pieprasījums.",
   "errors.extension_task_required": "Izvēlies apakšuzdevumu.",
   "errors.extension_list_required": "Izvēlies sarakstu.",

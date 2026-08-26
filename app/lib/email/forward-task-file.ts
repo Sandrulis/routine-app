@@ -15,10 +15,12 @@ import { assertListAccess } from "@/app/lib/lists/assert-list-access";
 import { logError } from "@/app/lib/security/log-error";
 import { getSiteSettings } from "@/app/lib/site-admin/repository";
 import { createAdminClient } from "@/app/lib/supabase/admin";
+import { createClient } from "@/app/lib/supabase/server";
 import {
   isSupabaseAdminConfigured,
   isSupabaseConfigured,
 } from "@/app/lib/supabase/env";
+import { assertTeamActionPermission } from "@/app/lib/team/assert-team-action";
 import {
   createActivity,
   type TaskActivity,
@@ -390,6 +392,31 @@ export async function forwardTaskFileAction(input: {
       mimeType: input.mimeType?.trim() || "application/octet-stream",
       contentBase64,
     };
+    if (taskId && isSupabaseAdminConfigured()) {
+      const admin = createAdminClient();
+      const { data: taskRow } = await admin
+        .from("work_tasks")
+        .select("team_id")
+        .eq("id", taskId)
+        .maybeSingle();
+      teamId = String(taskRow?.team_id || "").trim();
+    }
+  }
+
+  if (!teamId) {
+    return { ok: false, error: "errors.files_forward_missing" };
+  }
+
+  const supabase = await createClient();
+  const forwardAllowed = await assertTeamActionPermission(
+    supabase,
+    teamId,
+    user.id,
+    "files.forward",
+    "errors.files_forward_forbidden",
+  );
+  if (!forwardAllowed.ok) {
+    return { ok: false, error: forwardAllowed.error };
   }
 
   const settings = await getSiteSettings();

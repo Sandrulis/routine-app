@@ -33,9 +33,9 @@ import { useTemplates } from "@/app/lib/templates-store";
 import { useListFiles } from "@/app/lib/use-list-files";
 import { useFileTypes } from "@/app/lib/file-types-context";
 import {
+  canCreateFolders,
   canManageTemplates,
   hasTeamActionPermission,
-  hasTeamNavPermission,
 } from "@/app/lib/team";
 import { useTeam } from "@/app/lib/team-store";
 import { useIsAdmin } from "@/app/lib/users/use-is-admin";
@@ -77,9 +77,9 @@ export function ParentCreateFlow({
   const onedriveEnabled =
     fileUploadsEnabled && isModuleEnabled(FRONTEND_MODULE_KEYS.onedrive);
   const canApplyTemplate =
-    hasTeamNavPermission(currentUser, roles, isAdmin, "templates") &&
     canManageTemplates(currentUser, roles, isAdmin) &&
     isModuleEnabled(FRONTEND_MODULE_KEYS.templates);
+  const canCreateFolder = canCreateFolders(currentUser, roles, isAdmin);
   const canUploadFiles =
     hasTeamActionPermission(
       currentUser,
@@ -112,8 +112,14 @@ export function ParentCreateFlow({
       return;
     }
 
+    if (id === "folder") {
+      if (!canCreateFolder) return;
+      setStep("folder");
+      return;
+    }
+
     if (id === "template") {
-      if (!templatesReady) return;
+      if (!canApplyTemplate || !templatesReady) return;
       if (templates.length === 0) {
         showFeedback({
           type: "info",
@@ -130,7 +136,7 @@ export function ParentCreateFlow({
       return;
     }
 
-    setStep(id === "folder" ? "folder" : "task");
+    setStep("task");
   }
 
   async function handleFiles(event: ChangeEvent<HTMLInputElement>) {
@@ -265,22 +271,26 @@ export function ParentCreateFlow({
         anchor={context?.anchor ?? null}
         title={t("create.menu.title", "Izveidot")}
         items={[
-          {
-            id: "folder",
-            icon: "far fa-folder",
-            title: isFolder
-              ? t("create.subfolder.title", "Apakšmape")
-              : t("create.folder.title", "Mape"),
-            description: isFolder
-              ? t(
-                  "create.subfolder.description",
-                  "Grupē uzdevumu sarakstus un failus šajā mapē",
-                )
-              : t(
-                  "create.folder.description",
-                  "Grupē sarakstus, dokumentus un vairāk",
-                ),
-          },
+          ...(canCreateFolder
+            ? [
+                {
+                  id: "folder",
+                  icon: "far fa-folder",
+                  title: isFolder
+                    ? t("create.subfolder.title", "Apakšmape")
+                    : t("create.folder.title", "Mape"),
+                  description: isFolder
+                    ? t(
+                        "create.subfolder.description",
+                        "Grupē uzdevumu sarakstus un failus šajā mapē",
+                      )
+                    : t(
+                        "create.folder.description",
+                        "Grupē sarakstus, dokumentus un vairāk",
+                      ),
+                },
+              ]
+            : []),
           {
             id: "task",
             icon: "fas fa-list-check",
@@ -412,6 +422,7 @@ export function ParentCreateFlow({
         submitLabel={t("actions.add", "Pievienot")}
         onCreate={(input) => {
           if (!context) return;
+          if (step === "folder" && !canCreateFolder) return;
           const task = addTask({
             listId: context.listId,
             parentId: context.parentId,
@@ -421,8 +432,8 @@ export function ParentCreateFlow({
           });
           if (
             step === "folder" &&
-            isModuleEnabled(FRONTEND_MODULE_KEYS.automations) &&
-            isModuleEnabled(FRONTEND_MODULE_KEYS.templates)
+            canApplyTemplate &&
+            isModuleEnabled(FRONTEND_MODULE_KEYS.automations)
           ) {
             for (const rule of activeFolderCreatedTemplateAutomations(
               listAutomations,

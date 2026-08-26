@@ -130,7 +130,7 @@ export async function assertCanConfigureGoogleDrive(teamId: string, userId: stri
   const permissions = normalizeTeamPermissionSet(
     (roleRow as { permissions?: unknown } | null)?.permissions,
   );
-  if (!permissions.actions["team.settings.edit"]) {
+  if (!permissions.actions["team.integrations.google_drive"]) {
     return { ok: false as const, error: "errors.google_drive_forbidden" };
   }
   return { ok: true as const };

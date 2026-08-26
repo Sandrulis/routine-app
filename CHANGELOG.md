@@ -7,6 +7,10 @@
 ## v0.3.1
 
 - Vietnes **Iziet** (un MFA atcelšana) lieto Supabase `signOut({ scope: "local" })`, lai neatceltu Gmail spraudņa `refresh_token` / `chrome.storage` sesiju
+- Komandas pieejas: atsevišķi `team.integrations.google_drive` / `team.integrations.onedrive`; Sākums, Saraksts un Uzstādījumi vienmēr pieejami; `templates.manage` un `team.options` zem **Komanda**
+- Lomu pieeju grupas slēdzis saglabā visas apakšpieejas vienā atjauninājumā
+- Jaunas pieejas: `folders.create`, `folders.archive` / `tasks.archive`, `lists.archive.view`, `subtasks.archive.view`, `files.upload.subtask`, `files.view`, `files.forward`, `subtasks.status.change`
+- Bez `files.upload.subtask` apakšuzdevuma drag-and-drop zona netiek rādīta; Gmail spraudnis rāda pieejas kļūdu; sānjoslas statuss prasa `subtasks.status.change`
 
 ## v0.3.0
 

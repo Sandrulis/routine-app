@@ -5,10 +5,7 @@ import { useTranslations } from "@/app/components/translations-provider";
 import {
   TEAM_ACTION_PERMISSION_GROUPS,
   TEAM_ACTION_PERMISSION_LABELS,
-  TEAM_NAV_PERMISSION_KEYS,
-  TEAM_NAV_PERMISSION_LABELS,
   type TeamActionPermissionKey,
-  type TeamNavPermissionKey,
   type TeamPermissionSet,
 } from "@/app/lib/team-permissions";
 
@@ -45,62 +42,43 @@ function PermissionGroupHeader({
 export function TeamPermissionFields({
   value,
   disabled = false,
-  onNavChange,
   onActionChange,
 }: {
   value: TeamPermissionSet;
   disabled?: boolean;
-  onNavChange: (key: TeamNavPermissionKey, enabled: boolean) => void;
-  onActionChange: (key: TeamActionPermissionKey, enabled: boolean) => void;
+  /** One or many action keys in a single update (group toggle must be atomic). */
+  onActionChange: (
+    updates: Partial<Record<TeamActionPermissionKey, boolean>>,
+  ) => void;
 }) {
   const { t } = useTranslations();
 
-  const navTitle = t("team.access.nav", "Sadaļas");
-  const sections = [
-    {
-      key: "nav",
-      title: navTitle,
-      checked: allEnabled(TEAM_NAV_PERMISSION_KEYS.map((key) => value.nav[key])),
+  const sections = TEAM_ACTION_PERMISSION_GROUPS.map((group) => {
+    const groupTitle = t(group.titleKey, group.title);
+    return {
+      key: group.titleKey,
+      title: groupTitle,
+      checked: allEnabled(group.keys.map((key) => value.actions[key])),
       onToggle: (checked: boolean) => {
-        for (const key of TEAM_NAV_PERMISSION_KEYS) {
-          onNavChange(key, checked);
-        }
+        onActionChange(
+          Object.fromEntries(
+            group.keys.map((key) => [key, checked]),
+          ) as Partial<Record<TeamActionPermissionKey, boolean>>,
+        );
       },
-      items: TEAM_NAV_PERMISSION_KEYS.map((key) => {
-        const label = TEAM_NAV_PERMISSION_LABELS[key];
+      items: group.keys.map((key) => {
+        const label = TEAM_ACTION_PERMISSION_LABELS[key];
         return {
           key,
           label: t(label.key, label.fallback),
-          checked: value.nav[key],
-          onChange: (checked: boolean) => onNavChange(key, checked),
+          checked: value.actions[key],
+          onChange: (checked: boolean) => onActionChange({ [key]: checked }),
         };
       }),
-    },
-    ...TEAM_ACTION_PERMISSION_GROUPS.map((group) => {
-      const groupTitle = t(group.titleKey, group.title);
-      return {
-        key: group.titleKey,
-        title: groupTitle,
-        checked: allEnabled(group.keys.map((key) => value.actions[key])),
-        onToggle: (checked: boolean) => {
-          for (const key of group.keys) {
-            onActionChange(key, checked);
-          }
-        },
-        items: group.keys.map((key) => {
-          const label = TEAM_ACTION_PERMISSION_LABELS[key];
-          return {
-            key,
-            label: t(label.key, label.fallback),
-            checked: value.actions[key],
-            onChange: (checked: boolean) => onActionChange(key, checked),
-          };
-        }),
-      };
-    }),
-  ];
+    };
+  });
 
-  const leftColumnKeys = new Set(["nav", "team.access.groups.templates", "nav.settings"]);
+  const leftColumnKeys = new Set(["team.access.groups.lists"]);
   const leftSections = sections.filter((section) => leftColumnKeys.has(section.key));
   const rightSections = sections.filter((section) => !leftColumnKeys.has(section.key));
 
