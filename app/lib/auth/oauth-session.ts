@@ -111,18 +111,38 @@ function isExistingUserError(message: string) {
   );
 }
 
-function oauthProviderMatches(
+function listAuthProviders(user: {
+  app_metadata?: { provider?: unknown; providers?: unknown } | null;
+}): string[] {
+  const metadata = user.app_metadata ?? {};
+  const providers = Array.isArray(metadata.providers)
+    ? metadata.providers
+        .map((item) => String(item).trim().toLowerCase())
+        .filter(Boolean)
+    : [];
+  const stored = String(metadata.provider ?? "").trim().toLowerCase();
+  if (stored && !providers.includes(stored)) {
+    providers.push(stored);
+  }
+  return providers;
+}
+
+function mergeOAuthAppMetadata(
   user: {
-    app_metadata?: { provider?: unknown; providers?: unknown };
+    app_metadata?: Record<string, unknown> | null;
   },
   provider: "google" | "microsoft",
 ) {
-  const metadata = user.app_metadata ?? {};
-  const stored = String(metadata.provider ?? "").trim().toLowerCase();
-  const providers = Array.isArray(metadata.providers)
-    ? metadata.providers.map((item) => String(item).trim().toLowerCase())
-    : [];
-  return stored === provider || (providers.length === 1 && providers[0] === provider);
+  const existing = { ...(user.app_metadata ?? {}) };
+  const providers = new Set(listAuthProviders(user));
+  providers.add(provider);
+  // Keep the original primary when present; always record this OAuth method.
+  const primary = String(existing.provider ?? "").trim().toLowerCase();
+  return {
+    ...existing,
+    provider: primary || provider,
+    providers: Array.from(providers),
+  };
 }
 
 async function findOrCreateOAuthUser(profile: OAuthSignInProfile) {
@@ -142,6 +162,14 @@ async function findOrCreateOAuthUser(profile: OAuthSignInProfile) {
   });
 
   if (created.data.user) {
+    // createUser with a password can mark the identity as email — keep OAuth
+    // provider metadata explicit for later sign-ins.
+    await admin.auth.admin.updateUserById(created.data.user.id, {
+      app_metadata: {
+        provider: profile.provider,
+        providers: [profile.provider],
+      },
+    });
     return {
       ok: true as const,
       userId: created.data.user.id,
@@ -163,16 +191,23 @@ async function findOrCreateOAuthUser(profile: OAuthSignInProfile) {
     return { ok: false as const, reason: "failed" as const };
   }
 
-  if (!oauthProviderMatches(data.user, profile.provider)) {
-    return { ok: false as const, reason: "account_exists" as const };
-  }
-
+  // Google/Microsoft already verified email ownership — allow sign-in into an
+  // existing password (or other) account with the same email, and link methods.
   const merged = buildOAuthUserMetadata(
     profile,
     (data.user.user_metadata ?? null) as Record<string, unknown> | null,
   );
   await admin.auth.admin.updateUserById(data.user.id, {
     user_metadata: merged,
+    app_metadata: mergeOAuthAppMetadata(
+      {
+        app_metadata: (data.user.app_metadata ?? null) as Record<
+          string,
+          unknown
+        > | null,
+      },
+      profile.provider,
+    ),
   });
 
   return {
@@ -290,14 +325,6 @@ export async function completeOAuthSignIn(
     familyName: resolvedNames.familyName,
   });
   if (!prepared.ok) {
-    if (prepared.reason === "account_exists") {
-      return oauthSignInErrorRedirect(
-        input.origin,
-        input.errorPage,
-        input.profile.provider,
-        "account_exists",
-      );
-    }
     return fail();
   }
 
