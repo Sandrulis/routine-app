@@ -112,6 +112,17 @@ export function TaskDetailPage({
             />
           ) : null}
           {!isSubtask ? <WorkItemArchiveButton task={parent} /> : null}
+          {!isSubtask &&
+          !isFolder &&
+          listAccess.canCreateTasks &&
+          !archived ? (
+            <IconActionButton
+              label={t("subtasks.add.title", "Jauns apakšuzdevums")}
+              icon="fas fa-plus"
+              variant="muted"
+              onClick={() => setCreateSubtaskOpen(true)}
+            />
+          ) : null}
         </span>
       }
       subtitle={
@@ -138,25 +149,13 @@ export function TaskDetailPage({
             </button>
           ) : undefined
         ) : (
-          <div className="flex items-center gap-2">
-            {listAccess.canCreateTasks && !archived ? (
-              <button
-                type="button"
-                onClick={() => setCreateSubtaskOpen(true)}
-                className="inline-flex min-h-10 items-center justify-center gap-2 rounded-2xl bg-blue-700 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-800"
-              >
-                <i className="fas fa-plus text-xs" aria-hidden="true" />
-                {t("actions.add", "Pievienot")}
-              </button>
-            ) : null}
-            <IconActionButton
-              label={t("subtasks.archive", "Arhīvs")}
-              icon="fas fa-archive"
-              variant="delete"
-              pressed={archiveOpen}
-              onClick={() => setArchiveOpen((current) => !current)}
-            />
-          </div>
+          <IconActionButton
+            label={t("subtasks.archive", "Arhīvs")}
+            icon="fas fa-archive"
+            variant="delete"
+            pressed={archiveOpen}
+            onClick={() => setArchiveOpen((current) => !current)}
+          />
         )
       }
     >

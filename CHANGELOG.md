@@ -6,6 +6,7 @@
 
 ## v0.2.41
 
+- Uzdevuma galvenē aiz nosaukuma un arhīva pogas ir `+`, kas atver jauna apakšuzdevuma modāli
 - Google/Microsoft OAuth ielaiž esošu kontu ar to pašu verificēto e-pastu (vairs nerāda „e-pasts jau reģistrēts”, ja konts bija ar paroli)
 - Visās 15 sistēmas valodās ir pilns tulkojumu komplekts; `npm run i18n:check` CI krīt, ja kāda atslēga vai `{placeholder}` atpaliek
 - Nederīga Stripe atslēga rāda globālu baneri tikai sistēmas administratoriem (`is_admin`), ne komandas vadītājiem; saite uz Integrācijām

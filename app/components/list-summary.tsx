@@ -2,15 +2,30 @@
 
 import { memo, useMemo, useState } from "react";
 import { GroupedSubtaskTables } from "@/app/components/grouped-subtask-tables";
+import { IconActionButton } from "@/app/components/icon-action-button";
 import { UserAvatar } from "@/app/components/user-avatar";
 import { OptionalTooltip } from "@/app/components/tooltip";
 import { useDisplayPreferences } from "@/app/components/display-preferences-provider";
+import { SubtaskDetailModal } from "@/app/components/subtask-detail-modal";
 import { useTranslations } from "@/app/components/translations-provider";
 import { sortTasksLikeNavTree } from "@/app/lib/list-statuses";
-import { formatTaskLocationPath, getTaskAncestors, isTaskActiveInLists, isTaskDeleted, isWorkFolder, workItemIcon, workProgressById, type WorkProgress, type WorkTask } from "@/app/lib/lists";
+import {
+  formatTaskLocationPath,
+  getTaskAncestors,
+  isTaskActiveInLists,
+  isTaskDeleted,
+  isWorkFolder,
+  isWorkItemArchived,
+  workItemIcon,
+  workProgressById,
+  type WorkProgress,
+  type WorkTask,
+} from "@/app/lib/lists";
+import { resolveEffectiveListAccess } from "@/app/lib/list-access";
 import { useLists } from "@/app/lib/lists-store";
 import { useTaskStatuses } from "@/app/lib/task-statuses";
 import { useTeam } from "@/app/lib/team-store";
+import { useIsAdmin } from "@/app/lib/users/use-is-admin";
 import { WorkItemArchiveButton } from "@/app/components/work-item-archive-button";
 import { WorkProgressBar, WorkProgressLabel } from "@/app/components/work-progress";
 
@@ -41,7 +56,9 @@ const TaskSummarySection = memo(function TaskSummarySection({
   nested = false,
   archivedView = false,
   progress,
+  canCreateSubtasks,
   onOpenTask,
+  onAddSubtask,
 }: {
   listId: string;
   listName: string;
@@ -50,7 +67,9 @@ const TaskSummarySection = memo(function TaskSummarySection({
   nested?: boolean;
   archivedView?: boolean;
   progress: Map<string, WorkProgress>;
+  canCreateSubtasks: boolean;
   onOpenTask: (task: WorkTask) => void;
+  onAddSubtask: (task: WorkTask) => void;
 }) {
   const { t } = useTranslations();
   const { formatDate } = useDisplayPreferences();
@@ -58,6 +77,11 @@ const TaskSummarySection = memo(function TaskSummarySection({
   const { tasks, childTasks, subtasks } = useLists();
   const [expanded, setExpanded] = useState(defaultExpanded);
   const folder = isWorkFolder(task);
+  const showAddSubtask =
+    canCreateSubtasks &&
+    !folder &&
+    !archivedView &&
+    !isWorkItemArchived(task);
   const { statuses } = useTaskStatuses(listId, folder ? null : task.id);
   const children = sortTasksLikeNavTree(subtasks(task.id), statuses);
   const nestedItems = sortTasksLikeNavTree(
@@ -133,6 +157,18 @@ const TaskSummarySection = memo(function TaskSummarySection({
             </button>
           </OptionalTooltip>
           <WorkItemArchiveButton task={task} />
+          {showAddSubtask ? (
+            <IconActionButton
+              label={t("subtasks.add.title", "Jauns apakšuzdevums")}
+              icon="fas fa-plus"
+              variant="muted"
+              onClick={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                onAddSubtask(task);
+              }}
+            />
+          ) : null}
         </div>
         <div className="flex shrink-0 items-center gap-2">
           {itemProgress ? <WorkProgressLabel progress={itemProgress} /> : null}
@@ -179,7 +215,9 @@ const TaskSummarySection = memo(function TaskSummarySection({
                   nested
                   archivedView={archivedView}
                   progress={progress}
+                  canCreateSubtasks={canCreateSubtasks}
                   onOpenTask={onOpenTask}
+                  onAddSubtask={onAddSubtask}
                 />
               ))}
             </div>
@@ -225,8 +263,19 @@ export function ListSummary({
   onOpenTask: (task: WorkTask) => void;
 }) {
   const { t } = useTranslations();
-  const { tasks: allTasks } = useLists();
+  const { lists, tasks: allTasks } = useLists();
+  const { currentUser, roles } = useTeam();
+  const { isAdmin } = useIsAdmin();
   const { statuses } = useTaskStatuses(listId);
+  const [createFor, setCreateFor] = useState<{
+    listId: string;
+    parentId: string;
+  } | null>(null);
+  const list = lists.find((item) => item.id === listId) ?? null;
+  const canCreateSubtasks = list
+    ? resolveEffectiveListAccess(list, currentUser, roles, isAdmin)
+        .canCreateTasks
+    : false;
   const progressById = useMemo(
     () => workProgressById(allTasks, statuses),
     [allTasks, statuses],
@@ -254,9 +303,22 @@ export function ListSummary({
           defaultExpanded={index === 0}
           archivedView={archivedView}
           progress={progressById}
+          canCreateSubtasks={canCreateSubtasks}
           onOpenTask={onOpenTask}
+          onAddSubtask={(parent) =>
+            setCreateFor({ listId: parent.listId, parentId: parent.id })
+          }
         />
       ))}
+
+      <SubtaskDetailModal
+        taskId={null}
+        createFor={createFor}
+        open={createFor !== null}
+        onOpenChange={(open) => {
+          if (!open) setCreateFor(null);
+        }}
+      />
     </div>
   );
 }
