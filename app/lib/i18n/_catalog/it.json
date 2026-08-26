@@ -1834,5 +1834,21 @@
   "auth.password.fair": "Discreta",
   "auth.password.good": "Buona",
   "auth.password.strong": "Forte",
-  "auth.signup.password_too_weak": "La password è troppo debole. Usa maiuscole, minuscole, numeri e un carattere speciale."
+  "auth.signup.password_too_weak": "La password è troppo debole. Usa maiuscole, minuscole, numeri e un carattere speciale.",
+  "errors.billing_checkout_invalid": "La sessione di pagamento non è valida o è incompleta.",
+  "team.invite.purchasing_seat": "Acquisto posto…",
+  "team.invite.seat_purchased_title": "Posto acquistato",
+  "team.invite.seat_purchased_description": "Un posto a pagamento è pronto. Ora puoi invitare un utente.",
+  "notifications.dismiss_all": "Elimina tutti",
+  "notifications.dismiss_all_title": "Eliminare tutte le notifiche?",
+  "notifications.dismiss_all_description": "Tutte le notifiche visibili verranno eliminate definitivamente.",
+  "team.billing.period_toggle": "Passa tra mese e anno",
+  "team.billing.plus_vat": "+ IVA",
+  "team.billing.checkout_seats": "{count} utenti a pagamento",
+  "team.billing.checkout_preview": "{count} × {price} = {total}{period} {vat}",
+  "team.billing.checkout_preview_split": "{earlyCount} × {earlyPrice} + {regularCount} × {regularPrice} = {total}{period} {vat}",
+  "team.billing.checkout_period_month": "/mese",
+  "team.billing.checkout_period_year": "/anno",
+  "team.billing.checkout_period_quarter": "/trim.",
+  "team.billing.checkout_vat_hint": "L'IVA viene calcolata in base al tuo paese nel checkout Stripe."
 }

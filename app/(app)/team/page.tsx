@@ -59,7 +59,15 @@ export default function TeamPage() {
 
   const isBusy = pendingAction !== null;
   const canOpenTeam = canOpenTeamPage(currentUser, roles, isAdmin);
-  const { canInvite, startInvite, handleInviteError } = useStartTeamInvite();
+  const {
+    canInvite,
+    startInvite,
+    handleInviteError,
+    isPurchasingSeat,
+    seatPurchasedOpen,
+    setSeatPurchasedOpen,
+    confirmSeatPurchased,
+  } = useStartTeamInvite();
   const selfMember =
     members.find(
       (member) =>
@@ -213,11 +221,22 @@ export default function TeamPage() {
           currentTeam && canInvite ? (
             <button
               type="button"
+              disabled={isPurchasingSeat}
+              aria-busy={isPurchasingSeat}
               onClick={() => startInvite(() => setInviteOpen(true))}
-              className="inline-flex min-h-10 items-center justify-center gap-2 rounded-2xl bg-blue-700 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-800"
+              className="inline-flex min-h-10 items-center justify-center gap-2 rounded-2xl bg-blue-700 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              <i className="fas fa-plus text-xs" aria-hidden="true" />
-              {t("team.invite.button", "Uzaicināt")}
+              <i
+                className={
+                  isPurchasingSeat
+                    ? "fas fa-circle-notch fa-spin text-xs"
+                    : "fas fa-plus text-xs"
+                }
+                aria-hidden="true"
+              />
+              {isPurchasingSeat
+                ? t("team.invite.purchasing_seat", "Iegādājas vietu…")
+                : t("team.invite.button", "Uzaicināt")}
             </button>
           ) : null
         }
@@ -410,6 +429,18 @@ export default function TeamPage() {
           }}
         />
       </SectionPage>
+
+      <ConfirmModal
+        open={seatPurchasedOpen}
+        onOpenChange={setSeatPurchasedOpen}
+        title={t("team.invite.seat_purchased_title", "Vieta iegādāta")}
+        description={t(
+          "team.invite.seat_purchased_description",
+          "Viena apmaksāta vieta ir gatava. Tagad vari uzaicināt lietotāju.",
+        )}
+        confirmLabel={t("team.invite.button", "Uzaicināt")}
+        onConfirm={confirmSeatPurchased}
+      />
 
       <ConfirmModal
         open={leaveConfirmOpen}

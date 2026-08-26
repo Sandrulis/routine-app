@@ -4,6 +4,14 @@
 
 - (none)
 
+## v0.3.6
+
+- Abonementu checkout kopsavilkums: maksas lietotāju skaits, summa un + PVN piezīme
+- Mēneša/gada periods ar toggle; Checkout apstiprinājums ar `session_id`
+- Uzaicināt bez brīvās vietas: automātiska vietas iegāde (spinner + apstiprinājums)
+- Paziņojumi: „Dzēst visus” ar apstiprinājumu
+- Stripe vietu sinhronizācijas labojumi (`teams` update, reconcile pēc checkout)
+
 ## v0.3.5
 
 - Pēc Checkout vietas sinhronizē no Stripe arī bez webhook (un atverot Abonementus)

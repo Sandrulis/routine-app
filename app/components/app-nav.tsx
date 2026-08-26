@@ -290,6 +290,7 @@ function NavTreeSection({
   description,
   addLabel,
   addAriaLabel,
+  addBusy = false,
   expanded,
   isParentActive,
   onToggle,
@@ -332,6 +333,7 @@ function NavTreeSection({
   description?: string;
   addLabel?: string;
   addAriaLabel?: string;
+  addBusy?: boolean;
   expanded: boolean;
   isParentActive: boolean;
   onToggle: () => void;
@@ -548,18 +550,39 @@ function NavTreeSection({
           ) : null}
 
           {onAdd && addLabel && addAriaLabel ? (
-            <Tooltip label={addLabel} align="end">
+            <Tooltip
+              label={
+                addBusy
+                  ? t("team.invite.purchasing_seat", "Iegādājas vietu…")
+                  : addLabel
+              }
+              align="end"
+            >
               <button
                 type="button"
-                aria-label={addAriaLabel}
+                aria-label={
+                  addBusy
+                    ? t("team.invite.purchasing_seat", "Iegādājas vietu…")
+                    : addAriaLabel
+                }
+                aria-busy={addBusy}
+                disabled={addBusy}
                 onClick={(event) => {
                   event.preventDefault();
                   event.stopPropagation();
+                  if (addBusy) return;
                   onAdd(event);
                 }}
-                className={`relative z-10 ${rowHoverActionClassName(moreOpen)}`}
+                className={`relative z-10 ${rowHoverActionClassName(moreOpen)} disabled:cursor-not-allowed disabled:opacity-60`}
               >
-                <i className="fas fa-plus text-[11px]" aria-hidden="true" />
+                <i
+                  className={
+                    addBusy
+                      ? "fas fa-circle-notch fa-spin text-[11px]"
+                      : "fas fa-plus text-[11px]"
+                  }
+                  aria-hidden="true"
+                />
               </button>
             </Tooltip>
           ) : null}
@@ -705,7 +728,7 @@ export function AppNav() {
     isAdmin,
     "lists.create",
   );
-  const { canInvite: canInviteMembers, startInvite, handleInviteError } =
+  const { canInvite: canInviteMembers, startInvite, handleInviteError, isPurchasingSeat, seatPurchasedOpen, setSeatPurchasedOpen, confirmSeatPurchased } =
     useStartTeamInvite();
   const canManageRoles = canManageTeamSettings(
     currentUser,
@@ -1292,6 +1315,7 @@ export function AppNav() {
             label={t("nav.team", "Komanda")}
             addLabel={t("team.invite.button", "Uzaicināt")}
             addAriaLabel={t("team.invite.title", "Uzaicināt lietotāju")}
+            addBusy={isPurchasingSeat}
             expanded={isExpanded("team", true)}
             isParentActive={isTeam && canOpenTeam}
             onToggle={() => toggleTree("team", true)}
@@ -2050,6 +2074,18 @@ export function AppNav() {
           }
           setDeleteTarget(null);
         }}
+      />
+
+      <ConfirmModal
+        open={seatPurchasedOpen}
+        onOpenChange={setSeatPurchasedOpen}
+        title={t("team.invite.seat_purchased_title", "Vieta iegādāta")}
+        description={t(
+          "team.invite.seat_purchased_description",
+          "Viena apmaksāta vieta ir gatava. Tagad vari uzaicināt lietotāju.",
+        )}
+        confirmLabel={t("team.invite.button", "Uzaicināt")}
+        onConfirm={confirmSeatPurchased}
       />
 
       <TeamInviteModal

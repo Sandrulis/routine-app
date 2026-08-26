@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAuthSession } from "@/app/lib/auth/use-auth-session";
 import {
   deleteNotification,
+  deleteNotifications,
   fetchVisibleNotifications,
   markNotificationsRead,
   purgeOldNotificationsOnce,
@@ -91,5 +92,15 @@ export function useNotifications() {
     });
   }
 
-  return { items, isLoading, unreadCount, markRead, markAllRead, dismiss };
+  function dismissAll() {
+    const ids = items.map((item) => item.id);
+    if (ids.length === 0) return;
+    setItems([]);
+    void deleteNotifications(ids).catch((error) => {
+      console.error("Failed to delete notifications", error);
+      refresh({ silent: true });
+    });
+  }
+
+  return { items, isLoading, unreadCount, markRead, markAllRead, dismiss, dismissAll };
 }

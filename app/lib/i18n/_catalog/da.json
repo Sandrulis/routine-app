@@ -1834,5 +1834,21 @@
   "auth.password.fair": "Middel",
   "auth.password.good": "God",
   "auth.password.strong": "Stærk",
-  "auth.signup.password_too_weak": "Adgangskoden er for svag. Brug store og små bogstaver, tal og et specialtegn."
+  "auth.signup.password_too_weak": "Adgangskoden er for svag. Brug store og små bogstaver, tal og et specialtegn.",
+  "errors.billing_checkout_invalid": "Betalingssessionen er ugyldig eller ufuldstændig.",
+  "team.invite.purchasing_seat": "Køber en plads…",
+  "team.invite.seat_purchased_title": "Plads købt",
+  "team.invite.seat_purchased_description": "Én betalt plads er klar. Du kan invitere en bruger nu.",
+  "notifications.dismiss_all": "Slet alle",
+  "notifications.dismiss_all_title": "Slet alle notifikationer?",
+  "notifications.dismiss_all_description": "Alle synlige notifikationer slettes permanent.",
+  "team.billing.period_toggle": "Skift mellem måned og år",
+  "team.billing.plus_vat": "+ moms",
+  "team.billing.checkout_seats": "{count} betalte brugere",
+  "team.billing.checkout_preview": "{count} × {price} = {total}{period} {vat}",
+  "team.billing.checkout_preview_split": "{earlyCount} × {earlyPrice} + {regularCount} × {regularPrice} = {total}{period} {vat}",
+  "team.billing.checkout_period_month": "/md.",
+  "team.billing.checkout_period_year": "/år",
+  "team.billing.checkout_period_quarter": "/kv.",
+  "team.billing.checkout_vat_hint": "Moms beregnes for dit land i Stripe-betaling."
 }

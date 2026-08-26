@@ -722,6 +722,8 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "errors.billing_no_pending_seats": "Nav vietu, kas gaida samaksu.",
     "errors.billing_only_free_seat":
       "Komandas vadītāja vieta ir bez maksas. Pievieno maksas vietu, lai uzaicinātu citus.",
+    "errors.billing_checkout_invalid":
+      "Maksājuma sesija nav derīga vai nav pabeigta.",
     "site_payment_plans.page.subtitle":
       "Ieslēdz maksas plānus un piešķir frontend moduļus katram plānam",
     "site_payment_plans.enable.section": "Maksas plāni",
@@ -1009,6 +1011,10 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "team.invite.resend_required":
       "Jauns e-pasts prasa ieslēgtu Resend integrāciju. Esošs lietotājs saņems paziņojumu lietotnē.",
     "team.invite.button": "Uzaicināt",
+    "team.invite.purchasing_seat": "Iegādājas vietu…",
+    "team.invite.seat_purchased_title": "Vieta iegādāta",
+    "team.invite.seat_purchased_description":
+      "Viena apmaksāta vieta ir gatava. Tagad vari uzaicināt lietotāju.",
     "team.invite.sending": "Sūta…",
     "team.invite.accepted": "Uzaicinājums apstiprināts.",
     "team.invite.rejected": "Uzaicinājums noraidīts.",
@@ -1068,6 +1074,7 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
       "Aptuveni {amount} līdz nākamajam ciklam, pēc tam viena ikmēneša iemaksa visām vietām.",
     "team.billing.no_pending": "Nav vietu, kas gaida samaksu.",
     "team.billing.choose_period": "Periods",
+    "team.billing.period_toggle": "Pārslēgt mēnesi un gadu",
     "team.billing.pay_pending": "Samaksāt {count} vietas",
     "team.billing.pay_subscribe": "Sākt abonementu",
     "team.billing.period.year": "Gads",
@@ -1090,6 +1097,17 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
       "Ja līdz cikla beigām vieta paliek tukša, nākamajā rēķinā tā vairs nav.",
     "team.billing.free_owner_seat":
       "Komandas vadītāja vieta ir bez maksas. Maksā tikai par vietām virs 1.",
+    "team.billing.plus_vat": "+ PVN",
+    "team.billing.checkout_seats": "{count} maksas lietotāji",
+    "team.billing.checkout_preview":
+      "{count} × {price} = {total}{period} {vat}",
+    "team.billing.checkout_preview_split":
+      "{earlyCount} × {earlyPrice} + {regularCount} × {regularPrice} = {total}{period} {vat}",
+    "team.billing.checkout_period_month": "/mēn",
+    "team.billing.checkout_period_year": "/gads",
+    "team.billing.checkout_period_quarter": "/cet.",
+    "team.billing.checkout_vat_hint":
+      "PVN tiek aprēķināts atbilstoši tavai valstij Stripe apmaksā.",
     "team.fields.name_placeholder": "Vārds un uzvārds",
     "team.fields.email_placeholder": "vards@uznemums.lv",
     "team.fields.role": "Loma",
@@ -1735,6 +1753,10 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "notifications.empty": "Nav paziņojumu",
     "notifications.mark_all": "Atzīmēt visus kā lasītus",
     "notifications.dismiss": "Noņemt",
+    "notifications.dismiss_all": "Dzēst visus",
+    "notifications.dismiss_all_title": "Dzēst visus paziņojumus?",
+    "notifications.dismiss_all_description":
+      "Visi redzamie paziņojumi tiks neatgriezeniski dzēsti.",
     "notifications.just_now": "tagad",
     "notifications.item.assigned": "{name} piešķīra tev “{task}”",
     "notifications.item.assigned_other": "{name} piešķīra {assignee} “{task}”",
@@ -2964,6 +2986,8 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "errors.billing_no_pending_seats": "There are no seats waiting for payment.",
     "errors.billing_only_free_seat":
       "The team owner's seat is free. Buy a paid seat to invite others.",
+    "errors.billing_checkout_invalid":
+      "The payment session is invalid or incomplete.",
     "site_payment_plans.page.subtitle":
       "Enable payment plans and assign frontend modules to each plan",
     "site_payment_plans.enable.section": "Payment plans",
@@ -3247,6 +3271,10 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "team.invite.resend_required":
       "A new email needs Resend enabled. Existing users still get an in-app notification.",
     "team.invite.button": "Invite",
+    "team.invite.purchasing_seat": "Buying a seat…",
+    "team.invite.seat_purchased_title": "Seat purchased",
+    "team.invite.seat_purchased_description":
+      "One paid seat is ready. You can invite a user now.",
     "team.invite.sending": "Sending…",
     "team.invite.accepted": "Invitation accepted.",
     "team.invite.rejected": "Invitation declined.",
@@ -3306,6 +3334,7 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
       "About {amount} until the next cycle, then one monthly charge for all seats.",
     "team.billing.no_pending": "No seats are waiting for payment.",
     "team.billing.choose_period": "Period",
+    "team.billing.period_toggle": "Switch between month and year",
     "team.billing.pay_pending": "Pay for {count} seats",
     "team.billing.pay_subscribe": "Start subscription",
     "team.billing.period.year": "Year",
@@ -3328,6 +3357,17 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
       "If the extra seat is still empty at the end of the cycle, the next invoice will not include it.",
     "team.billing.free_owner_seat":
       "The team owner's seat is free. You pay only for seats above 1.",
+    "team.billing.plus_vat": "+ VAT",
+    "team.billing.checkout_seats": "{count} paid users",
+    "team.billing.checkout_preview":
+      "{count} × {price} = {total}{period} {vat}",
+    "team.billing.checkout_preview_split":
+      "{earlyCount} × {earlyPrice} + {regularCount} × {regularPrice} = {total}{period} {vat}",
+    "team.billing.checkout_period_month": "/mo",
+    "team.billing.checkout_period_year": "/yr",
+    "team.billing.checkout_period_quarter": "/qtr",
+    "team.billing.checkout_vat_hint":
+      "VAT is calculated for your country in Stripe checkout.",
     "team.fields.name_placeholder": "Full name",
     "team.fields.email_placeholder": "name@company.com",
     "team.fields.role": "Role",
@@ -3962,6 +4002,10 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "notifications.empty": "No notifications",
     "notifications.mark_all": "Mark all as read",
     "notifications.dismiss": "Dismiss",
+    "notifications.dismiss_all": "Delete all",
+    "notifications.dismiss_all_title": "Delete all notifications?",
+    "notifications.dismiss_all_description":
+      "All visible notifications will be permanently deleted.",
     "notifications.just_now": "just now",
     "notifications.item.assigned": "{name} assigned you “{task}”",
     "notifications.item.assigned_other": "{name} assigned {assignee} to “{task}”",

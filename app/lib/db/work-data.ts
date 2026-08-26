@@ -1242,6 +1242,15 @@ export async function deleteNotification(id: string) {
   if (error) throw error;
 }
 
+export async function deleteNotifications(ids: string[]) {
+  if (ids.length === 0) return;
+  const { error } = await db()
+    .from("app_notifications")
+    .delete()
+    .in("id", ids);
+  if (error) throw error;
+}
+
 export async function deleteOldNotifications(olderThanDays: number = 30) {
   const cutoff = new Date(Date.now() - olderThanDays * 86_400_000).toISOString();
   const { error } = await db()

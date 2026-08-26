@@ -1834,5 +1834,21 @@
   "auth.password.fair": "Vidutinis",
   "auth.password.good": "Geras",
   "auth.password.strong": "Stiprus",
-  "auth.signup.password_too_weak": "Slaptažodis per silpnas. Naudokite didžiąsias ir mažąsias raides, skaičius ir specialųjį simbolį."
+  "auth.signup.password_too_weak": "Slaptažodis per silpnas. Naudokite didžiąsias ir mažąsias raides, skaičius ir specialųjį simbolį.",
+  "errors.billing_checkout_invalid": "Mokėjimo sesija neteisinga arba neužbaigta.",
+  "team.invite.purchasing_seat": "Perkama vieta…",
+  "team.invite.seat_purchased_title": "Vieta nupirkta",
+  "team.invite.seat_purchased_description": "Viena apmokėta vieta paruošta. Dabar galite pakviesti naudotoją.",
+  "notifications.dismiss_all": "Ištrinti visus",
+  "notifications.dismiss_all_title": "Ištrinti visus pranešimus?",
+  "notifications.dismiss_all_description": "Visi matomi pranešimai bus visam laikui ištrinti.",
+  "team.billing.period_toggle": "Perjungti mėnesį ir metus",
+  "team.billing.plus_vat": "+ PVM",
+  "team.billing.checkout_seats": "{count} mokamų naudotojų",
+  "team.billing.checkout_preview": "{count} × {price} = {total}{period} {vat}",
+  "team.billing.checkout_preview_split": "{earlyCount} × {earlyPrice} + {regularCount} × {regularPrice} = {total}{period} {vat}",
+  "team.billing.checkout_period_month": "/mėn.",
+  "team.billing.checkout_period_year": "/m.",
+  "team.billing.checkout_period_quarter": "/ketv.",
+  "team.billing.checkout_vat_hint": "PVM apskaičiuojamas pagal jūsų šalį Stripe apmokėjime."
 }

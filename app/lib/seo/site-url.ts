@@ -89,6 +89,12 @@ function isLocalHost(host: string): boolean {
   return host === "localhost" || host === "127.0.0.1";
 }
 
+/** True when NEXT_PUBLIC_SITE_URL (or dev default) points at localhost. */
+export function isLocalPublicSite(): boolean {
+  const host = hostnameOf(getPublicSiteUrl());
+  return host != null && isLocalHost(host);
+}
+
 /**
  * If the request host is the www/apex twin of NEXT_PUBLIC_SITE_URL, return
  * the canonical absolute URL (301 target). Otherwise null.

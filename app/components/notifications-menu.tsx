@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { ConfirmModal } from "@/app/components/confirm-modal";
 import { OptionalTooltip } from "@/app/components/tooltip";
 import { LoadingState } from "@/app/components/loading-state";
 import { NotificationSettingsModal } from "@/app/components/notification-settings-modal";
@@ -150,14 +151,18 @@ export function NotificationsMenu() {
   const { showFeedback } = useFeedbackToast();
   const { user: authUser } = useAuthSession();
   const { members, currentUser, refreshTeams } = useTeam();
-  const { items, isLoading, unreadCount, markRead, markAllRead, dismiss } = useNotifications();
+  const { items, isLoading, unreadCount, markRead, markAllRead, dismiss, dismissAll } =
+    useNotifications();
   const [open, setOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [clearAllOpen, setClearAllOpen] = useState(false);
+  const [clearingAll, setClearingAll] = useState(false);
   const now = useNow();
   const [pendingInviteId, setPendingInviteId] = useState<string | null>(null);
   const label = t("notifications.label", "Paziņojumi");
   const settingsLabel = t("user_menu.notifications", "Paziņojumu uzstādījumi");
   const dismissLabel = t("notifications.dismiss", "Noņemt");
+  const dismissAllLabel = t("notifications.dismiss_all", "Dzēst visus");
 
   useEffect(() => {
     if (!open) return;
@@ -259,6 +264,26 @@ export function NotificationsMenu() {
                 >
                   {t("notifications.mark_all", "Atzīmēt visus kā lasītus")}
                 </button>
+              ) : null}
+              {items.length > 0 ? (
+                <OptionalTooltip label={dismissAllLabel}>
+                  <button
+                    type="button"
+                    onClick={() => setClearAllOpen(true)}
+                    aria-label={dismissAllLabel}
+                    disabled={clearingAll}
+                    className="inline-flex size-7 items-center justify-center rounded-md text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-800 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    <i
+                      className={
+                        clearingAll
+                          ? "fas fa-circle-notch fa-spin text-[12px]"
+                          : "fas fa-trash-can text-[12px]"
+                      }
+                      aria-hidden="true"
+                    />
+                  </button>
+                </OptionalTooltip>
               ) : null}
               <OptionalTooltip label={settingsLabel}>
                 <button
@@ -527,6 +552,29 @@ export function NotificationsMenu() {
           )}
         </div>
       ) : null}
+
+      <ConfirmModal
+        open={clearAllOpen}
+        onOpenChange={(next) => {
+          if (clearingAll) return;
+          setClearAllOpen(next);
+        }}
+        title={t("notifications.dismiss_all_title", "Dzēst visus paziņojumus?")}
+        description={t(
+          "notifications.dismiss_all_description",
+          "Visi redzamie paziņojumi tiks neatgriezeniski dzēsti.",
+        )}
+        confirmLabel={t("notifications.dismiss_all", "Dzēst visus")}
+        confirmVariant="danger"
+        blocking={clearingAll}
+        onConfirm={() => {
+          if (clearingAll) return;
+          setClearingAll(true);
+          dismissAll();
+          setClearAllOpen(false);
+          setClearingAll(false);
+        }}
+      />
 
       <NotificationSettingsModal
         open={settingsOpen}

@@ -1834,5 +1834,21 @@
   "auth.password.fair": "Mittel",
   "auth.password.good": "Gut",
   "auth.password.strong": "Stark",
-  "auth.signup.password_too_weak": "Das Passwort ist zu schwach. Nutze Groß- und Kleinbuchstaben, Zahlen und ein Sonderzeichen."
+  "auth.signup.password_too_weak": "Das Passwort ist zu schwach. Nutze Groß- und Kleinbuchstaben, Zahlen und ein Sonderzeichen.",
+  "errors.billing_checkout_invalid": "Die Zahlungssitzung ist ungültig oder unvollständig.",
+  "team.invite.purchasing_seat": "Platz wird gekauft…",
+  "team.invite.seat_purchased_title": "Platz gekauft",
+  "team.invite.seat_purchased_description": "Ein bezahlter Platz ist bereit. Du kannst jetzt einen Nutzer einladen.",
+  "notifications.dismiss_all": "Alle löschen",
+  "notifications.dismiss_all_title": "Alle Benachrichtigungen löschen?",
+  "notifications.dismiss_all_description": "Alle sichtbaren Benachrichtigungen werden dauerhaft gelöscht.",
+  "team.billing.period_toggle": "Zwischen Monat und Jahr wechseln",
+  "team.billing.plus_vat": "+ MwSt.",
+  "team.billing.checkout_seats": "{count} kostenpflichtige Nutzer",
+  "team.billing.checkout_preview": "{count} × {price} = {total}{period} {vat}",
+  "team.billing.checkout_preview_split": "{earlyCount} × {earlyPrice} + {regularCount} × {regularPrice} = {total}{period} {vat}",
+  "team.billing.checkout_period_month": "/Mon.",
+  "team.billing.checkout_period_year": "/J.",
+  "team.billing.checkout_period_quarter": "/Quart.",
+  "team.billing.checkout_vat_hint": "Die MwSt. wird in Stripe entsprechend deinem Land berechnet."
 }

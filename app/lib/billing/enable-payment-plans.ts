@@ -102,7 +102,6 @@ async function prepareTeamForPaidPlans(
       early_bird_seat_count: nextEarlyBird,
       payment_plan_is_early_bird: nextEarlyBird > 0,
       billing_cycle_end: cycleEnd,
-      updated_at: new Date().toISOString(),
     })
     .eq("id", team.id);
   if (updateError) {

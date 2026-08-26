@@ -138,7 +138,7 @@ URL ceļos vārdus atdala ar defisi (`/forgot-password`, `/admin/file-types`), n
 | Apakšuzdevums | uzdevuma ceļš vai saraksta skats + modālis | `SubtaskDetailModal` — lauki kreisajā, Check List pirms pielikumiem, vēsture labajā |
 | Šabloni | `/templates`, `/templates/[templateId]` | `TemplatesPage` / `TemplateDetailPage` + `TemplateTreeEditor` — mapes, uzdevumi, apakšuzdevumi, DnD; mapes `+` → Pievienot šablonu; `requireFrontendModule(module_templates)`
 | Google Drive | `/team/google-drive` | Komandas OAuth, mapes ceļš, auto-upload un **Glabāt failus Google Drive** (noklusējumā bez servera `content`); `requireFrontendModules(module_google_drive, module_file_upload)` |
-| Abonementi | `/team/billing` | Vadītāja vieta bez maksas; maksā tikai par vietām virs 1. Apmaksātās / aizņemtās / brīvās vietas, nākamais rēķins, **Iegādāties 1 vietu** (prorata) pirms uzaicinājuma, ja nav brīvas vietas; gaidošie **Samaksāt** vecām `pending_payment` rindām; neizmantotā vieta cikla beigās nokrīt no nākamā rēķina; īpašnieks / `team.settings.edit` / `is_admin` |
+| Abonementi | `/team/billing` | Vadītāja vieta bez maksas; maksā tikai par vietām virs 1. Apmaksātās / aizņemtās / brīvās vietas, nākamais rēķins, checkout kopsavilkums (maksas lietotāji, summa, + PVN, Early Bird sadalījums), mēneša/gada toggle, **Iegādāties 1 vietu** (prorata) pirms uzaicinājuma, ja nav brīvas vietas; gaidošie **Samaksāt** vecām `pending_payment` rindām; neizmantotā vieta cikla beigās nokrīt no nākamā rēķina; Checkout success ar `session_id` apstiprinājumu; īpašnieks / `team.settings.edit` / `is_admin` |
 | Personīgie uzstādījumi | `/settings/profile` | lasāms profila kopsavilkums + datumu/laika preferences (nedēļas sākums, formāts, atdalītājs, 12/24 h); vārdu/uzvārdu labo lietotāja izvēlnē |
 | Administrācija | `/admin` | kategoriju izvēlne ar hover dropdown (Cilvēki, Katalogs, Sistēma); tikai `is_admin` |
 
@@ -245,7 +245,7 @@ Komandai kolonnas `payment_plan_id` / `payment_plan_until` / `payment_plan_paid`
 - Nederīga Stripe atslēga (integrācija ieslēgta, bet atslēga neder) — globālais baneris `StripeInvalidKeyBanner` tikai `users.is_admin`; saite uz `/admin/integrations`. Komandas vadītājiem `/team/billing` rāda `team.billing.stripe_disabled`, ne atslēgas kļūdu.
 - **`billing_due`** — komandas vadītājam, kad sistēma ieslēdz maksas plānus un komandā ir vairāk par 1 lietotāju (ne bezmaksas plāns, nav Stripe sub, nav aktīvs trial); `task_title` = tekošā mēneša beigas; `href` `/team/billing`
 - Bez aktīvas komandas paziņojumus lasa pēc `target_user_id` (uzaicinājumi redzami arī dashboard tukšajā stāvoklī)
-- Lasītu paziņojumu **dzēšana**: hover rāda × pogu (`dismiss`); automātiska tīrīšana vecākiem par 30 dienām (`deleteOldNotifications`) katrā fetch reizē
+- Lasītu paziņojumu **dzēšana**: hover rāda × pogu (`dismiss`); **Dzēst visus** (miskastes ikona) ar apstiprinājumu dzēš visus redzamos (`deleteNotifications`); automātiska tīrīšana vecākiem par 30 dienām (`deleteOldNotifications`) katrā fetch reizē
 - Nav dummy seed; tipi `app/lib/notifications.ts`, preference `app/lib/notification-preferences.ts`
 - Stāvoklis: `app/lib/use-notifications.ts` lasa/raksta/dzēš `app_notifications` tabulu
 
@@ -433,7 +433,7 @@ app/
     team-invite-modal.tsx         # Uzaicināt lietotāju (e-pasts, loma; norāde, ja Resend izslēgts)
     team-member-page.tsx          # Lietotāja profils; pending: resend/link/remove; leave; pending_payment slēpj resend/linku
     open-paid-seat-banner.tsx      # globāls paziņojums vadītājam par brīvu apmaksātu vietu
-    team-billing-page.tsx         # /team/billing: vietas, nākamais rēķins, extra vieta, Checkout / Samaksāt
+    team-billing-page.tsx         # /team/billing: vietas, checkout kopsavilkums (+ PVN), period toggle, extra vieta, Checkout / Samaksāt
     team-leave-section.tsx        # Pamest komandu (profils, biedra lapa)
     app-shell.tsx                 # Layout ar sānjoslu
     dashboard-home-page.tsx       # Sākums: Mani uzdevumi (ja ir) + saraksti
@@ -521,7 +521,7 @@ app/
     calendar/                     # ICS plūsma, token, user calendar integration
     google-drive/                 # OAuth, status, Drive upload, team settings actions
     payment-plans/                # helpers + repository + team-plan (katalogs, cenas, trial, Early Bird, moduļu filtrs)
-    billing/                      # vietu skaits, invite gate (pay-first), Checkout/Invoice, webhook sync (`097`/`098`/`099`); `use-start-team-invite.ts`
+    billing/                      # vietu skaits, invite gate (pay-first), Checkout/Invoice, webhook sync, checkout-estimate (`097`/`098`/`099`); `use-start-team-invite.ts` (auto extra seat)
     task-date-display.ts          # Sākuma/termiņa relatīvais hints pēc statusa grupas (DateCell)
     nav-tree-move.ts              # Koka drop: mape / ārā / secība / grupas beigas
     list-access.ts                # Saraksta pieeju līmeņi un resolve

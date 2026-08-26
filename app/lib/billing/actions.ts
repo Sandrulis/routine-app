@@ -11,6 +11,7 @@ import {
 } from "@/app/lib/billing/seats";
 import {
   createSeatCheckoutSession,
+  confirmCheckoutSessionForTeam,
   ensureStripeCustomer,
   invoiceAdditionalSeats,
   loadTeamBillingRow,
@@ -39,14 +40,21 @@ import {
   isPaymentPlansEnabled,
   listPaymentPlans,
 } from "@/app/lib/payment-plans/repository";
+import { getPublicSiteUrl, isLocalPublicSite } from "@/app/lib/seo/site-url";
 import { isSupabaseConfigured } from "@/app/lib/supabase/env";
 import { createClient } from "@/app/lib/supabase/server";
+
+export type TeamBillingPlanPeriodPrices = {
+  regular: number;
+  earlyBird: number;
+};
 
 export type TeamBillingPlanOption = {
   id: string;
   name: string;
   isFree: boolean;
   periods: PaymentPlanBillingPeriod[];
+  prices: Partial<Record<PaymentPlanBillingPeriod, TeamBillingPlanPeriodPrices>>;
 };
 
 export type TeamBillingSummary = {
@@ -72,6 +80,7 @@ export type TeamBillingSummary = {
   nextBillingAt: string | null;
   pendingMembers: Array<{ id: string; email: string; name: string }>;
   paidPlans: TeamBillingPlanOption[];
+  remainingEarlyBirdSeats: number;
 };
 
 function periodsForPlan(
@@ -204,13 +213,24 @@ export async function getTeamBillingSummaryAction(
     }
   }
 
+  const globalRemainingEarlyBird = remainingEarlyBirdSeats(earlyBird);
   const paidPlans: TeamBillingPlanOption[] = plans
     .filter((item) => !item.isFree)
     .map((item) => ({
       id: item.id,
       name: resolveLocalizedValue(item.nameValues, languageCode) || item.planKey,
       isFree: false,
-      periods: periodsForPlan(item, remainingEarlyBird),
+      periods: periodsForPlan(item, globalRemainingEarlyBird),
+      prices: {
+        month: {
+          regular: item.priceMonth,
+          earlyBird: item.earlyBirdPriceMonth,
+        },
+        year: {
+          regular: item.priceYear,
+          earlyBird: item.earlyBirdPriceYear,
+        },
+      },
     }))
     .filter((item) => item.periods.length > 0);
 
@@ -261,6 +281,7 @@ export async function getTeamBillingSummaryAction(
           name: row.name,
         })),
       paidPlans,
+      remainingEarlyBirdSeats: globalRemainingEarlyBird,
     },
   };
 }
@@ -418,6 +439,17 @@ export async function buyExtraTeamSeatAction(
 
   const team = await loadTeamBillingRow(trimmed);
   if (!team) return { ok: false, error: "errors.billing_forbidden" };
+
+  // Race guard: another click already opened a seat — do not charge again.
+  const members = await loadTeamMembersForSeats(trimmed);
+  const seats = resolveSeatCounts({
+    paidSeatCount: team.paid_seat_count ?? 0,
+    members: members.map((row) => ({ seatStatus: row.seat_status })),
+  });
+  if (seats.openSeatCount > 0) {
+    return { ok: true, data: { url: `${getPublicSiteUrl()}/team/billing` } };
+  }
+
   if (!team.stripe_subscription_id) {
     return startTeamBillingCheckoutAction({ teamId: trimmed, extraSeats: 1 });
   }
@@ -458,4 +490,44 @@ export async function reconcileTeamBillingAfterCheckoutAction(
     revalidatePath("/team");
   }
   return { ok: true, data: { synced } };
+}
+
+/**
+ * Success-URL handler. Requires Stripe `session_id` (except localhost test bypass).
+ * Inventing `?checkout=success` alone does not confirm payment in production.
+ */
+export async function confirmTeamBillingCheckoutAction(
+  teamId: string,
+  sessionId?: string | null,
+): Promise<ActionResult<{ synced: boolean; confirmed: boolean }>> {
+  const user = await getCurrentUser();
+  if (!user) return { ok: false, error: "errors.auth_required" };
+  if (!isSupabaseConfigured()) return { ok: false, error: "errors.db_not_configured" };
+  if (!(await getStripeCredentials())) {
+    return { ok: false, error: await stripeUnavailableError() };
+  }
+
+  const trimmed = teamId.trim();
+  const access = await assertCanManageTeamBilling(trimmed, user.id);
+  if (!access.ok) return access;
+
+  const trimmedSession = sessionId?.trim() || "";
+  if (trimmedSession) {
+    const confirmed = await confirmCheckoutSessionForTeam(trimmed, trimmedSession);
+    if (!confirmed.ok) return confirmed;
+    revalidatePath("/team/billing");
+    revalidatePath("/team");
+    return { ok: true, data: { synced: confirmed.synced, confirmed: true } };
+  }
+
+  if (!isLocalPublicSite()) {
+    return { ok: true, data: { synced: false, confirmed: false } };
+  }
+
+  const synced = await reconcileTeamBillingFromStripe(trimmed);
+  if (synced) {
+    revalidatePath("/team/billing");
+    revalidatePath("/team");
+  }
+  return { ok: true, data: { synced, confirmed: synced } };
 }

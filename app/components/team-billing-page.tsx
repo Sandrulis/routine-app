@@ -10,17 +10,153 @@ import { useTranslations } from "@/app/components/translations-provider";
 import { translateActionError } from "@/app/lib/i18n/action-errors";
 import {
   buyExtraTeamSeatAction,
+  confirmTeamBillingCheckoutAction,
   getTeamBillingSummaryAction,
   payPendingTeamSeatsAction,
   reconcileTeamBillingAfterCheckoutAction,
   startTeamBillingCheckoutAction,
+  type TeamBillingPlanOption,
   type TeamBillingSummary,
 } from "@/app/lib/billing/actions";
+import { ToggleSwitch } from "@/app/components/toggle-switch";
+import {
+  checkoutPricesForPeriod,
+  estimateSubscriptionCheckoutTotal,
+} from "@/app/lib/billing/checkout-estimate";
 import { formatEuro, formatInteger } from "@/app/lib/format/numbers";
 import type { PaymentPlanBillingPeriod } from "@/app/lib/payment-plans/helpers";
+import { formatPlanEuro } from "@/app/lib/payment-plans/helpers";
 import { canEditTeamSettings } from "@/app/lib/team";
 import { useTeam } from "@/app/lib/team-store";
 import { useIsAdmin } from "@/app/lib/users/use-is-admin";
+
+function BillingPeriodToggle({
+  value,
+  disabled,
+  monthLabel,
+  yearLabel,
+  ariaLabel,
+  onChange,
+}: {
+  value: PaymentPlanBillingPeriod;
+  disabled?: boolean;
+  monthLabel: string;
+  yearLabel: string;
+  ariaLabel: string;
+  onChange: (next: PaymentPlanBillingPeriod) => void;
+}) {
+  const isYear = value === "year";
+  return (
+    <div className="flex items-center justify-center gap-3 sm:justify-start">
+      <span
+        className={`text-sm font-medium transition ${
+          isYear ? "text-zinc-400" : "text-zinc-900"
+        }`}
+      >
+        {monthLabel}
+      </span>
+      <ToggleSwitch
+        checked={isYear}
+        disabled={disabled}
+        label={ariaLabel}
+        onChange={(checked) => onChange(checked ? "year" : "month")}
+      />
+      <span
+        className={`text-sm font-medium transition ${
+          isYear ? "text-zinc-900" : "text-zinc-400"
+        }`}
+      >
+        {yearLabel}
+      </span>
+    </div>
+  );
+}
+
+function BillingCheckoutPreview({
+  summary,
+  selectedPlan,
+  period,
+  t,
+}: {
+  summary: TeamBillingSummary;
+  selectedPlan: TeamBillingPlanOption | undefined;
+  period: PaymentPlanBillingPeriod;
+  t: (key: string, fallback: string, params?: Record<string, string>) => string;
+}) {
+  const seatCount = summary.billableSeatCount;
+  if (seatCount < 1 || !selectedPlan) return null;
+
+  const prices = checkoutPricesForPeriod(selectedPlan, period);
+  if (!prices) return null;
+
+  const estimate = estimateSubscriptionCheckoutTotal({
+    quantity: seatCount,
+    prices,
+    remainingEarlyBirdSeats: summary.remainingEarlyBirdSeats,
+  });
+
+  const periodSuffix =
+    period === "year"
+      ? t("team.billing.checkout_period_year", "/gads")
+      : period === "quarter"
+        ? t("team.billing.checkout_period_quarter", "/cet.")
+        : t("team.billing.checkout_period_month", "/mēn");
+
+  const vatNote = t("team.billing.plus_vat", "+ PVN");
+  const unitPrice =
+    estimate.earlyBirdCount > 0 && estimate.regularCount === 0
+      ? estimate.earlyBirdPrice
+      : estimate.regularPrice;
+
+  const calcLine = estimate.hasMixedPricing
+    ? t(
+        "team.billing.checkout_preview_split",
+        "{earlyCount} × {earlyPrice} + {regularCount} × {regularPrice} = {total}{period} {vat}",
+        {
+          earlyCount: formatInteger(estimate.earlyBirdCount),
+          earlyPrice: formatPlanEuro(estimate.earlyBirdPrice),
+          regularCount: formatInteger(estimate.regularCount),
+          regularPrice: formatPlanEuro(estimate.regularPrice),
+          total: formatEuro(estimate.total),
+          period: periodSuffix,
+          vat: vatNote,
+        },
+      )
+    : t(
+        "team.billing.checkout_preview",
+        "{count} × {price} = {total}{period} {vat}",
+        {
+          count: formatInteger(seatCount),
+          price: formatPlanEuro(unitPrice),
+          total: formatEuro(estimate.total),
+          period: periodSuffix,
+          vat: vatNote,
+        },
+      );
+
+  return (
+    <div className="min-w-0 sm:text-right">
+      <p className="text-sm font-medium text-zinc-900">
+        {t("team.billing.checkout_seats", "{count} maksas lietotāji", {
+          count: formatInteger(seatCount),
+        })}
+      </p>
+      <p className="mt-1 text-lg font-semibold tabular-nums text-zinc-900">{calcLine}</p>
+      <p className="mt-1 text-xs text-zinc-500">
+        {t(
+          "team.billing.checkout_vat_hint",
+          "PVN tiek aprēķināts atbilstoši tavai valstij Stripe apmaksā.",
+        )}
+      </p>
+      <p className="mt-1 text-xs text-zinc-500">
+        {t(
+          "team.billing.free_owner_seat",
+          "Komandas vadītāja vieta ir bez maksas. Maksā tikai par vietām virs 1.",
+        )}
+      </p>
+    </div>
+  );
+}
 
 export function TeamBillingPage() {
   const { t } = useTranslations();
@@ -69,6 +205,7 @@ export function TeamBillingPage() {
 
   useEffect(() => {
     const checkout = searchParams.get("checkout");
+    const sessionId = searchParams.get("session_id");
     if (!checkout || !currentTeam?.id || !canManage) return;
 
     if (checkout === "cancel") {
@@ -84,8 +221,24 @@ export function TeamBillingPage() {
 
     let cancelled = false;
     void (async () => {
-      await reconcileTeamBillingAfterCheckoutAction(currentTeam.id);
+      const confirm = await confirmTeamBillingCheckoutAction(
+        currentTeam.id,
+        sessionId,
+      );
       if (cancelled) return;
+      if (!confirm.ok) {
+        showFeedback({
+          type: "error",
+          text: translateActionError(t, confirm.error),
+        });
+        router.replace("/team/billing");
+        return;
+      }
+      if (!confirm.data.confirmed) {
+        // Production without Stripe session_id — ignore forged success links.
+        router.replace("/team/billing");
+        return;
+      }
       const result = await getTeamBillingSummaryAction(currentTeam.id);
       if (cancelled) return;
       if (result.ok) {
@@ -335,48 +488,128 @@ export function TeamBillingPage() {
           </p>
         )}
 
-        {!summary.hasSubscription && summary.paidPlans.length > 0 ? (
-          <div className="rounded-3xl border border-zinc-200 bg-white px-5 py-5 shadow-sm">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <label className="block text-sm font-medium text-zinc-700">
-                {t("team.billing.choose_plan", "Izvēlies maksas plānu")}
-                <select
-                  className="mt-1.5 w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm"
-                  value={planId}
-                  onChange={(event) => {
-                    setPlanId(event.target.value);
-                    const next = summary.paidPlans.find((plan) => plan.id === event.target.value);
-                    if (next?.periods[0]) setPeriod(next.periods[0]);
-                  }}
-                  disabled={isPending}
-                >
-                  {summary.paidPlans.map((plan) => (
-                    <option key={plan.id} value={plan.id}>
-                      {plan.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label className="block text-sm font-medium text-zinc-700">
-                {t("team.billing.choose_period", "Periods")}
-                <select
-                  className="mt-1.5 w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm"
-                  value={period}
-                  onChange={(event) =>
-                    setPeriod(event.target.value as PaymentPlanBillingPeriod)
-                  }
-                  disabled={isPending}
-                >
-                  {(selectedPlan?.periods ?? ["month"]).map((item) => (
-                    <option key={item} value={item}>
-                      {periodLabel(item)}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            </div>
-          </div>
-        ) : null}
+        {!summary.hasSubscription && summary.paidPlans.length > 0
+          ? (() => {
+              const available = selectedPlan?.periods ?? ["month"];
+              const hasMonth = available.includes("month");
+              const hasYear = available.includes("year");
+              const onlyMonthYear =
+                hasMonth &&
+                hasYear &&
+                available.every((item) => item === "month" || item === "year");
+              const showPlanSelect = summary.paidPlans.length > 1;
+              const showPeriodToggle = onlyMonthYear;
+              const showPeriodSelect = !onlyMonthYear && available.length > 1;
+              const showCheckoutPreview = summary.billableSeatCount > 0 && Boolean(selectedPlan);
+              const hasControls = showPlanSelect || showPeriodToggle || showPeriodSelect;
+              if (!hasControls && !showCheckoutPreview) {
+                return null;
+              }
+
+              return (
+                <div className="rounded-3xl border border-zinc-200 bg-white px-5 py-5 shadow-sm">
+                  <div
+                    className={
+                      showPlanSelect
+                        ? "grid gap-5 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end"
+                        : showPeriodToggle && showCheckoutPreview
+                          ? "flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between"
+                          : "flex flex-col gap-3"
+                    }
+                  >
+                    {showPlanSelect ? (
+                      <label className="block min-w-0 text-sm font-medium text-zinc-700">
+                        {t("team.billing.choose_plan", "Izvēlies maksas plānu")}
+                        <select
+                          className="mt-1.5 w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm"
+                          value={planId}
+                          onChange={(event) => {
+                            setPlanId(event.target.value);
+                            const next = summary.paidPlans.find(
+                              (plan) => plan.id === event.target.value,
+                            );
+                            if (next?.periods[0]) setPeriod(next.periods[0]);
+                          }}
+                          disabled={isPending}
+                        >
+                          {summary.paidPlans.map((plan) => (
+                            <option key={plan.id} value={plan.id}>
+                              {plan.name}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    ) : null}
+
+                    {showPeriodToggle ? (
+                      <div className={showPlanSelect ? "pb-1" : "min-w-0 shrink-0"}>
+                        {showPlanSelect ? (
+                          <p className="mb-2 text-sm font-medium text-zinc-700">
+                            {t("team.billing.choose_period", "Periods")}
+                          </p>
+                        ) : null}
+                        <BillingPeriodToggle
+                          value={period === "year" ? "year" : "month"}
+                          disabled={isPending}
+                          monthLabel={t("team.billing.period.month", "Mēnesis")}
+                          yearLabel={t("team.billing.period.year", "Gads")}
+                          ariaLabel={t(
+                            "team.billing.period_toggle",
+                            "Pārslēgt mēnesi un gadu",
+                          )}
+                          onChange={setPeriod}
+                        />
+                      </div>
+                    ) : null}
+
+                    {showPeriodSelect ? (
+                      <label className="block text-sm font-medium text-zinc-700">
+                        {t("team.billing.choose_period", "Periods")}
+                        <select
+                          className="mt-1.5 w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm"
+                          value={period}
+                          onChange={(event) =>
+                            setPeriod(event.target.value as PaymentPlanBillingPeriod)
+                          }
+                          disabled={isPending}
+                        >
+                          {available.map((item) => (
+                            <option key={item} value={item}>
+                              {periodLabel(item)}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    ) : null}
+
+                    {showCheckoutPreview && showPeriodToggle && !showPlanSelect ? (
+                      <BillingCheckoutPreview
+                        summary={summary}
+                        selectedPlan={selectedPlan}
+                        period={period}
+                        t={t}
+                      />
+                    ) : null}
+                  </div>
+
+                  {showCheckoutPreview && (showPlanSelect || !showPeriodToggle) ? (
+                    <div
+                      className={
+                        hasControls ? "mt-5 border-t border-zinc-100 pt-5" : undefined
+                      }
+                    >
+                      <BillingCheckoutPreview
+                        summary={summary}
+                        selectedPlan={selectedPlan}
+                        period={period}
+                        t={t}
+                      />
+                    </div>
+                  ) : null}
+                </div>
+              );
+            })()
+          : null}
 
         {canBuyExtra ? (
           <div className="rounded-3xl border border-zinc-200 bg-white px-5 py-5 shadow-sm">

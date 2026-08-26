@@ -295,7 +295,6 @@ export async function applySubscriptionToTeam(input: {
       : null,
     payment_plan_paid: paid,
     payment_plan_is_trial: input.subscription.status === "trialing",
-    updated_at: new Date().toISOString(),
   };
   if (planId) {
     patch.payment_plan_id = planId;
@@ -349,6 +348,69 @@ export async function syncSubscriptionById(subscriptionId: string, teamIdHint?: 
   });
 }
 
+function preferActiveSubscription(items: Stripe.Subscription[], teamId: string) {
+  return (
+    items.find(
+      (item) =>
+        item.metadata?.teamId === teamId &&
+        (item.status === "active" ||
+          item.status === "trialing" ||
+          item.status === "past_due"),
+    ) ??
+    items.find(
+      (item) =>
+        item.status === "active" ||
+        item.status === "trialing" ||
+        item.status === "past_due",
+    ) ??
+    items[0] ??
+    null
+  );
+}
+
+/**
+ * Verify Stripe Checkout Session from success URL, then sync seats.
+ * Session ids are opaque Stripe tokens — inventing `?checkout=success` is not enough.
+ */
+export async function confirmCheckoutSessionForTeam(
+  teamId: string,
+  sessionId: string,
+): Promise<{ ok: true; synced: boolean } | { ok: false; error: string }> {
+  const stripe = await getStripeClient();
+  if (!stripe) {
+    return { ok: false, error: await stripeUnavailableError() };
+  }
+  const trimmedSession = sessionId.trim();
+  if (!trimmedSession.startsWith("cs_")) {
+    return { ok: false, error: "errors.billing_checkout_invalid" };
+  }
+
+  try {
+    const session = await stripe.checkout.sessions.retrieve(trimmedSession);
+    const sessionTeamId =
+      session.metadata?.teamId || session.client_reference_id || "";
+    if (sessionTeamId !== teamId) {
+      return { ok: false, error: "errors.billing_checkout_invalid" };
+    }
+    if (session.status !== "complete" || session.payment_status === "unpaid") {
+      return { ok: false, error: "errors.billing_checkout_invalid" };
+    }
+    const subscriptionId =
+      typeof session.subscription === "string"
+        ? session.subscription
+        : session.subscription?.id;
+    if (subscriptionId) {
+      await syncSubscriptionById(subscriptionId, teamId);
+      return { ok: true, synced: true };
+    }
+    const synced = await reconcileTeamBillingFromStripe(teamId);
+    return { ok: true, synced };
+  } catch (error) {
+    logError("confirmCheckoutSessionForTeam", error);
+    return { ok: false, error: "errors.billing_checkout_invalid" };
+  }
+}
+
 /** After Checkout success URL — sync seats if webhook has not run yet. */
 export async function reconcileTeamBillingFromStripe(teamId: string) {
   const team = await loadTeamBillingRow(teamId);
@@ -361,29 +423,26 @@ export async function reconcileTeamBillingFromStripe(teamId: string) {
     return true;
   }
 
-  if (!team.stripe_customer_id) return false;
-
   try {
-    const listed = await stripe.subscriptions.list({
-      customer: team.stripe_customer_id,
-      status: "all",
-      limit: 20,
+    if (team.stripe_customer_id) {
+      const listed = await stripe.subscriptions.list({
+        customer: team.stripe_customer_id,
+        status: "all",
+        limit: 20,
+      });
+      const preferred = preferActiveSubscription(listed.data, teamId);
+      if (preferred) {
+        await syncSubscriptionById(preferred.id, teamId);
+        return true;
+      }
+    }
+
+    // Customer id may be missing if a previous DB update failed — recover by metadata.
+    const searched = await stripe.subscriptions.search({
+      query: `metadata['teamId']:'${teamId}' AND status:'active'`,
+      limit: 10,
     });
-    const preferred =
-      listed.data.find(
-        (item) =>
-          item.metadata?.teamId === teamId &&
-          (item.status === "active" ||
-            item.status === "trialing" ||
-            item.status === "past_due"),
-      ) ??
-      listed.data.find(
-        (item) =>
-          item.status === "active" ||
-          item.status === "trialing" ||
-          item.status === "past_due",
-      ) ??
-      listed.data[0];
+    const preferred = preferActiveSubscription(searched.data, teamId);
     if (!preferred) return false;
     await syncSubscriptionById(preferred.id, teamId);
     return true;
@@ -418,14 +477,16 @@ export async function findTeamIdByCustomer(customerId: string) {
 export async function markTeamUnpaid(teamId: string) {
   if (!isSupabaseAdminConfigured()) return;
   const admin = createAdminClient();
-  await admin
+  const { error } = await admin
     .from("teams")
     .update({
       payment_plan_paid: false,
       payment_plan_until: new Date().toISOString().slice(0, 10),
-      updated_at: new Date().toISOString(),
     })
     .eq("id", teamId);
+  if (error) {
+    logError("markTeamUnpaid", error.message);
+  }
 }
 
 export async function ensureStripeCustomer(input: {
@@ -456,13 +517,16 @@ export async function ensureStripeCustomer(input: {
     });
     if (!isSupabaseAdminConfigured()) return customer.id;
     const admin = createAdminClient();
-    await admin
+    const { error } = await admin
       .from("teams")
       .update({
         stripe_customer_id: customer.id,
-        updated_at: new Date().toISOString(),
       })
       .eq("id", input.team.id);
+    if (error) {
+      logError("ensureStripeCustomer.save", error.message);
+      return null;
+    }
     return customer.id;
   } catch (error) {
     logError("ensureStripeCustomer", error);
@@ -521,7 +585,7 @@ export async function createSeatCheckoutSession(input: {
       mode: "subscription",
       customer: input.customerId,
       client_reference_id: input.team.id,
-      success_url: `${origin}/team/billing?checkout=success`,
+      success_url: `${origin}/team/billing?checkout=success&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${origin}/team/billing?checkout=cancel`,
       line_items: lineItems,
       metadata: {
@@ -646,7 +710,8 @@ export async function invoiceAdditionalSeats(input: {
           planId: updated.metadata.planId || input.team.payment_plan_id,
           period: parsePeriod(updated.metadata.period || input.team.billing_period),
         });
-        return { ok: true as const, url: `${getPublicSiteUrl()}/team/billing?checkout=success` };
+        // No Checkout Session id here — page reconciles from Stripe subscription.
+        return { ok: true as const, url: `${getPublicSiteUrl()}/team/billing` };
       }
     }
   } catch (error) {
