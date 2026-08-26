@@ -349,6 +349,50 @@ export async function syncSubscriptionById(subscriptionId: string, teamIdHint?: 
   });
 }
 
+/** After Checkout success URL — sync seats if webhook has not run yet. */
+export async function reconcileTeamBillingFromStripe(teamId: string) {
+  const team = await loadTeamBillingRow(teamId);
+  if (!team) return false;
+  const stripe = await getStripeClient();
+  if (!stripe) return false;
+
+  if (team.stripe_subscription_id) {
+    await syncSubscriptionById(team.stripe_subscription_id, teamId);
+    return true;
+  }
+
+  if (!team.stripe_customer_id) return false;
+
+  try {
+    const listed = await stripe.subscriptions.list({
+      customer: team.stripe_customer_id,
+      status: "all",
+      limit: 20,
+    });
+    const preferred =
+      listed.data.find(
+        (item) =>
+          item.metadata?.teamId === teamId &&
+          (item.status === "active" ||
+            item.status === "trialing" ||
+            item.status === "past_due"),
+      ) ??
+      listed.data.find(
+        (item) =>
+          item.status === "active" ||
+          item.status === "trialing" ||
+          item.status === "past_due",
+      ) ??
+      listed.data[0];
+    if (!preferred) return false;
+    await syncSubscriptionById(preferred.id, teamId);
+    return true;
+  } catch (error) {
+    logError("reconcileTeamBillingFromStripe", error);
+    return false;
+  }
+}
+
 async function findTeamIdBySubscription(subscriptionId: string) {
   if (!isSupabaseAdminConfigured()) return null;
   const admin = createAdminClient();

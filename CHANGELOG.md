@@ -4,6 +4,10 @@
 
 - (none)
 
+## v0.3.5
+
+- Pēc Checkout vietas sinhronizē no Stripe arī bez webhook (un atverot Abonementus)
+
 ## v0.3.4
 
 - Stripe Checkout: `product_data.tax_code` (SaaS) un `tax_behavior`, lai strādātu ar Managed Payments

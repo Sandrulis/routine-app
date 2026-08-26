@@ -16,6 +16,7 @@ import {
   loadTeamBillingRow,
   loadTeamMembersForSeats,
   parsePeriod,
+  reconcileTeamBillingFromStripe,
   remainingEarlyBirdForCheckout,
   subscriptionPeriodEndMs,
 } from "@/app/lib/billing/subscription";
@@ -435,4 +436,26 @@ export async function buyExtraTeamSeatAction(
   revalidatePath("/team/billing");
   revalidatePath("/team");
   return { ok: true, data: { url: result.url } };
+}
+
+export async function reconcileTeamBillingAfterCheckoutAction(
+  teamId: string,
+): Promise<ActionResult<{ synced: boolean }>> {
+  const user = await getCurrentUser();
+  if (!user) return { ok: false, error: "errors.auth_required" };
+  if (!isSupabaseConfigured()) return { ok: false, error: "errors.db_not_configured" };
+  if (!(await getStripeCredentials())) {
+    return { ok: false, error: await stripeUnavailableError() };
+  }
+
+  const trimmed = teamId.trim();
+  const access = await assertCanManageTeamBilling(trimmed, user.id);
+  if (!access.ok) return access;
+
+  const synced = await reconcileTeamBillingFromStripe(trimmed);
+  if (synced) {
+    revalidatePath("/team/billing");
+    revalidatePath("/team");
+  }
+  return { ok: true, data: { synced } };
 }

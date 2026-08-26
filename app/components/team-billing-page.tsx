@@ -12,6 +12,7 @@ import {
   buyExtraTeamSeatAction,
   getTeamBillingSummaryAction,
   payPendingTeamSeatsAction,
+  reconcileTeamBillingAfterCheckoutAction,
   startTeamBillingCheckoutAction,
   type TeamBillingSummary,
 } from "@/app/lib/billing/actions";
@@ -38,36 +39,77 @@ export function TeamBillingPage() {
 
   useEffect(() => {
     if (!currentTeam?.id || !canManage) return;
-    void getTeamBillingSummaryAction(currentTeam.id).then((result) => {
+    let cancelled = false;
+    void (async () => {
+      // Recover seats if Checkout succeeded but webhook did not update yet.
+      await reconcileTeamBillingAfterCheckoutAction(currentTeam.id);
+      if (cancelled) return;
+      const result = await getTeamBillingSummaryAction(currentTeam.id);
+      if (cancelled) return;
       if (!result.ok) {
         showFeedback({ type: "error", text: translateActionError(t, result.error) });
         return;
       }
       setSummary(result.data);
-      setPlanId(result.data.planId && !result.data.isFreePlan ? result.data.planId : result.data.paidPlans[0]?.id ?? "");
+      setPlanId(
+        result.data.planId && !result.data.isFreePlan
+          ? result.data.planId
+          : (result.data.paidPlans[0]?.id ?? ""),
+      );
       const nextPeriod =
-        result.data.paidPlans.find((plan) => plan.id === (result.data.planId || result.data.paidPlans[0]?.id))
-          ?.periods[0] ?? result.data.period;
+        result.data.paidPlans.find(
+          (plan) => plan.id === (result.data.planId || result.data.paidPlans[0]?.id),
+        )?.periods[0] ?? result.data.period;
       setPeriod(nextPeriod);
-    });
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, [canManage, currentTeam?.id, showFeedback, t]);
 
   useEffect(() => {
     const checkout = searchParams.get("checkout");
-    if (!checkout) return;
-    if (checkout === "success") {
-      showFeedback({
-        type: "success",
-        text: t("team.billing.checkout_success", "Maksājums saņemts. Vietas tiks atvērtas pēc apstiprinājuma."),
-      });
-    } else if (checkout === "cancel") {
+    if (!checkout || !currentTeam?.id || !canManage) return;
+
+    if (checkout === "cancel") {
       showFeedback({
         type: "info",
         text: t("team.billing.checkout_cancel", "Maksājums atcelts."),
       });
+      router.replace("/team/billing");
+      return;
     }
-    router.replace("/team/billing");
-  }, [router, searchParams, showFeedback, t]);
+
+    if (checkout !== "success") return;
+
+    let cancelled = false;
+    void (async () => {
+      await reconcileTeamBillingAfterCheckoutAction(currentTeam.id);
+      if (cancelled) return;
+      const result = await getTeamBillingSummaryAction(currentTeam.id);
+      if (cancelled) return;
+      if (result.ok) {
+        setSummary(result.data);
+        setPlanId(
+          result.data.planId && !result.data.isFreePlan
+            ? result.data.planId
+            : (result.data.paidPlans[0]?.id ?? ""),
+        );
+      }
+      showFeedback({
+        type: "success",
+        text: t(
+          "team.billing.checkout_success",
+          "Maksājums saņemts. Vietas tiks atvērtas pēc apstiprinājuma.",
+        ),
+      });
+      router.replace("/team/billing");
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [canManage, currentTeam?.id, router, searchParams, showFeedback, t]);
 
   function periodLabel(value: PaymentPlanBillingPeriod) {
     if (value === "year") return t("team.billing.period.year", "Gads");
