@@ -386,9 +386,19 @@ export async function ensureStripeCustomer(input: {
 }) {
   const stripe = await getStripeClient();
   if (!stripe) return null;
+
   if (input.team.stripe_customer_id) {
-    return input.team.stripe_customer_id;
+    try {
+      const existing = await stripe.customers.retrieve(input.team.stripe_customer_id);
+      if (!("deleted" in existing && existing.deleted)) {
+        return input.team.stripe_customer_id;
+      }
+    } catch (error) {
+      // Stale id after test/live key switch — recreate below.
+      logError("ensureStripeCustomer.retrieve", error);
+    }
   }
+
   try {
     const customer = await stripe.customers.create({
       email: input.email,
@@ -406,7 +416,7 @@ export async function ensureStripeCustomer(input: {
       .eq("id", input.team.id);
     return customer.id;
   } catch (error) {
-    logError("ensureStripeCustomer", stripeClientErrorKey(error));
+    logError("ensureStripeCustomer", error);
     return null;
   }
 }
@@ -489,7 +499,7 @@ export async function createSeatCheckoutSession(input: {
     }
     return { ok: true as const, url: session.url };
   } catch (error) {
-    logError("createSeatCheckoutSession", stripeClientErrorKey(error));
+    logError("createSeatCheckoutSession", error);
     return { ok: false as const, error: stripeClientErrorKey(error) };
   }
 }

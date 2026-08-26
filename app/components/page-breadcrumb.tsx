@@ -179,6 +179,22 @@ export function PageBreadcrumb() {
         });
         return items;
       }
+      if (parts[1] === "onedrive") {
+        items.push({
+          href: "/team/onedrive",
+          label: t("nav.onedrive", "OneDrive Integrācija"),
+          icon: <CrumbIcon className="fab fa-microsoft" />,
+        });
+        return items;
+      }
+      if (parts[1] === "billing") {
+        items.push({
+          href: "/team/billing",
+          label: t("team.billing.title", "Abonementi"),
+          icon: <CrumbIcon className="fas fa-credit-card" />,
+        });
+        return items;
+      }
       if (parts[1]) {
         const member = members.find((item) => item.id === parts[1]);
         items.push({

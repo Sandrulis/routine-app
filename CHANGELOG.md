@@ -4,6 +4,11 @@
 
 - (none)
 
+## v0.3.3
+
+- Stripe Checkout: ja komandai ir novecojis `stripe_customer_id` (test/live atslēgu maiņa), klients tiek izveidots no jauna
+- Breadcrumb `/team/billing` un `/team/onedrive` rāda pareizos nosaukumus (ne „Lietotājs nav atrasts”)
+
 ## v0.3.2
 
 - E-pasta reģistrācijā automātiski piedāvā spēcīgu paroli (16 zīmes) ar iespēju ģenerēt citu
