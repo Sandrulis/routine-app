@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAuthSession } from "@/app/lib/auth/use-auth-session";
 import {
   deleteNotification,
@@ -23,6 +23,7 @@ export function useNotifications() {
   const teamId = currentTeam?.id ?? null;
   const [items, setItems] = useState<AppNotification[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const refreshGenerationRef = useRef(0);
 
   const refresh = useCallback((options?: { silent?: boolean }) => {
     if (!authReady || !teamReady) return;
@@ -31,16 +32,23 @@ export function useNotifications() {
       setIsLoading(false);
       return;
     }
+    const generation = ++refreshGenerationRef.current;
     if (!options?.silent) setIsLoading(true);
     void purgeOldNotificationsOnce(30).catch(() => undefined);
     void fetchVisibleNotifications(teamId, userId)
-      .then(setItems)
+      .then((next) => {
+        if (generation !== refreshGenerationRef.current) return;
+        setItems(next);
+      })
       .catch((error) => {
+        if (generation !== refreshGenerationRef.current) return;
         console.error("Failed to load notifications", error);
         setItems([]);
       })
       .finally(() => {
-        setIsLoading(false);
+        if (generation === refreshGenerationRef.current) {
+          setIsLoading(false);
+        }
       });
   }, [authReady, teamId, teamReady, userId]);
 
@@ -56,6 +64,7 @@ export function useNotifications() {
     }
     window.addEventListener(NOTIFICATIONS_CHANGE_EVENT, handleChange);
     return () => {
+      refreshGenerationRef.current += 1;
       window.removeEventListener(NOTIFICATIONS_CHANGE_EVENT, handleChange);
     };
   }, [authReady, refresh, teamReady]);

@@ -8,11 +8,21 @@ import { SectionPage } from "@/app/components/section-page";
 import { LoadingState } from "@/app/components/loading-state";
 import { TeamInviteModal } from "@/app/components/team-invite-modal";
 import { MemberLastOnline } from "@/app/components/member-last-online";
+import {
+  MemberSeatBillingHintLine,
+  TeamOpenSeatsBillingHint,
+} from "@/app/components/member-seat-billing-hint";
 import { IconActionButton } from "@/app/components/icon-action-button";
 import { UserAvatar } from "@/app/components/user-avatar";
 import { useFeedbackToast } from "@/app/components/feedback-toast-provider";
 import { useTranslations } from "@/app/components/translations-provider";
 import { translateActionError } from "@/app/lib/i18n/action-errors";
+import { resolveSeatCounts } from "@/app/lib/billing/seats";
+import { useStartTeamInvite } from "@/app/lib/billing/use-start-team-invite";
+import {
+  useFreePlanIds,
+  usePaymentPlansEnabled,
+} from "@/app/lib/payment-plans/context";
 import {
   getTeamInviteLinkAction,
   inviteTeamMemberAction,
@@ -31,7 +41,6 @@ import {
   teamRankLabel,
   type TeamMember,
 } from "@/app/lib/team";
-import { useStartTeamInvite } from "@/app/lib/billing/use-start-team-invite";
 import { useTeam } from "@/app/lib/team-store";
 import { NOTIFICATIONS_CHANGE_EVENT } from "@/app/lib/notifications";
 import { useIsAdmin } from "@/app/lib/users/use-is-admin";
@@ -42,6 +51,8 @@ export default function TeamPage() {
   const { t } = useTranslations();
   const router = useRouter();
   const { showFeedback } = useFeedbackToast();
+  const paymentPlansEnabled = usePaymentPlansEnabled();
+  const freePlanIds = useFreePlanIds();
   const { isAdmin } = useIsAdmin();
   const {
     members,
@@ -74,6 +85,16 @@ export default function TeamPage() {
         member.id === currentUser.id ||
         (member.userId && member.userId === currentUser.userId),
     ) ?? null;
+  const isFreePlan = Boolean(
+    currentTeam?.paymentPlan.planId &&
+      freePlanIds.includes(currentTeam.paymentPlan.planId),
+  );
+  const seatCounts = currentTeam
+    ? resolveSeatCounts({
+        paidSeatCount: currentTeam.paidSeatCount,
+        members,
+      })
+    : null;
 
   async function handleResend(member: TeamMember) {
     if (isBusy) return;
@@ -251,7 +272,18 @@ export default function TeamPage() {
                 : t("teams.required.empty_members", "Vispirms izveido komandu.")}
             </div>
           ) : (
-            members.map((member) => {
+            <>
+              {currentTeam && seatCounts ? (
+                <TeamOpenSeatsBillingHint
+                  team={currentTeam}
+                  roles={roles}
+                  viewer={currentUser}
+                  isFreePlan={isFreePlan}
+                  paymentPlansEnabled={paymentPlansEnabled}
+                  openSeatCount={seatCounts.openSeatCount}
+                />
+              ) : null}
+              {members.map((member) => {
               const pending = isPendingTeamMember(member);
               const awaitingPayment = isAwaitingPaymentSeat(member);
               const canManage = canRemoveTeamMember(
@@ -303,6 +335,16 @@ export default function TeamPage() {
                           .filter(Boolean)
                           .join(" - ")}
                       </p>
+                      {currentTeam ? (
+                        <MemberSeatBillingHintLine
+                          member={member}
+                          roles={roles}
+                          team={currentTeam}
+                          isFreePlan={isFreePlan}
+                          paymentPlansEnabled={paymentPlansEnabled}
+                          viewer={currentUser}
+                        />
+                      ) : null}
                     </div>
                   </Link>
 
@@ -358,7 +400,8 @@ export default function TeamPage() {
                   )}
                 </div>
               );
-            })
+            })}
+            </>
           )}
         </div>
 

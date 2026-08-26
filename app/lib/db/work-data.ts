@@ -171,8 +171,15 @@ function teamFromRow(row: {
   payment_plan_is_early_bird?: boolean | null;
   paid_seat_count?: number | null;
   billing_cycle_end?: string | null;
+  billing_period?: string | null;
 }): WorkTeam {
   const paidSeatCount = Number(row.paid_seat_count);
+  const billingPeriod =
+    row.billing_period === "year" ||
+    row.billing_period === "month" ||
+    row.billing_period === "quarter"
+      ? row.billing_period
+      : null;
   return {
     id: row.id,
     name: row.name,
@@ -198,6 +205,7 @@ function teamFromRow(row: {
       typeof row.billing_cycle_end === "string" && row.billing_cycle_end.trim()
         ? row.billing_cycle_end.slice(0, 10)
         : null,
+    billingPeriod,
   };
 }
 
@@ -265,7 +273,7 @@ export async function fetchUserTeams(): Promise<{
       supabase
         .from("teams")
         .select(
-          "id, name, initials, icon, color, logo_url, created_at, payment_plan_id, payment_plan_until, payment_plan_paid, payment_plan_is_trial, payment_plan_is_early_bird, paid_seat_count, billing_cycle_end",
+          "id, name, initials, icon, color, logo_url, created_at, payment_plan_id, payment_plan_until, payment_plan_paid, payment_plan_is_trial, payment_plan_is_early_bird, paid_seat_count, billing_cycle_end, billing_period",
         )
         .in("id", chunk)
         .order("created_at", { ascending: true }),

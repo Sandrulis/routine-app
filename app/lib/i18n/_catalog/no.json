@@ -1850,5 +1850,16 @@
   "team.billing.checkout_period_month": "/mnd",
   "team.billing.checkout_period_year": "/år",
   "team.billing.checkout_period_quarter": "/kv.",
-  "team.billing.checkout_vat_hint": "MVA beregnes for ditt land i Stripe-betaling."
+  "team.billing.checkout_vat_hint": "MVA beregnes for ditt land i Stripe-betaling.",
+  "team.seat.free_owner": "Gratis plass (eier)",
+  "team.seat.awaiting_payment": "Venter på betaling for plass",
+  "team.seat.awaiting_accept": "Venter på aksept",
+  "team.seat.trial_until": "Prøveperiode til {until}",
+  "team.seat.subscribed_until": "Abonnert til {until}",
+  "team.seat.subscribed_until_month": "Abonnert til {until} (måned)",
+  "team.seat.subscribed_until_year": "Abonnert til {until} (år)",
+  "team.seat.open_one": "1 ledig betalt plass",
+  "team.seat.open_one_until": "1 ledig betalt plass til {until}",
+  "team.seat.open_many": "{count} ledige betalte plasser",
+  "team.seat.open_many_until": "{count} ledige betalte plasser til {until}"
 }

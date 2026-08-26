@@ -1850,5 +1850,16 @@
   "team.billing.checkout_period_month": "/mes",
   "team.billing.checkout_period_year": "/año",
   "team.billing.checkout_period_quarter": "/trim.",
-  "team.billing.checkout_vat_hint": "El IVA se calcula según tu país en el pago de Stripe."
+  "team.billing.checkout_vat_hint": "El IVA se calcula según tu país en el pago de Stripe.",
+  "team.seat.free_owner": "Plaza gratuita (propietario)",
+  "team.seat.awaiting_payment": "Esperando pago de plaza",
+  "team.seat.awaiting_accept": "Esperando aceptación",
+  "team.seat.trial_until": "Prueba hasta {until}",
+  "team.seat.subscribed_until": "Suscrito hasta {until}",
+  "team.seat.subscribed_until_month": "Suscrito hasta {until} (mes)",
+  "team.seat.subscribed_until_year": "Suscrito hasta {until} (año)",
+  "team.seat.open_one": "1 plaza de pago libre",
+  "team.seat.open_one_until": "1 plaza de pago libre hasta {until}",
+  "team.seat.open_many": "{count} plazas de pago libres",
+  "team.seat.open_many_until": "{count} plazas de pago libres hasta {until}"
 }

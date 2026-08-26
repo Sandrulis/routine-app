@@ -1850,5 +1850,16 @@
   "team.billing.checkout_period_month": "/mėn.",
   "team.billing.checkout_period_year": "/m.",
   "team.billing.checkout_period_quarter": "/ketv.",
-  "team.billing.checkout_vat_hint": "PVM apskaičiuojamas pagal jūsų šalį Stripe apmokėjime."
+  "team.billing.checkout_vat_hint": "PVM apskaičiuojamas pagal jūsų šalį Stripe apmokėjime.",
+  "team.seat.free_owner": "Nemokama vieta (savininkas)",
+  "team.seat.awaiting_payment": "Laukia vietos apmokėjimo",
+  "team.seat.awaiting_accept": "Laukia patvirtinimo",
+  "team.seat.trial_until": "Bandomasis laikotarpis iki {until}",
+  "team.seat.subscribed_until": "Abonentas iki {until}",
+  "team.seat.subscribed_until_month": "Abonentas iki {until} (mėnuo)",
+  "team.seat.subscribed_until_year": "Abonentas iki {until} (metai)",
+  "team.seat.open_one": "1 laisva apmokėta vieta",
+  "team.seat.open_one_until": "1 laisva apmokėta vieta iki {until}",
+  "team.seat.open_many": "{count} laisvos apmokėtos vietos",
+  "team.seat.open_many_until": "{count} laisvos apmokėtos vietos iki {until}"
 }

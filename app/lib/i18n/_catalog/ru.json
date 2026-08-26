@@ -1850,5 +1850,16 @@
   "team.billing.checkout_period_month": "/мес",
   "team.billing.checkout_period_year": "/год",
   "team.billing.checkout_period_quarter": "/кв.",
-  "team.billing.checkout_vat_hint": "НДС рассчитывается для вашей страны при оплате в Stripe."
+  "team.billing.checkout_vat_hint": "НДС рассчитывается для вашей страны при оплате в Stripe.",
+  "team.seat.free_owner": "Бесплатное место (владелец)",
+  "team.seat.awaiting_payment": "Ожидает оплаты места",
+  "team.seat.awaiting_accept": "Ожидает принятия",
+  "team.seat.trial_until": "Пробный период до {until}",
+  "team.seat.subscribed_until": "Подписка до {until}",
+  "team.seat.subscribed_until_month": "Подписка до {until} (месяц)",
+  "team.seat.subscribed_until_year": "Подписка до {until} (год)",
+  "team.seat.open_one": "1 свободное оплаченное место",
+  "team.seat.open_one_until": "1 свободное оплаченное место до {until}",
+  "team.seat.open_many": "{count} свободных оплаченных мест",
+  "team.seat.open_many_until": "{count} свободных оплаченных мест до {until}"
 }

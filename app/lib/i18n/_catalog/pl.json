@@ -1850,5 +1850,16 @@
   "team.billing.checkout_period_month": "/mies.",
   "team.billing.checkout_period_year": "/rok",
   "team.billing.checkout_period_quarter": "/kw.",
-  "team.billing.checkout_vat_hint": "VAT jest obliczany według kraju podczas płatności w Stripe."
+  "team.billing.checkout_vat_hint": "VAT jest obliczany według kraju podczas płatności w Stripe.",
+  "team.seat.free_owner": "Darmowe miejsce (właściciel)",
+  "team.seat.awaiting_payment": "Oczekuje na opłacenie miejsca",
+  "team.seat.awaiting_accept": "Oczekuje na akceptację",
+  "team.seat.trial_until": "Okres próbny do {until}",
+  "team.seat.subscribed_until": "Abonament do {until}",
+  "team.seat.subscribed_until_month": "Abonament do {until} (miesiąc)",
+  "team.seat.subscribed_until_year": "Abonament do {until} (rok)",
+  "team.seat.open_one": "1 wolne opłacone miejsce",
+  "team.seat.open_one_until": "1 wolne opłacone miejsce do {until}",
+  "team.seat.open_many": "{count} wolnych opłaconych miejsc",
+  "team.seat.open_many_until": "{count} wolnych opłaconych miejsc do {until}"
 }

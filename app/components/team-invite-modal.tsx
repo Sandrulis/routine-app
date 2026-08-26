@@ -34,7 +34,13 @@ export function TeamInviteModal({
     setRole(defaultRoleId);
     setPending(false);
     setEmailInviteEnabled(true);
-    void isTeamInviteEmailEnabledAction().then(setEmailInviteEnabled);
+    let cancelled = false;
+    void isTeamInviteEmailEnabledAction().then((enabled) => {
+      if (!cancelled) setEmailInviteEnabled(enabled);
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [defaultRoleId, open]);
 
   const trimmedEmail = email.trim();

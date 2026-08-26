@@ -4,6 +4,12 @@
 
 - (none)
 
+## v0.3.7
+
+- Komandas sarakstā īpašniekam zem vārda: vietas statuss (bezmaksas vadītājs, abonēts līdz, gaida samaksu/apstiprinājumu) un brīvās apmaksātas vietas baneris
+- Abonementu lapā: drošāka checkout atgriešanās (mount guards, bez dubulta toast)
+- Paziņojumi un uzaicinājuma modālis: async atjauninājumi neaiztiek stāvokli pēc aizvēršanas
+
 ## v0.3.6
 
 - Abonementu checkout kopsavilkums: maksas lietotāju skaits, summa un + PVN piezīme

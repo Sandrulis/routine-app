@@ -58,8 +58,25 @@ export function isTeamOwnerOrAdmin(
   isAdmin: boolean,
 ): boolean {
   if (isAdmin) return true;
+  return isTeamOwner(currentUser, roles);
+}
+
+export function isTeamOwner(
+  currentUser: Pick<TeamMember, "role" | "roleId">,
+  roles: TeamRole[],
+): boolean {
   if (currentUser.role === OWNER_TEAM_ROLE) return true;
-  const role = currentTeamRole(currentUser, roles);
+  return currentTeamRole(currentUser, roles)?.slug === OWNER_TEAM_ROLE;
+}
+
+export function isMemberTeamOwner(
+  member: Pick<TeamMember, "role" | "roleId">,
+  roles: TeamRole[],
+): boolean {
+  if (member.role === OWNER_TEAM_ROLE) return true;
+  const role = member.roleId
+    ? roles.find((item) => item.id === member.roleId)
+    : null;
   return role?.slug === OWNER_TEAM_ROLE;
 }
 
@@ -490,6 +507,7 @@ export type WorkTeam = {
   paymentPlan: TeamPaymentPlanState;
   paidSeatCount: number;
   billingCycleEnd: string | null;
+  billingPeriod: "month" | "year" | "quarter" | null;
 };
 
 export const TEAMS_STORAGE_KEY = "routine-app-teams";
@@ -601,6 +619,7 @@ export function normalizeStoredTeams(value: unknown): WorkTeam[] | null {
         paymentPlan: EMPTY_TEAM_PAYMENT_PLAN,
         paidSeatCount: 0,
         billingCycleEnd: null as string | null,
+        billingPeriod: null as "month" | "year" | "quarter" | null,
       };
     })
     .filter((item): item is WorkTeam => item !== null);

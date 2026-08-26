@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { LoadingState } from "@/app/components/loading-state";
 import { SectionPage } from "@/app/components/section-page";
@@ -172,6 +172,15 @@ export function TeamBillingPage() {
   const [period, setPeriod] = useState<PaymentPlanBillingPeriod>("month");
   const [pendingKind, setPendingKind] = useState<"pay" | "extra" | null>(null);
   const [isPending, startTransition] = useTransition();
+  const mountedRef = useRef(false);
+  const checkoutHandledRef = useRef<string | null>(null);
+
+  useLayoutEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
 
   useEffect(() => {
     if (!currentTeam?.id || !canManage) return;
@@ -179,9 +188,9 @@ export function TeamBillingPage() {
     void (async () => {
       // Recover seats if Checkout succeeded but webhook did not update yet.
       await reconcileTeamBillingAfterCheckoutAction(currentTeam.id);
-      if (cancelled) return;
+      if (cancelled || !mountedRef.current) return;
       const result = await getTeamBillingSummaryAction(currentTeam.id);
-      if (cancelled) return;
+      if (cancelled || !mountedRef.current) return;
       if (!result.ok) {
         showFeedback({ type: "error", text: translateActionError(t, result.error) });
         return;
@@ -208,12 +217,19 @@ export function TeamBillingPage() {
     const sessionId = searchParams.get("session_id");
     if (!checkout || !currentTeam?.id || !canManage) return;
 
+    const handleKey = `${checkout}:${sessionId ?? ""}`;
+    if (checkoutHandledRef.current === handleKey) return;
+    checkoutHandledRef.current = handleKey;
+
     if (checkout === "cancel") {
-      showFeedback({
-        type: "info",
-        text: t("team.billing.checkout_cancel", "Maksājums atcelts."),
+      queueMicrotask(() => {
+        if (!mountedRef.current) return;
+        showFeedback({
+          type: "info",
+          text: t("team.billing.checkout_cancel", "Maksājums atcelts."),
+        });
+        router.replace("/team/billing");
       });
-      router.replace("/team/billing");
       return;
     }
 
@@ -225,7 +241,7 @@ export function TeamBillingPage() {
         currentTeam.id,
         sessionId,
       );
-      if (cancelled) return;
+      if (cancelled || !mountedRef.current) return;
       if (!confirm.ok) {
         showFeedback({
           type: "error",
@@ -240,7 +256,7 @@ export function TeamBillingPage() {
         return;
       }
       const result = await getTeamBillingSummaryAction(currentTeam.id);
-      if (cancelled) return;
+      if (cancelled || !mountedRef.current) return;
       if (result.ok) {
         setSummary(result.data);
         setPlanId(

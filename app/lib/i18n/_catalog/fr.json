@@ -1850,5 +1850,16 @@
   "team.billing.checkout_period_month": "/mois",
   "team.billing.checkout_period_year": "/an",
   "team.billing.checkout_period_quarter": "/trim.",
-  "team.billing.checkout_vat_hint": "La TVA est calculée selon votre pays lors du paiement Stripe."
+  "team.billing.checkout_vat_hint": "La TVA est calculée selon votre pays lors du paiement Stripe.",
+  "team.seat.free_owner": "Place gratuite (propriétaire)",
+  "team.seat.awaiting_payment": "En attente du paiement de la place",
+  "team.seat.awaiting_accept": "En attente d'acceptation",
+  "team.seat.trial_until": "Essai jusqu'au {until}",
+  "team.seat.subscribed_until": "Abonné jusqu'au {until}",
+  "team.seat.subscribed_until_month": "Abonné jusqu'au {until} (mois)",
+  "team.seat.subscribed_until_year": "Abonné jusqu'au {until} (an)",
+  "team.seat.open_one": "1 place payée libre",
+  "team.seat.open_one_until": "1 place payée libre jusqu'au {until}",
+  "team.seat.open_many": "{count} places payées libres",
+  "team.seat.open_many_until": "{count} places payées libres jusqu'au {until}"
 }

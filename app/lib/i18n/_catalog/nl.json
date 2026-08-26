@@ -1850,5 +1850,16 @@
   "team.billing.checkout_period_month": "/mnd",
   "team.billing.checkout_period_year": "/jr",
   "team.billing.checkout_period_quarter": "/kw.",
-  "team.billing.checkout_vat_hint": "Btw wordt berekend voor jouw land in Stripe-afrekening."
+  "team.billing.checkout_vat_hint": "Btw wordt berekend voor jouw land in Stripe-afrekening.",
+  "team.seat.free_owner": "Gratis plaats (eigenaar)",
+  "team.seat.awaiting_payment": "Wacht op betaling van plaats",
+  "team.seat.awaiting_accept": "Wacht op acceptatie",
+  "team.seat.trial_until": "Proefperiode tot {until}",
+  "team.seat.subscribed_until": "Geabonneerd tot {until}",
+  "team.seat.subscribed_until_month": "Geabonneerd tot {until} (maand)",
+  "team.seat.subscribed_until_year": "Geabonneerd tot {until} (jaar)",
+  "team.seat.open_one": "1 open betaalde plaats",
+  "team.seat.open_one_until": "1 open betaalde plaats tot {until}",
+  "team.seat.open_many": "{count} open betaalde plaatsen",
+  "team.seat.open_many_until": "{count} open betaalde plaatsen tot {until}"
 }

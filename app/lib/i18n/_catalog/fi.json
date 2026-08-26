@@ -1850,5 +1850,16 @@
   "team.billing.checkout_period_month": "/kk",
   "team.billing.checkout_period_year": "/v",
   "team.billing.checkout_period_quarter": "/nv",
-  "team.billing.checkout_vat_hint": "ALV lasketaan maasi mukaan Stripen kassalla."
+  "team.billing.checkout_vat_hint": "ALV lasketaan maasi mukaan Stripen kassalla.",
+  "team.seat.free_owner": "Ilmainen paikka (omistaja)",
+  "team.seat.awaiting_payment": "Odottaa paikan maksua",
+  "team.seat.awaiting_accept": "Odottaa hyväksyntää",
+  "team.seat.trial_until": "Kokeilu {until} asti",
+  "team.seat.subscribed_until": "Tilattu {until} asti",
+  "team.seat.subscribed_until_month": "Tilattu {until} asti (kuukausi)",
+  "team.seat.subscribed_until_year": "Tilattu {until} asti (vuosi)",
+  "team.seat.open_one": "1 vapaa maksettu paikka",
+  "team.seat.open_one_until": "1 vapaa maksettu paikka {until} asti",
+  "team.seat.open_many": "{count} vapaata maksettua paikkaa",
+  "team.seat.open_many_until": "{count} vapaata maksettua paikkaa {until} asti"
 }
