@@ -595,7 +595,7 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "integrations.stripe.publishable_hint":
       "Publiskā atslēga no Stripe Dashboard. Sākas ar pk_.",
     "integrations.stripe.secret_key": "Secret key",
-    "integrations.stripe.secret_key_placeholder": "sk_live_… vai sk_test_…",
+    "integrations.stripe.secret_key_placeholder": "sk_… (live vai test)",
     "integrations.stripe.secret_key_placeholder_saved":
       "Saglabāts — atstāj tukšu, ja nemaina",
     "integrations.stripe.webhook_secret": "Webhook signing secret",
@@ -2808,7 +2808,7 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "integrations.stripe.publishable_hint":
       "Publishable key from the Stripe Dashboard. Starts with pk_.",
     "integrations.stripe.secret_key": "Secret key",
-    "integrations.stripe.secret_key_placeholder": "sk_live_… or sk_test_…",
+    "integrations.stripe.secret_key_placeholder": "sk_… (live or test)",
     "integrations.stripe.secret_key_placeholder_saved":
       "Saved — leave blank to keep unchanged",
     "integrations.stripe.webhook_secret": "Webhook signing secret",

@@ -1634,7 +1634,7 @@ export const fr: Record<string, string> = {
   "integrations.stripe.publishable_key_placeholder": "pk_live_… ou pk_test_…",
   "integrations.stripe.publishable_hint": "Clé publique du tableau de bord Stripe. Commence par pk_.",
   "integrations.stripe.secret_key": "Secret key",
-  "integrations.stripe.secret_key_placeholder": "sk_live_… ou sk_test_…",
+  "integrations.stripe.secret_key_placeholder": "sk_… (live ou test)",
   "integrations.stripe.secret_key_placeholder_saved": "Enregistré — laissez vide pour conserver",
   "integrations.stripe.webhook_secret": "Webhook signing secret",
   "integrations.stripe.webhook_secret_placeholder": "whsec_…",

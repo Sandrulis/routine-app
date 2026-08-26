@@ -1634,7 +1634,7 @@
   "integrations.stripe.publishable_key_placeholder": "pk_live_… oder pk_test_…",
   "integrations.stripe.publishable_hint": "Öffentlicher Schlüssel aus dem Stripe Dashboard. Beginnt mit pk_.",
   "integrations.stripe.secret_key": "Secret key",
-  "integrations.stripe.secret_key_placeholder": "sk_live_… oder sk_test_…",
+  "integrations.stripe.secret_key_placeholder": "sk_… (live oder test)",
   "integrations.stripe.secret_key_placeholder_saved": "Gespeichert — leer lassen, um beizubehalten",
   "integrations.stripe.webhook_secret": "Webhook signing secret",
   "integrations.stripe.webhook_secret_placeholder": "whsec_…",

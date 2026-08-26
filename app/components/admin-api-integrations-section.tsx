@@ -565,7 +565,7 @@ export function AdminApiIntegrationsSection({
                       "integrations.stripe.secret_key_placeholder_saved",
                       "Saglabāts — atstāj tukšu, ja nemaina",
                     )
-                  : t("integrations.stripe.secret_key_placeholder", "sk_live_… vai sk_test_…")
+                  : t("integrations.stripe.secret_key_placeholder", "sk_… (live vai test)")
               }
               className="mt-1.5 w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 font-mono text-sm text-zinc-900 outline-none transition placeholder:font-sans placeholder:text-zinc-400 focus:border-zinc-400 disabled:cursor-not-allowed disabled:bg-zinc-50"
               autoComplete="off"
