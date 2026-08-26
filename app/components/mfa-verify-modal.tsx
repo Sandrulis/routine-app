@@ -46,7 +46,7 @@ export function MfaVerifyModal({
   async function leave() {
     if (isLogin) {
       const supabase = createClient();
-      await supabase.auth.signOut();
+      await supabase.auth.signOut({ scope: "local" });
       router.push("/login");
       router.refresh();
       return;

@@ -233,7 +233,8 @@ export function UserMenu({ user }: { user: TeamMember }) {
               closeAnd(() => {
                 void (async () => {
                   if (isSupabaseConfigured()) {
-                    await createClient().auth.signOut();
+                    // Local only: keep Gmail plugin refresh token / chrome.storage session.
+                    await createClient().auth.signOut({ scope: "local" });
                   }
                   showFeedback({
                     type: "info",

@@ -4,6 +4,10 @@
 
 - (none)
 
+## v0.3.1
+
+- Vietnes **Iziet** (un MFA atcelšana) lieto Supabase `signOut({ scope: "local" })`, lai neatceltu Gmail spraudņa `refresh_token` / `chrome.storage` sesiju
+
 ## v0.3.0
 
 - Komandas vietu norēķini ar Stripe (`/team/billing`): vadītāja vieta bez maksas, samaksa pirms uzaicinājuma, Early Bird pool, `billing_due` / `seat_open`
