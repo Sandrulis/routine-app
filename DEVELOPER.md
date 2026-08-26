@@ -604,7 +604,7 @@ Trīs GitHub Actions darbplūsmas palaižas pie katra push un pull request:
 |----------|------|-------------|
 | **Secret scan** | `.github/workflows/secret-scan.yml` | gitleaks — API keys, tokens, paroles git vēsturē |
 | **Security audit** | `.github/workflows/security-audit.yml` | `npm run audit:check` — HIGH un CRITICAL atkarības |
-| **Security smoke** | `.github/workflows/security-smoke.yml` | `npm run i18n:check` (visas valodas, visi key + placeholderi), TypeScript, lint, production build, `requireAdmin` / `getCurrentUser` uz `actions.ts`, API `getCurrentUser`/`requireAuth`/`getExtensionAuth` (izņēmums: `extension/login`, `refresh`, `config`; `app/api/cron/*` ar `findEnabledCronJobByToken`), nav `eval()`, drošības galvenes |
+| **Security smoke** | `.github/workflows/security-smoke.yml` | `npm run i18n:check` (visas valodas, visi key + placeholderi), TypeScript, lint, production build, `requireAdmin` / `getCurrentUser` uz `actions.ts`, API `getCurrentUser`/`requireAuth`/`getExtensionAuth` (izņēmums: `extension/login`, `refresh`, `config`; `app/api/webhooks/*` ar Svix `verify` vai Stripe `constructEvent`; `app/api/cron/*` ar `findEnabledCronJobByToken`), nav `eval()`, drošības galvenes |
 
 > `GITLEAKS_LICENSE` repo secret ir vajadzīgs tikai **organization** kontiem. Šis repo pieder individuālam kontam, tāpēc scan strādā arī privātam repo bez licences.
 

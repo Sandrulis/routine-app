@@ -95,9 +95,10 @@ jobs:
                 app/api/extension/login/route.ts|app/api/extension/refresh/route.ts|app/api/extension/config/route.ts)
                   continue
                   ;;
-                # Provider webhooks authenticate via signing secret (Svix), not session cookies.
+                # Provider webhooks authenticate via signing secret, not session cookies.
+                # Resend: Svix `new Webhook` + `wh.verify`. Stripe: `constructEvent`.
                 app/api/webhooks/*)
-                  if ! grep -qE "(new Webhook|wh\.verify|\.verify\()" "$file"; then
+                  if ! grep -qE "(new Webhook|wh\.verify|\.verify\(|constructEvent)" "$file"; then
                     echo "FAIL: No webhook signature verify in $file"
                     exit 1
                   fi

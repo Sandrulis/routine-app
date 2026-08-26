@@ -33,6 +33,7 @@ export async function POST(request: Request) {
   const signature = request.headers.get("stripe-signature") ?? "";
   let event: Stripe.Event;
   try {
+    // Auth: Stripe signing secret via constructEvent — no session cookie.
     event = Stripe.webhooks.constructEvent(body, signature, credentials.webhookSecret);
   } catch (error) {
     logError("Stripe webhook verify failed", error);
