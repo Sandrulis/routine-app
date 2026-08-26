@@ -10,6 +10,8 @@
 - Nederīga Stripe atslēga rāda globālu baneri tikai sistēmas administratoriem (`is_admin`), ne komandas vadītājiem; saite uz Integrācijām
 - Stripe secret placeholder vairs nesatur `sk_live_` / `sk_test_`, lai CI secret scan neuzskatītu piemēru par atslēgu
 - Stripe webhook CI atpazīst `constructEvent` kā paraksta pārbaudi (ne tikai Svix `verify`)
+- Sistēmas noklusējuma lomu (`owner` / `member`) nosaukumi aizpildīti visās 15 valodās; `member` ir **Lietotājs**, ne Biedrs
+- Nezināma vai neesoša lapa (404) pāradresē uz `/dashboard`, nevis rāda 404 ekrānu
 - Gmail spraudnis `0.4.31`: pēc Google ielogošanās nesaka aizvērt cilni, kamēr spraudnis nav saņēmis sesiju; popup pagaida, ja done lapa vēl ir atvērta
 - `/team` sarakstā noņemšanas poga arī apstiprinātiem komandas lietotājiem, ja lomai ir pieeja `team.members.remove` (ne īpašnieku un ne sevi); poga pa kreisi no tiešsaistes zīmes
 - Noklusējuma `member` lomai šī pieeja paliek izslēgta; īpašniekam un sistēmas adminam tā ir

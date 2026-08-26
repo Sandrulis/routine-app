@@ -369,6 +369,7 @@ proxy.ts                          # Sesijas refresh, ielogota novirzīšana, pub
 next.config.ts                    # CSP/HSTS; `canonicalHostRedirectRules()` izlaiž `/api/extension/*`
 app/
   layout.tsx                      # Root: i18n, cookie consent, Umami/Sentry, SEO metadata; TimezoneSync (pārlūka IANA josla)
+  not-found.tsx                   # Jebkura nezināma UI lapa → redirect `/dashboard` (viesiem tālāk uz `/login`)
   robots.ts                       # /robots.txt — publiskās lapas, bloķē app/API
   sitemap.ts                      # /sitemap.xml — landing + legal × visām LANGUAGE_CODES
   fontawesome.css                 # FA solid/regular/brands (ne `all.min.css`)
