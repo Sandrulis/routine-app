@@ -40,6 +40,8 @@ export type TeamBillingRow = {
   paid_seat_count: number | null;
   billing_period: string | null;
   billing_cycle_end: string | null;
+  subscription_cancel_at_period_end?: boolean | null;
+  billing_period_end_at?: string | null;
 };
 
 function parsePeriod(value: string | null | undefined): PaymentPlanBillingPeriod {
@@ -147,7 +149,7 @@ export async function loadTeamBillingRow(teamId: string) {
   const { data, error } = await admin
     .from("teams")
     .select(
-      "id, name, payment_plan_id, payment_plan_until, payment_plan_paid, payment_plan_is_trial, payment_plan_is_early_bird, early_bird_seat_count, stripe_customer_id, stripe_subscription_id, paid_seat_count, billing_period, billing_cycle_end",
+      "id, name, payment_plan_id, payment_plan_until, payment_plan_paid, payment_plan_is_trial, payment_plan_is_early_bird, early_bird_seat_count, stripe_customer_id, stripe_subscription_id, paid_seat_count, billing_period, billing_cycle_end, subscription_cancel_at_period_end, billing_period_end_at",
     )
     .eq("id", teamId)
     .maybeSingle();
@@ -294,6 +296,10 @@ export async function applySubscriptionToTeam(input: {
       paid && periodEndMs
         ? new Date(periodEndMs).toISOString().slice(0, 10)
         : null,
+    billing_period_end_at:
+      paid && periodEndMs ? new Date(periodEndMs).toISOString() : null,
+    subscription_cancel_at_period_end:
+      paid && input.subscription.cancel_at_period_end === true,
     payment_plan_paid: paid,
     payment_plan_is_trial: input.subscription.status === "trialing",
   };
@@ -499,6 +505,8 @@ export async function clearTeamSeatBillingState(teamId: string): Promise<boolean
       early_bird_seat_count: 0,
       stripe_subscription_id: null,
       billing_cycle_end: null,
+      billing_period_end_at: null,
+      subscription_cancel_at_period_end: false,
       payment_plan_paid: false,
       payment_plan_is_trial: false,
       payment_plan_is_early_bird: false,
@@ -825,6 +833,56 @@ export async function dropUnusedSeatsAtRenewal(input: {
     });
   } catch (error) {
     logError("dropUnusedSeatsAtRenewal", stripeClientErrorKey(error));
+  }
+}
+
+export async function cancelTeamSubscriptionAtPeriodEnd(
+  teamId: string,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const team = await loadTeamBillingRow(teamId);
+  if (!team?.stripe_subscription_id) {
+    return { ok: false, error: "errors.billing_no_subscription" };
+  }
+  const stripe = await getStripeClient();
+  if (!stripe) {
+    return { ok: false, error: await stripeUnavailableError() };
+  }
+  try {
+    await stripe.subscriptions.update(team.stripe_subscription_id, {
+      cancel_at_period_end: true,
+    });
+    await syncSubscriptionById(team.stripe_subscription_id, teamId);
+    revalidatePath("/team/billing");
+    revalidatePath("/team");
+    return { ok: true };
+  } catch (error) {
+    logError("cancelTeamSubscriptionAtPeriodEnd", stripeClientErrorKey(error));
+    return { ok: false, error: "errors.billing_cancel_failed" };
+  }
+}
+
+export async function resumeTeamSubscription(
+  teamId: string,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const team = await loadTeamBillingRow(teamId);
+  if (!team?.stripe_subscription_id) {
+    return { ok: false, error: "errors.billing_no_subscription" };
+  }
+  const stripe = await getStripeClient();
+  if (!stripe) {
+    return { ok: false, error: await stripeUnavailableError() };
+  }
+  try {
+    await stripe.subscriptions.update(team.stripe_subscription_id, {
+      cancel_at_period_end: false,
+    });
+    await syncSubscriptionById(team.stripe_subscription_id, teamId);
+    revalidatePath("/team/billing");
+    revalidatePath("/team");
+    return { ok: true };
+  } catch (error) {
+    logError("resumeTeamSubscription", stripeClientErrorKey(error));
+    return { ok: false, error: "errors.billing_resume_failed" };
   }
 }
 

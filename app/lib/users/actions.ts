@@ -165,3 +165,64 @@ export async function saveCurrentUserTimezoneAction(
   }
   return { ok: true };
 }
+
+function mapAccountDeletionRpcError(message: string): string {
+  const normalized = message.toLowerCase();
+  if (normalized.includes("last_admin")) {
+    return "errors.last_admin";
+  }
+  if (normalized.includes("account_deletion_already_pending")) {
+    return "errors.account_deletion_already_pending";
+  }
+  if (normalized.includes("account_deletion_not_pending")) {
+    return "errors.account_deletion_not_pending";
+  }
+  return "errors.account_deletion_failed";
+}
+
+export async function requestAccountDeletionAction(): Promise<
+  { ok: true; scheduledAt: string } | { ok: false; error: string }
+> {
+  const user = await getCurrentUser();
+  if (!user) {
+    return { ok: false, error: "errors.auth_required" };
+  }
+  if (!isSupabaseConfigured()) {
+    return { ok: false, error: "errors.db_not_configured" };
+  }
+
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("request_account_deletion");
+  if (error) {
+    return { ok: false, error: mapAccountDeletionRpcError(error.message) };
+  }
+
+  const scheduledAt = typeof data === "string" ? data : String(data ?? "");
+  await supabase.auth.signOut({ scope: "global" });
+
+  revalidatePath("/", "layout");
+  return { ok: true, scheduledAt };
+}
+
+export async function cancelAccountDeletionAction(): Promise<
+  { ok: true } | { ok: false; error: string }
+> {
+  const user = await getCurrentUser();
+  if (!user) {
+    return { ok: false, error: "errors.auth_required" };
+  }
+  if (!isSupabaseConfigured()) {
+    return { ok: false, error: "errors.db_not_configured" };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("cancel_account_deletion");
+  if (error) {
+    return { ok: false, error: mapAccountDeletionRpcError(error.message) };
+  }
+
+  revalidatePath("/", "layout");
+  revalidatePath("/account/pending-deletion");
+  revalidatePath("/settings/profile");
+  return { ok: true };
+}

@@ -493,6 +493,8 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "admin.cron_jobs.job.subtask_start_reminder.description": "Paziņo piesaistītajam lietotājam vai grupai, ka jāuzsāk apakšuzdevums, kura sākuma datums ir šodien vai jau pagājis un statuss vēl ir “nav sākts”.",
     "admin.cron_jobs.job.subtask_due_reminder.title": "Apakšuzdevuma termiņa atgādinājums",
     "admin.cron_jobs.job.subtask_due_reminder.description": "Paziņo piesaistītajam lietotājam vai grupai, ka šodien ir apakšuzdevuma termiņš un tas vēl nav slēgts.",
+    "admin.cron_jobs.job.purge_scheduled_account_deletions.title": "Plānoto kontu dzēšana",
+    "admin.cron_jobs.job.purge_scheduled_account_deletions.description": "Neatgriezeniski izdzēš lietotāju kontus, kuriem beidzies 30 dienu deaktivizācijas termiņš.",
     "admin.cron_jobs.copy_url": "Kopēt cron-job.org saiti",
     "admin.cron_jobs.url_copied": "Saite nokopēta.",
     "admin.cron_jobs.last_run": "Pēdējā palaišana",
@@ -1065,6 +1067,27 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "team.billing.members_blocked_banner":
       "Pārējie komandas lietotāji nevar lietot sistēmu, jo nav apmaksāts abonements.",
     "team.billing.members_blocked_banner_action": "Abonementi",
+    "team.billing.subscription_ending_banner":
+      "Abonements beidzas pēc {countdown}. Pēc termiņa pārējie komandas lietotāji nevarēs lietot sistēmu.",
+    "team.billing.subscription_ending_countdown":
+      "{months} m {days} d {hours} h {minutes} min",
+    "team.billing.subscription_ending_expired": "Drīz beigsies",
+    "team.billing.manage_subscription": "Abonementa pārvaldība",
+    "team.billing.cancel_subscription": "Atteikties no abonementa",
+    "team.billing.cancel_subscription_hint":
+      "Atcelot abonementu, tas beidzas pašreizējā norēķinu perioda beigās. Pēc tam pārējie lietotāji nevarēs lietot sistēmu.",
+    "team.billing.cancel_subscription_confirm_title": "Atteikties no abonementa?",
+    "team.billing.cancel_subscription_confirm_body":
+      "Abonements beigsies pašreizējā perioda beigās. Līdz tam komanda var turpināt lietot sistēmu. Pēc termiņa pārējie lietotāji tiks bloķēti.",
+    "team.billing.cancel_subscription_success":
+      "Abonements tiks beigts perioda beigās. Līdz tam piekļuve paliek aktīva.",
+    "team.billing.cancel_scheduled_hint":
+      "Abonements beigsies perioda beigās. Līdz tam piekļuve paliek aktīva.",
+    "team.billing.resume_subscription": "Atjaunot abonementu",
+    "team.billing.resume_subscription_success":
+      "Abonements atjaunots. Automātiskā atcelšana ir noņemta.",
+    "errors.billing_cancel_failed": "Neizdevās atcelt abonementu.",
+    "errors.billing_resume_failed": "Neizdevās atjaunot abonementu.",
     "team.billing.member_paywall.title": "Komandas abonements nav apmaksāts",
     "team.billing.member_paywall.description":
       "Tava komanda vēl nav samaksājusi par abonementu. Sistēmas saturs nav pieejams, kamēr komandas vadītājs neapmaksā abonementu.",
@@ -1293,6 +1316,12 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "dashboard.my_tasks": "Mani uzdevumi",
     "dashboard.my_tasks.empty": "Tev vēl nav piesaistītu uzdevumu.",
     "dashboard.other_tasks": "Pārējie uzdevumi",
+    "dashboard.search.placeholder": "Meklēt uzdevumus un apakšuzdevumus…",
+    "dashboard.search.empty": "Nav rezultātu.",
+    "dashboard.search.archived": "Arhīvā",
+    "dashboard.search.kind_task": "Uzdevums",
+    "dashboard.search.kind_subtask": "Apakšuzdevums",
+    "dashboard.search.untitled": "Bez nosaukuma",
     "lists.add.title": "Jauns saraksts",
     "lists.add.description":
       "Saraksts grupē projektus vai klientus, katram ar saviem uzdevumiem un iestatījumiem.",
@@ -1904,6 +1933,20 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "user_menu.personal_info_hint": "Vārds un uzvārds",
     "user_menu.personal_info.description": "Atjauno savu vārdu un uzvārdu.",
     "profile.page.subtitle": "Tavs profils un datumu attēlojuma iestatījumi.",
+    "profile.deletion.title": "Dzēst kontu",
+    "profile.deletion.description": "Tavs profils tiks deaktivizēts uz 30 dienām. Pēc termiņa visi ar tevi saistītie dati tiks neatgriezeniski izdzēsti.",
+    "profile.deletion.button": "Dzēst manu kontu",
+    "profile.deletion.deleting": "Apstrādā…",
+    "profile.deletion.confirm_title": "Dzēst kontu?",
+    "profile.deletion.confirm_description": "Tavs profils tiks deaktivizēts uz 30 dienām un tu tiksi izlogots. Ja atkārtoti ienāksi, konts automātiski aktivizēsies un dzēšana tiks atcelta. Pēc 30 dienām bez atkārtotas pieslēgšanās visi dati tiks neatgriezeniski izdzēsti.",
+    "profile.deletion.reactivate_on_login": "Ja pēc deaktivizācijas atkārtoti ienāksi sistēmā, konts automātiski tiks aktivizēts un dzēšana tiks atcelta.",
+    "profile.deletion.reactivated_toast": "Konta dzēšana ir atcelta. Tavs konts atkal ir aktīvs.",
+    "account.pending_deletion.title": "Konts gaida dzēšanu",
+    "account.pending_deletion.description": "Tavs profils ir deaktivizēts. Visi dati tiks izdzēsti {date}, ja neatcelsi dzēšanu.",
+    "account.pending_deletion.hint": "Ja vēlies turpināt lietot Routine, atcel konta dzēšanu.",
+    "account.pending_deletion.cancel": "Atcelt konta dzēšanu",
+    "account.pending_deletion.cancelling": "Atceļ…",
+    "account.pending_deletion.cancel_success": "Konta dzēšana ir atcelta.",
     "profile.page.placeholder":
       "Profila rediģēšanu šeit pielāgosi nākamajā solī.",
     "profile.personal.first_name": "Vārds",
@@ -1982,6 +2025,9 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "errors.email_update_failed": "Neizdevās atjaunināt e-pastu.",
     "errors.user_save_failed": "Neizdevās saglabāt lietotāju.",
     "errors.self_delete": "Nevar dzēst savu kontu.",
+    "errors.account_deletion_failed": "Neizdevās pieprasīt konta dzēšanu.",
+    "errors.account_deletion_already_pending": "Konta dzēšana jau ir ieplānota.",
+    "errors.account_deletion_not_pending": "Kontam nav aktīva dzēšanas pieprasījuma.",
     "errors.user_delete_failed": "Neizdevās dzēst lietotāju.",
     "errors.team_name_required": "Ievadi komandas nosaukumu.",
     "errors.team_create_failed": "Neizdevās izveidot komandu.",
@@ -2786,6 +2832,8 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "admin.cron_jobs.job.subtask_start_reminder.description": "Notifies the assigned person or group that a subtask should be started when its start date is today or already passed and the status is still not started.",
     "admin.cron_jobs.job.subtask_due_reminder.title": "Subtask due reminder",
     "admin.cron_jobs.job.subtask_due_reminder.description": "Notifies the assigned person or group that a subtask is due today and is not closed yet.",
+    "admin.cron_jobs.job.purge_scheduled_account_deletions.title": "Scheduled account purge",
+    "admin.cron_jobs.job.purge_scheduled_account_deletions.description": "Permanently deletes user accounts whose 30-day deactivation period has ended.",
     "admin.cron_jobs.copy_url": "Copy cron-job.org URL",
     "admin.cron_jobs.url_copied": "Link copied.",
     "admin.cron_jobs.last_run": "Last run",
@@ -3014,6 +3062,8 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
       "The team owner's seat is free. Buy a paid seat to invite others.",
     "errors.billing_checkout_invalid":
       "The payment session is invalid or incomplete.",
+    "errors.billing_cancel_failed": "Failed to cancel subscription.",
+    "errors.billing_resume_failed": "Failed to resume subscription.",
     "site_payment_plans.page.subtitle":
       "Enable payment plans and assign frontend modules to each plan",
     "site_payment_plans.enable.section": "Payment plans",
@@ -3351,6 +3401,25 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "team.billing.members_blocked_banner":
       "Other team users cannot use the system because the subscription has not been paid.",
     "team.billing.members_blocked_banner_action": "Subscriptions",
+    "team.billing.subscription_ending_banner":
+      "Subscription ends in {countdown}. After that, other team users will not be able to use the system.",
+    "team.billing.subscription_ending_countdown":
+      "{months} mo {days} d {hours} h {minutes} min",
+    "team.billing.subscription_ending_expired": "Ending soon",
+    "team.billing.manage_subscription": "Manage subscription",
+    "team.billing.cancel_subscription": "Cancel subscription",
+    "team.billing.cancel_subscription_hint":
+      "If you cancel, the subscription ends at the end of the current billing period. After that, other users will be blocked.",
+    "team.billing.cancel_subscription_confirm_title": "Cancel subscription?",
+    "team.billing.cancel_subscription_confirm_body":
+      "The subscription will end at the current period end. Until then the team can keep using the system. After that, other users will be blocked.",
+    "team.billing.cancel_subscription_success":
+      "Subscription will end at period end. Access stays active until then.",
+    "team.billing.cancel_scheduled_hint":
+      "Subscription will end at period end. Access stays active until then.",
+    "team.billing.resume_subscription": "Resume subscription",
+    "team.billing.resume_subscription_success":
+      "Subscription resumed. Automatic cancellation was removed.",
     "team.billing.member_paywall.title": "Team subscription not paid",
     "team.billing.member_paywall.description":
       "Your team has not paid for the subscription yet. System content is unavailable until a team manager pays for the subscription.",
@@ -3578,6 +3647,12 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "dashboard.my_tasks": "My tasks",
     "dashboard.my_tasks.empty": "You have no assigned tasks yet.",
     "dashboard.other_tasks": "Other tasks",
+    "dashboard.search.placeholder": "Search tasks and subtasks…",
+    "dashboard.search.empty": "No results.",
+    "dashboard.search.archived": "Archived",
+    "dashboard.search.kind_task": "Task",
+    "dashboard.search.kind_subtask": "Subtask",
+    "dashboard.search.untitled": "Untitled",
     "lists.add.title": "New list",
     "lists.add.description":
       "A list groups projects or clients, each with its own tasks and settings.",
@@ -4177,6 +4252,20 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "user_menu.personal_info_hint": "First and last name",
     "user_menu.personal_info.description": "Update your first and last name.",
     "profile.page.subtitle": "Your profile and date display preferences.",
+    "profile.deletion.title": "Delete account",
+    "profile.deletion.description": "Your profile will be deactivated for 30 days. After that, all data linked to you will be permanently deleted.",
+    "profile.deletion.button": "Delete my account",
+    "profile.deletion.deleting": "Processing…",
+    "profile.deletion.confirm_title": "Delete account?",
+    "profile.deletion.confirm_description": "Your profile will be deactivated for 30 days and you will be signed out. If you sign in again, your account is reactivated automatically and deletion is cancelled. After 30 days without signing in again, all data will be permanently deleted.",
+    "profile.deletion.reactivate_on_login": "If you sign in again after deactivation, your account is reactivated automatically and deletion is cancelled.",
+    "profile.deletion.reactivated_toast": "Account deletion was cancelled. Your account is active again.",
+    "account.pending_deletion.title": "Account pending deletion",
+    "account.pending_deletion.description": "Your profile is deactivated. All data will be deleted on {date} unless you cancel.",
+    "account.pending_deletion.hint": "If you want to keep using Routine, cancel account deletion.",
+    "account.pending_deletion.cancel": "Cancel account deletion",
+    "account.pending_deletion.cancelling": "Cancelling…",
+    "account.pending_deletion.cancel_success": "Account deletion was cancelled.",
     "profile.page.placeholder":
       "You can customize profile editing in the next step.",
     "profile.personal.first_name": "First name",
@@ -4256,6 +4345,9 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "errors.email_update_failed": "Could not update the email.",
     "errors.user_save_failed": "Could not save the user.",
     "errors.self_delete": "You cannot delete your own account.",
+    "errors.account_deletion_failed": "Could not request account deletion.",
+    "errors.account_deletion_already_pending": "Account deletion is already scheduled.",
+    "errors.account_deletion_not_pending": "There is no active account deletion request.",
     "errors.user_delete_failed": "Could not delete the user.",
     "errors.team_name_required": "Enter a team name.",
     "errors.team_create_failed": "Could not create the team.",

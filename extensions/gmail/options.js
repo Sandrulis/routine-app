@@ -112,6 +112,30 @@ function send(type, payload = {}) {
   });
 }
 
+/** @type {((result: object | null) => void) | null} */
+let sessionPushWaiter = null;
+
+chrome.runtime.onMessage.addListener((message) => {
+  if (message?.type !== "routine.sessionUpdated") return;
+  if (sessionPushWaiter) {
+    sessionPushWaiter(message.result || null);
+    sessionPushWaiter = null;
+  }
+});
+
+function waitForSessionPush(timeoutMs) {
+  return new Promise((resolve) => {
+    const timer = setTimeout(() => {
+      sessionPushWaiter = null;
+      resolve(null);
+    }, timeoutMs);
+    sessionPushWaiter = (result) => {
+      clearTimeout(timer);
+      resolve(result);
+    };
+  });
+}
+
 function selectedTeam(session) {
   const teams = Array.isArray(session?.teams) ? session.teams : [];
   const selectedId = session?.selectedTeamId || "";
@@ -190,10 +214,18 @@ async function refreshUi() {
     Date.now() < deadline
   ) {
     $("boot").textContent = t("extension.gmail.checking_session");
-    await new Promise((resolve) => setTimeout(resolve, 400));
+    const pushed = await waitForSessionPush(1200);
+    if (pushed?.data?.authenticated) {
+      result = pushed;
+      session = pushed.data;
+      applySessionI18n(session);
+      break;
+    }
     result = await send("routine.getSession");
     session = result?.data || null;
     applySessionI18n(session);
+    if (session?.authenticated) break;
+    await new Promise((resolve) => setTimeout(resolve, 400));
   }
 
   $("boot").classList.add("hidden");

@@ -6,6 +6,7 @@ import { LoadingState } from "@/app/components/loading-state";
 import { ProfileDisplayPreferencesForm } from "@/app/components/profile-display-preferences-form";
 import { MfaSettingsCard } from "@/app/components/mfa-settings-card";
 import { TeamLeaveSection } from "@/app/components/team-leave-section";
+import { AccountDeletionSection } from "@/app/components/account-deletion-section";
 import { UserAvatar } from "@/app/components/user-avatar";
 import { useTranslations } from "@/app/components/translations-provider";
 import type {
@@ -77,6 +78,8 @@ export function ProfileSettingsView({
         </Suspense>
 
         {selfMember ? <TeamLeaveSection member={selfMember} redirectTo="/" /> : null}
+
+        <AccountDeletionSection />
       </div>
     </SectionPage>
   );

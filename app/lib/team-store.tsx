@@ -362,6 +362,8 @@ export function TeamProvider({ children }: { children: ReactNode }) {
         paidSeatCount: 0,
         billingCycleEnd: null,
         billingPeriod: null,
+        subscriptionCancelAtPeriodEnd: false,
+        billingPeriodEndAt: null,
       };
 
       const owner = authUser

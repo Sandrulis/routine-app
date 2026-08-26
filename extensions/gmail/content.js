@@ -1484,7 +1484,7 @@ function ensureUi() {
   }
 
   function pluginButtonsAllowed() {
-    if (!session) return false;
+    if (!session) return true;
     if (!session.authenticated) return true;
     const team = selectedTeamFromSession(session);
     return Boolean(team?.googleDriveConnected);
@@ -1504,9 +1504,23 @@ function ensureUi() {
     injectInlineButtons();
   }
 
-  async function refreshSession() {
-    const result = await send("routine.getSession");
+  let sessionLoadedAt = 0;
+  let sessionPrefetchStarted = false;
+
+  function prefetchSession() {
+    if (sessionPrefetchStarted) return;
+    sessionPrefetchStarted = true;
+    refreshSession().catch(() => undefined);
+  }
+
+  async function refreshSession(options = {}) {
+    const force = options.force === true;
+    if (!force && session && Date.now() - sessionLoadedAt < 30_000) {
+      return { data: session };
+    }
+    const result = await send("routine.getSession", force ? { force: true } : {});
     session = result?.data || null;
+    sessionLoadedAt = Date.now();
     applySessionI18n(session);
     applyStaticLabels();
     const logoUrl = session?.logoUrl;
@@ -1776,7 +1790,9 @@ function ensureUi() {
     }
     const email = scrapeEmailFallback();
     setBusy(true, t("extension.gmail.checking_session"));
-    const sessionResult = await refreshSession();
+    const sessionResult = await refreshSession(
+      session && Date.now() - sessionLoadedAt < 30_000 ? {} : { force: true },
+    );
     meta.textContent = email.subject
       ? t("extension.gmail.email_label", { subject: email.subject })
       : t("extension.gmail.open_email");
@@ -1883,9 +1899,12 @@ function ensureUi() {
       btn.querySelector(".routine-gmail-inline-fallback"),
       session?.logoUrl,
     );
+    btn.addEventListener("mouseenter", () => prefetchSession(), { once: true });
+    btn.addEventListener("focus", () => prefetchSession(), { once: true });
     const open = (event) => {
       event.preventDefault();
       event.stopPropagation();
+      prefetchSession();
       void openModal();
     };
     btn.addEventListener("click", open);
@@ -2211,8 +2230,23 @@ function ensureUi() {
   globalThis.__routineGmailOnMessage = onAttachProgress;
   chrome.runtime.onMessage.addListener(onAttachProgress);
 
+  function onSessionUpdated(message) {
+    if (message?.type !== "routine.sessionUpdated") return;
+    const data = message.result?.data;
+    if (!data) return;
+    session = data;
+    sessionLoadedAt = Date.now();
+    applySessionI18n(session);
+    applyStaticLabels();
+    syncPluginButtons();
+  }
+  if (globalThis.__routineGmailOnSession) {
+    chrome.runtime.onMessage.removeListener(globalThis.__routineGmailOnSession);
+  }
+  globalThis.__routineGmailOnSession = onSessionUpdated;
+  chrome.runtime.onMessage.addListener(onSessionUpdated);
+
   applyStaticLabels();
-  refreshSession().catch(() => undefined);
   root._routineInjectInline = syncPluginButtons;
 
   function onTeamStorageChange(changes, area) {
@@ -2228,19 +2262,31 @@ function ensureUi() {
   }
 }
 
-ensureUi();
+let uiInitialized = false;
+function initUiOnce() {
+  if (uiInitialized) return;
+  uiInitialized = true;
+  ensureUi();
+}
+
+function emailUiTargetsPresent() {
+  return Boolean(
+    document.querySelector(
+      "div.amn, div.gH.bAk, div.ade, h2.hP, h2[data-thread-perm-id]",
+    ),
+  );
+}
 
 let injectScheduled = false;
 function scheduleInlineInject() {
+  if (!emailUiTargetsPresent()) return;
   if (injectScheduled) return;
   injectScheduled = true;
   requestAnimationFrame(() => {
     injectScheduled = false;
+    initUiOnce();
     const root = document.getElementById("routine-gmail-root");
-    if (!root) {
-      ensureUi();
-      return;
-    }
+    if (!root) return;
     if (typeof root._routineInjectInline === "function") {
       root._routineInjectInline();
     }
@@ -2248,17 +2294,26 @@ function scheduleInlineInject() {
 }
 
 const observer = new MutationObserver(() => {
-  if (!document.getElementById("routine-gmail-root")) ensureUi();
   scheduleInlineInject();
 });
-observer.observe(document.documentElement, { childList: true, subtree: true });
 
-// Hash changes in Gmail often open/close threads without full reload.
+function attachGmailObserver() {
+  const target =
+    document.querySelector('div[role="main"]') || document.body;
+  if (!target || target.dataset.routineObserved === "1") return;
+  target.dataset.routineObserved = "1";
+  observer.observe(target, { childList: true, subtree: true });
+}
+
+if (document.body) attachGmailObserver();
+else document.addEventListener("DOMContentLoaded", attachGmailObserver, { once: true });
+
 function onHashChange() {
   scheduleInlineInject();
 }
 window.addEventListener("hashchange", onHashChange);
-const injectTimer = setInterval(scheduleInlineInject, 2500);
+const injectTimer = setInterval(scheduleInlineInject, 8000);
+scheduleInlineInject();
 
 globalThis.__routineGmailCleanup = () => {
   observer.disconnect();
@@ -2268,6 +2323,10 @@ globalThis.__routineGmailCleanup = () => {
     chrome.runtime.onMessage.removeListener(globalThis.__routineGmailOnMessage);
     globalThis.__routineGmailOnMessage = null;
   }
+  if (globalThis.__routineGmailOnSession) {
+    chrome.runtime.onMessage.removeListener(globalThis.__routineGmailOnSession);
+    globalThis.__routineGmailOnSession = null;
+  }
   if (globalThis.__routineGmailOnStorage && chrome.storage?.onChanged) {
     chrome.storage.onChanged.removeListener(globalThis.__routineGmailOnStorage);
     globalThis.__routineGmailOnStorage = null;
@@ -2276,5 +2335,6 @@ globalThis.__routineGmailCleanup = () => {
   for (const btn of document.querySelectorAll("[data-routine-gmail-inline]")) {
     btn.remove();
   }
+  uiInitialized = false;
 };
 })();

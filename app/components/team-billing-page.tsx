@@ -10,14 +10,17 @@ import { useTranslations } from "@/app/components/translations-provider";
 import { translateActionError } from "@/app/lib/i18n/action-errors";
 import {
   buyExtraTeamSeatAction,
+  cancelTeamSubscriptionAction,
   confirmTeamBillingCheckoutAction,
   getTeamBillingSummaryAction,
   payPendingTeamSeatsAction,
   reconcileTeamBillingAfterCheckoutAction,
+  resumeTeamSubscriptionAction,
   startTeamBillingCheckoutAction,
   type TeamBillingPlanOption,
   type TeamBillingSummary,
 } from "@/app/lib/billing/actions";
+import { ConfirmModal } from "@/app/components/confirm-modal";
 import { ToggleSwitch } from "@/app/components/toggle-switch";
 import {
   checkoutPricesForPeriod,
@@ -164,13 +167,15 @@ export function TeamBillingPage() {
   const searchParams = useSearchParams();
   const { formatDate } = useDisplayPreferences();
   const { showFeedback } = useFeedbackToast();
-  const { currentTeam, currentUser, roles, isReady } = useTeam();
+  const { currentTeam, currentUser, roles, isReady, refreshTeams } = useTeam();
   const { isAdmin } = useIsAdmin();
   const canManage = canEditTeamSettings(currentUser, roles, isAdmin);
   const [summary, setSummary] = useState<TeamBillingSummary | null>(null);
   const [planId, setPlanId] = useState("");
   const [period, setPeriod] = useState<PaymentPlanBillingPeriod>("month");
-  const [pendingKind, setPendingKind] = useState<"pay" | "extra" | null>(null);
+  const [pendingKind, setPendingKind] = useState<"pay" | "extra" | "cancel" | "resume" | null>(null);
+  const [cancelConfirmOpen, setCancelConfirmOpen] = useState(false);
+  const [subscriptionManageOpen, setSubscriptionManageOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
   const mountedRef = useRef(false);
   const checkoutHandledRef = useRef<string | null>(null);
@@ -182,12 +187,22 @@ export function TeamBillingPage() {
     };
   }, []);
 
+  async function reloadSummaryAndTeams() {
+    if (!currentTeam?.id) return;
+    await refreshTeams();
+    const result = await getTeamBillingSummaryAction(currentTeam.id);
+    if (result.ok && mountedRef.current) {
+      setSummary(result.data);
+    }
+  }
+
   useEffect(() => {
     if (!currentTeam?.id || !canManage) return;
     let cancelled = false;
     void (async () => {
-      // Recover seats if Checkout succeeded but webhook did not update yet.
       await reconcileTeamBillingAfterCheckoutAction(currentTeam.id);
+      if (cancelled || !mountedRef.current) return;
+      await refreshTeams();
       if (cancelled || !mountedRef.current) return;
       const result = await getTeamBillingSummaryAction(currentTeam.id);
       if (cancelled || !mountedRef.current) return;
@@ -210,7 +225,17 @@ export function TeamBillingPage() {
     return () => {
       cancelled = true;
     };
-  }, [canManage, currentTeam?.id, showFeedback, t]);
+  }, [canManage, currentTeam?.id, refreshTeams, showFeedback, t]);
+
+  useEffect(() => {
+    if (summary?.cancelAtPeriodEnd) {
+      setSubscriptionManageOpen(true);
+    }
+  }, [summary?.cancelAtPeriodEnd]);
+
+  useEffect(() => {
+    setSubscriptionManageOpen(false);
+  }, [currentTeam?.id]);
 
   useEffect(() => {
     const checkout = searchParams.get("checkout");
@@ -265,6 +290,7 @@ export function TeamBillingPage() {
             : (result.data.paidPlans[0]?.id ?? ""),
         );
       }
+      await refreshTeams();
       showFeedback({
         type: "success",
         text: t(
@@ -278,7 +304,50 @@ export function TeamBillingPage() {
     return () => {
       cancelled = true;
     };
-  }, [canManage, currentTeam?.id, router, searchParams, showFeedback, t]);
+  }, [canManage, currentTeam?.id, refreshTeams, router, searchParams, showFeedback, t]);
+
+  function cancelSubscription() {
+    if (!currentTeam || isPending) return;
+    startTransition(async () => {
+      setPendingKind("cancel");
+      const result = await cancelTeamSubscriptionAction(currentTeam.id);
+      setPendingKind(null);
+      setCancelConfirmOpen(false);
+      if (!result.ok) {
+        showFeedback({ type: "error", text: translateActionError(t, result.error) });
+        return;
+      }
+      showFeedback({
+        type: "success",
+        text: t(
+          "team.billing.cancel_subscription_success",
+          "Abonements tiks beigts perioda beigās. Līdz tam piekļuve paliek aktīva.",
+        ),
+      });
+      await reloadSummaryAndTeams();
+    });
+  }
+
+  function resumeSubscription() {
+    if (!currentTeam || isPending) return;
+    startTransition(async () => {
+      setPendingKind("resume");
+      const result = await resumeTeamSubscriptionAction(currentTeam.id);
+      setPendingKind(null);
+      if (!result.ok) {
+        showFeedback({ type: "error", text: translateActionError(t, result.error) });
+        return;
+      }
+      showFeedback({
+        type: "success",
+        text: t(
+          "team.billing.resume_subscription_success",
+          "Abonements atjaunots. Automātiskā atcelšana ir noņemta.",
+        ),
+      });
+      await reloadSummaryAndTeams();
+    });
+  }
 
   function periodLabel(value: PaymentPlanBillingPeriod) {
     if (value === "year") return t("team.billing.period.year", "Gads");
@@ -496,6 +565,72 @@ export function TeamBillingPage() {
               </p>
             </div>
           ) : null}
+          {summary.hasSubscription && summary.stripeEnabled ? (
+            <div className="mt-4 border-t border-zinc-100 pt-4">
+              <button
+                type="button"
+                onClick={() => setSubscriptionManageOpen((open) => !open)}
+                aria-expanded={subscriptionManageOpen}
+                className="flex w-full items-center justify-between gap-3 text-left"
+              >
+                <span className="text-sm font-semibold text-zinc-900">
+                  {t("team.billing.manage_subscription", "Abonementa pārvaldība")}
+                </span>
+                <i
+                  className={`fas fa-angle-down text-base text-zinc-500 transition-transform ${
+                    subscriptionManageOpen ? "rotate-180" : ""
+                  }`}
+                  aria-hidden="true"
+                />
+              </button>
+              {subscriptionManageOpen ? (
+                <div className="mt-3">
+                  {summary.cancelAtPeriodEnd ? (
+                    <>
+                      <p className="text-sm text-amber-900">
+                        {t(
+                          "team.billing.cancel_scheduled_hint",
+                          "Abonements beigsies perioda beigās. Līdz tam piekļuve paliek aktīva.",
+                        )}
+                      </p>
+                      <div className="mt-4 flex justify-end">
+                        <button
+                          type="button"
+                          disabled={isPending}
+                          onClick={resumeSubscription}
+                          className="inline-flex min-h-10 items-center justify-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 text-sm font-semibold text-zinc-800 shadow-sm transition hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          {pendingKind === "resume" ? (
+                            <i className="fas fa-circle-notch fa-spin text-xs" aria-hidden="true" />
+                          ) : null}
+                          {t("team.billing.resume_subscription", "Atjaunot abonementu")}
+                        </button>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <p className="text-sm text-zinc-500">
+                        {t(
+                          "team.billing.cancel_subscription_hint",
+                          "Atcelot abonementu, tas beidzas pašreizējā norēķinu perioda beigās. Pēc tam pārējie lietotāji nevarēs lietot sistēmu.",
+                        )}
+                      </p>
+                      <div className="mt-4 flex justify-end">
+                        <button
+                          type="button"
+                          disabled={isPending}
+                          onClick={() => setCancelConfirmOpen(true)}
+                          className="inline-flex min-h-10 items-center justify-center gap-2 rounded-2xl border border-red-200 bg-red-50 px-4 text-sm font-semibold text-red-900 shadow-sm transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          {t("team.billing.cancel_subscription", "Atteikties no abonementa")}
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
+              ) : null}
+            </div>
+          ) : null}
         </div>
 
         {summary.pendingMembers.length > 0 ? (
@@ -523,11 +658,7 @@ export function TeamBillingPage() {
               </p>
             ) : null}
           </div>
-        ) : (
-          <p className="rounded-3xl border border-dashed border-zinc-200 bg-white px-5 py-4 text-sm text-zinc-500">
-            {t("team.billing.no_pending", "Nav vietu, kas gaida samaksu.")}
-          </p>
-        )}
+        ) : null}
 
         {!summary.hasSubscription && summary.paidPlans.length > 0
           ? (() => {
@@ -708,6 +839,23 @@ export function TeamBillingPage() {
           </div>
         ) : null}
       </div>
+
+      <ConfirmModal
+        open={cancelConfirmOpen}
+        onOpenChange={setCancelConfirmOpen}
+        title={t(
+          "team.billing.cancel_subscription_confirm_title",
+          "Atteikties no abonementa?",
+        )}
+        description={t(
+          "team.billing.cancel_subscription_confirm_body",
+          "Abonements beigsies pašreizējā perioda beigās. Līdz tam komanda var turpināt lietot sistēmu. Pēc termiņa pārējie lietotāji tiks bloķēti.",
+        )}
+        confirmLabel={t("team.billing.cancel_subscription", "Atteikties no abonementa")}
+        confirmVariant="danger"
+        blocking={pendingKind === "cancel"}
+        onConfirm={cancelSubscription}
+      />
     </SectionPage>
   );
 }

@@ -508,6 +508,8 @@ export type WorkTeam = {
   paidSeatCount: number;
   billingCycleEnd: string | null;
   billingPeriod: "month" | "year" | "quarter" | null;
+  subscriptionCancelAtPeriodEnd: boolean;
+  billingPeriodEndAt: string | null;
 };
 
 export const TEAMS_STORAGE_KEY = "routine-app-teams";
@@ -620,6 +622,8 @@ export function normalizeStoredTeams(value: unknown): WorkTeam[] | null {
         paidSeatCount: 0,
         billingCycleEnd: null as string | null,
         billingPeriod: null as "month" | "year" | "quarter" | null,
+        subscriptionCancelAtPeriodEnd: false,
+        billingPeriodEndAt: null as string | null,
       };
     })
     .filter((item): item is WorkTeam => item !== null);

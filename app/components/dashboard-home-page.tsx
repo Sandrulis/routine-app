@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
+import { DashboardTaskSearch } from "@/app/components/dashboard-task-search";
 import { ListBadge } from "@/app/components/list-badge";
 import { ListSummary } from "@/app/components/list-summary";
 import { LoadingState } from "@/app/components/loading-state";
@@ -193,6 +194,12 @@ export function DashboardHomePage() {
         </div>
       ) : (
         <div className="space-y-6">
+          <DashboardTaskSearch
+            tasks={tasks}
+            lists={lists}
+            onOpenTask={openTask}
+          />
+
           {myTasks.length > 0 ? (
             <MyTasksSection
               tasks={myTasks}

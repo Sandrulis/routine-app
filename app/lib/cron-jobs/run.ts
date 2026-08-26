@@ -133,6 +133,13 @@ function subtaskHref(task: SubtaskRow): string {
 export async function executeCronJob(
   jobKey: CronJobKey,
 ): Promise<CronJobRunResult> {
+  if (jobKey === "purge_scheduled_account_deletions") {
+    const { executeAccountDeletionPurgeCron } = await import(
+      "@/app/lib/account-deletion/purge-cron"
+    );
+    return executeAccountDeletionPurgeCron();
+  }
+
   const supabase = createAdminClient();
   const today = todayUtcDate();
   const kind: NotificationKind =

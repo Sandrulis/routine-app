@@ -10,6 +10,45 @@ const PLUGIN_SIGNED_OUT_KEY = "pluginSignedOut";
 const COOKIE_CHUNK = 3180;
 const AUTH_MAX_AGE_SEC = 30 * 24 * 60 * 60;
 const EXTENSION_UPLOAD_MAX_BYTES = 25 * 1024 * 1024;
+const APP_BASE_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
+const SESSION_CACHE_TTL_MS = 45_000;
+const AUTH_COOKIE_URLS = [
+  "https://www.tasqin.com/",
+  "https://tasqin.com/",
+  "http://localhost:3120/",
+  "http://127.0.0.1:3120/",
+];
+
+/** @type {{ origin: string, config: object, resolvedAt: number } | null} */
+let cachedAppBase = null;
+/** @type {{ result: object, at: number } | null} */
+let cachedSessionResponse = null;
+/** @type {Promise<object> | null} */
+let sessionResponseInFlight = null;
+
+function invalidateAppBaseCache() {
+  cachedAppBase = null;
+}
+
+function invalidateSessionCache() {
+  cachedSessionResponse = null;
+}
+
+function invalidateRuntimeCaches() {
+  invalidateAppBaseCache();
+  invalidateSessionCache();
+}
+
+function broadcastSessionUpdate(result) {
+  try {
+    chrome.runtime.sendMessage({
+      type: "routine.sessionUpdated",
+      result: result || null,
+    });
+  } catch {
+    // no listeners (popup/content closed)
+  }
+}
 
 function unique(items) {
   return [...new Set(items.filter(Boolean))];
@@ -78,23 +117,34 @@ function expandOrigins(origins) {
   return unique(origins.flatMap(originsWithWwwFirst).map(preferLiveOrigin));
 }
 
-async function originsFromAuthCookies() {
-  let cookies = [];
+function originFromAuthCookie(url, cookie) {
   try {
-    cookies = await chrome.cookies.getAll({});
-  } catch {
-    cookies = [];
-  }
-  const origins = [];
-  for (const cookie of cookies) {
-    if (!/-auth-token/.test(cookie.name || "")) continue;
-    const host = String(cookie.domain || "").replace(/^\./, "");
-    if (!host) continue;
-    const protocol = cookie.secure ? "https" : "http";
+    const parsed = new URL(url);
+    const host = String(cookie.domain || parsed.hostname).replace(/^\./, "");
+    if (!host) return "";
+    const protocol = cookie.secure ? "https:" : parsed.protocol;
     if (host === "localhost" || host === "127.0.0.1") {
-      origins.push(`${protocol}://${host}:3120`);
-    } else {
-      origins.push(`${protocol}://${host}`);
+      return `${protocol}//${host}:3120`;
+    }
+    return `${protocol}//${host}`;
+  } catch {
+    return "";
+  }
+}
+
+async function originsFromAuthCookies() {
+  const origins = [];
+  for (const url of AUTH_COOKIE_URLS) {
+    let cookies = [];
+    try {
+      cookies = await chrome.cookies.getAll({ url });
+    } catch {
+      cookies = [];
+    }
+    for (const cookie of cookies) {
+      if (!/-auth-token/.test(cookie.name || "")) continue;
+      const origin = preferLiveOrigin(originFromAuthCookie(url, cookie));
+      if (origin) origins.push(origin);
     }
   }
   return unique(origins);
@@ -142,17 +192,6 @@ function sessionUsable(session) {
   return Boolean(session.refresh_token) || !sessionExpired(session);
 }
 
-/** Plugin storage is the session. Website cookies only bootstrap an empty store. */
-function pickBestSession(cookieSession, storedSession) {
-  if (sessionUsable(storedSession)) {
-    return mergeSessionPreserveRefresh(storedSession, cookieSession);
-  }
-  if (sessionUsable(cookieSession)) {
-    return mergeSessionPreserveRefresh(cookieSession, storedSession);
-  }
-  return storedSession || cookieSession || null;
-}
-
 async function writeStoredSession(appBase, session) {
   const origin = parseOrigin(appBase);
   if (!origin || !session?.access_token) return;
@@ -192,12 +231,14 @@ async function markPluginSignedIn() {
 async function markPluginSignedOut() {
   await chrome.storage.local.set({ [PLUGIN_SIGNED_OUT_KEY]: true });
   await clearStoredSession();
+  invalidateRuntimeCaches();
 }
 
 async function rememberSession(appBase, session) {
   const origin = preferLiveOrigin(parseOrigin(appBase));
   await writeStoredSession(origin, session);
   if (origin) await chrome.storage.sync.set({ appBaseUrl: origin });
+  invalidateSessionCache();
 }
 
 function isLocalOrigin(origin) {
@@ -209,13 +250,41 @@ function isLocalOrigin(origin) {
   }
 }
 
-async function getAppBase() {
+async function adoptAppOrigin(origin, config) {
+  origin = preferLiveOrigin(origin) || origin;
+  const canonical = preferLiveOrigin(parseOrigin(config.appOrigin)) || origin;
+  await chrome.storage.sync.set({
+    appBaseUrl: origin,
+    authCookieName: config.authCookieName || "",
+    loginPath: config.loginPath || "/auth/gmail-plugin/login",
+    canonicalOrigin: canonical,
+  });
+  cachedAppBase = { origin, config, resolvedAt: Date.now() };
+  return origin;
+}
+
+async function tryResolveOrigin(origin) {
+  const config = await probeConfig(origin);
+  if (!config) return null;
+  const token = await getAccessToken(origin);
+  if (token) return { origin, config, authed: true };
+  return { origin, config, authed: false, local: isLocalOrigin(origin) };
+}
+
+async function getAppBase(options = {}) {
+  const forceRefresh = options.force === true;
+  if (
+    !forceRefresh &&
+    cachedAppBase &&
+    Date.now() - cachedAppBase.resolvedAt < APP_BASE_CACHE_TTL_MS
+  ) {
+    return cachedAppBase.origin;
+  }
+
   const stored = await chrome.storage.sync.get(["appBaseUrl"]);
   const storedOrigin = parseOrigin(stored.appBaseUrl);
   const storedSession = await readStoredSession();
   const cookieOrigins = await originsFromAuthCookies();
-  // Production first for discovery; local cookies/session still checked for an
-  // existing login, but must not win as a blind fallback when CORS blocks www.
   const candidates = expandOrigins([
     ...APP_ORIGIN_CANDIDATES.filter((origin) => !isLocalOrigin(origin)),
     storedSession?.appBase,
@@ -224,37 +293,30 @@ async function getAppBase() {
     ...APP_ORIGIN_CANDIDATES.filter((origin) => isLocalOrigin(origin)),
   ]);
 
-  async function adopt(origin, config) {
-    origin = preferLiveOrigin(origin) || origin;
-    const canonical = preferLiveOrigin(parseOrigin(config.appOrigin)) || origin;
-    await chrome.storage.sync.set({
-      appBaseUrl: origin,
-      authCookieName: config.authCookieName || "",
-      loginPath: config.loginPath || "/auth/gmail-plugin/login",
-      canonicalOrigin: canonical,
-    });
-    return origin;
+  if (storedOrigin && !forceRefresh) {
+    const storedHit = await tryResolveOrigin(storedOrigin);
+    if (storedHit?.authed) return adoptAppOrigin(storedHit.origin, storedHit.config);
   }
 
+  const settled = await Promise.allSettled(
+    candidates.map((origin) => tryResolveOrigin(origin)),
+  );
   let productionFallback = null;
   let localFallback = null;
-  for (const origin of candidates) {
-    const config = await probeConfig(origin);
-    if (!config) continue;
-    if (isLocalOrigin(origin)) {
-      if (!localFallback) localFallback = { origin, config };
+  for (const entry of settled) {
+    if (entry.status !== "fulfilled" || !entry.value) continue;
+    const hit = entry.value;
+    if (hit.authed) return adoptAppOrigin(hit.origin, hit.config);
+    if (hit.local) {
+      if (!localFallback) localFallback = hit;
     } else if (!productionFallback) {
-      productionFallback = { origin, config };
+      productionFallback = hit;
     }
-    const token = await getAccessToken(origin);
-    if (token) return adopt(origin, config);
   }
-  // No session: prefer production so Login never opens localhost just because
-  // `npm run dev` is up while www CORS/probe fails.
   if (productionFallback) {
-    return adopt(productionFallback.origin, productionFallback.config);
+    return adoptAppOrigin(productionFallback.origin, productionFallback.config);
   }
-  if (localFallback) return adopt(localFallback.origin, localFallback.config);
+  if (localFallback) return adoptAppOrigin(localFallback.origin, localFallback.config);
 
   try {
     await chrome.permissions.request({
@@ -267,23 +329,28 @@ async function getAppBase() {
     ...(await originsFromAuthCookies()),
     ...APP_ORIGIN_CANDIDATES,
   ]).filter((origin) => !candidates.includes(origin));
+  const extraSettled = await Promise.allSettled(
+    extraOrigins.map(async (origin) => {
+      const config = await probeConfig(origin);
+      return config ? { origin, config, local: isLocalOrigin(origin) } : null;
+    }),
+  );
   let extraProduction = null;
   let extraLocal = null;
-  for (const origin of extraOrigins) {
-    const config = await probeConfig(origin);
-    if (!config) continue;
-    if (isLocalOrigin(origin)) {
-      if (!extraLocal) extraLocal = { origin, config };
+  for (const entry of extraSettled) {
+    if (entry.status !== "fulfilled" || !entry.value) continue;
+    const hit = entry.value;
+    if (hit.local) {
+      if (!extraLocal) extraLocal = hit;
     } else if (!extraProduction) {
-      extraProduction = { origin, config };
+      extraProduction = hit;
     }
   }
   if (extraProduction) {
-    return adopt(extraProduction.origin, extraProduction.config);
+    return adoptAppOrigin(extraProduction.origin, extraProduction.config);
   }
-  if (extraLocal) return adopt(extraLocal.origin, extraLocal.config);
+  if (extraLocal) return adoptAppOrigin(extraLocal.origin, extraLocal.config);
 
-  // Never stick to a stale localhost sync value when production is the default.
   if (storedOrigin && !isLocalOrigin(storedOrigin)) {
     return preferLiveOrigin(storedOrigin);
   }
@@ -433,23 +500,12 @@ async function listCookiesForOrigin(appBase) {
     seen.add(key);
     collected.push(cookie);
   }
-  if (origin) {
+  for (const candidate of expandOrigins([origin])) {
     try {
-      (await chrome.cookies.getAll({ url: origin })).forEach(add);
+      (await chrome.cookies.getAll({ url: `${candidate}/` })).forEach(add);
     } catch {
       // ignore
     }
-  }
-  try {
-    const host = origin ? new URL(origin).hostname.replace(/^www\./, "") : "";
-    const all = await chrome.cookies.getAll({});
-    for (const cookie of all) {
-      if (!/-auth-token(\.\d+)?$/.test(cookie.name || "")) continue;
-      if (host && !String(cookie.domain || "").includes(host)) continue;
-      add(cookie);
-    }
-  } catch {
-    // ignore
   }
   return collected;
 }
@@ -743,6 +799,9 @@ async function apiFetch(path, options = {}, retried = false) {
     data = text ? JSON.parse(text) : null;
   } catch {
     data = { ok: false, error: text || "errors.extension_invalid_body" };
+  }
+  if (response.status === 401 || response.status === 403) {
+    invalidateSessionCache();
   }
   return { ok: response.ok, status: response.status, data, appBase };
 }
@@ -1282,7 +1341,7 @@ async function getSelectedTeamId(teams) {
   return withDrive?.id || teams[0]?.id || "";
 }
 
-async function sessionResponse() {
+async function sessionResponseInner() {
   const existing = await readStoredSession();
   const alreadyAuthed =
     sessionUsable(existing?.session) &&
@@ -1313,6 +1372,37 @@ async function sessionResponse() {
     }
     result.data.selectedTeamId = selectedTeamId;
   }
+  return result;
+}
+
+async function sessionResponse(options = {}) {
+  const force = options.force === true;
+  const now = Date.now();
+  if (
+    !force &&
+    cachedSessionResponse &&
+    now - cachedSessionResponse.at < SESSION_CACHE_TTL_MS
+  ) {
+    return cachedSessionResponse.result;
+  }
+  if (sessionResponseInFlight && !force) {
+    return sessionResponseInFlight;
+  }
+  sessionResponseInFlight = (async () => {
+    try {
+      const result = await sessionResponseInner();
+      cachedSessionResponse = { result, at: Date.now() };
+      return result;
+    } finally {
+      sessionResponseInFlight = null;
+    }
+  })();
+  return sessionResponseInFlight;
+}
+
+async function publishSessionUpdate(force = true) {
+  const result = await sessionResponse({ force });
+  broadcastSessionUpdate(result);
   return result;
 }
 
@@ -1618,7 +1708,8 @@ if (chrome.tabs?.onUpdated) {
     if (!isPluginLoginDoneUrl(url) || url.includes("error=")) return;
     void (async () => {
       await markPluginSignedIn();
-      await captureSessionFromDone(url, "", null, "", tabId);
+      const origin = await captureSessionFromDone(url, "", null, "", tabId);
+      if (origin) await publishSessionUpdate(true);
     })();
   });
 }
@@ -1627,12 +1718,15 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   (async () => {
     try {
       if (message?.type === "routine.getSession") {
-        sendResponse(await sessionResponse());
+        sendResponse(
+          await sessionResponse({ force: message.force === true }),
+        );
         return;
       }
       if (message?.type === "routine.setTeam") {
         const teamId = String(message.teamId || "").trim();
         if (teamId) await chrome.storage.sync.set({ selectedTeamId: teamId });
+        invalidateSessionCache();
         sendResponse({ ok: true, teamId });
         return;
       }
@@ -1651,6 +1745,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           message.bootstrapTicket,
           sender.tab?.id,
         );
+        if (origin) await publishSessionUpdate(true);
         sendResponse({ ok: Boolean(origin) });
         return;
       }
@@ -1661,6 +1756,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         if (imported && (await getAccessToken(imported))) {
           const check = await apiFetch("/api/extension/session");
           if (check?.data?.authenticated) {
+            await publishSessionUpdate(true);
             sendResponse({ ok: true });
             return;
           }
@@ -1694,6 +1790,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           return;
         }
         const loggedIn = await apiFetch("/api/extension/session");
+        if (loggedIn?.data?.authenticated) {
+          await publishSessionUpdate(true);
+        }
         sendResponse({
           ok: Boolean(loggedIn?.data?.authenticated),
           error: loggedIn?.data?.authenticated
@@ -1727,12 +1826,17 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         }
         await markPluginSignedIn();
         await rememberSession(appBase, data.session);
+        await publishSessionUpdate(true);
         sendResponse({ ok: true });
         return;
       }
       if (message?.type === "routine.logout") {
         await markPluginSignedOut();
         await chrome.storage.local.remove(["gmailAccessToken", "gmailTokenExpiresAt"]);
+        broadcastSessionUpdate({
+          ok: true,
+          data: { authenticated: false },
+        });
         sendResponse({ ok: true });
         return;
       }

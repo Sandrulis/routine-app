@@ -29,6 +29,13 @@ const JOB_COPY: Record<
     descFallback:
       "Paziņo piesaistītajam lietotājam vai grupai, ka šodien ir apakšuzdevuma termiņš un tas vēl nav slēgts.",
   },
+  purge_scheduled_account_deletions: {
+    titleKey: "admin.cron_jobs.job.purge_scheduled_account_deletions.title",
+    titleFallback: "Plānoto kontu dzēšana",
+    descKey: "admin.cron_jobs.job.purge_scheduled_account_deletions.description",
+    descFallback:
+      "Neatgriezeniski izdzēš lietotāju kontus, kuriem beidzies 30 dienu deaktivizācijas termiņš.",
+  },
 };
 
 export function AdminCronJobsForm({

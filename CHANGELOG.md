@@ -4,6 +4,14 @@
 
 - (none)
 
+## v0.3.9
+
+- Dashboard live meklēšana: visi uzdevumi un apakšuzdevumi (arī arhīvā); arhivētie rezultāti blāvi
+- Konta dzēšana `/settings/profile`: 30 dienu deaktivizācija, auto-atjaunošana pieslēdzoties atkārtoti, cron `purge_scheduled_account_deletions`
+- Abonementa atcelšana/atjaunošana perioda beigās caur Stripe (`cancel_at_period_end`); dzeltens countdown baneris; live billing sync bez refresh
+- `/team/billing`: abonementa pārvaldība salokāma kopsavilkuma kartē (`fa-angle-down`)
+- Gmail spraudnis `0.4.33`: ātrāka ielāde (kešs, lazy UI, session push)
+
 ## v0.3.8
 
 - Neapmaksāta komandas abonementa paywall: parastiem lietotājiem blur + bloķējošs modālis; vadītājam sarkans globāls baneris

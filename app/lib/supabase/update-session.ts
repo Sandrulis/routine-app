@@ -9,6 +9,10 @@ import {
 import { getSupabasePublicEnv } from "@/app/lib/supabase/env";
 import { stripLocalePrefix } from "@/app/lib/seo/locale-path";
 import { isCrawlerUserAgent } from "@/app/lib/seo/crawler";
+import {
+  applyAccountDeletionReactivatedCookie,
+} from "@/app/lib/users/account-deletion-cookie";
+import { reactivatePendingAccountDeletion } from "@/app/lib/users/reactivate-pending-deletion";
 
 const AUTH_PAGES = new Set(["/login", "/signup", "/forgot-password"]);
 
@@ -28,6 +32,11 @@ function isProtectedAppPath(pathname: string) {
     pathname.startsWith("/settings/") ||
     pathname === "/update-password"
   );
+}
+
+function markReactivatedAccount(response: NextResponse) {
+  applyAccountDeletionReactivatedCookie(response);
+  return response;
 }
 
 function applyNoStoreHeaders(response: NextResponse) {
@@ -111,14 +120,24 @@ export async function updateSession(
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (
-    user &&
-    (pathname === "/" || AUTH_PAGES.has(pathname)) &&
-    !(pathname === "/" && isCrawlerUserAgent(request.headers.get("user-agent")))
-  ) {
-    return redirectToDashboard(request);
-  }
-  if (!user && isProtectedAppPath(pathname)) {
+  if (user) {
+    const reactivated = await reactivatePendingAccountDeletion(supabase, user.id);
+
+    if (
+      (pathname === "/" || AUTH_PAGES.has(pathname)) &&
+      !(pathname === "/" && isCrawlerUserAgent(request.headers.get("user-agent")))
+    ) {
+      const response = redirectToDashboard(request);
+      if (reactivated) {
+        markReactivatedAccount(response);
+      }
+      return response;
+    }
+
+    if (reactivated) {
+      markReactivatedAccount(supabaseResponse);
+    }
+  } else if (isProtectedAppPath(pathname)) {
     return redirectToLogin(request);
   }
 

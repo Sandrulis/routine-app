@@ -1,6 +1,7 @@
 export const CRON_JOB_KEYS = [
   "subtask_start_reminder",
   "subtask_due_reminder",
+  "purge_scheduled_account_deletions",
 ] as const;
 
 export type CronJobKey = (typeof CRON_JOB_KEYS)[number];

@@ -19,6 +19,8 @@ import {
   parsePeriod,
   reconcileTeamBillingFromStripe,
   remainingEarlyBirdForCheckout,
+  cancelTeamSubscriptionAtPeriodEnd,
+  resumeTeamSubscription,
   subscriptionPeriodEndMs,
 } from "@/app/lib/billing/subscription";
 import {
@@ -78,6 +80,8 @@ export type TeamBillingSummary = {
   prorataEstimate: number;
   extraSeatProrataEstimate: number;
   nextBillingAt: string | null;
+  cancelAtPeriodEnd: boolean;
+  subscriptionEndsAt: string | null;
   pendingMembers: Array<{ id: string; email: string; name: string }>;
   paidPlans: TeamBillingPlanOption[];
   remainingEarlyBirdSeats: number;
@@ -197,6 +201,7 @@ export async function getTeamBillingSummaryAction(
   let nextBillingAt: string | null = null;
   let pastDue = false;
   let periodEndMs: number | null = null;
+  let cancelAtPeriodEnd = team.subscription_cancel_at_period_end === true;
   if (stripeEnabled && team.stripe_subscription_id) {
     const stripe = await getStripeClient();
     if (stripe) {
@@ -207,6 +212,7 @@ export async function getTeamBillingSummaryAction(
         pastDue = subscription.status === "past_due";
         periodEndMs = subscriptionPeriodEndMs(subscription);
         nextBillingAt = periodEndMs ? new Date(periodEndMs).toISOString() : null;
+        cancelAtPeriodEnd = subscription.cancel_at_period_end === true;
       } catch {
         nextBillingAt = null;
       }
@@ -270,9 +276,16 @@ export async function getTeamBillingSummaryAction(
       }),
       nextBillingAt:
         nextBillingAt ??
-        (typeof team.billing_cycle_end === "string" && team.billing_cycle_end.trim()
-          ? `${team.billing_cycle_end.trim()}T00:00:00.000Z`
-          : null),
+        (typeof team.billing_period_end_at === "string" && team.billing_period_end_at.trim()
+          ? team.billing_period_end_at
+          : typeof team.billing_cycle_end === "string" && team.billing_cycle_end.trim()
+            ? `${team.billing_cycle_end.trim()}T00:00:00.000Z`
+            : null),
+      cancelAtPeriodEnd: cancelAtPeriodEnd,
+      subscriptionEndsAt:
+        typeof team.billing_period_end_at === "string" && team.billing_period_end_at.trim()
+          ? team.billing_period_end_at
+          : nextBillingAt,
       pendingMembers: members
         .filter((row) => row.seat_status === "pending_payment")
         .map((row) => ({
@@ -530,4 +543,46 @@ export async function confirmTeamBillingCheckoutAction(
     revalidatePath("/team");
   }
   return { ok: true, data: { synced, confirmed: synced } };
+}
+
+export async function cancelTeamSubscriptionAction(
+  teamId: string,
+): Promise<ActionResult<{ cancelled: true }>> {
+  const user = await getCurrentUser();
+  if (!user) return { ok: false, error: "errors.auth_required" };
+  if (!isSupabaseConfigured()) return { ok: false, error: "errors.db_not_configured" };
+  if (!(await getStripeCredentials())) {
+    return { ok: false, error: await stripeUnavailableError() };
+  }
+
+  const trimmed = teamId.trim();
+  const access = await assertCanManageTeamBilling(trimmed, user.id);
+  if (!access.ok) return access;
+
+  const result = await cancelTeamSubscriptionAtPeriodEnd(trimmed);
+  if (!result.ok) return result;
+  revalidatePath("/team/billing");
+  revalidatePath("/team");
+  return { ok: true, data: { cancelled: true } };
+}
+
+export async function resumeTeamSubscriptionAction(
+  teamId: string,
+): Promise<ActionResult<{ resumed: true }>> {
+  const user = await getCurrentUser();
+  if (!user) return { ok: false, error: "errors.auth_required" };
+  if (!isSupabaseConfigured()) return { ok: false, error: "errors.db_not_configured" };
+  if (!(await getStripeCredentials())) {
+    return { ok: false, error: await stripeUnavailableError() };
+  }
+
+  const trimmed = teamId.trim();
+  const access = await assertCanManageTeamBilling(trimmed, user.id);
+  if (!access.ok) return access;
+
+  const result = await resumeTeamSubscription(trimmed);
+  if (!result.ok) return result;
+  revalidatePath("/team/billing");
+  revalidatePath("/team");
+  return { ok: true, data: { resumed: true } };
 }
