@@ -52,6 +52,8 @@ type AppModalProps = {
   panelMaxWidthClassName?: string;
   overlayZClassName?: string;
   overlayZIndex?: number;
+  /** Papildu klases overlay konteinerim (piem. neaizklāt sānjoslu). */
+  overlayClassName?: string;
   headerMeta?: ReactNode;
   headerSubtitle?: ReactNode;
 };
@@ -67,6 +69,7 @@ export function AppModal({
   panelMaxWidthClassName = defaultPanelMaxWidthClassName,
   overlayZClassName = defaultOverlayZClassName,
   overlayZIndex,
+  overlayClassName = "",
   headerMeta,
   headerSubtitle,
 }: AppModalProps) {
@@ -196,7 +199,7 @@ export function AppModal({
   return createPortal(
     <>
       <div
-        className={`${overlayBaseClassName} ${overlayZIndex == null ? overlayZClassName : ""}`}
+        className={`${overlayBaseClassName} ${overlayZIndex == null ? overlayZClassName : ""} ${overlayClassName}`.trim()}
         style={overlayZIndex == null ? undefined : { zIndex: overlayZIndex }}
         role="dialog"
         aria-modal="true"

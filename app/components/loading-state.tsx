@@ -11,7 +11,7 @@ export function LoadingSpinner({
 }) {
   return (
     <i
-      className={`fas fa-circle-notch fa-spin ${size === "sm" ? "text-xs" : "text-lg"} ${className}`}
+      className={`fas fa-circle-notch ui-spinner ${size === "sm" ? "text-xs" : "text-lg"} ${className}`}
       aria-hidden="true"
     />
   );
@@ -44,7 +44,7 @@ export function LoadingState({
 
   return (
     <div
-      className={`flex min-h-48 flex-col items-center justify-center gap-3 rounded-3xl border border-zinc-200 bg-white px-6 py-12 text-sm text-zinc-500 ${className}`}
+      className={`flex min-h-48 flex-col items-center justify-center gap-3 px-6 py-12 text-sm text-zinc-500 ${className}`}
       role="status"
       aria-live="polite"
     >

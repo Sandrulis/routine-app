@@ -5,7 +5,7 @@ import dynamic from "next/dynamic";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState, type CSSProperties, type MouseEvent, type ReactNode } from "react";
 import { DragHandle } from "@/app/components/drag-handle";
-import { LoadingState } from "@/app/components/loading-state";
+import { LoadingSpinner, LoadingState } from "@/app/components/loading-state";
 import { NameFormModal } from "@/app/components/name-form-modal";
 import type { ParentCreateContext } from "@/app/components/parent-create-flow";
 import { ConfirmModal } from "@/app/components/confirm-modal";
@@ -71,6 +71,7 @@ import {
 import { useListFiles } from "@/app/lib/use-list-files";
 import { useTeam } from "@/app/lib/team-store";
 import { useStartTeamInvite } from "@/app/lib/billing/use-start-team-invite";
+import { useTeamBillingAccess } from "@/app/lib/billing/use-team-billing-access";
 import { usePaymentPlansEnabled } from "@/app/lib/payment-plans/context";
 import { useIsAdmin } from "@/app/lib/users/use-is-admin";
 import {
@@ -573,16 +574,13 @@ function NavTreeSection({
                   if (addBusy) return;
                   onAdd(event);
                 }}
-                className={`relative z-10 ${rowHoverActionClassName(moreOpen)} disabled:cursor-not-allowed disabled:opacity-60`}
+                className={`relative z-10 ${rowHoverActionClassName(moreOpen || addBusy)} disabled:cursor-not-allowed disabled:opacity-60`}
               >
-                <i
-                  className={
-                    addBusy
-                      ? "fas fa-circle-notch fa-spin text-[11px]"
-                      : "fas fa-plus text-[11px]"
-                  }
-                  aria-hidden="true"
-                />
+                {addBusy ? (
+                  <LoadingSpinner size="sm" className="text-[11px]" />
+                ) : (
+                  <i className="fas fa-plus text-[11px]" aria-hidden="true" />
+                )}
               </button>
             </Tooltip>
           ) : null}
@@ -606,6 +604,7 @@ export function AppNav() {
     lists.some((list) => list.id === file.listId),
   );
   const { members, roles, currentUser, currentTeam, inviteMember, isReady: teamReady } = useTeam();
+  const { memberBlocked: sidebarNavBlocked } = useTeamBillingAccess();
   const sidebarMembers = useMemo(() => confirmedTeamMembers(members), [members]);
   const { isAdmin } = useIsAdmin();
   const { isEnabled: isModuleEnabled } = useFrontendModules();
@@ -770,6 +769,17 @@ export function AppNav() {
   const showTeamMenu =
     canUseTeamOptions(currentUser, roles, isAdmin) &&
     (canManageRoles || canSeeTemplates || canSeeGoogleDrive || canSeeOneDrive);
+
+  useEffect(() => {
+    if (!sidebarNavBlocked) return;
+    setOpenedSubtaskId(null);
+    setSubtaskCreate(null);
+    setCreateListOpen(false);
+    setParentCreate(null);
+    setInviteOpen(false);
+    setItemMenu(null);
+    setTeamMenuAnchor(null);
+  }, [sidebarNavBlocked]);
 
   function accessForListId(listId: string) {
     return accessForList(lists.find((item) => item.id === listId));
@@ -1176,7 +1186,14 @@ export function AppNav() {
       <aside className="fixed inset-y-0 left-0 z-40 flex w-[var(--app-sidebar-width-expanded)] flex-col border-r border-zinc-200 bg-white">
         <TeamSwitcher />
 
-        <nav className="min-h-0 flex-1 space-y-0.5 overflow-x-visible overflow-y-auto px-2 pb-3 [scrollbar-width:thin] [scrollbar-color:rgb(212_212_216)_transparent]">
+        <nav
+          aria-hidden={sidebarNavBlocked ? true : undefined}
+          className={`min-h-0 flex-1 space-y-0.5 overflow-x-visible overflow-y-auto px-2 pb-3 [scrollbar-width:thin] [scrollbar-color:rgb(212_212_216)_transparent] ${
+            sidebarNavBlocked
+              ? "pointer-events-none select-none opacity-40 saturate-50"
+              : ""
+          }`}
+        >
           <Link href="/dashboard" className={rowClassName(isHome)}>
             <span className="inline-flex size-5 shrink-0 items-center justify-center text-zinc-500">
               <i className="fas fa-house text-[12px]" aria-hidden="true" />
@@ -1439,7 +1456,7 @@ export function AppNav() {
               {t("nav.feedback", "Atsauksmes")}
             </span>
           </button>
-          {currentTeam && fileUploadsEnabled ? (
+          {currentTeam && fileUploadsEnabled && !sidebarNavBlocked ? (
             <Tooltip label={storageTooltip} className="block">
               <div className="flex min-h-8 items-center gap-2 rounded-md px-1.5 text-[13px] text-zinc-500">
                 <span className="inline-flex size-5 shrink-0 items-center justify-center text-zinc-400">
@@ -1481,7 +1498,10 @@ export function AppNav() {
       <SubtaskDetailModal
         taskId={openedSubtaskId}
         createFor={subtaskCreate}
-        open={subtaskCreate !== null || openedSubtaskId !== null}
+        open={
+          !sidebarNavBlocked &&
+          (subtaskCreate !== null || openedSubtaskId !== null)
+        }
         onOpenChange={(open) => {
           if (!open) {
             setSubtaskCreate(null);

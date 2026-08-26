@@ -471,6 +471,31 @@ export function TeamBillingPage() {
               )}
             </p>
           ) : null}
+          {summary.hasSubscription ? (
+            <div
+              role="note"
+              className="mt-4 rounded-2xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-950"
+            >
+              <p className="font-semibold">
+                {t(
+                  "team.billing.new_user_prorata_title",
+                  "Jauni lietotāji bez brīvas vietas",
+                )}
+              </p>
+              <p className="mt-1 leading-relaxed text-sky-900/90">
+                {summary.nextBillingAt
+                  ? t(
+                      "team.billing.new_user_prorata_notice",
+                      "Ja uzaicini jaunu lietotāju, kam nav brīvas apmaksātas vietas, viņam tiks piestādīts rēķins par atlikušo periodu līdz {until} – līdz visas komandas abonementa perioda beigām. Pēc tam visi lietotāji tiek iekļauti vienā komandas rēķinā.",
+                      { until: formatDate(summary.nextBillingAt) },
+                    )
+                  : t(
+                      "team.billing.new_user_prorata_notice_no_date",
+                      "Ja uzaicini jaunu lietotāju, kam nav brīvas apmaksātas vietas, viņam tiks piestādīts rēķins par atlikušo periodu līdz komandas abonementa perioda beigām. Pēc tam visi lietotāji tiek iekļauti vienā komandas rēķinā.",
+                    )}
+              </p>
+            </div>
+          ) : null}
         </div>
 
         {summary.pendingMembers.length > 0 ? (

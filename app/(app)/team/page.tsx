@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { ConfirmModal } from "@/app/components/confirm-modal";
 import { SectionPage } from "@/app/components/section-page";
-import { LoadingState } from "@/app/components/loading-state";
+import { LoadingSpinner, LoadingState } from "@/app/components/loading-state";
 import { TeamInviteModal } from "@/app/components/team-invite-modal";
 import { MemberLastOnline } from "@/app/components/member-last-online";
 import {
@@ -247,14 +247,11 @@ export default function TeamPage() {
               onClick={() => startInvite(() => setInviteOpen(true))}
               className="inline-flex min-h-10 items-center justify-center gap-2 rounded-2xl bg-blue-700 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              <i
-                className={
-                  isPurchasingSeat
-                    ? "fas fa-circle-notch fa-spin text-xs"
-                    : "fas fa-plus text-xs"
-                }
-                aria-hidden="true"
-              />
+              {isPurchasingSeat ? (
+                <LoadingSpinner size="sm" className="text-xs text-white" />
+              ) : (
+                <i className="fas fa-plus text-xs" aria-hidden="true" />
+              )}
               {isPurchasingSeat
                 ? t("team.invite.purchasing_seat", "Iegādājas vietu…")
                 : t("team.invite.button", "Uzaicināt")}

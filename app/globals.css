@@ -64,6 +64,19 @@ button:not(:disabled),
   pointer-events: none;
 }
 
+/* Loading indicators — always spin (even when prefers-reduced-motion). */
+@keyframes ui-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.ui-spinner {
+  animation: ui-spin 0.75s linear infinite;
+  display: inline-block;
+  transform-origin: center;
+}
+
 button:disabled,
 [type="button"]:disabled,
 [type="submit"]:disabled,

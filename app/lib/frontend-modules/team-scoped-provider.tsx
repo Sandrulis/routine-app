@@ -5,12 +5,14 @@ import {
   FrontendModulesProvider,
   useFrontendModules,
 } from "@/app/lib/frontend-modules/context";
+import { resolveTeamBillingAccess } from "@/app/lib/billing/team-access-state";
 import {
   buildFreePlanIds,
   buildPlanModuleKeysMap,
   resolveEffectiveFrontendModuleKeys,
 } from "@/app/lib/payment-plans/team-plan";
 import { useTeam } from "@/app/lib/team-store";
+import { useIsAdmin } from "@/app/lib/users/use-is-admin";
 
 type PaymentPlanModuleSnapshot = {
   id: string;
@@ -29,24 +31,49 @@ export function TeamScopedFrontendModules({
   plans: PaymentPlanModuleSnapshot[];
   children: ReactNode;
 }) {
-  const { currentTeam } = useTeam();
+  const { currentTeam, currentUser, roles } = useTeam();
+  const { isAdmin } = useIsAdmin();
   const planModuleKeysByPlanId = useMemo(
     () => buildPlanModuleKeysMap(plans),
     [plans],
   );
   const freePlanIds = useMemo(() => buildFreePlanIds(plans), [plans]);
+  const freePlanIdList = useMemo(() => [...freePlanIds], [freePlanIds]);
+
+  const teamPlanForModules = useMemo(() => {
+    if (!currentTeam) return null;
+    const access = resolveTeamBillingAccess({
+      paymentPlansEnabled,
+      freePlanIds: freePlanIdList,
+      team: currentTeam,
+      currentUser,
+      roles,
+      isAdmin,
+    });
+    if (access.canUseAppDespiteUnpaid && access.subscriptionRequired) {
+      return { ...currentTeam.paymentPlan, paid: true };
+    }
+    return currentTeam.paymentPlan;
+  }, [
+    currentTeam,
+    currentUser,
+    freePlanIdList,
+    isAdmin,
+    paymentPlansEnabled,
+    roles,
+  ]);
 
   const effectiveKeys = useMemo(
     () =>
       resolveEffectiveFrontendModuleKeys({
         globalEnabledKeys,
         paymentPlansEnabled,
-        teamPlan: currentTeam?.paymentPlan,
+        teamPlan: teamPlanForModules,
         planModuleKeysByPlanId,
         freePlanIds,
       }),
     [
-      currentTeam?.paymentPlan,
+      teamPlanForModules,
       globalEnabledKeys,
       paymentPlansEnabled,
       planModuleKeysByPlanId,

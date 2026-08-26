@@ -286,13 +286,14 @@ export async function applySubscriptionToTeam(input: {
       typeof input.subscription.customer === "string"
         ? input.subscription.customer
         : input.subscription.customer?.id ?? null,
-    stripe_subscription_id: input.subscription.id,
-    paid_seat_count: quantity,
-    early_bird_seat_count: seats.earlyBird,
-    payment_plan_is_early_bird: seats.earlyBird > 0,
-    billing_cycle_end: periodEndMs
-      ? new Date(periodEndMs).toISOString().slice(0, 10)
-      : null,
+    stripe_subscription_id: paid ? input.subscription.id : null,
+    paid_seat_count: paid ? quantity : 0,
+    early_bird_seat_count: paid ? seats.earlyBird : 0,
+    payment_plan_is_early_bird: paid && seats.earlyBird > 0,
+    billing_cycle_end:
+      paid && periodEndMs
+        ? new Date(periodEndMs).toISOString().slice(0, 10)
+        : null,
     payment_plan_paid: paid,
     payment_plan_is_trial: input.subscription.status === "trialing",
   };
@@ -304,13 +305,6 @@ export async function applySubscriptionToTeam(input: {
   }
   if (!paid) {
     patch.payment_plan_until = until;
-    if (
-      input.subscription.status === "canceled" ||
-      input.subscription.status === "unpaid" ||
-      input.subscription.status === "incomplete_expired"
-    ) {
-      patch.stripe_subscription_id = null;
-    }
   } else if (input.subscription.status !== "past_due") {
     patch.payment_plan_until = null;
   }
@@ -340,6 +334,10 @@ export async function syncSubscriptionById(subscriptionId: string, teamIdHint?: 
     subscription.metadata.teamId ||
     (await findTeamIdBySubscription(subscriptionId));
   if (!teamId) return;
+  if (!isSubscriptionPaid(subscription.status)) {
+    await clearTeamSeatBillingState(teamId);
+    return;
+  }
   await applySubscriptionToTeam({
     teamId,
     subscription,
@@ -349,21 +347,14 @@ export async function syncSubscriptionById(subscriptionId: string, teamIdHint?: 
 }
 
 function preferActiveSubscription(items: Stripe.Subscription[], teamId: string) {
+  const isBillableStatus = (status: Stripe.Subscription.Status) =>
+    status === "active" || status === "trialing" || status === "past_due";
+
   return (
     items.find(
-      (item) =>
-        item.metadata?.teamId === teamId &&
-        (item.status === "active" ||
-          item.status === "trialing" ||
-          item.status === "past_due"),
+      (item) => item.metadata?.teamId === teamId && isBillableStatus(item.status),
     ) ??
-    items.find(
-      (item) =>
-        item.status === "active" ||
-        item.status === "trialing" ||
-        item.status === "past_due",
-    ) ??
-    items[0] ??
+    items.find((item) => isBillableStatus(item.status)) ??
     null
   );
 }
@@ -419,8 +410,12 @@ export async function reconcileTeamBillingFromStripe(teamId: string) {
   if (!stripe) return false;
 
   if (team.stripe_subscription_id) {
-    await syncSubscriptionById(team.stripe_subscription_id, teamId);
-    return true;
+    const subscription = await retrieveExpandedSubscription(team.stripe_subscription_id);
+    if (subscription && isSubscriptionPaid(subscription.status)) {
+      await syncSubscriptionById(team.stripe_subscription_id, teamId);
+      return true;
+    }
+    return clearTeamSeatBillingState(teamId);
   }
 
   try {
@@ -443,9 +438,11 @@ export async function reconcileTeamBillingFromStripe(teamId: string) {
       limit: 10,
     });
     const preferred = preferActiveSubscription(searched.data, teamId);
-    if (!preferred) return false;
-    await syncSubscriptionById(preferred.id, teamId);
-    return true;
+    if (preferred) {
+      await syncSubscriptionById(preferred.id, teamId);
+      return true;
+    }
+    return clearTeamSeatBillingState(teamId);
   } catch (error) {
     logError("reconcileTeamBillingFromStripe", error);
     return false;
@@ -476,17 +473,45 @@ export async function findTeamIdByCustomer(customerId: string) {
 
 export async function markTeamUnpaid(teamId: string) {
   if (!isSupabaseAdminConfigured()) return;
+  await clearTeamSeatBillingState(teamId);
+}
+
+export async function clearTeamSeatBillingState(teamId: string): Promise<boolean> {
+  if (!isSupabaseAdminConfigured()) return false;
   const admin = createAdminClient();
+  const team = await loadTeamBillingRow(teamId);
+  if (!team) return false;
+
+  const needsClear =
+    (team.paid_seat_count ?? 0) > 0 ||
+    (team.early_bird_seat_count ?? 0) > 0 ||
+    Boolean(team.billing_cycle_end?.trim()) ||
+    Boolean(team.stripe_subscription_id?.trim()) ||
+    team.payment_plan_paid === true ||
+    team.payment_plan_is_trial === true;
+
+  if (!needsClear) return false;
+
   const { error } = await admin
     .from("teams")
     .update({
+      paid_seat_count: 0,
+      early_bird_seat_count: 0,
+      stripe_subscription_id: null,
+      billing_cycle_end: null,
       payment_plan_paid: false,
+      payment_plan_is_trial: false,
+      payment_plan_is_early_bird: false,
       payment_plan_until: new Date().toISOString().slice(0, 10),
     })
     .eq("id", teamId);
   if (error) {
-    logError("markTeamUnpaid", error.message);
+    logError("clearTeamSeatBillingState", error.message);
+    return false;
   }
+  revalidatePath("/team/billing");
+  revalidatePath("/team");
+  return true;
 }
 
 export async function ensureStripeCustomer(input: {

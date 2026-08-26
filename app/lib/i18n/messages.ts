@@ -1062,6 +1062,16 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
       "Stripe nav ieslēgts. Administrators to konfigurē Integrācijās.",
     "team.billing.past_due":
       "Pēdējais rēķins nav apmaksāts. Stripe mēģinās vēlreiz; pēc termiņa maksas plāns tiks deaktivizēts.",
+    "team.billing.members_blocked_banner":
+      "Pārējie komandas lietotāji nevar lietot sistēmu, jo nav apmaksāts abonements.",
+    "team.billing.members_blocked_banner_action": "Abonementi",
+    "team.billing.member_paywall.title": "Komandas abonements nav apmaksāts",
+    "team.billing.member_paywall.description":
+      "Tava komanda vēl nav samaksājusi par abonementu. Sistēmas saturs nav pieejams, kamēr komandas vadītājs neapmaksā abonementu.",
+    "team.billing.member_paywall.hint":
+      "Sazinies ar komandas vadītāju, lai viņš noformētu maksājumu sadaļā Abonementi.",
+    "team.billing.member_paywall.switch_hint":
+      "Vari pārslēgties uz citu komandu vai izveidot jaunu.",
     "team.billing.seats_paid": "Apmaksātās vietas",
     "team.billing.seats_occupied": "Aizņemtās vietas",
     "team.billing.seats_open": "Atvērtās vietas",
@@ -1095,6 +1105,11 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
       "Aptuveni {amount} līdz nākamajam ciklam par vienu vietu.",
     "team.billing.extra_renewal_hint":
       "Ja līdz cikla beigām vieta paliek tukša, nākamajā rēķinā tā vairs nav.",
+    "team.billing.new_user_prorata_title": "Jauni lietotāji bez brīvas vietas",
+    "team.billing.new_user_prorata_notice":
+      "Ja uzaicini jaunu lietotāju, kam nav brīvas apmaksātas vietas, viņam tiks piestādīts rēķins par atlikušo periodu līdz {until} – līdz visas komandas abonementa perioda beigām. Pēc tam visi lietotāji tiek iekļauti vienā komandas rēķinā.",
+    "team.billing.new_user_prorata_notice_no_date":
+      "Ja uzaicini jaunu lietotāju, kam nav brīvas apmaksātas vietas, viņam tiks piestādīts rēķins par atlikušo periodu līdz komandas abonementa perioda beigām. Pēc tam visi lietotāji tiek iekļauti vienā komandas rēķinā.",
     "team.billing.free_owner_seat":
       "Komandas vadītāja vieta ir bez maksas. Maksā tikai par vietām virs 1.",
     "team.billing.plus_vat": "+ PVN",
@@ -3333,6 +3348,16 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
       "Stripe is not enabled. An administrator configures it in Integrations.",
     "team.billing.past_due":
       "The last invoice was not paid. Stripe will retry; after the deadline the paid plan will be deactivated.",
+    "team.billing.members_blocked_banner":
+      "Other team users cannot use the system because the subscription has not been paid.",
+    "team.billing.members_blocked_banner_action": "Subscriptions",
+    "team.billing.member_paywall.title": "Team subscription not paid",
+    "team.billing.member_paywall.description":
+      "Your team has not paid for the subscription yet. System content is unavailable until a team manager pays for the subscription.",
+    "team.billing.member_paywall.hint":
+      "Contact your team manager so they can complete payment in Subscriptions.",
+    "team.billing.member_paywall.switch_hint":
+      "You can switch to another team or create a new one.",
     "team.billing.seats_paid": "Paid seats",
     "team.billing.seats_occupied": "Occupied seats",
     "team.billing.seats_open": "Open seats",
@@ -3366,6 +3391,11 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
       "About {amount} until the next cycle for one extra seat.",
     "team.billing.extra_renewal_hint":
       "If the extra seat is still empty at the end of the cycle, the next invoice will not include it.",
+    "team.billing.new_user_prorata_title": "New users without an open seat",
+    "team.billing.new_user_prorata_notice":
+      "If you invite a new user who does not have a paid open seat, they will be invoiced for the remaining period until {until} – the end of the team subscription period. After that, all users are included on one team invoice.",
+    "team.billing.new_user_prorata_notice_no_date":
+      "If you invite a new user who does not have a paid open seat, they will be invoiced for the remaining period until the end of the team subscription period. After that, all users are included on one team invoice.",
     "team.billing.free_owner_seat":
       "The team owner's seat is free. You pay only for seats above 1.",
     "team.billing.plus_vat": "+ VAT",

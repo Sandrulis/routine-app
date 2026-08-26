@@ -4,6 +4,14 @@
 
 - (none)
 
+## v0.3.8
+
+- Neapmaksāta komandas abonementa paywall: parastiem lietotājiem blur + bloķējošs modālis; vadītājam sarkans globāls baneris
+- Bloķēta piekļuve: sānjoslas navigācija (saraksti, koks, komanda) paliek neaktīva; pieejams komandas pārslēdzējs, lietotāja izvēlne un atbalsta saites
+- Modālī un sānjoslā: pārslēgšanās uz citu komandu vai jaunas izveide; abonementa info par prorata rēķinu jauniem lietotājiem
+- Stripe reconcile: vairs neatjauno vietas no atceltiem abonementiem; `clearTeamSeatBillingState`; dev resets `scripts/reset-all-team-billing.mjs`
+- Loading spinner (`ui-spinner`), uzaicināt pogas spinner; `LoadingState` bez kartes fona
+
 ## v0.3.7
 
 - Komandas sarakstā īpašniekam zem vārda: vietas statuss (bezmaksas vadītājs, abonēts līdz, gaida samaksu/apstiprinājumu) un brīvās apmaksātas vietas baneris
