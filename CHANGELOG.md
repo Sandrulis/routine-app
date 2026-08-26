@@ -4,6 +4,10 @@
 
 - (none)
 
+## v0.3.4
+
+- Stripe Checkout: `product_data.tax_code` (SaaS) un `tax_behavior`, lai strādātu ar Managed Payments
+
 ## v0.3.3
 
 - Stripe Checkout: ja komandai ir novecojis `stripe_customer_id` (test/live atslēgu maiņa), klients tiek izveidots no jauna

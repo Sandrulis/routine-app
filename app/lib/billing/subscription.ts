@@ -197,12 +197,16 @@ export function recurringPriceData(
   return {
     currency: "eur" as const,
     unit_amount: eurosToCents(euros),
+    // Required when Stripe Managed Payments is enabled (default on newer accounts).
+    tax_behavior: "exclusive" as const,
     product_data: {
       name: name
         ? options.earlyBird
           ? `${name} Early Bird`
           : name
         : plan.planKey,
+      // SaaS — business use (team seats).
+      tax_code: "txcd_10103001",
       metadata: { seatKind },
     },
     recurring:
@@ -241,12 +245,13 @@ async function createRecurringPriceId(
     const price = await stripe.prices.create({
       currency: data.currency,
       unit_amount: data.unit_amount,
+      tax_behavior: data.tax_behavior,
       product_data: data.product_data,
       recurring: data.recurring,
     });
     return price.id;
   } catch (error) {
-    logError("createRecurringPriceId", stripeClientErrorKey(error));
+    logError("createRecurringPriceId", error);
     return null;
   }
 }

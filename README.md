@@ -2,7 +2,7 @@
 
 Komandas darba rīks ar publisku landing lapu un sānjoslas lietotni. Gaišs Next.js frontend.
 
-**Current version:** `0.3.3`
+**Current version:** `0.3.4`
 
 ## Palaist
 
