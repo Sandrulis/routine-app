@@ -7,11 +7,12 @@ import {
 } from "@/app/lib/format-display-date";
 import {
   DEFAULT_SITE_DISPLAY_PREFERENCES,
-  type SiteDisplayPreferences,
+  type EffectiveDisplaySettings,
 } from "@/app/lib/site-admin/display-preferences";
 
 type DisplayPreferencesContextValue = {
-  preferences: SiteDisplayPreferences;
+  preferences: EffectiveDisplaySettings;
+  timeZone: string;
   formatDate: (value: string) => string;
   formatDateTime: (value: string) => string;
 };
@@ -21,17 +22,23 @@ const DisplayPreferencesContext = createContext<DisplayPreferencesContextValue |
 );
 
 export function DisplayPreferencesProvider({
-  preferences = DEFAULT_SITE_DISPLAY_PREFERENCES,
+  preferences = {
+    ...DEFAULT_SITE_DISPLAY_PREFERENCES,
+    timeZone: "Europe/Riga",
+  },
   children,
 }: {
-  preferences?: SiteDisplayPreferences;
+  preferences?: EffectiveDisplaySettings;
   children: ReactNode;
 }) {
   const value = useMemo<DisplayPreferencesContextValue>(
     () => ({
       preferences,
-      formatDate: (value) => formatDisplayDate(value, preferences),
-      formatDateTime: (value) => formatDisplayDateTime(value, preferences),
+      timeZone: preferences.timeZone,
+      formatDate: (value) =>
+        formatDisplayDate(value, preferences, preferences.timeZone),
+      formatDateTime: (value) =>
+        formatDisplayDateTime(value, preferences, preferences.timeZone),
     }),
     [preferences],
   );
@@ -46,8 +53,13 @@ export function DisplayPreferencesProvider({
 export function useDisplayPreferences() {
   const context = useContext(DisplayPreferencesContext);
   if (!context) {
+    const fallback: EffectiveDisplaySettings = {
+      ...DEFAULT_SITE_DISPLAY_PREFERENCES,
+      timeZone: "Europe/Riga",
+    };
     return {
-      preferences: DEFAULT_SITE_DISPLAY_PREFERENCES,
+      preferences: fallback,
+      timeZone: fallback.timeZone,
       formatDate: (value: string) => formatDisplayDate(value),
       formatDateTime: (value: string) => formatDisplayDateTime(value),
     };

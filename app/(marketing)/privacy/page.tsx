@@ -11,7 +11,7 @@ export async function generateMetadata(): Promise<Metadata> {
     title: t("legal.privacy.title", "Privātuma politika"),
     description: t(
       "legal.privacy.intro",
-      "Šajā politikā skaidrojam, kādus personas datus apstrādājam, kad tu izmanto {SYSTEM_NAME}, kāpēc to darām un kādas ir tavas tiesības saskaņā ar Vispārīgo datu aizsardzības regulu (ES) 2016/679 (VDAR).",
+      "Šajā politikā skaidrojam, kādus personas datus apstrādājam, kad tu izmanto {SYSTEM_NAME}, kāpēc to darām, ar ko datus kopīgojam un kādas ir tavas tiesības saskaņā ar Vispārīgo datu aizsardzības regulu (ES) 2016/679 (VDAR).",
     ),
   });
 }
@@ -22,6 +22,13 @@ export default async function PrivacyPage() {
     getSiteSettings(),
   ]);
   return (
-    <LegalDocumentView content={getPrivacyPolicyContent(t, settings.legalEmail)} />
+    <LegalDocumentView
+      content={getPrivacyPolicyContent(t, {
+        legalEmail: settings.legalEmail,
+        legalEntityName: settings.legalEntityName,
+        legalEntityRegNo: settings.legalEntityRegNo,
+        legalEntityAddress: settings.legalEntityAddress,
+      })}
+    />
   );
 }

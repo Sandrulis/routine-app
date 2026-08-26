@@ -13,14 +13,11 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "site.nav.faq": "BUJ",
     "site.footer.rights": "© {year} {SYSTEM_NAME}",
     "landing.seo.title": "{name} — vienkārša komandas uzdevumu pārvaldība",
-    "landing.seo.description":
-      "{name} ir komandas uzdevumu pārvaldības rīks. Plāno uzdevumus, projektus un cilvēkus vienā darbvietā — ar statusu, termiņiem un atbildīgajiem.",
+    "landing.seo.description": "{name} ir komandas uzdevumu pārvaldības rīks. Plāno uzdevumus, projektus un cilvēkus vienā darbvietā — ar statusu, termiņiem un atbildīgajiem.",
     "landing.seo.meta_description": "{name}: komandas uzdevumi, projekti un termiņi vienā darbvietā. Skaidri statusi un atbildīgie. Sāc bez maksas — bez instalēšanas.",
-    "landing.seo.keywords":
-      "komandas uzdevumu pārvaldība, uzdevumu pārvaldības programma, projektu vadība, darba pārvaldība, uzdevumu uzskaite, komandas sadarbība",
+    "landing.seo.keywords": "komandas uzdevumu pārvaldība, uzdevumu pārvaldības programma, projektu vadība, darba pārvaldība, uzdevumu uzskaite, komandas sadarbība",
     "landing.hero.title": "Vienkārša komandas uzdevumu pārvaldība mūsdienīgām komandām",
-    "landing.hero.subtitle":
-      "{name} palīdz visai komandai redzēt sarakstus, uzdevumus un cilvēkus vienā darbvietā — ar statusu, termiņiem un atbildīgajiem, nevis tabulās un čatā.",
+    "landing.hero.subtitle": "{name} palīdz visai komandai redzēt sarakstus, uzdevumus un cilvēkus vienā darbvietā — ar statusu, termiņiem un atbildīgajiem, nevis tabulās un čatā.",
     "landing.hero.cta_signup": "Sākt bez maksas",
     "landing.hero.cta_how": "Skatīt, kā tas darbojas",
     "landing.hero.trust": "Bez instalēšanas. Sāc ar e-pastu.",
@@ -28,10 +25,8 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "landing.hero.stat_status_title": "Darāms, procesā, gatavs",
     "landing.hero.stat_status": "Viena tāfele visai dienai, nevis pieci rīki.",
     "landing.hero.stat_together_title": "Cilvēki pie darba",
-    "landing.hero.stat_together":
-      "Atbildīgais, termiņš un fails paliek pie uzdevuma.",
-    "landing.hero.stat_together_no_files":
-      "Atbildīgais un termiņš paliek pie uzdevuma.",
+    "landing.hero.stat_together": "Atbildīgais, termiņš un fails paliek pie uzdevuma.",
+    "landing.hero.stat_together_no_files": "Atbildīgais un termiņš paliek pie uzdevuma.",
     "landing.preview.team": "Studio",
     "landing.preview.list_projects": "Projekti",
     "landing.preview.list_clients": "Klienti",
@@ -49,137 +44,92 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "landing.preview.checklist_copy": "Tekstu uzmetums",
     "landing.preview.checklist_review": "Atsauksmes",
     "landing.problem.title": "Darbs tagad ir izkaisīts",
-    "landing.problem.subtitle":
-      "Komandas plāno darbu tabulās, čatā, kalendāros un failu mapēs. Tad neviens nav drošs, kas ir aktuāls.",
+    "landing.problem.subtitle": "Komandas plāno darbu tabulās, čatā, kalendāros un failu mapēs. Tad neviens nav drošs, kas ir aktuāls.",
     "landing.problem.item_tables": "Excel un tabulas",
     "landing.problem.item_chat": "Čats",
     "landing.problem.item_calendars": "Kalendāri",
     "landing.problem.item_files": "Failu mapes",
     "landing.problem.item_tools": "Vairāki uzdevumu rīki",
-    "landing.problem.solution":
-      "{name} savieno uzdevumus, projektus, cilvēkus, failus, termiņus un darbplūsmas vienā darbvietā.",
+    "landing.problem.solution": "{name} savieno uzdevumus, projektus, cilvēkus, failus, termiņus un darbplūsmas vienā darbvietā.",
     "landing.features.title": "Viss, kas komandai vajadzīgs darba vadībai",
-    "landing.features.subtitle":
-      "Mazāk rīku, skaidrāka atbildība un darbs, ko var pabeigt, nevis tikai apspriest.",
+    "landing.features.subtitle": "Mazāk rīku, skaidrāka atbildība un darbs, ko var pabeigt, nevis tikai apspriest.",
     "landing.features.lists.title": "Saraksti, kas atbilst tavam darbam",
-    "landing.features.lists.description":
-      "Projekti, klienti, mapes un faili vienā kokā. Katram uzdevumam ir statuss, termiņš un atbildīgais — nevis vēl viena Excel tabula.",
-    "landing.features.lists.description_no_files":
-      "Projekti, klienti un mapes vienā kokā. Katram uzdevumam ir statuss, termiņš un atbildīgais — nevis vēl viena Excel tabula.",
+    "landing.features.lists.description": "Projekti, klienti, mapes un faili vienā kokā. Katram uzdevumam ir statuss, termiņš un atbildīgais — nevis vēl viena Excel tabula.",
+    "landing.features.lists.description_no_files": "Projekti, klienti un mapes vienā kokā. Katram uzdevumam ir statuss, termiņš un atbildīgais — nevis vēl viena Excel tabula.",
     "landing.features.team.title": "Visa komanda redz to pašu",
-    "landing.features.team.description":
-      "Uzaicini komandas lietotājus, piešķir darbus un zini, kas ir tiešsaistē. Nav jāmeklē čatā, kur palika fails vai kurš ko sola.",
-    "landing.features.team.description_no_files":
-      "Uzaicini komandas lietotājus, piešķir darbus un zini, kas ir tiešsaistē. Nav jāmeklē čatā, kurš ko sola.",
+    "landing.features.team.description": "Uzaicini komandas lietotājus, piešķir darbus un zini, kas ir tiešsaistē. Nav jāmeklē čatā, kur palika fails vai kurš ko sola.",
+    "landing.features.team.description_no_files": "Uzaicini komandas lietotājus, piešķir darbus un zini, kas ir tiešsaistē. Nav jāmeklē čatā, kurš ko sola.",
     "landing.features.dashboard.title": "Sākums ir dienas tāfele",
-    "landing.features.dashboard.description":
-      "Atverot {name}, redzi darāmo, procesā un gatavo. Vilc kartītes un turi fokusu uz to, kas jāpabeidz šodien.",
+    "landing.features.dashboard.description": "Atverot {name}, redzi darāmo, procesā un gatavo. Vilc kartītes un turi fokusu uz to, kas jāpabeidz šodien.",
     "landing.features.private_list.title": "Privāti saraksti",
-    "landing.features.private_list.description":
-      "Paslēp sarakstu no pārējās komandas. Redz tikai tu un izvēlētie komandas lietotāji vai lomas.",
+    "landing.features.private_list.description": "Paslēp sarakstu no pārējās komandas. Redz tikai tu un izvēlētie komandas lietotāji vai lomas.",
     "landing.features.templates.title": "Šabloni",
-    "landing.features.templates.description":
-      "Saglabā atkārtojamu darbu kā šablonu un izveido jaunu mapi ar gatavu struktūru.",
+    "landing.features.templates.description": "Saglabā atkārtojamu darbu kā šablonu un izveido jaunu mapi ar gatavu struktūru.",
     "landing.features.automations.title": "Automatizācijas",
-    "landing.features.automations.description":
-      "Kad statuss mainās, piešķir atbildīgo vai aizver darbu. Mazāk manuālas pārcelšanas.",
+    "landing.features.automations.description": "Kad statuss mainās, piešķir atbildīgo vai aizver darbu. Mazāk manuālas pārcelšanas.",
     "landing.features.files.title": "Faili pie uzdevuma",
-    "landing.features.files.description":
-      "Pievieno dokumentus tieši pie darba. Nav jāmeklē pielikums e-pastā vai koplietotā mapē.",
+    "landing.features.files.description": "Pievieno dokumentus tieši pie darba. Nav jāmeklē pielikums e-pastā vai koplietotā mapē.",
     "landing.features.checklist.title": "Check List",
-    "landing.features.checklist.description":
-      "Sadali uzdevumu punktos, ko var atzīmēt, nezaudējot kontekstu un termiņu.",
+    "landing.features.checklist.description": "Sadali uzdevumu punktos, ko var atzīmēt, nezaudējot kontekstu un termiņu.",
     "landing.features.calendar.title": "Kalendāra integrācija",
-    "landing.features.calendar.description_both":
-      "Uzdevumu termiņi parādās Apple Calendar un Google Calendar, lai diena paliktu vienā vietā.",
-    "landing.features.calendar.description_apple":
-      "Uzdevumu termiņi parādās Apple Calendar, lai diena paliktu vienā vietā.",
-    "landing.features.calendar.description_google":
-      "Uzdevumu termiņi parādās Google Calendar, lai diena paliktu vienā vietā.",
+    "landing.features.calendar.description_both": "Uzdevumu termiņi parādās Apple Calendar un Google Calendar, lai diena paliktu vienā vietā.",
+    "landing.features.calendar.description_apple": "Uzdevumu termiņi parādās Apple Calendar, lai diena paliktu vienā vietā.",
+    "landing.features.calendar.description_google": "Uzdevumu termiņi parādās Google Calendar, lai diena paliktu vienā vietā.",
     "landing.features.google_drive.title": "Google Drive",
-    "landing.features.google_drive.description":
-      "Glabā failus Google Drive un atver tos no saraksta, neizejot no {name}.",
+    "landing.features.google_drive.description": "Glabā failus Google Drive un atver tos no saraksta, neizejot no {name}.",
     "landing.features.onedrive.title": "OneDrive",
-    "landing.features.onedrive.description":
-      "Glabā failus OneDrive un atver tos no saraksta, neizejot no {name}.",
+    "landing.features.onedrive.description": "Glabā failus OneDrive un atver tos no saraksta, neizejot no {name}.",
     "landing.features.gmail.title": "Gmail spraudnis",
-    "landing.features.gmail.description":
-      "No Gmail pievieno e-pastu un pielikumus pie uzdevuma, lai sarakste paliktu pie darba.",
+    "landing.features.gmail.description": "No Gmail pievieno e-pastu un pielikumus pie uzdevuma, lai sarakste paliktu pie darba.",
     "landing.features.send_file.title": "Pārsūtīt failu",
-    "landing.features.send_file.description":
-      "No apakšuzdevuma faila izvēlnes nosūti dokumentu e-pastā, lai saņēmējs iegūst pielikumu bez koplietotas mapes.",
+    "landing.features.send_file.description": "No apakšuzdevuma faila izvēlnes nosūti dokumentu e-pastā, lai saņēmējs iegūst pielikumu bez koplietotas mapes.",
     "landing.audiences.title": "Veidots komandām, kurām jāpaveic darbs",
-    "landing.audiences.subtitle":
-      "Vienkārša darbvieta mazām komandām, aģentūrām un uzņēmumiem, kas aug.",
+    "landing.audiences.subtitle": "Vienkārša darbvieta mazām komandām, aģentūrām un uzņēmumiem, kas aug.",
     "landing.audiences.small.title": "Mazas komandas",
-    "landing.audiences.small.description":
-      "Kad darbs jāredz visiem, nevis jātur piezīmēs vai galvā.",
+    "landing.audiences.small.description": "Kad darbs jāredz visiem, nevis jātur piezīmēs vai galvā.",
     "landing.audiences.agencies.title": "Aģentūras",
-    "landing.audiences.agencies.description":
-      "Klienti, projekti un termiņi vienā kokā, lai nekas nepazūd starp uzdevumiem.",
+    "landing.audiences.agencies.description": "Klienti, projekti un termiņi vienā kokā, lai nekas nepazūd starp uzdevumiem.",
     "landing.audiences.growing.title": "Augoši uzņēmumi",
-    "landing.audiences.growing.description":
-      "Skaidri atbildīgie un statusi, kad komanda kļūst lielāka.",
+    "landing.audiences.growing.description": "Skaidri atbildīgie un statusi, kad komanda kļūst lielāka.",
     "landing.audiences.remote.title": "Attālinātas komandas",
-    "landing.audiences.remote.description":
-      "Viena darbvieta, lai darbs nav izkaisīts pa čatiem dažādās joslās.",
-    "landing.how.title":
-      "No reģistrācijas līdz pirmajam pabeigtajam darbam",
-    "landing.how.subtitle":
-      "Trīs soļi. Komanda var sākt strādāt tajā pašā dienā.",
+    "landing.audiences.remote.description": "Viena darbvieta, lai darbs nav izkaisīts pa čatiem dažādās joslās.",
+    "landing.how.title": "No reģistrācijas līdz pirmajam pabeigtajam darbam",
+    "landing.how.subtitle": "Trīs soļi. Komanda var sākt strādāt tajā pašā dienā.",
     "landing.how.step1.title": "Izveido kontu minūtēs",
-    "landing.how.step1.description":
-      "Reģistrējies ar e-pastu. Nekādas instalēšanas, nekādu garu iestatījumu pirms pirmā saraksta.",
+    "landing.how.step1.description": "Reģistrējies ar e-pastu. Nekādas instalēšanas, nekādu garu iestatījumu pirms pirmā saraksta.",
     "landing.how.step2.title": "Saliec komandu un darbu",
-    "landing.how.step2.description":
-      "Uzaicini komandas lietotājus, izveido sarakstus projektiem vai klientiem un sadali uzdevumus ar termiņiem.",
+    "landing.how.step2.description": "Uzaicini komandas lietotājus, izveido sarakstus projektiem vai klientiem un sadali uzdevumus ar termiņiem.",
     "landing.how.step3.title": "Dari un redzi, kas gatavs",
-    "landing.how.step3.description":
-      "Katru rītu atver Sākumu. Tur ir dienas bilde: kas vēl jādara, kas ir procesā un kas jau aizvērts.",
+    "landing.how.step3.description": "Katru rītu atver Sākumu. Tur ir dienas bilde: kas vēl jādara, kas ir procesā un kas jau aizvērts.",
     "landing.faq.title": "Biežāk uzdotie jautājumi",
-    "landing.faq.subtitle":
-      "Īsas atbildes par to, kas {name} ir un kam tas noder.",
+    "landing.faq.subtitle": "Īsas atbildes par to, kas {name} ir un kam tas noder.",
     "landing.faq.what.question": "Kas ir {name}?",
-    "landing.faq.what.answer":
-      "{name} ir komandas uzdevumu pārvaldības rīks. Tajā vienā darbvietā ir saraksti, uzdevumi, cilvēki un termiņi, lai komanda redzētu, kas jādara šodien.",
+    "landing.faq.what.answer": "{name} ir komandas uzdevumu pārvaldības rīks. Tajā vienā darbvietā ir saraksti, uzdevumi, cilvēki un termiņi, lai komanda redzētu, kas jādara šodien.",
     "landing.faq.team_task.question": "Kas ir komandas uzdevumu pārvaldība?",
-    "landing.faq.team_task.answer":
-      "Tā ir darba organizēšana, kur katram uzdevumam ir atbildīgais, statuss un termiņš, un visa komanda redz to pašu ainu — nevis katrs savu tabulu vai čata pavedienu.",
+    "landing.faq.team_task.answer": "Tā ir darba organizēšana, kur katram uzdevumam ir atbildīgais, statuss un termiņš, un visa komanda redz to pašu ainu — nevis katrs savu tabulu vai čata pavedienu.",
     "landing.faq.who.question": "Kam {name} ir paredzēts?",
-    "landing.faq.who.answer":
-      "Mazām un augošām komandām, aģentūrām un attālinātām komandām, kam vajag skaidru darba ainu bez smagas projektu vadības sistēmas.",
+    "landing.faq.who.answer": "Mazām un augošām komandām, aģentūrām un attālinātām komandām, kam vajag skaidru darba ainu bez smagas projektu vadības sistēmas.",
     "landing.faq.pm.question": "Vai {name} ir projektu vadības rīks?",
-    "landing.faq.pm.answer":
-      "{name} palīdz vadīt projektus kā sarakstus ar uzdevumiem, termiņiem un atbildīgajiem. Tas nav korporatīvs portfeļa rīks — tas ir veidots ikdienas darbam.",
+    "landing.faq.pm.answer": "{name} palīdz vadīt projektus kā sarakstus ar uzdevumiem, termiņiem un atbildīgajiem. Tas nav korporatīvs portfeļa rīks — tas ir veidots ikdienas darbam.",
     "landing.faq.projects.question": "Vai varu vadīt projektus un uzdevumus?",
-    "landing.faq.projects.answer":
-      "Jā. Izveido sarakstus projektiem vai klientiem, sadali tos uzdevumos, piešķir atbildīgos un seko statusam no darāmā līdz gatavam.",
+    "landing.faq.projects.answer": "Jā. Izveido sarakstus projektiem vai klientiem, sadali tos uzdevumos, piešķir atbildīgos un seko statusam no darāmā līdz gatavam.",
     "landing.faq.invite.question": "Vai varu uzaicināt komandu?",
-    "landing.faq.invite.answer":
-      "Jā. Uzaicini komandas lietotājus, piešķir uzdevumus un redzi, kas ir tiešsaistē. Visi strādā vienā darbvietā.",
+    "landing.faq.invite.answer": "Jā. Uzaicini komandas lietotājus, piešķir uzdevumus un redzi, kas ir tiešsaistē. Visi strādā vienā darbvietā.",
     "landing.faq.files.question": "Vai varu pievienot failus uzdevumiem?",
-    "landing.faq.files.answer":
-      "Jā. Dokumentus pievieno tieši pie uzdevuma, lai faili paliek pie darba, nevis e-pastā vai atsevišķā mapē.",
+    "landing.faq.files.answer": "Jā. Dokumentus pievieno tieši pie uzdevuma, lai faili paliek pie darba, nevis e-pastā vai atsevišķā mapē.",
     "landing.faq.send_file.question": "Vai varu nosūtīt failu e-pastā?",
-    "landing.faq.send_file.answer":
-      "Jā. Apakšuzdevuma faila izvēlnē ir Pārsūtīt failu — dokuments tiek nosūtīts e-pastā kā pielikums.",
+    "landing.faq.send_file.answer": "Jā. Apakšuzdevuma faila izvēlnē ir Pārsūtīt failu — dokuments tiek nosūtīts e-pastā kā pielikums.",
     "landing.faq.drive.question": "Vai {name} savienojas ar Google Drive?",
-    "landing.faq.drive.answer":
-      "Jā. Failus var glabāt Google Drive un atvērt no saraksta, neizejot no {name}.",
+    "landing.faq.drive.answer": "Jā. Failus var glabāt Google Drive un atvērt no saraksta, neizejot no {name}.",
     "landing.faq.calendar.question": "Vai {name} ir kalendāra funkcija?",
-    "landing.faq.calendar.answer":
-      "Uzdevumu termiņi var parādīties Apple Calendar vai Google Calendar, lai dienas plāns paliek vienā vietā.",
+    "landing.faq.calendar.answer": "Uzdevumu termiņi var parādīties Apple Calendar vai Google Calendar, lai dienas plāns paliek vienā vietā.",
     "landing.faq.free.question": "Vai varu sākt bez maksas?",
-    "landing.faq.free.answer":
-      "Jā. Izveido kontu un sāc darbu bez instalēšanas. Nav nedēļas ilgas ieviešanas.",
-    "landing.faq.free.answer_plans":
-      "Jā. Bezmaksas plāns ļauj sākt bez kartes. Salīdzinājumu ar maksas plānu skatiet sadaļā Cenas.",
+    "landing.faq.free.answer": "Jā. Izveido kontu un sāc darbu bez instalēšanas. Nav nedēļas ilgas ieviešanas.",
+    "landing.faq.free.answer_plans": "Jā. Bezmaksas plāns ļauj sākt bez kartes. Salīdzinājumu ar maksas plānu skatiet sadaļā Cenas.",
     "landing.faq.plans.question": "Kāda ir atšķirība starp plāniem?",
-    "landing.faq.plans.answer":
-      "Bezmaksas plānam ir ierobežots lietotāju skaits un funkcijas. Maksas plāns ir cena par lietotāju un iekļauj pieejamos moduļus. Salīdzinājumu skatiet sadaļā Cenas.",
+    "landing.faq.plans.answer": "Bezmaksas plānam ir ierobežots lietotāju skaits un funkcijas. Maksas plāns ir cena par lietotāju un iekļauj pieejamos moduļus. Salīdzinājumu skatiet sadaļā Cenas.",
     "landing.pricing.title": "Plāni un cenas",
-    "landing.pricing.subtitle":
-      "Bezmaksas plānam ir ierobežojumi. Maksas plāns ir cena par lietotāju, bez limita.",
+    "landing.pricing.subtitle": "Bezmaksas plānam ir ierobežojumi. Maksas plāns ir cena par lietotāju, bez limita.",
     "landing.pricing.members_up_to": "{count}",
     "landing.pricing.members_unlimited": "Bez limita",
     "landing.pricing.compare.title": "Salīdzinājums",
@@ -190,42 +140,34 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "landing.pricing.trial": "{days} dienu izmēģinājums",
     "landing.pricing.early_bird_left": "Early Bird: {remaining} / {limit}",
     "landing.cta.title": "Sāc vadīt komandas darbu jau šodien",
-    "landing.cta.subtitle":
-      "Reģistrējies, uzaicini komandu un izveido pirmo sarakstu. Bez instalēšanas un bez nedēļas ilgas ieviešanas.",
+    "landing.cta.subtitle": "Reģistrējies, uzaicini komandu un izveido pirmo sarakstu. Bez instalēšanas un bez nedēļas ilgas ieviešanas.",
     "auth.login.title": "Ienākt",
     "auth.login.subtitle": "Pieslēdzies savam {SYSTEM_NAME} kontam.",
     "auth.login.forgot": "Aizmirsi paroli?",
     "auth.login.no_account": "Nav konta?",
     "auth.login.success": "Veiksmīgi ienāci.",
-    "auth.email.unavailable":
-      "Neviena ienākšanas metode nav ieslēgta. Adminā jābūt aktīvai Resend (e-pasts) vai Google / Microsoft OAuth integrācijai.",
+    "auth.email.unavailable": "Neviena ienākšanas metode nav ieslēgta. Adminā jābūt aktīvai Resend (e-pasts) vai Google / Microsoft OAuth integrācijai.",
     "auth.signup.title": "Reģistrēties",
     "auth.signup.subtitle": "Izveido kontu un sāc darbu ar komandu.",
-    "auth.signup.invite_subtitle":
-      "Izveido kontu, lai pievienotos komandai “{team}”.",
+    "auth.signup.invite_subtitle": "Izveido kontu, lai pievienotos komandai “{team}”.",
     "auth.signup.has_account": "Jau ir konts?",
     "auth.signup.accept_prefix": "Piekrītu",
     "auth.signup.accept_and": "un",
     "auth.signup.password_short": "Parolei jābūt vismaz 8 zīmēm.",
     "auth.signup.password_mismatch": "Paroles nesakrīt.",
-    "auth.signup.password_too_weak":
-      "Parole ir pārāk vāja. Izmanto lielos un mazos burtus, ciparus un speciālo zīmi.",
-    "auth.signup.password_suggested_hint":
-      "Spēcīga parole ir aizpildīta. Vari labot vai izvēlēties citu.",
+    "auth.signup.password_too_weak": "Parole ir pārāk vāja. Izmanto lielos un mazos burtus, ciparus un speciālo zīmi.",
+    "auth.signup.password_suggested_hint": "Spēcīga parole ir aizpildīta. Vari labot vai izvēlēties citu.",
     "auth.signup.password_suggest": "Piedāvāt citu spēcīgu paroli",
     "auth.signup.terms_required": "Lai reģistrētos, piekrīti noteikumiem.",
     "auth.signup.success": "Konts izveidots. Laipni lūgts {SYSTEM_NAME}.",
     "auth.signup.check_email": "Pārbaudi e-pastu, lai apstiprinātu kontu.",
     "auth.turnstile.modal_title": "Botu pārbaude",
-    "auth.turnstile.google_pending":
-      "Lai turpinātu ar Google bez komandas, apstiprini, ka neesi robots.",
+    "auth.turnstile.google_pending": "Lai turpinātu ar Google bez komandas, apstiprini, ka neesi robots.",
     "auth.confirm.loading": "Pabeidz apstiprināšanu…",
     "auth.confirm.failed_title": "Apstiprināšana neizdevās",
-    "auth.confirm.failed":
-      "Saites derīgums ir beidzies vai tā nav derīga. Pieprasi jaunu e-pastu un atver to tajā pašā pārlūkā.",
+    "auth.confirm.failed": "Saites derīgums ir beidzies vai tā nav derīga. Pieprasi jaunu e-pastu un atver to tajā pašā pārlūkā.",
     "auth.forgot.title": "Aizmirsi paroli",
-    "auth.forgot.subtitle":
-      "Ievadi e-pastu, un nosūtīsim paroles atjaunošanas saiti.",
+    "auth.forgot.subtitle": "Ievadi e-pastu, un nosūtīsim paroles atjaunošanas saiti.",
     "auth.forgot.submit": "Nosūtīt saiti",
     "auth.forgot.back": "Atpakaļ uz ienākšanu",
     "auth.forgot.success": "Ja konts pastāv, nosūtīsim atjaunošanas saiti.",
@@ -245,15 +187,12 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "auth.google.or": "vai",
     "auth.google.signing_in": "Pieslēdzas...",
     "auth.google.failed": "Neizdevās pieslēgties ar Google.",
-    "auth.google.not_configured":
-      "Google nav iestatīts. Konfigurē Google OAuth Administrācija → Integrācijas.",
-    "auth.google.not_enabled":
-      "Google pieslēgšanās nav ieslēgta. Ieslēdz Google OAuth Administrācija → Integrācijas.",
+    "auth.google.not_configured": "Google nav iestatīts. Konfigurē Google OAuth Administrācija → Integrācijas.",
+    "auth.google.not_enabled": "Google pieslēgšanās nav ieslēgta. Ieslēdz Google OAuth Administrācija → Integrācijas.",
     "auth.microsoft.continue": "Turpināt ar Microsoft",
     "auth.microsoft.signing_in": "Pieslēdzas...",
     "auth.microsoft.failed": "Neizdevās pieslēgties ar Microsoft.",
-    "auth.microsoft.not_enabled":
-      "Microsoft pieslēgšanās nav ieslēgta. Ieslēdz Microsoft OAuth Administrācija → Integrācijas.",
+    "auth.microsoft.not_enabled": "Microsoft pieslēgšanās nav ieslēgta. Ieslēdz Microsoft OAuth Administrācija → Integrācijas.",
     "auth.login.remember": "Atcerēties mani",
     "auth.open_app": "Atvērt lietotni",
     "auth.update_password.title": "Jauna parole",
@@ -261,16 +200,12 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "auth.update_password.submit": "Saglabāt paroli",
     "auth.update_password.success": "Parole atjaunota.",
     "auth.mfa.title": "Divfaktoru autentifikācija",
-    "auth.mfa.subtitle":
-      "Papildu solis pie ielogošanās ar Authenticator lietotni (TOTP).",
+    "auth.mfa.subtitle": "Papildu solis pie ielogošanās ar Authenticator lietotni (TOTP).",
     "auth.mfa.admin_note": "Administrācijas panelim MFA ir obligāta.",
-    "auth.mfa.subtitle_admin":
-      "Administrācijas panelim nepieciešams TOTP kods (Authenticator).",
+    "auth.mfa.subtitle_admin": "Administrācijas panelim nepieciešams TOTP kods (Authenticator).",
     "auth.mfa.required": "Lai atvērtu administrāciju, vispirms ieslēdz MFA.",
-    "auth.mfa.verify_session":
-      "Ievadi Authenticator kodu, lai apstiprinātu šo sesiju.",
-    "auth.mfa.verify_login":
-      "Ievadi Authenticator kodu, lai pabeigtu ielogošanos.",
+    "auth.mfa.verify_session": "Ievadi Authenticator kodu, lai apstiprinātu šo sesiju.",
+    "auth.mfa.verify_login": "Ievadi Authenticator kodu, lai pabeigtu ielogošanos.",
     "auth.mfa.secret": "Noslēpums",
     "auth.mfa.code": "Kods",
     "auth.mfa.enroll": "Ieslēgt MFA",
@@ -278,152 +213,99 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "auth.mfa.unenroll": "Izslēgt MFA",
     "auth.mfa.enabled": "Divfaktoru autentifikācija ir ieslēgta.",
     "auth.mfa.qr_alt": "MFA QR kods",
-    "legal.common.updated_at": "23.08.26",
+    "legal.common.updated_at": "26.08.26",
     "legal.nav.updated_at": "Atjaunināts {date}",
     "legal.toc.label": "Saturs",
     "legal.privacy.title": "Privātuma politika",
-    "legal.privacy.intro":
-      "Šajā politikā skaidrojam, kādus personas datus apstrādājam, kad tu izmanto {SYSTEM_NAME}, kāpēc to darām un kādas ir tavas tiesības saskaņā ar Vispārīgo datu aizsardzības regulu (ES) 2016/679 (VDAR).",
+    "legal.privacy.intro": "Šajā politikā skaidrojam, kādus personas datus apstrādājam, kad tu izmanto {SYSTEM_NAME}, kāpēc to darām, ar ko datus kopīgojam un kādas ir tavas tiesības saskaņā ar Vispārīgo datu aizsardzības regulu (ES) 2016/679 (VDAR).",
     "legal.privacy.controller.title": "1. Datu pārzinis",
-    "legal.privacy.controller.contact":
-      " Par datu apstrādi raksti uz {LEGAL_EMAIL}.",
-    "legal.privacy.controller.p1":
-      "Personas datu pārzinis ir {SYSTEM_NAME} pakalpojuma sniedzējs.{LEGAL_CONTACT} Atbildēsim saprātīgā termiņā un, ja nepieciešams, lūgsim papildu informāciju, lai pārliecinātos par tavu identitāti.",
-    "legal.privacy.controller.p2":
-      "Ja {SYSTEM_NAME} izmanto sava darba devēja vai klienta uzdevumā, par komandā ievadītajiem darba datiem pārzinis var būt attiecīgais uzņēmums. Šādā gadījumā mēs datus apstrādājam kā apstrādātājs uzņēmuma uzdevumā.",
+    "legal.privacy.controller.contact": " Par datu apstrādi raksti uz {LEGAL_EMAIL}.",
+    "legal.privacy.controller.p1": "Personas datu pārzinis ir {CONTROLLER_IDENTITY}.{LEGAL_CONTACT} Atbildēsim saprātīgā termiņā un, ja nepieciešams, lūgsim papildu informāciju, lai pārliecinātos par tavu identitāti.",
+    "legal.privacy.controller.p2": "Ja {SYSTEM_NAME} izmanto sava darba devēja vai klienta uzdevumā, par komandā ievadītajiem darba datiem pārzinis var būt attiecīgais uzņēmums. Šādā gadījumā mēs datus apstrādājam kā apstrādātājs uzņēmuma uzdevumā saskaņā ar piemērojamo līgumu.",
     "legal.privacy.data.title": "2. Kādus datus apstrādājam",
-    "legal.privacy.data.p1":
-      "Konta dati: vārds, e-pasta adrese, parole (glabājam tikai jaucējkodu), valodas izvēle un profila iestatījumi.",
-    "legal.privacy.data.p2":
-      "Komandas un darba dati: komandas nosaukums, lietotāju vārdi, e-pasti un lomas, saraksti, uzdevumi, apakšuzdevumi, statusi, termiņi, piezīmes, pielikumu nosaukumi un saturs, ko tu vai tava komanda ievada sistēmā.",
-    "legal.privacy.data.p3":
-      "Tehniskie dati: pieslēgšanās laiks, IP adrese, pārlūka un ierīces informācija, kā arī žurnāli, kas nepieciešami drošībai un kļūdu novēršanai.",
-    "legal.privacy.data.p4":
-      "Piekrišanas dati: tava izvēle par sīkdatņu kategorijām un tās veikšanas laiks.",
+    "legal.privacy.data.p1": "Konta dati: vārds, uzvārds, e-pasta adrese, parole (glabājam tikai jaucējkodu), valodas izvēle, laika josla, datuma/laika attēlošanas preferences, MFA iestatījumi un paziņojumu preferences.",
+    "legal.privacy.data.p2": "Komandas un darba dati: komandas nosaukums un iestatījumi, lietotāju vārdi, e-pasti un lomas, saraksti, uzdevumi, apakšuzdevumi, statusi, termiņi, piezīmes, aktivitāšu vēsture, pielikumu nosaukumi un saturs, ko tu vai tava komanda ievada sistēmā.",
+    "legal.privacy.data.p3": "Norēķinu dati (maksas plāniem): Stripe klienta un abonementa identifikatori, apmaksāto vietu skaits, norēķinu cikla datumi un abonementa statuss. Maksājumu kartes un rēķinu detaļas glabā Stripe, nevis mūsu datubāzē.",
+    "legal.privacy.data.p4": "Integrāciju dati (ja ieslēdz): OAuth piekļuves un atjaunošanas tokeni (šifrēti), Google/Microsoft konta e-pasts, Google Drive / OneDrive mapes metadati, Gmail savienojuma statuss Chrome spraudnim, kalendāra abonementu tokeni.",
     "legal.privacy.purpose.title": "3. Apstrādes mērķi un juridiskais pamats",
-    "legal.privacy.purpose.p1":
-      "Konta izveide, pieslēgšanās un pakalpojuma sniegšana - līguma izpilde (VDAR 6. panta 1. punkta b) apakšpunkts).",
-    "legal.privacy.purpose.p2":
-      "Sistēmas drošība, ļaunprātīgas izmantošanas un kļūdu novēršana - leģitīmās intereses (VDAR 6. panta 1. punkta f) apakšpunkts).",
-    "legal.privacy.purpose.p3":
-      "Neobligātās sīkdatnes - tava piekrišana (VDAR 6. panta 1. punkta a) apakšpunkts), kuru vari atsaukt jebkurā laikā.",
-    "legal.privacy.purpose.p4":
-      "Grāmatvedības un citu normatīvo prasību izpilde, ja tās attiecas uz pakalpojumu - juridiska pienākuma izpilde (VDAR 6. panta 1. punkta c) apakšpunkts).",
-    "legal.privacy.cookies.title": "4. Sīkdatnes",
-    "legal.privacy.cookies.p1":
-      "Izmantojam obligātās sīkdatnes, lai saglabātu tavu piekrišanu, uzturētu pieslēgšanās sesiju un nodrošinātu vietnes darbību. Preferenču, statistikas un mārketinga sīkdatnes ieslēdzam tikai ar tavu piekrišanu. Sīkāks saraksts ir sīkdatņu politikā.",
-    "legal.privacy.recipients.title": "5. Datu saņēmēji",
-    "legal.privacy.recipients.p1":
-      "Datus redz pilnvaroti lietotāji tavā komandā atbilstoši piešķirtajām tiesībām. Tehniskajai uzturēšanai varam piesaistīt mitināšanas un e-pasta pakalpojumu sniedzējus, kas darbojas uz apstrādes līguma pamata.",
-    "legal.privacy.recipients.p2":
-      "Datus nepārdodam un nenododam trešajām personām reklāmas nolūkiem.",
+    "legal.privacy.purpose.p1": "Konta izveide, pieslēgšanās, komandas sadarbība un pakalpojuma sniegšana - līguma izpilde (VDAR 6. panta 1. punkta b) apakšpunkts).",
+    "legal.privacy.purpose.p2": "Sistēmas drošība, ļaunprātīgas izmantošanas novēršana, kļūdu analīze un pakalpojuma uzturēšana - leģitīmās intereses (VDAR 6. panta 1. punkta f) apakšpunkts), ja vien likums neprasa piekrišanu.",
+    "legal.privacy.purpose.p3": "Neobligātās sīkdatnes un anonīma lietojuma statistika (Umami) - tava piekrišana (VDAR 6. panta 1. punkta a) apakšpunkts), kuru vari atsaukt jebkurā laikā.",
+    "legal.privacy.purpose.p4": "Maksājumu un abonementu apstrāde, grāmatvedības un citu normatīvo prasību izpilde - līguma izpilde un juridiska pienākuma izpilde (VDAR 6. panta 1. punkta b) un c) apakšpunkti).",
+    "legal.privacy.cookies.title": "8. Sīkdatnes",
+    "legal.privacy.cookies.p1": "Izmantojam obligātās sīkdatnes, lai saglabātu tavu piekrišanu, uzturētu pieslēgšanās sesiju un nodrošinātu vietnes darbību. Preferenču un statistikas sīkdatnes ieslēdzam tikai ar tavu piekrišanu. Pilns saraksts un pārvaldība ir sīkdatņu politikā.",
+    "legal.privacy.recipients.title": "4. Datu saņēmēji un apstrādātāji",
+    "legal.privacy.recipients.p1": "Datus redz pilnvaroti lietotāji tavā komandā atbilstoši piešķirtajām tiesībām. Tehniskajai uzturēšanai izmantojam uzticamus apstrādātājus, ar kuriem noslēgti datu apstrādes līgumi vai piemērojami ES standarta līguma noteikumi.",
+    "legal.privacy.recipients.p2": "Galvenie apstrādātāji: Supabase (datubāze un autentifikācija), Vercel (lietotnes mitināšana), Resend (transakcionālie e-pasti), Stripe (maksājumi), Google (OAuth, Drive, Gmail API spraudnim), Microsoft (OAuth, OneDrive), Cloudflare (Turnstile botu aizsardzība), Sentry (kļūdu uzraudzība, ja ieslēgta) un Umami (anonīma statistika, ja ieslēgta un tu piekrīti).",
     "legal.privacy.retention.title": "6. Cik ilgi glabājam",
-    "legal.privacy.retention.p1":
-      "Konta un komandas datus glabājam, kamēr konts ir aktīvs. Pēc konta dzēšanas datus dzēšam vai anonimizējam saprātīgā termiņā, izņemot gadījumus, kad ilgāka glabāšana ir vajadzīga likuma dēļ.",
-    "legal.privacy.retention.p2":
-      "Sīkdatņu piekrišanu glabājam līdz 180 dienām vai līdz brīdim, kad tu to maini. Pieslēgšanās sesiju ar “Atcerēties mani” glabājam līdz 30 dienām. Tehniskos žurnālus glabājam tikai tik ilgi, cik nepieciešams drošībai.",
+    "legal.privacy.retention.p1": "Konta un komandas datus glabājam, kamēr konts ir aktīvs. Pēc konta dzēšanas pieprasījuma konts tiek deaktivizēts uz 30 dienām; pēc termiņa dati tiek neatgriezeniski dzēsti, izņemot gadījumus, kad ilgāka glabāšana ir vajadzīga likuma dēļ.",
+    "legal.privacy.retention.p2": "Ja pieslēdzies atkārtoti deaktivizācijas periodā, konts automātiski tiek atjaunots. Komandas īpašnieka konta dzēšana var ietekmēt komandas datus saskaņā ar konta dzēšanas plūsmu.",
     "legal.privacy.rights.title": "7. Tavas tiesības",
-    "legal.privacy.rights.p1":
-      "Tev ir tiesības piekļūt saviem datiem, labot tos, dzēst, ierobežot apstrādi, iebilst pret apstrādi, kas balstīta uz leģitīmajām interesēm, un saņemt datus pārnesamā formātā.",
-    "legal.privacy.rights.p2":
-      "Ja apstrāde balstās uz piekrišanu, vari to jebkurā laikā atsaukt, neietekmējot apstrādi, kas veikta pirms atsaukuma. Sūdzību vari iesniegt Datu valsts inspekcijā (www.dvi.gov.lv).",
-    "legal.privacy.security.title": "8. Drošība",
-    "legal.privacy.security.p1":
-      "Izmantojam saprātīgus tehniskos un organizatoriskos pasākumus: šifrētu savienojumu, piekļuves kontroli un paroļu jaucējkodus. Absolūtu drošību internetā nevaram garantēt, tāpēc lūdzam sargāt arī sava konta paroli.",
-    "legal.privacy.changes.title": "9. Izmaiņas",
-    "legal.privacy.changes.p1":
-      "Ja politika būtiski mainās, atjaunināsim šo lapu un norādīsim jauno datumu. Turpinot lietot {SYSTEM_NAME} pēc izmaiņām, tu piekrīti atjauninātajai politikai, ciktāl to pieļauj piemērojamie tiesību akti.",
+    "legal.privacy.rights.p1": "Tev ir tiesības piekļūt saviem datiem, labot tos, dzēst, ierobežot apstrādi, iebilst pret apstrādi, kas balstīta uz leģitīmajām interesēm, un saņemt datus pārnesamā formātā.",
+    "legal.privacy.rights.p2": "Kontu vari dzēst sadaļā Personīgie uzstādījumi (/settings/profile). Datu kopijas pieprasījumu vari nosūtīt uz juridisko e-pastu, kas norādīts šīs politikas sadaļā par datu pārzini. Atbildēsim saprātīgā termiņā.",
+    "legal.privacy.security.title": "10. Drošība",
+    "legal.privacy.security.p1": "Izmantojam saprātīgus tehniskos un organizatoriskos pasākumus: šifrētu savienojumu (HTTPS), piekļuves kontroli, paroļu jaucējkodus, OAuth tokenu šifrēšanu datubāzē un ierobežotas piekļuves politikas (RLS). Absolūtu drošību internetā nevaram garantēt, tāpēc lūdzam sargāt arī sava konta paroli.",
+    "legal.privacy.changes.title": "11. Izmaiņas",
+    "legal.privacy.changes.p1": "Ja politika būtiski mainās, atjaunināsim šo lapu un norādīsim jauno datumu. Turpinot lietot {SYSTEM_NAME} pēc izmaiņām, tu piekrīti atjauninātajai politikai, ciktāl to pieļauj piemērojamie tiesību akti.",
     "legal.terms.title": "Lietošanas noteikumi",
-    "legal.terms.intro":
-      "Šie noteikumi regulē {SYSTEM_NAME} vietnes un lietotnes lietošanu. Reģistrējoties vai ienākot, tu apstiprini, ka esi tos izlasījis un piekrīti. Ja nepiekrīti, lūdzu, nelieto pakalpojumu.",
+    "legal.terms.intro": "Šie noteikumi regulē {SYSTEM_NAME} vietnes, lietotnes un Chrome Gmail spraudņa lietošanu. Reģistrējoties, ienākot ar e-pastu vai OAuth (Google/Microsoft), tu apstiprini, ka esi tos izlasījis un piekrīti. Ja nepiekrīti, lūdzu, nelieto pakalpojumu.",
     "legal.terms.service.title": "1. Pakalpojums",
-    "legal.terms.service.p1":
-      "{SYSTEM_NAME} ir komandas darba rīks sarakstiem, uzdevumiem, failiem un sadarbībai. Mēs sniedzam piekļuvi programmatūrai tādā stāvoklī, kādā tā ir, lai tu un tava komanda varētu plānot un izpildīt darbu.",
-    "legal.terms.service.p2":
-      "Funkcijas varam uzlabot, papildināt vai pārtraukt, ja tas nepieciešams produkta attīstībai vai drošībai. Par būtiskām izmaiņām informēsim vietnē vai e-pastā.",
+    "legal.terms.service.p1": "{SYSTEM_NAME} ir komandas darba rīks sarakstiem, uzdevumiem, failiem un sadarbībai. Mēs sniedzam piekļuvi programmatūrai tādā stāvoklī, kādā tā ir (as is), lai tu un tava komanda varētu plānot un izpildīt darbu.",
+    "legal.terms.service.p2": "Funkcijas varam uzlabot, papildināt vai pārtraukt, ja tas nepieciešams produkta attīstībai vai drošībai. Par būtiskām izmaiņām informēsim vietnē vai e-pastā.",
     "legal.terms.account.title": "2. Konts",
-    "legal.terms.account.p1":
-      "Kontu drīkst izveidot persona, kas ir vismaz 16 gadus veca un ir tiesīga slēgt līgumu. Tu apņemies sniegt precīzus datus un uzturēt aktuālu e-pasta adresi.",
-    "legal.terms.account.p2":
-      "Tu atbildi par paroles slepenību un par visām darbībām, kas veiktas no tava konta. Ja aizdomājies par nesankcionētu piekļuvi, nekavējoties nomaini paroli un raksti mums.",
+    "legal.terms.account.p1": "Kontu drīkst izveidot persona, kas ir vismaz 16 gadus veca un ir tiesīga slēgt līgumu. Tu apņemies sniegt precīzus datus un uzturēt aktuālu e-pasta adresi.",
+    "legal.terms.account.p2": "Tu atbildi par paroles slepenību un par visām darbībām, kas veiktas no tava konta. Ja aizdomājies par nesankcionētu piekļuvi, nekavējoties nomaini paroli un raksti mums.",
     "legal.terms.content.title": "3. Saturs",
-    "legal.terms.content.p1":
-      "Saraksti, uzdevumi, faili un citi dati, ko ievadi {SYSTEM_NAME}, paliek tev vai tavam uzņēmumam. Mēs tos izmantojam tikai pakalpojuma nodrošināšanai, drošībai un atbalstam.",
-    "legal.terms.content.p2":
-      "Tu garantē, ka tev ir tiesības ievadīt šo saturu un ka tas nepārkāpj citu personu tiesības, konfidencialitāti vai piemērojamos likumus.",
+    "legal.terms.content.p1": "Saraksti, uzdevumi, faili un citi dati, ko ievadi {SYSTEM_NAME}, paliek tev vai tavam uzņēmumam. Mēs tos izmantojam tikai pakalpojuma nodrošināšanai, drošībai un atbalstam.",
+    "legal.terms.content.p2": "Tu garantē, ka tev ir tiesības ievadīt šo saturu un ka tas nepārkāpj citu personu tiesības, konfidencialitāti vai piemērojamos likumus.",
     "legal.terms.acceptable.title": "4. Pieļaujamā lietošana",
-    "legal.terms.acceptable.p1":
-      "Nedrīkst mēģināt ielauzties sistēmā, pārslogot to, apiet drošību, kopēt citu komandu datus vai izmantot {SYSTEM_NAME} pretlikumīgiem mērķiem.",
-    "legal.terms.acceptable.p2":
-      "Ja pārkāpums ir būtisks, mēs varam ierobežot vai slēgt kontu. Par acīmredzami prettiesisku saturu varam ziņot kompetentajām iestādēm.",
-    "legal.terms.availability.title": "5. Pieejamība",
-    "legal.terms.availability.p1":
-      "Cenšamies, lai {SYSTEM_NAME} būtu pieejams bez pārtraukuma, taču nevaram garantēt 100% darbības laiku. Plānoti darbi un ārkārtas labojumi var īslaicīgi pārtraukt piekļuvi.",
-    "legal.terms.liability.title": "6. Atbildība",
-    "legal.terms.liability.p1":
-      "{SYSTEM_NAME} palīdz organizēt darbu, taču tu esi atbildīgs par lēmumiem, ko pieņem, balstoties uz sistēmā redzamo informāciju. Ciktāl to pieļauj likums, mēs neatbildam par netiešiem zaudējumiem, peļņas zudumu vai datu zudumu, kas radies no pakalpojuma lietošanas.",
-    "legal.terms.liability.p2":
-      "Ja likums neļauj izslēgt atbildību, mūsu atbildība ir ierobežota ar summu, ko tu esi samaksājis par {SYSTEM_NAME} pēdējo 12 mēnešu laikā, vai 100 EUR, ja maksa nav bijusi.",
-    "legal.terms.termination.title": "7. Izbeigšana",
-    "legal.terms.termination.p1":
-      "Tu vari pārtraukt {SYSTEM_NAME} lietošanu un dzēst kontu jebkurā laikā. Mēs varam slēgt kontu, ja tu būtiski pārkāp šos noteikumus vai ja pakalpojumu pārtraucam.",
-    "legal.terms.law.title": "8. Piemērojamie tiesību akti",
-    "legal.terms.law.p1":
-      "Noteikumiem piemērojami Latvijas Republikas tiesību akti. Strīdus vispirms risināsim sarunās. Ja tas neizdodas, strīds ir piekritīgs Latvijas tiesām, ja vien patērētāja aizsardzības normas nenosaka citādi.",
+    "legal.terms.acceptable.p1": "Nedrīkst mēģināt ielauzties sistēmā, pārslogot to, apiet drošību, kopēt citu komandu datus vai izmantot {SYSTEM_NAME} pretlikumīgiem mērķiem.",
+    "legal.terms.acceptable.p2": "Ja pārkāpums ir būtisks, mēs varam ierobežot vai slēgt kontu. Par acīmredzami prettiesisku saturu varam ziņot kompetentajām iestādēm.",
+    "legal.terms.availability.title": "8. Pieejamība",
+    "legal.terms.availability.p1": "Cenšamies, lai {SYSTEM_NAME} būtu pieejams bez pārtraukuma, taču nevaram garantēt 100% darbības laiku. Plānoti darbi un ārkārtas labojumi var īslaicīgi pārtraukt piekļuvi.",
+    "legal.terms.liability.title": "9. Atbildība",
+    "legal.terms.liability.p1": "{SYSTEM_NAME} palīdz organizēt darbu, taču tu esi atbildīgs par lēmumiem, ko pieņem, balstoties uz sistēmā redzamo informāciju. Ciktāl to pieļauj likums, mēs neatbildam par netiešiem zaudējumiem, peļņas zudumu vai datu zudumu, kas radies no pakalpojuma lietošanas.",
+    "legal.terms.liability.p2": "Ja likums neļauj izslēgt atbildību, mūsu atbildība ir ierobežota ar summu, ko tu esi samaksājis par {SYSTEM_NAME} pēdējo 12 mēnešu laikā, vai 100 EUR, ja maksa nav bijusi.",
+    "legal.terms.termination.title": "10. Izbeigšana",
+    "legal.terms.termination.p1": "Tu vari pārtraukt lietošanu un pieprasīt konta dzēšanu Personīgajos uzstādījumos. Pēc pieprasījuma konts tiek deaktivizēts uz 30 dienām; atkārtota pieslēgšanās to atjauno. Pēc termiņa dati tiek dzēsti saskaņā ar privātuma politiku.",
+    "legal.terms.law.title": "11. Piemērojamie tiesību akti",
+    "legal.terms.law.p1": "Noteikumiem piemērojami Latvijas Republikas tiesību akti. Strīdus vispirms risināsim sarunās. Ja tas neizdodas, strīds ir piekritīgs Latvijas tiesām, ja vien patērētāja aizsardzības normas nenosaka citādi.",
     "legal.cookies.title": "Sīkdatņu politika",
-    "legal.cookies.intro":
-      "Šī politika paskaidro, kādas sīkdatnes {SYSTEM_NAME} izmanto, kāpēc tās ir vajadzīgas un kā tu vari pārvaldīt piekrišanu. Tā jālasa kopā ar privātuma politiku.",
+    "legal.cookies.intro": "Šī politika paskaidro, kādas sīkdatnes un līdzīgas tehnoloģijas {SYSTEM_NAME} izmanto, kāpēc tās ir vajadzīgas un kā tu vari pārvaldīt piekrišanu. Tā jālasa kopā ar privātuma politiku.",
     "legal.cookies.what.title": "1. Kas ir sīkdatnes",
-    "legal.cookies.what.p1":
-      "Sīkdatnes ir nelieli teksta faili, ko pārlūks saglabā tavā ierīcē. Tās palīdz atcerēties iestatījumus, saglabāt piekrišanu un, ja tu atļauj, mērīt lietojumu.",
-    "legal.cookies.what.p2":
-      "Līdzīgas tehnoloģijas, piemēram, vietējā krātuve (localStorage), var tikt izmantotas tam pašam mērķim. Šajā politikā tās apzīmējam kopā ar sīkdatnēm.",
-    "legal.cookies.necessary.title": "2. Obligātās sīkdatnes",
-    "legal.cookies.necessary.p1":
-      "Obligātās sīkdatnes ir vajadzīgas, lai vietne darbotos: saglabājam tavu sīkdatņu izvēli, uzturam pieslēgšanās sesiju (arī pēc Google ienākšanas) līdz 30 dienām, ja izvēlies Atcerēties mani, un nodrošinām drošu pārlūkošanu. Bez tām piekrišanas logs atkārtotos katrā apmeklējumā un daļa funkciju nebūtu pieejama.",
-    "legal.cookies.necessary.p2":
-      "Šīs sīkdatnes nevar izslēgt sistēmā. Tās vari bloķēt pārlūka iestatījumos, taču tad {SYSTEM_NAME} var nestrādāt pareizi.",
-    "legal.cookies.preferences.title": "3. Preferenču sīkdatnes",
-    "legal.cookies.preferences.p1":
-      "Preferenču sīkdatnes atceras saskarnes izvēles, piemēram, saraksta logu (Uzdevumi, Faili, Saraksts) kārtību. Tās palīdz, lai tev nebūtu jāiestata skats no jauna katrā apmeklējumā.",
-    "legal.cookies.preferences.p2":
-      "Šīs sīkdatnes rakstām tikai tad, ja tu tām piekrīti. Ja atsakies, izvēles paliek tikai līdz lapas pārlādei.",
+    "legal.cookies.what.p1": "Sīkdatnes ir nelieli teksta faili, ko pārlūks saglabā tavā ierīcē. Tās palīdz atcerēties iestatījumus, saglabāt piekrišanu un, ja tu atļauj, mērīt lietojumu.",
+    "legal.cookies.what.p2": "Līdzīgas tehnoloģijas, piemēram, vietējā krātuve (localStorage), var tikt izmantotas tam pašam mērķim. Šajā politikā tās apzīmējam kopā ar sīkdatnēm, ja tās glabā preferences vai stāvokli tavā pārlūkā.",
+    "legal.cookies.necessary.title": "3. Obligātās sīkdatnes",
+    "legal.cookies.necessary.p1": "Obligātās sīkdatnes ir vajadzīgas, lai vietne darbotos: saglabājam tavu sīkdatņu izvēli (routine-app-cookie-consent), uzturam pieslēgšanās sesiju (Supabase auth token, routine-app-remember-session līdz 30 dienām) un OAuth stāvokli integrācijām.",
+    "legal.cookies.necessary.p2": "Valodas izvēli (routine-app-language, routine-app-language-chosen) glabājam, lai rādītu pareizo saskarnes valodu. Tās ir funkcionāli nepieciešamas un netiek izmantotas reklāmai.",
+    "legal.cookies.preferences.title": "4. Preferenču sīkdatnes",
+    "legal.cookies.preferences.p1": "Preferenču sīkdatnes atceras saskarnes izvēles, piemēram, saraksta logu (Uzdevumi, Faili, Saraksts) kārtību (routine-app-list-window-order).",
+    "legal.cookies.preferences.p2": "Šīs sīkdatnes rakstām tikai tad, ja tu tām piekrīti. Ja atsakies, izvēles paliek tikai līdz lapas pārlādei.",
     "legal.cookies.optional.title": "4. Statistikas un mārketinga sīkdatnes",
-    "legal.cookies.optional.p1":
-      "Statistikas sīkdatnes ļautu anonīmi saprast, kuras lapas palīdz un kuras mulsina. Mārketinga sīkdatnes ļautu mērīt kampaņas. Šobrīd {SYSTEM_NAME} šādus rīkus neieslēdz.",
-    "legal.cookies.optional.p2":
-      "Ja nākotnē tos pievienosim, tie darbosies tikai ar tavu piekrišanu. Līdz tam izvēle “Piekrist visām” saglabā gatavību, bet neieslēdz trešo pušu izsekošanu.",
-    "legal.cookies.manage.title": "5. Kā pārvaldīt piekrišanu",
-    "legal.cookies.manage.p1":
-      "Pirmo reizi atverot vietni, parādās sīkdatņu logs. Vari piekrist visām, atteikt neobligātās vai pielāgot kategorijas.",
-    "legal.cookies.manage.p2":
-      "Izvēli vari mainīt jebkurā laikā ar “Sīkdatņu iestatījumi” lapas kājenē vai šajā lapā. Piekrišanu glabājam līdz 180 dienām.",
-    "legal.cookies.changes.title": "6. Izmaiņas",
-    "legal.cookies.changes.p1":
-      "Ja mainās sīkdatņu kategorijas vai to mērķis, atjaunināsim šo politiku un, ja nepieciešams, no jauna lūgsim tavu piekrišanu.",
+    "legal.cookies.optional.p1": "Mārketinga sīkdatnes ļautu mērīt reklāmas kampaņas. Šobrīd {SYSTEM_NAME} mārketinga izsekošanu neieslēdz.",
+    "legal.cookies.optional.p2": "Statistikas sīkdatnes (Umami) darbojas tikai ar tavu piekrišanu - skatīt sadaļu par statistiku.",
+    "legal.cookies.manage.title": "8. Kā pārvaldīt piekrišanu",
+    "legal.cookies.manage.p1": "Pirmo reizi atverot vietni, parādās sīkdatņu logs. Vari piekrist visām, atteikt neobligātās vai pielāgot kategorijas.",
+    "legal.cookies.manage.p2": "Izvēli vari mainīt jebkurā laikā ar Sīkdatņu iestatījumi lapas kājenē. Piekrišanu glabājam līdz 180 dienām.",
+    "legal.cookies.changes.title": "9. Izmaiņas",
+    "legal.cookies.changes.p1": "Ja mainās sīkdatņu kategorijas vai to mērķis, atjaunināsim šo politiku un, ja nepieciešams, no jauna lūgsim tavu piekrišanu.",
     "cookie_consent.banner.title": "Mēs izmantojam sīkdatnes",
-    "cookie_consent.banner.description":
-      "Obligātās sīkdatnes ir nepieciešamas, lai sistēma darbotos. Preferenču, statistikas un mārketinga sīkdatnes izmantojam tikai ar tavu piekrišanu.",
+    "cookie_consent.banner.description": "Obligātās sīkdatnes ir nepieciešamas, lai sistēma darbotos. Preferenču, statistikas un mārketinga sīkdatnes izmantojam tikai ar tavu piekrišanu.",
     "cookie_consent.banner.customize": "Pielāgot",
     "cookie_consent.actions.reject_all": "Atteikt neobligātās",
     "cookie_consent.actions.accept_all": "Piekrist visām",
     "cookie_consent.actions.save": "Saglabāt izvēli",
     "cookie_consent.settings.title": "Sīkdatņu iestatījumi",
-    "cookie_consent.settings.description":
-      "Izvēlies, kuras sīkdatņu kategorijas atļaut. Izvēli vari mainīt jebkurā laikā.",
+    "cookie_consent.settings.description": "Izvēlies, kuras sīkdatņu kategorijas atļaut. Izvēli vari mainīt jebkurā laikā.",
     "cookie_consent.settings.always_on": "Vienmēr ieslēgtas",
     "cookie_consent.category.necessary.title": "Obligātās sīkdatnes",
-    "cookie_consent.category.necessary.description":
-      "Nodrošina drošību, pieslēgšanās sesiju un tavas piekrišanas saglabāšanu. Bez tām sistēma nedarbojas.",
+    "cookie_consent.category.necessary.description": "Nodrošina drošību, pieslēgšanās sesiju un tavas piekrišanas saglabāšanu. Bez tām sistēma nedarbojas.",
     "cookie_consent.category.preferences.title": "Preferenču sīkdatnes",
-    "cookie_consent.category.preferences.description":
-      "Atceras tavas izvēles saskarnē, piemēram, saraksta logu kārtību.",
+    "cookie_consent.category.preferences.description": "Atceras tavas izvēles saskarnē, piemēram, saraksta logu kārtību.",
     "cookie_consent.category.analytics.title": "Statistikas sīkdatnes",
-    "cookie_consent.category.analytics.description":
-      "Ļauj anonīmi mērīt lietojumu (Umami), ja administrators to ir ieslēdzis.",
+    "cookie_consent.category.analytics.description": "Ļauj anonīmi mērīt lietojumu (Umami), ja administrators to ir ieslēdzis.",
     "cookie_consent.category.marketing.title": "Mārketinga sīkdatnes",
-    "cookie_consent.category.marketing.description":
-      "Ļauj rādīt personalizētu saturu. Šobrīd netiek izmantota neviena mārketinga sīkdatne.",
+    "cookie_consent.category.marketing.description": "Ļauj rādīt personalizētu saturu. Šobrīd netiek izmantota neviena mārketinga sīkdatne.",
     "nav.home": "Sākums",
     "nav.lists": "Saraksts",
     "nav.team": "Komanda",
@@ -442,14 +324,12 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "nav.request_feature": "Pieprasīt funkciju",
     "nav.feedback": "Atsauksmes",
     "feedback.bug.title": "Atrast kļūdu?",
-    "feedback.bug.description":
-      "Apraksti kļūdu. Ziņojums tiks nosūtīts uz juridisko e-pastu.",
+    "feedback.bug.description": "Apraksti kļūdu. Ziņojums tiks nosūtīts uz juridisko e-pastu.",
     "feedback.bug.title_placeholder": "Īss kļūdas kopsavilkums",
     "feedback.bug.body_placeholder": "Kas notika, ko gaidīji un kā to atkārtot",
     "feedback.bug.sent": "Paldies, kļūdas ziņojums nosūtīts.",
     "feedback.feature.title": "Pieprasīt funkciju",
-    "feedback.feature.description":
-      "Iesaki jaunu iespēju. Citi var balsot, lai palīdzētu noteikt prioritāti.",
+    "feedback.feature.description": "Iesaki jaunu iespēju. Citi var balsot, lai palīdzētu noteikt prioritāti.",
     "feedback.feature.title_placeholder": "Ko vēlies pievienot?",
     "feedback.feature.body_placeholder": "Kāpēc tas palīdzētu un kā to izmantotu",
     "feedback.feature.sent": "Funkcijas pieprasījums nosūtīts.",
@@ -457,8 +337,7 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "feedback.feature.list": "Citu pieprasījumi",
     "feedback.feature.upvote": "Balsot",
     "feedback.general.title": "Atsauksmes",
-    "feedback.general.description":
-      "Padalies ar savu viedokli. Ziņojums tiks nosūtīts uz juridisko e-pastu.",
+    "feedback.general.description": "Padalies ar savu viedokli. Ziņojums tiks nosūtīts uz juridisko e-pastu.",
     "feedback.general.title_placeholder": "Tēma",
     "feedback.general.body_placeholder": "Kas tev patīk vai ko varētu uzlabot",
     "feedback.general.sent": "Paldies, atsauksme nosūtīta.",
@@ -470,8 +349,7 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "feedback.email.subject.feedback": "Atsauksme: {title}",
     "feedback.email.body": "{name} ({email}) nosūtīja {kind}.\n\n{title}\n\n{body}",
     "admin.panel.title": "Administrācijas panelis",
-    "admin.page.subtitle":
-      "Sistēmas iestatījumi. Pieejams tikai administratoriem.",
+    "admin.page.subtitle": "Sistēmas iestatījumi. Pieejams tikai administratoriem.",
     "admin.nav.label": "Administrācijas sadaļas",
     "admin.nav.group.people": "Cilvēki",
     "admin.nav.group.catalog": "Katalogs",
@@ -503,8 +381,7 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "admin.cron_jobs.last_run.never": "Vēl nav palaists",
     "admin.cron_jobs.feedback.enabled": "Cron job ieslēgts.",
     "admin.cron_jobs.feedback.disabled": "Cron job izslēgts.",
-    "admin.email_templates.section_hint":
-      "HTML e-pasti katrā sistēmas valodā. Parametri: {name}, {system}, {team}, {inviter}, {title}, {message}; pogai {link}.",
+    "admin.email_templates.section_hint": "HTML e-pasti katrā sistēmas valodā. Parametri: {name}, {system}, {team}, {inviter}, {title}, {message}; pogai {link}.",
     "admin.email_templates.kind.signup": "Reģistrācijas apstiprinājums",
     "admin.email_templates.kind.password_reset": "Aizmirsa paroli",
     "admin.email_templates.kind.invite": "Komandas uzaicinājums",
@@ -517,163 +394,120 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "admin.email_templates.save": "Saglabāt šablonus",
     "admin.email_templates.saved": "E-pasta šabloni saglabāti.",
     "admin.email_templates.preview": "Priekšskatījums",
-    "admin.email_templates.resend_disabled":
-      "Resend ir izslēgts, tāpēc e-pasti netiek sūtīti. Ieslēdz to sadaļā Integrācijas.",
+    "admin.email_templates.resend_disabled": "Resend ir izslēgts, tāpēc e-pasti netiek sūtīti. Ieslēdz to sadaļā Integrācijas.",
     "integrations.enabled_label": "Aktīva",
-    "integrations.enabled.requires_configured":
-      "Vispirms pabeidz konfigurāciju, lai ieslēgtu integrāciju.",
+    "integrations.enabled.requires_configured": "Vispirms pabeidz konfigurāciju, lai ieslēgtu integrāciju.",
     "integrations.status.configured": "Konfigurēta",
     "integrations.status.not_configured": "Nav konfigurēta",
     "integrations.feedback.status_saved": "Integrācijas statuss saglabāts.",
     "integrations.google_oauth.title": "Google OAuth",
-    "integrations.google_oauth.description":
-      "Konfigurē Google pieslēgšanos login un reģistrācijas lapā.",
+    "integrations.google_oauth.description": "Konfigurē Google pieslēgšanos login un reģistrācijas lapā.",
     "integrations.google_oauth.client_id": "Client ID",
     "integrations.google_oauth.client_secret": "Client Secret",
     "integrations.google_oauth.client_secret_placeholder": "Google OAuth Client Secret",
-    "integrations.google_oauth.client_secret_placeholder_saved":
-      "Saglabāts — atstāj tukšu, ja nemaina",
+    "integrations.google_oauth.client_secret_placeholder_saved": "Saglabāts — atstāj tukšu, ja nemaina",
     "integrations.google_oauth.configure": "Konfigurēt ar Google",
     "integrations.google_oauth.reconfigure": "Pārkonfigurēt ar Google",
     "integrations.google_oauth.reset": "Notīrīt konfigurāciju",
-    "integrations.google_oauth.reset.confirm_title":
-      "Notīrīt Google OAuth konfigurāciju?",
-    "integrations.google_oauth.reset.confirm_description":
-      "Integrācija tiks izslēgta un lietotāji vairs neredzēs Google pieslēgšanos.",
+    "integrations.google_oauth.reset.confirm_title": "Notīrīt Google OAuth konfigurāciju?",
+    "integrations.google_oauth.reset.confirm_description": "Integrācija tiks izslēgta un lietotāji vairs neredzēs Google pieslēgšanos.",
     "integrations.google_oauth.redirects.title": "Redirect URI",
-    "integrations.google_oauth.redirects.hint":
-      "Pirmais URI katrā originā ir login/signup un Gmail spraudnim, otrais — komandas Google Drive. Pievieno visus URI Google Cloud (arī localhost). Google Cloud projektā ieslēdz Drive API un Gmail API.",
+    "integrations.google_oauth.redirects.hint": "Pirmais URI katrā originā ir login/signup un Gmail spraudnim, otrais — komandas Google Drive. Pievieno visus URI Google Cloud (arī localhost). Google Cloud projektā ieslēdz Drive API un Gmail API.",
     "integrations.google_oauth.aria.enabled": "Google OAuth integrācija ieslēgta",
     "integrations.google_oauth.feedback.configured": "Google OAuth integrācija konfigurēta.",
     "integrations.google_oauth.feedback.credentials_saved": "Google OAuth dati saglabāti.",
     "integrations.google_oauth.feedback.client_id_required": "Ievadi Google OAuth Client ID.",
-    "integrations.google_oauth.feedback.client_secret_required":
-      "Ievadi Google OAuth Client Secret.",
+    "integrations.google_oauth.feedback.client_secret_required": "Ievadi Google OAuth Client Secret.",
     "integrations.google_oauth.feedback.reset": "Google OAuth konfigurācija notīrīta.",
     "integrations.microsoft_oauth.title": "Microsoft OAuth",
-    "integrations.microsoft_oauth.description":
-      "Konfigurē Microsoft Azure lietotni, lai lietotāji varētu ienākt un komandas izmantot OneDrive.",
+    "integrations.microsoft_oauth.description": "Konfigurē Microsoft Azure lietotni, lai lietotāji varētu ienākt un komandas izmantot OneDrive.",
     "integrations.microsoft_oauth.client_id": "Application (client) ID",
     "integrations.microsoft_oauth.client_secret": "Client Secret",
     "integrations.microsoft_oauth.client_secret_placeholder": "Microsoft Client Secret",
-    "integrations.microsoft_oauth.client_secret_placeholder_saved":
-      "Saglabāts — atstāj tukšu, ja nemaina",
+    "integrations.microsoft_oauth.client_secret_placeholder_saved": "Saglabāts — atstāj tukšu, ja nemaina",
     "integrations.microsoft_oauth.configure": "Konfigurēt ar Microsoft",
     "integrations.microsoft_oauth.reconfigure": "Pārkonfigurēt ar Microsoft",
     "integrations.microsoft_oauth.reset": "Notīrīt konfigurāciju",
-    "integrations.microsoft_oauth.reset.confirm_title":
-      "Notīrīt Microsoft OAuth konfigurāciju?",
-    "integrations.microsoft_oauth.reset.confirm_description":
-      "Integrācija tiks izslēgta, lietotāji vairs neredzēs Microsoft pieslēgšanos un OneDrive modulis vairs nebūs pieejams.",
+    "integrations.microsoft_oauth.reset.confirm_title": "Notīrīt Microsoft OAuth konfigurāciju?",
+    "integrations.microsoft_oauth.reset.confirm_description": "Integrācija tiks izslēgta, lietotāji vairs neredzēs Microsoft pieslēgšanos un OneDrive modulis vairs nebūs pieejams.",
     "integrations.microsoft_oauth.redirects.title": "Redirect URI",
-    "integrations.microsoft_oauth.redirects.hint":
-      "Pirmo URI izmanto konfigurācijai un login/signup, otro — komandas OneDrive. Azure appā pievieno arī Files.ReadWrite atļauju.",
+    "integrations.microsoft_oauth.redirects.hint": "Pirmo URI izmanto konfigurācijai un login/signup, otro — komandas OneDrive. Azure appā pievieno arī Files.ReadWrite atļauju.",
     "integrations.microsoft_oauth.aria.enabled": "Microsoft OAuth integrācija ieslēgta",
-    "integrations.microsoft_oauth.feedback.configured":
-      "Microsoft OAuth integrācija konfigurēta.",
-    "integrations.microsoft_oauth.feedback.credentials_saved":
-      "Microsoft OAuth dati saglabāti.",
-    "integrations.microsoft_oauth.feedback.client_id_required":
-      "Ievadi Microsoft Application (client) ID.",
-    "integrations.microsoft_oauth.feedback.client_secret_required":
-      "Ievadi Microsoft Client Secret.",
+    "integrations.microsoft_oauth.feedback.configured": "Microsoft OAuth integrācija konfigurēta.",
+    "integrations.microsoft_oauth.feedback.credentials_saved": "Microsoft OAuth dati saglabāti.",
+    "integrations.microsoft_oauth.feedback.client_id_required": "Ievadi Microsoft Application (client) ID.",
+    "integrations.microsoft_oauth.feedback.client_secret_required": "Ievadi Microsoft Client Secret.",
     "integrations.microsoft_oauth.feedback.reset": "Microsoft OAuth konfigurācija notīrīta.",
     "integrations.resend.title": "Resend",
-    "integrations.resend.description":
-      "Transakciju e-pasti caur Resend API (From adrese + API Key).",
+    "integrations.resend.description": "Transakciju e-pasti caur Resend API (From adrese + API Key).",
     "integrations.resend.from_email": "From e-pasts",
-    "integrations.resend.from_hint":
-      "No šīs adreses sistēma sūta vēstules. Tai jābūt verificētā Resend domēnā.",
+    "integrations.resend.from_hint": "No šīs adreses sistēma sūta vēstules. Tai jābūt verificētā Resend domēnā.",
     "integrations.resend.reply_to": "Reply-To e-pasts",
-    "integrations.resend.reply_to_hint":
-      "Atbildes uz vēstulēm iet uz šo adresi. Var būt Gmail vai cita publiska pastkaste.",
+    "integrations.resend.reply_to_hint": "Atbildes uz vēstulēm iet uz šo adresi. Var būt Gmail vai cita publiska pastkaste.",
     "integrations.resend.api_key": "API Key",
     "integrations.resend.api_key_placeholder": "re_…",
-    "integrations.resend.api_key_placeholder_saved":
-      "Saglabāts — atstāj tukšu, ja nemaina",
-    "integrations.resend.hint":
-      "From adresei jābūt verificētā Resend domēnā. Reply-To var būt Gmail, lai atbildes nonāktu tavā pastkastē.",
+    "integrations.resend.api_key_placeholder_saved": "Saglabāts — atstāj tukšu, ja nemaina",
+    "integrations.resend.hint": "From adresei jābūt verificētā Resend domēnā. Reply-To var būt Gmail, lai atbildes nonāktu tavā pastkastē.",
     "integrations.resend.reset": "Notīrīt konfigurāciju",
     "integrations.resend.reset.confirm_title": "Notīrīt Resend konfigurāciju?",
-    "integrations.resend.reset.confirm_description":
-      "API atslēga tiks dzēsta un e-pastu sūtīšana caur Resend tiks izslēgta.",
+    "integrations.resend.reset.confirm_description": "API atslēga tiks dzēsta un e-pastu sūtīšana caur Resend tiks izslēgta.",
     "integrations.resend.aria.enabled": "Resend integrācija ieslēgta",
     "integrations.resend.feedback.credentials_saved": "Resend dati saglabāti.",
     "integrations.resend.feedback.reset": "Resend konfigurācija notīrīta.",
     "integrations.stripe.title": "Stripe",
-    "integrations.stripe.description":
-      "Vietu norēķini: viena komandas abonements, jaunie lietotāji pēc samaksas.",
+    "integrations.stripe.description": "Vietu norēķini: viena komandas abonements, jaunie lietotāji pēc samaksas.",
     "integrations.stripe.publishable_key": "Publishable key",
     "integrations.stripe.publishable_key_placeholder": "pk_live_… vai pk_test_…",
-    "integrations.stripe.publishable_hint":
-      "Publiskā atslēga no Stripe Dashboard. Sākas ar pk_.",
+    "integrations.stripe.publishable_hint": "Publiskā atslēga no Stripe Dashboard. Sākas ar pk_.",
     "integrations.stripe.secret_key": "Secret key",
     "integrations.stripe.secret_key_placeholder": "sk_… (live vai test)",
-    "integrations.stripe.secret_key_placeholder_saved":
-      "Saglabāts — atstāj tukšu, ja nemaina",
+    "integrations.stripe.secret_key_placeholder_saved": "Saglabāts — atstāj tukšu, ja nemaina",
     "integrations.stripe.webhook_secret": "Webhook signing secret",
     "integrations.stripe.webhook_secret_placeholder": "whsec_…",
-    "integrations.stripe.webhook_secret_placeholder_saved":
-      "Saglabāts — atstāj tukšu, ja nemaina",
-    "integrations.stripe.webhook_url_hint":
-      "Stripe Dashboard webhook URL: {url}",
-    "integrations.stripe.hint":
-      "Kad integrācija ir aktīva, komandas maksā par vietām Stripe Checkout un abonementā. Webhook notikumi: checkout.session.completed, invoice.created, invoice.paid, invoice.payment_failed, customer.subscription.updated, customer.subscription.deleted.",
+    "integrations.stripe.webhook_secret_placeholder_saved": "Saglabāts — atstāj tukšu, ja nemaina",
+    "integrations.stripe.webhook_url_hint": "Stripe Dashboard webhook URL: {url}",
+    "integrations.stripe.hint": "Kad integrācija ir aktīva, komandas maksā par vietām Stripe Checkout un abonementā. Webhook notikumi: checkout.session.completed, invoice.created, invoice.paid, invoice.payment_failed, customer.subscription.updated, customer.subscription.deleted.",
     "integrations.stripe.reset": "Notīrīt konfigurāciju",
     "integrations.stripe.reset.confirm_title": "Notīrīt Stripe konfigurāciju?",
-    "integrations.stripe.reset.confirm_description":
-      "Stripe atslēgas tiks dzēstas un vietu norēķini tiks izslēgti.",
+    "integrations.stripe.reset.confirm_description": "Stripe atslēgas tiks dzēstas un vietu norēķini tiks izslēgti.",
     "integrations.stripe.aria.enabled": "Stripe integrācija ieslēgta",
     "integrations.stripe.feedback.credentials_saved": "Stripe dati saglabāti.",
     "integrations.stripe.feedback.reset": "Stripe konfigurācija notīrīta.",
     "integrations.umami.title": "Umami",
-    "integrations.umami.description":
-      "Anonīma lapu statistika. Aktīvam skripts tiek ielādēts head daļā pēc statistikas piekrišanas.",
+    "integrations.umami.description": "Anonīma lapu statistika. Aktīvam skripts tiek ielādēts head daļā pēc statistikas piekrišanas.",
     "integrations.umami.website_id": "Website ID",
     "integrations.umami.script_url": "Script URL",
-    "integrations.umami.script_url_placeholder_saved":
-      "Saglabāts — atstāj tukšu, ja nemaina",
-    "integrations.umami.hint":
-      "Kad integrācija ir aktīva un lietotājs piekrīt statistikas sīkdatnēm, Umami skripts tiek ielādēts lapas head daļā.",
+    "integrations.umami.script_url_placeholder_saved": "Saglabāts — atstāj tukšu, ja nemaina",
+    "integrations.umami.hint": "Kad integrācija ir aktīva un lietotājs piekrīt statistikas sīkdatnēm, Umami skripts tiek ielādēts lapas head daļā.",
     "integrations.umami.reset": "Notīrīt konfigurāciju",
     "integrations.umami.reset.confirm_title": "Notīrīt Umami konfigurāciju?",
-    "integrations.umami.reset.confirm_description":
-      "Website ID tiks dzēsts un Umami skripts vairs netiks ielādēts.",
+    "integrations.umami.reset.confirm_description": "Website ID tiks dzēsts un Umami skripts vairs netiks ielādēts.",
     "integrations.umami.aria.enabled": "Umami integrācija ieslēgta",
     "integrations.umami.feedback.credentials_saved": "Umami dati saglabāti.",
     "integrations.umami.feedback.reset": "Umami konfigurācija notīrīta.",
     "integrations.sentry.title": "Sentry",
-    "integrations.sentry.description":
-      "Kļūdu un izņēmumu uzskaite pārlūkā caur sentry.io.",
+    "integrations.sentry.description": "Kļūdu un izņēmumu uzskaite pārlūkā caur sentry.io.",
     "integrations.sentry.environment": "Environment",
     "integrations.sentry.dsn": "DSN",
-    "integrations.sentry.dsn_placeholder_saved":
-      "Saglabāts — atstāj tukšu, ja nemaina",
-    "integrations.sentry.hint":
-      "Kad integrācija ir aktīva, pārlūkā inicializējas Sentry kļūdu uzskaite.",
+    "integrations.sentry.dsn_placeholder_saved": "Saglabāts — atstāj tukšu, ja nemaina",
+    "integrations.sentry.hint": "Kad integrācija ir aktīva, pārlūkā inicializējas Sentry kļūdu uzskaite.",
     "integrations.sentry.reset": "Notīrīt konfigurāciju",
     "integrations.sentry.reset.confirm_title": "Notīrīt Sentry konfigurāciju?",
-    "integrations.sentry.reset.confirm_description":
-      "DSN tiks dzēsts un Sentry kļūdu uzskaite tiks izslēgta.",
+    "integrations.sentry.reset.confirm_description": "DSN tiks dzēsts un Sentry kļūdu uzskaite tiks izslēgta.",
     "integrations.sentry.aria.enabled": "Sentry integrācija ieslēgta",
     "integrations.sentry.feedback.credentials_saved": "Sentry dati saglabāti.",
     "integrations.sentry.feedback.reset": "Sentry konfigurācija notīrīta.",
     "integrations.turnstile.title": "Cloudflare Turnstile",
-    "integrations.turnstile.description":
-      "Botu pārbaude e-pasta reģistrācijā un Google ienākšanā, ja vēl nav komandas.",
+    "integrations.turnstile.description": "Botu pārbaude e-pasta reģistrācijā un Google ienākšanā, ja vēl nav komandas.",
     "integrations.turnstile.site_key": "Site Key",
-    "integrations.turnstile.site_key_hint":
-      "Publiskā atslēga no Cloudflare Turnstile. Tā tiek rādīta reģistrācijas formā un Google ienākšanā bez komandas.",
+    "integrations.turnstile.site_key_hint": "Publiskā atslēga no Cloudflare Turnstile. Tā tiek rādīta reģistrācijas formā un Google ienākšanā bez komandas.",
     "integrations.turnstile.secret_key": "Secret Key",
     "integrations.turnstile.secret_key_placeholder": "0x4AAAAAAA…",
-    "integrations.turnstile.secret_key_placeholder_saved":
-      "Saglabāts — atstāj tukšu, ja nemaina",
-    "integrations.turnstile.hint":
-      "Kad integrācija ir aktīva, e-pasta reģistrācija un Google ienākšana bez komandas prasa Cloudflare Turnstile pārbaudi.",
+    "integrations.turnstile.secret_key_placeholder_saved": "Saglabāts — atstāj tukšu, ja nemaina",
+    "integrations.turnstile.hint": "Kad integrācija ir aktīva, e-pasta reģistrācija un Google ienākšana bez komandas prasa Cloudflare Turnstile pārbaudi.",
     "integrations.turnstile.reset": "Notīrīt konfigurāciju",
     "integrations.turnstile.reset.confirm_title": "Notīrīt Turnstile konfigurāciju?",
-    "integrations.turnstile.reset.confirm_description":
-      "Atslēgas tiks dzēstas un botu pārbaude login/reģistrācijā tiks izslēgta.",
+    "integrations.turnstile.reset.confirm_description": "Atslēgas tiks dzēstas un botu pārbaude login/reģistrācijā tiks izslēgta.",
     "integrations.turnstile.aria.enabled": "Turnstile integrācija ieslēgta",
     "integrations.turnstile.feedback.credentials_saved": "Turnstile dati saglabāti.",
     "integrations.turnstile.feedback.reset": "Turnstile konfigurācija notīrīta.",
@@ -681,28 +515,20 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "errors.integrations_configure_failed": "Neizdevās pabeigt Google OAuth konfigurāciju.",
     "errors.integrations_reset_failed": "Neizdevās notīrīt Google OAuth konfigurāciju.",
     "errors.integrations_not_configured": "Vispirms pabeidz integrācijas konfigurāciju.",
-    "errors.integrations_credentials_missing":
-      "Nav Google OAuth Client ID vai Secret. Saglabā datus pirms konfigurācijas.",
+    "errors.integrations_credentials_missing": "Nav Google OAuth Client ID vai Secret. Saglabā datus pirms konfigurācijas.",
     "errors.integrations_client_id_required": "Ievadi Google OAuth Client ID.",
     "errors.integrations_forbidden": "Nav tiesību konfigurēt integrācijas.",
-    "errors.integrations_microsoft_configure_failed":
-      "Neizdevās pabeigt Microsoft OAuth konfigurāciju.",
-    "errors.integrations_microsoft_reset_failed":
-      "Neizdevās notīrīt Microsoft OAuth konfigurāciju.",
-    "errors.integrations_microsoft_not_configured":
-      "Vispirms pabeidz Microsoft OAuth konfigurāciju.",
-    "errors.integrations_microsoft_credentials_missing":
-      "Nav Microsoft Client ID vai Secret. Saglabā datus pirms konfigurācijas.",
-    "errors.integrations_microsoft_client_id_required":
-      "Ievadi Microsoft Application (client) ID.",
+    "errors.integrations_microsoft_configure_failed": "Neizdevās pabeigt Microsoft OAuth konfigurāciju.",
+    "errors.integrations_microsoft_reset_failed": "Neizdevās notīrīt Microsoft OAuth konfigurāciju.",
+    "errors.integrations_microsoft_not_configured": "Vispirms pabeidz Microsoft OAuth konfigurāciju.",
+    "errors.integrations_microsoft_credentials_missing": "Nav Microsoft Client ID vai Secret. Saglabā datus pirms konfigurācijas.",
+    "errors.integrations_microsoft_client_id_required": "Ievadi Microsoft Application (client) ID.",
     "errors.integrations_resend_from_required": "Ievadi Resend From e-pasta adresi.",
     "errors.integrations_resend_api_key_required": "Ievadi Resend API Key.",
     "errors.integrations_resend_not_enabled": "Resend integrācija nav ieslēgta.",
     "errors.integrations_resend_send_failed": "Neizdevās nosūtīt e-pastu caur Resend.",
-    "errors.integrations_resend_from_unverified":
-      "From adresei jābūt verificētā Resend domēnā. Gmail un citas publiskās pastkastes nevar izmantot.",
-    "errors.integrations_resend_reply_to_invalid":
-      "Ievadi derīgu Reply-To e-pasta adresi.",
+    "errors.integrations_resend_from_unverified": "From adresei jābūt verificētā Resend domēnā. Gmail un citas publiskās pastkastes nevar izmantot.",
+    "errors.integrations_resend_reply_to_invalid": "Ievadi derīgu Reply-To e-pasta adresi.",
     "errors.integrations_umami_website_id_required": "Ievadi Umami Website ID.",
     "errors.integrations_umami_script_required": "Ievadi Umami Script URL.",
     "errors.integrations_sentry_environment_required": "Ievadi Sentry Environment.",
@@ -713,8 +539,7 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "errors.integrations_stripe_secret_required": "Ievadi Stripe Secret key.",
     "errors.integrations_stripe_webhook_required": "Ievadi Stripe webhook signing secret.",
     "errors.integrations_stripe_not_enabled": "Stripe integrācija nav ieslēgta.",
-    "errors.integrations_stripe_invalid_key":
-      "Stripe atslēga nav derīga. Administrators to labo Integrācijās.",
+    "errors.integrations_stripe_invalid_key": "Stripe atslēga nav derīga. Administrators to labo Integrācijās.",
     "errors.integrations_stripe_checkout_failed": "Neizdevās izveidot Stripe maksājumu.",
     "errors.billing_forbidden": "Nav tiesību pārvaldīt komandas norēķinus.",
     "errors.billing_not_configured": "Maksas plāni sistēmā nav ieslēgti.",
@@ -722,19 +547,14 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "errors.billing_already_subscribed": "Komandai jau ir Stripe abonements.",
     "errors.billing_no_subscription": "Vispirms sāc komandas abonementu.",
     "errors.billing_no_pending_seats": "Nav vietu, kas gaida samaksu.",
-    "errors.billing_only_free_seat":
-      "Komandas vadītāja vieta ir bez maksas. Pievieno maksas vietu, lai uzaicinātu citus.",
-    "errors.billing_checkout_invalid":
-      "Maksājuma sesija nav derīga vai nav pabeigta.",
-    "site_payment_plans.page.subtitle":
-      "Ieslēdz maksas plānus un piešķir frontend moduļus katram plānam",
+    "errors.billing_only_free_seat": "Komandas vadītāja vieta ir bez maksas. Pievieno maksas vietu, lai uzaicinātu citus.",
+    "errors.billing_checkout_invalid": "Maksājuma sesija nav derīga vai nav pabeigta.",
+    "site_payment_plans.page.subtitle": "Ieslēdz maksas plānus un piešķir frontend moduļus katram plānam",
     "site_payment_plans.enable.section": "Maksas plāni",
-    "site_payment_plans.enable.hint":
-      "Kad ieslēgts, komandas redz tikai tās moduļus, kas iekļauti aktīvajā maksas plānā. Kad izslēgts, visi globāli ieslēgtie moduļi ir pieejami visām komandām.",
+    "site_payment_plans.enable.hint": "Kad ieslēgts, komandas redz tikai tās moduļus, kas iekļauti aktīvajā maksas plānā. Kad izslēgts, visi globāli ieslēgtie moduļi ir pieejami visām komandām.",
     "site_payment_plans.enable.label": "Ieslēgt maksas plānus",
     "site_payment_plans.enable.saved": "Maksas plānu iestatījums saglabāts.",
-    "site_payment_plans.enable.stripe_required":
-      "Maksas plānus var ieslēgt tikai tad, ja Stripe integrācija ir nokonfigurēta un ieslēgta.",
+    "site_payment_plans.enable.stripe_required": "Maksas plānus var ieslēgt tikai tad, ja Stripe integrācija ir nokonfigurēta un ieslēgta.",
     "site_payment_plans.list.title": "Plāni",
     "site_payment_plans.list.empty": "Vēl nav izveidots neviens maksas plāns.",
     "site_payment_plans.list.prices": "Cenas",
@@ -749,24 +569,19 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "site_payment_plans.form.name": "Nosaukums",
     "site_payment_plans.form.description": "Apraksts",
     "site_payment_plans.form.is_free": "Bezmaksas plāns",
-    "site_payment_plans.form.is_free_hint":
-      "Vienmēr pieejams bez maksas. Cenas nav jānorāda, un komandai šis plāns nebeidzas.",
+    "site_payment_plans.form.is_free_hint": "Vienmēr pieejams bez maksas. Cenas nav jānorāda, un komandai šis plāns nebeidzas.",
     "site_payment_plans.list.free": "Bezmaksas",
     "site_payment_plans.form.modules": "Moduļi šajā plānā",
     "site_payment_plans.form.modules_empty": "Nav globāli ieslēgtu frontend moduļu.",
     "site_payment_plans.form.max_members": "Maks. lietotāju skaits",
-    "site_payment_plans.form.max_members_hint":
-      "Cik komandas lietotāju drīkst būt šajā bezmaksas plānā.",
+    "site_payment_plans.form.max_members_hint": "Cik komandas lietotāju drīkst būt šajā bezmaksas plānā.",
     "site_payment_plans.form.prices": "Cenas par vienu lietotāju (EUR)",
-    "site_payment_plans.form.prices_hint":
-      "Cena ir par vienu lietotāju. Aizpildi tikai piedāvātos periodus. Tukšs periods landing lapā netiek rādīts. Decimālatdalītājs ir punkts, piemēram 9.00.",
+    "site_payment_plans.form.prices_hint": "Cena ir par vienu lietotāju. Aizpildi tikai piedāvātos periodus. Tukšs periods landing lapā netiek rādīts. Decimālatdalītājs ir punkts, piemēram 9.00.",
     "site_payment_plans.form.price_month": "Mēnesis",
     "site_payment_plans.form.price_quarter": "Ceturksnis",
     "site_payment_plans.form.price_year": "Gads",
-    "site_payment_plans.form.early_bird_prices":
-      "Early Bird cenas par vienu lietotāju (EUR)",
-    "site_payment_plans.form.early_bird_prices_hint":
-      "Šīs cenas attiecas uz Early Bird vietām un arī ir par vienu lietotāju. Tukšus periodus vari atstāt tukšus.",
+    "site_payment_plans.form.early_bird_prices": "Early Bird cenas par vienu lietotāju (EUR)",
+    "site_payment_plans.form.early_bird_prices_hint": "Šīs cenas attiecas uz Early Bird vietām un arī ir par vienu lietotāju. Tukšus periodus vari atstāt tukšus.",
     "site_payment_plans.period.month_short": "/ mēn.",
     "site_payment_plans.period.quarter_short": "/ cet.",
     "site_payment_plans.period.year_short": "/ gadā",
@@ -775,26 +590,22 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "site_payment_plans.feedback.saved": "Maksas plāns saglabāts.",
     "site_payment_plans.feedback.deleted": "Maksas plāns dzēsts.",
     "site_payment_plans.delete.confirm_title": "Dzēst maksas plānu?",
-    "site_payment_plans.delete.confirm_description":
-      "Plāns tiks noņemts no komandām, kurām tas bija piešķirts.",
+    "site_payment_plans.delete.confirm_description": "Plāns tiks noņemts no komandām, kurām tas bija piešķirts.",
     "site_payment_plans.trial.section": "Izmēģinājuma periods",
-    "site_payment_plans.trial.hint":
-      "Jauna komanda pēc reģistrācijas saņem šo plānu uz norādīto dienu skaitu. Bez izmēģinājuma plāna jaunai komandai nav pieejas, kamēr plānu nepiešķir manuāli.",
+    "site_payment_plans.trial.hint": "Jauna komanda pēc reģistrācijas saņem šo plānu uz norādīto dienu skaitu. Bez izmēģinājuma plāna jaunai komandai nav pieejas, kamēr plānu nepiešķir manuāli.",
     "site_payment_plans.trial.field_plan": "Plāns jaunām komandām",
     "site_payment_plans.trial.plan_none": "Bez izmēģinājuma",
     "site_payment_plans.trial.field_days": "Izmēģinājuma dienas",
     "site_payment_plans.trial.days_hint": "No 1 līdz 365 dienām.",
     "site_payment_plans.trial.saved": "Izmēģinājuma iestatījumi saglabāti.",
     "site_payment_plans.early_bird.section": "Early Bird",
-    "site_payment_plans.early_bird.hint":
-      "Kopīgs limīts Early Bird vietām (ne komandām). Vieta kļūst Early Bird pirkuma brīdī, ja poolā vēl ir vietas. Ja lietotāju noņem un līdz cikla beigām vietu neaizpilda, Early Bird vieta pazūd un neatgriežas poolā. 0 - Early Bird izslēgts.",
+    "site_payment_plans.early_bird.hint": "Kopīgs limīts Early Bird vietām (ne komandām). Vieta kļūst Early Bird pirkuma brīdī, ja poolā vēl ir vietas. Ja lietotāju noņem un līdz cikla beigām vietu neaizpilda, Early Bird vieta pazūd un neatgriežas poolā. 0 - Early Bird izslēgts.",
     "site_payment_plans.early_bird.field_limit": "Vietu skaits",
     "site_payment_plans.early_bird.claimed": "Izmantotas vietas: {claimed} / {limit}",
     "site_payment_plans.early_bird.claimed_off": "Izmantotas vietas: {claimed} (izslēgts)",
     "site_payment_plans.early_bird.saved": "Early Bird limīts saglabāts.",
     "frontend_modules.create.title": "Jauns modulis",
-    "frontend_modules.create.description":
-      "Pievieno unikālu moduļa atslēgu, piemēram `reports` vai `inventory.sync`.",
+    "frontend_modules.create.description": "Pievieno unikālu moduļa atslēgu, piemēram `reports` vai `inventory.sync`.",
     "frontend_modules.create.key_placeholder": "Moduļa atslēga",
     "frontend_modules.feedback.key_required": "Ievadi moduļa atslēgu.",
     "frontend_modules.feedback.created": "Modulis pievienots.",
@@ -803,25 +614,20 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "frontend_modules.table.key": "Atslēga",
     "frontend_modules.table.empty": "Nav moduļu.",
     "frontend_modules.aria.enabled": "{key} ieslēgts",
-    "frontend_modules.google_drive.toggle_locked":
-      "Vispirms konfigurē un ieslēdz Google OAuth integrāciju (Administrācija → Integrācijas).",
-    "frontend_modules.onedrive.toggle_locked":
-      "Vispirms konfigurē un ieslēdz Microsoft OAuth integrāciju (Administrācija → Integrācijas).",
+    "frontend_modules.google_drive.toggle_locked": "Vispirms konfigurē un ieslēdz Google OAuth integrāciju (Administrācija → Integrācijas).",
+    "frontend_modules.onedrive.toggle_locked": "Vispirms konfigurē un ieslēdz Microsoft OAuth integrāciju (Administrācija → Integrācijas).",
     "frontend_modules.delete.confirm_title": "Dzēst moduli?",
-    "frontend_modules.delete.confirm_description":
-      "Modulis {key} tiks neatgriezeniski dzēsts.",
+    "frontend_modules.delete.confirm_description": "Modulis {key} tiks neatgriezeniski dzēsts.",
     "admin.users.create": "Jauns lietotājs",
     "admin.users.empty": "Nav neviena lietotāja.",
-    "admin.users.help.password":
-      "Lietotājs var iestatīt paroli ar Aizmirsi paroli.",
+    "admin.users.help.password": "Lietotājs var iestatīt paroli ar Aizmirsi paroli.",
     "admin.users.feedback.created": "Lietotājs pievienots.",
     "admin.users.feedback.saved": "Lietotājs saglabāts.",
     "admin.users.feedback.deleted": "Lietotājs dzēsts.",
     "admin.users.delete.title": "Dzēst lietotāju?",
     "admin.users.delete.confirm_prefix": "Vai tiešām dzēst lietotāju",
     "admin.users.delete.self_disabled": "Nevar dzēst savu kontu",
-    "admin.users.delete.last_admin_disabled":
-      "Pēdējo administratoru nevar dzēst",
+    "admin.users.delete.last_admin_disabled": "Pēdējo administratoru nevar dzēst",
     "admin.users.registered": "Reģistrējies",
     "admin.users.last_seen": "Pēdējoreiz ienāca",
     "admin.users.last_seen_never": "Vēl nav ienācis",
@@ -838,15 +644,13 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "admin.teams.plan.plan_summary_paid": "{moduleCount} moduļi · cena par lietotāju",
     "admin.teams.plan.field_until": "Derīgs līdz",
     "admin.teams.plan.until_hint": "Tukšs = bez beigu datuma. Formāts: YYYY-MM-DD.",
-    "admin.teams.plan.free_hint":
-      "Bezmaksas plāns ir vienmēr aktīvs. Samaksa un termiņš nav jānorāda.",
+    "admin.teams.plan.free_hint": "Bezmaksas plāns ir vienmēr aktīvs. Samaksa un termiņš nav jānorāda.",
     "admin.teams.plan.paid": "Samaksāts",
     "admin.teams.plan.trial": "Izmēģinājums",
     "admin.teams.plan.early_bird": "Early Bird",
     "admin.teams.plan.early_bird_seats": "Early Bird vietas: {count}",
     "admin.teams.plan.saved": "Komandas plāns saglabāts.",
-    "admin.teams.plan.status_required":
-      "Norādi vismaz vienu statusu: samaksāts vai izmēģinājums.",
+    "admin.teams.plan.status_required": "Norādi vismaz vienu statusu: samaksāts vai izmēģinājums.",
     "admin.teams.members.description": "Komandas lietotāju saraksts.",
     "admin.teams.members.loading": "Ielādē lietotājus…",
     "admin.teams.members.count": "{count} lietotāji",
@@ -854,8 +658,7 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "admin.teams.members.load_failed": "Neizdevās ielādēt lietotājus.",
     "admin.teams.form.description": "Norādi komandas nosaukumu un izskatu.",
     "admin.teams.delete.confirm_prefix": "Vai tiešām dzēst komandu",
-    "admin.teams.delete.confirm_suffix":
-      "? Tiks dzēsti arī saraksti, uzdevumi un faili.",
+    "admin.teams.delete.confirm_suffix": "? Tiks dzēsti arī saraksti, uzdevumi un faili.",
     "admin.statuses.add": "Jauns statuss",
     "admin.statuses.empty": "Nav neviena statusa.",
     "admin.statuses.order": "Secība",
@@ -864,8 +667,7 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "admin.statuses.group": "Grupa",
     "admin.statuses.id": "ID (unikāls kods)",
     "admin.statuses.drag": "Mainīt secību",
-    "admin.statuses.form.description":
-      "Norādi statusa nosaukumus valodās, krāsu un grupu.",
+    "admin.statuses.form.description": "Norādi statusa nosaukumus valodās, krāsu un grupu.",
     "admin.statuses.feedback.created": "Statuss pievienots.",
     "admin.statuses.feedback.saved": "Statuss saglabāts.",
     "admin.statuses.feedback.deleted": "Statuss dzēsts.",
@@ -877,10 +679,8 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "admin.file_types.mime": "MIME tips",
     "admin.file_types.icon": "Ikona",
     "admin.file_types.color": "Krāsa",
-    "admin.file_types.hint":
-      "Šeit norāda, kādus failu paplašinājumus var augšupielādēt kokā un apakšuzdevumos.",
-    "admin.file_types.form.description":
-      "Norādi paplašinājumu, MIME tipu, Font Awesome ikonu un krāsu.",
+    "admin.file_types.hint": "Šeit norāda, kādus failu paplašinājumus var augšupielādēt kokā un apakšuzdevumos.",
+    "admin.file_types.form.description": "Norādi paplašinājumu, MIME tipu, Font Awesome ikonu un krāsu.",
     "admin.file_types.feedback.created": "Faila tips pievienots.",
     "admin.file_types.feedback.saved": "Faila tips saglabāts.",
     "admin.file_types.feedback.deleted": "Faila tips dzēsts.",
@@ -889,10 +689,8 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "admin.roles.add": "Jauna loma",
     "admin.roles.empty": "Nav nevienas noklusējuma lomas.",
     "admin.roles.system": "Sistēmas",
-    "admin.roles.inherit_hint":
-      "Šīs lomas un pieejas tiek piešķirtas jaunām komandām. Esošās komandas nemainās.",
-    "admin.roles.form.description":
-      "Norādi lomas nosaukumus valodās un pieejas sistēmas sadaļām.",
+    "admin.roles.inherit_hint": "Šīs lomas un pieejas tiek piešķirtas jaunām komandām. Esošās komandas nemainās.",
+    "admin.roles.form.description": "Norādi lomas nosaukumus valodās un pieejas sistēmas sadaļām.",
     "admin.roles.feedback.saved": "Loma saglabāta.",
     "admin.roles.delete.confirm_prefix": "Vai tiešām dzēst lomu",
     "admin.roles.nav_count": "{count} no {total}",
@@ -909,34 +707,28 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "common.default": "Noklusējuma",
     "common.key": "Key",
     "site_languages.create.title": "Jauna valoda",
-    "site_languages.create.description":
-      "Pievieno sistēmas UI valodu, piemēram de, fr vai en-US.",
+    "site_languages.create.description": "Pievieno sistēmas UI valodu, piemēram de, fr vai en-US.",
     "site_languages.create.select_placeholder": "Izvēlies valodu",
-    "site_languages.create.make_default":
-      "Jauno valodu iestatīt kā noklusējuma valodu",
+    "site_languages.create.make_default": "Jauno valodu iestatīt kā noklusējuma valodu",
     "site_languages.feedback.select_language": "Izvēlies valodu.",
     "site_languages.feedback.created": "Valoda pievienota.",
     "site_languages.feedback.saved": "Valoda saglabāta.",
     "site_languages.feedback.status_saved": "Valodas statuss saglabāts.",
     "site_languages.feedback.default_saved": "Noklusējuma valoda saglabāta.",
     "site_languages.feedback.deleted": "Valoda dzēsta.",
-    "site_languages.feedback.default_cannot_deactivate":
-      "Noklusējuma valodu nevar deaktivizēt.",
+    "site_languages.feedback.default_cannot_deactivate": "Noklusējuma valodu nevar deaktivizēt.",
     "site_languages.aria.active": "{name} aktīva",
     "site_languages.aria.default": "{name} noklusējuma valoda",
     "site_languages.delete.title": "Dzēst valodu?",
     "site_languages.delete.confirm_prefix": "Vai tiešām dzēst valodu",
-    "site_languages.delete.confirm_suffix":
-      "? Šīs valodas tulkojumu vērtības tiks noņemtas.",
+    "site_languages.delete.confirm_suffix": "? Šīs valodas tulkojumu vērtības tiks noņemtas.",
     "site_languages.delete.default_disabled": "Noklusējuma valodu nevar dzēst",
-    "site_translations.help":
-      "Sarakstā meklē pēc key un tulkojumu tekstiem. Labošanas formā vienlaikus redzamas visas valodas.",
+    "site_translations.help": "Sarakstā meklē pēc key un tulkojumu tekstiem. Labošanas formā vienlaikus redzamas visas valodas.",
     "site_translations.search.placeholder": "Meklēt tulkojumus...",
     "site_translations.create.action": "Jauns tulkojums",
     "site_translations.table.translations": "Tulkojumi",
     "site_translations.empty": "Nav atrasts neviens tulkojums.",
-    "site_translations.form.description":
-      "Norādi key un tulkojumu vērtības valodām.",
+    "site_translations.form.description": "Norādi key un tulkojumu vērtības valodām.",
     "site_translations.feedback.key_required": "Ievadi tulkojuma key.",
     "site_translations.feedback.saved": "Tulkojums saglabāts.",
     "site_translations.feedback.created": "Tulkojums pievienots.",
@@ -946,32 +738,23 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "site_translations.delete.bundled_disabled": "Koda tulkojumu nevar dzēst",
     "site_settings.form.system_name": "Sistēmas nosaukums",
     "site_settings.form.legal_email": "Juridiskais e-pasts",
-    "site_settings.form.legal_email_hint":
-      "Šo adresi rāda privātuma politikā saziņai par datu apstrādi.",
+    "site_settings.form.legal_email_hint": "Šo adresi rāda privātuma politikā saziņai par datu apstrādi un noteikumos.",
     "site_settings.form.resend_title": "Resend e-pasts",
-    "site_settings.form.resend_hint":
-      "Vēstules tiek sūtītas no From adreses; atbildes saņem Reply-To adrese.",
-    "site_settings.form.resend_disabled":
-      "Resend nav konfigurēts, tāpēc e-pasti netiek sūtīti.",
-    "site_settings.form.logo_color_hint":
-      "Ja logotips nav augšupielādēts, avatārs rāda sistēmas iniciāļus ar izvēlēto fonu.",
+    "site_settings.form.resend_hint": "Vēstules tiek sūtītas no From adreses; atbildes saņem Reply-To adrese.",
+    "site_settings.form.resend_disabled": "Resend nav konfigurēts, tāpēc e-pasti netiek sūtīti.",
+    "site_settings.form.logo_color_hint": "Ja logotips nav augšupielādēts, avatārs rāda sistēmas iniciāļus ar izvēlēto fonu.",
     "site_settings.form.slogan": "Slogans",
-    "site_settings.form.slogan_hint":
-      "Norādi sloganu katrai sistēmas valodai.",
+    "site_settings.form.slogan_hint": "Norādi sloganu katrai sistēmas valodai.",
     "site_settings.form.logo": "Logotips",
-    "site_settings.form.logo_hint":
-      "PNG, SVG, JPG vai WEBP līdz 1.5 MB. Rādās galvenē.",
+    "site_settings.form.logo_hint": "PNG, SVG, JPG vai WEBP līdz 1.5 MB. Rādās galvenē.",
     "site_settings.form.favicon": "Favicon",
-    "site_settings.form.favicon_hint":
-      "ICO, PNG vai SVG līdz 1.5 MB. Ja nav favicon, pārlūka cilnē lieto logotipu vai iniciāļu avatāru.",
+    "site_settings.form.favicon_hint": "ICO, PNG vai SVG līdz 1.5 MB. Ja nav favicon, pārlūka cilnē lieto logotipu vai iniciāļu avatāru.",
     "site_settings.form.image.drop": "Ievelc attēlu šeit vai",
     "site_settings.form.image.remove": "Noņemt attēlu",
     "site_settings.form.display.title": "Datumi un laiks",
-    "site_settings.form.display.description":
-      "Noklusējuma formāts visā sistēmā: datumi, laiks un kalendāra nedēļas sākums.",
+    "site_settings.form.display.description": "Noklusējuma formāts visā sistēmā: datumi, laiks un kalendāra nedēļas sākums.",
     "site_settings.form.week_start_day": "Nedēļas sākuma diena",
-    "site_settings.form.week_start_day_hint":
-      "Izvēlies, kura diena sākas nedēļa kalendāros.",
+    "site_settings.form.week_start_day_hint": "Izvēlies, kura diena sākas nedēļa kalendāros.",
     "site_settings.form.week_start_day.monday": "Pirmdiena",
     "site_settings.form.week_start_day.sunday": "Svētdiena",
     "site_settings.form.date_format": "Datuma formāts",
@@ -981,60 +764,51 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "site_settings.form.date_format.m/d/Y": "MM/DD/GGGG (08/19/2026)",
     "site_settings.form.date_format.d.m.Y": "DD.MM.GG (19.08.26)",
     "site_settings.form.date_separator": "Datuma atdalītājs",
-    "site_settings.form.date_separator_hint":
-      "Atdalītājs starp datuma daļām attēlojumā.",
+    "site_settings.form.date_separator_hint": "Atdalītājs starp datuma daļām attēlojumā.",
     "site_settings.form.date_separator.dot": "Punkts (.)",
     "site_settings.form.date_separator.dash": "Defise (-)",
     "site_settings.form.date_separator.slash": "Slīpsvītra (/)",
     "site_settings.form.date_separator.space": "Atstarpe",
     "site_settings.form.time_format": "Laika formāts",
-    "site_settings.form.time_format_hint":
-      "Izvēlies starp 12 stundu (AM/PM) vai 24 stundu pulksteni.",
+    "site_settings.form.time_format_hint": "Izvēlies starp 12 stundu (AM/PM) vai 24 stundu pulksteni.",
     "site_settings.form.time_format.24": "24 stundu pulkstenis",
     "site_settings.form.time_format.12": "12 stundu pulkstenis (AM/PM)",
+    "site_settings.form.timezone": "Servera laika josla",
+    "site_settings.form.timezone_hint": "Noklusējuma laika josla visai sistēmai un lietotājiem, kam nav sava iestatījuma.",
     "site_settings.feedback.saved": "Sistēmas uzstādījumi saglabāti.",
     "site_settings.preview.title": "Priekšskatījums",
     "site_settings.preview.date": "Datums:",
     "site_settings.preview.time": "Laiks:",
     "site_settings.preview.datetime": "Datums un laiks:",
-    "site_settings.preview.description":
-      "Šīs vērtības tiek izmantotas pārlūka virsrakstā, cilnes ikonā un lapas apraksta metadatos.",
+    "site_settings.preview.description": "Šīs vērtības tiek izmantotas pārlūka virsrakstā, cilnes ikonā un lapas apraksta metadatos.",
     "site_settings.preview.last_saved": "Pēdējās saglabātās izmaiņas:",
     "nav.expand": "Izvērst",
     "nav.collapse": "Sakļaut",
     "nav.more": "Vairāk",
     "nav.drag": "Pārvietot",
     "breadcrumb.label": "Ceļš",
-    "team.page.subtitle":
-      "Visi komandas lietotāji. Uzaicini jaunu lietotāju ar pluszīmi.",
+    "team.page.subtitle": "Visi komandas lietotāji. Uzaicini jaunu lietotāju ar pluszīmi.",
     "team.invite.title": "Uzaicināt lietotāju",
-    "team.invite.description":
-      "Ieraksti e-pastu un izvēlies lomu. Lietotājs aizpildīs profilu pie pirmās ielogošanās.",
-    "team.invite.resend_required":
-      "Jauns e-pasts prasa ieslēgtu Resend integrāciju. Esošs lietotājs saņems paziņojumu lietotnē.",
+    "team.invite.description": "Ieraksti e-pastu un izvēlies lomu. Lietotājs aizpildīs profilu pie pirmās ielogošanās.",
+    "team.invite.resend_required": "Jauns e-pasts prasa ieslēgtu Resend integrāciju. Esošs lietotājs saņems paziņojumu lietotnē.",
     "team.invite.button": "Uzaicināt",
     "team.invite.purchasing_seat": "Iegādājas vietu…",
     "team.invite.seat_purchased_title": "Vieta iegādāta",
-    "team.invite.seat_purchased_description":
-      "Viena apmaksāta vieta ir gatava. Tagad vari uzaicināt lietotāju.",
+    "team.invite.seat_purchased_description": "Viena apmaksāta vieta ir gatava. Tagad vari uzaicināt lietotāju.",
     "team.invite.sending": "Sūta…",
     "team.invite.accepted": "Uzaicinājums apstiprināts.",
     "team.invite.rejected": "Uzaicinājums noraidīts.",
     "team.invite.pending": "Gaida apstiprinājumu",
     "team.invite.pending_payment": "Gaida samaksu",
-    "team.invite.saved_awaiting_payment":
-      "Uzaicinājums saglabāts. Lietotājs saņems piekļuvi pēc vietas samaksas.",
-    "team.invite.awaiting_payment_page":
-      "Komanda vēl nav apmaksājusi vietu. Uzaicinājumu varēs apstiprināt pēc samaksas.",
+    "team.invite.saved_awaiting_payment": "Uzaicinājums saglabāts. Lietotājs saņems piekļuvi pēc vietas samaksas.",
+    "team.invite.awaiting_payment_page": "Komanda vēl nav apmaksājusi vietu. Uzaicinājumu varēs apstiprināt pēc samaksas.",
     "team.invite.resend": "Sūtīt uzaicinājumu vēlreiz",
     "team.invite.resending": "Sūta…",
     "team.invite.resent": "Uzaicinājums nosūtīts vēlreiz.",
-    "team.invite.resent_no_email":
-      "E-pasts netika nosūtīts. Nosūti uzaicinājuma linku manuāli.",
+    "team.invite.resent_no_email": "E-pasts netika nosūtīts. Nosūti uzaicinājuma linku manuāli.",
     "team.invite.copy_link": "Kopēt uzaicinājuma linku",
     "team.invite.link_copied": "Uzaicinājuma links nokopēts.",
-    "team.invited_no_email":
-      "Uzaicinājums saglabāts. E-pasts netika nosūtīts — nosūti linku manuāli.",
+    "team.invited_no_email": "Uzaicinājums saglabāts. E-pasts netika nosūtīts — nosūti linku manuāli.",
     "team.member.remove": "Noņemt no komandas",
     "team.member.remove_confirm_title": "Noņemt lietotāju?",
     "team.member.remove_confirm_description": "{name} zaudēs piekļuvi komandai.",
@@ -1043,58 +817,40 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "team.member.leave_title": "Pamest komandu",
     "team.member.leave_description": "Tu zaudēsi piekļuvi komandai {team}.",
     "team.member.leave_confirm_title": "Pamest komandu?",
-    "team.member.leave_confirm_description":
-      "Tu zaudēsi piekļuvi komandai {team}. Šo darbību nevar atsaukt.",
+    "team.member.leave_confirm_description": "Tu zaudēsi piekļuvi komandai {team}. Šo darbību nevar atsaukt.",
     "team.member.leaving": "Pamet…",
     "team.member.left": "Tu pameti komandu.",
     "team.invite.page.title": "Komandas uzaicinājums",
-    "team.invite.page.description":
-      "{inviter} uzaicina tevi pievienoties komandai “{team}”.",
-    "team.invite.page.login_required":
-      "Pieraksties ar e-pastu {email}, lai apstiprinātu uzaicinājumu.",
+    "team.invite.page.description": "{inviter} uzaicina tevi pievienoties komandai “{team}”.",
+    "team.invite.page.login_required": "Pieraksties ar e-pastu {email}, lai apstiprinātu uzaicinājumu.",
     "team.invite.page.accept": "Pievienoties komandai",
     "team.invite.page.reject": "Noraidīt uzaicinājumu",
-    "team.billing.menu_description":
-      "Vietas, rēķini un samaksa par jauniem lietotājiem",
+    "team.billing.menu_description": "Vietas, rēķini un samaksa par jauniem lietotājiem",
     "team.billing.title": "Abonementi",
-    "team.billing.subtitle":
-      "Apmaksātās vietas komandai. Jaunais lietotājs piekļūst tikai pēc apmaksātas vietas.",
+    "team.billing.subtitle": "Apmaksātās vietas komandai. Jaunais lietotājs piekļūst tikai pēc apmaksātas vietas.",
     "team.billing.plans_disabled": "Maksas plāni sistēmā nav ieslēgti.",
-    "team.billing.stripe_disabled":
-      "Stripe nav ieslēgts. Administrators to konfigurē Integrācijās.",
-    "team.billing.past_due":
-      "Pēdējais rēķins nav apmaksāts. Stripe mēģinās vēlreiz; pēc termiņa maksas plāns tiks deaktivizēts.",
-    "team.billing.members_blocked_banner":
-      "Pārējie komandas lietotāji nevar lietot sistēmu, jo nav apmaksāts abonements.",
+    "team.billing.stripe_disabled": "Stripe nav ieslēgts. Administrators to konfigurē Integrācijās.",
+    "team.billing.past_due": "Pēdējais rēķins nav apmaksāts. Stripe mēģinās vēlreiz; pēc termiņa maksas plāns tiks deaktivizēts.",
+    "team.billing.members_blocked_banner": "Pārējie komandas lietotāji nevar lietot sistēmu, jo nav apmaksāts abonements.",
     "team.billing.members_blocked_banner_action": "Abonementi",
-    "team.billing.subscription_ending_banner":
-      "Abonements beidzas pēc {countdown}. Pēc termiņa pārējie komandas lietotāji nevarēs lietot sistēmu.",
-    "team.billing.subscription_ending_countdown":
-      "{months} m {days} d {hours} h {minutes} min",
+    "team.billing.subscription_ending_banner": "Abonements beidzas pēc {countdown}. Pēc termiņa pārējie komandas lietotāji nevarēs lietot sistēmu.",
+    "team.billing.subscription_ending_countdown": "{months} m {days} d {hours} h {minutes} min",
     "team.billing.subscription_ending_expired": "Drīz beigsies",
     "team.billing.manage_subscription": "Abonementa pārvaldība",
     "team.billing.cancel_subscription": "Atteikties no abonementa",
-    "team.billing.cancel_subscription_hint":
-      "Atcelot abonementu, tas beidzas pašreizējā norēķinu perioda beigās. Pēc tam pārējie lietotāji nevarēs lietot sistēmu.",
+    "team.billing.cancel_subscription_hint": "Atcelot abonementu, tas beidzas pašreizējā norēķinu perioda beigās. Pēc tam pārējie lietotāji nevarēs lietot sistēmu.",
     "team.billing.cancel_subscription_confirm_title": "Atteikties no abonementa?",
-    "team.billing.cancel_subscription_confirm_body":
-      "Abonements beigsies pašreizējā perioda beigās. Līdz tam komanda var turpināt lietot sistēmu. Pēc termiņa pārējie lietotāji tiks bloķēti.",
-    "team.billing.cancel_subscription_success":
-      "Abonements tiks beigts perioda beigās. Līdz tam piekļuve paliek aktīva.",
-    "team.billing.cancel_scheduled_hint":
-      "Abonements beigsies perioda beigās. Līdz tam piekļuve paliek aktīva.",
+    "team.billing.cancel_subscription_confirm_body": "Abonements beigsies pašreizējā perioda beigās. Līdz tam komanda var turpināt lietot sistēmu. Pēc termiņa pārējie lietotāji tiks bloķēti.",
+    "team.billing.cancel_subscription_success": "Abonements tiks beigts perioda beigās. Līdz tam piekļuve paliek aktīva.",
+    "team.billing.cancel_scheduled_hint": "Abonements beigsies perioda beigās. Līdz tam piekļuve paliek aktīva.",
     "team.billing.resume_subscription": "Atjaunot abonementu",
-    "team.billing.resume_subscription_success":
-      "Abonements atjaunots. Automātiskā atcelšana ir noņemta.",
+    "team.billing.resume_subscription_success": "Abonements atjaunots. Automātiskā atcelšana ir noņemta.",
     "errors.billing_cancel_failed": "Neizdevās atcelt abonementu.",
     "errors.billing_resume_failed": "Neizdevās atjaunot abonementu.",
     "team.billing.member_paywall.title": "Komandas abonements nav apmaksāts",
-    "team.billing.member_paywall.description":
-      "Tava komanda vēl nav samaksājusi par abonementu. Sistēmas saturs nav pieejams, kamēr komandas vadītājs neapmaksā abonementu.",
-    "team.billing.member_paywall.hint":
-      "Sazinies ar komandas vadītāju, lai viņš noformētu maksājumu sadaļā Abonementi.",
-    "team.billing.member_paywall.switch_hint":
-      "Vari pārslēgties uz citu komandu vai izveidot jaunu.",
+    "team.billing.member_paywall.description": "Tava komanda vēl nav samaksājusi par abonementu. Sistēmas saturs nav pieejams, kamēr komandas vadītājs neapmaksā abonementu.",
+    "team.billing.member_paywall.hint": "Sazinies ar komandas vadītāju, lai viņš noformētu maksājumu sadaļā Abonementi.",
+    "team.billing.member_paywall.switch_hint": "Vari pārslēgties uz citu komandu vai izveidot jaunu.",
     "team.billing.seats_paid": "Apmaksātās vietas",
     "team.billing.seats_occupied": "Aizņemtās vietas",
     "team.billing.seats_open": "Atvērtās vietas",
@@ -1103,8 +859,7 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "team.billing.choose_plan": "Izvēlies maksas plānu",
     "team.billing.next_invoice": "Nākamais rēķins",
     "team.billing.pending_list": "Lietotāji, kas gaida samaksu",
-    "team.billing.prorata_hint":
-      "Aptuveni {amount} līdz nākamajam ciklam, pēc tam viena ikmēneša iemaksa visām vietām.",
+    "team.billing.prorata_hint": "Aptuveni {amount} līdz nākamajam ciklam, pēc tam viena ikmēneša iemaksa visām vietām.",
     "team.billing.no_pending": "Nav vietu, kas gaida samaksu.",
     "team.billing.choose_period": "Periods",
     "team.billing.period_toggle": "Pārslēgt mēnesi un gadu",
@@ -1113,39 +868,27 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "team.billing.period.year": "Gads",
     "team.billing.period.quarter": "Ceturksnis",
     "team.billing.period.month": "Mēnesis",
-    "team.billing.checkout_success":
-      "Maksājums saņemts. Vietas tiks atvērtas pēc apstiprinājuma.",
+    "team.billing.checkout_success": "Maksājums saņemts. Vietas tiks atvērtas pēc apstiprinājuma.",
     "team.billing.checkout_cancel": "Maksājums atcelts.",
-    "team.billing.open_seat_banner":
-      "Komandā ir {count} brīva apmaksāta vieta. Tās vietā var uzaicināt citu lietotāju.",
-    "team.billing.open_seat_banner_until":
-      "Komandā ir {count} brīva apmaksāta vieta līdz {until}. Tās vietā var uzaicināt citu lietotāju.",
+    "team.billing.open_seat_banner": "Komandā ir {count} brīva apmaksāta vieta. Tās vietā var uzaicināt citu lietotāju.",
+    "team.billing.open_seat_banner_until": "Komandā ir {count} brīva apmaksāta vieta līdz {until}. Tās vietā var uzaicināt citu lietotāju.",
     "team.billing.open_seat_invite": "Uzaicināt",
     "team.billing.buy_extra": "Iegādāties 1 vietu",
-    "team.billing.open_until_hint":
-      "Brīvās vietas paliek līdz {until}. Ja tās neaizpilda, nākamajā rēķinā maksā tikai par aizņemtajām vietām.",
-    "team.billing.extra_prorata":
-      "Aptuveni {amount} līdz nākamajam ciklam par vienu vietu.",
-    "team.billing.extra_renewal_hint":
-      "Ja līdz cikla beigām vieta paliek tukša, nākamajā rēķinā tā vairs nav.",
+    "team.billing.open_until_hint": "Brīvās vietas paliek līdz {until}. Ja tās neaizpilda, nākamajā rēķinā maksā tikai par aizņemtajām vietām.",
+    "team.billing.extra_prorata": "Aptuveni {amount} līdz nākamajam ciklam par vienu vietu.",
+    "team.billing.extra_renewal_hint": "Ja līdz cikla beigām vieta paliek tukša, nākamajā rēķinā tā vairs nav.",
     "team.billing.new_user_prorata_title": "Jauni lietotāji bez brīvas vietas",
-    "team.billing.new_user_prorata_notice":
-      "Ja uzaicini jaunu lietotāju, kam nav brīvas apmaksātas vietas, viņam tiks piestādīts rēķins par atlikušo periodu līdz {until} – līdz visas komandas abonementa perioda beigām. Pēc tam visi lietotāji tiek iekļauti vienā komandas rēķinā.",
-    "team.billing.new_user_prorata_notice_no_date":
-      "Ja uzaicini jaunu lietotāju, kam nav brīvas apmaksātas vietas, viņam tiks piestādīts rēķins par atlikušo periodu līdz komandas abonementa perioda beigām. Pēc tam visi lietotāji tiek iekļauti vienā komandas rēķinā.",
-    "team.billing.free_owner_seat":
-      "Komandas vadītāja vieta ir bez maksas. Maksā tikai par vietām virs 1.",
+    "team.billing.new_user_prorata_notice": "Ja uzaicini jaunu lietotāju, bet komandā nav brīvas apmaksātas vietas, pirms uzaicinājuma jānopērk papildu vieta par atlikušo periodu līdz {until}. Pēc tam visi lietotāji tiek iekļauti komandas abonementā.",
+    "team.billing.new_user_prorata_notice_no_date": "Ja uzaicini jaunu lietotāju, bet komandā nav brīvas apmaksātas vietas, pirms uzaicinājuma jānopērk papildu vieta par atlikušo periodu līdz komandas abonementa perioda beigām. Pēc tam visi lietotāji tiek iekļauti komandas abonementā.",
+    "team.billing.free_owner_seat": "Komandas vadītāja vieta ir bez maksas. Maksā tikai par vietām virs 1.",
     "team.billing.plus_vat": "+ PVN",
     "team.billing.checkout_seats": "{count} maksas lietotāji",
-    "team.billing.checkout_preview":
-      "{count} × {price} = {total}{period} {vat}",
-    "team.billing.checkout_preview_split":
-      "{earlyCount} × {earlyPrice} + {regularCount} × {regularPrice} = {total}{period} {vat}",
+    "team.billing.checkout_preview": "{count} × {price} = {total}{period} {vat}",
+    "team.billing.checkout_preview_split": "{earlyCount} × {earlyPrice} + {regularCount} × {regularPrice} = {total}{period} {vat}",
     "team.billing.checkout_period_month": "/mēn",
     "team.billing.checkout_period_year": "/gads",
     "team.billing.checkout_period_quarter": "/cet.",
-    "team.billing.checkout_vat_hint":
-      "PVN tiek aprēķināts atbilstoši tavai valstij Stripe apmaksā.",
+    "team.billing.checkout_vat_hint": "PVN tiek aprēķināts atbilstoši tavai valstij Stripe apmaksā.",
     "team.seat.free_owner": "Bezmaksas vieta (vadītājs)",
     "team.seat.awaiting_payment": "Gaida vietas samaksu",
     "team.seat.awaiting_accept": "Gaida apstiprinājumu",
@@ -1183,13 +926,11 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "team.roles.feedback.created": "Loma pievienota.",
     "team.roles.feedback.deleted": "Loma dzēsta.",
     "team.roles.delete.title": "Dzēst lomu?",
-    "team.roles.delete.description":
-      "Loma “{name}” tiks dzēsta. Lietotāji tiks pārcelti uz lomu Lietotājs.",
+    "team.roles.delete.description": "Loma “{name}” tiks dzēsta. Lietotāji tiks pārcelti uz lomu Lietotājs.",
     "team.roles.delete.system_disabled": "Sistēmas lomu nevar dzēst",
     "team.access.title": "Komandas lomu pieejas",
     "team.access.menu_description": "Norādi katrai lomai savu pieeju",
-    "team.access.description":
-      "Katrai lomai norādi, kuras sadaļas un darbības ir pieejamas.",
+    "team.access.description": "Katrai lomai norādi, kuras sadaļas un darbības ir pieejamas.",
     "team.access.nav": "Sadaļas",
     "team.access.column": "Pieejas",
     "team.access.toggle_all": "Visas pieejas: {section}",
@@ -1209,8 +950,7 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "team.access.actions.lists_archive_view": "Apskatīt Saraksta arhīvu",
     "team.access.actions.subtasks_archive_view": "Apskatīt Apakšuzdevumu arhīvu",
     "team.access.actions.files_upload": "Augšupielādēt failus",
-    "team.access.actions.files_upload_subtask":
-      "Augšupielādēt apakšuzdevumam pielikumus",
+    "team.access.actions.files_upload_subtask": "Augšupielādēt apakšuzdevumam pielikumus",
     "team.access.actions.files_view": "Apskatīt Pielikumus",
     "team.access.actions.files_forward": "Pārsūtīt pielikumus",
     "team.access.actions.team_options": "Komandas opcijas",
@@ -1224,10 +964,8 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "team.access.actions.team_integrations_onedrive": "Pārvaldīt OneDrive",
     "team.access.actions.team_delete": "Dzēst komandu",
     "team.access.actions.settings_save": "Saglabāt uzstādījumus",
-    "team.access.owner_locked":
-      "Īpašnieka lomai ir pilna pieeja, un to nevar mainīt.",
-    "team.access.owner_only":
-      "Lomu pieejas var mainīt tikai komandas īpašnieks.",
+    "team.access.owner_locked": "Īpašnieka lomai ir pilna pieeja, un to nevar mainīt.",
+    "team.access.owner_only": "Lomu pieejas var mainīt tikai komandas īpašnieks.",
     "team.access.feedback.saved": "Lomas pieejas saglabātas.",
     "team.access.denied": "Tev nav pieejas šai sadaļai.",
     "team.back": "Atpakaļ uz komandu",
@@ -1235,33 +973,25 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "team.detail.missing": "Lietotājs nav atrasts",
     "team.detail.missing_description": "Šis komandas lietotājs vairs nav pieejams.",
     "team.detail.placeholder": "Lietotāja profilu šeit pielāgosi nākamajā solī.",
-    "lists.page.subtitle":
-      "Saraksti, piemēram Projekti un Klienti. Zem tiem ir uzdevumi.",
-    "lists.overview.subtitle":
-      "Visu uzdevumu un apakšuzdevumu kopsavilkums.",
+    "lists.page.subtitle": "Saraksti, piemēram Projekti un Klienti. Zem tiem ir uzdevumi.",
+    "lists.overview.subtitle": "Visu uzdevumu un apakšuzdevumu kopsavilkums.",
     "lists.overview.empty": "Vēl nav uzdevumu.",
     "lists.overview.add_task": "Pievienot uzdevumu",
     "lists.statuses.title": "Statusi",
     "lists.statuses.menu_description": "Sistēmas un saraksta statusi",
     "tasks.statuses.title": "Statusi",
     "tasks.statuses.menu_description": "Uzdevuma apakšuzdevumu statusi",
-    "tasks.statuses.description":
-      "Pielāgo statusus šī uzdevuma apakšuzdevumiem. Saraksta statusi ir mantoti no saraksta; vari tos paslēpt acs ikonu. Uzdevumam vari pievienot savus statusus un dzēst tos.",
+    "tasks.statuses.description": "Pielāgo statusus šī uzdevuma apakšuzdevumiem. Saraksta statusi ir mantoti no saraksta; vari tos paslēpt acs ikonu. Uzdevumam vari pievienot savus statusus un dzēst tos.",
     "tasks.statuses.list.badge": "Saraksts",
     "tasks.statuses.task.badge": "Uzdevums",
-    "lists.statuses.description":
-      "Bīdi statusus arī starp grupām — tad grupa nomainās automātiski. Sistēmas statusu var pārsaukt šīs komandas ietvaros. Katrā grupā jābūt vismaz vienam statusam. Grupās Nav sākts un Slēgts drīkst būt tikai viens statuss.",
+    "lists.statuses.description": "Bīdi statusus arī starp grupām — tad grupa nomainās automātiski. Sistēmas statusu var pārsaukt šīs komandas ietvaros. Katrā grupā jābūt vismaz vienam statusam. Grupās Nav sākts un Slēgts drīkst būt tikai viens statuss.",
     "lists.statuses.system": "Sistēmas statusi",
-    "lists.statuses.system.hint":
-      "Šos statusus definē sistēma. Tos var izmantot visos sarakstos.",
+    "lists.statuses.system.hint": "Šos statusus definē sistēma. Tos var izmantot visos sarakstos.",
     "lists.statuses.custom": "Saraksta statusi",
-    "lists.statuses.custom.hint":
-      "Tikai šajā sarakstā. Redzami komandas lietotājiem.",
+    "lists.statuses.custom.hint": "Tikai šajā sarakstā. Redzami komandas lietotājiem.",
     "lists.statuses.custom.empty": "Vēl nav saraksta statusu.",
-    "lists.statuses.form.description":
-      "Norādi statusa nosaukumu, krāsu un grupu.",
-    "lists.statuses.form.system_description":
-      "Nosaukums attiecas tikai uz šo komandu. Citām komandām paliek sistēmas nosaukums.",
+    "lists.statuses.form.description": "Norādi statusa nosaukumu, krāsu un grupu.",
+    "lists.statuses.form.system_description": "Nosaukums attiecas tikai uz šo komandu. Citām komandām paliek sistēmas nosaukums.",
     "lists.statuses.hide": "Paslēpt",
     "lists.statuses.show": "Rādīt",
     "lists.statuses.hidden": "Paslēpts",
@@ -1272,13 +1002,10 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "lists.statuses.group.empty": "Šajā grupā vēl nav statusu.",
     "lists.automations.title": "Automatizācijas",
     "lists.automations.menu_description": "Automātiskās darbības sarakstā",
-    "lists.automations.description":
-      "Konfigurē automātiskās darbības sarakstam „{name}”.",
-    "lists.automations.description_generic":
-      "Konfigurē automātiskās darbības šim sarakstam.",
+    "lists.automations.description": "Konfigurē automātiskās darbības sarakstam „{name}”.",
+    "lists.automations.description_generic": "Konfigurē automātiskās darbības šim sarakstam.",
     "lists.automations.folder_created.title": "Mapes izveide → šablons",
-    "lists.automations.folder_created.description":
-      "Kad tiek izveidota jauna mape, automātiski izveido šablona saturu.",
+    "lists.automations.folder_created.description": "Kad tiek izveidota jauna mape, automātiski izveido šablona saturu.",
     "lists.automations.folder_created.apply_template": "Pielietot šablonu",
     "lists.automations.template_label": "Šablons",
     "lists.automations.template_placeholder": "Izvēlies šablonu",
@@ -1289,29 +1016,22 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "lists.automations.add": "Pievienot automatizāciju",
     "lists.automations.add_rule": "Pievienot noteikumu",
     "lists.automations.enabled": "Aktīva",
-    "lists.automations.no_templates":
-      "Vispirms izveido komandas šablonu, lai to var piesaistīt automatizācijai.",
+    "lists.automations.no_templates": "Vispirms izveido komandas šablonu, lai to var piesaistīt automatizācijai.",
     "lists.automations.delete.title": "Dzēst automatizāciju?",
-    "lists.automations.delete.description":
-      "Automatizācija vairs netiks pielietota.",
+    "lists.automations.delete.description": "Automatizācija vairs netiks pielietota.",
     "lists.automations.status_assign.title": "Statusa maiņa → piešķirt personu",
-    "lists.automations.status_assign.description":
-      "Kad uzdevumam mainās statuss uz izvēlēto, automātiski pievieno personu.",
+    "lists.automations.status_assign.description": "Kad uzdevumam mainās statuss uz izvēlēto, automātiski pievieno personu.",
     "lists.automations.trigger_status": "Trigera statuss",
     "lists.automations.assignee": "Persona",
     "lists.automations.select_status": "Izvēlies statusu",
     "lists.automations.select_person": "Izvēlies personu",
     "lists.automations.target_status": "Mērķa statuss",
     "lists.automations.checklist_status.title": "Checklist pabeigts → statusa maiņa",
-    "lists.automations.checklist_status.description":
-      "Kad visi checklist punkti ir atzīmēti, automātiski maina statusu.",
+    "lists.automations.checklist_status.description": "Kad visi checklist punkti ir atzīmēti, automātiski maina statusu.",
     "lists.automations.subtasks_status.title": "Visi apakšuzdevumi pabeigti → vecāka statuss",
-    "lists.automations.subtasks_status.description":
-      "Kad visi apakšuzdevumi ir slēgti, automātiski maina vecāka uzdevuma statusu.",
-    "lists.automations.needs_statuses_and_members":
-      "Sarakstam jābūt statusiem un komandas lietotājiem.",
-    "lists.automations.needs_statuses":
-      "Sarakstam jābūt vismaz vienam statusam.",
+    "lists.automations.subtasks_status.description": "Kad visi apakšuzdevumi ir slēgti, automātiski maina vecāka uzdevuma statusu.",
+    "lists.automations.needs_statuses_and_members": "Sarakstam jābūt statusiem un komandas lietotājiem.",
+    "lists.automations.needs_statuses": "Sarakstam jābūt vismaz vienam statusam.",
     "dashboard.subtitle": "Tavi uzdevumi un darbs pa sarakstiem.",
     "dashboard.my_tasks": "Mani uzdevumi",
     "dashboard.my_tasks.empty": "Tev vēl nav piesaistītu uzdevumu.",
@@ -1323,8 +1043,7 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "dashboard.search.kind_subtask": "Apakšuzdevums",
     "dashboard.search.untitled": "Bez nosaukuma",
     "lists.add.title": "Jauns saraksts",
-    "lists.add.description":
-      "Saraksts grupē projektus vai klientus, katram ar saviem uzdevumiem un iestatījumiem.",
+    "lists.add.description": "Saraksts grupē projektus vai klientus, katram ar saviem uzdevumiem un iestatījumiem.",
     "lists.fields.name": "Nosaukums",
     "lists.fields.name_placeholder": "Piemēram, Projekti, Klienti",
     "lists.fields.icon_and_name": "Ikona un nosaukums",
@@ -1387,30 +1106,23 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "lists.private.no_members": "Komandā nav citu pieslēgtu lietotāju.",
     "lists.access.default": "Noklusējuma pieeja",
     "lists.access.customize_roles": "Pielāgot katrai lomai",
-    "lists.access.customize_roles.hint":
-      "Ieslēdz, lai katrai lomai norādītu citu pieeju. Noklusējuma pieeja tad vairs nav globāla.",
-    "lists.access.roles_hint":
-      "Katrai lomai norādi, ko tās lietotāji drīkst darīt šajā sarakstā.",
+    "lists.access.customize_roles.hint": "Ieslēdz, lai katrai lomai norādītu citu pieeju. Noklusējuma pieeja tad vairs nav globāla.",
+    "lists.access.roles_hint": "Katrai lomai norādi, ko tās lietotāji drīkst darīt šajā sarakstā.",
     "lists.access.none": "Nav pieejas",
     "lists.access.full_edit": "Pilna labošana",
-    "lists.access.full_edit.hint":
-      "Var veidot uzdevumus, labot saraksta iestatījumus un dzēst šo sarakstu.",
+    "lists.access.full_edit.hint": "Var veidot uzdevumus, labot saraksta iestatījumus un dzēst šo sarakstu.",
     "lists.access.edit": "Labot",
-    "lists.access.edit.hint":
-      "Var labot uzdevumus un saraksta iestatījumus. Nevar veidot uzdevumus vai dzēst sarakstu.",
+    "lists.access.edit.hint": "Var labot uzdevumus un saraksta iestatījumus. Nevar veidot uzdevumus vai dzēst sarakstu.",
     "lists.access.comment": "Komentēt",
-    "lists.access.comment.hint":
-      "Var komentēt. Izpildītājs var mainīt statusu. Nevar labot saraksta iestatījumus.",
+    "lists.access.comment.hint": "Var komentēt. Izpildītājs var mainīt statusu. Nevar labot saraksta iestatījumus.",
     "lists.access.view": "Tikai skatīt",
-    "lists.access.view.hint":
-      "Tikai lasīšana. Nevar labot uzdevumus, sarakstu vai komentēt.",
+    "lists.access.view.hint": "Tikai lasīšana. Nevar labot uzdevumus, sarakstu vai komentēt.",
     "lists.updated": "Saraksts saglabāts.",
     "lists.edit.title": "Labot sarakstu",
     "lists.edit.description": "Maini saraksta nosaukumu, ikonu vai aprakstu.",
     "lists.deleted": "Saraksts dzēsts.",
     "lists.delete.title": "Dzēst sarakstu?",
-    "lists.delete.description":
-      "Saraksts “{name}” un viss tā saturs tiks dzēsts.",
+    "lists.delete.description": "Saraksts “{name}” un viss tā saturs tiks dzēsts.",
     "create.menu.title": "Izveidot",
     "create.menu.description": "Izvēlies, ko pievienot.",
     "create.list.title": "Saraksts",
@@ -1426,105 +1138,77 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "create.task.title": "Uzdevums",
     "create.task.description": "Darāmais darbs ar statusu un termiņu",
     "create.task_list.title": "Uzdevumu saraksts",
-    "create.task_list.description":
-      "Darāmais darbs ar statusu, termiņu un apakšuzdevumiem",
-    "templates.menu_description":
-      "Sagatavo uzdevumu sarakstus, ko pēc tam pievieno mapē",
-    "google_drive.menu_description":
-      "Sūti augšupielādētos failus uz komandas Google Drive",
-    "google_drive.page.subtitle":
-      "Pieslēdz komandas Google kontu. Pēc noklusējuma faili tiek glabāti Drive; pēc izvēles arī {SYSTEM_NAME} serverī.",
+    "create.task_list.description": "Darāmais darbs ar statusu, termiņu un apakšuzdevumiem",
+    "templates.menu_description": "Sagatavo uzdevumu sarakstus, ko pēc tam pievieno mapē",
+    "google_drive.menu_description": "Sūti augšupielādētos failus uz komandas Google Drive",
+    "google_drive.page.subtitle": "Pieslēdz komandas Google kontu. Pēc noklusējuma faili tiek glabāti Drive; pēc izvēles arī {SYSTEM_NAME} serverī.",
     "google_drive.connect.title": "Google konts",
-    "google_drive.connect.description":
-      "Piekļuve tikai failiem, ko izveido {SYSTEM_NAME} (Drive scope: drive.file).",
+    "google_drive.connect.description": "Piekļuve tikai failiem, ko izveido {SYSTEM_NAME} (Drive scope: drive.file).",
     "google_drive.connect.button": "Pierakstīties ar Google",
     "google_drive.status.connected": "Savienots",
     "google_drive.status.disconnected": "Nav savienots",
-    "google_drive.not_configured":
-      "Google OAuth integrācija nav konfigurēta (Administrācija → Integrācijas).",
-    "google_drive.configure_owner_only":
-      "Integrāciju var mainīt tikai ar pieeju «Pārvaldīt Google Drive» (vai īpašnieks / sistēmas admin).",
+    "google_drive.not_configured": "Google OAuth integrācija nav konfigurēta (Administrācija → Integrācijas).",
+    "google_drive.configure_owner_only": "Integrāciju var mainīt tikai ar pieeju «Pārvaldīt Google Drive» (vai īpašnieks / sistēmas admin).",
     "google_drive.disconnect": "Atvienot Google kontu",
     "google_drive.disconnect.title": "Atvienot Google kontu?",
-    "google_drive.disconnect.description":
-      "Jauni faili vairs netiks sūtīti uz Drive. Esošie Drive faili paliek.",
+    "google_drive.disconnect.description": "Jauni faili vairs netiks sūtīti uz Drive. Esošie Drive faili paliek.",
     "google_drive.folder.title": "Drive mape",
-    "google_drive.folder.description":
-      "Faili nonāk šajā mapē, saglabājot saraksta un mapju struktūru.",
+    "google_drive.folder.description": "Faili nonāk šajā mapē, saglabājot saraksta un mapju struktūru.",
     "google_drive.folder.path": "Mapes ceļš Drive",
-    "google_drive.folder.hint":
-      "Piemēram {SYSTEM_NAME} vai Komanda/Faili. Mape tiek izveidota, ja tās vēl nav.",
-    "google_drive.upload.enabled":
-      "Augšupielādēt failus uz Google Drive, kad tos pievieno {SYSTEM_NAME}",
+    "google_drive.folder.hint": "Piemēram {SYSTEM_NAME} vai Komanda/Faili. Mape tiek izveidota, ja tās vēl nav.",
+    "google_drive.upload.enabled": "Augšupielādēt failus uz Google Drive, kad tos pievieno {SYSTEM_NAME}",
     "google_drive.storage.drive_primary": "Glabāt failus Google Drive",
-    "google_drive.storage.drive_primary_hint":
-      "Ieslēgts pēc noklusējuma: {SYSTEM_NAME} glabā tikai saiti. Ja izķeksē, faila saturs tiek saglabāts arī {SYSTEM_NAME} serverī.",
+    "google_drive.storage.drive_primary_hint": "Ieslēgts pēc noklusējuma: {SYSTEM_NAME} glabā tikai saiti. Ja izķeksē, faila saturs tiek saglabāts arī {SYSTEM_NAME} serverī.",
     "google_drive.feedback.connected": "Google konts pieslēgts.",
     "google_drive.feedback.disconnected": "Google konts atvienots.",
     "google_drive.feedback.saved": "Google Drive iestatījumi saglabāti.",
-    "onedrive.menu_description":
-      "Sūti augšupielādētos failus uz komandas OneDrive",
-    "onedrive.page.subtitle":
-      "Pieslēdz komandas Microsoft kontu, lai augšupielādētie faili nonāktu arī OneDrive mapē.",
+    "onedrive.menu_description": "Sūti augšupielādētos failus uz komandas OneDrive",
+    "onedrive.page.subtitle": "Pieslēdz komandas Microsoft kontu, lai augšupielādētie faili nonāktu arī OneDrive mapē.",
     "onedrive.connect.title": "Microsoft konts",
-    "onedrive.connect.description":
-      "Piekļuve failiem, ko {SYSTEM_NAME} izveido komandas OneDrive (scope: Files.ReadWrite).",
+    "onedrive.connect.description": "Piekļuve failiem, ko {SYSTEM_NAME} izveido komandas OneDrive (scope: Files.ReadWrite).",
     "onedrive.connect.button": "Pierakstīties ar Microsoft",
     "onedrive.status.connected": "Savienots",
     "onedrive.status.disconnected": "Nav savienots",
-    "onedrive.not_configured":
-      "Sistēmā nav iestatīts Microsoft OAuth (Administrācija → Integrācijas).",
-    "onedrive.configure_owner_only":
-      "Integrāciju var mainīt tikai ar pieeju «Pārvaldīt OneDrive» (vai īpašnieks / sistēmas admin).",
+    "onedrive.not_configured": "Sistēmā nav iestatīts Microsoft OAuth (Administrācija → Integrācijas).",
+    "onedrive.configure_owner_only": "Integrāciju var mainīt tikai ar pieeju «Pārvaldīt OneDrive» (vai īpašnieks / sistēmas admin).",
     "onedrive.disconnect": "Atvienot Microsoft kontu",
     "onedrive.disconnect.title": "Atvienot Microsoft kontu?",
-    "onedrive.disconnect.description":
-      "Jauni faili vairs netiks sūtīti uz OneDrive. Esošie faili paliek.",
+    "onedrive.disconnect.description": "Jauni faili vairs netiks sūtīti uz OneDrive. Esošie faili paliek.",
     "onedrive.folder.title": "OneDrive mape",
-    "onedrive.folder.description":
-      "Faili nonāk šajā mapē, saglabājot saraksta un mapju struktūru.",
+    "onedrive.folder.description": "Faili nonāk šajā mapē, saglabājot saraksta un mapju struktūru.",
     "onedrive.folder.path": "Mapes ceļš OneDrive",
-    "onedrive.folder.hint":
-      "Piemēram {SYSTEM_NAME} vai Komanda/Faili. Mape tiek izveidota, ja tās vēl nav.",
-    "onedrive.upload.enabled":
-      "Augšupielādēt failus uz OneDrive, kad tos pievieno {SYSTEM_NAME}",
+    "onedrive.folder.hint": "Piemēram {SYSTEM_NAME} vai Komanda/Faili. Mape tiek izveidota, ja tās vēl nav.",
+    "onedrive.upload.enabled": "Augšupielādēt failus uz OneDrive, kad tos pievieno {SYSTEM_NAME}",
     "onedrive.feedback.connected": "Microsoft konts pieslēgts.",
     "onedrive.feedback.disconnected": "Microsoft konts atvienots.",
     "onedrive.feedback.saved": "OneDrive iestatījumi saglabāti.",
-    "templates.page.subtitle":
-      "Iepriekš definēti uzdevumu un apakšuzdevumu saraksti, ko pēc tam pievieno mapē.",
+    "templates.page.subtitle": "Iepriekš definēti uzdevumu un apakšuzdevumu saraksti, ko pēc tam pievieno mapē.",
     "templates.empty": "Vēl nav šablonu.",
     "templates.add.title": "Jauns šablons",
-    "templates.add.description":
-      "Norādi nosaukumu. Pēc tam pievieno uzdevumu un apakšuzdevumu sarakstus.",
+    "templates.add.description": "Norādi nosaukumu. Pēc tam pievieno uzdevumu un apakšuzdevumu sarakstus.",
     "templates.fields.name_placeholder": "Piemēram, Jauns objekts",
     "templates.fields.description_placeholder": "Īss šablona apraksts",
     "templates.created": "Šablons pievienots.",
     "templates.saved": "Šablons saglabāts.",
     "templates.deleted": "Šablons dzēsts.",
     "templates.delete.title": "Dzēst šablonu?",
-    "templates.delete.description":
-      "Šablons “{name}” tiks dzēsts. Esošie uzdevumi paliek.",
+    "templates.delete.description": "Šablons “{name}” tiks dzēsts. Esošie uzdevumi paliek.",
     "templates.detail.loading": "Ielādē šablonu",
     "templates.detail.missing": "Šablons nav atrasts",
-    "templates.detail.subtitle":
-      "Definē uzdevumu sarakstus, apakšuzdevumus, atbildīgos un checklist. Pēc tam šablonu var pievienot mapē.",
+    "templates.detail.subtitle": "Definē uzdevumu sarakstus, apakšuzdevumus, atbildīgos un checklist. Pēc tam šablonu var pievienot mapē.",
     "templates.items.title": "Uzdevumu saraksti",
-    "templates.items.help":
-      "Katram uzdevumam un apakšuzdevumam vari iepriekš norādīt atbildīgo personu vai grupu un checklist. Pievienojot šablonu, tiek izveidoti uzdevumi un nosūtīti paziņojumi.",
+    "templates.items.help": "Katram uzdevumam un apakšuzdevumam vari iepriekš norādīt atbildīgo personu vai grupu un checklist. Pievienojot šablonu, tiek izveidoti uzdevumi un nosūtīti paziņojumi.",
     "templates.items.add_subtask": "Apakšuzdevums",
     "templates.items.add_folder": "Mape",
     "templates.items.subtasks_label": "Apakšuzdevumi",
     "templates.items.add_checklist": "Checklist",
-    "templates.statuses.description":
-      "Definē apakšuzdevumu statusus šim veidnes uzdevumam. Pievienojot šablonu mapē, statusi tiks izveidoti automātiski.",
+    "templates.statuses.description": "Definē apakšuzdevumu statusus šim veidnes uzdevumam. Pievienojot šablonu mapē, statusi tiks izveidoti automātiski.",
     "templates.statuses.configured": "Pielāgoti statusi ({count})",
     "templates.fields.folder_placeholder": "Mapes nosaukums",
     "templates.items.empty": "Vēl nav uzdevumu sarakstu.",
     "templates.items.count": "{count} uzdevumu saraksti",
     "templates.apply.title": "Pievienot šablonu",
-    "templates.apply.description":
-      "Ievieto sagatavotus uzdevumu sarakstus šajā mapē",
+    "templates.apply.description": "Ievieto sagatavotus uzdevumu sarakstus šajā mapē",
     "templates.apply.pick_title": "Izvēlies šablonu",
     "templates.apply.empty": "Vispirms izveido šablonu komandas izvēlnē.",
     "templates.apply.no_items": "Šajā šablonā nav uzdevumu sarakstu.",
@@ -1533,8 +1217,7 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "folders.add.title": "Jauna mape",
     "folders.add.description": "Pievieno mapi, lai grupētu sarakstus un uzdevumus.",
     "folders.add.subfolder_title": "Jauna apakšmape",
-    "folders.add.subfolder_description":
-      "Pievieno apakšmapi, lai grupētu uzdevumu sarakstus.",
+    "folders.add.subfolder_description": "Pievieno apakšmapi, lai grupētu uzdevumu sarakstus.",
     "folders.fields.name_placeholder": "Mapes nosaukums",
     "folders.fields.subfolder_placeholder": "Apakšmapes nosaukums",
     "folders.created": "Mape pievienota.",
@@ -1563,15 +1246,12 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "lists.progress.completed": "Izpildīti {done} no {total}",
     "lists.windows.files_empty": "Šajā sarakstā vēl nav failu.",
     "lists.windows.files_add": "Pievienot failu",
-    "lists.windows.files_add_description":
-      "Ieraksti faila nosaukumu, lai pievienotu to šim sarakstam.",
+    "lists.windows.files_add_description": "Ieraksti faila nosaukumu, lai pievienotu to šim sarakstam.",
     "lists.windows.files_name_placeholder": "Piemēram, Plāns.pdf",
     "lists.windows.files_note_placeholder": "Īsa piezīme",
     "lists.windows.files_created": "Fails pievienots.",
-    "files.created_without_preview":
-      "Fails pievienots, bet saturu nevarēja saglabāt priekšskatījumam.",
-    "files.upload.rejected":
-      "Neatļauts faila tips. Atļautie: {types}",
+    "files.created_without_preview": "Fails pievienots, bet saturu nevarēja saglabāt priekšskatījumam.",
+    "files.upload.rejected": "Neatļauts faila tips. Atļautie: {types}",
     "files.upload.allowed_types": "Atļautie failu tipi: {types}",
     "files.upload.progress_title": "Augšupielādē failu",
     "files.upload.progress_count": "{current} no {total}",
@@ -1581,8 +1261,7 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "files.detail.missing_description": "Šis fails vairs nav pieejams.",
     "files.detail.empty_description": "Augšupielādēts fails.",
     "files.detail.empty_content": "Šim failam nav saglabāts saturs.",
-    "files.detail.too_large":
-      "Faila saturu nevar parādīt. Tas ir pārāk liels vai nav saglabāts.",
+    "files.detail.too_large": "Faila saturu nevar parādīt. Tas ir pārāk liels vai nav saglabāts.",
     "files.detail.preview_unavailable": "Šo faila veidu nevar parādīt pārlūkā.",
     "files.detail.download": "Lejupielādēt",
     "files.preview.progress_title": "Atver failu",
@@ -1613,18 +1292,15 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "tasks.add.description": "Pievieno uzdevumu šim sarakstam.",
     "tasks.add.nested_description": "Pievieno uzdevumu zem šī uzdevuma.",
     "tasks.add.list_title": "Jauns uzdevumu saraksts",
-    "tasks.add.list_description":
-      "Pievieno uzdevumu sarakstu ar apakšuzdevumiem.",
+    "tasks.add.list_description": "Pievieno uzdevumu sarakstu ar apakšuzdevumiem.",
     "tasks.fields.list_placeholder": "Uzdevumu saraksta nosaukums",
     "tasks.list_created": "Uzdevumu saraksts pievienots.",
     "tasks.list_updated": "Uzdevumu saraksts saglabāts.",
     "tasks.edit.list_title": "Labot uzdevumu sarakstu",
-    "tasks.edit.list_description":
-      "Maini uzdevumu saraksta nosaukumu vai aprakstu.",
+    "tasks.edit.list_description": "Maini uzdevumu saraksta nosaukumu vai aprakstu.",
     "tasks.list_deleted": "Uzdevumu saraksts dzēsts.",
     "tasks.delete.list_title": "Dzēst uzdevumu sarakstu?",
-    "tasks.delete.list_description":
-      "Uzdevumu saraksts “{name}” un apakšuzdevumi tiks dzēsti.",
+    "tasks.delete.list_description": "Uzdevumu saraksts “{name}” un apakšuzdevumi tiks dzēsti.",
     "tasks.fields.title": "Nosaukums",
     "tasks.fields.title_placeholder": "Uzdevuma nosaukums",
     "tasks.fields.description_placeholder": "Īss uzdevuma apraksts",
@@ -1660,8 +1336,7 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "subtasks.bulk.moved": "Iezīmētie apakšuzdevumi pārvietoti.",
     "subtasks.bulk.deleted": "Iezīmētie apakšuzdevumi dzēsti.",
     "subtasks.bulk.delete.title": "Dzēst iezīmētos apakšuzdevumus?",
-    "subtasks.bulk.delete.description":
-      "{count} apakšuzdevumi tiks dzēsti.",
+    "subtasks.bulk.delete.description": "{count} apakšuzdevumi tiks dzēsti.",
     "subtasks.table.status": "Statuss",
     "subtasks.status.changed_at": "Statuss mainīts",
     "status.next": "Nākamais statuss",
@@ -1691,8 +1366,7 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "subtasks.checklist.add": "Pievienot sarakstu",
     "subtasks.checklist.name_placeholder": "Saraksta nosaukums",
     "subtasks.checklist.item_placeholder": "Jauns punkts",
-    "subtasks.checklist.incomplete":
-      "Vispirms izpildi visus kontrolsaraksta punktus.",
+    "subtasks.checklist.incomplete": "Vispirms izpildi visus kontrolsaraksta punktus.",
     "subtasks.modal.history": "Vēsture",
     "subtasks.history.empty": "Vēl nav vēstures ierakstu.",
     "subtasks.history.load_older": "Ielādēt vecākus",
@@ -1717,8 +1391,7 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "subtasks.history.file_removed": "Noņemts fails: {name}",
     "subtasks.history.file_renamed": "Fails pārsaukts: {from} → {to}",
     "subtasks.history.file_forwarded": "Pārsūtīts fails „{name}”",
-    "subtasks.history.file_forwarded_bounced":
-      "E-pasts netika piegādāts. Pārbaudi adresi un nosūti vēlreiz.",
+    "subtasks.history.file_forwarded_bounced": "E-pasts netika piegādāts. Pārbaudi adresi un nosūti vēlreiz.",
     "subtasks.history.checklist": "Kontrolsaraksts mainīts.",
     "subtasks.history.checklist_added": "Pievienots kontrolsaraksts: {title}",
     "subtasks.history.checklist_removed": "Noņemts kontrolsaraksts: {title}",
@@ -1729,14 +1402,11 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "subtasks.history.checklist_item_checked": "Atzīmēts: „{item}” ({checklist})",
     "subtasks.history.checklist_item_unchecked": "Noņemta atzīme: „{item}” ({checklist})",
     "subtasks.history.reordered": "Mainīta kārtība.",
-    "settings.page.subtitle":
-      "Komandas un lietotāja iestatījumi. Šo sadaļu pielāgosi vēlāk.",
-    "settings.page.placeholder":
-      "Šeit vēlāk būs valoda, paziņojumi un komandas iestatījumi.",
+    "settings.page.subtitle": "Komandas un lietotāja iestatījumi. Šo sadaļu pielāgosi vēlāk.",
+    "settings.page.placeholder": "Šeit vēlāk būs valoda, paziņojumi un komandas iestatījumi.",
     "team.filter.all": "Visi",
     "todo.page.title": "Komandas darbi",
-    "todo.page.subtitle":
-      "Pievieno, piešķir un pārvieto uzdevumus starp kolonnām.",
+    "todo.page.subtitle": "Pievieno, piešķir un pārvieto uzdevumus starp kolonnām.",
     "todo.columns.todo": "Darāms",
     "todo.columns.in_progress": "Procesā",
     "todo.columns.done": "Gatavs",
@@ -1767,29 +1437,22 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "todo.updated": "Uzdevums saglabāts.",
     "todo.deleted": "Uzdevums dzēsts.",
     "todo.defaults.standup": "Rīta standup piezīmes",
-    "todo.defaults.standup_description":
-      "Sagatavot īsu kopsavilkumu par vakardienas darbiem.",
+    "todo.defaults.standup_description": "Sagatavot īsu kopsavilkumu par vakardienas darbiem.",
     "todo.defaults.client_call": "Zvanīt klientam par termiņiem",
-    "todo.defaults.client_call_description":
-      "Saskaņot nākamās nedēļas piegādes datumu.",
+    "todo.defaults.client_call_description": "Saskaņot nākamās nedēļas piegādes datumu.",
     "todo.defaults.review": "Pārskatīt nedēļas uzdevumus",
-    "todo.defaults.review_description":
-      "Aizvērt pabeigtos darbus un pārdalīt atlikušos.",
+    "todo.defaults.review_description": "Aizvērt pabeigtos darbus un pārdalīt atlikušos.",
     "todo.defaults.docs": "Atjaunināt iekšējo dokumentāciju",
-    "todo.defaults.docs_description":
-      "Pierakstīt, kā komanda pievieno un piešķir uzdevumus.",
+    "todo.defaults.docs_description": "Pierakstīt, kā komanda pievieno un piešķir uzdevumus.",
     "teams.switcher.label": "Komandas izvēlne",
     "teams.add": "Pievienot jaunu komandu",
     "teams.add.title": "Jauna komanda",
-    "teams.add.description":
-      "Norādi nosaukumu, izvēlies avatāra izskatu vai pievieno logotipu.",
-    "teams.required.description":
-      "Lai sāktu darbu, izveido savu komandu vai pievienojies uzaicinājumam no paziņojumiem.",
+    "teams.add.description": "Norādi nosaukumu, izvēlies avatāra izskatu vai pievieno logotipu.",
+    "teams.required.description": "Lai sāktu darbu, izveido savu komandu vai pievienojies uzaicinājumam no paziņojumiem.",
     "teams.rank.owner": "Īpašnieks",
     "teams.required.empty_members": "Vispirms izveido komandu.",
     "dashboard.no_team.title": "Nav aktīvas komandas",
-    "dashboard.no_team.description":
-      "Izveido jaunu komandu vai pievienojies uzaicinājumam. Paziņojumus skaties augšējā joslā — vari tur apstiprināt komandas uzaicinājumu.",
+    "dashboard.no_team.description": "Izveido jaunu komandu vai pievienojies uzaicinājumam. Paziņojumus skaties augšējā joslā — vari tur apstiprināt komandas uzaicinājumu.",
     "dashboard.no_team.unread_notifications": "Tev ir {count} nelasīti paziņojumi.",
     "teams.fields.name_placeholder": "Piemēram, Studio, Klienti",
     "teams.logo.drop": "Ievelc logotipu šeit vai",
@@ -1797,8 +1460,7 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "teams.logo.invalid": "Augšupielādē attēlu līdz 1.5 MB.",
     "teams.created": "Komanda pievienota.",
     "teams.edit.title": "Labot komandu",
-    "teams.edit.description":
-      "Maini komandas nosaukumu, izskatu vai logotipu.",
+    "teams.edit.description": "Maini komandas nosaukumu, izskatu vai logotipu.",
     "teams.updated": "Komanda saglabāta.",
     "teams.delete.title": "Dzēst komandu?",
     "teams.delete.description": "Komanda “{name}” tiks dzēsta.",
@@ -1810,8 +1472,7 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "notifications.dismiss": "Noņemt",
     "notifications.dismiss_all": "Dzēst visus",
     "notifications.dismiss_all_title": "Dzēst visus paziņojumus?",
-    "notifications.dismiss_all_description":
-      "Visi redzamie paziņojumi tiks neatgriezeniski dzēsti.",
+    "notifications.dismiss_all_description": "Visi redzamie paziņojumi tiks neatgriezeniski dzēsti.",
     "notifications.just_now": "tagad",
     "notifications.item.assigned": "{name} piešķīra tev “{task}”",
     "notifications.item.assigned_other": "{name} piešķīra {assignee} “{task}”",
@@ -1822,77 +1483,54 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "notifications.item.file": "{name} pievienoja failu pie “{task}”",
     "notifications.item.status_changed": "{name} mainīja statusu “{task}”",
     "notifications.item.task_updated": "{name} atjaunināja “{task}”",
-    "notifications.item.team_invite":
-      "{name} uzaicināja tevi pievienoties komandai “{team}”",
-    "notifications.item.team_invite_rejected":
-      "{email} noraidīja uzaicinājumu pievienoties komandai “{team}”",
-    "notifications.item.seat_open":
-      "Komandā ir brīva apmaksāta vieta līdz {until}. Tās vietā var uzaicināt citu lietotāju.",
-    "notifications.item.seat_open_no_date":
-      "Komandā ir brīva apmaksāta vieta. Tās vietā var uzaicināt citu lietotāju.",
-    "notifications.item.billing_due":
-      "No nākamā mēneša ({until}) būs jāmaksā par komandas lietotājiem.",
-    "notifications.item.billing_due_no_date":
-      "No nākamā mēneša būs jāmaksā par komandas lietotājiem.",
+    "notifications.item.team_invite": "{name} uzaicināja tevi pievienoties komandai “{team}”",
+    "notifications.item.team_invite_rejected": "{email} noraidīja uzaicinājumu pievienoties komandai “{team}”",
+    "notifications.item.seat_open": "Komandā ir brīva apmaksāta vieta līdz {until}. Tās vietā var uzaicināt citu lietotāju.",
+    "notifications.item.seat_open_no_date": "Komandā ir brīva apmaksāta vieta. Tās vietā var uzaicināt citu lietotāju.",
+    "notifications.item.billing_due": "No nākamā mēneša ({until}) būs jāmaksā par komandas lietotājiem.",
+    "notifications.item.billing_due_no_date": "No nākamā mēneša būs jāmaksā par komandas lietotājiem.",
     "notifications.settings.title": "Paziņojumu uzstādījumi",
-    "notifications.settings.description":
-      "Izvēlies, par kādiem notikumiem saņemt paziņojumus zvaniņa izvēlnē.",
+    "notifications.settings.description": "Izvēlies, par kādiem notikumiem saņemt paziņojumus zvaniņa izvēlnē.",
     "notifications.settings.group.tasks": "Uzdevumi",
     "notifications.settings.group.reminders": "Atgādinājumi",
     "notifications.settings.group.team": "Komanda",
     "notifications.settings.saved": "Paziņojumu uzstādījumi saglabāti.",
-    "notifications.settings.load_failed":
-      "Neizdevās ielādēt paziņojumu uzstādījumus.",
-    "notifications.settings.load_failed_hint":
-      "Rādām noklusējuma uzstādījumus. Saglabājot, preferences tiks sinhronizētas ar serveri.",
-    "notifications.settings.save_failed":
-      "Neizdevās saglabāt paziņojumu uzstādījumus.",
+    "notifications.settings.load_failed": "Neizdevās ielādēt paziņojumu uzstādījumus.",
+    "notifications.settings.load_failed_hint": "Rādām noklusējuma uzstādījumus. Saglabājot, preferences tiks sinhronizētas ar serveri.",
+    "notifications.settings.save_failed": "Neizdevās saglabāt paziņojumu uzstādījumus.",
     "notifications.settings.kind.assigned": "Piešķirts man uzdevums",
-    "notifications.settings.kind.assigned.hint":
-      "Kad tevi piešķir uzdevumam vai apakšuzdevumam.",
+    "notifications.settings.kind.assigned.hint": "Kad tevi piešķir uzdevumam vai apakšuzdevumam.",
     "notifications.settings.kind.unassigned": "Noņemts no uzdevuma",
-    "notifications.settings.kind.unassigned.hint":
-      "Kad tevi noņem no uzdevuma piesaistītajiem.",
+    "notifications.settings.kind.unassigned.hint": "Kad tevi noņem no uzdevuma piesaistītajiem.",
     "notifications.settings.kind.comment": "Komentārs uz manu uzdevumu",
-    "notifications.settings.kind.comment.hint":
-      "Kad kāds komentē uzdevumu, kurā esi iesaistīts.",
+    "notifications.settings.kind.comment.hint": "Kad kāds komentē uzdevumu, kurā esi iesaistīts.",
     "notifications.settings.kind.file": "Fails pievienots uzdevumam",
-    "notifications.settings.kind.file.hint":
-      "Kad pievieno failu uzdevumam, kurā esi iesaistīts.",
+    "notifications.settings.kind.file.hint": "Kad pievieno failu uzdevumam, kurā esi iesaistīts.",
     "notifications.settings.kind.status_changed": "Statusa maiņa uzdevumā",
-    "notifications.settings.kind.status_changed.hint":
-      "Kad maina statusu uzdevumam, kurā esi iesaistīts.",
+    "notifications.settings.kind.status_changed.hint": "Kad maina statusu uzdevumam, kurā esi iesaistīts.",
     "notifications.settings.kind.task_updated": "Citi uzdevuma labojumi",
-    "notifications.settings.kind.task_updated.hint":
-      "Datumi, nosaukums, apraksts, kontrolsaraksts, pārvietošana, izveide.",
+    "notifications.settings.kind.task_updated.hint": "Datumi, nosaukums, apraksts, kontrolsaraksts, pārvietošana, izveide.",
     "notifications.settings.kind.due": "Tuvojošs termiņš",
     "notifications.settings.kind.due.hint": "Atgādinājums, ka šodien ir apakšuzdevuma termiņš.",
     "notifications.settings.kind.start": "Jāuzsāk apakšuzdevums",
     "notifications.settings.kind.start.hint": "Atgādinājums, ka jāuzsāk apakšuzdevums.",
     "notifications.settings.kind.team_invite": "Komandas uzaicinājums",
-    "notifications.settings.kind.team_invite.hint":
-      "Kad uzaicina pievienoties komandai.",
-    "notifications.settings.kind.team_invite_rejected":
-      "Noraidīts komandas uzaicinājums",
-    "notifications.settings.kind.team_invite_rejected.hint":
-      "Kad kāds noraida tavu komandas uzaicinājumu.",
+    "notifications.settings.kind.team_invite.hint": "Kad uzaicina pievienoties komandai.",
+    "notifications.settings.kind.team_invite_rejected": "Noraidīts komandas uzaicinājums",
+    "notifications.settings.kind.team_invite_rejected.hint": "Kad kāds noraida tavu komandas uzaicinājumu.",
     "notifications.settings.kind.seat_open": "Brīva apmaksāta vieta",
-    "notifications.settings.kind.seat_open.hint":
-      "Kad komandā paliek brīva apmaksāta vieta līdz cikla beigām.",
+    "notifications.settings.kind.seat_open.hint": "Kad komandā paliek brīva apmaksāta vieta līdz cikla beigām.",
     "notifications.settings.kind.billing_due": "Maksas par komandas lietotājiem",
-    "notifications.settings.kind.billing_due.hint":
-      "Kad sistēma ieslēdz maksas plānus un nākamajā mēnesī jāmaksā par lietotājiem virs 1.",
+    "notifications.settings.kind.billing_due.hint": "Kad sistēma ieslēdz maksas plānus un nākamajā mēnesī jāmaksā par lietotājiem virs 1.",
     "user_menu.label": "Lietotāja izvēlne",
     "user_menu.heading": "Konts",
     "user_menu.notifications": "Paziņojumu uzstādījumi",
     "user_menu.notifications_hint": "Izvēlies, par ko saņemt brīdinājumus",
     "user_menu.calendar_hint": "Uzdevumi Apple vai Google kalendārā",
     "calendar.integration.title": "Kalendāra integrācija",
-    "calendar.integration.description":
-      "Parādi savā kalendārā piesaistītos uzdevumus, kuriem ir termiņš.",
+    "calendar.integration.description": "Parādi savā kalendārā piesaistītos uzdevumus, kuriem ir termiņš.",
     "calendar.integration.enable": "Rādīt uzdevumus kalendārā",
-    "calendar.integration.enable_hint":
-      "Tikai uzdevumi, kuros esi piesaistīts un kuriem ir termiņš.",
+    "calendar.integration.enable_hint": "Tikai uzdevumi, kuros esi piesaistīts un kuriem ir termiņš.",
     "calendar.integration.choose": "Kurš kalendārs",
     "calendar.provider.apple": "Apple Calendar",
     "calendar.provider.apple.hint": "Abonē ar webcal vai .ics linku.",
@@ -1900,17 +1538,14 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "calendar.provider.google.hint": "Abonē to pašu .ics plūsmu no URL.",
     "calendar.integration.apple_link": "Apple .ics links",
     "calendar.integration.google_link": "Google .ics links",
-    "calendar.integration.apple_help":
-      "Kalendārs → Fails → Jauna kalendāra abonēšana, vai atver linku, lai pievienotu macOS Kalendāram.",
-    "calendar.integration.google_help":
-      "Google Calendar → Citi kalendāri → plus → No URL. Google atjauno plūsmu ik pēc dažām stundām. Vietējam http:// localhost Google neabonēs.",
+    "calendar.integration.apple_help": "Kalendārs → Fails → Jauna kalendāra abonēšana, vai atver linku, lai pievienotu macOS Kalendāram.",
+    "calendar.integration.google_help": "Google Calendar → Citi kalendāri → plus → No URL. Google atjauno plūsmu ik pēc dažām stundām. Vietējam http:// localhost Google neabonēs.",
     "calendar.integration.open_apple": "Atvērt Kalendārā",
     "calendar.integration.open_google": "Pievienot Google Calendar",
     "calendar.integration.link_copied": "Kalendāra links nokopēts.",
     "calendar.integration.regenerate": "Izveidot jaunu linku",
     "calendar.integration.regenerate_title": "Izveidot jaunu kalendāra linku?",
-    "calendar.integration.regenerate_description":
-      "Vecais links pārstās darboties. Kalendārā būs jāabonē jaunais.",
+    "calendar.integration.regenerate_description": "Vecais links pārstās darboties. Kalendārā būs jāabonē jaunais.",
     "calendar.integration.regenerated": "Jauns kalendāra links ir gatavs.",
     "calendar.integration.feed_hidden": "Kalendāra saite ir saglabāta. Jaunu saiti var izveidot ar pogu zemāk — vecā tad pārstās darboties.",
     "calendar.integration.feed_once": "Nokopē saiti tagad. Pēc šī loga aizvēršanas tā vairs netiks rādīta.",
@@ -1947,15 +1582,15 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "account.pending_deletion.cancel": "Atcelt konta dzēšanu",
     "account.pending_deletion.cancelling": "Atceļ…",
     "account.pending_deletion.cancel_success": "Konta dzēšana ir atcelta.",
-    "profile.page.placeholder":
-      "Profila rediģēšanu šeit pielāgosi nākamajā solī.",
+    "profile.page.placeholder": "Profila rediģēšanu šeit pielāgosi nākamajā solī.",
     "profile.personal.first_name": "Vārds",
     "profile.personal.last_name": "Uzvārds",
     "profile.personal.feedback.saved": "Profils saglabāts.",
     "profile.display.title": "Datumi un laiks",
-    "profile.display.description":
-      "Pielāgo datumu, laika un kalendāra attēlojumu sev. Tukšs lauks nozīmē sistēmas noklusējumu.",
+    "profile.display.description": "Pielāgo datumu, laika un kalendāra attēlojumu sev. Tukšs lauks nozīmē sistēmas noklusējumu.",
     "profile.display.system_default": "Sistēmas noklusējums ({value})",
+    "profile.display.timezone": "Laika josla",
+    "profile.display.timezone_hint": "Datumi ar laiku tiks rādīti šajā joslā. Tukšs lauks nozīmē servera laika joslu.",
     "profile.display.reset": "Atiestatīt uz sistēmas noklusējumu",
     "profile.display.feedback.saved": "Personīgie attēlojuma uzstādījumi saglabāti.",
     "actions.save": "Saglabāt",
@@ -2001,13 +1636,13 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "settings.language.description": "Lietotnes saskarnes valoda.",
     "landing.preview.member_anna": "Anna",
     "landing.preview.member_janis": "Jānis",
-    "meta.home.description":
-      "Komandas darba rīks sarakstiem, uzdevumiem un komandai.",
+    "meta.home.description": "Komandas darba rīks sarakstiem, uzdevumiem un komandai.",
     "errors.db_not_configured": "Datubāze nav konfigurēta.",
     "errors.name_required": "Ievadi vārdu.",
     "errors.first_name_required": "Ievadi vārdu.",
     "errors.last_name_required": "Ievadi uzvārdu.",
     "errors.email_invalid": "Ievadi derīgu e-pasta adresi.",
+    "errors.invalid_timezone": "Norādītā laika josla nav derīga.",
     "errors.files_forward_missing": "Neizdevās atrast faila saturu pārsūtīšanai.",
     "errors.files_forward_too_large": "Fails ir pārāk liels, lai nosūtītu e-pastā (maks. 25 MB).",
     "errors.files_forward_subject_required": "Ievadi e-pasta tēmu.",
@@ -2017,8 +1652,7 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "errors.user_exists": "Lietotājs ar šo e-pastu jau eksistē.",
     "errors.user_create_failed": "Neizdevās izveidot lietotāju.",
     "errors.user_profile_failed": "Neizdevās saglabāt lietotāja profilu.",
-    "errors.user_admin_status_failed":
-      "Lietotājs izveidots, bet administratora statusu neizdevās saglabāt.",
+    "errors.user_admin_status_failed": "Lietotājs izveidots, bet administratora statusu neizdevās saglabāt.",
     "errors.user_not_found": "Lietotājs nav atrasts.",
     "errors.last_admin": "Nevar noņemt pēdējo administratoru.",
     "errors.self_admin_remove": "Nevar noņemt administratora statusu sev.",
@@ -2062,11 +1696,9 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "errors.auth_email_unverified": "E-pasta adrese nav apstiprināta pie pakalpojuma.",
     "errors.auth_signup_failed": "Neizdevās izveidot kontu.",
     "errors.auth_password_update_failed": "Neizdevās atjaunot paroli.",
-    "errors.auth_email_disabled":
-      "Ienākšana ar e-pastu nav pieejama, kamēr Resend integrācija nav konfigurēta un ieslēgta.",
+    "errors.auth_email_disabled": "Ienākšana ar e-pastu nav pieejama, kamēr Resend integrācija nav konfigurēta un ieslēgta.",
     "errors.auth_email_send_failed": "Neizdevās nosūtīt apstiprinājuma e-pastu.",
-    "errors.auth_password_reset_failed":
-      "Neizdevās nosūtīt paroles atjaunošanas e-pastu.",
+    "errors.auth_password_reset_failed": "Neizdevās nosūtīt paroles atjaunošanas e-pastu.",
     "errors.email_templates_unknown": "Nezināms e-pasta šablons.",
     "errors.email_link_missing": "E-pasta saite nav atrasta.",
     "errors.mfa_invalid": "MFA iestatīšana neizdevās.",
@@ -2077,14 +1709,12 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "errors.extension_file_type": "Faila tips nav atļauts.",
     "errors.extension_file_empty": "Fails ir tukšs.",
     "errors.extension_file_too_large": "Fails pārsniedz 25 MB limitu.",
-    "errors.extension_file_needs_drive":
-      "Liels fails: ieslēdz komandas Google Drive integrāciju.",
+    "errors.extension_file_needs_drive": "Liels fails: ieslēdz komandas Google Drive integrāciju.",
     "errors.extension_upload_failed": "Neizdevās pievienot failu.",
     "errors.extension_nothing_attached": "Nekas netika pievienots.",
     "errors.extension_search_failed": "Neizdevās meklēt apakšuzdevumus.",
     "errors.extension_uploads_disabled": "Failu augšupielāde ir izslēgta.",
-    "errors.extension_subtask_upload_forbidden":
-      "Tev nav pieejas pievienot pielikumus apakšuzdevumam.",
+    "errors.extension_subtask_upload_forbidden": "Tev nav pieejas pievienot pielikumus apakšuzdevumam.",
     "errors.extension_invalid_body": "Nederīgs pieprasījums.",
     "errors.extension_task_required": "Izvēlies apakšuzdevumu.",
     "errors.extension_title_required": "Ievadi apakšuzdevuma nosaukumu.",
@@ -2092,26 +1722,18 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "errors.extension_create_forbidden": "Nav tiesību pievienot apakšuzdevumu.",
     "errors.extension_list_required": "Izvēlies sarakstu.",
     "errors.extension_gmail_client_id": "Trūkst Gmail OAuth Client ID paplašinājuma opcijās.",
-    "errors.extension_gmail_auth":
-      "Gmail atļauja novecojusi. Spraudnī atjauno savienojumu (Savienot Gmail).",
+    "errors.extension_gmail_auth": "Gmail atļauja novecojusi. Spraudnī atjauno savienojumu (Savienot Gmail).",
     "errors.extension_gmail_fetch_failed": "Neizdevās ielādēt e-pastu no Gmail API.",
     "errors.extension_gmail_message_id": "Neatrada Gmail ziņas ID.",
-    "errors.extension_gmail_forbidden":
-      "Gmail API liegts: ieslēdz Gmail API Google Cloud projektā un atkārtoti Savienot Gmail (scope gmail.readonly).",
-    "errors.extension_gmail_not_found":
-      "Gmail neatradā ziņu. Atver e-pastu pilnā skatā un mēģini vēlreiz.",
-    "errors.extension_auth_required":
-      "Ienāc {SYSTEM_NAME} spraudnī. Sesija paliek aptuveni 30 dienas, arī ja lapa ir aizvērta.",
+    "errors.extension_gmail_forbidden": "Gmail API liegts: ieslēdz Gmail API Google Cloud projektā un atkārtoti Savienot Gmail (scope gmail.readonly).",
+    "errors.extension_gmail_not_found": "Gmail neatradā ziņu. Atver e-pastu pilnā skatā un mēģini vēlreiz.",
+    "errors.extension_auth_required": "Ienāc {SYSTEM_NAME} spraudnī. Sesija paliek aptuveni 30 dienas, arī ja lapa ir aizvērta.",
     "errors.extension_unknown": "Nezināma kļūda.",
-    "errors.extension_network":
-      "Neizdevās savienoties ar serveri. Pārbaudi internetu un mēģini vēlreiz.",
-    "errors.extension_gmail_not_connected":
-      "Vispirms savieno Gmail spraudnī. Savienojums tiks saglabāts arī {SYSTEM_NAME}.",
+    "errors.extension_network": "Neizdevās savienoties ar serveri. Pārbaudi internetu un mēģini vēlreiz.",
+    "errors.extension_gmail_not_connected": "Vispirms savieno Gmail spraudnī. Savienojums tiks saglabāts arī {SYSTEM_NAME}.",
     "errors.extension_plugin_disabled": "Gmail spraudnis sistēmā ir izslēgts.",
-    "errors.extension_team_drive_missing":
-      "Šai komandai nav pieslēgts Google Drive. Spraudnis nestrādās.",
-    "errors.extension_login_mfa":
-      "Šim kontam ir MFA. Pabeidz ienākšanu {SYSTEM_NAME} lapā un mēģini vēlreiz.",
+    "errors.extension_team_drive_missing": "Šai komandai nav pieslēgts Google Drive. Spraudnis nestrādās.",
+    "errors.extension_login_mfa": "Šim kontam ir MFA. Pabeidz ienākšanu {SYSTEM_NAME} lapā un mēģini vēlreiz.",
     "extension.gmail.title": "Pievienot apakšuzdevumam",
     "extension.gmail.back": "Atpakaļ",
     "extension.gmail.waiting": "Gaida…",
@@ -2126,8 +1748,7 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "extension.gmail.check_all": "Atzīmēt visus",
     "extension.gmail.email_always": "E-pasta saturs (.txt) ir izvēles iespēja.",
     "extension.gmail.email_body": "E-pasta saturs (.txt)",
-    "extension.gmail.email_body_hint":
-      "Noņem atzīmi, ja e-pasta tekstu nevēlies pievienot.",
+    "extension.gmail.email_body_hint": "Noņem atzīmi, ja e-pasta tekstu nevēlies pievienot.",
     "extension.gmail.too_large": "{size} — pārāk liels (>25 MB)",
     "extension.gmail.empty": "Šeit nav ierakstu",
     "extension.gmail.load_lists": "Ielādē sarakstus…",
@@ -2160,94 +1781,69 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "extension.gmail.options.client_id": "Gmail OAuth Client ID",
     "extension.gmail.options.redirect": "Redirect URI (ieliec Google Cloud OAuth klientā):",
     "extension.gmail.options.connect": "Savienot Gmail",
-    "extension.gmail.options.hint":
-      "Ielogojies {SYSTEM_NAME} tajā pašā Chrome profilā. Pielikumi nāk caur Gmail API (līdz 25 MB; lielākiem failiem vajag komandas Google Drive).",
+    "extension.gmail.options.hint": "Ielogojies {SYSTEM_NAME} tajā pašā Chrome profilā. Pielikumi nāk caur Gmail API (līdz 25 MB; lielākiem failiem vajag komandas Google Drive).",
     "extension.gmail.options.saved": "Saglabāts.",
     "extension.gmail.options.invalid_url": "Nederīgs {SYSTEM_NAME} URL.",
-    "extension.gmail.options.need_client_id":
-      "Vispirms ievadi Gmail OAuth Client ID un saglabā.",
+    "extension.gmail.options.need_client_id": "Vispirms ievadi Gmail OAuth Client ID un saglabā.",
     "extension.gmail.options.connecting": "Atveras Google atļauju logs…",
     "extension.gmail.options.connected": "Gmail savienots.",
-    "extension.gmail.options.connect_failed":
-      "Neizdevās savienot Gmail. Pārbaudi Google OAuth un Gmail API.",
+    "extension.gmail.options.connect_failed": "Neizdevās savienot Gmail. Pārbaudi Google OAuth un Gmail API.",
     "extension.gmail.options.missing_client_id": "Trūkst Client ID.",
     "extension.gmail.team.label": "Komanda",
-    "extension.gmail.team.drive_missing":
-      "Šai komandai nav pieslēgts Google Drive. Spraudnis nestrādās.",
+    "extension.gmail.team.drive_missing": "Šai komandai nav pieslēgts Google Drive. Spraudnis nestrādās.",
     "extension.gmail.connect_gmail": "Savienot Gmail",
     "extension.gmail.reconnect_gmail": "Atjaunot Gmail savienojumu",
-    "extension.gmail.connect_gmail_hint":
-      "Custom login kontam Gmail jāsavieno šeit. Savienojums tiks saglabāts arī {SYSTEM_NAME}.",
-    "extension.gmail.reconnect_gmail_hint":
-      "Pēc sistēmas vai OAuth izmaiņām atjauno Gmail piekļuvi šeit.",
+    "extension.gmail.connect_gmail_hint": "Custom login kontam Gmail jāsavieno šeit. Savienojums tiks saglabāts arī {SYSTEM_NAME}.",
+    "extension.gmail.reconnect_gmail_hint": "Pēc sistēmas vai OAuth izmaiņām atjauno Gmail piekļuvi šeit.",
     "extension.gmail.bridge.title": "Savieno Gmail",
     "extension.gmail.bridge.loading": "Sagatavo Gmail atļaujas…",
-    "extension.gmail.bridge.error":
-      "Neizdevās sagatavot sesiju. Mēģini vēlreiz no spraudņa.",
+    "extension.gmail.bridge.error": "Neizdevās sagatavot sesiju. Mēģini vēlreiz no spraudņa.",
     "extension.gmail.gmail_connected": "Gmail savienots: {email}",
-    "extension.gmail.plugin_disabled":
-      "Gmail spraudnis sistēmā ir izslēgts. Ieslēdz to Administrācija → Moduļi.",
+    "extension.gmail.plugin_disabled": "Gmail spraudnis sistēmā ir izslēgts. Ieslēdz to Administrācija → Moduļi.",
     "extension.gmail.login_failed": "Neizdevās ienākt.",
     "extension.gmail.checking_app": "Ielādē {SYSTEM_NAME}…",
     "extension.gmail.login_done.title": "Ienāci {SYSTEM_NAME}",
-    "extension.gmail.login_done.body":
-      "Vari aizvērt šo logu un atgriezties spraudnī.",
-    "extension.gmail.handoff.waiting":
-      "Pagaidi, kamēr spraudnis saņem sesiju…",
+    "extension.gmail.login_done.body": "Vari aizvērt šo logu un atgriezties spraudnī.",
+    "extension.gmail.handoff.waiting": "Pagaidi, kamēr spraudnis saņem sesiju…",
     "extension.gmail.login_done.error_title": "Neizdevās ienākt",
-    "extension.gmail.login_done.error_body":
-      "Mēģini vēlreiz no Gmail spraudņa.",
-    "extension.gmail.login_done.session_missing":
-      "Pārlūkā nav aktīvas sesijas. Mēģini vēlreiz no Gmail spraudņa.",
+    "extension.gmail.login_done.error_body": "Mēģini vēlreiz no Gmail spraudņa.",
+    "extension.gmail.login_done.session_missing": "Pārlūkā nav aktīvas sesijas. Mēģini vēlreiz no Gmail spraudņa.",
     "extension.gmail.done.title": "Gmail savienots",
-    "extension.gmail.done.body":
-      "Gmail ir pieslēgts {SYSTEM_NAME}. Vari aizvērt šo logu un atgriezties spraudnī.",
+    "extension.gmail.done.body": "Gmail ir pieslēgts {SYSTEM_NAME}. Vari aizvērt šo logu un atgriezties spraudnī.",
     "extension.gmail.done.error_title": "Neizdevās savienot Gmail",
-    "extension.gmail.done.error_body":
-      "Mēģini vēlreiz no Gmail spraudņa. Pārliecinies, ka Google OAuth un Gmail API ir ieslēgti.",
-    "errors.auth_google_disabled":
-      "Google pieslēgšanās nav ieslēgta. Ieslēdz Google OAuth Administrācija → Integrācijas.",
+    "extension.gmail.done.error_body": "Mēģini vēlreiz no Gmail spraudņa. Pārliecinies, ka Google OAuth un Gmail API ir ieslēgti.",
+    "errors.auth_google_disabled": "Google pieslēgšanās nav ieslēgta. Ieslēdz Google OAuth Administrācija → Integrācijas.",
     "errors.auth_google_failed": "Neizdevās pieslēgties ar Google.",
-    "errors.auth_microsoft_disabled":
-      "Microsoft pieslēgšanās nav ieslēgta. Ieslēdz Microsoft OAuth Administrācija → Integrācijas.",
+    "errors.auth_microsoft_disabled": "Microsoft pieslēgšanās nav ieslēgta. Ieslēdz Microsoft OAuth Administrācija → Integrācijas.",
     "errors.auth_microsoft_failed": "Neizdevās pieslēgties ar Microsoft.",
     "errors.team_invite_forbidden": "Nav tiesību uzaicināt lietotājus.",
     "errors.team_invite_already_member": "Šis e-pasts jau ir komandas lietotājs.",
     "errors.team_invite_already_pending": "Uzaicinājums šim e-pastam jau gaida apstiprinājumu.",
     "errors.team_invite_failed": "Neizdevās nosūtīt uzaicinājumu.",
     "errors.team_invite_email_failed": "Neizdevās nosūtīt uzaicinājuma e-pastu.",
-    "errors.team_invite_email_not_configured":
-      "Jaunu komandas lietotāju ar e-pastu var uzaicināt tikai tad, ja Resend integrācija ir ieslēgta.",
+    "errors.team_invite_email_not_configured": "Jaunu komandas lietotāju ar e-pastu var uzaicināt tikai tad, ja Resend integrācija ir ieslēgta.",
     "errors.clipboard_failed": "Neizdevās nokopēt linku.",
     "errors.calendar_load_failed": "Neizdevās ielādēt kalendāra integrāciju.",
     "errors.calendar_save_failed": "Neizdevās saglabāt kalendāra integrāciju.",
     "errors.calendar_provider_required": "Izvēlies kalendāru.",
     "errors.team_invite_not_found": "Uzaicinājums nav atrasts vai vairs nav spēkā.",
-    "errors.team_invite_account_exists":
-      "Šim e-pastam jau ir konts. Ienāc, lai apstiprinātu uzaicinājumu.",
-    "errors.team_invite_email_mismatch":
-      "Reģistrācijai jāizmanto uzaicinājuma e-pasta adrese.",
+    "errors.team_invite_account_exists": "Šim e-pastam jau ir konts. Ienāc, lai apstiprinātu uzaicinājumu.",
+    "errors.team_invite_email_mismatch": "Reģistrācijai jāizmanto uzaicinājuma e-pasta adrese.",
     "errors.team_invite_accept_failed": "Neizdevās apstiprināt uzaicinājumu.",
     "errors.team_invite_reject_failed": "Neizdevās noraidīt uzaicinājumu.",
     "errors.team_invite_not_pending": "Uzaicinājums vairs nav gaidīšanas stāvoklī.",
-    "errors.team_invite_seat_limit":
-      "Bezmaksas plānā ir sasniegts lietotāju skaita limits.",
-    "errors.team_invite_awaiting_payment":
-      "Uzaicinājumu var apstiprināt tikai pēc vietas samaksas.",
-    "errors.team_invite_pay_first":
-      "Vispirms samaksā par vietu, tad uzaicini lietotāju.",
+    "errors.team_invite_seat_limit": "Bezmaksas plānā ir sasniegts lietotāju skaita limits.",
+    "errors.team_invite_awaiting_payment": "Uzaicinājumu var apstiprināt tikai pēc vietas samaksas.",
+    "errors.team_invite_pay_first": "Vispirms samaksā par vietu, tad uzaicini lietotāju.",
     "errors.team_page_forbidden": "Nav pieejas komandas lapai.",
     "errors.team_member_remove_failed": "Neizdevās noņemt lietotāju.",
     "errors.team_member_remove_forbidden": "Nav tiesību noņemt šo lietotāju.",
-    "errors.team_member_leave_owner":
-      "Komandas īpašnieks nevar pamest komandu. Vispirms nodod īpašumtiesības.",
+    "errors.team_member_leave_owner": "Komandas īpašnieks nevar pamest komandu. Vispirms nodod īpašumtiesības.",
     "unsaved_changes.title": "Doties prom nesaglabājot?",
-    "unsaved_changes.description":
-      "Vai tiešām vēlies doties prom nesaglabājot? Nesaglabātās izmaiņas tiks zaudētas.",
+    "unsaved_changes.description": "Vai tiešām vēlies doties prom nesaglabājot? Nesaglabātās izmaiņas tiks zaudētas.",
     "unsaved_changes.stay": "Turpināt rediģēt",
     "unsaved_changes.leave": "Doties prom",
-    "errors.status_id_invalid":
-      "Statusa kods nav derīgs. Izmanto burtus, ciparus un pasvītru.",
+    "errors.status_id_invalid": "Statusa kods nav derīgs. Izmanto burtus, ciparus un pasvītru.",
     "errors.status_group_invalid": "Izvēlies statusa grupu.",
     "errors.status_exists": "Statuss ar šādu kodu jau eksistē.",
     "errors.status_create_failed": "Neizdevās pievienot statusu.",
@@ -2261,90 +1857,125 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "errors.status_update_failed": "Neizdevās saglabāt statusu.",
     "errors.status_delete_failed": "Neizdevās dzēst statusu.",
     "errors.status_reorder_failed": "Neizdevās mainīt statusu secību.",
-    "errors.status_group_min_one":
-      "Katrā grupā jābūt vismaz vienam statusam.",
-    "errors.status_closed_one_visible":
-      "Grupās Nav sākts un Slēgts drīkst būt tikai viens statuss.",
-    "errors.status_singleton_group":
-      "Grupās Nav sākts un Slēgts drīkst būt tikai viens statuss.",
+    "errors.status_group_min_one": "Katrā grupā jābūt vismaz vienam statusam.",
+    "errors.status_closed_one_visible": "Grupās Nav sākts un Slēgts drīkst būt tikai viens statuss.",
+    "errors.status_singleton_group": "Grupās Nav sākts un Slēgts drīkst būt tikai viens statuss.",
     "errors.file_extension_invalid": "Faila paplašinājums nav derīgs.",
     "errors.file_extension_exists": "Šis paplašinājums jau ir pievienots.",
     "errors.file_mime_required": "Norādi MIME tipu.",
-    "errors.file_icon_invalid":
-      "Ikona nav derīga. Izmanto Font Awesome klasi, piemēram fas fa-file-pdf.",
+    "errors.file_icon_invalid": "Ikona nav derīga. Izmanto Font Awesome klasi, piemēram fas fa-file-pdf.",
     "errors.file_color_invalid": "Krāsas kods nav derīgs.",
     "errors.file_extension_create_failed": "Neizdevās pievienot faila tipu.",
     "errors.file_extension_update_failed": "Neizdevās saglabāt faila tipu.",
     "errors.file_extension_delete_failed": "Neizdevās dzēst faila tipu.",
     "errors.frontend_module_key_required": "Ievadi moduļa atslēgu.",
-    "errors.frontend_module_key_invalid":
-      "Atslēgai jābūt ar mazajiem burtiem, cipariem, punktiem, svītrām, apakšsvītrām un kolu.",
+    "errors.frontend_module_key_invalid": "Atslēgai jābūt ar mazajiem burtiem, cipariem, punktiem, svītrām, apakšsvītrām un kolu.",
     "errors.frontend_module_key_exists": "Modulis ar šo atslēgu jau eksistē.",
     "errors.frontend_module_create_failed": "Neizdevās izveidot moduli.",
     "errors.frontend_module_not_found": "Modulis nav atrasts.",
-    "errors.frontend_module_status_save_failed":
-      "Neizdevās saglabāt moduļa statusu.",
+    "errors.frontend_module_status_save_failed": "Neizdevās saglabāt moduļa statusu.",
     "errors.frontend_module_delete_failed": "Neizdevās dzēst moduli.",
-    "errors.frontend_module_google_oauth_required":
-      "Google Drive moduli var ieslēgt tikai pēc Google OAuth integrācijas konfigurācijas un ieslēgšanas.",
-    "errors.frontend_module_microsoft_oauth_required":
-      "OneDrive moduli var ieslēgt tikai pēc Microsoft OAuth integrācijas konfigurācijas un ieslēgšanas.",
+    "errors.frontend_module_google_oauth_required": "Google Drive moduli var ieslēgt tikai pēc Google OAuth integrācijas konfigurācijas un ieslēgšanas.",
+    "errors.frontend_module_microsoft_oauth_required": "OneDrive moduli var ieslēgt tikai pēc Microsoft OAuth integrācijas konfigurācijas un ieslēgšanas.",
     "errors.google_drive_forbidden": "Nav tiesību konfigurēt Google Drive.",
-    "errors.google_drive_module_disabled":
-      "Google Drive vai failu augšupielādes modulis nav ieslēgts.",
-    "errors.google_drive_not_configured":
-      "Google Drive OAuth nav konfigurēts serverī.",
+    "errors.google_drive_module_disabled": "Google Drive vai failu augšupielādes modulis nav ieslēgts.",
+    "errors.google_drive_not_configured": "Google Drive OAuth nav konfigurēts serverī.",
     "errors.google_drive_connect_failed": "Neizdevās pieslēgt Google Drive.",
     "errors.google_drive_save_failed": "Neizdevās saglabāt Google Drive iestatījumus.",
     "errors.google_drive_disconnect_failed": "Neizdevās atvienot Google kontu.",
     "errors.google_drive_upload_failed": "Neizdevās augšupielādēt failu uz Google Drive.",
     "errors.google_drive_file_too_large": "Fails ir pārāk liels Google Drive augšupielādei.",
     "errors.onedrive_forbidden": "Nav tiesību konfigurēt OneDrive.",
-    "errors.onedrive_module_disabled":
-      "OneDrive vai failu augšupielādes modulis nav ieslēgts.",
-    "errors.onedrive_not_configured":
-      "OneDrive OAuth nav konfigurēts serverī.",
+    "errors.onedrive_module_disabled": "OneDrive vai failu augšupielādes modulis nav ieslēgts.",
+    "errors.onedrive_not_configured": "OneDrive OAuth nav konfigurēts serverī.",
     "errors.onedrive_connect_failed": "Neizdevās pieslēgt OneDrive.",
     "errors.onedrive_save_failed": "Neizdevās saglabāt OneDrive iestatījumus.",
     "errors.onedrive_disconnect_failed": "Neizdevās atvienot Microsoft kontu.",
     "errors.onedrive_upload_failed": "Neizdevās augšupielādēt failu uz OneDrive.",
     "errors.onedrive_file_too_large": "Fails ir pārāk liels OneDrive augšupielādei.",
     "errors.payment_plan_key_required": "Ievadi plāna atslēgu.",
-    "errors.payment_plan_key_invalid":
-      "Atslēgai jābūt formātā ar mazajiem burtiem, cipariem, punktiem, svītrām, apakšsvītrām un kolu.",
+    "errors.payment_plan_key_invalid": "Atslēgai jābūt formātā ar mazajiem burtiem, cipariem, punktiem, svītrām, apakšsvītrām un kolu.",
     "errors.payment_plan_key_exists": "Plāns ar šo atslēgu jau eksistē.",
     "errors.payment_plan_name_required": "Ievadi plāna nosaukumu vismaz vienā valodā.",
-    "errors.payment_plan_price_invalid":
-      "Ievadi derīgu cenu (0 vai vairāk) aizpildītajiem periodiem.",
-    "errors.payment_plan_price_period_required":
-      "Norādi vismaz vienu perioda cenu (mēnesis vai gads).",
+    "errors.payment_plan_price_invalid": "Ievadi derīgu cenu (0 vai vairāk) aizpildītajiem periodiem.",
+    "errors.payment_plan_price_period_required": "Norādi vismaz vienu perioda cenu (mēnesis vai gads).",
     "errors.payment_plan_create_failed": "Neizdevās izveidot maksas plānu.",
     "errors.payment_plan_save_failed": "Neizdevās saglabāt maksas plānu.",
     "errors.payment_plan_delete_failed": "Neizdevās dzēst maksas plānu.",
     "errors.payment_plan_not_found": "Maksas plāns nav atrasts.",
     "errors.payment_plan_id_required": "Plāns nav norādīts.",
     "errors.payment_plan_modules_save_failed": "Neizdevās saglabāt plāna moduļus.",
-    "errors.payment_plan_max_members_invalid":
-      "Norādi derīgu lietotāju skaitu (no 1 līdz 10 000).",
+    "errors.payment_plan_max_members_invalid": "Norādi derīgu lietotāju skaitu (no 1 līdz 10 000).",
     "errors.team_payment_plan_save_failed": "Neizdevās saglabāt komandas plānu.",
     "errors.early_bird_limit_reached": "Early Bird slotu limits ir sasniegts.",
-    "errors.payment_plans_enable_save_failed":
-      "Neizdevās saglabāt maksas plānu iestatījumu.",
-    "errors.payment_plans_stripe_required":
-      "Maksas plānus var ieslēgt tikai tad, ja Stripe integrācija ir nokonfigurēta un ieslēgta.",
+    "errors.payment_plans_enable_save_failed": "Neizdevās saglabāt maksas plānu iestatījumu.",
+    "errors.payment_plans_stripe_required": "Maksas plānus var ieslēgt tikai tad, ja Stripe integrācija ir nokonfigurēta un ieslēgta.",
     "errors.trial_days_invalid": "Ievadi izmēģinājuma dienu skaitu no 1 līdz 365.",
     "errors.trial_settings_save_failed": "Neizdevās saglabāt izmēģinājuma iestatījumus.",
-    "errors.early_bird_limit_invalid":
-      "Ievadi derīgu Early Bird slotu skaitu (0 vai vairāk).",
+    "errors.early_bird_limit_invalid": "Ievadi derīgu Early Bird slotu skaitu (0 vai vairāk).",
     "errors.early_bird_save_failed": "Neizdevās saglabāt Early Bird limītu.",
     "errors.feedback_title_required": "Ievadi virsrakstu.",
     "errors.feedback_body_required": "Ievadi aprakstu.",
-    "errors.feedback_legal_email_missing":
-      "Juridiskais e-pasts nav norādīts sistēmas uzstādījumos.",
+    "errors.feedback_legal_email_missing": "Juridiskais e-pasts nav norādīts sistēmas uzstādījumos.",
     "errors.feedback_save_failed": "Neizdevās saglabāt ziņojumu.",
     "errors.feedback_rate_limited": "Pārāk daudz ziņojumu. Mēģini vēlāk.",
     "errors.feedback_vote_failed": "Neizdevās saglabāt balsi.",
     "errors.feedback_list_failed": "Neizdevās ielādēt pieprasījumus.",
+    "legal.privacy.controller.identity_provider": "{SYSTEM_NAME} pakalpojuma sniedzējs",
+    "legal.privacy.controller.identity_reg": "reģ. nr. {REG_NO}",
+    "legal.privacy.controller.identity_address": "juridiskā adrese: {ADDRESS}",
+    "legal.privacy.data.p5": "Tehniskie un drošības dati: pieslēgšanās laiks, IP adrese, pārlūka un ierīces informācija, kļūdu žurnāli (ar PII maskēšanu), botu pārbaudes rezultāti (Cloudflare Turnstile), piekrišanas izvēle par sīkdatnēm un rate limiting ieraksti.",
+    "legal.privacy.data.p6": "Atgriezeniskā saite: kļūdu ziņojumi, funkciju pieprasījumi un atsauksmes, ko iesniedz caur sānjoslu, ar tavu e-pastu un brīvā formā ievadītu tekstu.",
+    "legal.privacy.purpose.p5": "E-pasta paziņojumi par uzdevumiem, uzaicinājumiem un atgādinājumiem - līguma izpilde; dažus paziņojumus vari ierobežot profila iestatījumos.",
+    "legal.privacy.recipients.p3": "Datus nepārdodam un nenododam trešajām personām reklāmas nolūkos. Apstrādātāji drīkst apstrādāt datus tikai mūsu uzdevumā un saskaņā ar instrukcijām.",
+    "legal.privacy.transfers.p1": "Dati galvenokārt tiek glabāti Eiropas Ekonomikas zonā (EEZ). Daži apstrādātāji (piem., Stripe, Google, Microsoft, Cloudflare, Sentry) var apstrādāt datus arī ārpus EEZ, piemēram ASV, ja tu izmanto attiecīgo integrāciju.",
+    "legal.privacy.transfers.p2": "Šādos gadījumos paļaujamies uz Eiropas Komisijas lēmumiem par pietiekamību, ES standarta līguma noteikumiem vai citiem VDAR atļautajiem mehānismiem, ko nodrošina attiecīgais apstrādātājs.",
+    "legal.privacy.transfers.title": "5. Starptautiskie datu pārnesumi",
+    "legal.privacy.retention.p3": "Sīkdatņu piekrišanu glabājam līdz 180 dienām. Pieslēgšanās sesiju ar Atcerēties mani - līdz 30 dienām. Tehniskos žurnālus un drošības ierakstus glabājam tikai tik ilgi, cik nepieciešams drošībai un normatīvajām prasībām.",
+    "legal.privacy.rights.p3": "Ja apstrāde balstās uz piekrišanu (neobligātās sīkdatnes), vari to jebkurā laikā atsaukt sīkdatņu iestatījumos. Sūdzību vari iesniegt Datu valsts inspekcijā (www.dvi.gov.lv).",
+    "legal.privacy.integrations.p1": "Ja savieno Google Drive, OneDrive, Gmail spraudni vai kalendāra abonementu, attiecīgais pakalpojumu sniedzējs apstrādā datus saskaņā ar savu privātuma politiku. Mēs glabājam tikai tos tokenus un metadatus, kas nepieciešami integrācijas darbībai.",
+    "legal.privacy.integrations.p2": "Gmail Chrome spraudnis darbojas tikai pēc tavas pieslēgšanās un piekļuves piešķiršanas. Spraudnis var lasīt e-pasta metadatus un saturu, lai pievienotu e-pastus uzdevumiem vai izveidotu apakšuzdevumus.",
+    "legal.privacy.integrations.title": "9. Integrācijas un trešo pušu pakalpojumi",
+    "legal.terms.account.p3": "Ienākot ar Google vai Microsoft, tu piekrīti, ka attiecīgais pakalpojumu sniedzējs nodod mums profila datus (vārds, e-pasts), kas nepieciešami konta izveidei vai pieslēgšanai.",
+    "legal.terms.billing.p1": "Maksas plāni tiek apmaksāti caur Stripe. Cenas, norēķinu periods un vietu skaits ir norādīti abonementu lapā pirms maksājuma. Vadītāja vieta komandā parasti ir bez maksas; maksā par papildu lietotāju vietām saskaņā ar plānu.",
+    "legal.terms.billing.p2": "Abonementu vari atcelt perioda beigās abonementu sadaļā; piekļuve paliek līdz apmaksātā perioda beigām. Atmaksas politiku piemērojam saskaņā ar piemērojamajiem patērētāju tiesību aktiem un Stripe noteikumiem.",
+    "legal.terms.billing.p3": "Stripe apstrādā maksājumu un rēķinu datus saskaņā ar savu privātuma politiku. Maksājumu karte netiek glabāta mūsu datubāzē.",
+    "legal.terms.billing.p4": "Katram komandai ir viens Stripe abonements. Norēķini notiek par lietotāju vietām: komandas īpašnieka vai vadītāja vieta ir bez maksas (1 vieta); par katru papildu aktīvo lietotāju nepieciešama atsevišķa apmaksāta vieta saskaņā ar izvēlēto plānu un norēķinu periodu (mēnesis vai gads).",
+    "legal.terms.billing.p5": "Norēķinus par komandas abonementu veic komandas īpašnieks vai cits dalībnieks ar tiesībām pārvaldīt komandas uzstādījumus un norēķinus (sadaļa Komanda → Norēķini). Pārējie komandas lietotāji neapmaksā pakalpojumu individuāli; viņu piekļuve komandas datiem un funkcijām ir atkarīga no aktīva un apmaksāta komandas abonementa.",
+    "legal.terms.billing.p6": "Ja uzaicini jaunu lietotāju, bet komandā nav brīvas apmaksātas vietas, pirms uzaicinājuma apstiprināšanas jānopērk papildu vieta. Jauna vieta cikla laikā tiek iekasēta proporcionāli (prorata) par atlikušo norēķinu periodu; orientējošo un faktisko summu rāda norēķinu lapa un Stripe Checkout.",
+    "legal.terms.billing.p7": "Apmaksātas, bet neaizņemtas vietas paliek komandā līdz pašreizējā norēķinu perioda beigām — vari uzaicināt citu lietotāju bez jaunas maksas, kamēr vieta ir brīva. Nākamajā norēķinu periodā abonementā tiek iekļautas tikai faktiski aizņemtās vietas; neizmantotās vietas tiek noņemtas bez atmaksas par jau apmaksāto periodu.",
+    "legal.terms.billing.p8": "Abonements automātiski atjaunojas katrā norēķinu periodā, ja to neesi atcēlis. Atcelšanu vari veikt norēķinu sadaļā — tā stājas spēkā perioda beigās, un līdz tam piekļuve paliek aktīva. Pirms perioda beigām vari atcelt plānoto atcelšanu un atjaunot automātisko pagarināšanu.",
+    "legal.terms.billing.p9": "Cenas lapā un norēķinos ir norādītas eiro (EUR) bez PVN. PVN, ja piemērojams, Stripe aprēķina un iekasē maksājuma brīdī atbilstoši tavai valstij un norēķinu informācijai. Atmaksas politiku piemērojam saskaņā ar piemērojamajiem patērētāju tiesību aktiem un Stripe noteikumiem.",
+    "legal.terms.billing.p10": "Ja sistēmas administratoram ir ieslēgts izmēģinājuma (trial) periods, jaunas komandas var saņemt noteiktu plānu uz ierobežotu dienu skaitu; trial laikā jaunu lietotāju uzaicināšanai parasti nav nepieciešama atsevišķa apmaksāta vieta. Early Bird ir ierobežots kopējais vietu skaits ar īpašu cenu visā sistēmā; vieta kļūst Early Bird pirkuma brīdī, ja poolā vēl ir brīvas vietas. Ja lietotājs tiek noņemts un vieta netiek aizpildīta līdz cikla beigām, Early Bird statuss netiek atjaunots poolā.",
+    "legal.terms.billing.p11": "Ja maksājums netiek saņemts, Stripe mēģina to atkārtoti; varam ierobežot piekļuvi komandas funkcijām lietotājiem, kas nav īpašnieks vai nav ar norēķinu tiesībām, līdz parāds ir nomaksāts vai abonements atjaunots. Pēc abonementa beigām vai ilgstošas neapmaksas piekļuve maksas funkcijām var tikt bloķēta visiem komandas lietotājiem, izņemot personu ar tiesībām pārvaldīt norēķinus.",
+    "legal.terms.billing.title": "5. Maksas plāni un norēķini",
+    "legal.terms.integrations.p1": "Google Drive, OneDrive, Gmail un kalendāra integrācijas ir brīvprātīgas. Tu esi atbildīgs par to, ka tev ir tiesības piešķirt piekļuvi attiecīgajiem kontiem un mapēm.",
+    "legal.terms.integrations.p2": "Mēs neesam atbildīgi par trešo pušu pakalpojumu (Google, Microsoft u.c.) pieejamību, cenu vai satura zudumu ārpus {SYSTEM_NAME}.",
+    "legal.terms.integrations.title": "6. Integrācijas",
+    "legal.terms.extension.p1": "Chrome spraudnis darbojas papildus web lietotnei. Lietojot spraudni, tu piekrīti, ka tas var piekļūt Gmail kontam tikai tādā apjomā, kādu piešķir Google OAuth, lai pievienotu e-pastus uzdevumiem.",
+    "legal.terms.extension.p2": "Spraudņa sesija glabājas Chrome ierīcē. Tu vari atvienot spraudni jebkurā laikā, izdzēšot savienojumu profilā vai noņemot spraudni no pārlūka.",
+    "legal.terms.extension.title": "7. Gmail Chrome spraudnis",
+    "legal.terms.termination.p2": "Mēs varam slēgt kontu, ja tu būtiski pārkāp šos noteikumus vai ja pakalpojumu pārtraucam. Maksas abonementu pārtraukšana neatbrīvo no jau uzkrātajām maksājumu saistībām, ja piemērojams.",
+    "legal.terms.contact.email": " Raksti uz {LEGAL_EMAIL}.",
+    "legal.terms.contact.p1": "Jautājumi par noteikumiem un pakalpojumu:{LEGAL_CONTACT} Atbildēsim saprātīgā termiņā.",
+    "legal.terms.contact.title": "12. Saziņa",
+    "legal.cookies.categories.p1": "Obligātās sīkdatnes vienmēr ir ieslēgtas. Preferenču, statistikas un mārketinga sīkdatnes izmantojam tikai ar tavu piekrišanu, ko vari mainīt jebkurā laikā.",
+    "legal.cookies.categories.p2": "Mārketinga izsekošanu pašlaik neizmantojam. Kategorija ir sagatavota nākotnes rīkiem; piekrišana tos neieslēdz automātiski, kamēr tādi rīki nav pievienoti.",
+    "legal.cookies.categories.title": "2. Piekrišanas kategorijas",
+    "legal.cookies.necessary.p3": "Šīs sīkdatnes nevar izslēgt produktā. Tās vari bloķēt pārlūka iestatījumos, taču tad {SYSTEM_NAME} var nestrādāt pareizi.",
+    "legal.cookies.analytics.p1": "Ja administrators ir ieslēdzis Umami analītiku un tu piekrīti statistikas sīkdatnēm, ielādējam Umami skriptu, lai anonīmi skaitītu lapas apmeklējumus. Umami var izmantot savas sīkdatnes vai līdzīgas identifikatorus.",
+    "legal.cookies.analytics.p2": "Bez tavas piekrišanas Umami netiek ielādēts. Analītika nav obligāta pakalpojuma darbībai.",
+    "legal.cookies.analytics.title": "5. Statistikas sīkdatnes",
+    "legal.cookies.third_party.p1": "Cloudflare Turnstile (pieslēgšanās un reģistrācija) var iestatīt sīkdatnes vai apstrādāt IP adresi botu pārbaudei. Sentry (ja ieslēgts) var vākt kļūdu informāciju un ierīces datus, lai uzlabotu stabilitāti; PII tiek maskēts pirms sūtīšanas.",
+    "legal.cookies.third_party.p2": "Stripe maksājumu lapās var izmantot savas sīkdatnes maksājumu drošībai. Google un Microsoft OAuth plūsmās var tikt izmantotas to pakalpojumu sīkdatnes, ja tu jau esi pieslēdzies attiecīgajā kontā.",
+    "legal.cookies.third_party.title": "6. Citi tehnoloģiju partneri",
+    "legal.cookies.local_storage.p1": "Lietojam localStorage, lai saglabātu sānjoslas koka stāvokli, aktīvās komandas izvēli, laika joslas sinhronizāciju un dažu failu kešu ātrākai ielādei. Šie dati paliek tavā pārlūkā un netiek pārdoti trešajām personām.",
+    "legal.cookies.local_storage.p2": "localStorage vari notīrīt pārlūka iestatījumos; daļa preferences var pazust, bet konta dati paliek serverī.",
+    "legal.cookies.local_storage.title": "7. Vietējā krātuve (localStorage)",
+    "site_settings.form.legal_entity_name": "Juridiskās personas nosaukums",
+    "site_settings.form.legal_entity_name_hint": "Piem., SIA nosaukums. Rāda privātuma politikā kā datu pārzini.",
+    "site_settings.form.legal_entity_reg_no": "Reģistrācijas numurs",
+    "site_settings.form.legal_entity_address": "Juridiskā adrese",
   },
   en: {
     "app.name": "{SYSTEM_NAME}",
@@ -2355,14 +1986,11 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "site.nav.faq": "FAQ",
     "site.footer.rights": "© {year} {SYSTEM_NAME}",
     "landing.seo.title": "{name} — Simple Team Task Management Software",
-    "landing.seo.description":
-      "{name} is team task management software for tasks, projects and people in one workspace. Status, due dates and owners stay with the work — without the usual complexity.",
+    "landing.seo.description": "{name} is team task management software for tasks, projects and people in one workspace. Status, due dates and owners stay with the work — without the usual complexity.",
     "landing.seo.meta_description": "{name}: team tasks, projects and deadlines in one workspace. Clear owners, statuses and due dates. Start free — no install required.",
-    "landing.seo.keywords":
-      "team task management software, task management software, team collaboration software, project management software, work management software, task tracking software",
+    "landing.seo.keywords": "team task management software, task management software, team collaboration software, project management software, work management software, task tracking software",
     "landing.hero.title": "Simple team task management for modern teams",
-    "landing.hero.subtitle":
-      "{name} helps the whole team see lists, tasks and people in one workspace — with status, due dates and owners, not scattered across sheets and chat.",
+    "landing.hero.subtitle": "{name} helps the whole team see lists, tasks and people in one workspace — with status, due dates and owners, not scattered across sheets and chat.",
     "landing.hero.cta_signup": "Start for free",
     "landing.hero.cta_how": "See how it works",
     "landing.hero.trust": "No install. Start with your email.",
@@ -2370,10 +1998,8 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "landing.hero.stat_status_title": "To do, in progress, done",
     "landing.hero.stat_status": "One board for the day, not five tools.",
     "landing.hero.stat_together_title": "People on the work",
-    "landing.hero.stat_together":
-      "Owner, due date and file stay with the task.",
-    "landing.hero.stat_together_no_files":
-      "Owner and due date stay with the task.",
+    "landing.hero.stat_together": "Owner, due date and file stay with the task.",
+    "landing.hero.stat_together_no_files": "Owner and due date stay with the task.",
     "landing.preview.team": "Studio",
     "landing.preview.list_projects": "Projects",
     "landing.preview.list_clients": "Clients",
@@ -2391,136 +2017,92 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "landing.preview.checklist_copy": "Copy draft",
     "landing.preview.checklist_review": "Feedback",
     "landing.problem.title": "Work is scattered today",
-    "landing.problem.subtitle":
-      "Teams plan work in tables, chat, calendars and file folders. Then nobody is sure what is current.",
+    "landing.problem.subtitle": "Teams plan work in tables, chat, calendars and file folders. Then nobody is sure what is current.",
     "landing.problem.item_tables": "Excel and tables",
     "landing.problem.item_chat": "Chat",
     "landing.problem.item_calendars": "Calendars",
     "landing.problem.item_files": "File folders",
     "landing.problem.item_tools": "Multiple task tools",
-    "landing.problem.solution":
-      "{name} brings tasks, projects, people, files, deadlines and workflows into one workspace.",
+    "landing.problem.solution": "{name} brings tasks, projects, people, files, deadlines and workflows into one workspace.",
     "landing.features.title": "Everything a team needs to manage work",
-    "landing.features.subtitle":
-      "Fewer tools, clearer ownership and work you can finish, not just discuss.",
+    "landing.features.subtitle": "Fewer tools, clearer ownership and work you can finish, not just discuss.",
     "landing.features.lists.title": "Lists that match how you work",
-    "landing.features.lists.description":
-      "Projects, clients, folders and files in one tree. Every task has a status, due date and owner, not another spreadsheet.",
-    "landing.features.lists.description_no_files":
-      "Projects, clients and folders in one tree. Every task has a status, due date and owner, not another spreadsheet.",
+    "landing.features.lists.description": "Projects, clients, folders and files in one tree. Every task has a status, due date and owner, not another spreadsheet.",
+    "landing.features.lists.description_no_files": "Projects, clients and folders in one tree. Every task has a status, due date and owner, not another spreadsheet.",
     "landing.features.team.title": "The whole team sees the same picture",
-    "landing.features.team.description":
-      "Invite team users, assign work and see who is online. No more hunting chat for a file or a promise.",
-    "landing.features.team.description_no_files":
-      "Invite team users, assign work and see who is online. No more hunting chat for a promise.",
+    "landing.features.team.description": "Invite team users, assign work and see who is online. No more hunting chat for a file or a promise.",
+    "landing.features.team.description_no_files": "Invite team users, assign work and see who is online. No more hunting chat for a promise.",
     "landing.features.dashboard.title": "Home is your daily board",
-    "landing.features.dashboard.description":
-      "Open {name} and see to do, in progress and done. Drag cards and keep focus on what must ship today.",
+    "landing.features.dashboard.description": "Open {name} and see to do, in progress and done. Drag cards and keep focus on what must ship today.",
     "landing.features.private_list.title": "Private lists",
-    "landing.features.private_list.description":
-      "Hide a list from the rest of the team. Only you and selected users or roles can see it.",
+    "landing.features.private_list.description": "Hide a list from the rest of the team. Only you and selected users or roles can see it.",
     "landing.features.templates.title": "Templates",
-    "landing.features.templates.description":
-      "Save repeating work as a template and create a new folder with the structure ready.",
+    "landing.features.templates.description": "Save repeating work as a template and create a new folder with the structure ready.",
     "landing.features.automations.title": "Automations",
-    "landing.features.automations.description":
-      "When a status changes, assign an owner or close the work. Less manual moving around.",
+    "landing.features.automations.description": "When a status changes, assign an owner or close the work. Less manual moving around.",
     "landing.features.files.title": "Files on the task",
-    "landing.features.files.description":
-      "Attach documents to the work itself. No hunting an attachment in email or a shared folder.",
+    "landing.features.files.description": "Attach documents to the work itself. No hunting an attachment in email or a shared folder.",
     "landing.features.checklist.title": "Checklists",
-    "landing.features.checklist.description":
-      "Break a task into checkable items without losing context or the due date.",
+    "landing.features.checklist.description": "Break a task into checkable items without losing context or the due date.",
     "landing.features.calendar.title": "Calendar integration",
-    "landing.features.calendar.description_both":
-      "Task due dates show up in Apple Calendar and Google Calendar, so the day stays in one place.",
-    "landing.features.calendar.description_apple":
-      "Task due dates show up in Apple Calendar, so the day stays in one place.",
-    "landing.features.calendar.description_google":
-      "Task due dates show up in Google Calendar, so the day stays in one place.",
+    "landing.features.calendar.description_both": "Task due dates show up in Apple Calendar and Google Calendar, so the day stays in one place.",
+    "landing.features.calendar.description_apple": "Task due dates show up in Apple Calendar, so the day stays in one place.",
+    "landing.features.calendar.description_google": "Task due dates show up in Google Calendar, so the day stays in one place.",
     "landing.features.google_drive.title": "Google Drive",
-    "landing.features.google_drive.description":
-      "Store files in Google Drive and open them from the list without leaving {name}.",
+    "landing.features.google_drive.description": "Store files in Google Drive and open them from the list without leaving {name}.",
     "landing.features.onedrive.title": "OneDrive",
-    "landing.features.onedrive.description":
-      "Store files in OneDrive and open them from the list without leaving {name}.",
+    "landing.features.onedrive.description": "Store files in OneDrive and open them from the list without leaving {name}.",
     "landing.features.gmail.title": "Gmail plugin",
-    "landing.features.gmail.description":
-      "Add an email and its attachments from Gmail to a task, so the thread stays with the work.",
+    "landing.features.gmail.description": "Add an email and its attachments from Gmail to a task, so the thread stays with the work.",
     "landing.features.send_file.title": "Forward files",
-    "landing.features.send_file.description":
-      "Send a subtask file by email from the file menu, so the recipient gets the attachment without a shared folder.",
+    "landing.features.send_file.description": "Send a subtask file by email from the file menu, so the recipient gets the attachment without a shared folder.",
     "landing.audiences.title": "Built for teams that need to get work done",
-    "landing.audiences.subtitle":
-      "A simple workspace for small teams, agencies and businesses that are growing.",
+    "landing.audiences.subtitle": "A simple workspace for small teams, agencies and businesses that are growing.",
     "landing.audiences.small.title": "Small teams",
-    "landing.audiences.small.description":
-      "When everyone needs to see the work — not keep it in notes or in their head.",
+    "landing.audiences.small.description": "When everyone needs to see the work — not keep it in notes or in their head.",
     "landing.audiences.agencies.title": "Agencies",
-    "landing.audiences.agencies.description":
-      "Clients, projects and deadlines in one tree, so nothing gets lost between tasks.",
+    "landing.audiences.agencies.description": "Clients, projects and deadlines in one tree, so nothing gets lost between tasks.",
     "landing.audiences.growing.title": "Growing businesses",
-    "landing.audiences.growing.description":
-      "Clear owners and statuses when the team gets larger.",
+    "landing.audiences.growing.description": "Clear owners and statuses when the team gets larger.",
     "landing.audiences.remote.title": "Remote teams",
-    "landing.audiences.remote.description":
-      "One workspace, so work is not scattered across chats in different time zones.",
+    "landing.audiences.remote.description": "One workspace, so work is not scattered across chats in different time zones.",
     "landing.how.title": "From sign-up to the first finished task",
-    "landing.how.subtitle":
-      "Three steps. Your team can start working the same day.",
+    "landing.how.subtitle": "Three steps. Your team can start working the same day.",
     "landing.how.step1.title": "Create an account in minutes",
-    "landing.how.step1.description":
-      "Sign up with email. No install, no long setup before the first list.",
+    "landing.how.step1.description": "Sign up with email. No install, no long setup before the first list.",
     "landing.how.step2.title": "Set up the team and the work",
-    "landing.how.step2.description":
-      "Invite team users, create lists for projects or clients, and split tasks with due dates.",
+    "landing.how.step2.description": "Invite team users, create lists for projects or clients, and split tasks with due dates.",
     "landing.how.step3.title": "Do the work and see what is done",
-    "landing.how.step3.description":
-      "Open Home every morning. That is the day's picture: still to do, in progress and already closed.",
+    "landing.how.step3.description": "Open Home every morning. That is the day's picture: still to do, in progress and already closed.",
     "landing.faq.title": "Frequently asked questions",
-    "landing.faq.subtitle":
-      "Short answers about what {name} is and who it is for.",
+    "landing.faq.subtitle": "Short answers about what {name} is and who it is for.",
     "landing.faq.what.question": "What is {name}?",
-    "landing.faq.what.answer":
-      "{name} is team task management software. Lists, tasks, people and due dates live in one workspace, so the team can see what to do today.",
+    "landing.faq.what.answer": "{name} is team task management software. Lists, tasks, people and due dates live in one workspace, so the team can see what to do today.",
     "landing.faq.team_task.question": "What is team task management?",
-    "landing.faq.team_task.answer":
-      "It is how a team organizes work so every task has an owner, a status and a due date — and everyone sees the same picture, not a separate table or chat thread.",
+    "landing.faq.team_task.answer": "It is how a team organizes work so every task has an owner, a status and a due date — and everyone sees the same picture, not a separate table or chat thread.",
     "landing.faq.who.question": "Who is {name} for?",
-    "landing.faq.who.answer":
-      "Small and growing teams, agencies and remote teams that need a clear view of work without a heavy project-management system.",
+    "landing.faq.who.answer": "Small and growing teams, agencies and remote teams that need a clear view of work without a heavy project-management system.",
     "landing.faq.pm.question": "Is {name} a project management tool?",
-    "landing.faq.pm.answer":
-      "{name} helps you run projects as lists with tasks, due dates and owners. It is not a corporate portfolio suite — it is built for everyday work.",
+    "landing.faq.pm.answer": "{name} helps you run projects as lists with tasks, due dates and owners. It is not a corporate portfolio suite — it is built for everyday work.",
     "landing.faq.projects.question": "Can I manage projects and tasks?",
-    "landing.faq.projects.answer":
-      "Yes. Create lists for projects or clients, break them into tasks, assign owners and follow status from to do to done.",
+    "landing.faq.projects.answer": "Yes. Create lists for projects or clients, break them into tasks, assign owners and follow status from to do to done.",
     "landing.faq.invite.question": "Can I invite my team?",
-    "landing.faq.invite.answer":
-      "Yes. Invite team users, assign tasks and see who is online. Everyone works in the same workspace.",
+    "landing.faq.invite.answer": "Yes. Invite team users, assign tasks and see who is online. Everyone works in the same workspace.",
     "landing.faq.files.question": "Can I attach files to tasks?",
-    "landing.faq.files.answer":
-      "Yes. Add documents on the task itself, so files stay with the work instead of in email or a separate folder.",
+    "landing.faq.files.answer": "Yes. Add documents on the task itself, so files stay with the work instead of in email or a separate folder.",
     "landing.faq.send_file.question": "Can I send a file by email?",
-    "landing.faq.send_file.answer":
-      "Yes. The subtask file menu has Forward file — the document is sent by email as an attachment.",
+    "landing.faq.send_file.answer": "Yes. The subtask file menu has Forward file — the document is sent by email as an attachment.",
     "landing.faq.drive.question": "Does {name} connect to Google Drive?",
-    "landing.faq.drive.answer":
-      "Yes. You can store files in Google Drive and open them from the list without leaving {name}.",
+    "landing.faq.drive.answer": "Yes. You can store files in Google Drive and open them from the list without leaving {name}.",
     "landing.faq.calendar.question": "Does {name} have calendar functionality?",
-    "landing.faq.calendar.answer":
-      "Task due dates can appear in Apple Calendar or Google Calendar, so the day's plan stays in one place.",
+    "landing.faq.calendar.answer": "Task due dates can appear in Apple Calendar or Google Calendar, so the day's plan stays in one place.",
     "landing.faq.free.question": "Can I start for free?",
-    "landing.faq.free.answer":
-      "Yes. Create an account and start working. No install and no week-long rollout.",
-    "landing.faq.free.answer_plans":
-      "Yes. The free plan lets you start without a card. Compare it with the paid plan in Pricing.",
+    "landing.faq.free.answer": "Yes. Create an account and start working. No install and no week-long rollout.",
+    "landing.faq.free.answer_plans": "Yes. The free plan lets you start without a card. Compare it with the paid plan in Pricing.",
     "landing.faq.plans.question": "What's the difference between the plans?",
-    "landing.faq.plans.answer":
-      "The free plan has a user cap and fewer features. The paid plan is priced per user and includes the available modules. See the comparison in Pricing.",
+    "landing.faq.plans.answer": "The free plan has a user cap and fewer features. The paid plan is priced per user and includes the available modules. See the comparison in Pricing.",
     "landing.pricing.title": "Plans and pricing",
-    "landing.pricing.subtitle":
-      "The free plan has limits. The paid plan is priced per user, with no user cap.",
+    "landing.pricing.subtitle": "The free plan has limits. The paid plan is priced per user, with no user cap.",
     "landing.pricing.members_up_to": "{count}",
     "landing.pricing.members_unlimited": "No limit",
     "landing.pricing.compare.title": "Compare plans",
@@ -2531,42 +2113,34 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "landing.pricing.trial": "{days}-day trial",
     "landing.pricing.early_bird_left": "Early Bird: {remaining} / {limit}",
     "landing.cta.title": "Start managing your team's work today",
-    "landing.cta.subtitle":
-      "Sign up, invite the team and create the first list. No install and no week-long rollout.",
+    "landing.cta.subtitle": "Sign up, invite the team and create the first list. No install and no week-long rollout.",
     "auth.login.title": "Sign in",
     "auth.login.subtitle": "Sign in to your {SYSTEM_NAME} account.",
     "auth.login.forgot": "Forgot password?",
     "auth.login.no_account": "No account?",
     "auth.login.success": "Signed in successfully.",
-    "auth.email.unavailable":
-      "No sign-in method is enabled. Turn on Resend (email) or Google / Microsoft OAuth in Admin integrations.",
+    "auth.email.unavailable": "No sign-in method is enabled. Turn on Resend (email) or Google / Microsoft OAuth in Admin integrations.",
     "auth.signup.title": "Sign up",
     "auth.signup.subtitle": "Create an account and start working with your team.",
-    "auth.signup.invite_subtitle":
-      "Create an account to join the “{team}” team.",
+    "auth.signup.invite_subtitle": "Create an account to join the “{team}” team.",
     "auth.signup.has_account": "Already have an account?",
     "auth.signup.accept_prefix": "I agree to the",
     "auth.signup.accept_and": "and",
     "auth.signup.password_short": "Password must be at least 8 characters.",
     "auth.signup.password_mismatch": "Passwords do not match.",
-    "auth.signup.password_too_weak":
-      "Password is too weak. Use upper and lower case letters, numbers, and a special character.",
-    "auth.signup.password_suggested_hint":
-      "A strong password is filled in. You can edit it or pick another.",
+    "auth.signup.password_too_weak": "Password is too weak. Use upper and lower case letters, numbers, and a special character.",
+    "auth.signup.password_suggested_hint": "A strong password is filled in. You can edit it or pick another.",
     "auth.signup.password_suggest": "Suggest another strong password",
     "auth.signup.terms_required": "Please accept the terms to sign up.",
     "auth.signup.success": "Account created. Welcome to {SYSTEM_NAME}.",
     "auth.signup.check_email": "Check your email to confirm the account.",
     "auth.turnstile.modal_title": "Bot check",
-    "auth.turnstile.google_pending":
-      "To continue with Google without a team, confirm you are not a robot.",
+    "auth.turnstile.google_pending": "To continue with Google without a team, confirm you are not a robot.",
     "auth.confirm.loading": "Finishing confirmation…",
     "auth.confirm.failed_title": "Confirmation failed",
-    "auth.confirm.failed":
-      "This link has expired or is not valid. Request a new email and open it in the same browser.",
+    "auth.confirm.failed": "This link has expired or is not valid. Request a new email and open it in the same browser.",
     "auth.forgot.title": "Forgot password",
-    "auth.forgot.subtitle":
-      "Enter your email and we will send a password reset link.",
+    "auth.forgot.subtitle": "Enter your email and we will send a password reset link.",
     "auth.forgot.submit": "Send link",
     "auth.forgot.back": "Back to sign in",
     "auth.forgot.success": "If the account exists, we will send a reset link.",
@@ -2586,15 +2160,12 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "auth.google.or": "or",
     "auth.google.signing_in": "Signing in...",
     "auth.google.failed": "Could not sign in with Google.",
-    "auth.google.not_configured":
-      "Google is not set up. Configure Google OAuth in Administration → Integrations.",
-    "auth.google.not_enabled":
-      "Google sign-in is not enabled. Turn on Google OAuth in Administration → Integrations.",
+    "auth.google.not_configured": "Google is not set up. Configure Google OAuth in Administration → Integrations.",
+    "auth.google.not_enabled": "Google sign-in is not enabled. Turn on Google OAuth in Administration → Integrations.",
     "auth.microsoft.continue": "Continue with Microsoft",
     "auth.microsoft.signing_in": "Signing in...",
     "auth.microsoft.failed": "Could not sign in with Microsoft.",
-    "auth.microsoft.not_enabled":
-      "Microsoft sign-in is not enabled. Turn on Microsoft OAuth in Administration → Integrations.",
+    "auth.microsoft.not_enabled": "Microsoft sign-in is not enabled. Turn on Microsoft OAuth in Administration → Integrations.",
     "auth.login.remember": "Remember me",
     "auth.open_app": "Open app",
     "auth.update_password.title": "New password",
@@ -2602,16 +2173,12 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "auth.update_password.submit": "Save password",
     "auth.update_password.success": "Password updated.",
     "auth.mfa.title": "Two-factor authentication",
-    "auth.mfa.subtitle":
-      "An extra step at login with an Authenticator app (TOTP).",
+    "auth.mfa.subtitle": "An extra step at login with an Authenticator app (TOTP).",
     "auth.mfa.admin_note": "MFA is required for the administration panel.",
-    "auth.mfa.subtitle_admin":
-      "The administration panel requires a TOTP code (Authenticator).",
+    "auth.mfa.subtitle_admin": "The administration panel requires a TOTP code (Authenticator).",
     "auth.mfa.required": "Enable MFA before opening administration.",
-    "auth.mfa.verify_session":
-      "Enter your Authenticator code to confirm this session.",
-    "auth.mfa.verify_login":
-      "Enter your Authenticator code to finish signing in.",
+    "auth.mfa.verify_session": "Enter your Authenticator code to confirm this session.",
+    "auth.mfa.verify_login": "Enter your Authenticator code to finish signing in.",
     "auth.mfa.secret": "Secret",
     "auth.mfa.code": "Code",
     "auth.mfa.enroll": "Enable MFA",
@@ -2619,151 +2186,99 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "auth.mfa.unenroll": "Turn off MFA",
     "auth.mfa.enabled": "Two-factor authentication is enabled.",
     "auth.mfa.qr_alt": "MFA QR code",
-    "legal.common.updated_at": "23.08.26",
+    "legal.common.updated_at": "26.08.26",
     "legal.nav.updated_at": "Updated {date}",
     "legal.toc.label": "Contents",
     "legal.privacy.title": "Privacy policy",
-    "legal.privacy.intro":
-      "This policy explains what personal data we process when you use {SYSTEM_NAME}, why we do it, and what rights you have under the General Data Protection Regulation (EU) 2016/679 (GDPR).",
+    "legal.privacy.intro": "This policy explains what personal data we process when you use {SYSTEM_NAME}, why we do it, who we share it with, and what rights you have under the General Data Protection Regulation (EU) 2016/679 (GDPR).",
     "legal.privacy.controller.title": "1. Controller",
     "legal.privacy.controller.contact": " Write to {LEGAL_EMAIL} about data processing.",
-    "legal.privacy.controller.p1":
-      "The controller of personal data is the {SYSTEM_NAME} service provider.{LEGAL_CONTACT} We will reply within a reasonable time and may ask for extra details to confirm your identity.",
-    "legal.privacy.controller.p2":
-      "If you use {SYSTEM_NAME} for your employer or a client, that company may be the controller of the work data entered in the team. In that case we process the data as a processor on the company's behalf.",
+    "legal.privacy.controller.p1": "The controller of personal data is {CONTROLLER_IDENTITY}.{LEGAL_CONTACT} We will reply within a reasonable time and may ask for extra details to confirm your identity.",
+    "legal.privacy.controller.p2": "If you use {SYSTEM_NAME} for your employer or a client, that company may be the controller of work data entered in the team. In that case we process the data as a processor on the company's behalf under the applicable agreement.",
     "legal.privacy.data.title": "2. What data we process",
-    "legal.privacy.data.p1":
-      "Account data: name, email address, password (stored only as a hash), language choice and profile settings.",
-    "legal.privacy.data.p2":
-      "Team and work data: team name, user names, emails and roles, lists, tasks, subtasks, statuses, due dates, notes, attachment names and content that you or your team enter in the system.",
-    "legal.privacy.data.p3":
-      "Technical data: sign-in time, IP address, browser and device information, and logs needed for security and debugging.",
-    "legal.privacy.data.p4":
-      "Consent data: your cookie category choice and when you made it.",
+    "legal.privacy.data.p1": "Account data: first and last name, email address, password (stored only as a hash), language choice, time zone, date/time display preferences, MFA settings and notification preferences.",
+    "legal.privacy.data.p2": "Team and work data: team name and settings, user names, emails and roles, lists, tasks, subtasks, statuses, due dates, notes, activity history, attachment names and content that you or your team enter in the system.",
+    "legal.privacy.data.p3": "Billing data (paid plans): Stripe customer and subscription identifiers, paid seat count, billing cycle dates and subscription status. Payment card and invoice details are stored by Stripe, not in our database.",
+    "legal.privacy.data.p4": "Integration data (if enabled): encrypted OAuth access and refresh tokens, Google/Microsoft account email, Google Drive / OneDrive folder metadata, Gmail connection status for the Chrome extension, calendar subscription tokens.",
     "legal.privacy.purpose.title": "3. Purposes and legal basis",
-    "legal.privacy.purpose.p1":
-      "Creating an account, signing in and providing the service - performance of a contract (GDPR Art. 6(1)(b)).",
-    "legal.privacy.purpose.p2":
-      "System security, abuse prevention and debugging - legitimate interests (GDPR Art. 6(1)(f)).",
-    "legal.privacy.purpose.p3":
-      "Optional cookies - your consent (GDPR Art. 6(1)(a)), which you may withdraw at any time.",
-    "legal.privacy.purpose.p4":
-      "Accounting and other legal duties that apply to the service - compliance with a legal obligation (GDPR Art. 6(1)(c)).",
-    "legal.privacy.cookies.title": "4. Cookies",
-    "legal.privacy.cookies.p1":
-      "We use necessary cookies to store your consent, keep your sign-in session and keep the site working. Preference, analytics and marketing cookies are turned on only with your consent. The full list is in the cookie policy.",
-    "legal.privacy.recipients.title": "5. Recipients",
-    "legal.privacy.recipients.p1":
-      "Data is visible to authorised users in your team according to their permissions. For hosting and email we may use processors that work under a data processing agreement.",
-    "legal.privacy.recipients.p2":
-      "We do not sell data or share it with third parties for advertising.",
+    "legal.privacy.purpose.p1": "Account creation, sign-in, team collaboration and providing the service - performance of a contract (GDPR Art. 6(1)(b)).",
+    "legal.privacy.purpose.p2": "System security, abuse prevention, error analysis and service maintenance - legitimate interests (GDPR Art. 6(1)(f)), unless consent is required by law.",
+    "legal.privacy.purpose.p3": "Optional cookies and anonymous usage statistics (Umami) - your consent (GDPR Art. 6(1)(a)), which you may withdraw at any time.",
+    "legal.privacy.purpose.p4": "Payment and subscription processing, accounting and other legal duties - performance of a contract and compliance with a legal obligation (GDPR Art. 6(1)(b) and (c)).",
+    "legal.privacy.cookies.title": "8. Cookies",
+    "legal.privacy.cookies.p1": "We use necessary cookies to store your consent, keep your sign-in session and keep the site working. Preference and analytics cookies are enabled only with your consent. The full list and controls are in the cookie policy.",
+    "legal.privacy.recipients.title": "4. Recipients and processors",
+    "legal.privacy.recipients.p1": "Data is visible to authorised users in your team according to their permissions. For technical operations we use trusted processors bound by data processing agreements or EU Standard Contractual Clauses.",
+    "legal.privacy.recipients.p2": "Main processors: Supabase (database and authentication), Vercel (app hosting), Resend (transactional email), Stripe (payments), Google (OAuth, Drive, Gmail API for the extension), Microsoft (OAuth, OneDrive), Cloudflare (Turnstile bot protection), Sentry (error monitoring, if enabled) and Umami (anonymous analytics, if enabled and you consent).",
     "legal.privacy.retention.title": "6. How long we keep data",
-    "legal.privacy.retention.p1":
-      "We keep account and team data while the account is active. After deletion we erase or anonymise the data within a reasonable time, unless the law requires a longer period.",
-    "legal.privacy.retention.p2":
-      "Cookie consent is kept for up to 180 days or until you change it. A Remember me sign-in session is kept for up to 30 days. Technical logs are kept only as long as needed for security.",
+    "legal.privacy.retention.p1": "We keep account and team data while the account is active. After a deletion request the account is deactivated for 30 days; after that period data is permanently deleted, unless a longer period is required by law.",
+    "legal.privacy.retention.p2": "If you sign in again during deactivation, the account is automatically restored. Deleting a team owner's account may affect team data according to the account deletion flow.",
     "legal.privacy.rights.title": "7. Your rights",
-    "legal.privacy.rights.p1":
-      "You have the right to access your data, correct it, delete it, restrict processing, object to processing based on legitimate interests, and receive your data in a portable format.",
-    "legal.privacy.rights.p2":
-      "If processing is based on consent, you may withdraw it at any time without affecting processing already carried out. You may lodge a complaint with the Data State Inspectorate (www.dvi.gov.lv).",
-    "legal.privacy.security.title": "8. Security",
-    "legal.privacy.security.p1":
-      "We use reasonable technical and organisational measures: encrypted connections, access control and password hashes. Absolute security on the internet cannot be guaranteed, so please also protect your account password.",
-    "legal.privacy.changes.title": "9. Changes",
-    "legal.privacy.changes.p1":
-      "If this policy changes in a material way, we will update this page and the date. Continuing to use {SYSTEM_NAME} after a change means you accept the updated policy to the extent allowed by applicable law.",
+    "legal.privacy.rights.p1": "You have the right to access your data, correct it, delete it, restrict processing, object to processing based on legitimate interests, and receive your data in a portable format.",
+    "legal.privacy.rights.p2": "You can delete your account under Personal settings (/settings/profile). To request a copy of your data, write to the legal email shown in the controller section of this policy. We will reply within a reasonable time.",
+    "legal.privacy.security.title": "10. Security",
+    "legal.privacy.security.p1": "We use reasonable technical and organisational measures: encrypted connections (HTTPS), access control, password hashes, encrypted OAuth tokens in the database and row-level security policies. Absolute security on the internet cannot be guaranteed, so please also protect your account password.",
+    "legal.privacy.changes.title": "11. Changes",
+    "legal.privacy.changes.p1": "If this policy changes in a material way, we will update this page and the date. Continuing to use {SYSTEM_NAME} after a change means you accept the updated policy to the extent allowed by applicable law.",
     "legal.terms.title": "Terms of use",
-    "legal.terms.intro":
-      "These terms govern use of the {SYSTEM_NAME} website and app. By signing up or signing in you confirm that you have read and accept them. If you do not agree, please do not use the service.",
+    "legal.terms.intro": "These terms govern use of the {SYSTEM_NAME} website, app and Chrome Gmail extension. By signing up, signing in with email or OAuth (Google/Microsoft), you confirm that you have read and accept them. If you do not agree, please do not use the service.",
     "legal.terms.service.title": "1. Service",
-    "legal.terms.service.p1":
-      "{SYSTEM_NAME} is a team work tool for lists, tasks, files and collaboration. We provide access to the software as it stands so you and your team can plan and finish work.",
-    "legal.terms.service.p2":
-      "We may improve, add or discontinue features when needed for product development or security. We will announce material changes on the site or by email.",
+    "legal.terms.service.p1": "{SYSTEM_NAME} is a team work tool for lists, tasks, files and collaboration. We provide access to the software as it stands (as is) so you and your team can plan and finish work.",
+    "legal.terms.service.p2": "We may improve, add or discontinue features when needed for product development or security. We will announce material changes on the site or by email.",
     "legal.terms.account.title": "2. Account",
-    "legal.terms.account.p1":
-      "An account may be created by a person who is at least 16 and able to enter a contract. You agree to provide accurate details and keep your email address current.",
-    "legal.terms.account.p2":
-      "You are responsible for keeping your password secret and for all activity from your account. If you suspect unauthorised access, change the password at once and contact us.",
+    "legal.terms.account.p1": "An account may be created by a person who is at least 16 and able to enter a contract. You agree to provide accurate details and keep your email address current.",
+    "legal.terms.account.p2": "You are responsible for keeping your password secret and for all activity from your account. If you suspect unauthorised access, change the password at once and contact us.",
     "legal.terms.content.title": "3. Content",
-    "legal.terms.content.p1":
-      "Lists, tasks, files and other data you enter in {SYSTEM_NAME} stay yours or your company's. We use them only to provide the service, keep it secure and give support.",
-    "legal.terms.content.p2":
-      "You warrant that you have the right to enter this content and that it does not infringe other people's rights, confidentiality or applicable law.",
+    "legal.terms.content.p1": "Lists, tasks, files and other data you enter in {SYSTEM_NAME} stay yours or your company's. We use them only to provide the service, keep it secure and give support.",
+    "legal.terms.content.p2": "You warrant that you have the right to enter this content and that it does not infringe other people's rights, confidentiality or applicable law.",
     "legal.terms.acceptable.title": "4. Acceptable use",
-    "legal.terms.acceptable.p1":
-      "You must not try to break into the system, overload it, bypass security, copy another team's data or use {SYSTEM_NAME} for unlawful purposes.",
-    "legal.terms.acceptable.p2":
-      "If a breach is material, we may restrict or close the account. For clearly unlawful content we may notify the competent authorities.",
-    "legal.terms.availability.title": "5. Availability",
-    "legal.terms.availability.p1":
-      "We aim to keep {SYSTEM_NAME} available without interruption, but we cannot guarantee 100% uptime. Planned work and emergency fixes may briefly interrupt access.",
-    "legal.terms.liability.title": "6. Liability",
-    "legal.terms.liability.p1":
-      "{SYSTEM_NAME} helps organise work, but you are responsible for decisions based on what you see in the system. To the extent allowed by law, we are not liable for indirect loss, lost profit or data loss arising from use of the service.",
-    "legal.terms.liability.p2":
-      "If the law does not allow us to exclude liability, it is limited to the amount you paid for {SYSTEM_NAME} in the last 12 months, or EUR 100 if there was no fee.",
-    "legal.terms.termination.title": "7. Termination",
-    "legal.terms.termination.p1":
-      "You may stop using {SYSTEM_NAME} and delete your account at any time. We may close an account if you materially breach these terms or if we discontinue the service.",
-    "legal.terms.law.title": "8. Governing law",
-    "legal.terms.law.p1":
-      "These terms are governed by the law of the Republic of Latvia. We will first try to resolve disputes by discussion. If that fails, Latvian courts have jurisdiction unless consumer protection rules say otherwise.",
+    "legal.terms.acceptable.p1": "You must not try to break into the system, overload it, bypass security, copy another team's data or use {SYSTEM_NAME} for unlawful purposes.",
+    "legal.terms.acceptable.p2": "If a breach is material, we may restrict or close the account. For clearly unlawful content we may notify the competent authorities.",
+    "legal.terms.availability.title": "8. Availability",
+    "legal.terms.availability.p1": "We aim to keep {SYSTEM_NAME} available without interruption, but we cannot guarantee 100% uptime. Planned work and emergency fixes may briefly interrupt access.",
+    "legal.terms.liability.title": "9. Liability",
+    "legal.terms.liability.p1": "{SYSTEM_NAME} helps organise work, but you are responsible for decisions based on what you see in the system. To the extent allowed by law, we are not liable for indirect loss, lost profit or data loss arising from use of the service.",
+    "legal.terms.liability.p2": "If the law does not allow us to exclude liability, it is limited to the amount you paid for {SYSTEM_NAME} in the last 12 months, or EUR 100 if there was no fee.",
+    "legal.terms.termination.title": "10. Termination",
+    "legal.terms.termination.p1": "You may stop using the service and request account deletion in Personal settings. After a request the account is deactivated for 30 days; signing in again restores it. After the period data is deleted according to the privacy policy.",
+    "legal.terms.law.title": "11. Governing law",
+    "legal.terms.law.p1": "These terms are governed by the law of the Republic of Latvia. We will first try to resolve disputes by discussion. If that fails, Latvian courts have jurisdiction unless consumer protection rules say otherwise.",
     "legal.cookies.title": "Cookie policy",
-    "legal.cookies.intro":
-      "This policy explains which cookies {SYSTEM_NAME} uses, why they are needed and how you can manage consent. Read it together with the privacy policy.",
+    "legal.cookies.intro": "This policy explains which cookies and similar technologies {SYSTEM_NAME} uses, why they are needed and how you can manage consent. Read it together with the privacy policy.",
     "legal.cookies.what.title": "1. What cookies are",
-    "legal.cookies.what.p1":
-      "Cookies are small text files stored in your browser. They help remember settings, store consent and, if you allow it, measure usage.",
-    "legal.cookies.what.p2":
-      "Similar technologies such as localStorage may be used for the same purpose. In this policy we refer to them together as cookies.",
-    "legal.cookies.necessary.title": "2. Necessary cookies",
-    "legal.cookies.necessary.p1":
-      "Necessary cookies are required for the site to work: we store your cookie choice, keep your sign-in session (including Google) for up to 30 days if you choose Remember me, and keep browsing secure. Without them the consent banner would return on every visit and some features would not work.",
-    "legal.cookies.necessary.p2":
-      "These cookies cannot be turned off in the product. You can block them in the browser, but then {SYSTEM_NAME} may not work correctly.",
-    "legal.cookies.preferences.title": "3. Preference cookies",
-    "legal.cookies.preferences.p1":
-      "Preference cookies remember interface choices, such as the order of list windows (Tasks, Files, Overview). They save you from resetting the view on every visit.",
-    "legal.cookies.preferences.p2":
-      "We write these cookies only if you consent. If you refuse, the choices last only until you reload the page.",
+    "legal.cookies.what.p1": "Cookies are small text files stored in your browser. They help remember settings, store consent and, if you allow it, measure usage.",
+    "legal.cookies.what.p2": "Similar technologies such as localStorage may be used for the same purpose. In this policy we refer to them together with cookies when they store preferences or state in your browser.",
+    "legal.cookies.necessary.title": "3. Necessary cookies",
+    "legal.cookies.necessary.p1": "Necessary cookies are required for the site to work: we store your cookie choice (routine-app-cookie-consent), keep your sign-in session (Supabase auth token, routine-app-remember-session for up to 30 days) and OAuth state for integrations.",
+    "legal.cookies.necessary.p2": "We store language choice (routine-app-language, routine-app-language-chosen) to show the correct UI language. These are functionally necessary and not used for advertising.",
+    "legal.cookies.preferences.title": "4. Preference cookies",
+    "legal.cookies.preferences.p1": "Preference cookies remember interface choices, such as list window order (Tasks, Files, Overview) (routine-app-list-window-order).",
+    "legal.cookies.preferences.p2": "We write these cookies only if you consent. If you refuse, the choices last only until you reload the page.",
     "legal.cookies.optional.title": "4. Analytics and marketing cookies",
-    "legal.cookies.optional.p1":
-      "Analytics cookies would let us see anonymously which pages help and which confuse. Marketing cookies would measure campaigns. {SYSTEM_NAME} does not turn these tools on today.",
-    "legal.cookies.optional.p2":
-      "If we add them later, they will run only with your consent. Until then, Accept all stores your preference but does not enable third-party tracking.",
-    "legal.cookies.manage.title": "5. How to manage consent",
-    "legal.cookies.manage.p1":
-      "The first time you open the site, a cookie banner appears. You can accept all, reject optional cookies or customise categories.",
-    "legal.cookies.manage.p2":
-      "You can change the choice at any time with Cookie settings in the footer or on this page. We keep consent for up to 180 days.",
-    "legal.cookies.changes.title": "6. Changes",
-    "legal.cookies.changes.p1":
-      "If cookie categories or their purpose change, we will update this policy and, if needed, ask for your consent again.",
+    "legal.cookies.optional.p1": "Marketing cookies would measure ad campaigns. {SYSTEM_NAME} does not enable marketing tracking today.",
+    "legal.cookies.optional.p2": "Analytics cookies (Umami) run only with your consent - see the analytics section.",
+    "legal.cookies.manage.title": "8. How to manage consent",
+    "legal.cookies.manage.p1": "The first time you open the site, a cookie banner appears. You can accept all, reject optional cookies or customise categories.",
+    "legal.cookies.manage.p2": "You can change the choice at any time with Cookie settings in the footer. We keep consent for up to 180 days.",
+    "legal.cookies.changes.title": "9. Changes",
+    "legal.cookies.changes.p1": "If cookie categories or their purpose change, we will update this policy and, if needed, ask for your consent again.",
     "cookie_consent.banner.title": "We use cookies",
-    "cookie_consent.banner.description":
-      "Necessary cookies are required for the system to work. Preference, analytics and marketing cookies are used only with your consent.",
+    "cookie_consent.banner.description": "Necessary cookies are required for the system to work. Preference, analytics and marketing cookies are used only with your consent.",
     "cookie_consent.banner.customize": "Customize",
     "cookie_consent.actions.reject_all": "Reject optional",
     "cookie_consent.actions.accept_all": "Accept all",
     "cookie_consent.actions.save": "Save choice",
     "cookie_consent.settings.title": "Cookie settings",
-    "cookie_consent.settings.description":
-      "Choose which cookie categories to allow. You can change this at any time.",
+    "cookie_consent.settings.description": "Choose which cookie categories to allow. You can change this at any time.",
     "cookie_consent.settings.always_on": "Always on",
     "cookie_consent.category.necessary.title": "Necessary cookies",
-    "cookie_consent.category.necessary.description":
-      "Keep the site secure, keep you signed in and remember your consent. The system cannot work without them.",
+    "cookie_consent.category.necessary.description": "Keep the site secure, keep you signed in and remember your consent. The system cannot work without them.",
     "cookie_consent.category.preferences.title": "Preference cookies",
-    "cookie_consent.category.preferences.description":
-      "Remember your interface choices, such as list window order.",
+    "cookie_consent.category.preferences.description": "Remember your interface choices, such as list window order.",
     "cookie_consent.category.analytics.title": "Analytics cookies",
-    "cookie_consent.category.analytics.description":
-      "Allow anonymous usage measurement (Umami) when enabled by an administrator.",
+    "cookie_consent.category.analytics.description": "Allow anonymous usage measurement (Umami) when enabled by an administrator.",
     "cookie_consent.category.marketing.title": "Marketing cookies",
-    "cookie_consent.category.marketing.description":
-      "Allow personalized content. No marketing cookie is used yet.",
+    "cookie_consent.category.marketing.description": "Allow personalized content. No marketing cookie is used yet.",
     "nav.home": "Home",
     "nav.lists": "Lists",
     "nav.team": "Team",
@@ -2782,14 +2297,12 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "nav.request_feature": "Request a feature",
     "nav.feedback": "Feedback",
     "feedback.bug.title": "Find a bug?",
-    "feedback.bug.description":
-      "Describe the bug. The report will be sent to the legal email.",
+    "feedback.bug.description": "Describe the bug. The report will be sent to the legal email.",
     "feedback.bug.title_placeholder": "Short summary of the bug",
     "feedback.bug.body_placeholder": "What happened, what you expected, and how to reproduce it",
     "feedback.bug.sent": "Thanks, the bug report was sent.",
     "feedback.feature.title": "Request a feature",
-    "feedback.feature.description":
-      "Suggest a new capability. Others can vote to help set priority.",
+    "feedback.feature.description": "Suggest a new capability. Others can vote to help set priority.",
     "feedback.feature.title_placeholder": "What would you like to add?",
     "feedback.feature.body_placeholder": "Why it would help and how you would use it",
     "feedback.feature.sent": "Feature request sent.",
@@ -2797,8 +2310,7 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "feedback.feature.list": "Requests from others",
     "feedback.feature.upvote": "Upvote",
     "feedback.general.title": "Feedback",
-    "feedback.general.description":
-      "Share your thoughts. The message will be sent to the legal email.",
+    "feedback.general.description": "Share your thoughts. The message will be sent to the legal email.",
     "feedback.general.title_placeholder": "Subject",
     "feedback.general.body_placeholder": "What you like or what could be improved",
     "feedback.general.sent": "Thanks, your feedback was sent.",
@@ -2842,8 +2354,7 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "admin.cron_jobs.last_run.never": "Not run yet",
     "admin.cron_jobs.feedback.enabled": "Cron job enabled.",
     "admin.cron_jobs.feedback.disabled": "Cron job disabled.",
-    "admin.email_templates.section_hint":
-      "HTML emails in every system language. Parameters: {name}, {system}, {team}, {inviter}, {title}, {message}; the button uses {link}.",
+    "admin.email_templates.section_hint": "HTML emails in every system language. Parameters: {name}, {system}, {team}, {inviter}, {title}, {message}; the button uses {link}.",
     "admin.email_templates.kind.signup": "Registration confirmation",
     "admin.email_templates.kind.password_reset": "Forgot password",
     "admin.email_templates.kind.invite": "Team invitation",
@@ -2856,160 +2367,120 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "admin.email_templates.save": "Save templates",
     "admin.email_templates.saved": "Email templates saved.",
     "admin.email_templates.preview": "Preview",
-    "admin.email_templates.resend_disabled":
-      "Resend is off, so emails are not sent. Enable it under Integrations.",
+    "admin.email_templates.resend_disabled": "Resend is off, so emails are not sent. Enable it under Integrations.",
     "integrations.enabled_label": "Active",
-    "integrations.enabled.requires_configured":
-      "Finish configuration first to enable the integration.",
+    "integrations.enabled.requires_configured": "Finish configuration first to enable the integration.",
     "integrations.status.configured": "Configured",
     "integrations.status.not_configured": "Not configured",
     "integrations.feedback.status_saved": "Integration status saved.",
     "integrations.google_oauth.title": "Google OAuth",
-    "integrations.google_oauth.description":
-      "Configure Google sign-in on the login and signup pages.",
+    "integrations.google_oauth.description": "Configure Google sign-in on the login and signup pages.",
     "integrations.google_oauth.client_id": "Client ID",
     "integrations.google_oauth.client_secret": "Client Secret",
     "integrations.google_oauth.client_secret_placeholder": "Google OAuth Client Secret",
-    "integrations.google_oauth.client_secret_placeholder_saved":
-      "Saved — leave blank to keep unchanged",
+    "integrations.google_oauth.client_secret_placeholder_saved": "Saved — leave blank to keep unchanged",
     "integrations.google_oauth.configure": "Configure with Google",
     "integrations.google_oauth.reconfigure": "Reconfigure with Google",
     "integrations.google_oauth.reset": "Clear configuration",
     "integrations.google_oauth.reset.confirm_title": "Clear Google OAuth configuration?",
-    "integrations.google_oauth.reset.confirm_description":
-      "The integration will be disabled and users will no longer see Google sign-in.",
+    "integrations.google_oauth.reset.confirm_description": "The integration will be disabled and users will no longer see Google sign-in.",
     "integrations.google_oauth.redirects.title": "Redirect URI",
-    "integrations.google_oauth.redirects.hint":
-      "The first URI for each origin is for login/signup and the Gmail plugin; the second is for team Google Drive. Add every URI in Google Cloud (including localhost). Also enable the Drive API and Gmail API.",
+    "integrations.google_oauth.redirects.hint": "The first URI for each origin is for login/signup and the Gmail plugin; the second is for team Google Drive. Add every URI in Google Cloud (including localhost). Also enable the Drive API and Gmail API.",
     "integrations.google_oauth.aria.enabled": "Google OAuth integration enabled",
     "integrations.google_oauth.feedback.configured": "Google OAuth integration configured.",
     "integrations.google_oauth.feedback.credentials_saved": "Google OAuth credentials saved.",
     "integrations.google_oauth.feedback.client_id_required": "Enter the Google OAuth Client ID.",
-    "integrations.google_oauth.feedback.client_secret_required":
-      "Enter the Google OAuth Client Secret.",
+    "integrations.google_oauth.feedback.client_secret_required": "Enter the Google OAuth Client Secret.",
     "integrations.google_oauth.feedback.reset": "Google OAuth configuration cleared.",
     "integrations.microsoft_oauth.title": "Microsoft OAuth",
-    "integrations.microsoft_oauth.description":
-      "Configure a Microsoft Azure app so users can sign in and teams can use OneDrive.",
+    "integrations.microsoft_oauth.description": "Configure a Microsoft Azure app so users can sign in and teams can use OneDrive.",
     "integrations.microsoft_oauth.client_id": "Application (client) ID",
     "integrations.microsoft_oauth.client_secret": "Client Secret",
     "integrations.microsoft_oauth.client_secret_placeholder": "Microsoft Client Secret",
-    "integrations.microsoft_oauth.client_secret_placeholder_saved":
-      "Saved — leave blank to keep unchanged",
+    "integrations.microsoft_oauth.client_secret_placeholder_saved": "Saved — leave blank to keep unchanged",
     "integrations.microsoft_oauth.configure": "Configure with Microsoft",
     "integrations.microsoft_oauth.reconfigure": "Reconfigure with Microsoft",
     "integrations.microsoft_oauth.reset": "Clear configuration",
     "integrations.microsoft_oauth.reset.confirm_title": "Clear Microsoft OAuth configuration?",
-    "integrations.microsoft_oauth.reset.confirm_description":
-      "The integration will be disabled, users will no longer see Microsoft sign-in, and the OneDrive module will no longer be available.",
+    "integrations.microsoft_oauth.reset.confirm_description": "The integration will be disabled, users will no longer see Microsoft sign-in, and the OneDrive module will no longer be available.",
     "integrations.microsoft_oauth.redirects.title": "Redirect URI",
-    "integrations.microsoft_oauth.redirects.hint":
-      "The first URI is used for configuration and login/signup; the second for team OneDrive. Also add the Files.ReadWrite permission in the Azure app.",
+    "integrations.microsoft_oauth.redirects.hint": "The first URI is used for configuration and login/signup; the second for team OneDrive. Also add the Files.ReadWrite permission in the Azure app.",
     "integrations.microsoft_oauth.aria.enabled": "Microsoft OAuth integration enabled",
     "integrations.microsoft_oauth.feedback.configured": "Microsoft OAuth integration configured.",
-    "integrations.microsoft_oauth.feedback.credentials_saved":
-      "Microsoft OAuth credentials saved.",
-    "integrations.microsoft_oauth.feedback.client_id_required":
-      "Enter the Microsoft Application (client) ID.",
-    "integrations.microsoft_oauth.feedback.client_secret_required":
-      "Enter the Microsoft Client Secret.",
+    "integrations.microsoft_oauth.feedback.credentials_saved": "Microsoft OAuth credentials saved.",
+    "integrations.microsoft_oauth.feedback.client_id_required": "Enter the Microsoft Application (client) ID.",
+    "integrations.microsoft_oauth.feedback.client_secret_required": "Enter the Microsoft Client Secret.",
     "integrations.microsoft_oauth.feedback.reset": "Microsoft OAuth configuration cleared.",
     "integrations.resend.title": "Resend",
-    "integrations.resend.description":
-      "Transactional email via the Resend API (From address + API Key).",
+    "integrations.resend.description": "Transactional email via the Resend API (From address + API Key).",
     "integrations.resend.from_email": "From email",
-    "integrations.resend.from_hint":
-      "Emails are sent from this address. It must be on a domain verified in Resend.",
+    "integrations.resend.from_hint": "Emails are sent from this address. It must be on a domain verified in Resend.",
     "integrations.resend.reply_to": "Reply-To email",
-    "integrations.resend.reply_to_hint":
-      "Replies to emails go to this address. It can be Gmail or another public mailbox.",
+    "integrations.resend.reply_to_hint": "Replies to emails go to this address. It can be Gmail or another public mailbox.",
     "integrations.resend.api_key": "API Key",
     "integrations.resend.api_key_placeholder": "re_…",
-    "integrations.resend.api_key_placeholder_saved":
-      "Saved — leave blank to keep unchanged",
-    "integrations.resend.hint":
-      "The From address must use a domain verified in Resend. Reply-To can be Gmail so replies reach your inbox.",
+    "integrations.resend.api_key_placeholder_saved": "Saved — leave blank to keep unchanged",
+    "integrations.resend.hint": "The From address must use a domain verified in Resend. Reply-To can be Gmail so replies reach your inbox.",
     "integrations.resend.reset": "Clear configuration",
     "integrations.resend.reset.confirm_title": "Clear Resend configuration?",
-    "integrations.resend.reset.confirm_description":
-      "The API key will be deleted and Resend email sending will be turned off.",
+    "integrations.resend.reset.confirm_description": "The API key will be deleted and Resend email sending will be turned off.",
     "integrations.resend.aria.enabled": "Resend integration enabled",
     "integrations.resend.feedback.credentials_saved": "Resend credentials saved.",
     "integrations.resend.feedback.reset": "Resend configuration cleared.",
     "integrations.stripe.title": "Stripe",
-    "integrations.stripe.description":
-      "Seat billing: one team subscription, new users after payment.",
+    "integrations.stripe.description": "Seat billing: one team subscription, new users after payment.",
     "integrations.stripe.publishable_key": "Publishable key",
     "integrations.stripe.publishable_key_placeholder": "pk_live_… or pk_test_…",
-    "integrations.stripe.publishable_hint":
-      "Publishable key from the Stripe Dashboard. Starts with pk_.",
+    "integrations.stripe.publishable_hint": "Publishable key from the Stripe Dashboard. Starts with pk_.",
     "integrations.stripe.secret_key": "Secret key",
     "integrations.stripe.secret_key_placeholder": "sk_… (live or test)",
-    "integrations.stripe.secret_key_placeholder_saved":
-      "Saved — leave blank to keep unchanged",
+    "integrations.stripe.secret_key_placeholder_saved": "Saved — leave blank to keep unchanged",
     "integrations.stripe.webhook_secret": "Webhook signing secret",
     "integrations.stripe.webhook_secret_placeholder": "whsec_…",
-    "integrations.stripe.webhook_secret_placeholder_saved":
-      "Saved — leave blank to keep unchanged",
-    "integrations.stripe.webhook_url_hint":
-      "Stripe Dashboard webhook URL: {url}",
-    "integrations.stripe.hint":
-      "When the integration is active, teams pay for seats with Stripe Checkout and a subscription. Webhook events: checkout.session.completed, invoice.created, invoice.paid, invoice.payment_failed, customer.subscription.updated, customer.subscription.deleted.",
+    "integrations.stripe.webhook_secret_placeholder_saved": "Saved — leave blank to keep unchanged",
+    "integrations.stripe.webhook_url_hint": "Stripe Dashboard webhook URL: {url}",
+    "integrations.stripe.hint": "When the integration is active, teams pay for seats with Stripe Checkout and a subscription. Webhook events: checkout.session.completed, invoice.created, invoice.paid, invoice.payment_failed, customer.subscription.updated, customer.subscription.deleted.",
     "integrations.stripe.reset": "Clear configuration",
     "integrations.stripe.reset.confirm_title": "Clear Stripe configuration?",
-    "integrations.stripe.reset.confirm_description":
-      "Stripe keys will be deleted and seat billing will be turned off.",
+    "integrations.stripe.reset.confirm_description": "Stripe keys will be deleted and seat billing will be turned off.",
     "integrations.stripe.aria.enabled": "Stripe integration enabled",
     "integrations.stripe.feedback.credentials_saved": "Stripe credentials saved.",
     "integrations.stripe.feedback.reset": "Stripe configuration cleared.",
     "integrations.umami.title": "Umami",
-    "integrations.umami.description":
-      "Anonymous page analytics. When active, the script loads in the page head after analytics consent.",
+    "integrations.umami.description": "Anonymous page analytics. When active, the script loads in the page head after analytics consent.",
     "integrations.umami.website_id": "Website ID",
     "integrations.umami.script_url": "Script URL",
-    "integrations.umami.script_url_placeholder_saved":
-      "Saved — leave blank to keep unchanged",
-    "integrations.umami.hint":
-      "When the integration is active and the user consents to analytics cookies, the Umami script is loaded in the page head.",
+    "integrations.umami.script_url_placeholder_saved": "Saved — leave blank to keep unchanged",
+    "integrations.umami.hint": "When the integration is active and the user consents to analytics cookies, the Umami script is loaded in the page head.",
     "integrations.umami.reset": "Clear configuration",
     "integrations.umami.reset.confirm_title": "Clear Umami configuration?",
-    "integrations.umami.reset.confirm_description":
-      "The Website ID will be deleted and the Umami script will no longer load.",
+    "integrations.umami.reset.confirm_description": "The Website ID will be deleted and the Umami script will no longer load.",
     "integrations.umami.aria.enabled": "Umami integration enabled",
     "integrations.umami.feedback.credentials_saved": "Umami credentials saved.",
     "integrations.umami.feedback.reset": "Umami configuration cleared.",
     "integrations.sentry.title": "Sentry",
-    "integrations.sentry.description":
-      "Browser error and exception tracking via sentry.io.",
+    "integrations.sentry.description": "Browser error and exception tracking via sentry.io.",
     "integrations.sentry.environment": "Environment",
     "integrations.sentry.dsn": "DSN",
-    "integrations.sentry.dsn_placeholder_saved":
-      "Saved — leave blank to keep unchanged",
-    "integrations.sentry.hint":
-      "When the integration is active, Sentry error tracking is initialized in the browser.",
+    "integrations.sentry.dsn_placeholder_saved": "Saved — leave blank to keep unchanged",
+    "integrations.sentry.hint": "When the integration is active, Sentry error tracking is initialized in the browser.",
     "integrations.sentry.reset": "Clear configuration",
     "integrations.sentry.reset.confirm_title": "Clear Sentry configuration?",
-    "integrations.sentry.reset.confirm_description":
-      "The DSN will be deleted and Sentry error tracking will be turned off.",
+    "integrations.sentry.reset.confirm_description": "The DSN will be deleted and Sentry error tracking will be turned off.",
     "integrations.sentry.aria.enabled": "Sentry integration enabled",
     "integrations.sentry.feedback.credentials_saved": "Sentry credentials saved.",
     "integrations.sentry.feedback.reset": "Sentry configuration cleared.",
     "integrations.turnstile.title": "Cloudflare Turnstile",
-    "integrations.turnstile.description":
-      "Bot protection for email signup and Google sign-in when the user has no team.",
+    "integrations.turnstile.description": "Bot protection for email signup and Google sign-in when the user has no team.",
     "integrations.turnstile.site_key": "Site Key",
-    "integrations.turnstile.site_key_hint":
-      "Public key from Cloudflare Turnstile. Shown on the signup form and when Google sign-in needs a bot check.",
+    "integrations.turnstile.site_key_hint": "Public key from Cloudflare Turnstile. Shown on the signup form and when Google sign-in needs a bot check.",
     "integrations.turnstile.secret_key": "Secret Key",
     "integrations.turnstile.secret_key_placeholder": "0x4AAAAAAA…",
-    "integrations.turnstile.secret_key_placeholder_saved":
-      "Saved — leave blank to keep unchanged",
-    "integrations.turnstile.hint":
-      "When active, email signup and Google sign-in without a team require Cloudflare Turnstile verification.",
+    "integrations.turnstile.secret_key_placeholder_saved": "Saved — leave blank to keep unchanged",
+    "integrations.turnstile.hint": "When active, email signup and Google sign-in without a team require Cloudflare Turnstile verification.",
     "integrations.turnstile.reset": "Clear configuration",
     "integrations.turnstile.reset.confirm_title": "Clear Turnstile configuration?",
-    "integrations.turnstile.reset.confirm_description":
-      "Keys will be deleted and bot checks on login/signup will be turned off.",
+    "integrations.turnstile.reset.confirm_description": "Keys will be deleted and bot checks on login/signup will be turned off.",
     "integrations.turnstile.aria.enabled": "Turnstile integration enabled",
     "integrations.turnstile.feedback.credentials_saved": "Turnstile credentials saved.",
     "integrations.turnstile.feedback.reset": "Turnstile configuration cleared.",
@@ -3017,28 +2488,20 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "errors.integrations_configure_failed": "Could not complete Google OAuth configuration.",
     "errors.integrations_reset_failed": "Could not clear Google OAuth configuration.",
     "errors.integrations_not_configured": "Complete the integration configuration first.",
-    "errors.integrations_credentials_missing":
-      "Google OAuth Client ID or Secret is missing. Save credentials before configuring.",
+    "errors.integrations_credentials_missing": "Google OAuth Client ID or Secret is missing. Save credentials before configuring.",
     "errors.integrations_client_id_required": "Enter the Google OAuth Client ID.",
     "errors.integrations_forbidden": "You do not have permission to configure integrations.",
-    "errors.integrations_microsoft_configure_failed":
-      "Could not complete Microsoft OAuth configuration.",
-    "errors.integrations_microsoft_reset_failed":
-      "Could not clear Microsoft OAuth configuration.",
-    "errors.integrations_microsoft_not_configured":
-      "Complete Microsoft OAuth configuration first.",
-    "errors.integrations_microsoft_credentials_missing":
-      "Microsoft Client ID or Secret is missing. Save credentials before configuring.",
-    "errors.integrations_microsoft_client_id_required":
-      "Enter the Microsoft Application (client) ID.",
+    "errors.integrations_microsoft_configure_failed": "Could not complete Microsoft OAuth configuration.",
+    "errors.integrations_microsoft_reset_failed": "Could not clear Microsoft OAuth configuration.",
+    "errors.integrations_microsoft_not_configured": "Complete Microsoft OAuth configuration first.",
+    "errors.integrations_microsoft_credentials_missing": "Microsoft Client ID or Secret is missing. Save credentials before configuring.",
+    "errors.integrations_microsoft_client_id_required": "Enter the Microsoft Application (client) ID.",
     "errors.integrations_resend_from_required": "Enter the Resend From email address.",
     "errors.integrations_resend_api_key_required": "Enter the Resend API Key.",
     "errors.integrations_resend_not_enabled": "Resend integration is not enabled.",
     "errors.integrations_resend_send_failed": "Could not send email through Resend.",
-    "errors.integrations_resend_from_unverified":
-      "The From address must be on a domain verified in Resend. Gmail and other public mailboxes cannot be used.",
-    "errors.integrations_resend_reply_to_invalid":
-      "Enter a valid Reply-To email address.",
+    "errors.integrations_resend_from_unverified": "The From address must be on a domain verified in Resend. Gmail and other public mailboxes cannot be used.",
+    "errors.integrations_resend_reply_to_invalid": "Enter a valid Reply-To email address.",
     "errors.integrations_umami_website_id_required": "Enter the Umami Website ID.",
     "errors.integrations_umami_script_required": "Enter the Umami Script URL.",
     "errors.integrations_sentry_environment_required": "Enter the Sentry Environment.",
@@ -3049,8 +2512,7 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "errors.integrations_stripe_secret_required": "Enter the Stripe Secret key.",
     "errors.integrations_stripe_webhook_required": "Enter the Stripe webhook signing secret.",
     "errors.integrations_stripe_not_enabled": "Stripe integration is not enabled.",
-    "errors.integrations_stripe_invalid_key":
-      "The Stripe API key is invalid. An administrator must fix it in Integrations.",
+    "errors.integrations_stripe_invalid_key": "The Stripe API key is invalid. An administrator must fix it in Integrations.",
     "errors.integrations_stripe_checkout_failed": "Could not create a Stripe payment.",
     "errors.billing_forbidden": "You do not have permission to manage team billing.",
     "errors.billing_not_configured": "Payment plans are not enabled on this system.",
@@ -3058,21 +2520,16 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "errors.billing_already_subscribed": "This team already has a Stripe subscription.",
     "errors.billing_no_subscription": "Start a team subscription first.",
     "errors.billing_no_pending_seats": "There are no seats waiting for payment.",
-    "errors.billing_only_free_seat":
-      "The team owner's seat is free. Buy a paid seat to invite others.",
-    "errors.billing_checkout_invalid":
-      "The payment session is invalid or incomplete.",
+    "errors.billing_only_free_seat": "The team owner's seat is free. Buy a paid seat to invite others.",
+    "errors.billing_checkout_invalid": "The payment session is invalid or incomplete.",
     "errors.billing_cancel_failed": "Failed to cancel subscription.",
     "errors.billing_resume_failed": "Failed to resume subscription.",
-    "site_payment_plans.page.subtitle":
-      "Enable payment plans and assign frontend modules to each plan",
+    "site_payment_plans.page.subtitle": "Enable payment plans and assign frontend modules to each plan",
     "site_payment_plans.enable.section": "Payment plans",
-    "site_payment_plans.enable.hint":
-      "When enabled, teams only see modules included in their active payment plan. When disabled, all globally enabled modules are available to every team.",
+    "site_payment_plans.enable.hint": "When enabled, teams only see modules included in their active payment plan. When disabled, all globally enabled modules are available to every team.",
     "site_payment_plans.enable.label": "Enable payment plans",
     "site_payment_plans.enable.saved": "Payment plans setting saved.",
-    "site_payment_plans.enable.stripe_required":
-      "Payment plans can be turned on only after the Stripe integration is configured and enabled.",
+    "site_payment_plans.enable.stripe_required": "Payment plans can be turned on only after the Stripe integration is configured and enabled.",
     "site_payment_plans.list.title": "Plans",
     "site_payment_plans.list.empty": "No payment plans yet.",
     "site_payment_plans.list.prices": "Prices",
@@ -3087,23 +2544,19 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "site_payment_plans.form.name": "Name",
     "site_payment_plans.form.description": "Description",
     "site_payment_plans.form.is_free": "Free plan",
-    "site_payment_plans.form.is_free_hint":
-      "Always available at no cost. Prices are not required, and the plan does not expire for the team.",
+    "site_payment_plans.form.is_free_hint": "Always available at no cost. Prices are not required, and the plan does not expire for the team.",
     "site_payment_plans.list.free": "Free",
     "site_payment_plans.form.modules": "Modules in this plan",
     "site_payment_plans.form.modules_empty": "No globally enabled frontend modules.",
     "site_payment_plans.form.max_members": "Max team users",
-    "site_payment_plans.form.max_members_hint":
-      "How many team users are allowed on this free plan.",
+    "site_payment_plans.form.max_members_hint": "How many team users are allowed on this free plan.",
     "site_payment_plans.form.prices": "Prices per user (EUR)",
-    "site_payment_plans.form.prices_hint":
-      "The price is per user. Fill only the periods you offer. Empty periods are hidden on the landing page. Use a dot as decimal separator, e.g. 9.00.",
+    "site_payment_plans.form.prices_hint": "The price is per user. Fill only the periods you offer. Empty periods are hidden on the landing page. Use a dot as decimal separator, e.g. 9.00.",
     "site_payment_plans.form.price_month": "Month",
     "site_payment_plans.form.price_quarter": "Quarter",
     "site_payment_plans.form.price_year": "Year",
     "site_payment_plans.form.early_bird_prices": "Early Bird prices per user (EUR)",
-    "site_payment_plans.form.early_bird_prices_hint":
-      "These prices apply to Early Bird seats and are also per user. You can leave unused periods empty.",
+    "site_payment_plans.form.early_bird_prices_hint": "These prices apply to Early Bird seats and are also per user. You can leave unused periods empty.",
     "site_payment_plans.period.month_short": "/ mo",
     "site_payment_plans.period.quarter_short": "/ qtr",
     "site_payment_plans.period.year_short": "/ yr",
@@ -3112,26 +2565,22 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "site_payment_plans.feedback.saved": "Payment plan saved.",
     "site_payment_plans.feedback.deleted": "Payment plan deleted.",
     "site_payment_plans.delete.confirm_title": "Delete payment plan?",
-    "site_payment_plans.delete.confirm_description":
-      "The plan will be removed from teams that had it assigned.",
+    "site_payment_plans.delete.confirm_description": "The plan will be removed from teams that had it assigned.",
     "site_payment_plans.trial.section": "Trial period",
-    "site_payment_plans.trial.hint":
-      "A new team receives this plan for the given number of days right after registration. Without a trial plan, a new team has no access until a plan is assigned manually.",
+    "site_payment_plans.trial.hint": "A new team receives this plan for the given number of days right after registration. Without a trial plan, a new team has no access until a plan is assigned manually.",
     "site_payment_plans.trial.field_plan": "Plan for new teams",
     "site_payment_plans.trial.plan_none": "No trial",
     "site_payment_plans.trial.field_days": "Trial days",
     "site_payment_plans.trial.days_hint": "Between 1 and 365 days.",
     "site_payment_plans.trial.saved": "Trial settings saved.",
     "site_payment_plans.early_bird.section": "Early Bird",
-    "site_payment_plans.early_bird.hint":
-      "Global limit of Early Bird seats (not teams). A purchased seat is Early Bird if seats remain in the pool. If a user is removed and the seat is not filled before the cycle ends, that Early Bird seat is lost and does not return to the pool. 0 disables Early Bird.",
+    "site_payment_plans.early_bird.hint": "Global limit of Early Bird seats (not teams). A purchased seat is Early Bird if seats remain in the pool. If a user is removed and the seat is not filled before the cycle ends, that Early Bird seat is lost and does not return to the pool. 0 disables Early Bird.",
     "site_payment_plans.early_bird.field_limit": "Seat count",
     "site_payment_plans.early_bird.claimed": "Used seats: {claimed} / {limit}",
     "site_payment_plans.early_bird.claimed_off": "Used seats: {claimed} (off)",
     "site_payment_plans.early_bird.saved": "Early Bird limit saved.",
     "frontend_modules.create.title": "New module",
-    "frontend_modules.create.description":
-      "Add a unique module key, for example `reports` or `inventory.sync`.",
+    "frontend_modules.create.description": "Add a unique module key, for example `reports` or `inventory.sync`.",
     "frontend_modules.create.key_placeholder": "Module key",
     "frontend_modules.feedback.key_required": "Enter a module key.",
     "frontend_modules.feedback.created": "Module added.",
@@ -3140,17 +2589,13 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "frontend_modules.table.key": "Key",
     "frontend_modules.table.empty": "No modules yet.",
     "frontend_modules.aria.enabled": "{key} enabled",
-    "frontend_modules.google_drive.toggle_locked":
-      "First configure and enable the Google OAuth integration (Administration → Integrations).",
-    "frontend_modules.onedrive.toggle_locked":
-      "First configure and enable the Microsoft OAuth integration (Administration → Integrations).",
+    "frontend_modules.google_drive.toggle_locked": "First configure and enable the Google OAuth integration (Administration → Integrations).",
+    "frontend_modules.onedrive.toggle_locked": "First configure and enable the Microsoft OAuth integration (Administration → Integrations).",
     "frontend_modules.delete.confirm_title": "Delete module?",
-    "frontend_modules.delete.confirm_description":
-      "Module {key} will be permanently deleted.",
+    "frontend_modules.delete.confirm_description": "Module {key} will be permanently deleted.",
     "admin.users.create": "New user",
     "admin.users.empty": "No users yet.",
-    "admin.users.help.password":
-      "The user can set a password with Forgot password.",
+    "admin.users.help.password": "The user can set a password with Forgot password.",
     "admin.users.feedback.created": "User added.",
     "admin.users.feedback.saved": "User saved.",
     "admin.users.feedback.deleted": "User deleted.",
@@ -3174,15 +2619,13 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "admin.teams.plan.plan_summary_paid": "{moduleCount} modules · priced per user",
     "admin.teams.plan.field_until": "Valid until",
     "admin.teams.plan.until_hint": "Leave empty for no end date. Format: YYYY-MM-DD.",
-    "admin.teams.plan.free_hint":
-      "A free plan is always active. Payment status and an end date are not required.",
+    "admin.teams.plan.free_hint": "A free plan is always active. Payment status and an end date are not required.",
     "admin.teams.plan.paid": "Paid",
     "admin.teams.plan.trial": "Trial",
     "admin.teams.plan.early_bird": "Early Bird",
     "admin.teams.plan.early_bird_seats": "Early Bird seats: {count}",
     "admin.teams.plan.saved": "Team plan saved.",
-    "admin.teams.plan.status_required":
-      "Select at least one status: paid or trial.",
+    "admin.teams.plan.status_required": "Select at least one status: paid or trial.",
     "admin.teams.members.description": "Team user list.",
     "admin.teams.members.loading": "Loading users…",
     "admin.teams.members.count": "{count} users",
@@ -3190,8 +2633,7 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "admin.teams.members.load_failed": "Failed to load users.",
     "admin.teams.form.description": "Set the team name and appearance.",
     "admin.teams.delete.confirm_prefix": "Delete team",
-    "admin.teams.delete.confirm_suffix":
-      "? Lists, tasks and files will also be deleted.",
+    "admin.teams.delete.confirm_suffix": "? Lists, tasks and files will also be deleted.",
     "admin.statuses.add": "New status",
     "admin.statuses.empty": "No statuses yet.",
     "admin.statuses.order": "Order",
@@ -3200,8 +2642,7 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "admin.statuses.group": "Group",
     "admin.statuses.id": "ID (unique code)",
     "admin.statuses.drag": "Reorder",
-    "admin.statuses.form.description":
-      "Set the names for each language, color, and group.",
+    "admin.statuses.form.description": "Set the names for each language, color, and group.",
     "admin.statuses.feedback.created": "Status added.",
     "admin.statuses.feedback.saved": "Status saved.",
     "admin.statuses.feedback.deleted": "Status deleted.",
@@ -3213,10 +2654,8 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "admin.file_types.mime": "MIME type",
     "admin.file_types.icon": "Icon",
     "admin.file_types.color": "Color",
-    "admin.file_types.hint":
-      "Configure which file extensions can be uploaded in the tree and subtasks.",
-    "admin.file_types.form.description":
-      "Set the extension, MIME type, Font Awesome icon, and color.",
+    "admin.file_types.hint": "Configure which file extensions can be uploaded in the tree and subtasks.",
+    "admin.file_types.form.description": "Set the extension, MIME type, Font Awesome icon, and color.",
     "admin.file_types.feedback.created": "File type added.",
     "admin.file_types.feedback.saved": "File type saved.",
     "admin.file_types.feedback.deleted": "File type deleted.",
@@ -3225,10 +2664,8 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "admin.roles.add": "New role",
     "admin.roles.empty": "No default roles yet.",
     "admin.roles.system": "System",
-    "admin.roles.inherit_hint":
-      "These roles and permissions are assigned to new teams. Existing teams are not changed.",
-    "admin.roles.form.description":
-      "Set the role names for each language and access to system sections.",
+    "admin.roles.inherit_hint": "These roles and permissions are assigned to new teams. Existing teams are not changed.",
+    "admin.roles.form.description": "Set the role names for each language and access to system sections.",
     "admin.roles.feedback.saved": "Role saved.",
     "admin.roles.delete.confirm_prefix": "Delete role",
     "admin.roles.nav_count": "{count} of {total}",
@@ -3245,8 +2682,7 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "common.default": "Default",
     "common.key": "Key",
     "site_languages.create.title": "New language",
-    "site_languages.create.description":
-      "Add a system UI language, for example de, fr or en-US.",
+    "site_languages.create.description": "Add a system UI language, for example de, fr or en-US.",
     "site_languages.create.select_placeholder": "Choose a language",
     "site_languages.create.make_default": "Set the new language as default",
     "site_languages.feedback.select_language": "Choose a language.",
@@ -3255,23 +2691,19 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "site_languages.feedback.status_saved": "Language status saved.",
     "site_languages.feedback.default_saved": "Default language saved.",
     "site_languages.feedback.deleted": "Language deleted.",
-    "site_languages.feedback.default_cannot_deactivate":
-      "The default language cannot be deactivated.",
+    "site_languages.feedback.default_cannot_deactivate": "The default language cannot be deactivated.",
     "site_languages.aria.active": "{name} active",
     "site_languages.aria.default": "{name} default language",
     "site_languages.delete.title": "Delete language?",
     "site_languages.delete.confirm_prefix": "Delete language",
-    "site_languages.delete.confirm_suffix":
-      "? Translation values for this language will be removed.",
+    "site_languages.delete.confirm_suffix": "? Translation values for this language will be removed.",
     "site_languages.delete.default_disabled": "The default language cannot be deleted",
-    "site_translations.help":
-      "Search by key and translation text. The edit form shows all languages at once.",
+    "site_translations.help": "Search by key and translation text. The edit form shows all languages at once.",
     "site_translations.search.placeholder": "Search translations...",
     "site_translations.create.action": "New translation",
     "site_translations.table.translations": "Translations",
     "site_translations.empty": "No translations found.",
-    "site_translations.form.description":
-      "Enter the key and translation values for each language.",
+    "site_translations.form.description": "Enter the key and translation values for each language.",
     "site_translations.feedback.key_required": "Enter a translation key.",
     "site_translations.feedback.saved": "Translation saved.",
     "site_translations.feedback.created": "Translation added.",
@@ -3281,32 +2713,23 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "site_translations.delete.bundled_disabled": "Code translations cannot be deleted",
     "site_settings.form.system_name": "System name",
     "site_settings.form.legal_email": "Legal email",
-    "site_settings.form.legal_email_hint":
-      "This address is shown in the privacy policy for data-processing requests.",
+    "site_settings.form.legal_email_hint": "Shown in the privacy policy and terms for data processing and legal contact.",
     "site_settings.form.resend_title": "Resend email",
-    "site_settings.form.resend_hint":
-      "Messages are sent from the From address; replies go to the Reply-To address.",
-    "site_settings.form.resend_disabled":
-      "Resend is not configured, so emails are not sent.",
-    "site_settings.form.logo_color_hint":
-      "If no logo is uploaded, the avatar uses system initials on the chosen background.",
+    "site_settings.form.resend_hint": "Messages are sent from the From address; replies go to the Reply-To address.",
+    "site_settings.form.resend_disabled": "Resend is not configured, so emails are not sent.",
+    "site_settings.form.logo_color_hint": "If no logo is uploaded, the avatar uses system initials on the chosen background.",
     "site_settings.form.slogan": "Slogan",
-    "site_settings.form.slogan_hint":
-      "Enter a slogan for each system language.",
+    "site_settings.form.slogan_hint": "Enter a slogan for each system language.",
     "site_settings.form.logo": "Logo",
-    "site_settings.form.logo_hint":
-      "PNG, SVG, JPG, or WEBP up to 1.5 MB. Shown in the header.",
+    "site_settings.form.logo_hint": "PNG, SVG, JPG, or WEBP up to 1.5 MB. Shown in the header.",
     "site_settings.form.favicon": "Favicon",
-    "site_settings.form.favicon_hint":
-      "ICO, PNG, or SVG up to 1.5 MB. If no favicon is set, the logo or initials avatar is used in the browser tab.",
+    "site_settings.form.favicon_hint": "ICO, PNG, or SVG up to 1.5 MB. If no favicon is set, the logo or initials avatar is used in the browser tab.",
     "site_settings.form.image.drop": "Drop an image here or",
     "site_settings.form.image.remove": "Remove image",
     "site_settings.form.display.title": "Dates and time",
-    "site_settings.form.display.description":
-      "Default format across the system: dates, time, and calendar week start.",
+    "site_settings.form.display.description": "Default format across the system: dates, time, and calendar week start.",
     "site_settings.form.week_start_day": "First day of the week",
-    "site_settings.form.week_start_day_hint":
-      "Choose which day starts the week in calendars.",
+    "site_settings.form.week_start_day_hint": "Choose which day starts the week in calendars.",
     "site_settings.form.week_start_day.monday": "Monday",
     "site_settings.form.week_start_day.sunday": "Sunday",
     "site_settings.form.date_format": "Date format",
@@ -3316,24 +2739,23 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "site_settings.form.date_format.m/d/Y": "MM/DD/YYYY (08/19/2026)",
     "site_settings.form.date_format.d.m.Y": "DD.MM.YY (19.08.26)",
     "site_settings.form.date_separator": "Date separator",
-    "site_settings.form.date_separator_hint":
-      "Separator between date parts in display.",
+    "site_settings.form.date_separator_hint": "Separator between date parts in display.",
     "site_settings.form.date_separator.dot": "Period (.)",
     "site_settings.form.date_separator.dash": "Hyphen (-)",
     "site_settings.form.date_separator.slash": "Slash (/)",
     "site_settings.form.date_separator.space": "Space",
     "site_settings.form.time_format": "Time format",
-    "site_settings.form.time_format_hint":
-      "Choose between 12-hour (AM/PM) or 24-hour clock.",
+    "site_settings.form.time_format_hint": "Choose between 12-hour (AM/PM) or 24-hour clock.",
     "site_settings.form.time_format.24": "24-hour clock",
     "site_settings.form.time_format.12": "12-hour clock (AM/PM)",
+    "site_settings.form.timezone": "Server timezone",
+    "site_settings.form.timezone_hint": "Default timezone for the whole system and users without their own setting.",
     "site_settings.feedback.saved": "System settings saved.",
     "site_settings.preview.title": "Preview",
     "site_settings.preview.date": "Date:",
     "site_settings.preview.time": "Time:",
     "site_settings.preview.datetime": "Date and time:",
-    "site_settings.preview.description":
-      "These values are used in the browser title, tab icon, and page description metadata.",
+    "site_settings.preview.description": "These values are used in the browser title, tab icon, and page description metadata.",
     "site_settings.preview.last_saved": "Last saved:",
     "nav.expand": "Expand",
     "nav.collapse": "Collapse",
@@ -3342,33 +2764,26 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "breadcrumb.label": "Path",
     "team.page.subtitle": "All team users. Invite a new user with the plus icon.",
     "team.invite.title": "Invite team user",
-    "team.invite.description":
-      "Enter an email and choose a role. They will complete their profile on first sign-in.",
-    "team.invite.resend_required":
-      "A new email needs Resend enabled. Existing users still get an in-app notification.",
+    "team.invite.description": "Enter an email and choose a role. They will complete their profile on first sign-in.",
+    "team.invite.resend_required": "A new email needs Resend enabled. Existing users still get an in-app notification.",
     "team.invite.button": "Invite",
     "team.invite.purchasing_seat": "Buying a seat…",
     "team.invite.seat_purchased_title": "Seat purchased",
-    "team.invite.seat_purchased_description":
-      "One paid seat is ready. You can invite a user now.",
+    "team.invite.seat_purchased_description": "One paid seat is ready. You can invite a user now.",
     "team.invite.sending": "Sending…",
     "team.invite.accepted": "Invitation accepted.",
     "team.invite.rejected": "Invitation declined.",
     "team.invite.pending": "Awaiting confirmation",
     "team.invite.pending_payment": "Awaiting payment",
-    "team.invite.saved_awaiting_payment":
-      "Invitation saved. The user will get access after the seat is paid.",
-    "team.invite.awaiting_payment_page":
-      "The team has not paid for a seat yet. You can accept the invitation after payment.",
+    "team.invite.saved_awaiting_payment": "Invitation saved. The user will get access after the seat is paid.",
+    "team.invite.awaiting_payment_page": "The team has not paid for a seat yet. You can accept the invitation after payment.",
     "team.invite.resend": "Resend invitation",
     "team.invite.resending": "Sending…",
     "team.invite.resent": "Invitation sent again.",
-    "team.invite.resent_no_email":
-      "Email was not sent. Share the invite link manually.",
+    "team.invite.resent_no_email": "Email was not sent. Share the invite link manually.",
     "team.invite.copy_link": "Copy invitation link",
     "team.invite.link_copied": "Invitation link copied.",
-    "team.invited_no_email":
-      "Invitation saved. Email was not sent — share the link manually.",
+    "team.invited_no_email": "Invitation saved. Email was not sent — share the link manually.",
     "team.member.remove": "Remove from team",
     "team.member.remove_confirm_title": "Remove user?",
     "team.member.remove_confirm_description": "{name} will lose access to the team.",
@@ -3377,56 +2792,38 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "team.member.leave_title": "Leave team",
     "team.member.leave_description": "You will lose access to {team}.",
     "team.member.leave_confirm_title": "Leave team?",
-    "team.member.leave_confirm_description":
-      "You will lose access to {team}. This cannot be undone.",
+    "team.member.leave_confirm_description": "You will lose access to {team}. This cannot be undone.",
     "team.member.leaving": "Leaving…",
     "team.member.left": "You left the team.",
     "team.invite.page.title": "Team invitation",
-    "team.invite.page.description":
-      "{inviter} invited you to join the team “{team}”.",
-    "team.invite.page.login_required":
-      "Sign in with {email} to accept this invitation.",
+    "team.invite.page.description": "{inviter} invited you to join the team “{team}”.",
+    "team.invite.page.login_required": "Sign in with {email} to accept this invitation.",
     "team.invite.page.accept": "Join team",
     "team.invite.page.reject": "Decline invitation",
-    "team.billing.menu_description":
-      "Seats, invoices and payment for new users",
+    "team.billing.menu_description": "Seats, invoices and payment for new users",
     "team.billing.title": "Subscriptions",
-    "team.billing.subtitle":
-      "Paid seats for the team. New users get access only after a paid seat.",
+    "team.billing.subtitle": "Paid seats for the team. New users get access only after a paid seat.",
     "team.billing.plans_disabled": "Payment plans are not enabled on this system.",
-    "team.billing.stripe_disabled":
-      "Stripe is not enabled. An administrator configures it in Integrations.",
-    "team.billing.past_due":
-      "The last invoice was not paid. Stripe will retry; after the deadline the paid plan will be deactivated.",
-    "team.billing.members_blocked_banner":
-      "Other team users cannot use the system because the subscription has not been paid.",
+    "team.billing.stripe_disabled": "Stripe is not enabled. An administrator configures it in Integrations.",
+    "team.billing.past_due": "The last invoice was not paid. Stripe will retry; after the deadline the paid plan will be deactivated.",
+    "team.billing.members_blocked_banner": "Other team users cannot use the system because the subscription has not been paid.",
     "team.billing.members_blocked_banner_action": "Subscriptions",
-    "team.billing.subscription_ending_banner":
-      "Subscription ends in {countdown}. After that, other team users will not be able to use the system.",
-    "team.billing.subscription_ending_countdown":
-      "{months} mo {days} d {hours} h {minutes} min",
+    "team.billing.subscription_ending_banner": "Subscription ends in {countdown}. After that, other team users will not be able to use the system.",
+    "team.billing.subscription_ending_countdown": "{months} mo {days} d {hours} h {minutes} min",
     "team.billing.subscription_ending_expired": "Ending soon",
     "team.billing.manage_subscription": "Manage subscription",
     "team.billing.cancel_subscription": "Cancel subscription",
-    "team.billing.cancel_subscription_hint":
-      "If you cancel, the subscription ends at the end of the current billing period. After that, other users will be blocked.",
+    "team.billing.cancel_subscription_hint": "If you cancel, the subscription ends at the end of the current billing period. After that, other users will be blocked.",
     "team.billing.cancel_subscription_confirm_title": "Cancel subscription?",
-    "team.billing.cancel_subscription_confirm_body":
-      "The subscription will end at the current period end. Until then the team can keep using the system. After that, other users will be blocked.",
-    "team.billing.cancel_subscription_success":
-      "Subscription will end at period end. Access stays active until then.",
-    "team.billing.cancel_scheduled_hint":
-      "Subscription will end at period end. Access stays active until then.",
+    "team.billing.cancel_subscription_confirm_body": "The subscription will end at the current period end. Until then the team can keep using the system. After that, other users will be blocked.",
+    "team.billing.cancel_subscription_success": "Subscription will end at period end. Access stays active until then.",
+    "team.billing.cancel_scheduled_hint": "Subscription will end at period end. Access stays active until then.",
     "team.billing.resume_subscription": "Resume subscription",
-    "team.billing.resume_subscription_success":
-      "Subscription resumed. Automatic cancellation was removed.",
+    "team.billing.resume_subscription_success": "Subscription resumed. Automatic cancellation was removed.",
     "team.billing.member_paywall.title": "Team subscription not paid",
-    "team.billing.member_paywall.description":
-      "Your team has not paid for the subscription yet. System content is unavailable until a team manager pays for the subscription.",
-    "team.billing.member_paywall.hint":
-      "Contact your team manager so they can complete payment in Subscriptions.",
-    "team.billing.member_paywall.switch_hint":
-      "You can switch to another team or create a new one.",
+    "team.billing.member_paywall.description": "Your team has not paid for the subscription yet. System content is unavailable until a team manager pays for the subscription.",
+    "team.billing.member_paywall.hint": "Contact your team manager so they can complete payment in Subscriptions.",
+    "team.billing.member_paywall.switch_hint": "You can switch to another team or create a new one.",
     "team.billing.seats_paid": "Paid seats",
     "team.billing.seats_occupied": "Occupied seats",
     "team.billing.seats_open": "Open seats",
@@ -3435,8 +2832,7 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "team.billing.choose_plan": "Choose a paid plan",
     "team.billing.next_invoice": "Next invoice",
     "team.billing.pending_list": "Users waiting for payment",
-    "team.billing.prorata_hint":
-      "About {amount} until the next cycle, then one monthly charge for all seats.",
+    "team.billing.prorata_hint": "About {amount} until the next cycle, then one monthly charge for all seats.",
     "team.billing.no_pending": "No seats are waiting for payment.",
     "team.billing.choose_period": "Period",
     "team.billing.period_toggle": "Switch between month and year",
@@ -3445,39 +2841,27 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "team.billing.period.year": "Year",
     "team.billing.period.quarter": "Quarter",
     "team.billing.period.month": "Month",
-    "team.billing.checkout_success":
-      "Payment received. Seats will unlock after confirmation.",
+    "team.billing.checkout_success": "Payment received. Seats will unlock after confirmation.",
     "team.billing.checkout_cancel": "Payment cancelled.",
-    "team.billing.open_seat_banner":
-      "The team has {count} paid seat still available. You can invite someone else into it.",
-    "team.billing.open_seat_banner_until":
-      "The team has {count} paid seat still available until {until}. You can invite someone else into it.",
+    "team.billing.open_seat_banner": "The team has {count} paid seat still available. You can invite someone else into it.",
+    "team.billing.open_seat_banner_until": "The team has {count} paid seat still available until {until}. You can invite someone else into it.",
     "team.billing.open_seat_invite": "Invite",
     "team.billing.buy_extra": "Buy 1 extra seat",
-    "team.billing.open_until_hint":
-      "Open seats stay until {until}. If they are not filled, the next invoice charges for occupied seats only.",
-    "team.billing.extra_prorata":
-      "About {amount} until the next cycle for one extra seat.",
-    "team.billing.extra_renewal_hint":
-      "If the extra seat is still empty at the end of the cycle, the next invoice will not include it.",
+    "team.billing.open_until_hint": "Open seats stay until {until}. If they are not filled, the next invoice charges for occupied seats only.",
+    "team.billing.extra_prorata": "About {amount} until the next cycle for one extra seat.",
+    "team.billing.extra_renewal_hint": "If the extra seat is still empty at the end of the cycle, the next invoice will not include it.",
     "team.billing.new_user_prorata_title": "New users without an open seat",
-    "team.billing.new_user_prorata_notice":
-      "If you invite a new user who does not have a paid open seat, they will be invoiced for the remaining period until {until} – the end of the team subscription period. After that, all users are included on one team invoice.",
-    "team.billing.new_user_prorata_notice_no_date":
-      "If you invite a new user who does not have a paid open seat, they will be invoiced for the remaining period until the end of the team subscription period. After that, all users are included on one team invoice.",
-    "team.billing.free_owner_seat":
-      "The team owner's seat is free. You pay only for seats above 1.",
+    "team.billing.new_user_prorata_notice": "If you invite a new user but the team has no open paid seat, you must purchase an additional seat for the remaining period until {until} before the invitation can be sent. After that, all users are included on the team subscription.",
+    "team.billing.new_user_prorata_notice_no_date": "If you invite a new user but the team has no open paid seat, you must purchase an additional seat for the remaining period until the end of the team subscription period before the invitation can be sent. After that, all users are included on the team subscription.",
+    "team.billing.free_owner_seat": "The team owner's seat is free. You pay only for seats above 1.",
     "team.billing.plus_vat": "+ VAT",
     "team.billing.checkout_seats": "{count} paid users",
-    "team.billing.checkout_preview":
-      "{count} × {price} = {total}{period} {vat}",
-    "team.billing.checkout_preview_split":
-      "{earlyCount} × {earlyPrice} + {regularCount} × {regularPrice} = {total}{period} {vat}",
+    "team.billing.checkout_preview": "{count} × {price} = {total}{period} {vat}",
+    "team.billing.checkout_preview_split": "{earlyCount} × {earlyPrice} + {regularCount} × {regularPrice} = {total}{period} {vat}",
     "team.billing.checkout_period_month": "/mo",
     "team.billing.checkout_period_year": "/yr",
     "team.billing.checkout_period_quarter": "/qtr",
-    "team.billing.checkout_vat_hint":
-      "VAT is calculated for your country in Stripe checkout.",
+    "team.billing.checkout_vat_hint": "VAT is calculated for your country in Stripe checkout.",
     "team.seat.free_owner": "Free seat (owner)",
     "team.seat.awaiting_payment": "Awaiting seat payment",
     "team.seat.awaiting_accept": "Awaiting acceptance",
@@ -3515,13 +2899,11 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "team.roles.feedback.created": "Role added.",
     "team.roles.feedback.deleted": "Role deleted.",
     "team.roles.delete.title": "Delete role?",
-    "team.roles.delete.description":
-      "Role “{name}” will be deleted. Users will be moved to User.",
+    "team.roles.delete.description": "Role “{name}” will be deleted. Users will be moved to User.",
     "team.roles.delete.system_disabled": "System roles cannot be deleted",
     "team.access.title": "Team role access",
     "team.access.menu_description": "Set access for each role",
-    "team.access.description":
-      "Choose which sections and actions each role can use.",
+    "team.access.description": "Choose which sections and actions each role can use.",
     "team.access.nav": "Sections",
     "team.access.column": "Access",
     "team.access.toggle_all": "All access: {section}",
@@ -3541,8 +2923,7 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "team.access.actions.lists_archive_view": "View list archive",
     "team.access.actions.subtasks_archive_view": "View subtask archive",
     "team.access.actions.files_upload": "Upload files",
-    "team.access.actions.files_upload_subtask":
-      "Upload attachments to subtasks",
+    "team.access.actions.files_upload_subtask": "Upload attachments to subtasks",
     "team.access.actions.files_view": "View attachments",
     "team.access.actions.files_forward": "Forward attachments",
     "team.access.actions.team_options": "Team options",
@@ -3556,8 +2937,7 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "team.access.actions.team_integrations_onedrive": "Manage OneDrive",
     "team.access.actions.team_delete": "Delete team",
     "team.access.actions.settings_save": "Save settings",
-    "team.access.owner_locked":
-      "The owner role has full access and cannot be changed.",
+    "team.access.owner_locked": "The owner role has full access and cannot be changed.",
     "team.access.owner_only": "Only the team owner can change role access.",
     "team.access.feedback.saved": "Role access saved.",
     "team.access.denied": "You do not have access to this section.",
@@ -3565,10 +2945,8 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "team.detail.loading": "Loading team user",
     "team.detail.missing": "Team user not found",
     "team.detail.missing_description": "This team user is no longer available.",
-    "team.detail.placeholder":
-      "You can customize the team user profile in the next step.",
-    "lists.page.subtitle":
-      "Lists such as Projects and Clients. Tasks live under each list.",
+    "team.detail.placeholder": "You can customize the team user profile in the next step.",
+    "lists.page.subtitle": "Lists such as Projects and Clients. Tasks live under each list.",
     "lists.overview.subtitle": "A summary of all tasks and subtasks.",
     "lists.overview.empty": "No tasks yet.",
     "lists.overview.add_task": "Add task",
@@ -3576,23 +2954,17 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "lists.statuses.menu_description": "System and list statuses",
     "tasks.statuses.title": "Statuses",
     "tasks.statuses.menu_description": "Subtask statuses for this task",
-    "tasks.statuses.description":
-      "Customize statuses for this task's subtasks. List statuses are inherited; hide them with the eye icon. Add task-specific statuses and delete those.",
+    "tasks.statuses.description": "Customize statuses for this task's subtasks. List statuses are inherited; hide them with the eye icon. Add task-specific statuses and delete those.",
     "tasks.statuses.list.badge": "List",
     "tasks.statuses.task.badge": "Task",
-    "lists.statuses.description":
-      "Drag statuses between groups to change the group automatically. A system status can be renamed for this team. Each group must keep at least one status. Not started and closed can have only one status.",
+    "lists.statuses.description": "Drag statuses between groups to change the group automatically. A system status can be renamed for this team. Each group must keep at least one status. Not started and closed can have only one status.",
     "lists.statuses.system": "System statuses",
-    "lists.statuses.system.hint":
-      "These statuses are defined by the system. They can be used in every list.",
+    "lists.statuses.system.hint": "These statuses are defined by the system. They can be used in every list.",
     "lists.statuses.custom": "List statuses",
-    "lists.statuses.custom.hint":
-      "Only in this list. Visible to team users.",
+    "lists.statuses.custom.hint": "Only in this list. Visible to team users.",
     "lists.statuses.custom.empty": "No list statuses yet.",
-    "lists.statuses.form.description":
-      "Enter the status name, color, and group.",
-    "lists.statuses.form.system_description":
-      "The name applies only to this team. Other teams keep the system name.",
+    "lists.statuses.form.description": "Enter the status name, color, and group.",
+    "lists.statuses.form.system_description": "The name applies only to this team. Other teams keep the system name.",
     "lists.statuses.hide": "Hide",
     "lists.statuses.show": "Show",
     "lists.statuses.hidden": "Hidden",
@@ -3603,13 +2975,10 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "lists.statuses.group.empty": "No statuses in this group yet.",
     "lists.automations.title": "Automations",
     "lists.automations.menu_description": "Automatic actions in the list",
-    "lists.automations.description":
-      "Configure automatic actions for list „{name}”.",
-    "lists.automations.description_generic":
-      "Configure automatic actions for this list.",
+    "lists.automations.description": "Configure automatic actions for list „{name}”.",
+    "lists.automations.description_generic": "Configure automatic actions for this list.",
     "lists.automations.folder_created.title": "Folder created",
-    "lists.automations.folder_created.description":
-      "When a new folder is created, automatically add the selected template's folders, tasks, and subtasks inside it.",
+    "lists.automations.folder_created.description": "When a new folder is created, automatically add the selected template's folders, tasks, and subtasks inside it.",
     "lists.automations.folder_created.apply_template": "Apply template",
     "lists.automations.template_label": "Template",
     "lists.automations.template_placeholder": "Choose a template",
@@ -3620,29 +2989,22 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "lists.automations.add": "Add automation",
     "lists.automations.add_rule": "Add rule",
     "lists.automations.enabled": "Enabled",
-    "lists.automations.no_templates":
-      "Create a team template first before linking it to an automation.",
+    "lists.automations.no_templates": "Create a team template first before linking it to an automation.",
     "lists.automations.delete.title": "Delete automation?",
-    "lists.automations.delete.description":
-      "The automation will no longer run.",
+    "lists.automations.delete.description": "The automation will no longer run.",
     "lists.automations.status_assign.title": "Status change → assign person",
-    "lists.automations.status_assign.description":
-      "When task status changes to the selected one, automatically add a person.",
+    "lists.automations.status_assign.description": "When task status changes to the selected one, automatically add a person.",
     "lists.automations.trigger_status": "Trigger status",
     "lists.automations.assignee": "Person",
     "lists.automations.select_status": "Select status",
     "lists.automations.select_person": "Select person",
     "lists.automations.target_status": "Target status",
     "lists.automations.checklist_status.title": "Checklist completed → status change",
-    "lists.automations.checklist_status.description":
-      "When all checklist items are checked, automatically change the status.",
+    "lists.automations.checklist_status.description": "When all checklist items are checked, automatically change the status.",
     "lists.automations.subtasks_status.title": "All subtasks completed → parent status",
-    "lists.automations.subtasks_status.description":
-      "When all subtasks are closed, automatically change the parent task's status.",
-    "lists.automations.needs_statuses_and_members":
-      "The list needs statuses and team users configured.",
-    "lists.automations.needs_statuses":
-      "The list needs at least one status configured.",
+    "lists.automations.subtasks_status.description": "When all subtasks are closed, automatically change the parent task's status.",
+    "lists.automations.needs_statuses_and_members": "The list needs statuses and team users configured.",
+    "lists.automations.needs_statuses": "The list needs at least one status configured.",
     "dashboard.subtitle": "Your tasks and work grouped by lists.",
     "dashboard.my_tasks": "My tasks",
     "dashboard.my_tasks.empty": "You have no assigned tasks yet.",
@@ -3654,8 +3016,7 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "dashboard.search.kind_subtask": "Subtask",
     "dashboard.search.untitled": "Untitled",
     "lists.add.title": "New list",
-    "lists.add.description":
-      "A list groups projects or clients, each with its own tasks and settings.",
+    "lists.add.description": "A list groups projects or clients, each with its own tasks and settings.",
     "lists.fields.name": "Name",
     "lists.fields.name_placeholder": "e.g. Projects, Clients",
     "lists.fields.icon_and_name": "Icon & name",
@@ -3718,23 +3079,17 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "lists.private.no_members": "No other connected team users.",
     "lists.access.default": "Default permission",
     "lists.access.customize_roles": "Customize by role",
-    "lists.access.customize_roles.hint":
-      "Turn on to set a different permission for each role. The default permission then no longer applies to everyone.",
-    "lists.access.roles_hint":
-      "Choose what each role can do in this list.",
+    "lists.access.customize_roles.hint": "Turn on to set a different permission for each role. The default permission then no longer applies to everyone.",
+    "lists.access.roles_hint": "Choose what each role can do in this list.",
     "lists.access.none": "No access",
     "lists.access.full_edit": "Full edit",
-    "lists.access.full_edit.hint":
-      "Can create tasks, edit list settings, and delete this list.",
+    "lists.access.full_edit.hint": "Can create tasks, edit list settings, and delete this list.",
     "lists.access.edit": "Edit",
-    "lists.access.edit.hint":
-      "Can edit tasks and list settings. Can't create tasks or delete this list.",
+    "lists.access.edit.hint": "Can edit tasks and list settings. Can't create tasks or delete this list.",
     "lists.access.comment": "Comment",
-    "lists.access.comment.hint":
-      "Can comment. Assignees can set task status. Can't edit list settings.",
+    "lists.access.comment.hint": "Can comment. Assignees can set task status. Can't edit list settings.",
     "lists.access.view": "View only",
-    "lists.access.view.hint":
-      "Read-only. Can't edit tasks, list settings, or comment.",
+    "lists.access.view.hint": "Read-only. Can't edit tasks, list settings, or comment.",
     "lists.updated": "List saved.",
     "lists.edit.title": "Edit list",
     "lists.edit.description": "Change the list name, icon or description.",
@@ -3757,96 +3112,70 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "create.task.description": "Work with status and due date",
     "create.task_list.title": "Task list",
     "create.task_list.description": "Work with status, due date and subtasks",
-    "templates.menu_description":
-      "Prepare task lists to add into a folder later",
-    "google_drive.menu_description":
-      "Send uploaded files to the team Google Drive",
-    "google_drive.page.subtitle":
-      "Connect a team Google account. By default files are stored on Drive; optionally also on the {SYSTEM_NAME} server.",
+    "templates.menu_description": "Prepare task lists to add into a folder later",
+    "google_drive.menu_description": "Send uploaded files to the team Google Drive",
+    "google_drive.page.subtitle": "Connect a team Google account. By default files are stored on Drive; optionally also on the {SYSTEM_NAME} server.",
     "google_drive.connect.title": "Google account",
-    "google_drive.connect.description":
-      "Access is limited to files created by {SYSTEM_NAME} (Drive scope: drive.file).",
+    "google_drive.connect.description": "Access is limited to files created by {SYSTEM_NAME} (Drive scope: drive.file).",
     "google_drive.connect.button": "Sign in with Google",
     "google_drive.status.connected": "Connected",
     "google_drive.status.disconnected": "Not connected",
-    "google_drive.not_configured":
-      "Google OAuth integration is not configured (Administration → Integrations).",
-    "google_drive.configure_owner_only":
-      "Only users with the Manage Google Drive permission can change this integration (or the owner / system admin).",
+    "google_drive.not_configured": "Google OAuth integration is not configured (Administration → Integrations).",
+    "google_drive.configure_owner_only": "Only users with the Manage Google Drive permission can change this integration (or the owner / system admin).",
     "google_drive.disconnect": "Disconnect Google account",
     "google_drive.disconnect.title": "Disconnect Google account?",
-    "google_drive.disconnect.description":
-      "New files will no longer be sent to Drive. Existing Drive files stay.",
+    "google_drive.disconnect.description": "New files will no longer be sent to Drive. Existing Drive files stay.",
     "google_drive.folder.title": "Drive folder",
-    "google_drive.folder.description":
-      "Files go into this folder, keeping the list and folder structure.",
+    "google_drive.folder.description": "Files go into this folder, keeping the list and folder structure.",
     "google_drive.folder.path": "Drive folder path",
-    "google_drive.folder.hint":
-      "For example {SYSTEM_NAME} or Team/Files. The folder is created if it does not exist yet.",
-    "google_drive.upload.enabled":
-      "Upload files to Google Drive when they are added in {SYSTEM_NAME}",
+    "google_drive.folder.hint": "For example {SYSTEM_NAME} or Team/Files. The folder is created if it does not exist yet.",
+    "google_drive.upload.enabled": "Upload files to Google Drive when they are added in {SYSTEM_NAME}",
     "google_drive.storage.drive_primary": "Store files on Google Drive",
-    "google_drive.storage.drive_primary_hint":
-      "On by default: {SYSTEM_NAME} keeps only a link. If unchecked, file content is also saved on the {SYSTEM_NAME} server.",
+    "google_drive.storage.drive_primary_hint": "On by default: {SYSTEM_NAME} keeps only a link. If unchecked, file content is also saved on the {SYSTEM_NAME} server.",
     "google_drive.feedback.connected": "Google account connected.",
     "google_drive.feedback.disconnected": "Google account disconnected.",
     "google_drive.feedback.saved": "Google Drive settings saved.",
-    "onedrive.menu_description":
-      "Send uploaded files to the team OneDrive",
-    "onedrive.page.subtitle":
-      "Connect a team Microsoft account so uploaded files are also stored in OneDrive.",
+    "onedrive.menu_description": "Send uploaded files to the team OneDrive",
+    "onedrive.page.subtitle": "Connect a team Microsoft account so uploaded files are also stored in OneDrive.",
     "onedrive.connect.title": "Microsoft account",
-    "onedrive.connect.description":
-      "Access to files {SYSTEM_NAME} creates in the team OneDrive (scope: Files.ReadWrite).",
+    "onedrive.connect.description": "Access to files {SYSTEM_NAME} creates in the team OneDrive (scope: Files.ReadWrite).",
     "onedrive.connect.button": "Sign in with Microsoft",
     "onedrive.status.connected": "Connected",
     "onedrive.status.disconnected": "Not connected",
-    "onedrive.not_configured":
-      "Microsoft OAuth is not configured (Administration → Integrations).",
-    "onedrive.configure_owner_only":
-      "Only users with the Manage OneDrive permission can change this integration (or the owner / system admin).",
+    "onedrive.not_configured": "Microsoft OAuth is not configured (Administration → Integrations).",
+    "onedrive.configure_owner_only": "Only users with the Manage OneDrive permission can change this integration (or the owner / system admin).",
     "onedrive.disconnect": "Disconnect Microsoft account",
     "onedrive.disconnect.title": "Disconnect Microsoft account?",
-    "onedrive.disconnect.description":
-      "New files will no longer be sent to OneDrive. Existing OneDrive files stay.",
+    "onedrive.disconnect.description": "New files will no longer be sent to OneDrive. Existing OneDrive files stay.",
     "onedrive.folder.title": "OneDrive folder",
-    "onedrive.folder.description":
-      "Files go into this folder, keeping the list and folder structure.",
+    "onedrive.folder.description": "Files go into this folder, keeping the list and folder structure.",
     "onedrive.folder.path": "OneDrive folder path",
-    "onedrive.folder.hint":
-      "For example {SYSTEM_NAME} or Team/Files. The folder is created if it does not exist yet.",
-    "onedrive.upload.enabled":
-      "Upload files to OneDrive when they are added in {SYSTEM_NAME}",
+    "onedrive.folder.hint": "For example {SYSTEM_NAME} or Team/Files. The folder is created if it does not exist yet.",
+    "onedrive.upload.enabled": "Upload files to OneDrive when they are added in {SYSTEM_NAME}",
     "onedrive.feedback.connected": "Microsoft account connected.",
     "onedrive.feedback.disconnected": "Microsoft account disconnected.",
     "onedrive.feedback.saved": "OneDrive settings saved.",
-    "templates.page.subtitle":
-      "Predefined task lists and subtask lists that the team can later add into a folder.",
+    "templates.page.subtitle": "Predefined task lists and subtask lists that the team can later add into a folder.",
     "templates.empty": "No templates yet.",
     "templates.add.title": "New template",
-    "templates.add.description":
-      "Give it a name. Then add task lists and their subtasks.",
+    "templates.add.description": "Give it a name. Then add task lists and their subtasks.",
     "templates.fields.name_placeholder": "For example, New site",
     "templates.fields.description_placeholder": "Short template description",
     "templates.created": "Template added.",
     "templates.saved": "Template saved.",
     "templates.deleted": "Template deleted.",
     "templates.delete.title": "Delete template?",
-    "templates.delete.description":
-      "Template “{name}” will be deleted. Existing tasks stay.",
+    "templates.delete.description": "Template “{name}” will be deleted. Existing tasks stay.",
     "templates.detail.loading": "Loading template",
     "templates.detail.missing": "Template not found",
-    "templates.detail.subtitle":
-      "Define task lists, subtasks, assignees, and checklists. Then add the template into a folder.",
+    "templates.detail.subtitle": "Define task lists, subtasks, assignees, and checklists. Then add the template into a folder.",
     "templates.items.title": "Task lists",
-    "templates.items.help":
-      "Set default assignees (people or groups) and checklists for each task and subtask. Applying the template creates tasks and sends notifications.",
+    "templates.items.help": "Set default assignees (people or groups) and checklists for each task and subtask. Applying the template creates tasks and sends notifications.",
     "templates.items.add_subtask": "Subtask",
     "templates.items.add_folder": "Folder",
     "templates.items.subtasks_label": "Subtasks",
     "templates.items.add_checklist": "Checklist",
-    "templates.statuses.description":
-      "Define subtask statuses for this template task. They are created automatically when the template is applied to a folder.",
+    "templates.statuses.description": "Define subtask statuses for this template task. They are created automatically when the template is applied to a folder.",
     "templates.statuses.configured": "Custom statuses ({count})",
     "templates.fields.folder_placeholder": "Folder name",
     "templates.items.empty": "No task lists yet.",
@@ -3890,15 +3219,12 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "lists.progress.completed": "Completed {done} of {total}",
     "lists.windows.files_empty": "This list has no files yet.",
     "lists.windows.files_add": "Add file",
-    "lists.windows.files_add_description":
-      "Enter a file name to add it to this list.",
+    "lists.windows.files_add_description": "Enter a file name to add it to this list.",
     "lists.windows.files_name_placeholder": "For example, Plan.pdf",
     "lists.windows.files_note_placeholder": "Short note",
     "lists.windows.files_created": "File added.",
-    "files.created_without_preview":
-      "File added, but its contents could not be saved for preview.",
-    "files.upload.rejected":
-      "File type not allowed. Allowed: {types}",
+    "files.created_without_preview": "File added, but its contents could not be saved for preview.",
+    "files.upload.rejected": "File type not allowed. Allowed: {types}",
     "files.upload.allowed_types": "Allowed file types: {types}",
     "files.upload.progress_title": "Uploading file",
     "files.upload.progress_count": "{current} of {total}",
@@ -3908,8 +3234,7 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "files.detail.missing_description": "This file is no longer available.",
     "files.detail.empty_description": "Uploaded file.",
     "files.detail.empty_content": "This file has no stored contents.",
-    "files.detail.too_large":
-      "This file cannot be previewed. It is too large or was not stored.",
+    "files.detail.too_large": "This file cannot be previewed. It is too large or was not stored.",
     "files.detail.preview_unavailable": "This file type cannot be previewed in the browser.",
     "files.detail.download": "Download",
     "files.preview.progress_title": "Opening file",
@@ -3948,8 +3273,7 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "tasks.edit.list_description": "Change the task list name or description.",
     "tasks.list_deleted": "Task list deleted.",
     "tasks.delete.list_title": "Delete task list?",
-    "tasks.delete.list_description":
-      "Task list “{name}” and its subtasks will be deleted.",
+    "tasks.delete.list_description": "Task list “{name}” and its subtasks will be deleted.",
     "tasks.fields.title": "Title",
     "tasks.fields.title_placeholder": "Task title",
     "tasks.fields.description_placeholder": "Short task description",
@@ -4040,8 +3364,7 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "subtasks.history.file_removed": "File removed: {name}",
     "subtasks.history.file_renamed": "File renamed: {from} → {to}",
     "subtasks.history.file_forwarded": "File “{name}” forwarded",
-    "subtasks.history.file_forwarded_bounced":
-      "The email was not delivered. Check the address and send again.",
+    "subtasks.history.file_forwarded_bounced": "The email was not delivered. Check the address and send again.",
     "subtasks.history.checklist": "Checklist changed.",
     "subtasks.history.checklist_added": "Checklist added: {title}",
     "subtasks.history.checklist_removed": "Checklist removed: {title}",
@@ -4052,10 +3375,8 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "subtasks.history.checklist_item_checked": "Checked: \"{item}\" ({checklist})",
     "subtasks.history.checklist_item_unchecked": "Unchecked: \"{item}\" ({checklist})",
     "subtasks.history.reordered": "Order changed.",
-    "settings.page.subtitle":
-      "Team and user settings. This section can be customized later.",
-    "settings.page.placeholder":
-      "Language, notifications and team settings will appear here later.",
+    "settings.page.subtitle": "Team and user settings. This section can be customized later.",
+    "settings.page.placeholder": "Language, notifications and team settings will appear here later.",
     "team.filter.all": "Everyone",
     "todo.page.title": "Team tasks",
     "todo.page.subtitle": "Add, assign and move tasks between columns.",
@@ -4089,29 +3410,22 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "todo.updated": "Task saved.",
     "todo.deleted": "Task deleted.",
     "todo.defaults.standup": "Morning standup notes",
-    "todo.defaults.standup_description":
-      "Prepare a short summary of yesterday's work.",
+    "todo.defaults.standup_description": "Prepare a short summary of yesterday's work.",
     "todo.defaults.client_call": "Call the client about deadlines",
-    "todo.defaults.client_call_description":
-      "Confirm next week's delivery date.",
+    "todo.defaults.client_call_description": "Confirm next week's delivery date.",
     "todo.defaults.review": "Review this week's tasks",
-    "todo.defaults.review_description":
-      "Close finished work and reassign what is left.",
+    "todo.defaults.review_description": "Close finished work and reassign what is left.",
     "todo.defaults.docs": "Update internal documentation",
-    "todo.defaults.docs_description":
-      "Write down how the team adds and assigns tasks.",
+    "todo.defaults.docs_description": "Write down how the team adds and assigns tasks.",
     "teams.switcher.label": "Team menu",
     "teams.add": "Add a new team",
     "teams.add.title": "New team",
-    "teams.add.description":
-      "Enter a name, choose avatar appearance, or add a logo.",
-    "teams.required.description":
-      "Create your team to get started, or accept an invitation from notifications.",
+    "teams.add.description": "Enter a name, choose avatar appearance, or add a logo.",
+    "teams.required.description": "Create your team to get started, or accept an invitation from notifications.",
     "teams.rank.owner": "Owner",
     "teams.required.empty_members": "Create a team first.",
     "dashboard.no_team.title": "No active team",
-    "dashboard.no_team.description":
-      "Create a new team or join via invitation. Check notifications in the top bar — you can accept team invites there.",
+    "dashboard.no_team.description": "Create a new team or join via invitation. Check notifications in the top bar — you can accept team invites there.",
     "dashboard.no_team.unread_notifications": "You have {count} unread notifications.",
     "teams.fields.name_placeholder": "e.g. Studio, Clients",
     "teams.logo.drop": "Drop a logo here or",
@@ -4131,8 +3445,7 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "notifications.dismiss": "Dismiss",
     "notifications.dismiss_all": "Delete all",
     "notifications.dismiss_all_title": "Delete all notifications?",
-    "notifications.dismiss_all_description":
-      "All visible notifications will be permanently deleted.",
+    "notifications.dismiss_all_description": "All visible notifications will be permanently deleted.",
     "notifications.just_now": "just now",
     "notifications.item.assigned": "{name} assigned you “{task}”",
     "notifications.item.assigned_other": "{name} assigned {assignee} to “{task}”",
@@ -4143,75 +3456,54 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "notifications.item.file": "{name} added a file to “{task}”",
     "notifications.item.status_changed": "{name} changed status of “{task}”",
     "notifications.item.task_updated": "{name} updated “{task}”",
-    "notifications.item.team_invite":
-      "{name} invited you to join the team “{team}”",
-    "notifications.item.team_invite_rejected":
-      "{email} declined the invitation to join “{team}”",
-    "notifications.item.seat_open":
-      "A paid team seat is free until {until}. You can invite someone else into it.",
-    "notifications.item.seat_open_no_date":
-      "A paid team seat is free. You can invite someone else into it.",
-    "notifications.item.billing_due":
-      "From next month ({until}) you will pay for team users.",
-    "notifications.item.billing_due_no_date":
-      "From next month you will pay for team users.",
+    "notifications.item.team_invite": "{name} invited you to join the team “{team}”",
+    "notifications.item.team_invite_rejected": "{email} declined the invitation to join “{team}”",
+    "notifications.item.seat_open": "A paid team seat is free until {until}. You can invite someone else into it.",
+    "notifications.item.seat_open_no_date": "A paid team seat is free. You can invite someone else into it.",
+    "notifications.item.billing_due": "From next month ({until}) you will pay for team users.",
+    "notifications.item.billing_due_no_date": "From next month you will pay for team users.",
     "notifications.settings.title": "Notification settings",
-    "notifications.settings.description":
-      "Choose which events appear in the bell menu.",
+    "notifications.settings.description": "Choose which events appear in the bell menu.",
     "notifications.settings.group.tasks": "Tasks",
     "notifications.settings.group.reminders": "Reminders",
     "notifications.settings.group.team": "Team",
     "notifications.settings.saved": "Notification settings saved.",
     "notifications.settings.load_failed": "Could not load notification settings.",
-    "notifications.settings.load_failed_hint":
-      "Showing default settings. Saving will sync preferences with the server.",
-    "notifications.settings.save_failed":
-      "Could not save notification settings.",
+    "notifications.settings.load_failed_hint": "Showing default settings. Saving will sync preferences with the server.",
+    "notifications.settings.save_failed": "Could not save notification settings.",
     "notifications.settings.kind.assigned": "Assigned to me",
-    "notifications.settings.kind.assigned.hint":
-      "When you are assigned to a task or subtask.",
+    "notifications.settings.kind.assigned.hint": "When you are assigned to a task or subtask.",
     "notifications.settings.kind.unassigned": "Removed from task",
-    "notifications.settings.kind.unassigned.hint":
-      "When you are removed from task assignees.",
+    "notifications.settings.kind.unassigned.hint": "When you are removed from task assignees.",
     "notifications.settings.kind.comment": "Comment on my task",
-    "notifications.settings.kind.comment.hint":
-      "When someone comments on a task you are involved in.",
+    "notifications.settings.kind.comment.hint": "When someone comments on a task you are involved in.",
     "notifications.settings.kind.file": "File added to task",
-    "notifications.settings.kind.file.hint":
-      "When a file is added to a task you are involved in.",
+    "notifications.settings.kind.file.hint": "When a file is added to a task you are involved in.",
     "notifications.settings.kind.status_changed": "Task status changed",
-    "notifications.settings.kind.status_changed.hint":
-      "When status changes on a task you are involved in.",
+    "notifications.settings.kind.status_changed.hint": "When status changes on a task you are involved in.",
     "notifications.settings.kind.task_updated": "Other task updates",
-    "notifications.settings.kind.task_updated.hint":
-      "Dates, title, description, checklist, move, creation.",
+    "notifications.settings.kind.task_updated.hint": "Dates, title, description, checklist, move, creation.",
     "notifications.settings.kind.due": "Due date reminder",
     "notifications.settings.kind.due.hint": "Reminder that a subtask is due today.",
     "notifications.settings.kind.start": "Start a subtask",
     "notifications.settings.kind.start.hint": "Reminder that a subtask should be started.",
     "notifications.settings.kind.team_invite": "Team invitation",
-    "notifications.settings.kind.team_invite.hint":
-      "When you are invited to join a team.",
+    "notifications.settings.kind.team_invite.hint": "When you are invited to join a team.",
     "notifications.settings.kind.team_invite_rejected": "Invitation declined",
-    "notifications.settings.kind.team_invite_rejected.hint":
-      "When someone declines your team invitation.",
+    "notifications.settings.kind.team_invite_rejected.hint": "When someone declines your team invitation.",
     "notifications.settings.kind.seat_open": "Open paid seat",
-    "notifications.settings.kind.seat_open.hint":
-      "When a paid team seat stays available until the end of the billing cycle.",
+    "notifications.settings.kind.seat_open.hint": "When a paid team seat stays available until the end of the billing cycle.",
     "notifications.settings.kind.billing_due": "Team user billing",
-    "notifications.settings.kind.billing_due.hint":
-      "When paid plans are turned on and next month you will pay for users above 1.",
+    "notifications.settings.kind.billing_due.hint": "When paid plans are turned on and next month you will pay for users above 1.",
     "user_menu.label": "User menu",
     "user_menu.heading": "Account",
     "user_menu.notifications": "Notification settings",
     "user_menu.notifications_hint": "Choose which alerts you receive",
     "user_menu.calendar_hint": "Tasks in Apple or Google Calendar",
     "calendar.integration.title": "Calendar integration",
-    "calendar.integration.description":
-      "Show assigned tasks that have a due date in your calendar.",
+    "calendar.integration.description": "Show assigned tasks that have a due date in your calendar.",
     "calendar.integration.enable": "Show tasks in the calendar",
-    "calendar.integration.enable_hint":
-      "Only tasks you are assigned to that have a due date.",
+    "calendar.integration.enable_hint": "Only tasks you are assigned to that have a due date.",
     "calendar.integration.choose": "Which calendar",
     "calendar.provider.apple": "Apple Calendar",
     "calendar.provider.apple.hint": "Subscribe with a webcal or .ics link.",
@@ -4219,17 +3511,14 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "calendar.provider.google.hint": "Subscribe to the same .ics feed from URL.",
     "calendar.integration.apple_link": "Apple .ics link",
     "calendar.integration.google_link": "Google .ics link",
-    "calendar.integration.apple_help":
-      "Calendar → File → New Calendar Subscription, or open the link to add it in macOS Calendar.",
-    "calendar.integration.google_help":
-      "Google Calendar → Other calendars → plus → From URL. Google refreshes the feed every few hours. It will not subscribe to a local http:// localhost URL.",
+    "calendar.integration.apple_help": "Calendar → File → New Calendar Subscription, or open the link to add it in macOS Calendar.",
+    "calendar.integration.google_help": "Google Calendar → Other calendars → plus → From URL. Google refreshes the feed every few hours. It will not subscribe to a local http:// localhost URL.",
     "calendar.integration.open_apple": "Open in Calendar",
     "calendar.integration.open_google": "Add to Google Calendar",
     "calendar.integration.link_copied": "Calendar link copied.",
     "calendar.integration.regenerate": "Create a new link",
     "calendar.integration.regenerate_title": "Create a new calendar link?",
-    "calendar.integration.regenerate_description":
-      "The old link will stop working. You will need to subscribe again in the calendar.",
+    "calendar.integration.regenerate_description": "The old link will stop working. You will need to subscribe again in the calendar.",
     "calendar.integration.regenerated": "A new calendar link is ready.",
     "calendar.integration.feed_hidden": "The calendar link is saved. Create a new one with the button below — the old link will then stop working.",
     "calendar.integration.feed_once": "Copy the link now. After you close this window it will not be shown again.",
@@ -4266,15 +3555,15 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "account.pending_deletion.cancel": "Cancel account deletion",
     "account.pending_deletion.cancelling": "Cancelling…",
     "account.pending_deletion.cancel_success": "Account deletion was cancelled.",
-    "profile.page.placeholder":
-      "You can customize profile editing in the next step.",
+    "profile.page.placeholder": "You can customize profile editing in the next step.",
     "profile.personal.first_name": "First name",
     "profile.personal.last_name": "Last name",
     "profile.personal.feedback.saved": "Profile saved.",
     "profile.display.title": "Dates and time",
-    "profile.display.description":
-      "Customize date, time and calendar display for yourself. An empty field uses the system default.",
+    "profile.display.description": "Customize date, time and calendar display for yourself. An empty field uses the system default.",
     "profile.display.system_default": "System default ({value})",
+    "profile.display.timezone": "Timezone",
+    "profile.display.timezone_hint": "Dates with time are shown in this timezone. An empty field uses the server timezone.",
     "profile.display.reset": "Reset to system default",
     "profile.display.feedback.saved": "Personal display settings saved.",
     "actions.save": "Save",
@@ -4320,25 +3609,23 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "settings.language.description": "App interface language.",
     "landing.preview.member_anna": "Anna",
     "landing.preview.member_janis": "Jānis",
-    "meta.home.description":
-      "A team work tool for lists, tasks and your team.",
+    "meta.home.description": "A team work tool for lists, tasks and your team.",
     "errors.db_not_configured": "Database is not configured.",
     "errors.name_required": "Enter a name.",
     "errors.first_name_required": "Enter a first name.",
     "errors.last_name_required": "Enter a last name.",
     "errors.email_invalid": "Enter a valid email address.",
+    "errors.invalid_timezone": "The selected timezone is not valid.",
     "errors.files_forward_missing": "Could not find the file contents to forward.",
     "errors.files_forward_too_large": "The file is too large to send by email (max 25 MB).",
     "errors.files_forward_subject_required": "Enter an email subject.",
     "errors.files_forward_reply_to_missing": "Your account does not have a valid email address for Reply-To.",
     "errors.files_forward_module_disabled": "Sending files by email is not enabled.",
-    "errors.files_forward_forbidden":
-      "You do not have permission to forward attachments.",
+    "errors.files_forward_forbidden": "You do not have permission to forward attachments.",
     "errors.user_exists": "A user with this email already exists.",
     "errors.user_create_failed": "Could not create the user.",
     "errors.user_profile_failed": "Could not save the user profile.",
-    "errors.user_admin_status_failed":
-      "User created, but the administrator status could not be saved.",
+    "errors.user_admin_status_failed": "User created, but the administrator status could not be saved.",
     "errors.user_not_found": "User not found.",
     "errors.last_admin": "The last administrator cannot be removed.",
     "errors.self_admin_remove": "You cannot remove your own administrator status.",
@@ -4382,8 +3669,7 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "errors.auth_email_unverified": "The email address is not verified with the provider.",
     "errors.auth_signup_failed": "Could not create the account.",
     "errors.auth_password_update_failed": "Could not update the password.",
-    "errors.auth_email_disabled":
-      "Email sign-in is unavailable until the Resend integration is configured and enabled.",
+    "errors.auth_email_disabled": "Email sign-in is unavailable until the Resend integration is configured and enabled.",
     "errors.auth_email_send_failed": "Could not send the confirmation email.",
     "errors.auth_password_reset_failed": "Could not send the password reset email.",
     "errors.email_templates_unknown": "Unknown email template.",
@@ -4396,14 +3682,12 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "errors.extension_file_type": "File type is not allowed.",
     "errors.extension_file_empty": "File is empty.",
     "errors.extension_file_too_large": "File exceeds the 25 MB limit.",
-    "errors.extension_file_needs_drive":
-      "Large file: enable the team Google Drive integration.",
+    "errors.extension_file_needs_drive": "Large file: enable the team Google Drive integration.",
     "errors.extension_upload_failed": "Could not attach the file.",
     "errors.extension_nothing_attached": "Nothing was attached.",
     "errors.extension_search_failed": "Could not search subtasks.",
     "errors.extension_uploads_disabled": "File upload is disabled.",
-    "errors.extension_subtask_upload_forbidden":
-      "You do not have permission to attach files to a subtask.",
+    "errors.extension_subtask_upload_forbidden": "You do not have permission to attach files to a subtask.",
     "errors.extension_invalid_body": "Invalid request body.",
     "errors.extension_task_required": "Select a subtask.",
     "errors.extension_title_required": "Enter a subtask title.",
@@ -4411,26 +3695,18 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "errors.extension_create_forbidden": "You cannot create a subtask here.",
     "errors.extension_list_required": "Select a list.",
     "errors.extension_gmail_client_id": "Gmail OAuth Client ID is missing in extension options.",
-    "errors.extension_gmail_auth":
-      "Gmail permission expired. Reconnect Gmail in the extension popup.",
+    "errors.extension_gmail_auth": "Gmail permission expired. Reconnect Gmail in the extension popup.",
     "errors.extension_gmail_fetch_failed": "Could not load the email from the Gmail API.",
     "errors.extension_gmail_message_id": "Could not find the Gmail message ID.",
-    "errors.extension_gmail_forbidden":
-      "Gmail API denied: enable Gmail API in the Google Cloud project and connect Gmail again (gmail.readonly scope).",
-    "errors.extension_gmail_not_found":
-      "Gmail could not find the message. Open the email in full view and try again.",
-    "errors.extension_auth_required":
-      "Sign in to the {SYSTEM_NAME} extension. The session lasts about 30 days, even if the website is closed.",
+    "errors.extension_gmail_forbidden": "Gmail API denied: enable Gmail API in the Google Cloud project and connect Gmail again (gmail.readonly scope).",
+    "errors.extension_gmail_not_found": "Gmail could not find the message. Open the email in full view and try again.",
+    "errors.extension_auth_required": "Sign in to the {SYSTEM_NAME} extension. The session lasts about 30 days, even if the website is closed.",
     "errors.extension_unknown": "Unknown error.",
-    "errors.extension_network":
-      "Could not reach the server. Check your connection and try again.",
-    "errors.extension_gmail_not_connected":
-      "Connect Gmail in the plugin first. The connection is also saved in {SYSTEM_NAME}.",
+    "errors.extension_network": "Could not reach the server. Check your connection and try again.",
+    "errors.extension_gmail_not_connected": "Connect Gmail in the plugin first. The connection is also saved in {SYSTEM_NAME}.",
     "errors.extension_plugin_disabled": "The Gmail plugin is disabled in the system.",
-    "errors.extension_team_drive_missing":
-      "This team has no Google Drive connected. The plugin will not work.",
-    "errors.extension_login_mfa":
-      "This account has MFA. Finish signing in on the {SYSTEM_NAME} page and try again.",
+    "errors.extension_team_drive_missing": "This team has no Google Drive connected. The plugin will not work.",
+    "errors.extension_login_mfa": "This account has MFA. Finish signing in on the {SYSTEM_NAME} page and try again.",
     "extension.gmail.title": "Add to subtask",
     "extension.gmail.back": "Back",
     "extension.gmail.waiting": "Waiting…",
@@ -4445,8 +3721,7 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "extension.gmail.check_all": "Check all",
     "extension.gmail.email_always": "Email content (.txt) is optional.",
     "extension.gmail.email_body": "Email content (.txt)",
-    "extension.gmail.email_body_hint":
-      "Uncheck if you do not want to attach the email text.",
+    "extension.gmail.email_body_hint": "Uncheck if you do not want to attach the email text.",
     "extension.gmail.too_large": "{size} — too large (>25 MB)",
     "extension.gmail.empty": "Nothing here",
     "extension.gmail.load_lists": "Loading lists…",
@@ -4479,94 +3754,69 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "extension.gmail.options.client_id": "Gmail OAuth Client ID",
     "extension.gmail.options.redirect": "Redirect URI (add it to the Google Cloud OAuth client):",
     "extension.gmail.options.connect": "Connect Gmail",
-    "extension.gmail.options.hint":
-      "Sign in to {SYSTEM_NAME} in the same Chrome profile. Attachments come through the Gmail API (up to 25 MB; larger files need team Google Drive).",
+    "extension.gmail.options.hint": "Sign in to {SYSTEM_NAME} in the same Chrome profile. Attachments come through the Gmail API (up to 25 MB; larger files need team Google Drive).",
     "extension.gmail.options.saved": "Saved.",
     "extension.gmail.options.invalid_url": "Invalid {SYSTEM_NAME} URL.",
-    "extension.gmail.options.need_client_id":
-      "Enter the Gmail OAuth Client ID first and save.",
+    "extension.gmail.options.need_client_id": "Enter the Gmail OAuth Client ID first and save.",
     "extension.gmail.options.connecting": "Google permission window is opening…",
     "extension.gmail.options.connected": "Gmail connected.",
-    "extension.gmail.options.connect_failed":
-      "Could not connect Gmail. Check Google OAuth and the Gmail API.",
+    "extension.gmail.options.connect_failed": "Could not connect Gmail. Check Google OAuth and the Gmail API.",
     "extension.gmail.options.missing_client_id": "Client ID is missing.",
     "extension.gmail.team.label": "Team",
-    "extension.gmail.team.drive_missing":
-      "This team has no Google Drive connected. The plugin will not work.",
+    "extension.gmail.team.drive_missing": "This team has no Google Drive connected. The plugin will not work.",
     "extension.gmail.connect_gmail": "Connect Gmail",
     "extension.gmail.reconnect_gmail": "Reconnect Gmail",
-    "extension.gmail.connect_gmail_hint":
-      "Custom-login accounts must connect Gmail here. The connection is also saved in {SYSTEM_NAME}.",
-    "extension.gmail.reconnect_gmail_hint":
-      "After system or OAuth changes, renew Gmail access here.",
+    "extension.gmail.connect_gmail_hint": "Custom-login accounts must connect Gmail here. The connection is also saved in {SYSTEM_NAME}.",
+    "extension.gmail.reconnect_gmail_hint": "After system or OAuth changes, renew Gmail access here.",
     "extension.gmail.bridge.title": "Connect Gmail",
     "extension.gmail.bridge.loading": "Preparing Gmail permissions…",
-    "extension.gmail.bridge.error":
-      "Could not prepare the session. Try again from the extension.",
+    "extension.gmail.bridge.error": "Could not prepare the session. Try again from the extension.",
     "extension.gmail.gmail_connected": "Gmail connected: {email}",
-    "extension.gmail.plugin_disabled":
-      "The Gmail plugin is disabled. Turn it on in Administration → Modules.",
+    "extension.gmail.plugin_disabled": "The Gmail plugin is disabled. Turn it on in Administration → Modules.",
     "extension.gmail.login_failed": "Could not sign in.",
     "extension.gmail.checking_app": "Loading {SYSTEM_NAME}…",
     "extension.gmail.login_done.title": "Signed in to {SYSTEM_NAME}",
-    "extension.gmail.login_done.body":
-      "You can close this window and return to the plugin.",
-    "extension.gmail.handoff.waiting":
-      "Wait until the plugin has received the session…",
+    "extension.gmail.login_done.body": "You can close this window and return to the plugin.",
+    "extension.gmail.handoff.waiting": "Wait until the plugin has received the session…",
     "extension.gmail.login_done.error_title": "Could not sign in",
-    "extension.gmail.login_done.error_body":
-      "Try again from the Gmail plugin.",
-    "extension.gmail.login_done.session_missing":
-      "No active browser session. Try again from the Gmail plugin.",
+    "extension.gmail.login_done.error_body": "Try again from the Gmail plugin.",
+    "extension.gmail.login_done.session_missing": "No active browser session. Try again from the Gmail plugin.",
     "extension.gmail.done.title": "Gmail connected",
-    "extension.gmail.done.body":
-      "Gmail is connected to {SYSTEM_NAME}. You can close this window and return to the plugin.",
+    "extension.gmail.done.body": "Gmail is connected to {SYSTEM_NAME}. You can close this window and return to the plugin.",
     "extension.gmail.done.error_title": "Could not connect Gmail",
-    "extension.gmail.done.error_body":
-      "Try again from the Gmail plugin. Make sure Google OAuth and the Gmail API are enabled.",
-    "errors.auth_google_disabled":
-      "Google sign-in is not enabled. Turn on Google OAuth in Administration → Integrations.",
+    "extension.gmail.done.error_body": "Try again from the Gmail plugin. Make sure Google OAuth and the Gmail API are enabled.",
+    "errors.auth_google_disabled": "Google sign-in is not enabled. Turn on Google OAuth in Administration → Integrations.",
     "errors.auth_google_failed": "Could not sign in with Google.",
-    "errors.auth_microsoft_disabled":
-      "Microsoft sign-in is not enabled. Turn on Microsoft OAuth in Administration → Integrations.",
+    "errors.auth_microsoft_disabled": "Microsoft sign-in is not enabled. Turn on Microsoft OAuth in Administration → Integrations.",
     "errors.auth_microsoft_failed": "Could not sign in with Microsoft.",
     "errors.team_invite_forbidden": "You do not have permission to invite users.",
     "errors.team_invite_already_member": "This email is already a team user.",
     "errors.team_invite_already_pending": "An invitation for this email is already pending.",
     "errors.team_invite_failed": "Could not send the invitation.",
     "errors.team_invite_email_failed": "Could not send the invitation email.",
-    "errors.team_invite_email_not_configured":
-      "You can invite a new team user by email only when the Resend integration is enabled.",
+    "errors.team_invite_email_not_configured": "You can invite a new team user by email only when the Resend integration is enabled.",
     "errors.clipboard_failed": "Could not copy the link.",
     "errors.calendar_load_failed": "Could not load calendar integration.",
     "errors.calendar_save_failed": "Could not save calendar integration.",
     "errors.calendar_provider_required": "Choose a calendar.",
     "errors.team_invite_not_found": "Invitation not found or no longer valid.",
-    "errors.team_invite_account_exists":
-      "An account already exists for this email. Sign in to accept the invitation.",
-    "errors.team_invite_email_mismatch":
-      "You must register with the invited email address.",
+    "errors.team_invite_account_exists": "An account already exists for this email. Sign in to accept the invitation.",
+    "errors.team_invite_email_mismatch": "You must register with the invited email address.",
     "errors.team_invite_accept_failed": "Could not accept the invitation.",
     "errors.team_invite_reject_failed": "Could not decline the invitation.",
     "errors.team_invite_not_pending": "This invitation is no longer pending.",
-    "errors.team_invite_seat_limit":
-      "The free plan user limit has been reached.",
-    "errors.team_invite_awaiting_payment":
-      "This invitation can be accepted only after the seat is paid.",
-    "errors.team_invite_pay_first":
-      "Pay for a seat first, then invite the user.",
+    "errors.team_invite_seat_limit": "The free plan user limit has been reached.",
+    "errors.team_invite_awaiting_payment": "This invitation can be accepted only after the seat is paid.",
+    "errors.team_invite_pay_first": "Pay for a seat first, then invite the user.",
     "errors.team_page_forbidden": "You do not have access to the team page.",
     "errors.team_member_remove_failed": "Could not remove the user.",
     "errors.team_member_remove_forbidden": "You do not have permission to remove this user.",
-    "errors.team_member_leave_owner":
-      "Team owners cannot leave. Transfer ownership first.",
+    "errors.team_member_leave_owner": "Team owners cannot leave. Transfer ownership first.",
     "unsaved_changes.title": "Leave without saving?",
-    "unsaved_changes.description":
-      "Are you sure you want to leave without saving? Unsaved changes will be lost.",
+    "unsaved_changes.description": "Are you sure you want to leave without saving? Unsaved changes will be lost.",
     "unsaved_changes.stay": "Keep editing",
     "unsaved_changes.leave": "Leave",
-    "errors.status_id_invalid":
-      "Status code is invalid. Use letters, numbers and underscores.",
+    "errors.status_id_invalid": "Status code is invalid. Use letters, numbers and underscores.",
     "errors.status_group_invalid": "Choose a status group.",
     "errors.status_exists": "A status with this code already exists.",
     "errors.status_create_failed": "Could not add the status.",
@@ -4580,87 +3830,124 @@ export const messages: { lv: Record<string, string>; en: Record<string, string> 
     "errors.status_update_failed": "Could not save the status.",
     "errors.status_delete_failed": "Could not delete the status.",
     "errors.status_reorder_failed": "Could not reorder statuses.",
-    "errors.status_group_min_one":
-      "Each group must have at least one status.",
-    "errors.status_closed_one_visible":
-      "Not started and closed can have only one status.",
-    "errors.status_singleton_group":
-      "Not started and closed can have only one status.",
+    "errors.status_group_min_one": "Each group must have at least one status.",
+    "errors.status_closed_one_visible": "Not started and closed can have only one status.",
+    "errors.status_singleton_group": "Not started and closed can have only one status.",
     "errors.file_extension_invalid": "The file extension is invalid.",
     "errors.file_extension_exists": "This extension is already configured.",
     "errors.file_mime_required": "Enter a MIME type.",
-    "errors.file_icon_invalid":
-      "The icon is invalid. Use a Font Awesome class, e.g. fas fa-file-pdf.",
+    "errors.file_icon_invalid": "The icon is invalid. Use a Font Awesome class, e.g. fas fa-file-pdf.",
     "errors.file_color_invalid": "The color code is invalid.",
     "errors.file_extension_create_failed": "Could not add the file type.",
     "errors.file_extension_update_failed": "Could not save the file type.",
     "errors.file_extension_delete_failed": "Could not delete the file type.",
     "errors.frontend_module_key_required": "Enter a module key.",
-    "errors.frontend_module_key_invalid":
-      "The key may only contain lowercase letters, numbers, dots, dashes, underscores and colons.",
+    "errors.frontend_module_key_invalid": "The key may only contain lowercase letters, numbers, dots, dashes, underscores and colons.",
     "errors.frontend_module_key_exists": "A module with this key already exists.",
     "errors.frontend_module_create_failed": "Could not create the module.",
     "errors.frontend_module_not_found": "Module not found.",
     "errors.frontend_module_status_save_failed": "Could not save the module status.",
     "errors.frontend_module_delete_failed": "Could not delete the module.",
-    "errors.frontend_module_google_oauth_required":
-      "Enable Google Drive only after the Google OAuth integration is configured and turned on.",
-    "errors.frontend_module_microsoft_oauth_required":
-      "Enable OneDrive only after the Microsoft OAuth integration is configured and turned on.",
+    "errors.frontend_module_google_oauth_required": "Enable Google Drive only after the Google OAuth integration is configured and turned on.",
+    "errors.frontend_module_microsoft_oauth_required": "Enable OneDrive only after the Microsoft OAuth integration is configured and turned on.",
     "errors.google_drive_forbidden": "You do not have permission to configure Google Drive.",
-    "errors.google_drive_module_disabled":
-      "The Google Drive or file upload module is not enabled.",
-    "errors.google_drive_not_configured":
-      "Google Drive OAuth is not configured on the server.",
+    "errors.google_drive_module_disabled": "The Google Drive or file upload module is not enabled.",
+    "errors.google_drive_not_configured": "Google Drive OAuth is not configured on the server.",
     "errors.google_drive_connect_failed": "Could not connect Google Drive.",
     "errors.google_drive_save_failed": "Could not save Google Drive settings.",
     "errors.google_drive_disconnect_failed": "Could not disconnect the Google account.",
     "errors.google_drive_upload_failed": "Could not upload the file to Google Drive.",
     "errors.google_drive_file_too_large": "The file is too large for Google Drive upload.",
     "errors.onedrive_forbidden": "You do not have permission to configure OneDrive.",
-    "errors.onedrive_module_disabled":
-      "The OneDrive or file upload module is not enabled.",
-    "errors.onedrive_not_configured":
-      "OneDrive OAuth is not configured on the server.",
+    "errors.onedrive_module_disabled": "The OneDrive or file upload module is not enabled.",
+    "errors.onedrive_not_configured": "OneDrive OAuth is not configured on the server.",
     "errors.onedrive_connect_failed": "Could not connect OneDrive.",
     "errors.onedrive_save_failed": "Could not save OneDrive settings.",
     "errors.onedrive_disconnect_failed": "Could not disconnect the Microsoft account.",
     "errors.onedrive_upload_failed": "Could not upload the file to OneDrive.",
     "errors.onedrive_file_too_large": "The file is too large for OneDrive upload.",
     "errors.payment_plan_key_required": "Enter a plan key.",
-    "errors.payment_plan_key_invalid":
-      "The key must use lowercase letters, digits, dots, hyphens, underscores and colons.",
+    "errors.payment_plan_key_invalid": "The key must use lowercase letters, digits, dots, hyphens, underscores and colons.",
     "errors.payment_plan_key_exists": "A plan with this key already exists.",
     "errors.payment_plan_name_required": "Enter a plan name in at least one language.",
-    "errors.payment_plan_price_invalid":
-      "Enter a valid price (0 or more) for each filled billing period.",
-    "errors.payment_plan_price_period_required":
-      "Enter at least one billing period price (month or year).",
+    "errors.payment_plan_price_invalid": "Enter a valid price (0 or more) for each filled billing period.",
+    "errors.payment_plan_price_period_required": "Enter at least one billing period price (month or year).",
     "errors.payment_plan_create_failed": "Could not create the payment plan.",
     "errors.payment_plan_save_failed": "Could not save the payment plan.",
     "errors.payment_plan_delete_failed": "Could not delete the payment plan.",
     "errors.payment_plan_not_found": "Payment plan not found.",
     "errors.payment_plan_id_required": "Plan is not specified.",
     "errors.payment_plan_modules_save_failed": "Could not save plan modules.",
-    "errors.payment_plan_max_members_invalid":
-      "Enter a valid user limit (1 to 10,000).",
+    "errors.payment_plan_max_members_invalid": "Enter a valid user limit (1 to 10,000).",
     "errors.team_payment_plan_save_failed": "Could not save the team plan.",
     "errors.early_bird_limit_reached": "Early Bird slot limit has been reached.",
     "errors.payment_plans_enable_save_failed": "Could not save the payment plans setting.",
-    "errors.payment_plans_stripe_required":
-      "Payment plans can be turned on only after the Stripe integration is configured and enabled.",
+    "errors.payment_plans_stripe_required": "Payment plans can be turned on only after the Stripe integration is configured and enabled.",
     "errors.trial_days_invalid": "Enter a trial length between 1 and 365 days.",
     "errors.trial_settings_save_failed": "Could not save trial settings.",
     "errors.early_bird_limit_invalid": "Enter a valid Early Bird slot limit (0 or more).",
     "errors.early_bird_save_failed": "Could not save the Early Bird limit.",
     "errors.feedback_title_required": "Enter a title.",
     "errors.feedback_body_required": "Enter a description.",
-    "errors.feedback_legal_email_missing":
-      "Legal email is not set in system settings.",
+    "errors.feedback_legal_email_missing": "Legal email is not set in system settings.",
     "errors.feedback_save_failed": "Could not save the message.",
     "errors.feedback_rate_limited": "Too many messages. Try again later.",
     "errors.feedback_vote_failed": "Could not save the vote.",
     "errors.feedback_list_failed": "Could not load feature requests.",
+    "legal.privacy.controller.identity_provider": "the {SYSTEM_NAME} service provider",
+    "legal.privacy.controller.identity_reg": "reg. no. {REG_NO}",
+    "legal.privacy.controller.identity_address": "registered address: {ADDRESS}",
+    "legal.privacy.data.p5": "Technical and security data: sign-in time, IP address, browser and device information, error logs (with PII redaction), bot check results (Cloudflare Turnstile), cookie consent choice and rate limiting records.",
+    "legal.privacy.data.p6": "Feedback: bug reports, feature requests and feedback submitted via the sidebar, with your email and free-text message.",
+    "legal.privacy.purpose.p5": "Email notifications about tasks, invitations and reminders - performance of a contract; some notifications can be limited in profile settings.",
+    "legal.privacy.recipients.p3": "We do not sell data or share it with third parties for advertising. Processors may handle data only on our instructions.",
+    "legal.privacy.transfers.p1": "Data is mainly stored in the European Economic Area (EEA). Some processors (e.g. Stripe, Google, Microsoft, Cloudflare, Sentry) may also process data outside the EEA, for example in the USA, when you use the related integration.",
+    "legal.privacy.transfers.p2": "In those cases we rely on European Commission adequacy decisions, EU Standard Contractual Clauses or other GDPR-approved mechanisms provided by the processor.",
+    "legal.privacy.transfers.title": "5. International transfers",
+    "legal.privacy.retention.p3": "Cookie consent is kept for up to 180 days. A Remember me sign-in session is kept for up to 30 days. Technical logs and security records are kept only as long as needed for security and legal requirements.",
+    "legal.privacy.rights.p3": "If processing is based on consent (optional cookies), you may withdraw it at any time in cookie settings. You may lodge a complaint with the Data State Inspectorate (www.dvi.gov.lv).",
+    "legal.privacy.integrations.p1": "If you connect Google Drive, OneDrive, the Gmail extension or a calendar subscription, the relevant provider processes data under its own privacy policy. We store only the tokens and metadata needed for the integration to work.",
+    "legal.privacy.integrations.p2": "The Gmail Chrome extension works only after you sign in and grant access. The extension may read email metadata and content to attach emails to tasks or create subtasks.",
+    "legal.privacy.integrations.title": "9. Integrations and third-party services",
+    "legal.terms.account.p3": "When signing in with Google or Microsoft, you agree that the provider shares profile data (name, email) needed to create or access your account.",
+    "legal.terms.billing.p1": "Paid plans are billed through Stripe. Prices, billing period and seat count are shown on the billing page before payment. The team manager seat is usually free; you pay for additional user seats according to the plan.",
+    "legal.terms.billing.p2": "You can cancel a subscription at period end in the billing section; access continues until the paid period ends. Refunds follow applicable consumer law and Stripe terms.",
+    "legal.terms.billing.p3": "Stripe processes payment and invoice data under its own privacy policy. Payment card details are not stored in our database.",
+    "legal.terms.billing.p4": "Each team has one Stripe subscription. Billing is per user seat: the team owner or manager seat is free (1 seat); each additional active user requires a separate paid seat according to the selected plan and billing period (monthly or yearly).",
+    "legal.terms.billing.p5": "Team subscription charges are paid by the team owner or another member with permission to manage team settings and billing (Team → Billing). Other team users do not pay individually; their access to team data and features depends on an active, paid team subscription.",
+    "legal.terms.billing.p6": "If you invite a new user but the team has no open paid seat, you must purchase an additional seat before the invitation can be accepted. A new seat added mid-cycle is charged proportionally (prorated) for the remaining billing period; indicative and final amounts are shown on the billing page and in Stripe Checkout.",
+    "legal.terms.billing.p7": "Paid but unoccupied seats remain available until the end of the current billing period — you can invite another user at no extra charge while the seat is open. In the next billing period the subscription includes only occupied seats; unused seats are removed with no refund for the already paid period.",
+    "legal.terms.billing.p8": "The subscription renews automatically each billing period unless you cancel it. You can cancel in the billing section — cancellation takes effect at period end and access remains active until then. Before period end you can undo a scheduled cancellation and restore automatic renewal.",
+    "legal.terms.billing.p9": "Prices on the site and in billing are shown in euros (EUR) excluding VAT. Where applicable, VAT is calculated and collected by Stripe at checkout based on your country and billing details. Refunds follow applicable consumer law and Stripe terms.",
+    "legal.terms.billing.p10": "If the system administrator enables a trial period, new teams may receive a specific plan for a limited number of days; during an active trial, inviting new users usually does not require a separate paid seat. Early Bird is a limited global pool of seats at a special price; a seat becomes Early Bird at purchase time if seats remain in the pool. If a user is removed and the seat is not filled before the cycle ends, Early Bird status is not returned to the pool.",
+    "legal.terms.billing.p11": "If payment fails, Stripe retries the charge; we may restrict access to team features for users who are not the owner or do not have billing permissions until the balance is settled or the subscription is restored. After subscription end or prolonged non-payment, access to paid features may be blocked for all team users except the person authorised to manage billing.",
+    "legal.terms.billing.title": "5. Paid plans and billing",
+    "legal.terms.integrations.p1": "Google Drive, OneDrive, Gmail and calendar integrations are optional. You are responsible for having the right to grant access to the relevant accounts and folders.",
+    "legal.terms.integrations.p2": "We are not liable for availability, pricing or content loss of third-party services (Google, Microsoft, etc.) outside {SYSTEM_NAME}.",
+    "legal.terms.integrations.title": "6. Integrations",
+    "legal.terms.extension.p1": "The Chrome extension works alongside the web app. By using it, you agree it may access your Gmail account only to the extent granted by Google OAuth to attach emails to tasks.",
+    "legal.terms.extension.p2": "The extension session is stored on your Chrome device. You can disconnect it at any time by removing the connection in your profile or uninstalling the extension.",
+    "legal.terms.extension.title": "7. Gmail Chrome extension",
+    "legal.terms.termination.p2": "We may close an account if you materially breach these terms or if we discontinue the service. Ending a paid subscription does not release you from payment obligations already incurred, where applicable.",
+    "legal.terms.contact.email": " Write to {LEGAL_EMAIL}.",
+    "legal.terms.contact.p1": "Questions about these terms and the service:{LEGAL_CONTACT} We will reply within a reasonable time.",
+    "legal.terms.contact.title": "12. Contact",
+    "legal.cookies.categories.p1": "Necessary cookies are always on. We use preference, analytics and marketing cookies only with your consent, which you can change at any time.",
+    "legal.cookies.categories.p2": "We do not use marketing tracking today. The category is reserved for future tools; consent does not enable them until such tools are added.",
+    "legal.cookies.categories.title": "2. Consent categories",
+    "legal.cookies.necessary.p3": "These cookies cannot be turned off in the product. You can block them in the browser, but then {SYSTEM_NAME} may not work correctly.",
+    "legal.cookies.analytics.p1": "If an administrator has enabled Umami analytics and you consent to analytics cookies, we load the Umami script to count page views anonymously. Umami may use its own cookies or similar identifiers.",
+    "legal.cookies.analytics.p2": "Without your consent Umami is not loaded. Analytics is not required for the service to work.",
+    "legal.cookies.analytics.title": "5. Analytics cookies",
+    "legal.cookies.third_party.p1": "Cloudflare Turnstile (sign-in and sign-up) may set cookies or process your IP for bot checks. Sentry (if enabled) may collect error and device data to improve stability; PII is redacted before sending.",
+    "legal.cookies.third_party.p2": "Stripe may use its own cookies on payment pages for payment security. Google and Microsoft OAuth flows may use their service cookies if you are already signed in to those accounts.",
+    "legal.cookies.third_party.title": "6. Other technology partners",
+    "legal.cookies.local_storage.p1": "We use localStorage to store sidebar tree state, active team choice, time zone sync and cached file content for faster loading. This data stays in your browser and is not sold to third parties.",
+    "legal.cookies.local_storage.p2": "You can clear localStorage in browser settings; some preferences may be lost, but account data remains on the server.",
+    "legal.cookies.local_storage.title": "7. Local storage (localStorage)",
+    "site_settings.form.legal_entity_name": "Legal entity name",
+    "site_settings.form.legal_entity_name_hint": "E.g. company name. Shown in the privacy policy as the data controller.",
+    "site_settings.form.legal_entity_reg_no": "Registration number",
+    "site_settings.form.legal_entity_address": "Registered address",
   },
 };
-

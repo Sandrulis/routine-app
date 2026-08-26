@@ -71,6 +71,17 @@ export async function saveUserDisplayPreferencesAction(
     return { ok: false, error: "errors.user_profile_failed" };
   }
 
+  const timezoneValue = input.timezone?.trim() ?? "";
+  if (timezoneValue && !isValidTimeZone(timezoneValue)) {
+    return { ok: false, error: "errors.invalid_timezone" };
+  }
+  const { error: timezoneError } = await supabase.rpc("set_current_user_timezone", {
+    p_timezone: timezoneValue,
+  });
+  if (timezoneError) {
+    return { ok: false, error: "errors.user_profile_failed" };
+  }
+
   revalidatePath("/", "layout");
   revalidatePath("/settings/profile");
   return { ok: true };
@@ -152,17 +163,19 @@ export async function saveCurrentUserTimezoneAction(
   if (!isSupabaseConfigured()) {
     return { ok: false, error: "errors.db_not_configured" };
   }
-  if (!isValidTimeZone(timeZone)) {
+  const trimmed = timeZone.trim();
+  if (trimmed && !isValidTimeZone(trimmed)) {
     return { ok: false, error: "errors.invalid_timezone" };
   }
 
   const supabase = await createClient();
   const { error } = await supabase.rpc("set_current_user_timezone", {
-    p_timezone: timeZone,
+    p_timezone: trimmed,
   });
   if (error) {
     return { ok: false, error: "errors.user_profile_failed" };
   }
+  revalidatePath("/", "layout");
   return { ok: true };
 }
 

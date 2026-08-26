@@ -1,5 +1,6 @@
 import { randomBytes } from "crypto";
 import { cache } from "react";
+import { DEFAULT_TIMEZONE, resolveTimeZone } from "@/app/lib/cron-jobs/timezone";
 import { createAdminClient } from "@/app/lib/supabase/admin";
 import { createClient as createUserServerClient } from "@/app/lib/supabase/server";
 import { isSupabaseAdminConfigured, isSupabaseConfigured } from "@/app/lib/supabase/env";
@@ -144,6 +145,10 @@ type TranslationRow = {
 type SettingsRow = {
   system_name: string;
   legal_email: string | null;
+  legal_entity_name: string | null;
+  legal_entity_reg_no: string | null;
+  legal_entity_address: string | null;
+  timezone: string | null;
   slogan: string;
   slogan_values: Record<string, unknown> | null;
   week_start_day: string | null;
@@ -1054,12 +1059,16 @@ export const getSiteSettings = cache(async function getSiteSettings(): Promise<S
   const fallback: SiteSettingsSummary = {
     systemName: DEFAULT_SYSTEM_NAME,
     legalEmail: "",
+    legalEntityName: "",
+    legalEntityRegNo: "",
+    legalEntityAddress: "",
     sloganValues: {
       lv: messages.lv["app.subtitle"] || "",
       en: messages.en["app.subtitle"] || "",
       ru: messages.ru["app.subtitle"] || "",
     },
     displayPreferences: DEFAULT_SITE_DISPLAY_PREFERENCES,
+    timezone: resolveTimeZone(DEFAULT_TIMEZONE),
     logoUrl: null,
     faviconUrl: null,
     logoColor: DEFAULT_SITE_LOGO_COLOR,
@@ -1074,7 +1083,7 @@ export const getSiteSettings = cache(async function getSiteSettings(): Promise<S
   const { data, error } = await supabase
     .from("site_settings")
     .select(
-      "system_name, legal_email, slogan, slogan_values, week_start_day, date_format, date_separator, time_format, logo_url, favicon_url, logo_color, updated_at",
+      "system_name, legal_email, legal_entity_name, legal_entity_reg_no, legal_entity_address, timezone, slogan, slogan_values, week_start_day, date_format, date_separator, time_format, logo_url, favicon_url, logo_color, updated_at",
     )
     .eq("id", 1)
     .maybeSingle();
@@ -1088,6 +1097,9 @@ export const getSiteSettings = cache(async function getSiteSettings(): Promise<S
   return {
     systemName: row.system_name,
     legalEmail: row.legal_email?.trim() ?? "",
+    legalEntityName: row.legal_entity_name?.trim() ?? "",
+    legalEntityRegNo: row.legal_entity_reg_no?.trim() ?? "",
+    legalEntityAddress: row.legal_entity_address?.trim() ?? "",
     sloganValues: {
       lv: stored.lv || row.slogan,
       en: stored.en || "",
@@ -1095,6 +1107,7 @@ export const getSiteSettings = cache(async function getSiteSettings(): Promise<S
       ...stored,
     },
     displayPreferences: readDisplayPreferences(row),
+    timezone: resolveTimeZone(row.timezone),
     logoUrl: normalizeBrandImageUrl(row.logo_url),
     faviconUrl: normalizeBrandImageUrl(row.favicon_url),
     logoColor: normalizeSiteLogoColor(row.logo_color),
@@ -1105,6 +1118,10 @@ export const getSiteSettings = cache(async function getSiteSettings(): Promise<S
 export async function saveSiteSettings(input: SiteSettingsInput): Promise<ActionResult> {
   const systemName = input.systemName.trim();
   const legalEmail = input.legalEmail.trim();
+  const legalEntityName = input.legalEntityName.trim();
+  const legalEntityRegNo = input.legalEntityRegNo.trim();
+  const legalEntityAddress = input.legalEntityAddress.trim();
+  const timezone = resolveTimeZone(input.timezone);
   if (!systemName) {
     return { ok: false, error: "errors.system_name_required" };
   }
@@ -1128,6 +1145,10 @@ export async function saveSiteSettings(input: SiteSettingsInput): Promise<Action
     id: 1,
     system_name: systemName,
     legal_email: legalEmail,
+    legal_entity_name: legalEntityName,
+    legal_entity_reg_no: legalEntityRegNo,
+    legal_entity_address: legalEntityAddress,
+    timezone,
     slogan,
     slogan_values: input.sloganValues,
     week_start_day: displayPreferences.weekStartDay,

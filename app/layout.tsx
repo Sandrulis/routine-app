@@ -16,7 +16,7 @@ import { getActiveUiLanguages, getServerTranslations } from "@/app/lib/i18n/serv
 import { documentTitleTemplate, resolveSystemName } from "@/app/lib/document-title";
 import { brandImageMime, siteHeadIconUrl } from "@/app/lib/site-admin/branding";
 import { getSiteSettings } from "@/app/lib/site-admin/repository";
-import { getEffectiveDisplayPreferences } from "@/app/lib/users/display-preferences";
+import { getEffectiveDisplayPreferences, getCurrentUserDisplayPreferences } from "@/app/lib/users/display-preferences";
 import { htmlLang, ogLocale as openGraphLocale } from "@/app/lib/seo/locale-path";
 import {
   OG_IMAGE_PATH,
@@ -111,6 +111,7 @@ export default async function RootLayout({
     effectiveDisplayPreferences,
     settings,
     user,
+    userDisplayPreferences,
     umami,
     sentry,
   ] = await Promise.all([
@@ -119,6 +120,7 @@ export default async function RootLayout({
     getEffectiveDisplayPreferences(),
     getSiteSettings(),
     getCurrentUser(),
+    getCurrentUserDisplayPreferences(),
     getUmamiPublicConfig(),
     getSentryPublicConfig(),
   ]);
@@ -143,7 +145,7 @@ export default async function RootLayout({
           <SentryInit dsn={sentry.dsn} environment={sentry.environment} />
         ) : null}
         <AuthSessionProvider initialUser={user}>
-          <TimezoneSync />
+          <TimezoneSync userTimezone={userDisplayPreferences.timezone} />
           <NowProvider>
             <TranslationsProvider
               languageCode={languageCode}

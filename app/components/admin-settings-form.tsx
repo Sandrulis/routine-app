@@ -7,8 +7,9 @@ import { useDisplayPreferences } from "@/app/components/display-preferences-prov
 import { useFeedbackToast } from "@/app/components/feedback-toast-provider";
 import { ListAppearancePicker } from "@/app/components/list-appearance-picker";
 import { ListBadge } from "@/app/components/list-badge";
-import { UnsavedChangesConfirmModal } from "@/app/components/unsaved-changes-confirm-modal";
+import { TimezoneSelectField } from "@/app/components/timezone-select-field";
 import { useUnsavedChangesGuard } from "@/app/components/unsaved-changes-guard";
+import { UnsavedChangesConfirmModal } from "@/app/components/unsaved-changes-confirm-modal";
 import { useTranslations } from "@/app/components/translations-provider";
 import { translateActionError } from "@/app/lib/i18n/action-errors";
 import { previewDisplayDate } from "@/app/lib/format-display-date";
@@ -62,7 +63,11 @@ function toInput(
   return {
     systemName: settings.systemName,
     legalEmail: settings.legalEmail,
+    legalEntityName: settings.legalEntityName,
+    legalEntityRegNo: settings.legalEntityRegNo,
+    legalEntityAddress: settings.legalEntityAddress,
     sloganValues: mergeSloganValues(languages, settings.sloganValues),
+    timezone: settings.timezone,
     displayPreferences: settings.displayPreferences,
     logoUrl: settings.logoUrl,
     faviconUrl: settings.faviconUrl,
@@ -100,6 +105,10 @@ export function AdminSettingsForm({
   const hasChanges =
     settings.systemName !== savedInput.systemName ||
     settings.legalEmail !== savedInput.legalEmail ||
+    settings.legalEntityName !== savedInput.legalEntityName ||
+    settings.legalEntityRegNo !== savedInput.legalEntityRegNo ||
+    settings.legalEntityAddress !== savedInput.legalEntityAddress ||
+    settings.timezone !== savedInput.timezone ||
     JSON.stringify(settings.sloganValues) !== JSON.stringify(savedInput.sloganValues) ||
     !siteDisplayPreferencesEqual(settings.displayPreferences, savedInput.displayPreferences) ||
     settings.logoUrl !== savedInput.logoUrl ||
@@ -115,7 +124,10 @@ export function AdminSettingsForm({
     settings.sloganValues[languageCode]?.trim() ||
     settings.sloganValues[editLang]?.trim() ||
     "—";
-  const displayPreview = previewDisplayDate(settings.displayPreferences);
+  const displayPreview = previewDisplayDate({
+    ...settings.displayPreferences,
+    timeZone: settings.timezone,
+  });
 
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -137,7 +149,11 @@ export function AdminSettingsForm({
       setSavedSettings({
         systemName: settings.systemName,
         legalEmail: settings.legalEmail,
+        legalEntityName: settings.legalEntityName,
+        legalEntityRegNo: settings.legalEntityRegNo,
+        legalEntityAddress: settings.legalEntityAddress,
         sloganValues: settings.sloganValues,
+        timezone: settings.timezone,
         displayPreferences: settings.displayPreferences,
         logoUrl: settings.logoUrl,
         faviconUrl: settings.faviconUrl,
@@ -234,9 +250,70 @@ export function AdminSettingsForm({
                 <p className={hintClassName}>
                   {t(
                     "site_settings.form.legal_email_hint",
-                    "Šo adresi rāda privātuma politikā saziņai par datu apstrādi.",
+                    "Šo adresi rāda privātuma politikā saziņai par datu apstrādi un noteikumos.",
                   )}
                 </p>
+              </div>
+
+              <div>
+                <label htmlFor="legalEntityName" className={labelClassName}>
+                  {t("site_settings.form.legal_entity_name", "Juridiskās personas nosaukums")}
+                </label>
+                <input
+                  id="legalEntityName"
+                  type="text"
+                  value={settings.legalEntityName}
+                  onChange={(event) =>
+                    setSettings((current) => ({
+                      ...current,
+                      legalEntityName: event.target.value,
+                    }))
+                  }
+                  className="mt-2 min-h-11 w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 outline-none transition focus:border-zinc-400 focus:ring-4 focus:ring-zinc-100"
+                />
+                <p className={hintClassName}>
+                  {t(
+                    "site_settings.form.legal_entity_name_hint",
+                    "Piem., SIA nosaukums. Rāda privātuma politikā kā datu pārzini.",
+                  )}
+                </p>
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <label htmlFor="legalEntityRegNo" className={labelClassName}>
+                    {t("site_settings.form.legal_entity_reg_no", "Reģistrācijas numurs")}
+                  </label>
+                  <input
+                    id="legalEntityRegNo"
+                    type="text"
+                    value={settings.legalEntityRegNo}
+                    onChange={(event) =>
+                      setSettings((current) => ({
+                        ...current,
+                        legalEntityRegNo: event.target.value,
+                      }))
+                    }
+                    className="mt-2 min-h-11 w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 outline-none transition focus:border-zinc-400 focus:ring-4 focus:ring-zinc-100"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="legalEntityAddress" className={labelClassName}>
+                    {t("site_settings.form.legal_entity_address", "Juridiskā adrese")}
+                  </label>
+                  <input
+                    id="legalEntityAddress"
+                    type="text"
+                    value={settings.legalEntityAddress}
+                    onChange={(event) =>
+                      setSettings((current) => ({
+                        ...current,
+                        legalEntityAddress: event.target.value,
+                      }))
+                    }
+                    className="mt-2 min-h-11 w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 outline-none transition focus:border-zinc-400 focus:ring-4 focus:ring-zinc-100"
+                  />
+                </div>
               </div>
 
               <div className="space-y-4 rounded-2xl border border-zinc-100 bg-zinc-50/70 p-4">
@@ -510,36 +587,55 @@ export function AdminSettingsForm({
                 </div>
               </div>
 
-              <div>
-                <label htmlFor="timeFormat" className={labelClassName}>
-                  {t("site_settings.form.time_format", "Laika formāts")}
-                </label>
-                <select
-                  id="timeFormat"
-                  value={settings.displayPreferences.timeFormat}
-                  onChange={(event) =>
+              <div className="grid items-start gap-5 sm:grid-cols-2">
+                <div>
+                  <label htmlFor="timeFormat" className={labelClassName}>
+                    {t("site_settings.form.time_format", "Laika formāts")}
+                  </label>
+                  <select
+                    id="timeFormat"
+                    value={settings.displayPreferences.timeFormat}
+                    onChange={(event) =>
+                      setSettings((current) => ({
+                        ...current,
+                        displayPreferences: {
+                          ...current.displayPreferences,
+                          timeFormat: event.target.value as SiteTimeFormat,
+                        },
+                      }))
+                    }
+                    className={fieldClassName}
+                  >
+                    {TIME_FORMATS.map((value) => (
+                      <option key={value} value={value}>
+                        {t(`site_settings.form.time_format.${value}`, value)}
+                      </option>
+                    ))}
+                  </select>
+                  <p className={hintClassName}>
+                    {t(
+                      "site_settings.form.time_format_hint",
+                      "Izvēlies starp 12 stundu (AM/PM) vai 24 stundu pulksteni.",
+                    )}
+                  </p>
+                </div>
+
+                <TimezoneSelectField
+                  id="siteTimezone"
+                  label={t("site_settings.form.timezone", "Servera laika josla")}
+                  hint={t(
+                    "site_settings.form.timezone_hint",
+                    "Noklusējuma laika josla visai sistēmai un lietotājiem, kam nav sava iestatījuma.",
+                  )}
+                  value={settings.timezone}
+                  onChange={(timezone) =>
                     setSettings((current) => ({
                       ...current,
-                      displayPreferences: {
-                        ...current.displayPreferences,
-                        timeFormat: event.target.value as SiteTimeFormat,
-                      },
+                      timezone,
                     }))
                   }
-                  className={fieldClassName}
-                >
-                  {TIME_FORMATS.map((value) => (
-                    <option key={value} value={value}>
-                      {t(`site_settings.form.time_format.${value}`, value)}
-                    </option>
-                  ))}
-                </select>
-                <p className={hintClassName}>
-                  {t(
-                    "site_settings.form.time_format_hint",
-                    "Izvēlies starp 12 stundu (AM/PM) vai 24 stundu pulksteni.",
-                  )}
-                </p>
+                  disabled={isPending}
+                />
               </div>
             </div>
 

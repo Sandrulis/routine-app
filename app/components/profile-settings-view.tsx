@@ -18,9 +18,11 @@ import { teamRankLabel } from "@/app/lib/team";
 
 export function ProfileSettingsView({
   systemDefaults,
+  systemTimezone,
   initialUserPreferences,
 }: {
   systemDefaults: SiteDisplayPreferences;
+  systemTimezone: string;
   initialUserPreferences: UserDisplayPreferences;
 }) {
   const { t } = useTranslations();
@@ -70,6 +72,7 @@ export function ProfileSettingsView({
 
         <ProfileDisplayPreferencesForm
           systemDefaults={systemDefaults}
+          systemTimezone={systemTimezone}
           initialUserPreferences={initialUserPreferences}
         />
 

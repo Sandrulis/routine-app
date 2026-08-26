@@ -108,7 +108,11 @@ export type SiteTranslationInput = {
 export type SiteSettingsSummary = {
   systemName: string;
   legalEmail: string;
+  legalEntityName: string;
+  legalEntityRegNo: string;
+  legalEntityAddress: string;
   sloganValues: Record<string, string>;
+  timezone: string;
   displayPreferences: SiteDisplayPreferences;
   logoUrl: string | null;
   faviconUrl: string | null;
@@ -119,7 +123,11 @@ export type SiteSettingsSummary = {
 export type SiteSettingsInput = {
   systemName: string;
   legalEmail: string;
+  legalEntityName: string;
+  legalEntityRegNo: string;
+  legalEntityAddress: string;
   sloganValues: Record<string, string>;
+  timezone: string;
   displayPreferences: SiteDisplayPreferences;
   logoUrl: string | null;
   faviconUrl: string | null;

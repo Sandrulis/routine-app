@@ -1,6 +1,7 @@
 "use client";
 
 import { useTranslations } from "@/app/components/translations-provider";
+import { TimezoneSelectField } from "@/app/components/timezone-select-field";
 import type {
   SiteDateFormat,
   SiteDateSeparator,
@@ -69,6 +70,10 @@ export function DisplayPreferencesFields({
   allowSystemDefault = false,
   disabled = false,
   idPrefix = "display",
+  includeTimezone = false,
+  systemTimezone,
+  timezoneLabel,
+  timezoneHint,
 }: {
   values: UserDisplayPreferences;
   onChange: (values: UserDisplayPreferences) => void;
@@ -76,6 +81,10 @@ export function DisplayPreferencesFields({
   allowSystemDefault?: boolean;
   disabled?: boolean;
   idPrefix?: string;
+  includeTimezone?: boolean;
+  systemTimezone?: string;
+  timezoneLabel?: string;
+  timezoneHint?: string;
 }) {
   const { t } = useTranslations();
 
@@ -190,39 +199,68 @@ export function DisplayPreferencesFields({
         </div>
       </div>
 
-      <div>
-        <label htmlFor={`${idPrefix}-timeFormat`} className={labelClassName}>
-          {t("site_settings.form.time_format", "Laika formāts")}
-        </label>
-        <select
-          id={`${idPrefix}-timeFormat`}
-          disabled={disabled}
-          value={values.timeFormat ?? ""}
-          onChange={(event) =>
-            onChange({
-              ...values,
-              timeFormat: (event.target.value || null) as SiteTimeFormat | null,
-            })
-          }
-          className={fieldClassName}
-        >
-          {allowSystemDefault ? (
-            <option value="">
-              {systemDefaultLabel(systemTimeFormatLabel(t, systemDefaults.timeFormat))}
-            </option>
-          ) : null}
-          {TIME_FORMATS.map((value) => (
-            <option key={value} value={value}>
-              {t(`site_settings.form.time_format.${value}`, value)}
-            </option>
-          ))}
-        </select>
-        <p className={hintClassName}>
-          {t(
-            "site_settings.form.time_format_hint",
-            "Izvēlies starp 12 stundu (AM/PM) vai 24 stundu pulksteni.",
-          )}
-        </p>
+      <div className={`grid items-start gap-5${includeTimezone ? " sm:grid-cols-2" : ""}`}>
+        <div>
+          <label htmlFor={`${idPrefix}-timeFormat`} className={labelClassName}>
+            {t("site_settings.form.time_format", "Laika formāts")}
+          </label>
+          <select
+            id={`${idPrefix}-timeFormat`}
+            disabled={disabled}
+            value={values.timeFormat ?? ""}
+            onChange={(event) =>
+              onChange({
+                ...values,
+                timeFormat: (event.target.value || null) as SiteTimeFormat | null,
+              })
+            }
+            className={fieldClassName}
+          >
+            {allowSystemDefault ? (
+              <option value="">
+                {systemDefaultLabel(systemTimeFormatLabel(t, systemDefaults.timeFormat))}
+              </option>
+            ) : null}
+            {TIME_FORMATS.map((value) => (
+              <option key={value} value={value}>
+                {t(`site_settings.form.time_format.${value}`, value)}
+              </option>
+            ))}
+          </select>
+          <p className={hintClassName}>
+            {t(
+              "site_settings.form.time_format_hint",
+              "Izvēlies starp 12 stundu (AM/PM) vai 24 stundu pulksteni.",
+            )}
+          </p>
+        </div>
+
+        {includeTimezone ? (
+          <TimezoneSelectField
+            id={`${idPrefix}-timezone`}
+            label={
+              timezoneLabel ??
+              t("profile.display.timezone", "Laika josla")
+            }
+            hint={
+              timezoneHint ??
+              t(
+                "profile.display.timezone_hint",
+                "Datumi ar laiku tiks rādīti šajā joslā. Tukšs lauks nozīmē servera laika joslu.",
+              )
+            }
+            value={values.timezone ?? ""}
+            onChange={(timezone) =>
+              onChange({
+                ...values,
+                timezone: timezone || null,
+              })
+            }
+            allowSystemDefault={allowSystemDefault}
+            systemDefaultValue={systemTimezone}
+            disabled={disabled}
+          />
+        ) : null}
       </div>
     </div>
   );

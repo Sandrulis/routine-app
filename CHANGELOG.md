@@ -4,6 +4,12 @@
 
 - (none)
 
+## v0.3.10
+
+- Servera un personīgā laika josla (`/admin/settings`, `/settings/profile`); efektīvā josla lietotājs → serveris; datumi ar laiku timezone-aware
+- Terms §5 norēķini: vietu modelis, prorata, PVN, trial, Early Bird, atcelšana/atjaunošana; paplašināta privātuma politika; juridiskās personas lauki adminā (`115`)
+- Laika joslu izvēlne kārtota pēc UTC nobīdes; blakus 12/24 h formātam; migrācija `116` lietotāja joslas notīrīšanai
+
 ## v0.3.9
 
 - Dashboard live meklēšana: visi uzdevumi un apakšuzdevumi (arī arhīvā); arhivētie rezultāti blāvi

@@ -19,9 +19,11 @@ import { saveUserDisplayPreferencesAction } from "@/app/lib/users/actions";
 
 export function ProfileDisplayPreferencesForm({
   systemDefaults,
+  systemTimezone,
   initialUserPreferences,
 }: {
   systemDefaults: SiteDisplayPreferences;
+  systemTimezone: string;
   initialUserPreferences: UserDisplayPreferences;
 }) {
   const [preferences, setPreferences] = useState(initialUserPreferences);
@@ -35,10 +37,13 @@ export function ProfileDisplayPreferencesForm({
   });
 
   const effectivePreview = useMemo(
-    () => mergeDisplayPreferences(systemDefaults, preferences),
-    [preferences, systemDefaults],
+    () =>
+      previewDisplayDate({
+        ...mergeDisplayPreferences(systemDefaults, preferences),
+        timeZone: preferences.timezone?.trim() || systemTimezone,
+      }),
+    [preferences, systemDefaults, systemTimezone],
   );
-  const displayPreview = previewDisplayDate(effectivePreview);
 
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -101,6 +106,8 @@ export function ProfileDisplayPreferencesForm({
             systemDefaults={systemDefaults}
             allowSystemDefault
             disabled={isPending}
+            includeTimezone
+            systemTimezone={systemTimezone}
           />
 
           <div className="mt-5 space-y-2 rounded-xl bg-zinc-50 p-3 text-xs text-zinc-600">
@@ -108,14 +115,14 @@ export function ProfileDisplayPreferencesForm({
               {t("site_settings.preview.title", "Priekšskatījums")}
             </p>
             <p>
-              {t("site_settings.preview.date", "Datums:")} {displayPreview.date}
+              {t("site_settings.preview.date", "Datums:")} {effectivePreview.date}
             </p>
             <p>
-              {t("site_settings.preview.time", "Laiks:")} {displayPreview.time}
+              {t("site_settings.preview.time", "Laiks:")} {effectivePreview.time}
             </p>
             <p>
               {t("site_settings.preview.datetime", "Datums un laiks:")}{" "}
-              {displayPreview.datetime}
+              {effectivePreview.datetime}
             </p>
           </div>
 

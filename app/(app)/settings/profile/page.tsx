@@ -19,6 +19,7 @@ export default async function ProfileSettingsPage() {
   return (
     <ProfileSettingsView
       systemDefaults={settings.displayPreferences}
+      systemTimezone={settings.timezone}
       initialUserPreferences={userPreferences}
     />
   );

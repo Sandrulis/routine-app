@@ -6,11 +6,13 @@ import { saveCurrentUserTimezoneAction } from "@/app/lib/users/actions";
 
 const STORAGE_KEY = "routine.timezone";
 
-export function TimezoneSync() {
+export function TimezoneSync({ userTimezone }: { userTimezone?: string | null }) {
   const { user, isReady } = useAuthSession();
 
   useEffect(() => {
     if (!isReady || !user) return;
+    if (userTimezone?.trim()) return;
+
     const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
     if (!timeZone) return;
     try {
@@ -26,7 +28,7 @@ export function TimezoneSync() {
         // ignore
       }
     });
-  }, [isReady, user]);
+  }, [isReady, user, userTimezone]);
 
   return null;
 }

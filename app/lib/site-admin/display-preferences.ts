@@ -16,6 +16,7 @@ export type UserDisplayPreferences = {
   dateFormat: SiteDateFormat | null;
   dateSeparator: SiteDateSeparator | null;
   timeFormat: SiteTimeFormat | null;
+  timezone: string | null;
 };
 
 export const EMPTY_USER_DISPLAY_PREFERENCES: UserDisplayPreferences = {
@@ -23,6 +24,11 @@ export const EMPTY_USER_DISPLAY_PREFERENCES: UserDisplayPreferences = {
   dateFormat: null,
   dateSeparator: null,
   timeFormat: null,
+  timezone: null,
+};
+
+export type EffectiveDisplaySettings = SiteDisplayPreferences & {
+  timeZone: string;
 };
 
 export const DEFAULT_SITE_DISPLAY_PREFERENCES: SiteDisplayPreferences = {
@@ -98,7 +104,8 @@ export function userDisplayPreferencesEqual(
     left.weekStartDay === right.weekStartDay &&
     left.dateFormat === right.dateFormat &&
     left.dateSeparator === right.dateSeparator &&
-    left.timeFormat === right.timeFormat
+    left.timeFormat === right.timeFormat &&
+    left.timezone === right.timezone
   );
 }
 
@@ -107,7 +114,9 @@ export function readUserDisplayPreferences(row: {
   date_format?: string | null;
   date_separator?: string | null;
   time_format?: string | null;
+  timezone?: string | null;
 }): UserDisplayPreferences {
+  const timezone = row.timezone?.trim() ?? "";
   return {
     weekStartDay:
       typeof row.week_start_day === "string" &&
@@ -129,6 +138,7 @@ export function readUserDisplayPreferences(row: {
       TIME_FORMATS.has(row.time_format as SiteTimeFormat)
         ? (row.time_format as SiteTimeFormat)
         : null,
+    timezone: timezone.length > 0 ? timezone : null,
   };
 }
 
@@ -137,7 +147,8 @@ export function hasUserDisplayOverrides(user: UserDisplayPreferences): boolean {
     user.weekStartDay !== null ||
     user.dateFormat !== null ||
     user.dateSeparator !== null ||
-    user.timeFormat !== null
+    user.timeFormat !== null ||
+    user.timezone !== null
   );
 }
 
