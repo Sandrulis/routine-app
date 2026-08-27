@@ -597,7 +597,7 @@ app/
     security/                     # rate-limit, turnstile, secret-box, file-bytes, log-error, hash-token
 app/auth/gmail-plugin/            # login (Google OAuth ielogošanās) / bridge / start / done; callback aliases vai `/auth/google-oauth/callback`
 app/api/extension/                # config, session, login, refresh, gmail-access, gmail-bridge-ticket, browse, subtasks, attach-email; CORS `extension/cors.ts`
-app/api/docs/                     # Rakstu attēli: GET `/api/docs/images/[id]`, POST `/api/docs/images`
+app/api/docs/                     # GET `/api/docs/images/[id]` publiski tikai ieslēgtai + redzamai dokumentācijai, citādi `requireDocsAdminJson`; POST upload ar admin
 app/api/cron/                     # GET/POST `/api/cron/[jobKey]` — token auth, stundas batch atgādinājumi
 app/api/webhooks/stripe/route.ts  # Stripe Billing: Checkout / invoice / subscription (paraksts `stripe-signature`)
 app/auth/callback/route.ts        # E-pasta magic link / PKCE code → session
@@ -626,7 +626,7 @@ Trīs GitHub Actions darbplūsmas palaižas pie katra push un pull request:
 |----------|------|-------------|
 | **Secret scan** | `.github/workflows/secret-scan.yml` | gitleaks — API keys, tokens, paroles git vēsturē |
 | **Security audit** | `.github/workflows/security-audit.yml` | `npm run audit:check` — HIGH un CRITICAL atkarības |
-| **Security smoke** | `.github/workflows/security-smoke.yml` | `npm run i18n:check` (visas valodas, visi key + placeholderi), TypeScript, lint, production build, `requireAdmin` / `getCurrentUser` uz `actions.ts`, API `getCurrentUser`/`requireAuth`/`getExtensionAuth` (izņēmums: `extension/login`, `refresh`, `config`; `app/api/webhooks/*` ar Svix `verify` vai Stripe `constructEvent`; `app/api/cron/*` ar `findEnabledCronJobByToken`), nav `eval()`, drošības galvenes |
+| **Security smoke** | `.github/workflows/security-smoke.yml` | `npm run i18n:check` (visas valodas, visi key + placeholderi), TypeScript, lint, production build, `requireAdmin` / `getCurrentUser` uz `actions.ts`, API `getCurrentUser`/`requireAuth`/`getExtensionAuth`/`requireDocsAdminJson` (izņēmums: `extension/login`, `refresh`, `config`; `app/api/webhooks/*` ar Svix `verify` vai Stripe `constructEvent`; `app/api/cron/*` ar `findEnabledCronJobByToken`), nav `eval()`, drošības galvenes |
 
 > `GITLEAKS_LICENSE` repo secret ir vajadzīgs tikai **organization** kontiem. Šis repo pieder individuālam kontam, tāpēc scan strādā arī privātam repo bez licences.
 
@@ -772,7 +772,7 @@ RLS (`005_work_data.sql`): `authenticated` drīkst SELECT/INSERT/UPDATE/DELETE t
 | `site_docs_category_translations` | Kategoriju nosaukumi pēc valodas (`118`) |
 | `site_docs_articles` | Apakškategorijas / raksti (`category_id`, `slug`, `sort_order`, `is_visible`; `118`, `120`) |
 | `site_docs_article_translations` | Rakstu nosaukums, slogans, Markdown saturs pēc valodas (`118`, `119`) |
-| `site_docs_article_images` | Rakstu attēli (data URL, līdz 1.5 MB; `121`); publiski caur `/api/docs/images/[id]` |
+| `site_docs_article_images` | Rakstu attēli (data URL, līdz 1.5 MB; `121`); publiski caur `/api/docs/images/[id]` tikai ja `docs_enabled` un raksts/kategorija ir redzami; slēptiem vajag admin |
 | `site_cron_jobs` | Cron darbi (`subtask_start_reminder`, `subtask_due_reminder`): ieslēgts, hashed `secret_token`, pēdējā palaišana (`089`); RLS deny authenticated |
 | `site_user_feedback` | Lietotāju kļūdu ziņojumi, funkciju pieprasījumi un atsauksmes (`kind`, `title`, `body`, `vote_count`; `088`); SELECT: `feature` visiem authenticated, pārējie tikai autoram |
 | `site_feature_votes` | Funkciju pieprasījumu UP balsis (`request_id` + `user_id`); RPC `toggle_feature_vote` (`088`) |

@@ -4,6 +4,11 @@
 
 - (none)
 
+## v0.3.14
+
+- Docs attēlu GET ir publisks tikai ieslēgtai un redzamai dokumentācijai; slēptiem rakstiem vajag admin
+- Security smoke atpazīst `requireDocsAdminJson` kā API autentifikāciju
+
 ## v0.3.13
 
 - Publiskā dokumentācija `/docs` ar sānjoslu, Markdown, attēliem un kājenes saiti, kad admin to ieslēdz

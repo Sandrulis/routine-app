@@ -113,7 +113,7 @@ jobs:
                   continue
                   ;;
               esac
-              if ! grep -qE "(getCurrentUser|requireAuth|getExtensionAuth)" "$file"; then
+              if ! grep -qE "(getCurrentUser|requireAuth|getExtensionAuth|requireDocsAdminJson|requireAdmin)" "$file"; then
                 echo "FAIL: No auth check in $file"
                 exit 1
               fi
