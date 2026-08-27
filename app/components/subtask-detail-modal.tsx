@@ -294,6 +294,7 @@ export function SubtaskDetailModal({
     taskId: string;
     checklists: TaskChecklist[];
   } | null>(null);
+  const detailsSeqRef = useRef(0);
   const [pendingFiles, setPendingFiles] = useState<
     Array<{ id: string; file: File; name: string; previewUrl: string | null }>
   >([]);
@@ -395,6 +396,7 @@ export function SubtaskDetailModal({
   }, [updateTask]);
 
   function commitChecklists(next: TaskChecklist[]) {
+    detailsSeqRef.current += 1;
     setDraft((current) => ({ ...current, checklists: next }));
     if (!task || isCreate || deleted || (!access.canEditTasks && !access.canChangeStatus)) {
       return;
@@ -409,7 +411,7 @@ export function SubtaskDetailModal({
     }
     persistChecklistsTimerRef.current = window.setTimeout(() => {
       flushChecklistPersist();
-    }, 300);
+    }, 500);
   }
 
   useEffect(() => {
@@ -430,25 +432,31 @@ export function SubtaskDetailModal({
     const next = task ? draftFromTask(task) : emptyDraft;
     snapshotRef.current = next;
     setDraft(next);
-    if (!task?.id) return;
+    if (!activeTaskId) return;
+    const seq = ++detailsSeqRef.current;
     let cancelled = false;
-    void fetchTaskDetails(task.id).then((details) => {
-      if (cancelled || !details) return;
-      setDraft((current) => ({
-        ...current,
-        description: details.description,
-        checklists: details.checklists,
-      }));
-      snapshotRef.current = {
-        ...snapshotRef.current,
-        description: details.description,
-        checklists: details.checklists,
-      };
+    void fetchTaskDetails(activeTaskId).then((details) => {
+      if (cancelled || !details || seq !== detailsSeqRef.current) return;
+      setDraft((current) => {
+        const snapshot = snapshotRef.current;
+        const descriptionDirty = current.description !== snapshot.description;
+        const nextDraft = {
+          ...current,
+          description: descriptionDirty ? current.description : details.description,
+          checklists: details.checklists,
+        };
+        snapshotRef.current = {
+          ...snapshot,
+          description: descriptionDirty ? snapshot.description : details.description,
+          checklists: details.checklists,
+        };
+        return nextDraft;
+      });
     });
     return () => {
       cancelled = true;
     };
-  }, [open, task]);
+  }, [open, activeTaskId]);
 
   useEffect(() => {
     if (open) return;

@@ -15,12 +15,12 @@ import {
   getTeamBillingSummaryAction,
   payPendingTeamSeatsAction,
   reconcileTeamBillingAfterCheckoutAction,
-  resumeTeamSubscriptionAction,
   startTeamBillingCheckoutAction,
   type TeamBillingPlanOption,
   type TeamBillingSummary,
 } from "@/app/lib/billing/actions";
 import { ConfirmModal } from "@/app/components/confirm-modal";
+import { ResumeSubscriptionButton } from "@/app/components/resume-subscription-button";
 import { ToggleSwitch } from "@/app/components/toggle-switch";
 import {
   checkoutPricesForPeriod,
@@ -173,7 +173,7 @@ export function TeamBillingPage() {
   const [summary, setSummary] = useState<TeamBillingSummary | null>(null);
   const [planId, setPlanId] = useState("");
   const [period, setPeriod] = useState<PaymentPlanBillingPeriod>("month");
-  const [pendingKind, setPendingKind] = useState<"pay" | "extra" | "cancel" | "resume" | null>(null);
+  const [pendingKind, setPendingKind] = useState<"pay" | "extra" | "cancel" | null>(null);
   const [cancelConfirmOpen, setCancelConfirmOpen] = useState(false);
   const [subscriptionManageOpen, setSubscriptionManageOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
@@ -322,27 +322,6 @@ export function TeamBillingPage() {
         text: t(
           "team.billing.cancel_subscription_success",
           "Abonements tiks beigts perioda beigās. Līdz tam piekļuve paliek aktīva.",
-        ),
-      });
-      await reloadSummaryAndTeams();
-    });
-  }
-
-  function resumeSubscription() {
-    if (!currentTeam || isPending) return;
-    startTransition(async () => {
-      setPendingKind("resume");
-      const result = await resumeTeamSubscriptionAction(currentTeam.id);
-      setPendingKind(null);
-      if (!result.ok) {
-        showFeedback({ type: "error", text: translateActionError(t, result.error) });
-        return;
-      }
-      showFeedback({
-        type: "success",
-        text: t(
-          "team.billing.resume_subscription_success",
-          "Abonements atjaunots. Automātiskā atcelšana ir noņemta.",
         ),
       });
       await reloadSummaryAndTeams();
@@ -594,17 +573,10 @@ export function TeamBillingPage() {
                         )}
                       </p>
                       <div className="mt-4 flex justify-end">
-                        <button
-                          type="button"
+                        <ResumeSubscriptionButton
                           disabled={isPending}
-                          onClick={resumeSubscription}
-                          className="inline-flex min-h-10 items-center justify-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 text-sm font-semibold text-zinc-800 shadow-sm transition hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-60"
-                        >
-                          {pendingKind === "resume" ? (
-                            <i className="fas fa-circle-notch fa-spin text-xs" aria-hidden="true" />
-                          ) : null}
-                          {t("team.billing.resume_subscription", "Atjaunot abonementu")}
-                        </button>
+                          onResumed={reloadSummaryAndTeams}
+                        />
                       </div>
                     </>
                   ) : (

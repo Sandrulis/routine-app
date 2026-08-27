@@ -38,6 +38,7 @@ export type RolesByTeam = Record<string, TeamRole[]>;
 export const TEAM_STORAGE_KEY = "routine-app-team-members";
 export const TEAM_CHANGE_EVENT = "routine-app-team-change";
 export const REQUEST_CREATE_TEAM_EVENT = "routine-app-request-create-team";
+export const REQUEST_TEAM_INVITE_EVENT = "routine-app-request-team-invite";
 export const OWNER_TEAM_ROLE = "owner";
 export const MEMBER_TEAM_ROLE = "member";
 

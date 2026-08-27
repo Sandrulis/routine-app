@@ -1,12 +1,15 @@
 "use client";
 
-import Link from "next/link";
 import { useDisplayPreferences } from "@/app/components/display-preferences-provider";
 import { useTranslations } from "@/app/components/translations-provider";
 import { resolveSeatCounts } from "@/app/lib/billing/seats";
 import { formatInteger } from "@/app/lib/format/numbers";
 import { usePaymentPlansEnabled } from "@/app/lib/payment-plans/context";
-import { canEditTeamSettings } from "@/app/lib/team";
+import {
+  canEditTeamSettings,
+  canInviteTeamMembers,
+  REQUEST_TEAM_INVITE_EVENT,
+} from "@/app/lib/team";
 import { useTeam } from "@/app/lib/team-store";
 import { useIsAdmin } from "@/app/lib/users/use-is-admin";
 
@@ -20,6 +23,7 @@ export function OpenPaidSeatBanner() {
   if (!isReady || !paymentPlansEnabled || !currentTeam) return null;
   if (!canEditTeamSettings(currentUser, roles, isAdmin)) return null;
   if (!currentTeam.paymentPlan.paid) return null;
+  const canInvite = canInviteTeamMembers(currentUser, roles, isAdmin);
 
   const counts = resolveSeatCounts({
     paidSeatCount: currentTeam.paidSeatCount,
@@ -50,12 +54,17 @@ export function OpenPaidSeatBanner() {
         className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950"
       >
         <p className="min-w-0 flex-1">{message}</p>
-        <Link
-          href="/team"
-          className="shrink-0 font-medium text-amber-950 underline decoration-amber-300 underline-offset-2 hover:decoration-amber-500"
-        >
-          {t("team.billing.open_seat_invite", "Uzaicināt")}
-        </Link>
+        {canInvite ? (
+          <button
+            type="button"
+            onClick={() => {
+              window.dispatchEvent(new Event(REQUEST_TEAM_INVITE_EVENT));
+            }}
+            className="shrink-0 font-medium text-amber-950 underline decoration-amber-300 underline-offset-2 hover:decoration-amber-500"
+          >
+            {t("team.billing.open_seat_invite", "Uzaicināt")}
+          </button>
+        ) : null}
       </div>
     </div>
   );

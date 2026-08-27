@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { ResumeSubscriptionButton } from "@/app/components/resume-subscription-button";
 import { useTranslations } from "@/app/components/translations-provider";
 import { subscriptionCountdownParts } from "@/app/lib/billing/subscription-countdown";
 import { resolveTeamBillingAccess } from "@/app/lib/billing/team-access-state";
@@ -72,12 +73,15 @@ export function TeamSubscriptionEndingBanner() {
             { countdown: countdownLabel(parts, t) },
           )}
         </p>
-        <Link
-          href="/team/billing"
-          className="shrink-0 font-semibold text-amber-950 underline decoration-amber-300 underline-offset-2 hover:decoration-amber-600"
-        >
-          {t("team.billing.members_blocked_banner_action", "Abonementi")}
-        </Link>
+        <div className="flex shrink-0 flex-wrap items-center justify-end gap-3">
+          <ResumeSubscriptionButton />
+          <Link
+            href="/team/billing"
+            className="font-semibold text-amber-950 underline decoration-amber-300 underline-offset-2 hover:decoration-amber-600"
+          >
+            {t("team.billing.members_blocked_banner_action", "Abonementi")}
+          </Link>
+        </div>
       </div>
     </div>
   );

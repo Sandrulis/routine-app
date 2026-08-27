@@ -4,6 +4,12 @@
 
 - (none)
 
+## v0.3.12
+
+- Brīvās vietas banera **Uzaicināt** atver uzaicinājuma modāli; zaļa **Atjaunot abonementu** billing lapā un abonementa beigu banerī
+- Checklist nosaukumu saglabā pēc blur vai 500 ms pauzes; čeklistes ielādē ar workspace, lai statusa josla paliktu pēc refresh
+- Zem statusa joslas labajā `{izpildīts}/{kopā}`
+
 ## v0.3.11
 
 - Komandas vadītājs var iecelt citu apstiprinātu lietotāju par vadītāju: lomas apmaiņa, `teams.created_by` seko jaunajam vadītājam

@@ -101,6 +101,7 @@ import {
   confirmedTeamMembers,
   hasTeamActionPermission,
   memberDisplayName,
+  REQUEST_TEAM_INVITE_EVENT,
 } from "@/app/lib/team";
 
 const ListFormModal = dynamic(() =>
@@ -729,6 +730,17 @@ export function AppNav() {
   );
   const { canInvite: canInviteMembers, startInvite, handleInviteError, isPurchasingSeat, seatPurchasedOpen, setSeatPurchasedOpen, confirmSeatPurchased } =
     useStartTeamInvite();
+
+  useEffect(() => {
+    function handleRequestTeamInvite() {
+      startInvite(() => setInviteOpen(true));
+    }
+    window.addEventListener(REQUEST_TEAM_INVITE_EVENT, handleRequestTeamInvite);
+    return () => {
+      window.removeEventListener(REQUEST_TEAM_INVITE_EVENT, handleRequestTeamInvite);
+    };
+  }, [startInvite]);
+
   const canManageRoles = canManageTeamSettings(
     currentUser,
     roles,

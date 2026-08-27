@@ -10,6 +10,8 @@ import {
   type TaskChecklist,
 } from "@/app/lib/task-checklists";
 
+const CHECKLIST_TEXT_SAVE_MS = 500;
+
 function ChecklistCard({
   list,
   disabled,
@@ -26,10 +28,21 @@ function ChecklistCard({
   const { t } = useTranslations();
   const lastItemRef = useRef<HTMLInputElement | null>(null);
   const itemCountRef = useRef(list.items.length);
+  const textTimerRef = useRef<number | null>(null);
+  const editingTextRef = useRef(false);
+  const pendingRef = useRef<TaskChecklist | null>(null);
+  const onChangeRef = useRef(onChange);
+  onChangeRef.current = onChange;
+  const [local, setLocal] = useState(list);
   const lockStructure = disabled || structureLocked;
 
   useEffect(() => {
-    if (list.items.length > itemCountRef.current) {
+    if (editingTextRef.current || pendingRef.current) return;
+    setLocal(list);
+  }, [list]);
+
+  useEffect(() => {
+    if (local.items.length > itemCountRef.current) {
       const input = lastItemRef.current;
       if (input) {
         input.focus();
@@ -37,33 +50,80 @@ function ChecklistCard({
         input.setSelectionRange(length, length);
       }
     }
-    itemCountRef.current = list.items.length;
-  }, [list.items.length]);
+    itemCountRef.current = local.items.length;
+  }, [local.items.length]);
+
+  useEffect(() => {
+    return () => {
+      if (textTimerRef.current) window.clearTimeout(textTimerRef.current);
+      const pending = pendingRef.current;
+      pendingRef.current = null;
+      if (pending) onChangeRef.current(pending);
+    };
+  }, []);
+
+  function commitNow(next: TaskChecklist) {
+    if (textTimerRef.current) {
+      window.clearTimeout(textTimerRef.current);
+      textTimerRef.current = null;
+    }
+    pendingRef.current = null;
+    setLocal(next);
+    onChange(next);
+  }
+
+  function commitText(next: TaskChecklist) {
+    setLocal(next);
+    pendingRef.current = next;
+    if (textTimerRef.current) window.clearTimeout(textTimerRef.current);
+    textTimerRef.current = window.setTimeout(() => {
+      textTimerRef.current = null;
+      editingTextRef.current = false;
+      const pending = pendingRef.current;
+      pendingRef.current = null;
+      if (pending) onChange(pending);
+    }, CHECKLIST_TEXT_SAVE_MS);
+  }
+
+  function flushText() {
+    editingTextRef.current = false;
+    if (textTimerRef.current) {
+      window.clearTimeout(textTimerRef.current);
+      textTimerRef.current = null;
+    }
+    const pending = pendingRef.current;
+    if (!pending) return;
+    pendingRef.current = null;
+    onChange(pending);
+  }
 
   function updateItem(
     itemId: string,
     patch: Partial<TaskChecklist["items"][number]>,
+    persistNow = true,
   ) {
-    onChange({
-      ...list,
-      items: list.items.map((item) =>
+    const next = {
+      ...local,
+      items: local.items.map((item) =>
         item.id === itemId ? { ...item, ...patch } : item,
       ),
-    });
+    };
+    if (persistNow) commitNow(next);
+    else commitText(next);
   }
 
   function removeItem(itemId: string) {
-    onChange({
-      ...list,
-      items: list.items.filter((item) => item.id !== itemId),
+    commitNow({
+      ...local,
+      items: local.items.filter((item) => item.id !== itemId),
     });
   }
 
   function addItem(title: string) {
-    onChange({
-      ...list,
+    commitNow({
+      ...local,
       items: [
-        ...list.items,
+        ...local.items,
         { id: createChecklistItemId(), title, done: false },
       ],
     });
@@ -77,9 +137,19 @@ function ChecklistCard({
         </label>
         <input
           id={`checklist-title-${list.id}`}
-          value={list.title}
+          value={local.title}
           readOnly={lockStructure}
-          onChange={(event) => onChange({ ...list, title: event.target.value })}
+          onFocus={() => {
+            editingTextRef.current = true;
+          }}
+          onChange={(event) => {
+            editingTextRef.current = true;
+            commitText({ ...local, title: event.target.value });
+          }}
+          onBlur={() => {
+            if (lockStructure) return;
+            flushText();
+          }}
           onKeyDown={(event) => {
             if (event.key === "Enter") event.preventDefault();
           }}
@@ -104,7 +174,7 @@ function ChecklistCard({
       </div>
 
       <ul className="mt-2 space-y-1">
-        {list.items.map((item, index) => (
+        {local.items.map((item, index) => (
           <li key={item.id} className="group/item flex items-center gap-2">
             <button
               type="button"
@@ -121,15 +191,34 @@ function ChecklistCard({
               <i className="fas fa-check text-[9px]" aria-hidden="true" />
             </button>
             <input
-              ref={index === list.items.length - 1 ? lastItemRef : undefined}
+              ref={index === local.items.length - 1 ? lastItemRef : undefined}
               value={item.title}
               readOnly={lockStructure}
+              onFocus={() => {
+                editingTextRef.current = true;
+              }}
               onChange={(event) => {
-                updateItem(item.id, { title: event.target.value });
+                editingTextRef.current = true;
+                updateItem(item.id, { title: event.target.value }, false);
               }}
               onBlur={() => {
                 if (lockStructure) return;
-                if (!item.title.trim()) removeItem(item.id);
+                const latest = pendingRef.current ?? local;
+                const latestItem = latest.items.find((row) => row.id === item.id);
+                if (!latestItem?.title.trim()) {
+                  pendingRef.current = null;
+                  if (textTimerRef.current) {
+                    window.clearTimeout(textTimerRef.current);
+                    textTimerRef.current = null;
+                  }
+                  editingTextRef.current = false;
+                  commitNow({
+                    ...latest,
+                    items: latest.items.filter((row) => row.id !== item.id),
+                  });
+                  return;
+                }
+                flushText();
               }}
               onKeyDown={(event) => {
                 if (event.key === "Enter") event.preventDefault();
@@ -197,10 +286,35 @@ export function TaskChecklists({
   forceCollapsed?: boolean;
 }) {
   const { t } = useTranslations();
+  const checklistsRef = useRef(checklists);
   const hasChecklists = checklists.length > 0;
   const [expanded, setExpanded] = useState(
     !forceCollapsed && (hasChecklists || defaultExpanded),
   );
+
+  useEffect(() => {
+    checklistsRef.current = checklists;
+  }, [checklists]);
+
+  function replaceList(next: TaskChecklist) {
+    const merged = checklistsRef.current.map((item) =>
+      item.id === next.id ? next : item,
+    );
+    checklistsRef.current = merged;
+    onChange(merged);
+  }
+
+  function removeList(listId: string) {
+    const merged = checklistsRef.current.filter((item) => item.id !== listId);
+    checklistsRef.current = merged;
+    onChange(merged);
+  }
+
+  function addList() {
+    const merged = [...checklistsRef.current, emptyChecklist()];
+    checklistsRef.current = merged;
+    onChange(merged);
+  }
   const progress = checklistProgress(checklists);
   const lockStructure = disabled || structureLocked;
   const isExpanded = !forceCollapsed && expanded;
@@ -249,21 +363,15 @@ export function TaskChecklists({
               list={list}
               disabled={disabled}
               structureLocked={structureLocked}
-              onChange={(next) =>
-                onChange(
-                  checklists.map((item) => (item.id === next.id ? next : item)),
-                )
-              }
-              onRemove={() =>
-                onChange(checklists.filter((item) => item.id !== list.id))
-              }
+              onChange={replaceList}
+              onRemove={() => removeList(list.id)}
             />
           ))}
 
           {!lockStructure ? (
             <button
               type="button"
-              onClick={() => onChange([...checklists, emptyChecklist()])}
+              onClick={addList}
               className="inline-flex min-h-9 items-center gap-2 rounded-xl px-1 text-sm font-medium text-zinc-600 transition hover:text-zinc-900"
             >
               <i className="fas fa-plus text-[11px]" aria-hidden="true" />

@@ -13,6 +13,7 @@ import { Tooltip } from "@/app/components/tooltip";
 import { RelativeTime } from "@/app/components/relative-time";
 import { useTranslations } from "@/app/components/translations-provider";
 import { fadeHexColor, type WorkTaskStatus } from "@/app/lib/lists";
+import { formatInteger } from "@/app/lib/format/numbers";
 import { useTaskStatuses } from "@/app/lib/task-statuses";
 
 export const WORK_TASK_STATUSES: WorkTaskStatus[] = [
@@ -308,13 +309,26 @@ export function StatusControl({
     : statusClassName(status, muted);
   const extraActionsClassName = `inline-flex items-center gap-1 ${hoverRevealClassName}`.trim();
   const checklistTotal = checklistProgress?.total ?? 0;
+  const checklistDone = checklistProgress?.done ?? 0;
   const checklistPercent = checklistProgress?.percent ?? 0;
   const showChecklistProgress = checklistTotal > 0;
+  const checklistCountLabel = t("lists.windows.progress", "{done}/{total}", {
+    done: formatInteger(checklistDone),
+    total: formatInteger(checklistTotal),
+  });
+  const checklistCountHint = t(
+    "lists.progress.completed",
+    "Izpildīti {done} no {total}",
+    {
+      done: formatInteger(checklistDone),
+      total: formatInteger(checklistTotal),
+    },
+  );
 
   return (
-    <div className="inline-flex flex-col items-start gap-0.5">
+    <div className="inline-flex flex-col items-stretch gap-0.5">
       <div ref={rootRef} className="relative inline-flex items-start gap-1">
-      <div className="inline-flex flex-col">
+      <div className="inline-flex flex-col overflow-visible">
       <div
         className={
           splitOnHover
@@ -384,23 +398,14 @@ export function StatusControl({
         </Tooltip>
       </div>
       {showChecklistProgress ? (
-        <Tooltip
-          label={t("lists.windows.progress", "{done}/{total}", {
-            done: checklistProgress?.done ?? 0,
-            total: checklistTotal,
-          })}
-          className="w-full"
-        >
+        <Tooltip label={checklistCountHint} className="w-full">
           <div
-            className="mt-0.5 h-1.5 w-full overflow-hidden rounded-full bg-zinc-200"
+            className="relative z-0 mt-0.5 h-1.5 w-full shrink-0 overflow-hidden rounded-full bg-zinc-200"
             role="progressbar"
             aria-valuemin={0}
             aria-valuemax={100}
             aria-valuenow={checklistPercent}
-            aria-label={t("lists.windows.progress", "{done}/{total}", {
-              done: checklistProgress?.done ?? 0,
-              total: checklistTotal,
-            })}
+            aria-label={checklistCountHint}
           >
             <div
               className="h-full rounded-full bg-emerald-500"
@@ -408,6 +413,23 @@ export function StatusControl({
             />
           </div>
         </Tooltip>
+      ) : null}
+      {statusChangedAt || showChecklistProgress ? (
+        <div className="mt-0.5 flex w-full min-h-[1rem] items-center justify-between gap-2">
+          {statusChangedAt ? (
+            <RelativeTime
+              at={statusChangedAt}
+              className="min-w-0 text-[11px] leading-tight tabular-nums text-zinc-400"
+            />
+          ) : (
+            <span />
+          )}
+          {showChecklistProgress ? (
+            <span className="shrink-0 text-[11px] leading-tight tabular-nums text-zinc-400">
+              {checklistCountLabel}
+            </span>
+          ) : null}
+        </div>
       ) : null}
       </div>
 
@@ -536,12 +558,6 @@ export function StatusControl({
           )
         : null}
       </div>
-      {statusChangedAt ? (
-        <RelativeTime
-          at={statusChangedAt}
-          className="text-[11px] leading-tight tabular-nums text-zinc-400"
-        />
-      ) : null}
     </div>
   );
 }
