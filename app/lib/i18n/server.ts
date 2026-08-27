@@ -8,7 +8,6 @@ import {
 import { DEFAULT_SYSTEM_NAME, resolveSystemName } from "@/app/lib/document-title";
 import { withSystemNameParams } from "@/app/lib/i18n/interpolate";
 import {
-  DEFAULT_LANGUAGE,
   interpolate,
   type LanguageCode,
 } from "@/app/lib/i18n/messages";
@@ -18,6 +17,7 @@ import {
   isLanguageCode,
   LANGUAGE_CHOSEN_COOKIE,
   LANGUAGE_COOKIE,
+  matchAcceptLanguage,
   resolveLanguageCode,
   type UiLanguageOption,
 } from "@/app/lib/i18n/language";
@@ -87,6 +87,9 @@ export async function getRequestLanguageCode(): Promise<LanguageCode> {
   )
     ? pick(cookieStore.get(LANGUAGE_COOKIE)?.value)
     : null;
+  const fromBrowser = pick(
+    matchAcceptLanguage(headerStore.get("accept-language"), activeCodes),
+  );
 
   if (isSupabaseConfigured()) {
     try {
@@ -98,14 +101,14 @@ export async function getRequestLanguageCode(): Promise<LanguageCode> {
           .select("language_code")
           .eq("id", user.id)
           .maybeSingle();
-        return pick(data?.language_code) ?? explicitCookie ?? systemDefault;
+        return pick(data?.language_code) ?? explicitCookie ?? fromBrowser ?? systemDefault;
       }
     } catch (error) {
       console.error("getRequestLanguageCode profile failed:", error);
     }
   }
 
-  return explicitCookie ?? systemDefault;
+  return explicitCookie ?? fromBrowser ?? systemDefault;
 }
 
 export const getServerTranslations = cache(async function getServerTranslations(): Promise<ServerTranslations> {

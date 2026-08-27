@@ -130,3 +130,87 @@ export function resolveLanguageCode(
 ): LanguageCode {
   return isLanguageCode(value) ? value : DEFAULT_LANGUAGE;
 }
+
+const ACCEPT_LANGUAGE_ALIASES: Record<string, LanguageCode> = {
+  nb: "no",
+  nn: "no",
+};
+
+const LANGUAGE_NEGOTIATION_BOT_RE =
+  /googlebot|adsbot-google|bingbot|yandex(?:bot|images)|baiduspider|duckduckbot|slurp|facebookexternalhit|linkedinbot|twitterbot|applebot|semrushbot|ahrefsbot/i;
+
+export function isLanguageNegotiationBot(
+  userAgent: string | null | undefined,
+): boolean {
+  return !!userAgent && LANGUAGE_NEGOTIATION_BOT_RE.test(userAgent);
+}
+
+function allowedLanguageSet(codes: Iterable<string>): Set<LanguageCode> {
+  const allowed = new Set<LanguageCode>();
+  for (const code of codes) {
+    if (isLanguageCode(code)) allowed.add(code);
+  }
+  return allowed;
+}
+
+function languageFromAcceptTag(
+  tag: string,
+  allowed: Set<LanguageCode>,
+): LanguageCode | null {
+  if (tag === "*") return null;
+  const lowered = tag.trim().toLowerCase();
+  if (!lowered) return null;
+  if (isLanguageCode(lowered) && allowed.has(lowered)) return lowered;
+  const primary = lowered.split("-")[0] ?? "";
+  const aliased = ACCEPT_LANGUAGE_ALIASES[primary];
+  if (aliased && allowed.has(aliased)) return aliased;
+  if (isLanguageCode(primary) && allowed.has(primary)) return primary;
+  return null;
+}
+
+export function matchAcceptLanguage(
+  header: string | null | undefined,
+  allowedCodes: Iterable<string> = LANGUAGE_CODES,
+): LanguageCode | null {
+  const allowed = allowedLanguageSet(allowedCodes);
+  if (allowed.size === 0 || !header?.trim()) return null;
+
+  const ranked = header.split(",").flatMap((part) => {
+    const [rawTag, ...params] = part.trim().split(";");
+    const tag = rawTag?.trim().toLowerCase();
+    if (!tag) return [];
+    let q = 1;
+    for (const param of params) {
+      const [key, value] = param.trim().split("=");
+      if (key?.trim() !== "q" || !value) continue;
+      const parsed = Number(value);
+      if (Number.isFinite(parsed)) q = parsed;
+    }
+    if (q <= 0) return [];
+    return [{ tag, q }];
+  });
+  ranked.sort((left, right) => right.q - left.q);
+
+  for (const { tag } of ranked) {
+    const matched = languageFromAcceptTag(tag, allowed);
+    if (matched) return matched;
+  }
+  return null;
+}
+
+export function resolveGuestLanguage(input: {
+  acceptLanguage: string | null | undefined;
+  cookieLanguage: string | null | undefined;
+  chosenCookie: string | null | undefined;
+  allowedCodes?: Iterable<string>;
+}): LanguageCode | null {
+  const allowed = allowedLanguageSet(input.allowedCodes ?? LANGUAGE_CODES);
+  if (
+    hasExplicitLanguageChoice(input.chosenCookie) &&
+    isLanguageCode(input.cookieLanguage) &&
+    allowed.has(input.cookieLanguage)
+  ) {
+    return input.cookieLanguage;
+  }
+  return matchAcceptLanguage(input.acceptLanguage, allowed);
+}

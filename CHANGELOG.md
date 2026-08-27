@@ -4,6 +4,10 @@
 
 - (none)
 
+## v0.3.15
+
+- Viesiem bez URL prefiksa UI valodu ņem no pārlūka `Accept-Language` (piem. somu → `/fi`); meklētājprogrammas netiek novirzītas
+
 ## v0.3.14
 
 - Docs attēlu GET ir publisks tikai ieslēgtai un redzamai dokumentācijai; slēptiem rakstiem vajag admin

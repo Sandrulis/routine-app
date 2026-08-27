@@ -2,10 +2,15 @@ import { NextResponse, type NextRequest } from "next/server";
 import { updateSession } from "@/app/lib/supabase/update-session";
 import {
   DEFAULT_LANGUAGE,
+  LANGUAGE_CHOSEN_COOKIE,
+  LANGUAGE_COOKIE,
+  isLanguageNegotiationBot,
+  resolveGuestLanguage,
   type LanguageCode,
 } from "@/app/lib/i18n/language";
 import {
   isPublicLocalizedPath,
+  localePath,
   stripLocalePrefix,
   UI_LANGUAGE_HEADER,
   urlLanguageFromPath,
@@ -77,6 +82,23 @@ export async function proxy(request: NextRequest) {
       const url = request.nextUrl.clone();
       url.pathname = basePath;
       return applyCsp(NextResponse.redirect(url, 308), nonce);
+    }
+
+    if (
+      !urlLang &&
+      (request.method === "GET" || request.method === "HEAD") &&
+      !isLanguageNegotiationBot(request.headers.get("user-agent"))
+    ) {
+      const detected = resolveGuestLanguage({
+        acceptLanguage: request.headers.get("accept-language"),
+        cookieLanguage: request.cookies.get(LANGUAGE_COOKIE)?.value,
+        chosenCookie: request.cookies.get(LANGUAGE_CHOSEN_COOKIE)?.value,
+      });
+      if (detected && detected !== DEFAULT_LANGUAGE) {
+        const url = request.nextUrl.clone();
+        url.pathname = localePath(basePath, detected);
+        return applyCsp(NextResponse.redirect(url, 307), nonce);
+      }
     }
 
     const languageCode = urlLang ?? DEFAULT_LANGUAGE;
