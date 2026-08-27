@@ -50,7 +50,7 @@ export function buildContentSecurityPolicy(nonce: string) {
     "font-src 'self' data:",
     `connect-src ${connectSrc}`,
     "media-src 'self' data: blob:",
-    `frame-src 'self' blob: ${turnstile}`,
+    `frame-src 'self' blob: ${turnstile} https://www.youtube.com https://www.youtube-nocookie.com`,
     "object-src 'none'",
     "base-uri 'self'",
     "form-action 'self' https://checkout.stripe.com https://billing.stripe.com https://invoice.stripe.com",

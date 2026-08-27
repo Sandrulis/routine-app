@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useCookieConsent } from "@/app/components/cookie-consent-context";
+import { useDocsEnabled } from "@/app/components/docs-enabled-provider";
 import { useTranslations } from "@/app/components/translations-provider";
 import { localePath } from "@/app/lib/seo/locale-path";
 
@@ -12,6 +13,7 @@ export function SiteFooter({
 }) {
   const { t, languageCode } = useTranslations();
   const { openSettings } = useCookieConsent();
+  const docsEnabled = useDocsEnabled();
   const year = new Date().getFullYear();
   const isApp = variant === "app";
 
@@ -28,6 +30,14 @@ export function SiteFooter({
           {t("site.footer.rights", "© {year} {SYSTEM_NAME}", { year })}
         </p>
         <nav className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
+          {docsEnabled ? (
+            <Link
+              href={localePath("/docs", languageCode)}
+              className="text-zinc-500 transition hover:text-zinc-900"
+            >
+              {t("site.footer.docs", "Dokumentācija")}
+            </Link>
+          ) : null}
           <Link
             href={localePath("/privacy", languageCode)}
             className="text-zinc-500 transition hover:text-zinc-900"

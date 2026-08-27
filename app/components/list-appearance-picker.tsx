@@ -10,11 +10,23 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import { useTranslations } from "@/app/components/translations-provider";
+import { FONT_AWESOME_ICON_OPTIONS } from "@/app/lib/fontawesome-icons";
 import { listColorById, listInitials, LIST_COLORS, LIST_ICON_OPTIONS } from "@/app/lib/lists";
 
 function iconSearchText(className: string) {
-  return className.replace(/^fas fa-/, "").replace(/-/g, " ");
+  return className.replace(/^fa[sbrld]?\s+fa-/i, "").replace(/-/g, " ");
 }
+
+const ALL_ICON_OPTIONS: string[] = (() => {
+  const seen = new Set<string>();
+  const ordered: string[] = [];
+  for (const icon of [...LIST_ICON_OPTIONS, ...FONT_AWESOME_ICON_OPTIONS]) {
+    if (seen.has(icon)) continue;
+    seen.add(icon);
+    ordered.push(icon);
+  }
+  return ordered;
+})();
 
 export function ListAppearancePicker({
   open,
@@ -23,6 +35,8 @@ export function ListAppearancePicker({
   icon,
   color,
   showIcons = true,
+  showColors = true,
+  allowEmptyIcon = true,
   onIconChange,
   onColorChange,
   onClose,
@@ -33,6 +47,8 @@ export function ListAppearancePicker({
   icon: string | null;
   color: string;
   showIcons?: boolean;
+  showColors?: boolean;
+  allowEmptyIcon?: boolean;
   onIconChange: (icon: string | null) => void;
   onColorChange: (color: string) => void;
   onClose: () => void;
@@ -52,8 +68,8 @@ export function ListAppearancePicker({
 
   const filteredIcons = useMemo(() => {
     const needle = query.trim().toLowerCase();
-    if (!needle) return [...LIST_ICON_OPTIONS];
-    return LIST_ICON_OPTIONS.filter((option) =>
+    if (!needle) return ALL_ICON_OPTIONS;
+    return ALL_ICON_OPTIONS.filter((option) =>
       iconSearchText(option).includes(needle),
     );
   }, [query]);
@@ -178,8 +194,8 @@ export function ListAppearancePicker({
       className="overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-xl"
     >
       {showIcons ? (
-        <div className="flex">
-          <div className="flex h-0 min-h-full w-[18.5rem] flex-col p-2.5">
+        <div className="flex h-72">
+          <div className="flex min-h-0 w-[18.5rem] flex-col p-2.5">
             <input
               ref={searchRef}
               type="search"
@@ -198,7 +214,7 @@ export function ListAppearancePicker({
                 </p>
               ) : (
                 <div className="grid grid-cols-7 gap-0.5">
-                  {!query.trim() ? (
+                  {!query.trim() && allowEmptyIcon ? (
                     <button
                       type="button"
                       aria-label={t("lists.fields.icon_initials", "Iniciāļi")}
@@ -236,7 +252,11 @@ export function ListAppearancePicker({
               )}
             </div>
           </div>
-          <div className="w-[6.75rem] border-l border-zinc-100 p-2.5">{colorGrid}</div>
+          {showColors ? (
+            <div className="w-[6.75rem] overflow-y-auto border-l border-zinc-100 p-2.5 [scrollbar-width:thin]">
+              {colorGrid}
+            </div>
+          ) : null}
         </div>
       ) : (
         <div className="p-2.5">{colorGrid}</div>

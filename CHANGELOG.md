@@ -4,6 +4,11 @@
 
 - (none)
 
+## v0.3.13
+
+- Publiskā dokumentācija `/docs` ar sānjoslu, Markdown, attēliem un kājenes saiti, kad admin to ieslēdz
+- `/admin/docs`: kategorijas un apakškategorijas, redzamība, slogans, ikonas un vilkšana secībai
+
 ## v0.3.12
 
 - Brīvās vietas banera **Uzaicināt** atver uzaicinājuma modāli; zaļa **Atjaunot abonementu** billing lapā un abonementa beigu banerī

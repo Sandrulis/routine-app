@@ -257,6 +257,7 @@ export function PageBreadcrumb() {
         "file-types": t("admin.nav.file_types", "Failu tipi"),
         languages: t("admin.nav.languages", "Valodas"),
         translations: t("admin.nav.translations", "Tulkojumi"),
+        docs: t("admin.nav.docs", "Docs"),
         modules: t("nav.modules", "Moduļi"),
         "payment-plans": t("admin.nav.payment_plans", "Maksas plāni"),
         integrations: t("admin.nav.integrations", "Integrācijas"),
@@ -276,6 +277,12 @@ export function PageBreadcrumb() {
         items.push({
           href: `/admin/${section}`,
           label: sectionLabel,
+        });
+      }
+      if (section === "docs" && parts[2]) {
+        items.push({
+          href: pathname,
+          label: t("admin.docs.articles", "Apakškategorijas"),
         });
       }
       return items;

@@ -62,6 +62,12 @@ const GROUPS = [
         labelKey: "admin.nav.translations",
         fallback: "Tulkojumi",
       },
+      {
+        href: "/admin/docs",
+        icon: "fas fa-book",
+        labelKey: "admin.nav.docs",
+        fallback: "Docs",
+      },
     ],
   },
   {

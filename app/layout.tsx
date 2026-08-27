@@ -3,6 +3,7 @@ import { Geist } from "next/font/google";
 import { AuthSessionProvider } from "@/app/lib/auth/auth-session-provider";
 import { getCurrentUser } from "@/app/lib/auth/get-current-user";
 import { CookieConsentProvider } from "@/app/components/cookie-consent-provider";
+import { DocsEnabledProvider } from "@/app/components/docs-enabled-provider";
 import { DisplayPreferencesProvider } from "@/app/components/display-preferences-provider";
 import { TimezoneSync } from "@/app/components/timezone-sync";
 import { FeedbackToastProvider } from "@/app/components/feedback-toast-provider";
@@ -16,6 +17,7 @@ import { getActiveUiLanguages, getServerTranslations } from "@/app/lib/i18n/serv
 import { documentTitleTemplate, resolveSystemName } from "@/app/lib/document-title";
 import { brandImageMime, siteHeadIconUrl } from "@/app/lib/site-admin/branding";
 import { getSiteSettings } from "@/app/lib/site-admin/repository";
+import { isDocsEnabled } from "@/app/lib/docs/repository";
 import { getEffectiveDisplayPreferences, getCurrentUserDisplayPreferences } from "@/app/lib/users/display-preferences";
 import { htmlLang, ogLocale as openGraphLocale } from "@/app/lib/seo/locale-path";
 import {
@@ -30,6 +32,7 @@ import {
 } from "@/app/lib/seo/site-url";
 import { INDEX_ROBOTS } from "@/app/lib/seo/metadata";
 import "./fontawesome.css";
+import "./fontawesome-brands.css";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -114,6 +117,7 @@ export default async function RootLayout({
     userDisplayPreferences,
     umami,
     sentry,
+    docsEnabled,
   ] = await Promise.all([
     getServerTranslations(),
     getActiveUiLanguages(),
@@ -123,6 +127,7 @@ export default async function RootLayout({
     getCurrentUserDisplayPreferences(),
     getUmamiPublicConfig(),
     getSentryPublicConfig(),
+    isDocsEnabled(),
   ]);
   const headIcon = siteHeadIconUrl(
     settings.logoUrl,
@@ -157,6 +162,7 @@ export default async function RootLayout({
               <DisplayPreferencesProvider preferences={effectiveDisplayPreferences}>
                 <FeedbackToastProvider>
                   <CookieConsentProvider>
+                    <DocsEnabledProvider enabled={docsEnabled}>
                     {children}
                     {umami ? (
                       <UmamiAnalytics
@@ -165,6 +171,7 @@ export default async function RootLayout({
                         integrity={umami.integrity}
                       />
                     ) : null}
+                    </DocsEnabledProvider>
                   </CookieConsentProvider>
                 </FeedbackToastProvider>
               </DisplayPreferencesProvider>

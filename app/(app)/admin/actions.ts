@@ -25,6 +25,23 @@ import {
   type TrialSettings,
 } from "@/app/lib/payment-plans/repository";
 import {
+  createDocsArticle,
+  createDocsCategory,
+  deleteDocsArticle,
+  deleteDocsArticleImage,
+  deleteDocsCategory,
+  getDocsArticle,
+  listDocsArticleImages,
+  reorderDocsArticles,
+  reorderDocsCategories,
+  setDocsEnabled,
+  updateDocsArticle,
+  updateDocsCategory,
+  setDocsArticleVisible,
+  setDocsCategoryVisible,
+} from "@/app/lib/docs/repository";
+import type { DocsArticleInput, DocsCategoryInput } from "@/app/lib/docs/types";
+import {
   createAdminTeam,
   createAdminUser,
   createSiteLanguage,
@@ -78,6 +95,7 @@ import { requireAdmin } from "@/app/lib/users/require-admin";
 function refreshAdmin() {
   revalidatePath("/admin", "layout");
   revalidatePath("/", "layout");
+  revalidatePath("/docs", "layout");
 }
 
 export async function createAdminUserAction(input: AdminUserInput) {
@@ -412,4 +430,116 @@ export async function setCronJobEnabledAction(jobKey: string, enabled: boolean) 
   } catch {
     return { ok: false as const, error: "errors.db_not_configured" };
   }
+}
+
+export async function setDocsEnabledAction(enabled: boolean) {
+  await requireAdmin({ action: "admin.docs.toggle" });
+  const result = await setDocsEnabled(enabled);
+  if (result.ok) refreshAdmin();
+  return result;
+}
+
+export async function createDocsCategoryAction(input: DocsCategoryInput) {
+  await requireAdmin({ action: "admin.docs.category.create" });
+  const result = await createDocsCategory(input);
+  if (result.ok) refreshAdmin();
+  return result;
+}
+
+export async function updateDocsCategoryAction(
+  categoryId: string,
+  input: DocsCategoryInput,
+) {
+  await requireAdmin({ action: "admin.docs.category.update", target: categoryId });
+  const result = await updateDocsCategory(categoryId, input);
+  if (result.ok) refreshAdmin();
+  return result;
+}
+
+export async function deleteDocsCategoryAction(categoryId: string) {
+  await requireAdmin({ action: "admin.docs.category.delete", target: categoryId });
+  const result = await deleteDocsCategory(categoryId);
+  if (result.ok) refreshAdmin();
+  return result;
+}
+
+export async function getDocsArticleAction(articleId: string) {
+  await requireAdmin();
+  return getDocsArticle(articleId);
+}
+
+export async function createDocsArticleAction(
+  categoryId: string,
+  input: DocsArticleInput,
+) {
+  await requireAdmin({ action: "admin.docs.article.create", target: categoryId });
+  const result = await createDocsArticle(categoryId, input);
+  if (result.ok) refreshAdmin();
+  return result;
+}
+
+export async function updateDocsArticleAction(
+  articleId: string,
+  input: DocsArticleInput,
+) {
+  await requireAdmin({ action: "admin.docs.article.update", target: articleId });
+  const result = await updateDocsArticle(articleId, input);
+  if (result.ok) refreshAdmin();
+  return result;
+}
+
+export async function deleteDocsArticleAction(articleId: string) {
+  await requireAdmin({ action: "admin.docs.article.delete", target: articleId });
+  const result = await deleteDocsArticle(articleId);
+  if (result.ok) refreshAdmin();
+  return result;
+}
+
+export async function setDocsCategoryVisibleAction(
+  categoryId: string,
+  isVisible: boolean,
+) {
+  await requireAdmin({ action: "admin.docs.category.visibility", target: categoryId });
+  const result = await setDocsCategoryVisible(categoryId, isVisible);
+  if (result.ok) refreshAdmin();
+  return result;
+}
+
+export async function setDocsArticleVisibleAction(
+  articleId: string,
+  isVisible: boolean,
+) {
+  await requireAdmin({ action: "admin.docs.article.visibility", target: articleId });
+  const result = await setDocsArticleVisible(articleId, isVisible);
+  if (result.ok) refreshAdmin();
+  return result;
+}
+
+export async function reorderDocsCategoriesAction(orderedIds: string[]) {
+  await requireAdmin({ action: "admin.docs.category.reorder" });
+  const result = await reorderDocsCategories(orderedIds);
+  if (result.ok) refreshAdmin();
+  return result;
+}
+
+export async function reorderDocsArticlesAction(
+  categoryId: string,
+  orderedIds: string[],
+) {
+  await requireAdmin({ action: "admin.docs.article.reorder", target: categoryId });
+  const result = await reorderDocsArticles(categoryId, orderedIds);
+  if (result.ok) refreshAdmin();
+  return result;
+}
+
+export async function listDocsArticleImagesAction(articleId: string) {
+  await requireAdmin();
+  return listDocsArticleImages(articleId);
+}
+
+export async function deleteDocsArticleImageAction(imageId: string) {
+  await requireAdmin({ action: "admin.docs.article.image.delete", target: imageId });
+  const result = await deleteDocsArticleImage(imageId);
+  if (result.ok) refreshAdmin();
+  return result;
 }

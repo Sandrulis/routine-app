@@ -102,7 +102,8 @@ export function localePath(pathname: string, languageCode: LanguageCode): string
 
 export function isPublicLocalizedPath(pathname: string): boolean {
   const base = stripLocalePrefix(pathname);
-  return (PUBLIC_LOCALIZED_PATHS as readonly string[]).includes(base);
+  if ((PUBLIC_LOCALIZED_PATHS as readonly string[]).includes(base)) return true;
+  return base === "/docs" || base.startsWith("/docs/");
 }
 
 export function urlLanguageFromPath(pathname: string): LanguageCode | null {
