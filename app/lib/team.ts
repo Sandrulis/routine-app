@@ -356,6 +356,18 @@ export function canLeaveTeam(
   return true;
 }
 
+export function canAppointTeamLeader(
+  currentUser: Pick<TeamMember, "id" | "role" | "roleId" | "userId">,
+  target: Pick<TeamMember, "id" | "role" | "roleId" | "userId">,
+  roles: TeamRole[],
+): boolean {
+  if (!isTeamOwner(currentUser, roles)) return false;
+  if (isSelfTeamMember(currentUser, target)) return false;
+  if (isPendingTeamMember(target)) return false;
+  if (isMemberTeamOwner(target, roles)) return false;
+  return true;
+}
+
 export function teamRankLabel(
   role: string,
   t: (key: string, fallback: string) => string,

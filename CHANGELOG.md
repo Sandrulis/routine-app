@@ -4,6 +4,11 @@
 
 - (none)
 
+## v0.3.11
+
+- Komandas vadītājs var iecelt citu apstiprinātu lietotāju par vadītāju: lomas apmaiņa, `teams.created_by` seko jaunajam vadītājam
+- Vadītāja lomu vairs nevar piešķirt lomām vai uzaicinājumā; pogas lietotāja lapā blakus
+
 ## v0.3.10
 
 - Servera un personīgā laika josla (`/admin/settings`, `/settings/profile`); efektīvā josla lietotājs → serveris; datumi ar laiku timezone-aware

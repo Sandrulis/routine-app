@@ -346,6 +346,10 @@ export async function inviteTeamMemberAction(input: {
     roleSlug = roleRow.slug;
   }
 
+  if (roleSlug === OWNER_TEAM_ROLE) {
+    return { ok: false, error: "errors.team_leader_transfer_forbidden" };
+  }
+
   const { data: teamRow, error: teamError } = await supabase
     .from("teams")
     .select("name")
@@ -862,6 +866,48 @@ export async function removeTeamMemberAction(
         error instanceof Error ? error.message : "failed",
       );
     }
+  }
+
+  revalidatePath("/", "layout");
+  return { ok: true };
+}
+
+export async function transferTeamLeadershipAction(
+  memberId: string,
+): Promise<ActionResult> {
+  const user = await getCurrentUser();
+  if (!user) {
+    return { ok: false, error: "errors.auth_required" };
+  }
+  if (!isSupabaseConfigured()) {
+    return { ok: false, error: "errors.db_not_configured" };
+  }
+
+  const trimmedMemberId = memberId.trim();
+  if (!trimmedMemberId) {
+    return { ok: false, error: "errors.team_leader_transfer_failed" };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("transfer_team_leadership", {
+    p_member_id: trimmedMemberId,
+  });
+
+  if (error) {
+    const message = error.message.toLowerCase();
+    if (message.includes("auth_required")) {
+      return { ok: false, error: "errors.auth_required" };
+    }
+    if (message.includes("team_leader_transfer_forbidden")) {
+      return { ok: false, error: "errors.team_leader_transfer_forbidden" };
+    }
+    if (message.includes("team_leader_transfer_pending")) {
+      return { ok: false, error: "errors.team_leader_transfer_pending" };
+    }
+    if (message.includes("team_leader_transfer_self")) {
+      return { ok: false, error: "errors.team_leader_transfer_self" };
+    }
+    return { ok: false, error: "errors.team_leader_transfer_failed" };
   }
 
   revalidatePath("/", "layout");

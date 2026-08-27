@@ -40,6 +40,7 @@ import {
   emptyTeamMember,
   EMPTY_TEAM_PAYMENT_PLAN,
   initialsFromName,
+  isMemberTeamOwner,
   MEMBER_TEAM_ROLE,
   OWNER_TEAM_ROLE,
   slugFromRoleName,
@@ -590,7 +591,10 @@ export function TeamProvider({ children }: { children: ReactNode }) {
       if (!currentTeam) return;
       const teamRoles = rolesByTeam[currentTeam.id] ?? [];
       const role = teamRoles.find((item) => item.id === roleId);
-      if (!role) return;
+      if (!role || role.slug === OWNER_TEAM_ROLE) return;
+      const currentMembers = membersByTeam[currentTeam.id] ?? [];
+      const target = currentMembers.find((member) => member.id === memberId);
+      if (!target || isMemberTeamOwner(target, teamRoles)) return;
 
       setMembersByTeam((current) => ({
         ...current,
@@ -604,7 +608,7 @@ export function TeamProvider({ children }: { children: ReactNode }) {
         console.error("Failed to assign member role", error);
       });
     },
-    [currentTeam, rolesByTeam],
+    [currentTeam, membersByTeam, rolesByTeam],
   );
 
   const updateRolePermissions = useCallback(

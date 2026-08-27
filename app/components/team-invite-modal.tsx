@@ -7,7 +7,7 @@ import {
 } from "@/app/components/app-modal";
 import { useTranslations } from "@/app/components/translations-provider";
 import { isTeamInviteEmailEnabledAction } from "@/app/lib/team/actions";
-import { MEMBER_TEAM_ROLE, teamRankLabel } from "@/app/lib/team";
+import { MEMBER_TEAM_ROLE, OWNER_TEAM_ROLE, teamRankLabel } from "@/app/lib/team";
 import { useTeam } from "@/app/lib/team-store";
 
 export function TeamInviteModal({
@@ -21,8 +21,11 @@ export function TeamInviteModal({
 }) {
   const { t } = useTranslations();
   const { roles } = useTeam();
+  const inviteRoles = roles.filter((item) => item.slug !== OWNER_TEAM_ROLE);
   const defaultRoleId =
-    roles.find((item) => item.slug === MEMBER_TEAM_ROLE)?.id ?? roles[0]?.id ?? "";
+    inviteRoles.find((item) => item.slug === MEMBER_TEAM_ROLE)?.id ??
+    inviteRoles[0]?.id ??
+    "";
   const [email, setEmail] = useState("");
   const [role, setRole] = useState(defaultRoleId);
   const [pending, setPending] = useState(false);
@@ -107,7 +110,7 @@ export function TeamInviteModal({
             disabled={pending}
             className="mt-2 min-h-11 w-full cursor-pointer rounded-2xl border border-zinc-200 bg-zinc-50 px-4 text-sm text-zinc-900 outline-none transition focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-100 disabled:opacity-60"
           >
-            {roles.map((item) => (
+            {inviteRoles.map((item) => (
               <option key={item.id} value={item.id}>
                 {teamRankLabel(item.slug, t, roles) ?? item.name}
               </option>

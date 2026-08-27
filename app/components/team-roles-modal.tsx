@@ -29,7 +29,9 @@ import { useFeedbackToast } from "@/app/components/feedback-toast-provider";
 import { useTranslations } from "@/app/components/translations-provider";
 import {
   MEMBER_TEAM_ROLE,
+  OWNER_TEAM_ROLE,
   canManageTeamSettings,
+  isMemberTeamOwner,
   teamRankLabel,
   type TeamRole,
 } from "@/app/lib/team";
@@ -186,7 +188,10 @@ export function TeamRolesModal({
     }
 
     for (const member of members) {
+      if (isMemberTeamOwner(member, roles)) continue;
       const nextRoleId = draft.memberRoleIds[member.id];
+      const nextRole = roles.find((role) => role.id === nextRoleId);
+      if (nextRole?.slug === OWNER_TEAM_ROLE) continue;
       if (nextRoleId && nextRoleId !== member.roleId) {
         assignMemberRole(member.id, nextRoleId);
       }
@@ -350,7 +355,12 @@ export function TeamRolesModal({
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-zinc-100">
-                    {members.map((member) => (
+                    {members.map((member) => {
+                      const memberIsOwner = isMemberTeamOwner(member, roles);
+                      const assignableRoles = memberIsOwner
+                        ? roles.filter((role) => role.slug === OWNER_TEAM_ROLE)
+                        : roles.filter((role) => role.slug !== OWNER_TEAM_ROLE);
+                      return (
                       <tr key={member.id}>
                         <td className="px-4 py-2.5">
                           <div className="flex items-center gap-2.5">
@@ -370,6 +380,7 @@ export function TeamRolesModal({
                         <td className="px-4 py-2.5">
                           <select
                             value={draft.memberRoleIds[member.id] ?? ""}
+                            disabled={memberIsOwner}
                             onChange={(event) =>
                               setDraft((current) => ({
                                 ...current,
@@ -379,9 +390,9 @@ export function TeamRolesModal({
                                 },
                               }))
                             }
-                            className="w-full cursor-pointer rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-sm text-zinc-900 outline-none focus:border-zinc-400 focus:ring-2 focus:ring-zinc-100"
+                            className="w-full cursor-pointer rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-sm text-zinc-900 outline-none focus:border-zinc-400 focus:ring-2 focus:ring-zinc-100 disabled:cursor-not-allowed disabled:bg-zinc-50 disabled:text-zinc-500"
                           >
-                            {roles.map((role) => (
+                            {assignableRoles.map((role) => (
                               <option key={role.id} value={role.id}>
                                 {roleLabel(role)}
                               </option>
@@ -389,10 +400,17 @@ export function TeamRolesModal({
                           </select>
                         </td>
                       </tr>
-                    ))}
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
+              <p className="text-[13px] text-zinc-500">
+                {t(
+                  "team.roles.leader_transfer_hint",
+                  "Komandas vadītāju ieceļ komandas lietotāja lapā. Šeit vadītāja lomu nevar piešķirt.",
+                )}
+              </p>
             </section>
           </fieldset>
 

@@ -14,8 +14,10 @@ import {
   getTeamInviteLinkAction,
   removeTeamMemberAction,
   resendTeamInvitationAction,
+  transferTeamLeadershipAction,
 } from "@/app/lib/team/actions";
 import {
+  canAppointTeamLeader,
   canLeaveTeam,
   canOpenTeamPage,
   canRemoveTeamMember,
@@ -30,7 +32,7 @@ import { useTeam } from "@/app/lib/team-store";
 import { NOTIFICATIONS_CHANGE_EVENT } from "@/app/lib/notifications";
 import { useIsAdmin } from "@/app/lib/users/use-is-admin";
 
-type PendingAction = "resend" | "remove" | "copy" | null;
+type PendingAction = "resend" | "remove" | "copy" | "appoint" | null;
 
 export function TeamMemberPage({ memberId }: { memberId: string }) {
   const { t } = useTranslations();
@@ -41,6 +43,7 @@ export function TeamMemberPage({ memberId }: { memberId: string }) {
   const member = members.find((item) => item.id === memberId) ?? null;
   const [pendingAction, setPendingAction] = useState<PendingAction>(null);
   const [removeConfirmOpen, setRemoveConfirmOpen] = useState(false);
+  const [appointConfirmOpen, setAppointConfirmOpen] = useState(false);
 
   const isBusy = pendingAction !== null;
   const isPending = member ? isPendingTeamMember(member) : false;
@@ -49,6 +52,9 @@ export function TeamMemberPage({ memberId }: { memberId: string }) {
     ? canRemoveTeamMember(currentUser, member, roles, isAdmin)
     : false;
   const canLeave = member ? canLeaveTeam(currentUser, member, roles) : false;
+  const canAppoint = member
+    ? canAppointTeamLeader(currentUser, member, roles)
+    : false;
   const isSelf = member ? isSelfTeamMember(currentUser, member) : false;
   const canOpenTeam = canOpenTeamPage(currentUser, roles, isAdmin);
 
@@ -106,6 +112,33 @@ export function TeamMemberPage({ memberId }: { memberId: string }) {
         type: "error",
         text: t("errors.clipboard_failed", "Neizdevās nokopēt linku."),
       });
+    } finally {
+      setPendingAction(null);
+    }
+  }
+
+  async function handleAppoint() {
+    if (isBusy || !member) return;
+    setPendingAction("appoint");
+    try {
+      const result = await transferTeamLeadershipAction(member.id);
+      if (!result.ok) {
+        showFeedback({
+          type: "error",
+          text: translateActionError(t, result.error),
+        });
+        return;
+      }
+      await refreshTeams();
+      showFeedback({
+        type: "success",
+        text: t(
+          "team.member.appoint_leader_success",
+          "{name} tagad ir komandas vadītājs.",
+          { name: memberDisplayName(member) },
+        ),
+      });
+      setAppointConfirmOpen(false);
     } finally {
       setPendingAction(null);
     }
@@ -212,9 +245,29 @@ export function TeamMemberPage({ memberId }: { memberId: string }) {
 
           {canLeave ? <TeamLeaveSection member={member} redirectTo="/" /> : null}
 
-          {canManageMember ? (
+          {canAppoint || canManageMember ? (
             <div className="flex flex-wrap gap-3">
-              {isPending && !awaitingPayment ? (
+              {canAppoint ? (
+                <button
+                  type="button"
+                  onClick={() => setAppointConfirmOpen(true)}
+                  disabled={isBusy}
+                  className="inline-flex min-h-10 items-center justify-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 text-sm font-semibold text-zinc-700 transition hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {pendingAction === "appoint" ? (
+                    <>
+                      <i className="fas fa-spinner fa-spin text-xs" aria-hidden="true" />
+                      {t("actions.saving", "Saglabā…")}
+                    </>
+                  ) : (
+                    <>
+                      <i className="fas fa-user-tie text-xs" aria-hidden="true" />
+                      {t("team.member.appoint_leader", "Iecelt par vadītāju")}
+                    </>
+                  )}
+                </button>
+              ) : null}
+              {canManageMember && isPending && !awaitingPayment ? (
                 <>
                   <button
                     type="button"
@@ -235,47 +288,71 @@ export function TeamMemberPage({ memberId }: { memberId: string }) {
                     )}
                   </button>
                   <button
+                    type="button"
+                    onClick={() => void handleResend()}
+                    disabled={isBusy}
+                    className="inline-flex min-h-10 items-center justify-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 text-sm font-semibold text-zinc-700 transition hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {pendingAction === "resend" ? (
+                      <>
+                        <i className="fas fa-spinner fa-spin text-xs" aria-hidden="true" />
+                        {t("team.invite.resending", "Sūta…")}
+                      </>
+                    ) : (
+                      <>
+                        <i className="fas fa-paper-plane text-xs" aria-hidden="true" />
+                        {t("team.invite.resend", "Sūtīt uzaicinājumu vēlreiz")}
+                      </>
+                    )}
+                  </button>
+                </>
+              ) : null}
+              {canManageMember ? (
+                <button
                   type="button"
-                  onClick={() => void handleResend()}
+                  onClick={() => setRemoveConfirmOpen(true)}
                   disabled={isBusy}
-                  className="inline-flex min-h-10 items-center justify-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 text-sm font-semibold text-zinc-700 transition hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="inline-flex min-h-10 items-center justify-center gap-2 rounded-2xl bg-red-50 px-4 text-sm font-semibold text-red-700 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  {pendingAction === "resend" ? (
+                  {pendingAction === "remove" ? (
                     <>
                       <i className="fas fa-spinner fa-spin text-xs" aria-hidden="true" />
-                      {t("team.invite.resending", "Sūta…")}
+                      {t("actions.deleting", "Dzēš…")}
                     </>
                   ) : (
                     <>
-                      <i className="fas fa-paper-plane text-xs" aria-hidden="true" />
-                      {t("team.invite.resend", "Sūtīt uzaicinājumu vēlreiz")}
+                      <i className="fas fa-user-minus text-xs" aria-hidden="true" />
+                      {t("team.member.remove", "Noņemt no komandas")}
                     </>
                   )}
                 </button>
-                </>
               ) : null}
-              <button
-                type="button"
-                onClick={() => setRemoveConfirmOpen(true)}
-                disabled={isBusy}
-                className="inline-flex min-h-10 items-center justify-center gap-2 rounded-2xl bg-red-50 px-4 text-sm font-semibold text-red-700 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {pendingAction === "remove" ? (
-                  <>
-                    <i className="fas fa-spinner fa-spin text-xs" aria-hidden="true" />
-                    {t("actions.deleting", "Dzēš…")}
-                  </>
-                ) : (
-                  <>
-                    <i className="fas fa-user-minus text-xs" aria-hidden="true" />
-                    {t("team.member.remove", "Noņemt no komandas")}
-                  </>
-                )}
-              </button>
             </div>
           ) : null}
         </div>
       </SectionPage>
+
+      <ConfirmModal
+        open={appointConfirmOpen}
+        onOpenChange={(open) => {
+          if (!open && pendingAction !== "appoint") setAppointConfirmOpen(false);
+        }}
+        title={t(
+          "team.member.appoint_leader_confirm_title",
+          "Iecelt par komandas vadītāju?",
+        )}
+        description={t(
+          "team.member.appoint_leader_confirm_description",
+          "{name} kļūs par komandas vadītāju. Tu pārņemsi šī lietotāja lomu ({role}).",
+          {
+            name: displayName,
+            role: teamRankLabel(member.role, t, roles) || member.role,
+          },
+        )}
+        confirmLabel={t("team.member.appoint_leader", "Iecelt par vadītāju")}
+        blocking={pendingAction === "appoint"}
+        onConfirm={() => void handleAppoint()}
+      />
 
       <ConfirmModal
         open={removeConfirmOpen}

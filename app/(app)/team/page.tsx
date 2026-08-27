@@ -28,8 +28,10 @@ import {
   inviteTeamMemberAction,
   removeTeamMemberAction,
   resendTeamInvitationAction,
+  transferTeamLeadershipAction,
 } from "@/app/lib/team/actions";
 import {
+  canAppointTeamLeader,
   canLeaveTeam,
   canOpenTeamPage,
   canRemoveTeamMember,
@@ -45,7 +47,7 @@ import { useTeam } from "@/app/lib/team-store";
 import { NOTIFICATIONS_CHANGE_EVENT } from "@/app/lib/notifications";
 import { useIsAdmin } from "@/app/lib/users/use-is-admin";
 
-type PendingAction = "resend" | "remove" | "copy" | "leave" | null;
+type PendingAction = "resend" | "remove" | "copy" | "leave" | "appoint" | null;
 
 export default function TeamPage() {
   const { t } = useTranslations();
@@ -66,6 +68,7 @@ export default function TeamPage() {
   const [pendingMemberId, setPendingMemberId] = useState<string | null>(null);
   const [pendingAction, setPendingAction] = useState<PendingAction>(null);
   const [removeTarget, setRemoveTarget] = useState<TeamMember | null>(null);
+  const [appointTarget, setAppointTarget] = useState<TeamMember | null>(null);
   const [leaveConfirmOpen, setLeaveConfirmOpen] = useState(false);
 
   const isBusy = pendingAction !== null;
@@ -211,6 +214,35 @@ export default function TeamPage() {
     }
   }
 
+  async function handleAppoint(member: TeamMember) {
+    if (isBusy) return;
+    setPendingMemberId(member.id);
+    setPendingAction("appoint");
+    try {
+      const result = await transferTeamLeadershipAction(member.id);
+      if (!result.ok) {
+        showFeedback({
+          type: "error",
+          text: translateActionError(t, result.error),
+        });
+        return;
+      }
+      await refreshTeams();
+      showFeedback({
+        type: "success",
+        text: t(
+          "team.member.appoint_leader_success",
+          "{name} tagad ir komandas vadītājs.",
+          { name: memberDisplayName(member) },
+        ),
+      });
+      setAppointTarget(null);
+    } finally {
+      setPendingMemberId(null);
+      setPendingAction(null);
+    }
+  }
+
   if (isReady && !canOpenTeam) {
     return (
       <SectionPage
@@ -290,7 +322,25 @@ export default function TeamPage() {
                 isAdmin,
               );
               const canLeave = canLeaveTeam(currentUser, member, roles);
+              const canAppoint = canAppointTeamLeader(
+                currentUser,
+                member,
+                roles,
+              );
               const memberBusy = isBusy && pendingMemberId === member.id;
+              const appointButton = canAppoint ? (
+                <IconActionButton
+                  label={t("team.member.appoint_leader", "Iecelt par vadītāju")}
+                  icon={
+                    memberBusy && pendingAction === "appoint"
+                      ? "fas fa-spinner fa-spin"
+                      : "fas fa-user-tie"
+                  }
+                  variant="muted"
+                  disabled={isBusy}
+                  onClick={() => setAppointTarget(member)}
+                />
+              ) : null;
               const removeButton = canManage ? (
                 <IconActionButton
                   label={t("team.member.remove", "Noņemt no komandas")}
@@ -391,6 +441,7 @@ export default function TeamPage() {
                     </div>
                   ) : (
                     <div className="flex shrink-0 items-center gap-1">
+                      {appointButton}
                       {removeButton}
                       <MemberLastOnline lastOnlineAt={member.lastOnlineAt} />
                     </div>
@@ -497,6 +548,34 @@ export default function TeamPage() {
         confirmVariant="danger"
         blocking={pendingAction === "leave"}
         onConfirm={() => void handleLeave()}
+      />
+
+      <ConfirmModal
+        open={appointTarget !== null}
+        onOpenChange={(open) => {
+          if (!open && pendingAction !== "appoint") setAppointTarget(null);
+        }}
+        title={t(
+          "team.member.appoint_leader_confirm_title",
+          "Iecelt par komandas vadītāju?",
+        )}
+        description={t(
+          "team.member.appoint_leader_confirm_description",
+          "{name} kļūs par komandas vadītāju. Tu pārņemsi šī lietotāja lomu ({role}).",
+          {
+            name: appointTarget ? memberDisplayName(appointTarget) : "",
+            role:
+              appointTarget
+                ? teamRankLabel(appointTarget.role, t, roles) ||
+                  appointTarget.role
+                : "",
+          },
+        )}
+        confirmLabel={t("team.member.appoint_leader", "Iecelt par vadītāju")}
+        blocking={pendingAction === "appoint"}
+        onConfirm={() => {
+          if (appointTarget) void handleAppoint(appointTarget);
+        }}
       />
 
       <ConfirmModal
