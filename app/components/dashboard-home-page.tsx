@@ -105,7 +105,7 @@ function MyTasksSection({
 export function DashboardHomePage() {
   const { t } = useTranslations();
   const router = useRouter();
-  const { lists, tasks, isReady } = useLists();
+  const { lists, tasks, allTaskFiles, isReady } = useLists();
   const { currentTeam, currentUser } = useTeam();
   const { unreadCount } = useNotifications();
   const { statuses } = useTaskStatuses();
@@ -197,6 +197,7 @@ export function DashboardHomePage() {
           <DashboardTaskSearch
             tasks={tasks}
             lists={lists}
+            taskFiles={allTaskFiles}
             onOpenTask={openTask}
           />
 

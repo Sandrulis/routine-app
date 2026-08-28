@@ -4,6 +4,11 @@
 
 - (none)
 
+## v0.3.16
+
+- Dashboard live meklēšana iet cauri aprakstam, kontrolsarakstam un pielikuma nosaukumam
+- Gmail spraudnis `0.4.34`: e-pasta `.txt` pielikums pēc sūtītāja adreses (`sandris@gmail.com.txt`)
+
 ## v0.3.15
 
 - Viesiem bez URL prefiksa UI valodu ņem no pārlūka `Accept-Language` (piem. somu → `/fi`); meklētājprogrammas netiek novirzītas

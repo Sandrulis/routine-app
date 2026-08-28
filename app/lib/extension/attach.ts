@@ -50,6 +50,20 @@ function sanitizeFileBase(name: string): string {
   return cleaned || "email";
 }
 
+/** Sender mailbox from a From header (`Name <a@b.c>` or `a@b.c`). */
+export function senderEmailFromHeader(from: string): string {
+  const trimmed = from.trim();
+  if (!trimmed) return "";
+  const named = trimmed.match(/<([^<>]+@[^<>]+)>/);
+  const raw = (named?.[1] ?? trimmed).replace(/^["']|["']$/g, "").trim();
+  const match = raw.match(/[^\s<>"]+@[^\s<>"]+/);
+  return (match?.[0] ?? "").toLowerCase();
+}
+
+export function emailAttachmentFileName(from: string): string {
+  return `${sanitizeFileBase(senderEmailFromHeader(from))}.txt`;
+}
+
 export function buildEmailFile(input: {
   subject: string;
   from: string;
@@ -60,7 +74,6 @@ export function buildEmailFile(input: {
   permalink?: string;
 }): { name: string; mimeType: string; bytes: Uint8Array } {
   const subject = input.subject.trim() || "(bez temata)";
-  const base = sanitizeFileBase(subject);
   const encoder = new TextEncoder();
   const plainBody = input.body.trim();
   const htmlBody =
@@ -80,7 +93,7 @@ export function buildEmailFile(input: {
   ].filter((line): line is string => line !== null);
 
   return {
-    name: `${base}.txt`,
+    name: emailAttachmentFileName(input.from),
     mimeType: "text/plain",
     bytes: encoder.encode(lines.join("\n")),
   };

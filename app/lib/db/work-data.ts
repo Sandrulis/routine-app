@@ -587,7 +587,7 @@ export async function fetchTeamWorkspace(teamId: string): Promise<TeamWorkspace>
       supabase
         .from("work_tasks")
         .select(
-          "id, list_id, parent_id, kind, title, status, status_changed_at, deleted_at, archived_at, start_date, due_date, sort_order, hidden_status_ids, status_order, status_group_overrides, created_at, checklists",
+          "id, list_id, parent_id, kind, title, description, status, status_changed_at, deleted_at, archived_at, start_date, due_date, sort_order, hidden_status_ids, status_order, status_group_overrides, created_at, checklists",
         )
         .eq("team_id", teamId)
         .order("sort_order", { ascending: true })
@@ -767,7 +767,7 @@ export async function fetchTeamWorkspace(teamId: string): Promise<TeamWorkspace>
       parentId: row.parent_id,
       kind: row.kind,
       title: row.title,
-      description: "",
+      description: typeof row.description === "string" ? row.description : "",
       status: row.status,
       statusChangedAt: row.status_changed_at ?? null,
       deletedAt: row.deleted_at ?? null,

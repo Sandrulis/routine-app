@@ -16,6 +16,7 @@ import {
 type DashboardTaskSearchProps = {
   tasks: WorkTask[];
   lists: WorkList[];
+  taskFiles: Array<{ taskId: string; name: string }>;
   onOpenTask: (task: WorkTask) => void;
 };
 
@@ -27,7 +28,7 @@ function SearchResultRow({
   onOpen: () => void;
 }) {
   const { t } = useTranslations();
-  const { task, listName, parentTitle, archived } = hit;
+  const { task, listName, parentTitle, archived, matchedFileName } = hit;
   const kindLabel = isWorkSubtask(task)
     ? t("dashboard.search.kind_subtask", "Apakšuzdevums")
     : t("dashboard.search.kind_task", "Uzdevums");
@@ -48,7 +49,13 @@ function SearchResultRow({
           {task.title.trim() || t("dashboard.search.untitled", "Bez nosaukuma")}
         </span>
         <span className="mt-0.5 block truncate text-xs text-zinc-500">
-          {[listName, parentTitle, kindLabel, archived ? t("dashboard.search.archived", "Arhīvā") : null]
+          {[
+            listName,
+            parentTitle,
+            kindLabel,
+            matchedFileName,
+            archived ? t("dashboard.search.archived", "Arhīvā") : null,
+          ]
             .filter(Boolean)
             .join(" · ")}
         </span>
@@ -60,14 +67,15 @@ function SearchResultRow({
 export function DashboardTaskSearch({
   tasks,
   lists,
+  taskFiles,
   onOpenTask,
 }: DashboardTaskSearchProps) {
   const { t } = useTranslations();
   const [query, setQuery] = useState("");
 
   const results = useMemo(
-    () => searchDashboardTasks(query, tasks, lists),
-    [lists, query, tasks],
+    () => searchDashboardTasks(query, tasks, lists, taskFiles),
+    [lists, query, taskFiles, tasks],
   );
 
   const showResults = query.trim().length > 0;

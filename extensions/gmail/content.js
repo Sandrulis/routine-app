@@ -372,6 +372,20 @@ function scrapeEmailFallback() {
   };
 }
 
+function senderEmailFromHeader(from) {
+  const trimmed = String(from || "").trim();
+  if (!trimmed) return "";
+  const named = trimmed.match(/<([^<>]+@[^<>]+)>/);
+  const raw = (named?.[1] ?? trimmed).replace(/^["']|["']$/g, "").trim();
+  const match = raw.match(/[^\s<>"]+@[^\s<>"]+/);
+  return (match?.[0] || "").toLowerCase();
+}
+
+function emailBodyAttachmentName(from) {
+  const email = senderEmailFromHeader(from);
+  return email ? `${email}.txt` : "email.txt";
+}
+
 function ensureUi() {
   const existing = document.getElementById("routine-gmail-root");
   if (existing?.dataset?.routineUi === "21") {
@@ -527,6 +541,7 @@ function ensureUi() {
   /** @type {{ attachmentId: string, name: string, mimeType?: string, size: number, tooLarge?: boolean }[]} */
   let attachmentOptions = [];
   let listedGmailMessageId = "";
+  let listedGmailFrom = "";
   let creatingSubtask = false;
   const DRAFT_ID = "__draft__";
   /** @type {{ id: string, title: string }[]} */
@@ -559,6 +574,7 @@ function ensureUi() {
     if (attLabel) attLabel.textContent = t("extension.gmail.attachments");
     const attHint = root.querySelector("#routine-gmail-att-hint");
     if (attHint) attHint.textContent = t("extension.gmail.email_body_hint");
+    paintEmailBodyOptionName();
     const titleLabel = root.querySelector("#routine-gmail-create-title-label");
     if (titleLabel) titleLabel.textContent = t("tasks.fields.title");
     createTitle.placeholder = t("subtasks.fields.title_placeholder");
@@ -693,6 +709,7 @@ function ensureUi() {
   function resetAttachmentsUi() {
     attachmentOptions = [];
     listedGmailMessageId = "";
+    listedGmailFrom = "";
     attachList.innerHTML = "";
     attachmentsSection.hidden = true;
     attToggleBtn.hidden = true;
@@ -748,8 +765,22 @@ function ensureUi() {
     }
   }
 
+  function emailBodyFromHeader() {
+    return listedGmailFrom || scrapeEmailFallback().from || "";
+  }
+
+  function paintEmailBodyOptionName() {
+    const input = attachList.querySelector("#routine-att-email-body");
+    const nameEl = input?.closest("label")?.querySelector(".routine-gmail-att-name");
+    if (nameEl) nameEl.textContent = emailBodyAttachmentName(emailBodyFromHeader());
+  }
+
   function ensureEmailBodyOption() {
-    if (attachList.querySelector("#routine-att-email-body")) return;
+    const existing = attachList.querySelector("#routine-att-email-body");
+    if (existing) {
+      paintEmailBodyOptionName();
+      return;
+    }
     const li = document.createElement("li");
     li.innerHTML = `
       <label class="routine-gmail-att-row" for="routine-att-email-body">
@@ -762,7 +793,7 @@ function ensureUi() {
     `;
     const nameEl = li.querySelector(".routine-gmail-att-name");
     const sizeEl = li.querySelector(".routine-gmail-att-size");
-    if (nameEl) nameEl.textContent = t("extension.gmail.email_body");
+    if (nameEl) nameEl.textContent = emailBodyAttachmentName(emailBodyFromHeader());
     if (sizeEl) sizeEl.textContent = ".txt";
     li.querySelector("input")?.addEventListener("change", updateAttToggleLabel);
     attachList.prepend(li);
@@ -872,6 +903,7 @@ function ensureUi() {
         return;
       }
       listedGmailMessageId = String(result.data?.gmailMessageId || "");
+      listedGmailFrom = String(result.data?.from || "");
       renderAttachments(result.data?.attachments || []);
     } catch {
       showAttachmentsPlaceholder(t("extension.gmail.attachments_failed"), {

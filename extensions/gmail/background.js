@@ -1165,8 +1165,10 @@ async function listGmailAttachments(messageId, threadId, interactive) {
     const message = await resolveGmailMessage(messageId, threadId, token);
     const parts = [];
     walkParts(message.payload, parts);
+    const headers = message.payload?.headers || [];
     return {
       gmailMessageId: message.id || messageId,
+      from: headerValue(headers, "From"),
       attachments: parts.map((part) => ({
         attachmentId: String(part.attachmentId),
         name:
@@ -1976,6 +1978,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             data: {
               ok: true,
               gmailMessageId: listed.gmailMessageId,
+              from: listed.from || "",
               attachments: listed.attachments,
             },
           });
