@@ -42,6 +42,7 @@ export type TeamBillingRow = {
   billing_cycle_end: string | null;
   subscription_cancel_at_period_end?: boolean | null;
   billing_period_end_at?: string | null;
+  is_vip?: boolean | null;
 };
 
 function parsePeriod(value: string | null | undefined): PaymentPlanBillingPeriod {
@@ -149,7 +150,7 @@ export async function loadTeamBillingRow(teamId: string) {
   const { data, error } = await admin
     .from("teams")
     .select(
-      "id, name, payment_plan_id, payment_plan_until, payment_plan_paid, payment_plan_is_trial, payment_plan_is_early_bird, early_bird_seat_count, stripe_customer_id, stripe_subscription_id, paid_seat_count, billing_period, billing_cycle_end, subscription_cancel_at_period_end, billing_period_end_at",
+      "id, name, payment_plan_id, payment_plan_until, payment_plan_paid, payment_plan_is_trial, payment_plan_is_early_bird, early_bird_seat_count, stripe_customer_id, stripe_subscription_id, paid_seat_count, billing_period, billing_cycle_end, subscription_cancel_at_period_end, billing_period_end_at, is_vip",
     )
     .eq("id", teamId)
     .maybeSingle();
@@ -486,7 +487,7 @@ export async function clearTeamSeatBillingState(teamId: string): Promise<boolean
   if (!isSupabaseAdminConfigured()) return false;
   const admin = createAdminClient();
   const team = await loadTeamBillingRow(teamId);
-  if (!team) return false;
+  if (!team || team.is_vip === true) return false;
 
   const needsClear =
     (team.paid_seat_count ?? 0) > 0 ||

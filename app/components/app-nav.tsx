@@ -764,6 +764,7 @@ export function AppNav() {
     isModuleEnabled(FRONTEND_MODULE_KEYS.fileUpload);
   const canSeeBilling =
     paymentPlansEnabled &&
+    currentTeam?.isVip !== true &&
     canEditTeamSettings(currentUser, roles, isAdmin);
   const canManageListStatuses = hasTeamActionPermission(
     currentUser,

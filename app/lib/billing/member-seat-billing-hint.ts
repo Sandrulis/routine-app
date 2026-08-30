@@ -32,7 +32,7 @@ export function resolveMemberSeatBillingHint(input: {
   isFreePlan: boolean;
   paymentPlansEnabled: boolean;
 }): MemberSeatBillingHint | null {
-  if (!input.paymentPlansEnabled || input.isFreePlan) return null;
+  if (!input.paymentPlansEnabled || input.isFreePlan || input.team.isVip) return null;
   if (!input.team.paymentPlan.planId) return null;
 
   if (isAwaitingPaymentSeat(input.member)) {

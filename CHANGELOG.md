@@ -4,6 +4,11 @@
 
 - (none)
 
+## v0.3.17
+
+- Sistēmas admins `/admin/teams` var piešķirt komandai VIP (zvaigzne): bez maksas, vietu un moduļu limitu; sānjoslā nav Abonementi
+- Admin plāna modālis rāda Stripe cikla beigas **Derīgs līdz**
+
 ## v0.3.16
 
 - Dashboard live meklēšana iet cauri aprakstam, kontrolsarakstam un pielikuma nosaukumam

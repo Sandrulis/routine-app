@@ -1,13 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { listAdminTeamMembersAction } from "@/app/(app)/admin/actions";
+import { useEffect, useState, useTransition } from "react";
+import { listAdminTeamMembersAction, setAdminTeamVipAction } from "@/app/(app)/admin/actions";
 import { AppModal } from "@/app/components/app-modal";
+import { useFeedbackToast } from "@/app/components/feedback-toast-provider";
 import { ListBadge } from "@/app/components/list-badge";
 import { LoadingState } from "@/app/components/loading-state";
 import { MemberLastOnline } from "@/app/components/member-last-online";
 import { useTranslations } from "@/app/components/translations-provider";
 import { UserAvatar } from "@/app/components/user-avatar";
+import { translateActionError } from "@/app/lib/i18n/action-errors";
 import { initialsFromName, teamRankLabel } from "@/app/lib/team";
 import type {
   AdminTeamMemberSummary,
@@ -18,17 +20,26 @@ type AdminTeamMembersModalProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   team: AdminTeamMembersTarget | null;
+  onVipChange?: (teamId: string, isVip: boolean) => void;
 };
 
 export function AdminTeamMembersModal({
   open,
   onOpenChange,
   team,
+  onVipChange,
 }: AdminTeamMembersModalProps) {
   const { t } = useTranslations();
+  const { showFeedback } = useFeedbackToast();
   const [members, setMembers] = useState<AdminTeamMemberSummary[]>([]);
   const [loading, setLoading] = useState(false);
   const [loadFailed, setLoadFailed] = useState(false);
+  const [isVip, setIsVip] = useState(team?.isVip === true);
+  const [vipPending, startVipTransition] = useTransition();
+
+  useEffect(() => {
+    setIsVip(team?.isVip === true);
+  }, [team]);
 
   useEffect(() => {
     if (!open || !team) {
@@ -62,6 +73,24 @@ export function AdminTeamMembersModal({
     };
   }, [open, team]);
 
+  function toggleVip() {
+    if (!team || vipPending) return;
+    const next = !isVip;
+    startVipTransition(async () => {
+      const result = await setAdminTeamVipAction(team.id, next);
+      if (!result.ok) {
+        showFeedback({ type: "error", text: translateActionError(t, result.error) });
+        return;
+      }
+      setIsVip(next);
+      onVipChange?.(team.id, next);
+      showFeedback({
+        type: "success",
+        text: t("admin.teams.vip.saved", "VIP statuss saglabāts."),
+      });
+    });
+  }
+
   return (
     <AppModal
       open={open}
@@ -89,6 +118,30 @@ export function AdminTeamMembersModal({
                     })}
               </p>
             </div>
+            <button
+              type="button"
+              aria-pressed={isVip}
+              aria-label={
+                isVip
+                  ? t("admin.teams.vip.disable", "Noņemt VIP")
+                  : t("admin.teams.vip.enable", "Padarīt par VIP")
+              }
+              title={
+                isVip
+                  ? t("admin.teams.vip.disable", "Noņemt VIP")
+                  : t("admin.teams.vip.enable", "Padarīt par VIP")
+              }
+              disabled={vipPending}
+              onClick={toggleVip}
+              className="ml-auto flex size-10 shrink-0 items-center justify-center rounded-lg text-xl transition hover:bg-zinc-200/80 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <i
+                className={
+                  isVip ? "fas fa-star text-amber-400" : "far fa-star text-zinc-300"
+                }
+                aria-hidden="true"
+              />
+            </button>
           </div>
 
           {loading ? (

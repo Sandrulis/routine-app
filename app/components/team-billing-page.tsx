@@ -419,15 +419,38 @@ export function TeamBillingPage() {
   }
 
   const selectedPlan = summary.paidPlans.find((plan) => plan.id === planId) ?? summary.paidPlans[0];
-  const canPayPending = summary.stripeEnabled && summary.pendingPaymentCount > 0;
+  const canPayPending =
+    !summary.isVip && summary.stripeEnabled && summary.pendingPaymentCount > 0;
   const canSubscribe =
+    !summary.isVip &&
     summary.stripeEnabled &&
     !summary.hasSubscription &&
     summary.paidPlans.length > 0 &&
     Boolean(planId) &&
     summary.billableSeatCount > 0;
   const canBuyExtra =
-    summary.stripeEnabled && (summary.hasSubscription || summary.billableSeatCount < 1);
+    !summary.isVip &&
+    summary.stripeEnabled &&
+    (summary.hasSubscription || summary.billableSeatCount < 1);
+
+  if (summary.isVip) {
+    return (
+      <SectionPage
+        title={t("team.billing.title", "Abonementi")}
+        subtitle={t(
+          "team.billing.subtitle",
+          "Apmaksātās vietas komandai. Jaunais lietotājs piekļūst tikai pēc apmaksātas vietas.",
+        )}
+      >
+        <p className="rounded-3xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-950">
+          {t(
+            "team.billing.vip_notice",
+            "VIP komandai nav jāmaksā par pakalpojumiem.",
+          )}
+        </p>
+      </SectionPage>
+    );
+  }
 
   return (
     <SectionPage

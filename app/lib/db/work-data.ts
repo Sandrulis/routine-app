@@ -174,6 +174,7 @@ function teamFromRow(row: {
   billing_period?: string | null;
   subscription_cancel_at_period_end?: boolean | null;
   billing_period_end_at?: string | null;
+  is_vip?: boolean | null;
 }): WorkTeam {
   const paidSeatCount = Number(row.paid_seat_count);
   const billingPeriod =
@@ -189,6 +190,7 @@ function teamFromRow(row: {
     icon: row.icon,
     color: row.color,
     logoUrl: row.logo_url,
+    isVip: row.is_vip === true,
     paymentPlan: {
       planId:
         typeof row.payment_plan_id === "string" && row.payment_plan_id.trim()
@@ -280,7 +282,7 @@ export async function fetchUserTeams(): Promise<{
       supabase
         .from("teams")
         .select(
-          "id, name, initials, icon, color, logo_url, created_at, payment_plan_id, payment_plan_until, payment_plan_paid, payment_plan_is_trial, payment_plan_is_early_bird, paid_seat_count, billing_cycle_end, billing_period, subscription_cancel_at_period_end, billing_period_end_at",
+          "id, name, initials, icon, color, logo_url, created_at, payment_plan_id, payment_plan_until, payment_plan_paid, payment_plan_is_trial, payment_plan_is_early_bird, paid_seat_count, billing_cycle_end, billing_period, subscription_cancel_at_period_end, billing_period_end_at, is_vip",
         )
         .in("id", chunk)
         .order("created_at", { ascending: true }),

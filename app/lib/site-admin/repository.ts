@@ -109,6 +109,7 @@ type TeamListRow = {
   id: string;
   name: string;
   logo_url: string | null;
+  is_vip?: boolean | null;
 };
 
 type TeamRow = {
@@ -125,6 +126,9 @@ type TeamRow = {
   payment_plan_is_trial?: boolean | null;
   payment_plan_is_early_bird?: boolean | null;
   early_bird_seat_count?: number | null;
+  billing_cycle_end?: string | null;
+  billing_period_end_at?: string | null;
+  is_vip?: boolean | null;
 };
 
 type LanguageRow = {
@@ -163,6 +167,12 @@ type SettingsRow = {
 
 function dbNotConfigured(): ActionResult {
   return { ok: false, error: "errors.db_not_configured" };
+}
+
+function dateOnly(value: string | null | undefined): string | null {
+  if (typeof value !== "string") return null;
+  const match = value.trim().match(/^(\d{4}-\d{2}-\d{2})/);
+  return match?.[1] ?? null;
 }
 
 async function getSessionClient() {
@@ -233,7 +243,7 @@ export const listAdminUsers = cache(async function listAdminUsers(): Promise<Adm
     supabase
       .from("team_members")
       .select("user_id, team_id, role, last_online_at"),
-    supabase.from("teams").select("id, name, logo_url"),
+    supabase.from("teams").select("id, name, logo_url, is_vip"),
   ]);
 
   const teamById = new Map(
@@ -251,6 +261,7 @@ export const listAdminUsers = cache(async function listAdminUsers(): Promise<Adm
         name: team.name,
         role: row.role,
         logoUrl: team.logo_url,
+        isVip: team.is_vip === true,
       });
       teamsByUser.set(row.user_id, list);
     }
@@ -432,7 +443,7 @@ export const listAdminTeams = cache(async function listAdminTeams(): Promise<Adm
   const { data: teams, error } = await supabase
     .from("teams")
     .select(
-      "id, name, initials, icon, color, logo_url, created_at, payment_plan_id, payment_plan_until, payment_plan_paid, payment_plan_is_trial, payment_plan_is_early_bird, early_bird_seat_count",
+      "id, name, initials, icon, color, logo_url, created_at, payment_plan_id, payment_plan_until, payment_plan_paid, payment_plan_is_trial, payment_plan_is_early_bird, early_bird_seat_count, billing_cycle_end, billing_period_end_at, is_vip",
     )
     .order("created_at", { ascending: true });
 
@@ -462,13 +473,14 @@ export const listAdminTeams = cache(async function listAdminTeams(): Promise<Adm
         ? row.payment_plan_id
         : null,
     paymentPlanUntil:
-      typeof row.payment_plan_until === "string" && row.payment_plan_until.trim()
-        ? row.payment_plan_until.slice(0, 10)
-        : null,
+      dateOnly(row.payment_plan_until) ??
+      dateOnly(row.billing_cycle_end) ??
+      dateOnly(row.billing_period_end_at),
     paymentPlanPaid: row.payment_plan_paid === true,
     paymentPlanIsTrial: row.payment_plan_is_trial === true,
     paymentPlanIsEarlyBird: row.payment_plan_is_early_bird === true,
     earlyBirdSeatCount: Math.max(0, Math.trunc(Number(row.early_bird_seat_count) || 0)),
+    isVip: row.is_vip === true,
   }));
 });
 
@@ -648,6 +660,44 @@ export async function updateAdminTeamPaymentPlan(
   if (error) {
     console.error("updateAdminTeamPaymentPlan failed:", error.message);
     return { ok: false, error: "errors.team_payment_plan_save_failed" };
+  }
+
+  return { ok: true };
+}
+
+export async function setAdminTeamVip(
+  teamId: string,
+  isVip: boolean,
+): Promise<ActionResult> {
+  const trimmedTeamId = teamId.trim();
+  if (!trimmedTeamId) {
+    return { ok: false, error: "errors.team_save_failed" };
+  }
+  if (!isSupabaseConfigured()) {
+    return dbNotConfigured();
+  }
+
+  const supabase = await getSessionClient();
+  const { error } = await supabase
+    .from("teams")
+    .update({ is_vip: isVip === true })
+    .eq("id", trimmedTeamId);
+
+  if (error) {
+    console.error("setAdminTeamVip failed:", error.message);
+    return { ok: false, error: "errors.team_vip_save_failed" };
+  }
+
+  if (isVip === true && isSupabaseAdminConfigured()) {
+    const admin = createAdminClient();
+    const { error: seatError } = await admin
+      .from("team_members")
+      .update({ seat_status: "active" })
+      .eq("team_id", trimmedTeamId)
+      .eq("seat_status", "pending_payment");
+    if (seatError) {
+      console.error("setAdminTeamVip seats failed:", seatError.message);
+    }
   }
 
   return { ok: true };

@@ -69,6 +69,7 @@ export function AdminTeamsManager({
       icon: team.icon,
       color: team.color,
       logoUrl: team.logoUrl,
+      isVip: team.isVip,
     });
   }
 
@@ -156,7 +157,16 @@ export function AdminTeamsManager({
                         color={team.color}
                         logoUrl={team.logoUrl}
                       />
-                      <p className="font-semibold text-zinc-900">{team.name}</p>
+                      <div className="flex min-w-0 items-center gap-2">
+                        <p className="truncate font-semibold text-zinc-900">{team.name}</p>
+                        {team.isVip ? (
+                          <i
+                            className="fas fa-star shrink-0 text-amber-400"
+                            aria-label={t("admin.teams.vip", "VIP")}
+                            title={t("admin.teams.vip", "VIP")}
+                          />
+                        ) : null}
+                      </div>
                     </div>
                   </td>
                   <td className="px-5 py-4 text-zinc-600">{team.memberCount}</td>
@@ -211,6 +221,12 @@ export function AdminTeamsManager({
           if (!open) setMembersTeam(null);
         }}
         team={membersTeam}
+        onVipChange={(teamId, isVip) => {
+          setMembersTeam((current) =>
+            current && current.id === teamId ? { ...current, isVip } : current,
+          );
+          router.refresh();
+        }}
       />
 
       <NameFormModal

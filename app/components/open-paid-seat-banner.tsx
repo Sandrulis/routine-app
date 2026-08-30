@@ -21,6 +21,7 @@ export function OpenPaidSeatBanner() {
   const { currentTeam, members, currentUser, roles, isReady } = useTeam();
 
   if (!isReady || !paymentPlansEnabled || !currentTeam) return null;
+  if (currentTeam.isVip) return null;
   if (!canEditTeamSettings(currentUser, roles, isAdmin)) return null;
   if (!currentTeam.paymentPlan.paid) return null;
   const canInvite = canInviteTeamMembers(currentUser, roles, isAdmin);

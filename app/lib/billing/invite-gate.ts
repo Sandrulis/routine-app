@@ -31,6 +31,10 @@ export async function resolveInviteSeatDecision(teamId: string): Promise<
     return { ok: false, error: "errors.team_invite_failed" };
   }
 
+  if (team.is_vip === true) {
+    return { ok: true, seatStatus: "active" };
+  }
+
   const plan = plans.find((item) => item.id === team.payment_plan_id) ?? null;
   const counts = resolveSeatCounts({
     paidSeatCount: team.paid_seat_count ?? 0,

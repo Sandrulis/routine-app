@@ -63,6 +63,7 @@ export type TeamBillingSummary = {
   paymentPlansEnabled: boolean;
   stripeEnabled: boolean;
   canManage: boolean;
+  isVip: boolean;
   hasSubscription: boolean;
   pastDue: boolean;
   planId: string | null;
@@ -246,6 +247,7 @@ export async function getTeamBillingSummaryAction(
       paymentPlansEnabled: plansEnabled,
       stripeEnabled,
       canManage: true,
+      isVip: team.is_vip === true,
       hasSubscription: Boolean(team.stripe_subscription_id),
       pastDue,
       planId: team.payment_plan_id,
@@ -332,6 +334,9 @@ export async function startTeamBillingCheckoutAction(input: {
       .then((result) => result.data),
   ]);
   if (!team) return { ok: false, error: "errors.billing_forbidden" };
+  if (team.is_vip === true) {
+    return { ok: false, error: "errors.billing_vip_no_payment" };
+  }
   if (team.stripe_subscription_id) {
     return payPendingTeamSeatsAction(teamId);
   }
@@ -411,6 +416,9 @@ export async function payPendingTeamSeatsAction(
     loadTeamMembersForSeats(trimmed),
   ]);
   if (!team) return { ok: false, error: "errors.billing_forbidden" };
+  if (team.is_vip === true) {
+    return { ok: false, error: "errors.billing_vip_no_payment" };
+  }
 
   const counts = resolveSeatCounts({
     paidSeatCount: team.paid_seat_count ?? 0,
@@ -452,6 +460,9 @@ export async function buyExtraTeamSeatAction(
 
   const team = await loadTeamBillingRow(trimmed);
   if (!team) return { ok: false, error: "errors.billing_forbidden" };
+  if (team.is_vip === true) {
+    return { ok: false, error: "errors.billing_vip_no_payment" };
+  }
 
   // Race guard: another click already opened a seat — do not charge again.
   const members = await loadTeamMembersForSeats(trimmed);

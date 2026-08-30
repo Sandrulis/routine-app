@@ -246,6 +246,7 @@ export function AdminUsersManager({
                                     id: team.id,
                                     name: team.name,
                                     logoUrl: team.logoUrl,
+                                    isVip: team.isVip,
                                   })
                                 }
                                 className="-mx-2 flex w-full items-center gap-2.5 rounded-lg px-2 py-1 text-left transition hover:bg-zinc-50"
@@ -325,6 +326,12 @@ export function AdminUsersManager({
           if (!open) setMembersTeam(null);
         }}
         team={membersTeam}
+        onVipChange={(teamId, isVip) => {
+          setMembersTeam((current) =>
+            current && current.id === teamId ? { ...current, isVip } : current,
+          );
+          router.refresh();
+        }}
       />
 
       <AppModal

@@ -71,6 +71,7 @@ export function TeamScopedFrontendModules({
         teamPlan: teamPlanForModules,
         planModuleKeysByPlanId,
         freePlanIds,
+        isVip: currentTeam?.isVip === true,
       }),
     [
       teamPlanForModules,
@@ -78,6 +79,7 @@ export function TeamScopedFrontendModules({
       paymentPlansEnabled,
       planModuleKeysByPlanId,
       freePlanIds,
+      currentTeam?.isVip,
     ],
   );
 

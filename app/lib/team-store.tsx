@@ -359,6 +359,7 @@ export function TeamProvider({ children }: { children: ReactNode }) {
         icon: input.icon ?? null,
         color: input.color ?? randomListColorId(),
         logoUrl: input.logoUrl ?? null,
+        isVip: false,
         paymentPlan: { ...EMPTY_TEAM_PAYMENT_PLAN },
         paidSeatCount: 0,
         billingCycleEnd: null,

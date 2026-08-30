@@ -33,7 +33,7 @@ export async function notifyOpenPaidSeats(teamId: string) {
     await Promise.all([
       admin
         .from("teams")
-        .select("paid_seat_count, billing_cycle_end, payment_plan_paid")
+        .select("paid_seat_count, billing_cycle_end, payment_plan_paid, is_vip")
         .eq("id", teamId)
         .maybeSingle(),
       admin
@@ -50,7 +50,7 @@ export async function notifyOpenPaidSeats(teamId: string) {
     logError("notifyOpenPaidSeats.members", memberError.message);
     return;
   }
-  if (!team || team.payment_plan_paid !== true) return;
+  if (!team || team.payment_plan_paid !== true || team.is_vip === true) return;
 
   const counts = resolveSeatCounts({
     paidSeatCount: team.paid_seat_count ?? 0,

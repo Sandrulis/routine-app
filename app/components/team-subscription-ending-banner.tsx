@@ -46,6 +46,7 @@ export function TeamSubscriptionEndingBanner() {
   }, []);
 
   if (!isReady || !currentTeam?.subscriptionCancelAtPeriodEnd) return null;
+  if (currentTeam.isVip) return null;
 
   const access = resolveTeamBillingAccess({
     paymentPlansEnabled,

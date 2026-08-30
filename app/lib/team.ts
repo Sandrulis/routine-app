@@ -517,6 +517,7 @@ export type WorkTeam = {
   icon: string | null;
   color: string;
   logoUrl: string | null;
+  isVip: boolean;
   paymentPlan: TeamPaymentPlanState;
   paidSeatCount: number;
   billingCycleEnd: string | null;
@@ -631,6 +632,7 @@ export function normalizeStoredTeams(value: unknown): WorkTeam[] | null {
         icon,
         color,
         logoUrl,
+        isVip: false,
         paymentPlan: EMPTY_TEAM_PAYMENT_PLAN,
         paidSeatCount: 0,
         billingCycleEnd: null as string | null,

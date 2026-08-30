@@ -32,10 +32,11 @@ export function resolveEffectiveFrontendModuleKeys(input: {
   planModuleKeysByPlanId: ReadonlyMap<string, readonly string[]>;
   freePlanIds?: ReadonlySet<string>;
   todayIso?: string;
+  isVip?: boolean;
 }): string[] {
   const globalKeys = [...input.globalEnabledKeys];
 
-  if (!input.paymentPlansEnabled) {
+  if (!input.paymentPlansEnabled || input.isVip === true) {
     return globalKeys;
   }
 

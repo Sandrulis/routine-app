@@ -68,6 +68,7 @@ import {
   setDefaultSiteLanguage,
   updateAdminTeam,
   updateAdminTeamPaymentPlan,
+  setAdminTeamVip,
   updateAdminUser,
   updateSiteLanguageActiveStatus,
   updateSiteLanguageName,
@@ -152,6 +153,13 @@ export async function updateAdminTeamPaymentPlanAction(
 ) {
   await requireAdmin({ action: "admin.team.payment_plan", target: teamId });
   const result = await updateAdminTeamPaymentPlan(teamId, input);
+  if (result.ok) refreshAdmin();
+  return result;
+}
+
+export async function setAdminTeamVipAction(teamId: string, isVip: boolean) {
+  await requireAdmin({ action: "admin.team.vip", target: teamId });
+  const result = await setAdminTeamVip(teamId, isVip);
   if (result.ok) refreshAdmin();
   return result;
 }

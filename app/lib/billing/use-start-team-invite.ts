@@ -54,6 +54,7 @@ export function useStartTeamInvite() {
         isTrialActive:
           currentTeam.paymentPlan.isTrial &&
           isTeamPaymentPlanActive(currentTeam.paymentPlan),
+        isVip: currentTeam.isVip === true,
         paidSeatCount: currentTeam.paidSeatCount,
         members,
       }),

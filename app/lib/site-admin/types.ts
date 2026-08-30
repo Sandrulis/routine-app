@@ -6,6 +6,7 @@ export type AdminUserTeamSummary = {
   name: string;
   role: string;
   logoUrl: string | null;
+  isVip: boolean;
 };
 
 export type AdminUserSummary = {
@@ -41,6 +42,7 @@ export type AdminTeamSummary = {
   paymentPlanIsTrial: boolean;
   paymentPlanIsEarlyBird: boolean;
   earlyBirdSeatCount: number;
+  isVip: boolean;
 };
 
 export type AdminTeamPaymentPlanInput = {
@@ -67,6 +69,7 @@ export type AdminTeamMembersTarget = {
   icon?: string | null;
   color?: string;
   logoUrl?: string | null;
+  isVip: boolean;
 };
 
 export type AdminTeamInput = {

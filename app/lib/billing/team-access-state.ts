@@ -39,6 +39,16 @@ export function resolveTeamBillingAccess(input: {
     isTeamOwner(input.currentUser, input.roles) ||
     canManageBilling;
 
+  if (input.team?.isVip === true) {
+    return {
+      subscriptionRequired: false,
+      canUseAppDespiteUnpaid,
+      canManageBilling,
+      memberBlocked: false,
+      showManagerBlockedBanner: false,
+    };
+  }
+
   if (!input.paymentPlansEnabled || !input.team?.paymentPlan.planId) {
     return {
       subscriptionRequired: false,

@@ -61,10 +61,16 @@ export function inviteRequiresPaidSeat(input: {
   paymentPlansEnabled: boolean;
   isFreePlan: boolean;
   isTrialActive: boolean;
+  isVip?: boolean;
   paidSeatCount: number;
   members: Array<{ seatStatus?: string | null }>;
 }): boolean {
-  if (!input.paymentPlansEnabled || input.isFreePlan || input.isTrialActive) {
+  if (
+    !input.paymentPlansEnabled ||
+    input.isFreePlan ||
+    input.isTrialActive ||
+    input.isVip === true
+  ) {
     return false;
   }
   return (

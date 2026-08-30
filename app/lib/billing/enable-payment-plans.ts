@@ -29,6 +29,7 @@ type TeamRow = {
   early_bird_seat_count: number | null;
   stripe_subscription_id: string | null;
   billing_cycle_end: string | null;
+  is_vip?: boolean | null;
 };
 
 export function endOfCurrentUtcMonthIso(now = new Date()) {
@@ -47,7 +48,7 @@ export async function notifyTeamsPaymentPlansEnabled() {
   const { data: teams, error: teamsError } = await admin
     .from("teams")
     .select(
-      "id, payment_plan_id, payment_plan_until, payment_plan_paid, payment_plan_is_trial, payment_plan_is_early_bird, early_bird_seat_count, stripe_subscription_id, billing_cycle_end",
+      "id, payment_plan_id, payment_plan_until, payment_plan_paid, payment_plan_is_trial, payment_plan_is_early_bird, early_bird_seat_count, stripe_subscription_id, billing_cycle_end, is_vip",
     );
   if (teamsError) {
     logError("notifyTeamsPaymentPlansEnabled.teams", teamsError.message);
@@ -66,6 +67,7 @@ async function prepareTeamForPaidPlans(
   until: string,
 ) {
   if (team.stripe_subscription_id) return;
+  if (team.is_vip === true) return;
   if (team.payment_plan_id && freePlanIds.has(team.payment_plan_id)) return;
   if (
     team.payment_plan_is_trial === true &&
