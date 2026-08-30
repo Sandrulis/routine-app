@@ -1,7 +1,6 @@
 import { redirect } from "next/navigation";
 import type { Metadata } from "next";
-import { DocsShell } from "@/app/components/docs-shell";
-import { resolveSystemName } from "@/app/lib/document-title";
+import { DocsArticleContent } from "@/app/components/docs-article-content";
 import {
   getPublicDocsArticle,
   getPublicDocsTree,
@@ -9,7 +8,6 @@ import {
 import { getServerTranslations } from "@/app/lib/i18n/server";
 import { canonicalMetadata } from "@/app/lib/seo/metadata";
 import { localePath } from "@/app/lib/seo/locale-path";
-import { getSiteSettings } from "@/app/lib/site-admin/repository";
 
 export const dynamic = "force-dynamic";
 
@@ -41,11 +39,10 @@ export default async function DocsArticlePage({
   params: Promise<DocsArticleParams>;
 }) {
   const { category, article } = await params;
-  const [{ t, languageCode }, tree, detail, settings] = await Promise.all([
+  const [{ t, languageCode }, tree, detail] = await Promise.all([
     getServerTranslations(),
     getPublicDocsTree(),
     getPublicDocsArticle(category, article),
-    getSiteSettings(),
   ]);
 
   if (!tree.enabled) {
@@ -56,14 +53,10 @@ export default async function DocsArticlePage({
   }
 
   return (
-    <DocsShell
-      categories={tree.categories}
+    <DocsArticleContent
       article={detail}
-      logoUrl={settings.logoUrl}
-      logoColor={settings.logoColor}
-      systemName={resolveSystemName(settings.systemName)}
+      categories={tree.categories}
       emptyLabel={t("docs.empty", "Dokumentācija vēl nav sagatavota.")}
-      showLanguageSwitcher={tree.hasMultipleLanguages}
     />
   );
 }

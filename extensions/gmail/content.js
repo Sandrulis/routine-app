@@ -1835,6 +1835,12 @@ function ensureUi() {
       return;
     }
     if (!sessionResult?.data?.authenticated) {
+      const sessionError = sessionResult?.data?.error;
+      if (sessionError === "errors.extension_network") {
+        setResultMode(true);
+        setFeedback(tError("errors.extension_network"), "error");
+        return;
+      }
       const appBase = sessionResult?.appBase || "https://www.tasqin.com";
       const loginPath = "/auth/gmail-plugin/login";
       setResultMode(true);

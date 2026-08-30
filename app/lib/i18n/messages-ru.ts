@@ -349,6 +349,7 @@ export const ru: Record<string, string> = {
   "docs.copy_code": "Копировать код",
   "docs.empty": "Документация ещё не подготовлена.",
   "docs.empty_category": "В этом разделе пока нет страниц.",
+  "docs.menu.open": "Открыть меню",
   "docs.next": "Следующий",
   "docs.previous": "Предыдущий",
   "docs.title": "Документация",

@@ -4,6 +4,11 @@
 
 - (none)
 
+## v0.3.18
+
+- Gmail spraudnis `0.4.35`: sesija paliek pēc tīkla kļūmes un vietnes token rotācijas, neizmet pirms ~30 dienām
+- Publiskā dokumentācija: kopīgs layout, ātrāka koka ielāde, mobilā izvēlne un loading starp rakstiem
+
 ## v0.3.17
 
 - Sistēmas admins `/admin/teams` var piešķirt komandai VIP (zvaigzne): bez maksas, vietu un moduļu limitu; sānjoslā nav Abonementi

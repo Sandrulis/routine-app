@@ -1,31 +1,45 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
+import { IconActionButton } from "@/app/components/icon-action-button";
 import { LanguageSwitcher } from "@/app/components/language-switcher";
 import { ListBadge } from "@/app/components/list-badge";
 import { useTranslations } from "@/app/components/translations-provider";
-import { localePath } from "@/app/lib/seo/locale-path";
+import { localePath, stripLocalePrefix } from "@/app/lib/seo/locale-path";
 import { DEFAULT_SITE_LOGO_COLOR } from "@/app/lib/site-admin/branding";
 import type { DocsNavCategory } from "@/app/lib/docs/types";
 
+function docsActiveSlugs(pathname: string): {
+  categorySlug?: string;
+  articleSlug?: string;
+} {
+  const parts = stripLocalePrefix(pathname).split("/").filter(Boolean);
+  if (parts[0] !== "docs") return {};
+  return { categorySlug: parts[1], articleSlug: parts[2] };
+}
+
 export function DocsSidebar({
   categories,
-  activeCategorySlug,
-  activeArticleSlug,
   logoUrl,
   logoColor,
   systemName,
   showLanguageSwitcher = false,
+  mobileOpen = false,
+  onClose,
 }: {
   categories: DocsNavCategory[];
-  activeCategorySlug?: string;
-  activeArticleSlug?: string;
   logoUrl: string | null;
   logoColor: string;
   systemName: string;
   showLanguageSwitcher?: boolean;
+  mobileOpen?: boolean;
+  onClose?: () => void;
 }) {
+  const pathname = usePathname();
+  const { categorySlug: activeCategorySlug, articleSlug: activeArticleSlug } =
+    docsActiveSlugs(pathname);
   const { t, languageCode, languages } = useTranslations();
   const showSwitcher = showLanguageSwitcher && languages.length > 1;
   const [openIds, setOpenIds] = useState<Record<string, boolean>>(() => {
@@ -37,26 +51,52 @@ export function DocsSidebar({
     return initial;
   });
 
+  useEffect(() => {
+    if (!activeCategorySlug) return;
+    const active = categories.find((category) => category.slug === activeCategorySlug);
+    if (!active) return;
+    setOpenIds((current) =>
+      current[active.id] ? current : { ...current, [active.id]: true },
+    );
+  }, [activeCategorySlug, categories]);
+
   function toggle(id: string) {
     setOpenIds((current) => ({ ...current, [id]: !current[id] }));
   }
 
   return (
-    <aside className="flex h-dvh w-[17.5rem] shrink-0 flex-col border-r border-zinc-200 bg-white">
+    <aside
+      id="docs-sidebar"
+      className={`flex h-dvh w-[17.5rem] shrink-0 flex-col border-r border-zinc-200 bg-white max-md:fixed max-md:inset-y-0 max-md:left-0 max-md:z-50 max-md:shadow-xl max-md:transition-transform max-md:duration-200 md:visible md:static md:z-auto md:pointer-events-auto md:shadow-none ${
+        mobileOpen
+          ? "max-md:translate-x-0"
+          : "max-md:pointer-events-none max-md:invisible max-md:-translate-x-full"
+      }`}
+    >
       <div className="border-b border-zinc-200 px-4 py-4">
-        <Link
-          href={localePath("/", languageCode)}
-          className="inline-flex items-center gap-2 text-sm font-semibold text-zinc-900"
-        >
-          <ListBadge
-            name={systemName}
-            icon={null}
-            color={logoColor || DEFAULT_SITE_LOGO_COLOR}
-            logoUrl={logoUrl}
-            size="md"
-          />
-          <span className="min-w-0 truncate">{systemName}</span>
-        </Link>
+        <div className="flex items-start justify-between gap-2">
+          <Link
+            href={localePath("/", languageCode)}
+            className="inline-flex min-w-0 items-center gap-2 text-sm font-semibold text-zinc-900"
+          >
+            <ListBadge
+              name={systemName}
+              icon={null}
+              color={logoColor || DEFAULT_SITE_LOGO_COLOR}
+              logoUrl={logoUrl}
+              size="md"
+            />
+            <span className="min-w-0 truncate">{systemName}</span>
+          </Link>
+          <div className="md:hidden">
+            <IconActionButton
+              label={t("actions.close", "Aizvērt")}
+              icon="fas fa-xmark"
+              variant="muted"
+              onClick={() => onClose?.()}
+            />
+          </div>
+        </div>
         <p className="mt-3 text-xs font-medium uppercase tracking-wider text-zinc-400">
           {t("docs.title", "Dokumentācija")}
         </p>

@@ -25,6 +25,10 @@ let cachedAppBase = null;
 let cachedSessionResponse = null;
 /** @type {Promise<object> | null} */
 let sessionResponseInFlight = null;
+/** @type {{ key: string, promise: Promise<{ ok: boolean, session?: object, reason?: string }> } | null} */
+let refreshInFlight = null;
+/** @type {null | "invalid" | "unavailable" | "missing"} */
+let lastTokenRefreshReason = null;
 
 function invalidateAppBaseCache() {
   cachedAppBase = null;
@@ -197,7 +201,7 @@ async function writeStoredSession(appBase, session) {
   if (!origin || !session?.access_token) return;
   const existing = await readStoredSession();
   const previous =
-    existing && parseOrigin(existing.appBase) === origin
+    existing && originsEquivalent(existing.appBase, origin)
       ? existing.session
       : null;
   const merged = mergeSessionPreserveRefresh(session, previous);
@@ -655,8 +659,7 @@ function buildConnectGmailBridgeUrl(appBase, bridgePath, ticket) {
   return url.toString();
 }
 
-async function refreshSession(appBase, session) {
-  if (!session?.refresh_token) return null;
+async function refreshSessionOnce(appBase, session) {
   const origin = preferLiveOrigin(appBase) || appBase;
   try {
     const response = await fetch(`${origin}/api/extension/refresh`, {
@@ -666,9 +669,16 @@ async function refreshSession(appBase, session) {
       redirect: "manual",
       body: JSON.stringify({ refresh_token: session.refresh_token }),
     });
-    if (response.status >= 300 && response.status < 400) return null;
+    if (response.status >= 300 && response.status < 400) {
+      return { ok: false, reason: "unavailable" };
+    }
+    if (response.status === 429 || response.status >= 500) {
+      return { ok: false, reason: "unavailable" };
+    }
     const data = await response.json().catch(() => null);
-    if (!response.ok || !data?.session?.access_token) return null;
+    if (!response.ok || !data?.session?.access_token) {
+      return { ok: false, reason: "invalid" };
+    }
     const expiresIn = Number(data.session.expires_in) || 3600;
     const expiresAt =
       Number(data.session.expires_at) ||
@@ -683,23 +693,46 @@ async function refreshSession(appBase, session) {
       await chrome.storage.sync.set({ authCookieName: data.authCookieName });
     }
     await rememberSession(origin, next);
-    return next;
+    return { ok: true, session: next };
   } catch {
-    return null;
+    return { ok: false, reason: "unavailable" };
   }
 }
 
-async function resolveAccessToken(appBase, session, fallback) {
-  if (!session?.access_token) return null;
-  if (!sessionExpired(session)) {
-    await rememberSession(
-      appBase,
-      mergeSessionPreserveRefresh(session, fallback),
-    );
-    return session.access_token;
+async function refreshSessionInner(appBase, session) {
+  let result = await refreshSessionOnce(appBase, session);
+  if (!result.ok && result.reason === "unavailable") {
+    await new Promise((resolve) => setTimeout(resolve, 800));
+    result = await refreshSessionOnce(appBase, session);
   }
-  const refreshed = await refreshSession(appBase, session);
-  if (refreshed?.access_token) return refreshed.access_token;
+  lastTokenRefreshReason = result.ok ? null : result.reason;
+  return result;
+}
+
+async function refreshSession(appBase, session) {
+  if (!session?.refresh_token) {
+    lastTokenRefreshReason = "missing";
+    return { ok: false, reason: "missing" };
+  }
+  const key = session.refresh_token;
+  if (refreshInFlight?.key === key) return refreshInFlight.promise;
+  const promise = refreshSessionInner(appBase, session);
+  refreshInFlight = { key, promise };
+  try {
+    return await promise;
+  } finally {
+    if (refreshInFlight?.promise === promise) refreshInFlight = null;
+  }
+}
+
+async function readCookieSession(origin) {
+  if (!(await pluginCookieImportAllowed())) return null;
+  for (const candidate of originsWithWwwFirst(origin)) {
+    const { session } = await readSessionFromCookies(candidate);
+    if (session?.access_token || session?.refresh_token) {
+      return { origin: candidate, session };
+    }
+  }
   return null;
 }
 
@@ -723,24 +756,58 @@ async function importSessionFromKnownCookies(preferredOrigin) {
 }
 
 async function getAccessToken(appBase) {
+  lastTokenRefreshReason = null;
   const origin = preferLiveOrigin(parseOrigin(appBase));
   const stored = await readStoredSession();
   const storedSession =
-    stored && originsEquivalent(stored.appBase, origin) ? stored.session : null;
+    stored && originsEquivalent(stored.appBase, origin || stored.appBase)
+      ? stored.session
+      : null;
 
-  const fromStored = await resolveAccessToken(origin, storedSession, null);
-  if (fromStored) return fromStored;
+  if (storedSession?.access_token && !sessionExpired(storedSession)) {
+    return storedSession.access_token;
+  }
 
-  if (!(await pluginCookieImportAllowed())) return null;
-  for (const candidate of originsWithWwwFirst(origin)) {
-    const { session: cookieSession } = await readSessionFromCookies(candidate);
-    const bootstrapped = mergeSessionPreserveRefresh(cookieSession, storedSession);
-    const token = await resolveAccessToken(
-      candidate,
-      bootstrapped,
-      storedSession,
-    );
-    if (token) return token;
+  const fromCookies = await readCookieSession(origin);
+  const cookieMerged = fromCookies
+    ? mergeSessionPreserveRefresh(fromCookies.session, storedSession)
+    : null;
+  if (cookieMerged?.access_token && !sessionExpired(cookieMerged)) {
+    await rememberSession(fromCookies.origin, cookieMerged);
+    return cookieMerged.access_token;
+  }
+
+  const refreshSource = cookieMerged?.refresh_token
+    ? { appBase: fromCookies.origin, session: cookieMerged }
+    : storedSession?.refresh_token
+      ? { appBase: origin || stored?.appBase, session: storedSession }
+      : null;
+  if (!refreshSource) return null;
+
+  const refreshed = await refreshSession(
+    refreshSource.appBase,
+    refreshSource.session,
+  );
+  if (refreshed.ok) return refreshed.session.access_token;
+
+  if (refreshed.reason !== "invalid") return null;
+
+  await new Promise((resolve) => setTimeout(resolve, 400));
+  const again = await readCookieSession(origin);
+  const merged = again
+    ? mergeSessionPreserveRefresh(again.session, storedSession)
+    : null;
+  if (merged?.access_token && !sessionExpired(merged)) {
+    lastTokenRefreshReason = null;
+    await rememberSession(again.origin, merged);
+    return merged.access_token;
+  }
+  if (
+    merged?.refresh_token &&
+    merged.refresh_token !== refreshSource.session.refresh_token
+  ) {
+    const retry = await refreshSession(again.origin, merged);
+    if (retry.ok) return retry.session.access_token;
   }
   return null;
 }
@@ -1345,11 +1412,35 @@ async function getSelectedTeamId(teams) {
 
 async function sessionResponseInner() {
   const existing = await readStoredSession();
-  const alreadyAuthed =
+  let alreadyAuthed =
     sessionUsable(existing?.session) &&
     Boolean(await getAccessToken(existing.appBase));
+  const refreshFailedNetwork = lastTokenRefreshReason === "unavailable";
   if (!alreadyAuthed) {
     await tryCaptureFromOpenDoneTabs();
+    const captured = await readStoredSession();
+    if (captured?.session && (await getAccessToken(captured.appBase))) {
+      alreadyAuthed = true;
+    }
+  }
+
+  if (
+    !alreadyAuthed &&
+    refreshFailedNetwork &&
+    sessionUsable((await readStoredSession())?.session)
+  ) {
+    const pendingTabs = await findOpenPluginDoneTabs();
+    return {
+      ok: false,
+      status: 0,
+      data: {
+        ok: false,
+        authenticated: false,
+        error: "errors.extension_network",
+        handoffPending: pendingTabs.length > 0,
+      },
+      appBase: existing?.appBase,
+    };
   }
 
   const result = await apiFetch("/api/extension/session");
@@ -1358,7 +1449,8 @@ async function sessionResponseInner() {
     result?.status === 200 &&
     result?.data &&
     result.data.authenticated !== true &&
-    doneTabs.length === 0
+    doneTabs.length === 0 &&
+    lastTokenRefreshReason === "invalid"
   ) {
     const stored = await readStoredSession();
     if (stored?.session?.access_token) {
@@ -1662,12 +1754,32 @@ async function waitForPluginSession(tabId, preferredOrigin, timeoutMs = 180000) 
   }
 }
 
+async function refreshStoredAccessToken() {
+  const local = await readStoredSession();
+  const storedSync = await chrome.storage.sync.get(["appBaseUrl"]);
+  const appBase =
+    parseOrigin(local?.appBase) || parseOrigin(storedSync.appBaseUrl) || "";
+  if (!appBase) return;
+  await getAccessToken(appBase);
+}
+
 function scheduleSessionRefresh() {
   if (!chrome.alarms) return;
-  void chrome.alarms.create("routine.refreshSession", { periodInMinutes: 45 });
+  void chrome.alarms.create("routine.refreshSession", { periodInMinutes: 20 });
 }
 
 scheduleSessionRefresh();
+if (chrome.runtime?.onStartup) {
+  chrome.runtime.onStartup.addListener(() => {
+    scheduleSessionRefresh();
+    void refreshStoredAccessToken();
+  });
+}
+if (chrome.runtime?.onInstalled) {
+  chrome.runtime.onInstalled.addListener(() => {
+    scheduleSessionRefresh();
+  });
+}
 
 if (chrome.cookies?.onChanged) {
   chrome.cookies.onChanged.addListener((changeInfo) => {
@@ -1676,14 +1788,18 @@ if (chrome.cookies?.onChanged) {
     if (!/-auth-token/.test(cookie?.name || "")) return;
     void (async () => {
       const host = String(cookie.domain || "").replace(/^\./, "");
-      const protocol = cookie.secure ? "https" : "http";
-      const origin =
+      const protocol = cookie.secure ? "https:" : "http:";
+      const rawOrigin =
         host === "localhost" || host === "127.0.0.1"
-          ? `${protocol}://${host}:3120`
-          : `${protocol}://${host}`;
+          ? `${protocol}//${host}:3120`
+          : `${protocol}//${host}`;
+      const origin = preferLiveOrigin(rawOrigin) || rawOrigin;
       if (!(await pluginCookieImportAllowed())) return;
       const { session } = await readSessionFromCookies(origin);
-      if (session?.access_token) await rememberSession(origin, session);
+      if (!sessionUsable(session)) return;
+      const stored = await readStoredSession();
+      const merged = mergeSessionPreserveRefresh(session, stored?.session);
+      if (sessionUsable(merged)) await rememberSession(origin, merged);
     })();
   });
 }
@@ -1691,16 +1807,7 @@ if (chrome.cookies?.onChanged) {
 if (chrome.alarms) {
   chrome.alarms.onAlarm.addListener((alarm) => {
     if (alarm.name !== "routine.refreshSession") return;
-    void (async () => {
-      const storedSync = await chrome.storage.sync.get(["appBaseUrl"]);
-      const local = await readStoredSession();
-      const appBase =
-        parseOrigin(storedSync.appBaseUrl) ||
-        parseOrigin(local?.appBase) ||
-        "";
-      if (!appBase) return;
-      await getAccessToken(appBase);
-    })();
+    void refreshStoredAccessToken();
   });
 }
 

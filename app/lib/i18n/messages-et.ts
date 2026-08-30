@@ -349,6 +349,7 @@ export const et: Record<string, string> = {
   "docs.copy_code": "Kopeeri kood",
   "docs.empty": "Dokumentatsioon ei ole veel valmis.",
   "docs.empty_category": "Selles jaotises ei ole veel lehti.",
+  "docs.menu.open": "Ava menüü",
   "docs.next": "Järgmine",
   "docs.previous": "Eelmine",
   "docs.title": "Dokumentatsioon",

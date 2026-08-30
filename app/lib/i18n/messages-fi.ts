@@ -349,6 +349,7 @@ export const fi: Record<string, string> = {
   "docs.copy_code": "Kopioi koodi",
   "docs.empty": "Dokumentaatio ei ole vielä valmis.",
   "docs.empty_category": "Tässä osiossa ei ole vielä sivuja.",
+  "docs.menu.open": "Avaa valikko",
   "docs.next": "Seuraava",
   "docs.previous": "Edellinen",
   "docs.title": "Dokumentaatio",

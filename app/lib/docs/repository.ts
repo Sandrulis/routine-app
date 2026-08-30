@@ -112,29 +112,6 @@ function someEntityHasMultipleLanguages(
   return false;
 }
 
-const docsHasMultipleLanguages = cache(async function docsHasMultipleLanguages(): Promise<boolean> {
-  if (!isSupabaseConfigured()) return false;
-  const supabase = await getClient();
-  const [{ data: categories }, { data: articles }] = await Promise.all([
-    supabase.from("site_docs_category_translations").select("category_id, language_code"),
-    supabase.from("site_docs_article_translations").select("article_id, language_code"),
-  ]);
-  return (
-    someEntityHasMultipleLanguages(
-      ((categories ?? []) as { category_id: string; language_code: string }[]).map((row) => ({
-        id: row.category_id,
-        language_code: row.language_code,
-      })),
-    ) ||
-    someEntityHasMultipleLanguages(
-      ((articles ?? []) as { article_id: string; language_code: string }[]).map((row) => ({
-        id: row.article_id,
-        language_code: row.language_code,
-      })),
-    )
-  );
-});
-
 export async function setDocsEnabled(enabled: boolean): Promise<ActionResult> {
   if (!isSupabaseConfigured()) return dbNotConfigured();
   const supabase = await getClient();
@@ -309,36 +286,112 @@ export const getDocsArticle = cache(async function getDocsArticle(
 });
 
 export const getPublicDocsTree = cache(async function getPublicDocsTree(): Promise<DocsTree> {
-  const [enabled, languageCode, categories] = await Promise.all([
+  const [enabled, languageCode] = await Promise.all([
     isDocsEnabled(),
     getDocsDefaultLanguage(),
-    listDocsCategories(),
   ]);
 
-  if (!enabled) {
+  if (!enabled || !isSupabaseConfigured()) {
     return { enabled: false, languageCode, hasMultipleLanguages: false, categories: [] };
   }
 
-  const nav: DocsNavCategory[] = [];
-  for (const category of categories) {
-    if (!category.isVisible) continue;
-    const articles = (await listDocsArticles(category.id, languageCode)).filter(
-      (article) => article.isVisible,
+  const supabase = await getClient();
+  const [
+    { data: categories, error: categoryError },
+    { data: categoryTranslations },
+    { data: articles },
+    { data: articleTranslations },
+  ] = await Promise.all([
+    supabase
+      .from("site_docs_categories")
+      .select("id, slug, icon, sort_order, is_visible")
+      .order("sort_order", { ascending: true })
+      .order("slug", { ascending: true }),
+    supabase.from("site_docs_category_translations").select("category_id, language_code, title"),
+    supabase
+      .from("site_docs_articles")
+      .select("id, category_id, slug, sort_order, is_visible")
+      .order("sort_order", { ascending: true })
+      .order("slug", { ascending: true }),
+    supabase.from("site_docs_article_translations").select("article_id, language_code, title"),
+  ]);
+
+  if (categoryError || !categories) {
+    return { enabled: true, languageCode, hasMultipleLanguages: false, categories: [] };
+  }
+
+  const translationByCategory = new Map<string, CategoryTranslationRow[]>();
+  for (const row of (categoryTranslations ?? []) as CategoryTranslationRow[]) {
+    const list = translationByCategory.get(row.category_id) ?? [];
+    list.push(row);
+    translationByCategory.set(row.category_id, list);
+  }
+
+  const translationByArticle = new Map<
+    string,
+    Pick<ArticleTranslationRow, "article_id" | "language_code" | "title">[]
+  >();
+  for (const row of (articleTranslations ?? []) as ArticleTranslationRow[]) {
+    const list = translationByArticle.get(row.article_id) ?? [];
+    list.push(row);
+    translationByArticle.set(row.article_id, list);
+  }
+
+  const articlesByCategory = new Map<string, DocsArticleSummary[]>();
+  for (const row of (articles ?? []) as ArticleRow[]) {
+    if (row.is_visible === false) continue;
+    const translation = pickTranslation(
+      translationByArticle.get(row.id) ?? [],
+      languageCode,
+      languageCode,
     );
-    if (articles.length === 0) continue;
+    const list = articlesByCategory.get(row.category_id) ?? [];
+    list.push({
+      id: row.id,
+      categoryId: row.category_id,
+      slug: row.slug,
+      title: translation?.title ?? row.slug,
+      sortOrder: row.sort_order,
+      isVisible: true,
+    });
+    articlesByCategory.set(row.category_id, list);
+  }
+
+  const nav: DocsNavCategory[] = [];
+  for (const row of categories as CategoryRow[]) {
+    if (row.is_visible === false) continue;
+    const categoryArticles = articlesByCategory.get(row.id) ?? [];
+    if (categoryArticles.length === 0) continue;
+    const translation = pickTranslation(
+      translationByCategory.get(row.id) ?? [],
+      languageCode,
+      languageCode,
+    );
     nav.push({
-      id: category.id,
-      slug: category.slug,
-      icon: category.icon,
-      title: category.title,
-      articles,
+      id: row.id,
+      slug: row.slug,
+      icon: row.icon,
+      title: translation?.title ?? row.slug,
+      articles: categoryArticles,
     });
   }
 
   return {
     enabled: true,
     languageCode,
-    hasMultipleLanguages: await docsHasMultipleLanguages(),
+    hasMultipleLanguages:
+      someEntityHasMultipleLanguages(
+        ((categoryTranslations ?? []) as CategoryTranslationRow[]).map((row) => ({
+          id: row.category_id,
+          language_code: row.language_code,
+        })),
+      ) ||
+      someEntityHasMultipleLanguages(
+        ((articleTranslations ?? []) as ArticleTranslationRow[]).map((row) => ({
+          id: row.article_id,
+          language_code: row.language_code,
+        })),
+      ),
     categories: nav,
   };
 });
@@ -351,8 +404,34 @@ export const getPublicDocsArticle = cache(async function getPublicDocsArticle(
   if (!tree.enabled) return null;
   const category = tree.categories.find((item) => item.slug === categorySlug);
   const article = category?.articles.find((item) => item.slug === articleSlug);
-  if (!article) return null;
-  return getDocsArticle(article.id, tree.languageCode);
+  if (!article || !category) return null;
+  if (!isSupabaseConfigured()) return null;
+
+  const supabase = await getClient();
+  const { data: translations } = await supabase
+    .from("site_docs_article_translations")
+    .select("article_id, language_code, title, slogan, content")
+    .eq("article_id", article.id);
+
+  const translation = pickTranslation(
+    (translations ?? []) as ArticleTranslationRow[],
+    tree.languageCode,
+    tree.languageCode,
+  );
+
+  return {
+    id: article.id,
+    categoryId: article.categoryId,
+    slug: article.slug,
+    title: translation?.title ?? article.title,
+    slogan: translation?.slogan ?? "",
+    sortOrder: article.sortOrder,
+    isVisible: article.isVisible,
+    content: translation?.content ?? "",
+    categorySlug: category.slug,
+    categoryTitle: category.title,
+    categoryIcon: category.icon,
+  };
 });
 
 function validateCategoryInput(

@@ -349,6 +349,7 @@ export const es: Record<string, string> = {
   "docs.copy_code": "Copiar código",
   "docs.empty": "La documentación aún no está lista.",
   "docs.empty_category": "Esta sección aún no tiene páginas.",
+  "docs.menu.open": "Abrir menú",
   "docs.next": "Siguiente",
   "docs.previous": "Anterior",
   "docs.title": "Documentación",

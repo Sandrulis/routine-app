@@ -349,6 +349,7 @@ export const no: Record<string, string> = {
   "docs.copy_code": "Kopier kode",
   "docs.empty": "Dokumentasjonen er ikke klar ennå.",
   "docs.empty_category": "Denne delen har ingen sider ennå.",
+  "docs.menu.open": "Åpne meny",
   "docs.next": "Neste",
   "docs.previous": "Forrige",
   "docs.title": "Dokumentasjon",

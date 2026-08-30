@@ -231,6 +231,13 @@ async function refreshUi() {
   $("boot").classList.add("hidden");
 
   if (!session?.authenticated) {
+    const err = session?.error || result?.data?.error;
+    if (err === "errors.extension_network") {
+      $("boot").classList.remove("hidden");
+      $("boot").textContent = t("errors.extension_network");
+      fitPopup();
+      return session;
+    }
     $("login").classList.remove("hidden");
     $("googleWrap").classList.toggle(
       "hidden",
