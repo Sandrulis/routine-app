@@ -215,7 +215,7 @@ function DocsImage({
         type="button"
         onClick={() => setOpen(true)}
         aria-label={enlargeLabel}
-        className="mx-auto block w-1/2 cursor-zoom-in rounded-xl border-0 bg-transparent p-0"
+        className="mx-auto block w-full cursor-zoom-in rounded-xl border-0 bg-transparent p-0 lg:w-1/2"
       >
         <img
           src={resolved}

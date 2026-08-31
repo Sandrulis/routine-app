@@ -400,7 +400,7 @@ app/
     docs-shell.tsx                # Publiskais docs layout: sānjosla, burger overlay zem 1024px, raksta loading
     docs-sidebar.tsx              # Docs kategorijas/apakškategorijas; mobilajā overlay (`hidden lg:flex`)
     docs-article-content.tsx      # Publiskā raksta saturs (virsraksts, Markdown, pager)
-    docs-markdown.tsx             # Markdown: teksts, koda bloki, YouTube, attēli (50% platums, klikšķis pietuvina)
+    docs-markdown.tsx             # Markdown: teksts, koda bloki, YouTube, attēli (mobilē 100%, datorā 50%, klikšķis pietuvina)
     docs-article-pager.tsx        # Iepriekšējais / nākamais raksts pēc sort_order
     docs-article-images.tsx       # Admin raksta attēlu galerija un ievietošana
     admin-docs-categories.tsx     # /admin/docs: ieslēgums, kategorijas CRUD + DnD; loading, kad atver kategoriju

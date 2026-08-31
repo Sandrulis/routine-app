@@ -4,6 +4,10 @@
 
 - (none)
 
+## v0.3.21
+
+- Docs attēli mobilajā ir 100% no teksta platuma, datorā paliek 50%
+
 ## v0.3.20
 
 - Docs attēli ir puse no teksta platuma un iecentrēti; klikšķis atver pietuvinātu skatu
