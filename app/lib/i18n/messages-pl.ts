@@ -352,6 +352,7 @@ export const pl: Record<string, string> = {
   "docs.copy_code": "Kopiuj kod",
   "docs.empty": "Dokumentacja nie jest jeszcze gotowa.",
   "docs.empty_category": "Ta sekcja nie ma jeszcze stron.",
+  "docs.image.enlarge": "Powiększ obraz",
   "docs.next": "Następny",
   "docs.previous": "Poprzedni",
   "docs.title": "Dokumentacja",

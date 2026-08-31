@@ -399,6 +399,7 @@
   "docs.empty": "Documentation is not ready yet.",
   "docs.empty_category": "This section has no pages yet.",
   "docs.copy_code": "Copy code",
+  "docs.image.enlarge": "Enlarge image",
   "docs.previous": "Previous",
   "docs.next": "Next",
   "admin.email_templates.section": "Email templates",

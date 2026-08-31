@@ -31,6 +31,7 @@ import { ConfirmModal } from "@/app/components/confirm-modal";
 import { DragHandle } from "@/app/components/drag-handle";
 import { useFeedbackToast } from "@/app/components/feedback-toast-provider";
 import { IconActionButton } from "@/app/components/icon-action-button";
+import { LoadingState } from "@/app/components/loading-state";
 import {
   DocsSourceLanguageCode,
   DocsSourceLanguageNotice,
@@ -71,6 +72,7 @@ export function AdminDocsCategories({
   const [deleteTarget, setDeleteTarget] = useState<DocsCategorySummary | null>(null);
   const [isPending, startTransition] = useTransition();
   const [pendingToggle, setPendingToggle] = useState(false);
+  const [openingCategoryId, setOpeningCategoryId] = useState<string | null>(null);
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
   );
@@ -104,6 +106,14 @@ export function AdminDocsCategories({
     setEditingId(null);
     setDraft(emptyDraft());
     setModalOpen(true);
+  }
+
+  function openCategory(category: DocsCategorySummary) {
+    if (openingCategoryId) return;
+    setOpeningCategoryId(category.id);
+    startTransition(() => {
+      router.push(`/admin/docs/${category.id}`);
+    });
   }
 
   function openEdit(category: DocsCategorySummary) {
@@ -287,7 +297,9 @@ export function AdminDocsCategories({
                       key={category.id}
                       category={category}
                       dragLabel={t("subtasks.drag", "Mainīt secību")}
-                      disabled={isPending}
+                      disabled={isPending || Boolean(openingCategoryId)}
+                      opening={openingCategoryId === category.id}
+                      onOpen={openCategory}
                       onEdit={openEdit}
                       onDelete={setDeleteTarget}
                       onVisibility={handleVisibility}
@@ -307,6 +319,18 @@ export function AdminDocsCategories({
           </DndContext>
         </div>
       </div>
+
+      {openingCategoryId ? (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/40 p-4"
+          role="status"
+          aria-live="polite"
+        >
+          <div className="w-full max-w-sm rounded-2xl border border-zinc-200 bg-white shadow-xl">
+            <LoadingState />
+          </div>
+        </div>
+      ) : null}
 
       <AppModal
         open={modalOpen}
@@ -408,6 +432,8 @@ function SortableCategoryRow({
   category,
   dragLabel,
   disabled,
+  opening,
+  onOpen,
   onEdit,
   onDelete,
   onVisibility,
@@ -416,6 +442,8 @@ function SortableCategoryRow({
   category: DocsCategorySummary;
   dragLabel: string;
   disabled: boolean;
+  opening: boolean;
+  onOpen: (category: DocsCategorySummary) => void;
   onEdit: (category: DocsCategorySummary) => void;
   onDelete: (category: DocsCategorySummary) => void;
   onVisibility: (category: DocsCategorySummary) => void;
@@ -451,12 +479,22 @@ function SortableCategoryRow({
       <td className="px-5 py-4">
         <Link
           href={`/admin/docs/${category.id}`}
+          onClick={(event) => {
+            if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) {
+              return;
+            }
+            event.preventDefault();
+            onOpen(category);
+          }}
           className="inline-flex min-w-0 items-center gap-3 text-zinc-900 transition hover:text-zinc-600"
         >
           <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg bg-zinc-50 text-zinc-600">
             <i className={category.icon} aria-hidden="true" />
           </span>
           <span className="font-medium">{category.title}</span>
+          {opening ? (
+            <i className="fas fa-circle-notch ui-spinner text-xs text-zinc-400" aria-hidden="true" />
+          ) : null}
         </Link>
       </td>
       <td className="px-5 py-4 text-zinc-500">{category.articleCount}</td>
@@ -470,17 +508,20 @@ function SortableCategoryRow({
             }
             icon={category.isVisible ? "fas fa-eye-slash" : "fas fa-eye"}
             variant="muted"
+            disabled={disabled}
             onClick={() => onVisibility(category)}
           />
           <IconActionButton
             label={t("actions.edit", "Labot")}
             icon="fas fa-pen"
+            disabled={disabled}
             onClick={() => onEdit(category)}
           />
           <IconActionButton
             label={t("actions.delete", "Dzēst")}
             icon="fas fa-trash"
             variant="delete"
+            disabled={disabled}
             onClick={() => onDelete(category)}
           />
         </div>

@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState, type MouseEvent, type ReactNode } from "react";
-import { usePathname } from "next/navigation";
+import { useEffect, useState, useTransition, type MouseEvent, type ReactNode } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import { DocsSidebar } from "@/app/components/docs-sidebar";
 import { LoadingState } from "@/app/components/loading-state";
 import { Tooltip } from "@/app/components/tooltip";
@@ -44,14 +44,23 @@ export function DocsShell({
   children: ReactNode;
 }) {
   const pathname = usePathname();
+  const router = useRouter();
   const { t } = useTranslations();
   const [menuOpen, setMenuOpen] = useState(false);
-  const [articlePending, setArticlePending] = useState(false);
+  const [pendingPath, setPendingPath] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
+  const articlePending = Boolean(pendingPath) || isPending;
 
   useEffect(() => {
     setMenuOpen(false);
-    setArticlePending(false);
   }, [pathname]);
+
+  useEffect(() => {
+    if (!pendingPath) return;
+    if (stripLocalePrefix(pathname) === pendingPath && !isPending) {
+      setPendingPath(null);
+    }
+  }, [pathname, pendingPath, isPending]);
 
   useEffect(() => {
     const media = window.matchMedia("(min-width: 1024px)");
@@ -90,8 +99,12 @@ export function DocsShell({
       setMenuOpen(false);
       return;
     }
+    event.preventDefault();
     setMenuOpen(false);
-    setArticlePending(true);
+    setPendingPath(nextPath);
+    startTransition(() => {
+      router.push(href);
+    });
   }
 
   return (

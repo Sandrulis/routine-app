@@ -352,6 +352,7 @@ export const it: Record<string, string> = {
   "docs.copy_code": "Copia codice",
   "docs.empty": "La documentazione non è ancora pronta.",
   "docs.empty_category": "Questa sezione non ha ancora pagine.",
+  "docs.image.enlarge": "Ingrandisci l'immagine",
   "docs.next": "Successivo",
   "docs.previous": "Precedente",
   "docs.title": "Documentazione",

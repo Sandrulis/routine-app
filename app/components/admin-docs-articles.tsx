@@ -45,6 +45,7 @@ import {
 import { DragHandle } from "@/app/components/drag-handle";
 import { useFeedbackToast } from "@/app/components/feedback-toast-provider";
 import { IconActionButton } from "@/app/components/icon-action-button";
+import { LoadingState } from "@/app/components/loading-state";
 import { useTranslations } from "@/app/components/translations-provider";
 import { translateActionError } from "@/app/lib/i18n/action-errors";
 import { DOCS_SYSTEM_NAME_PLACEHOLDER, renderDocsPlaceholders } from "@/app/lib/docs/placeholders";
@@ -113,6 +114,7 @@ export function AdminDocsArticles({
   const [deleteTarget, setDeleteTarget] = useState<DocsArticleSummary | null>(null);
   const [images, setImages] = useState<LocalImage[]>([]);
   const [isPending, startTransition] = useTransition();
+  const [openingArticleId, setOpeningArticleId] = useState<string | null>(null);
   const contentRef = useRef<HTMLTextAreaElement>(null);
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
@@ -154,19 +156,25 @@ export function AdminDocsArticles({
   }
 
   function openEdit(article: DocsArticleSummary) {
+    if (openingArticleId) return;
     clearFeedback();
+    setOpeningArticleId(article.id);
     startTransition(async () => {
-      const [detail, articleImages] = await Promise.all([
-        getDocsArticleAction(article.id),
-        listDocsArticleImagesAction(article.id),
-      ]);
-      const content = detail?.content ?? "";
-      const slogan = detail?.slogan ?? "";
-      setLoadedArticles((current) => ({ ...current, [article.id]: { slogan, content } }));
-      setEditingId(article.id);
-      setDraft({ title: detail?.title ?? article.title, slogan, content });
-      setImages(articleImages);
-      setModalOpen(true);
+      try {
+        const [detail, articleImages] = await Promise.all([
+          getDocsArticleAction(article.id),
+          listDocsArticleImagesAction(article.id),
+        ]);
+        const content = detail?.content ?? "";
+        const slogan = detail?.slogan ?? "";
+        setLoadedArticles((current) => ({ ...current, [article.id]: { slogan, content } }));
+        setEditingId(article.id);
+        setDraft({ title: detail?.title ?? article.title, slogan, content });
+        setImages(articleImages);
+        setModalOpen(true);
+      } finally {
+        setOpeningArticleId(null);
+      }
     });
   }
 
@@ -477,7 +485,8 @@ export function AdminDocsArticles({
                       key={article.id}
                       article={article}
                       dragLabel={t("subtasks.drag", "Mainīt secību")}
-                      disabled={isPending}
+                      disabled={isPending || Boolean(openingArticleId)}
+                      opening={openingArticleId === article.id}
                       onEdit={openEdit}
                       onDelete={setDeleteTarget}
                       onVisibility={handleVisibility}
@@ -497,6 +506,18 @@ export function AdminDocsArticles({
           </DndContext>
         </div>
       </div>
+
+      {openingArticleId ? (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/40 p-4"
+          role="status"
+          aria-live="polite"
+        >
+          <div className="w-full max-w-sm rounded-2xl border border-zinc-200 bg-white shadow-xl">
+            <LoadingState />
+          </div>
+        </div>
+      ) : null}
 
       <AppModal
         open={modalOpen}
@@ -685,6 +706,7 @@ function SortableArticleRow({
   article,
   dragLabel,
   disabled,
+  opening,
   onEdit,
   onDelete,
   onVisibility,
@@ -693,6 +715,7 @@ function SortableArticleRow({
   article: DocsArticleSummary;
   dragLabel: string;
   disabled: boolean;
+  opening: boolean;
   onEdit: (article: DocsArticleSummary) => void;
   onDelete: (article: DocsArticleSummary) => void;
   onVisibility: (article: DocsArticleSummary) => void;
@@ -729,9 +752,13 @@ function SortableArticleRow({
         <button
           type="button"
           onClick={() => onEdit(article)}
-          className="text-left font-medium text-zinc-900 transition hover:text-zinc-600"
+          disabled={disabled}
+          className="inline-flex max-w-full items-center gap-2 text-left font-medium text-zinc-900 transition hover:text-zinc-600 disabled:cursor-not-allowed disabled:opacity-70"
         >
-          {article.title}
+          <span className="truncate">{article.title}</span>
+          {opening ? (
+            <i className="fas fa-circle-notch ui-spinner text-xs text-zinc-400" aria-hidden="true" />
+          ) : null}
         </button>
       </td>
       <td className="px-5 py-4">
@@ -744,17 +771,20 @@ function SortableArticleRow({
             }
             icon={article.isVisible ? "fas fa-eye-slash" : "fas fa-eye"}
             variant="muted"
+            disabled={disabled}
             onClick={() => onVisibility(article)}
           />
           <IconActionButton
             label={t("actions.edit", "Labot")}
-            icon="fas fa-pen"
+            icon={opening ? "fas fa-circle-notch ui-spinner" : "fas fa-pen"}
+            disabled={disabled}
             onClick={() => onEdit(article)}
           />
           <IconActionButton
             label={t("actions.delete", "Dzēst")}
             icon="fas fa-trash"
             variant="delete"
+            disabled={disabled}
             onClick={() => onDelete(article)}
           />
         </div>

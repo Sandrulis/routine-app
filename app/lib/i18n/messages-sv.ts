@@ -352,6 +352,7 @@ export const sv: Record<string, string> = {
   "docs.copy_code": "Kopiera kod",
   "docs.empty": "Dokumentationen är inte redo ännu.",
   "docs.empty_category": "Det här avsnittet har inga sidor ännu.",
+  "docs.image.enlarge": "Förstora bilden",
   "docs.next": "Nästa",
   "docs.previous": "Föregående",
   "docs.title": "Dokumentation",

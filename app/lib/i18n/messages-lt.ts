@@ -352,6 +352,7 @@ export const lt: Record<string, string> = {
   "docs.copy_code": "Kopijuoti kodą",
   "docs.empty": "Dokumentacija dar neparuošta.",
   "docs.empty_category": "Šiame skyriuje dar nėra puslapių.",
+  "docs.image.enlarge": "Priartinti paveikslėlį",
   "docs.next": "Kitas",
   "docs.previous": "Ankstesnis",
   "docs.title": "Dokumentacija",

@@ -2,7 +2,8 @@
 
 /* eslint-disable @next/next/no-img-element */
 
-import { Fragment, useState, type ReactNode } from "react";
+import { Fragment, useEffect, useState, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { useTranslations } from "@/app/components/translations-provider";
 import { applyDocsPlaceholders, renderDocsPlaceholders } from "@/app/lib/docs/placeholders";
 import { docsImageIdFromSrc } from "@/app/lib/docs/images";
@@ -171,16 +172,94 @@ function DocsImage({
   dark: boolean;
   overrides?: Record<string, string>;
 }) {
+  const { t } = useTranslations();
+  const [open, setOpen] = useState(false);
+  const [zoomed, setZoomed] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const resolved = safeImageSrc(src, overrides);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!open) {
+      setZoomed(false);
+      return;
+    }
+
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") setOpen(false);
+    }
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [open]);
+
   if (!resolved) return null;
+
+  const enlargeLabel = t("docs.image.enlarge", "Pietuvināt attēlu");
+  const closeLabel = t("actions.close", "Aizvērt");
+  const frameClassName = dark
+    ? "border-zinc-800 bg-zinc-900"
+    : "border-zinc-200 bg-white";
+
   return (
-    <img
-      src={resolved}
-      alt={alt}
-      className={`max-h-[32rem] w-auto max-w-full rounded-xl border ${
-        dark ? "border-zinc-800 bg-zinc-900" : "border-zinc-200 bg-white"
-      }`}
-    />
+    <>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        aria-label={enlargeLabel}
+        className="mx-auto block w-1/2 cursor-zoom-in rounded-xl border-0 bg-transparent p-0"
+      >
+        <img
+          src={resolved}
+          alt={alt}
+          className={`block h-auto w-full rounded-xl border ${frameClassName}`}
+        />
+      </button>
+      {mounted && open
+        ? createPortal(
+            <div
+              className="fixed inset-0 z-[80] flex items-center justify-center bg-zinc-950/80 p-4"
+              role="dialog"
+              aria-modal="true"
+              aria-label={alt.trim() || enlargeLabel}
+              onClick={() => setOpen(false)}
+            >
+              <button
+                type="button"
+                onClick={() => setOpen(false)}
+                aria-label={closeLabel}
+                className="absolute top-4 right-4 z-10 inline-flex size-10 items-center justify-center rounded-full bg-zinc-950/70 text-white transition hover:bg-zinc-950"
+              >
+                <i className="fas fa-times" aria-hidden="true" />
+              </button>
+              <div
+                className={`max-h-full max-w-full overflow-auto ${zoomed ? "cursor-zoom-out" : "cursor-zoom-in"}`}
+                onClick={(event) => event.stopPropagation()}
+              >
+                <img
+                  src={resolved}
+                  alt={alt}
+                  onClick={() => setZoomed((current) => !current)}
+                  className={`rounded-xl border shadow-2xl ${frameClassName} ${
+                    zoomed
+                      ? "max-w-none"
+                      : "max-h-[92vh] max-w-[min(92vw,72rem)] object-contain"
+                  }`}
+                />
+              </div>
+            </div>,
+            document.body,
+          )
+        : null}
+    </>
   );
 }
 

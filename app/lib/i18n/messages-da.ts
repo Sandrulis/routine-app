@@ -352,6 +352,7 @@ export const da: Record<string, string> = {
   "docs.copy_code": "Kopiér kode",
   "docs.empty": "Dokumentationen er endnu ikke klar.",
   "docs.empty_category": "Dette afsnit har endnu ingen sider.",
+  "docs.image.enlarge": "Forstør billedet",
   "docs.next": "Næste",
   "docs.previous": "Forrige",
   "docs.title": "Dokumentation",

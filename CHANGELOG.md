@@ -4,6 +4,11 @@
 
 - (none)
 
+## v0.3.20
+
+- Docs attēli ir puse no teksta platuma un iecentrēti; klikšķis atver pietuvinātu skatu
+- Loading, kad admin atver docs kategoriju vai rakstu un kad publiskajā `/docs` pārslēdz rakstus
+
 ## v0.3.19
 
 - Docs `{SYSTEM_NAME}` publiski kļūst par sistēmas nosaukumu treknrakstā un lielajiem burtiem; admin poga ievietošanai

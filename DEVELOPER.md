@@ -400,11 +400,11 @@ app/
     docs-shell.tsx                # Publiskais docs layout: sānjosla, burger overlay zem 1024px, raksta loading
     docs-sidebar.tsx              # Docs kategorijas/apakškategorijas; mobilajā overlay (`hidden lg:flex`)
     docs-article-content.tsx      # Publiskā raksta saturs (virsraksts, Markdown, pager)
-    docs-markdown.tsx             # Markdown: teksts, koda bloki, YouTube, attēli
+    docs-markdown.tsx             # Markdown: teksts, koda bloki, YouTube, attēli (50% platums, klikšķis pietuvina)
     docs-article-pager.tsx        # Iepriekšējais / nākamais raksts pēc sort_order
     docs-article-images.tsx       # Admin raksta attēlu galerija un ievietošana
-    admin-docs-categories.tsx     # /admin/docs: ieslēgums, kategorijas CRUD + DnD
-    admin-docs-articles.tsx       # /admin/docs/[id]: apakškategorijas, saturs, attēli, DnD, `{SYSTEM_NAME}` ievietošana
+    admin-docs-categories.tsx     # /admin/docs: ieslēgums, kategorijas CRUD + DnD; loading, kad atver kategoriju
+    admin-docs-articles.tsx       # /admin/docs/[id]: apakškategorijas, saturs, attēli, DnD, `{SYSTEM_NAME}` ievietošana; loading, kad atver rakstu
     landing-page.tsx              # Landing: H1, problem, features, audiences, pricing (ja plāni ieslēgti), FAQ; zem fold lazy (`landing-below-fold`, `lazy-on-visible`); hash `smooth-scroll`
     landing-pricing.tsx           # Publiskie plāni: vienāda augstuma kartītes, CTA apakšā, Early Bird/izmēģinājums birkās, salīdzinājuma tabula
     landing-json-ld.tsx           # schema.org Organization / WebSite / SoftwareApplication / FAQPage; docs CollectionPage + TechArticle
