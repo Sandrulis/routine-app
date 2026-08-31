@@ -56,6 +56,7 @@ export type TaskFile = {
   size: number;
   hasContent: boolean;
   googleDriveFileId: string | null;
+  oneDriveFileId: string | null;
   createdAt: string;
 };
 
@@ -153,6 +154,10 @@ export function normalizeStoredTaskFiles(value: unknown): TaskFile[] | null {
         "googleDriveFileId" in item && item.googleDriveFileId
           ? String(item.googleDriveFileId)
           : null;
+      const oneDriveFileId =
+        "oneDriveFileId" in item && item.oneDriveFileId
+          ? String(item.oneDriveFileId)
+          : null;
       const createdAt =
         "createdAt" in item && item.createdAt
           ? String(item.createdAt)
@@ -165,6 +170,7 @@ export function normalizeStoredTaskFiles(value: unknown): TaskFile[] | null {
         size,
         hasContent,
         googleDriveFileId,
+        oneDriveFileId,
         createdAt,
       };
     })

@@ -29,11 +29,16 @@ export function buildContentSecurityPolicy(nonce: string) {
   const isDev = process.env.NODE_ENV === "development";
   const umami = umamiHost();
   const turnstile = "https://challenges.cloudflare.com";
+  // Production uses strict-dynamic so host allowlists are ignored; keep hosts as a
+  // fallback for older browsers. Dev omits strict-dynamic so Turbopack HMR chunks
+  // from 'self' can load even when they are injected without a nonce.
   const scriptSrc = [
     "'self'",
     `'nonce-${nonce}'`,
-    "'strict-dynamic'",
+    isDev ? null : "'strict-dynamic'",
     isDev ? "'unsafe-eval'" : null,
+    umami,
+    turnstile,
   ]
     .filter(Boolean)
     .join(" ");
@@ -43,8 +48,7 @@ export function buildContentSecurityPolicy(nonce: string) {
 
   return [
     "default-src 'self'",
-    `script-src ${scriptSrc}`,
-    `script-src-elem ${scriptSrc} ${umami} ${turnstile}`.trim(),
+    `script-src ${scriptSrc}`.trim(),
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: https: blob:",
     "font-src 'self' data:",

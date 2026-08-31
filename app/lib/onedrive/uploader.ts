@@ -45,6 +45,14 @@ async function getAccessToken(row: OneDriveSecretRow) {
   return refreshed.access_token;
 }
 
+async function parseDriveItemId(response: Response, fallbackMessage: string) {
+  const data = (await response.json().catch(() => null)) as { id?: string } | null;
+  if (!response.ok || !data?.id) {
+    throw new Error(fallbackMessage);
+  }
+  return data.id;
+}
+
 async function simpleUpload(
   accessToken: string,
   remotePath: string,
@@ -52,7 +60,7 @@ async function simpleUpload(
   mimeType: string,
 ) {
   const response = await fetch(
-    `${GRAPH}/me/drive/root:/${remotePath}:/content`,
+    `${GRAPH}/me/drive/root:/${remotePath}:/content?@microsoft.graph.conflictBehavior=rename`,
     {
       method: "PUT",
       headers: {
@@ -62,9 +70,10 @@ async function simpleUpload(
       body: Buffer.from(bytes),
     },
   );
-  if (!response.ok) {
-    throw new Error(`OneDrive upload failed (${response.status})`);
-  }
+  return parseDriveItemId(
+    response,
+    `OneDrive upload failed (${response.status})`,
+  );
 }
 
 async function sessionUpload(
@@ -105,9 +114,7 @@ async function sessionUpload(
     },
     body: Buffer.from(bytes),
   });
-  if (!response.ok) {
-    throw new Error("OneDrive session upload failed");
-  }
+  return parseDriveItemId(response, "OneDrive session upload failed");
 }
 
 export async function uploadTeamFileToOneDrive(input: {
@@ -119,7 +126,10 @@ export async function uploadTeamFileToOneDrive(input: {
 }) {
   const row = await fetchOneDriveSecretRow(input.teamId);
   if (!row?.isConnected || !row.isEnabled || !row.refreshToken) {
-    return { ok: true as const, skipped: true as const };
+    return {
+      ok: false as const,
+      error: "errors.files_require_onedrive",
+    };
   }
 
   const accessToken = await getAccessToken(row);
@@ -130,10 +140,66 @@ export async function uploadTeamFileToOneDrive(input: {
   const fileName = sanitizeSegment(input.fileName) || "file";
   const remotePath = encodeGraphPath([...folderParts, fileName]);
 
-  if (input.bytes.length <= ONEDRIVE_SIMPLE_UPLOAD_MAX_BYTES) {
-    await simpleUpload(accessToken, remotePath, input.bytes, input.mimeType);
-  } else {
-    await sessionUpload(accessToken, remotePath, input.bytes, input.mimeType);
+  const oneDriveFileId =
+    input.bytes.length <= ONEDRIVE_SIMPLE_UPLOAD_MAX_BYTES
+      ? await simpleUpload(accessToken, remotePath, input.bytes, input.mimeType)
+      : await sessionUpload(accessToken, remotePath, input.bytes, input.mimeType);
+
+  return {
+    ok: true as const,
+    skipped: false as const,
+    oneDriveFileId,
+  };
+}
+
+export async function downloadTeamOneDriveFile(input: {
+  teamId: string;
+  oneDriveFileId: string;
+}) {
+  const row = await fetchOneDriveSecretRow(input.teamId);
+  if (!row?.isConnected || !row.refreshToken) {
+    throw new Error("OneDrive not connected");
   }
+  const accessToken = await getAccessToken(row);
+  const response = await fetch(
+    `${GRAPH}/me/drive/items/${encodeURIComponent(input.oneDriveFileId)}/content`,
+    {
+      headers: { Authorization: `Bearer ${accessToken}` },
+      redirect: "follow",
+    },
+  );
+  if (!response.ok) {
+    throw new Error(`OneDrive download failed (${response.status})`);
+  }
+  const mimeType =
+    response.headers.get("content-type") || "application/octet-stream";
+  const bytes = new Uint8Array(await response.arrayBuffer());
+  return { bytes, mimeType };
+}
+
+export async function renameTeamOneDriveFile(input: {
+  teamId: string;
+  oneDriveFileId: string;
+  fileName: string;
+}) {
+  const row = await fetchOneDriveSecretRow(input.teamId);
+  if (!row?.isConnected || !row.isEnabled || !row.refreshToken) {
+    return { ok: true as const, skipped: true as const };
+  }
+
+  const accessToken = await getAccessToken(row);
+  const fileName = sanitizeSegment(input.fileName) || "file";
+  const response = await fetch(
+    `${GRAPH}/me/drive/items/${encodeURIComponent(input.oneDriveFileId)}`,
+    {
+      method: "PATCH",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ name: fileName }),
+    },
+  );
+  await parseDriveItemId(response, `OneDrive rename failed (${response.status})`);
   return { ok: true as const, skipped: false as const };
 }

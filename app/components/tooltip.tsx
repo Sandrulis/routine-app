@@ -25,6 +25,23 @@ type TooltipPosition = {
 
 const GAP_PX = 6;
 const VIEWPORT_PADDING_PX = 12;
+const DESKTOP_HOVER_UI = "(min-width: 1024px)";
+
+function useDesktopHoverUi() {
+  const [enabled, setEnabled] = useState(false);
+
+  useEffect(() => {
+    const media = window.matchMedia(DESKTOP_HOVER_UI);
+    function sync() {
+      setEnabled(media.matches);
+    }
+    sync();
+    media.addEventListener("change", sync);
+    return () => media.removeEventListener("change", sync);
+  }, []);
+
+  return enabled;
+}
 
 function computeTooltipPosition(
   triggerRect: DOMRect,
@@ -95,6 +112,7 @@ export function Tooltip({
   const [position, setPosition] = useState<TooltipPosition | null>(null);
   const [isPositioned, setIsPositioned] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const desktopHover = useDesktopHoverUi();
 
   useEffect(() => {
     setMounted(true);
@@ -116,15 +134,20 @@ export function Tooltip({
   }, [align]);
 
   const show = useCallback(() => {
+    if (!desktopHover) return;
     setIsPositioned(false);
     setVisible(true);
-  }, []);
+  }, [desktopHover]);
 
   const hide = useCallback(() => {
     setVisible(false);
     setIsPositioned(false);
     setPosition(null);
   }, []);
+
+  useEffect(() => {
+    if (!desktopHover) hide();
+  }, [desktopHover, hide]);
 
   useLayoutEffect(() => {
     if (!visible || !mounted) return;

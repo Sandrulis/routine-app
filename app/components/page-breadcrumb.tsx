@@ -7,6 +7,8 @@ import { AdminPanelButton } from "@/app/components/admin-panel-button";
 import { LanguageSwitcher } from "@/app/components/language-switcher";
 import { ListBadge } from "@/app/components/list-badge";
 import { NotificationsMenu } from "@/app/components/notifications-menu";
+import { TeamSwitcher } from "@/app/components/team-switcher";
+import { Tooltip } from "@/app/components/tooltip";
 import { useTranslations } from "@/app/components/translations-provider";
 import { UserAvatar } from "@/app/components/user-avatar";
 import { FileIcon } from "@/app/components/file-icon";
@@ -39,7 +41,13 @@ function CrumbMark({ icon, muted }: { icon?: ReactNode; muted: boolean }) {
   );
 }
 
-export function PageBreadcrumb() {
+export function PageBreadcrumb({
+  menuOpen = false,
+  onOpenMenu,
+}: {
+  menuOpen?: boolean;
+  onOpenMenu?: () => void;
+}) {
   const pathname = usePathname();
   const { t } = useTranslations();
   const { lists, tasks, allTaskFiles, isReady: listsReady } = useLists();
@@ -298,9 +306,29 @@ export function PageBreadcrumb() {
   }, [allTaskFiles, files, filesReady, lists, listsReady, loadingLabel, members, pathname, t, tasks, teamReady, templates, templatesReady]);
 
   return (
-    <header className="sticky top-0 z-20 border-b border-zinc-200 bg-white/95 py-2.5 pr-4 pl-[var(--app-content-inset-left)] backdrop-blur-sm md:pr-6">
+    <header className="sticky top-0 z-20 border-b border-zinc-200 bg-white/95 py-2.5 pr-4 pl-2 backdrop-blur-sm md:pr-6 lg:pl-[var(--app-content-inset-left)]">
       <div className="flex items-center justify-between gap-3">
-        <nav aria-label={t("breadcrumb.label", "Ceļš")} className="min-w-0">
+        {onOpenMenu ? (
+          <Tooltip label={t("actions.open_menu", "Atvērt izvēlni")} align="start">
+            <button
+              type="button"
+              className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-zinc-600 transition hover:bg-zinc-100 hover:text-zinc-900 lg:hidden"
+              aria-label={t("actions.open_menu", "Atvērt izvēlni")}
+              aria-expanded={menuOpen}
+              aria-controls="app-sidebar"
+              onClick={onOpenMenu}
+            >
+              <i className="fas fa-bars text-lg" aria-hidden="true" />
+            </button>
+          </Tooltip>
+        ) : null}
+        <div className="min-w-0 flex-1 lg:hidden">
+          <TeamSwitcher compact />
+        </div>
+        <nav
+          aria-label={t("breadcrumb.label", "Ceļš")}
+          className="hidden min-w-0 flex-1 lg:block"
+        >
           <ol className="flex min-w-0 items-center gap-1.5 text-[13px]">
             {crumbs.map((crumb, index) => {
               const isCurrent = index === crumbs.length - 1;

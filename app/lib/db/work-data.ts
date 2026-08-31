@@ -598,7 +598,7 @@ export async function fetchTeamWorkspace(teamId: string): Promise<TeamWorkspace>
     fetchAllRows((from, to) =>
       supabase
         .from("task_files")
-        .select("id, task_id, name, mime_type, size, has_content, google_drive_file_id, created_at")
+        .select("id, task_id, name, mime_type, size, has_content, google_drive_file_id, onedrive_file_id, created_at")
         .eq("team_id", teamId)
         .range(from, to),
     ),
@@ -606,7 +606,7 @@ export async function fetchTeamWorkspace(teamId: string): Promise<TeamWorkspace>
       supabase
         .from("list_files")
         .select(
-          "id, list_id, parent_id, name, mime_type, size, has_content, google_drive_file_id, sort_order, created_at",
+          "id, list_id, parent_id, name, mime_type, size, has_content, google_drive_file_id, onedrive_file_id, sort_order, created_at",
         )
         .eq("team_id", teamId)
         .range(from, to),
@@ -680,6 +680,7 @@ export async function fetchTeamWorkspace(teamId: string): Promise<TeamWorkspace>
     googleDriveFileId: row.google_drive_file_id
       ? String(row.google_drive_file_id)
       : null,
+    oneDriveFileId: row.onedrive_file_id ? String(row.onedrive_file_id) : null,
     createdAt: row.created_at,
   }));
 
@@ -694,6 +695,7 @@ export async function fetchTeamWorkspace(teamId: string): Promise<TeamWorkspace>
     googleDriveFileId: row.google_drive_file_id
       ? String(row.google_drive_file_id)
       : null,
+    oneDriveFileId: row.onedrive_file_id ? String(row.onedrive_file_id) : null,
     createdAt: row.created_at,
     sortOrder: row.sort_order,
   }));
@@ -1111,7 +1113,7 @@ export async function insertActivity(teamId: string, activity: TaskActivity) {
 export async function insertTaskFile(
   teamId: string,
   file: TaskFile,
-  content: string | null,
+  _content: string | null,
 ) {
   const { error } = await db().from("task_files").insert({
     id: file.id,
@@ -1120,9 +1122,10 @@ export async function insertTaskFile(
     name: file.name,
     mime_type: file.mimeType,
     size: Math.max(0, Math.round(Number(file.size) || 0)),
-    content,
+    content: null,
     google_drive_file_id: file.googleDriveFileId,
-    has_content: Boolean(content),
+    onedrive_file_id: file.oneDriveFileId,
+    has_content: false,
     created_at: file.createdAt,
   });
   if (error) throw error;
@@ -1144,7 +1147,7 @@ export async function deleteTaskFileRow(fileId: string) {
 export async function insertListFile(
   teamId: string,
   file: ListFile,
-  content: string | null,
+  _content: string | null,
 ) {
   const { error } = await db().from("list_files").insert({
     id: file.id,
@@ -1154,9 +1157,10 @@ export async function insertListFile(
     name: file.name,
     mime_type: file.mimeType,
     size: Math.max(0, Math.round(Number(file.size) || 0)),
-    content,
+    content: null,
     google_drive_file_id: file.googleDriveFileId,
-    has_content: Boolean(content),
+    onedrive_file_id: file.oneDriveFileId,
+    has_content: false,
     sort_order: file.sortOrder,
     created_at: file.createdAt,
   });

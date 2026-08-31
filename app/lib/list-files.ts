@@ -15,6 +15,7 @@ export type ListFile = {
   size: number;
   hasContent: boolean;
   googleDriveFileId: string | null;
+  oneDriveFileId: string | null;
   createdAt: string;
   sortOrder: number;
 };
@@ -96,15 +97,23 @@ export type FileStorageBucketBytes = {
   totalBytes: number;
   /** Bytes kept as content on Routine server. */
   serverBytes: number;
-  /** Bytes uploaded to Google Drive (cloud). */
+  /** Bytes uploaded to Google Drive and/or OneDrive (cloud). */
   cloudBytes: number;
 };
+
+export function fileHasCloudStorage(file: {
+  googleDriveFileId?: string | null;
+  oneDriveFileId?: string | null;
+}): boolean {
+  return Boolean(file.googleDriveFileId || file.oneDriveFileId);
+}
 
 export function sumFileStorageBuckets(
   files: Array<{
     size: number;
     hasContent?: boolean;
     googleDriveFileId?: string | null;
+    oneDriveFileId?: string | null;
   }>,
 ): FileStorageBucketBytes {
   let totalBytes = 0;
@@ -115,7 +124,7 @@ export function sumFileStorageBuckets(
     if (size <= 0) continue;
     totalBytes += size;
     if (file.hasContent) serverBytes += size;
-    if (file.googleDriveFileId) cloudBytes += size;
+    if (fileHasCloudStorage(file)) cloudBytes += size;
   }
   return { totalBytes, serverBytes, cloudBytes };
 }
@@ -287,6 +296,10 @@ export function normalizeStoredFiles(value: unknown): ListFile[] | null {
         "googleDriveFileId" in item && item.googleDriveFileId
           ? String(item.googleDriveFileId)
           : null;
+      const oneDriveFileId =
+        "oneDriveFileId" in item && item.oneDriveFileId
+          ? String(item.oneDriveFileId)
+          : null;
       const createdAt =
         "createdAt" in item && item.createdAt
           ? String(item.createdAt)
@@ -306,6 +319,7 @@ export function normalizeStoredFiles(value: unknown): ListFile[] | null {
         size,
         hasContent,
         googleDriveFileId,
+        oneDriveFileId,
         createdAt,
         sortOrder,
       };
@@ -339,27 +353,6 @@ function removeListFileContent(fileId: string) {
   listFileContentCache.delete(fileId);
 }
 
-function readFileAsDataUrl(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result ?? ""));
-    reader.onerror = () => reject(reader.error ?? new Error("read failed"));
-    reader.readAsDataURL(file);
-  });
-}
-
-async function storeFileContent(fileId: string, file: File): Promise<string | null> {
-  if (file.size <= 0 || file.size > MAX_STORED_FILE_BYTES) return null;
-  try {
-    const dataUrl = await readFileAsDataUrl(file);
-    listFileContentCache.set(fileId, dataUrl);
-    return dataUrl;
-  } catch {
-    listFileContentCache.delete(fileId);
-    return null;
-  }
-}
-
 export async function addStoredListFile(
   listId: string,
   file: File,
@@ -368,6 +361,7 @@ export async function addStoredListFile(
   options?: {
     storeContent?: boolean;
     googleDriveFileId?: string | null;
+    oneDriveFileId?: string | null;
   },
 ): Promise<ListFile | null> {
   const fileName = file.name.trim() || "file";
@@ -376,7 +370,10 @@ export async function addStoredListFile(
   }
 
   const googleDriveFileId = options?.googleDriveFileId?.trim() || null;
-  const storeContent = options?.storeContent !== false;
+  const oneDriveFileId = options?.oneDriveFileId?.trim() || null;
+  if (!googleDriveFileId && !oneDriveFileId) {
+    return null;
+  }
 
   const all = readAllListFiles();
   const record: ListFile = {
@@ -388,6 +385,7 @@ export async function addStoredListFile(
     size: Math.max(0, Math.round(file.size)),
     hasContent: false,
     googleDriveFileId,
+    oneDriveFileId,
     createdAt: new Date().toISOString(),
     sortOrder:
       sortOrder ??
@@ -396,15 +394,12 @@ export async function addStoredListFile(
       ),
   };
 
-  const content = storeContent ? await storeFileContent(record.id, file) : null;
-  record.hasContent = Boolean(content);
-
   writeAllListFiles([...all, record]);
   if (listFilesTeamId) {
     const teamId = listFilesTeamId;
     try {
       const { insertListFile } = await import("@/app/lib/db/work-data");
-      await insertListFile(teamId, record, content);
+      await insertListFile(teamId, record, null);
     } catch (error) {
       console.error("Failed to save list file", error);
       writeAllListFiles(all);
@@ -450,6 +445,13 @@ export function renameStoredListFile(fileId: string, name: string): ListFile | n
     void import("@/app/lib/google-drive/queue-upload").then(
       ({ queueGoogleDriveRename }) => {
         queueGoogleDriveRename({ kind: "list", id: fileId, name: trimmed });
+      },
+    );
+  }
+  if (renamedFile.oneDriveFileId) {
+    void import("@/app/lib/onedrive/queue-upload").then(
+      ({ queueOneDriveRename }) => {
+        queueOneDriveRename({ kind: "list", id: fileId, name: trimmed });
       },
     );
   }

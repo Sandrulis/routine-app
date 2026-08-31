@@ -179,9 +179,8 @@ export async function uploadTeamFileToGoogleDrive(input: {
   const row = await fetchGoogleDriveSecretRow(input.teamId);
   if (!row?.isConnected || !row.isEnabled || !row.refreshToken) {
     return {
-      ok: true as const,
-      skipped: true as const,
-      storeOnServer: true as const,
+      ok: false as const,
+      error: "errors.files_require_google_drive",
     };
   }
 
@@ -206,7 +205,7 @@ export async function uploadTeamFileToGoogleDrive(input: {
   return {
     ok: true as const,
     skipped: false as const,
-    storeOnServer: row.storeOnServer,
+    storeOnServer: false as const,
     driveFileId,
   };
 }

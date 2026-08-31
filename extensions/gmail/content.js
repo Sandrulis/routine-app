@@ -26,6 +26,10 @@
   "errors.extension_plugin_disabled": "Gmail spraudnis sistēmā ir izslēgts.",
   "errors.extension_team_drive_missing":
     "Šai komandai nav pieslēgts Google Drive. Spraudnis nestrādās.",
+  "errors.extension_team_onedrive_missing":
+    "Šai komandai nav pieslēgts OneDrive. Spraudnis nestrādās.",
+  "errors.extension_team_cloud_missing":
+    "Šai komandai nav pieslēgts Google Drive vai OneDrive. Spraudnis nestrādās.",
   "errors.extension_not_subtask": "Izvēlētais ieraksts nav apakšuzdevums.",
   "errors.extension_subtask_unavailable": "Apakšuzdevums nav pieejams.",
   "errors.file_type_mismatch": "Pielikuma tips nesakrīt ar saturu.",
@@ -34,6 +38,12 @@
   "errors.extension_file_too_large": "Fails pārsniedz 25 MB limitu.",
   "errors.extension_file_needs_drive":
     "Liels fails: ieslēdz komandas Google Drive integrāciju.",
+  "errors.files_require_google_drive":
+    "Lai augšupielādētu failus, vispirms pieslēdziet komandas Google Drive.",
+  "errors.files_require_onedrive":
+    "Lai augšupielādētu failus, vispirms pieslēdziet komandas OneDrive.",
+  "errors.files_require_cloud":
+    "Lai augšupielādētu failus, vispirms pieslēdziet komandas Google Drive vai OneDrive.",
   "errors.extension_upload_failed": "Neizdevās pievienot failu.",
   "errors.extension_nothing_attached": "Nekas netika pievienots.",
   "errors.extension_search_failed": "Meklēšana neizdevās.",
@@ -1515,11 +1525,20 @@ function ensureUi() {
     return teams.find((team) => team.id === selectedId) || teams[0] || null;
   }
 
+  function teamCloudConnected(team) {
+    const driveOn = session?.googleDriveEnabled !== false;
+    const odOn = session?.oneDriveEnabled === true;
+    return Boolean(
+      (driveOn && team?.googleDriveConnected) ||
+        (odOn && team?.oneDriveConnected),
+    );
+  }
+
   function pluginButtonsAllowed() {
     if (!session) return true;
     if (!session.authenticated) return true;
     const team = selectedTeamFromSession(session);
-    return Boolean(team?.googleDriveConnected);
+    return teamCloudConnected(team);
   }
 
   function removeInlineButtons() {
@@ -1911,7 +1930,7 @@ function ensureUi() {
     const teams = Array.isArray(data.teams) ? data.teams : [];
     const team =
       teams.find((item) => item.id === data.selectedTeamId) || teams[0] || null;
-    if (team && !team.googleDriveConnected) {
+    if (team && !teamCloudConnected(team)) {
       syncPluginButtons();
       closeModal();
       return;

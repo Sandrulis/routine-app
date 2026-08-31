@@ -20,7 +20,10 @@ export async function POST(request: Request) {
     isFrontendModuleEnabled(FRONTEND_MODULE_KEYS.fileUpload),
   ]);
   if (!onedriveEnabled || !filesEnabled) {
-    return NextResponse.json({ ok: true, skipped: true });
+    return NextResponse.json(
+      { ok: false, error: "errors.onedrive_module_disabled" },
+      { status: 403 },
+    );
   }
 
   const user = await getCurrentUser();

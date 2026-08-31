@@ -11,6 +11,7 @@ export type ExtensionTeamSummary = {
   id: string;
   name: string;
   googleDriveConnected: boolean;
+  oneDriveConnected: boolean;
 };
 
 export type ExtensionUserSummary = {
@@ -86,15 +87,25 @@ export async function listExtensionTeams(
     .order("name", { ascending: true });
 
   const connected = new Set<string>();
+  const oneDriveConnected = new Set<string>();
   if (isSupabaseAdminConfigured()) {
     const admin = createAdminClient();
     const { data: rows } = await admin
       .from("team_google_drive_integrations")
-      .select("team_id, is_connected, refresh_token")
+      .select("team_id, is_connected, is_enabled, refresh_token")
       .in("team_id", teamIds);
     for (const row of rows ?? []) {
-      if (row.is_connected && decryptSecret(row.refresh_token)) {
+      if (row.is_connected && row.is_enabled && decryptSecret(row.refresh_token)) {
         connected.add(String(row.team_id));
+      }
+    }
+    const { data: oneDriveRows } = await admin
+      .from("team_onedrive_integrations")
+      .select("team_id, is_connected, is_enabled, refresh_token")
+      .in("team_id", teamIds);
+    for (const row of oneDriveRows ?? []) {
+      if (row.is_connected && row.is_enabled && decryptSecret(row.refresh_token)) {
+        oneDriveConnected.add(String(row.team_id));
       }
     }
   }
@@ -103,15 +114,24 @@ export async function listExtensionTeams(
     id: String(team.id),
     name: String(team.name || "").trim() || "",
     googleDriveConnected: connected.has(String(team.id)),
+    oneDriveConnected: oneDriveConnected.has(String(team.id)),
   }));
 }
 
 export async function loadExtensionSessionFlags(supabase: SupabaseClient) {
-  const [fileUploadEnabled, gmailPluginEnabled] = await Promise.all([
-    isModuleEnabled(supabase, FRONTEND_MODULE_KEYS.fileUpload, true),
-    isModuleEnabled(supabase, FRONTEND_MODULE_KEYS.gmailPlugin, true),
-  ]);
-  return { fileUploadEnabled, gmailPluginEnabled };
+  const [fileUploadEnabled, gmailPluginEnabled, googleDriveEnabled, oneDriveEnabled] =
+    await Promise.all([
+      isModuleEnabled(supabase, FRONTEND_MODULE_KEYS.fileUpload, true),
+      isModuleEnabled(supabase, FRONTEND_MODULE_KEYS.gmailPlugin, true),
+      isModuleEnabled(supabase, FRONTEND_MODULE_KEYS.googleDrive, true),
+      isModuleEnabled(supabase, FRONTEND_MODULE_KEYS.onedrive, false),
+    ]);
+  return {
+    fileUploadEnabled,
+    gmailPluginEnabled,
+    googleDriveEnabled,
+    oneDriveEnabled,
+  };
 }
 
 export async function loadGmailConnectionSummary(userId: string) {

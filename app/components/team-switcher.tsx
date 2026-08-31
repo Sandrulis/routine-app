@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState, type MouseEvent } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type MouseEvent } from "react";
+import { createPortal } from "react-dom";
 import { ConfirmModal } from "@/app/components/confirm-modal";
 import {
   CreateItemMenu,
@@ -42,8 +43,10 @@ function TeamAvatar({
   );
 }
 
-export function TeamSwitcher() {
+export function TeamSwitcher({ compact = false }: { compact?: boolean }) {
   const menuRef = useRef<HTMLDivElement | null>(null);
+  const triggerRef = useRef<HTMLButtonElement | null>(null);
+  const dropdownRef = useRef<HTMLDivElement | null>(null);
   const { t } = useTranslations();
   const { showFeedback } = useFeedbackToast();
   const {
@@ -73,6 +76,35 @@ export function TeamSwitcher() {
     teamId: string;
     anchor: CreateMenuAnchor;
   } | null>(null);
+  const [menuPos, setMenuPos] = useState<{ top: number; left: number } | null>(null);
+
+  useLayoutEffect(() => {
+    if (!open) {
+      setMenuPos(null);
+      return;
+    }
+    if (!triggerRef.current) return;
+
+    function update() {
+      const el = triggerRef.current;
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      const width = 248;
+      const left = Math.min(
+        Math.max(8, rect.left),
+        window.innerWidth - width - 8,
+      );
+      setMenuPos({ top: rect.bottom + 4, left });
+    }
+
+    update();
+    window.addEventListener("resize", update);
+    window.addEventListener("scroll", update, true);
+    return () => {
+      window.removeEventListener("resize", update);
+      window.removeEventListener("scroll", update, true);
+    };
+  }, [open]);
 
   useEffect(() => {
     if (!open) return;
@@ -80,6 +112,7 @@ export function TeamSwitcher() {
     function handlePointerDown(event: PointerEvent) {
       const target = event.target as Node;
       if (menuRef.current?.contains(target)) return;
+      if (dropdownRef.current?.contains(target)) return;
       if (
         target instanceof Element &&
         target.closest("[data-app-modal-ignore-backdrop]")
@@ -135,9 +168,10 @@ export function TeamSwitcher() {
   return (
     <div
       ref={menuRef}
-      className="relative shrink-0 px-2 py-2"
+      className={`relative z-[60] shrink-0 ${compact ? "min-w-0 flex-1 py-0" : "px-2 py-2"}`}
     >
       <button
+        ref={triggerRef}
         type="button"
         onClick={() => {
           if (!isReady) return;
@@ -150,7 +184,9 @@ export function TeamSwitcher() {
         aria-haspopup="menu"
         aria-expanded={open}
         aria-label={teamLabel}
-        className={`flex w-full min-h-12 items-center gap-2.5 rounded-lg px-2 py-1.5 text-left transition ${
+        className={`flex w-full items-center gap-2.5 rounded-lg px-2 text-left transition ${
+          compact ? "min-h-10 py-1" : "min-h-12 py-1.5"
+        } ${
           open ? "bg-zinc-100 ring-2 ring-zinc-300 ring-offset-2" : "hover:bg-zinc-100"
         }`}
       >
@@ -170,100 +206,105 @@ export function TeamSwitcher() {
             <span className="truncate text-[15px] font-semibold text-zinc-900">
               {isReady ? teamLabel : t("common.loading", "Ielādē…")}
             </span>
-            {rank ? (
+            {rank && !compact ? (
               <span className="truncate text-[11px] text-zinc-400">{rank}</span>
             ) : null}
           </span>
         </OverflowTooltip>
       </button>
 
-      {open ? (
-        <div
-          role="menu"
-          className="absolute top-full left-2 z-[70] mt-1 w-[248px] overflow-hidden rounded-xl bg-white py-2 shadow-[0_12px_40px_rgba(15,23,42,0.16)] ring-1 ring-zinc-200/80"
-        >
-          {teams.map((team) => {
-            const isCurrent = team.id === currentTeam?.id;
-            const membership = membershipForUser(
-              membersByTeam[team.id],
-              currentUser,
-            );
-            const teamRankLabelText = membership
-              ? teamRankLabel(
-                  membership.role,
-                  t,
-                  rolesByTeam[team.id] ?? [],
-                )
-              : null;
-            return (
-              <div
-                key={team.id}
-                className={`group flex w-full items-center gap-1 pr-1.5 transition hover:bg-zinc-100 ${
-                  isCurrent ? "bg-zinc-50" : ""
-                }`}
-              >
-                <button
-                  type="button"
-                  role="menuitem"
-                  onClick={() => {
-                    selectTeam(team.id);
-                    setOpen(false);
-                  }}
-                  className="flex min-w-0 flex-1 items-center gap-3 px-3 py-2 text-left"
-                >
-                  <TeamAvatar team={team} />
-                  <OverflowTooltip label={team.name} className="min-w-0 flex-1">
-                    <span className="block min-w-0">
-                      <span className="block truncate text-[13px] font-medium text-zinc-900">
-                        {team.name}
-                      </span>
-                      {teamRankLabelText ? (
-                        <span className="mt-0.5 block truncate text-[11px] text-zinc-400">
-                          {teamRankLabelText}
+      {open && menuPos
+        ? createPortal(
+            <div
+              ref={dropdownRef}
+              role="menu"
+              style={{ top: menuPos.top, left: menuPos.left }}
+              className="fixed z-[80] w-[248px] overflow-hidden rounded-xl bg-white py-2 shadow-[0_12px_40px_rgba(15,23,42,0.16)] ring-1 ring-zinc-200/80"
+            >
+              {teams.map((team) => {
+                const isCurrent = team.id === currentTeam?.id;
+                const membership = membershipForUser(
+                  membersByTeam[team.id],
+                  currentUser,
+                );
+                const teamRankLabelText = membership
+                  ? teamRankLabel(
+                      membership.role,
+                      t,
+                      rolesByTeam[team.id] ?? [],
+                    )
+                  : null;
+                return (
+                  <div
+                    key={team.id}
+                    className={`group flex w-full items-center gap-1 pr-1.5 transition hover:bg-zinc-100 ${
+                      isCurrent ? "bg-zinc-50" : ""
+                    }`}
+                  >
+                    <button
+                      type="button"
+                      role="menuitem"
+                      onClick={() => {
+                        selectTeam(team.id);
+                        setOpen(false);
+                      }}
+                      className="flex min-w-0 flex-1 items-center gap-3 px-3 py-2 text-left"
+                    >
+                      <TeamAvatar team={team} />
+                      <OverflowTooltip label={team.name} className="min-w-0 flex-1">
+                        <span className="block min-w-0">
+                          <span className="block truncate text-[13px] font-medium text-zinc-900">
+                            {team.name}
+                          </span>
+                          {teamRankLabelText ? (
+                            <span className="mt-0.5 block truncate text-[11px] text-zinc-400">
+                              {teamRankLabelText}
+                            </span>
+                          ) : null}
+                        </span>
+                      </OverflowTooltip>
+                    </button>
+                    <span className="flex shrink-0 items-center pr-1">
+                      {isCurrent && showCurrentTeamActions ? (
+                      <button
+                        type="button"
+                        aria-label={t("nav.more", "Vairāk")}
+                        onClick={(event) => openTeamActions(event, team)}
+                        className="inline-flex size-7 items-center justify-center rounded-md text-zinc-500 opacity-100 hover:bg-zinc-200 hover:text-zinc-800 lg:opacity-0 lg:group-hover:opacity-100 lg:group-focus-within:opacity-100"
+                      >
+                        <i className="fas fa-ellipsis text-[13px]" aria-hidden="true" />
+                      </button>
+                      ) : null}
+                      {isCurrent ? (
+                        <span className="inline-flex size-7 items-center justify-center text-zinc-500">
+                          <i className="fas fa-check text-[11px]" aria-hidden="true" />
                         </span>
                       ) : null}
                     </span>
-                  </OverflowTooltip>
-                </button>
-                <span className="flex shrink-0 items-center pr-1">
-                  {isCurrent && showCurrentTeamActions ? (
-                  <button
-                    type="button"
-                    aria-label={t("nav.more", "Vairāk")}
-                    onClick={(event) => openTeamActions(event, team)}
-                    className="inline-flex size-7 items-center justify-center rounded-md text-zinc-500 opacity-0 hover:bg-zinc-200 hover:text-zinc-800 group-hover:opacity-100 group-focus-within:opacity-100"
-                  >
-                    <i className="fas fa-ellipsis text-[13px]" aria-hidden="true" />
-                  </button>
-                  ) : null}
-                  {isCurrent ? (
-                    <span className="inline-flex size-7 items-center justify-center text-zinc-500">
-                      <i className="fas fa-check text-[11px]" aria-hidden="true" />
-                    </span>
-                  ) : null}
+                  </div>
+                );
+              })}
+              <div className="my-1.5 border-t border-zinc-100" />
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => {
+                  setOpen(false);
+                  setFormTeam("new");
+                }}
+                className="flex w-full items-center gap-3 px-3 py-2 text-left transition hover:bg-zinc-100"
+              >
+                <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-zinc-100 text-zinc-500">
+                  <i className="fas fa-plus text-[11px]" aria-hidden="true" />
                 </span>
-              </div>
-            );
-          })}
-          <div className="my-1.5 border-t border-zinc-100" />
-          <button
-            type="button"
-            role="menuitem"
-            onClick={() => {
-              setOpen(false);
-              setFormTeam("new");
-            }}
-            className="flex w-full items-center gap-3 px-3 py-2 text-left transition hover:bg-zinc-100"
-          >
-            <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-zinc-100 text-zinc-500">
-              <i className="fas fa-plus text-[11px]" aria-hidden="true" />
-            </span>
-            <span className="text-[13px] font-medium text-zinc-900">
-              {t("teams.add", "Pievienot jaunu komandu")}
-            </span>
-          </button>
-        </div>
-      ) : null}
+                <span className="text-[13px] font-medium text-zinc-900">
+                  {t("teams.add", "Pievienot jaunu komandu")}
+                </span>
+              </button>
+            </div>,
+            document.body,
+          )
+        : null}
 
       <CreateItemMenu
         open={itemMenu !== null}

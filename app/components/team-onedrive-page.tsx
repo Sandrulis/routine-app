@@ -16,6 +16,7 @@ import {
   saveOneDriveSettingsAction,
   startOneDriveOAuthAction,
 } from "@/app/lib/onedrive/actions";
+import { notifyOneDriveStatusChanged } from "@/app/lib/onedrive/context";
 import type { OneDriveStatus } from "@/app/lib/onedrive/repository";
 import { canConfigureTeamOneDrive } from "@/app/lib/team";
 import { useTeam } from "@/app/lib/team-store";
@@ -137,6 +138,7 @@ export function TeamOneDrivePage() {
         folderPath: result.data.folderPath,
       }));
       setFolderPath(result.data.folderPath);
+      notifyOneDriveStatusChanged();
       showFeedback({
         type: "success",
         text: t("onedrive.feedback.saved", "OneDrive iestatījumi saglabāti."),
@@ -161,6 +163,7 @@ export function TeamOneDrivePage() {
         accountEmail: "",
       }));
       setEnabled(false);
+      notifyOneDriveStatusChanged();
       showFeedback({
         type: "success",
         text: t("onedrive.feedback.disconnected", "Microsoft konts atvienots."),
@@ -173,7 +176,7 @@ export function TeamOneDrivePage() {
       title={t("nav.onedrive", "OneDrive Integrācija")}
       subtitle={t(
         "onedrive.page.subtitle",
-        "Pieslēdz komandas Microsoft kontu, lai augšupielādētie faili nonāktu arī OneDrive mapē.",
+        "Pieslēdz komandas Microsoft kontu. Faili tiek glabāti OneDrive, nevis {SYSTEM_NAME} serverī.",
       )}
     >
       {!isReady || !loaded ? (

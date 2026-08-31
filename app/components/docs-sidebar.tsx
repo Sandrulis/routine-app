@@ -9,6 +9,7 @@ import { ListBadge } from "@/app/components/list-badge";
 import { useTranslations } from "@/app/components/translations-provider";
 import { localePath, stripLocalePrefix } from "@/app/lib/seo/locale-path";
 import { DEFAULT_SITE_LOGO_COLOR } from "@/app/lib/site-admin/branding";
+import { renderDocsPlaceholders } from "@/app/lib/docs/placeholders";
 import type { DocsNavCategory } from "@/app/lib/docs/types";
 
 function docsActiveSlugs(pathname: string): {
@@ -67,10 +68,10 @@ export function DocsSidebar({
   return (
     <aside
       id="docs-sidebar"
-      className={`flex h-dvh w-[17.5rem] shrink-0 flex-col border-r border-zinc-200 bg-white max-md:fixed max-md:inset-y-0 max-md:left-0 max-md:z-50 max-md:shadow-xl max-md:transition-transform max-md:duration-200 md:visible md:static md:z-auto md:pointer-events-auto md:shadow-none ${
+      className={`h-dvh w-[17.5rem] shrink-0 flex-col border-r border-zinc-200 bg-white ${
         mobileOpen
-          ? "max-md:translate-x-0"
-          : "max-md:pointer-events-none max-md:invisible max-md:-translate-x-full"
+          ? "fixed inset-y-0 left-0 z-50 flex shadow-xl lg:static lg:z-auto lg:shadow-none"
+          : "hidden lg:flex"
       }`}
     >
       <div className="border-b border-zinc-200 px-4 py-4">
@@ -88,7 +89,7 @@ export function DocsSidebar({
             />
             <span className="min-w-0 truncate">{systemName}</span>
           </Link>
-          <div className="md:hidden">
+          <div className="lg:hidden">
             <IconActionButton
               label={t("actions.close", "Aizvērt")}
               icon="fas fa-xmark"
@@ -128,7 +129,9 @@ export function DocsSidebar({
                       className={`${category.icon} w-4 text-center text-[13px] text-zinc-400`}
                       aria-hidden="true"
                     />
-                    <span className="min-w-0 flex-1 truncate">{category.title}</span>
+                    <span className="min-w-0 flex-1 truncate">
+                      {renderDocsPlaceholders(category.title, systemName)}
+                    </span>
                   </button>
                   {open ? (
                     <ul className="relative mt-1 ml-3 space-y-0.5 border-l border-zinc-200 pl-3">
@@ -157,7 +160,7 @@ export function DocsSidebar({
                                 {active ? (
                                   <span className="absolute top-1/2 -left-[calc(0.75rem+1px)] h-5 w-0.5 -translate-y-1/2 rounded-full bg-sky-500" />
                                 ) : null}
-                                {article.title}
+                                {renderDocsPlaceholders(article.title, systemName)}
                               </Link>
                             </li>
                           );

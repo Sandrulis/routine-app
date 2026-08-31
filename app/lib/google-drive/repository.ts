@@ -17,12 +17,19 @@ export type GoogleDriveStatus = {
   configured: boolean;
   connected: boolean;
   enabled: boolean;
-  /** When false (default), file bytes stay on Drive only. */
+  /** Kept for existing rows; new uploads never store bytes on the app server. */
   storeOnServer: boolean;
   folderPath: string;
   accountEmail: string;
   canConfigure: boolean;
 };
+
+/** Team can accept file uploads: Drive is connected and upload-to-Drive is on. */
+export function isGoogleDriveReadyForUploads(
+  status: Pick<GoogleDriveStatus, "connected" | "enabled"> | null | undefined,
+): boolean {
+  return Boolean(status?.connected && status?.enabled);
+}
 
 export type GoogleDriveSecretRow = {
   teamId: string;
@@ -205,7 +212,7 @@ export async function saveGoogleDriveTokens(input: {
     team_id: input.teamId,
     is_connected: true,
     is_enabled: existing?.isEnabled ?? true,
-    store_on_server: existing?.storeOnServer ?? false,
+    store_on_server: false,
     folder_path: existing?.folderPath ?? LEGACY_CLOUD_FOLDER,
     account_email: input.accountEmail,
     refresh_token: persistSecret(refreshToken),
@@ -255,7 +262,7 @@ export async function saveGoogleDriveSettings(input: {
   const folderChanged = existing?.folderPath !== folderPath;
   const payload = {
     is_enabled: input.isEnabled,
-    store_on_server: input.storeOnServer,
+    store_on_server: false,
     folder_path: folderPath,
     folder_id_cache: folderChanged ? {} : (existing?.folderIdCache ?? {}),
   };
@@ -273,7 +280,7 @@ export async function saveGoogleDriveSettings(input: {
     logError("saveGoogleDriveSettings failed", error.message);
     return { ok: false as const, error: "errors.google_drive_save_failed" };
   }
-  return { ok: true as const, folderPath, storeOnServer: input.storeOnServer };
+  return { ok: true as const, folderPath, storeOnServer: false };
 }
 
 export async function disconnectGoogleDrive(teamId: string) {
@@ -286,7 +293,7 @@ export async function disconnectGoogleDrive(teamId: string) {
     team_id: teamId,
     is_connected: false,
     is_enabled: false,
-    store_on_server: existing?.storeOnServer ?? false,
+    store_on_server: false,
     folder_path: existing?.folderPath ?? LEGACY_CLOUD_FOLDER,
     account_email: "",
     refresh_token: null,

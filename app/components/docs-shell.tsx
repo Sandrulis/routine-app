@@ -54,6 +54,15 @@ export function DocsShell({
   }, [pathname]);
 
   useEffect(() => {
+    const media = window.matchMedia("(min-width: 1024px)");
+    function onChange() {
+      if (media.matches) setMenuOpen(false);
+    }
+    media.addEventListener("change", onChange);
+    return () => media.removeEventListener("change", onChange);
+  }, []);
+
+  useEffect(() => {
     if (!menuOpen) return;
 
     function onKeyDown(event: KeyboardEvent) {
@@ -93,7 +102,7 @@ export function DocsShell({
       {menuOpen ? (
         <button
           type="button"
-          className="fixed inset-0 z-40 bg-zinc-900/40 md:hidden"
+          className="fixed inset-0 z-40 bg-zinc-900/40 lg:hidden"
           aria-label={t("actions.close", "Aizvērt")}
           onClick={() => setMenuOpen(false)}
         />
@@ -108,12 +117,12 @@ export function DocsShell({
         onClose={() => setMenuOpen(false)}
       />
       <main className="flex min-w-0 flex-1 flex-col overflow-hidden">
-        <div className="flex items-center gap-2 border-b border-zinc-200 bg-white px-3 py-2 md:hidden">
-          <Tooltip label={t("docs.menu.open", "Atvērt izvēlni")} align="start">
+        <div className="flex items-center gap-2 border-b border-zinc-200 bg-white px-3 py-2 lg:hidden">
+            <Tooltip label={t("actions.open_menu", "Atvērt izvēlni")} align="start">
             <button
               type="button"
               className="inline-flex h-10 w-10 items-center justify-center rounded-lg text-zinc-600 transition hover:bg-zinc-100 hover:text-zinc-900"
-              aria-label={t("docs.menu.open", "Atvērt izvēlni")}
+              aria-label={t("actions.open_menu", "Atvērt izvēlni")}
               aria-expanded={menuOpen}
               aria-controls="docs-sidebar"
               onClick={() => setMenuOpen(true)}

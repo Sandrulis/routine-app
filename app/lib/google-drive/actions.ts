@@ -105,7 +105,7 @@ export async function saveGoogleDriveSettingsAction(input: {
   const result = await saveGoogleDriveSettings({
     teamId: input.teamId.trim(),
     isEnabled: input.isEnabled,
-    storeOnServer: input.storeOnServer,
+    storeOnServer: false,
     folderPath: sanitizeDriveFolderPath(input.folderPath),
   });
   if (!result.ok) return result;

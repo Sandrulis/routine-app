@@ -26,15 +26,20 @@ import {
   createCspNonce,
 } from "@/app/lib/security/csp";
 
-function withLanguageHeader(request: NextRequest, languageCode: LanguageCode, nonce: string) {
+function withLanguageHeader(request: NextRequest, languageCode: LanguageCode) {
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set(UI_LANGUAGE_HEADER, languageCode);
-  requestHeaders.set("x-nonce", nonce);
   return requestHeaders;
 }
 
-function applyCsp(response: NextResponse, nonce: string) {
-  response.headers.set("Content-Security-Policy", buildContentSecurityPolicy(nonce));
+function attachCspToRequest(requestHeaders: Headers, nonce: string, csp: string) {
+  requestHeaders.set("x-nonce", nonce);
+  // Next.js reads the nonce from the request CSP header and stamps it on scripts.
+  requestHeaders.set("Content-Security-Policy", csp);
+}
+
+function applyCsp(response: NextResponse, csp: string) {
+  response.headers.set("Content-Security-Policy", csp);
   return response;
 }
 
@@ -52,6 +57,7 @@ function copySessionOnto(from: NextResponse, to: NextResponse) {
 
 export async function proxy(request: NextRequest) {
   const nonce = createCspNonce();
+  const csp = buildContentSecurityPolicy(nonce);
   const { pathname } = request.nextUrl;
 
   if (isExtensionApiPath(pathname)) {
@@ -71,7 +77,7 @@ export async function proxy(request: NextRequest) {
     if (origin.startsWith("chrome-extension://")) {
       applyExtensionCors(request, redirect);
     }
-    return applyCsp(redirect, nonce);
+    return applyCsp(redirect, csp);
   }
 
   if (isPublicLocalizedPath(pathname)) {
@@ -81,7 +87,7 @@ export async function proxy(request: NextRequest) {
     if (urlLang === DEFAULT_LANGUAGE) {
       const url = request.nextUrl.clone();
       url.pathname = basePath;
-      return applyCsp(NextResponse.redirect(url, 308), nonce);
+      return applyCsp(NextResponse.redirect(url, 308), csp);
     }
 
     if (
@@ -97,16 +103,17 @@ export async function proxy(request: NextRequest) {
       if (detected && detected !== DEFAULT_LANGUAGE) {
         const url = request.nextUrl.clone();
         url.pathname = localePath(basePath, detected);
-        return applyCsp(NextResponse.redirect(url, 307), nonce);
+        return applyCsp(NextResponse.redirect(url, 307), csp);
       }
     }
 
     const languageCode = urlLang ?? DEFAULT_LANGUAGE;
-    const requestHeaders = withLanguageHeader(request, languageCode, nonce);
+    const requestHeaders = withLanguageHeader(request, languageCode);
+    attachCspToRequest(requestHeaders, nonce, csp);
     const sessionResponse = await updateSession(request, requestHeaders);
 
     if (sessionResponse.headers.has("location")) {
-      return applyCsp(sessionResponse, nonce);
+      return applyCsp(sessionResponse, csp);
     }
 
     if (urlLang) {
@@ -116,15 +123,15 @@ export async function proxy(request: NextRequest) {
         request: { headers: requestHeaders },
       });
       copySessionOnto(sessionResponse, rewrite);
-      return applyCsp(rewrite, nonce);
+      return applyCsp(rewrite, csp);
     }
 
-    return applyCsp(sessionResponse, nonce);
+    return applyCsp(sessionResponse, csp);
   }
 
   const requestHeaders = new Headers(request.headers);
-  requestHeaders.set("x-nonce", nonce);
-  return applyCsp(await updateSession(request, requestHeaders), nonce);
+  attachCspToRequest(requestHeaders, nonce, csp);
+  return applyCsp(await updateSession(request, requestHeaders), csp);
 }
 
 export const config = {

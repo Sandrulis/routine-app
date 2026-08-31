@@ -112,7 +112,7 @@ export async function uploadGoogleDriveFile(input: {
   const teamId = input.teamId?.trim();
   const listId = input.listId.trim();
   if (!teamId || !listId || input.file.size <= 0) {
-    return { ok: true, skipped: true, storeOnServer: true };
+    return { ok: false, error: "errors.files_require_google_drive" };
   }
 
   const body = new FormData();
@@ -130,6 +130,9 @@ export async function uploadGoogleDriveFile(input: {
     );
     input.onProgress?.(100);
     const data = response.data;
+    if (data && "ok" in data && data.ok === false) {
+      return data;
+    }
     if (!response.ok || !data || !("ok" in data)) {
       return { ok: false, error: "errors.google_drive_upload_failed" };
     }
@@ -140,16 +143,13 @@ export async function uploadGoogleDriveFile(input: {
   }
 }
 
-/**
- * Decide whether to keep file bytes in Routine after a Drive upload attempt.
- * Drive-primary (default): only store on server if upload skipped/failed or setting says so.
- */
-export function shouldStoreFileOnServer(
+/** Error key when Drive did not return a file id (missing config or upload failed). */
+export function googleDriveUploadFailure(
   driveResult: GoogleDriveUploadResult | null,
-): boolean {
-  if (!driveResult || !driveResult.ok) return true;
-  if (driveResult.skipped) return true;
-  return driveResult.storeOnServer;
+): string | null {
+  if (driveFileIdFromUpload(driveResult)) return null;
+  if (driveResult && !driveResult.ok) return driveResult.error;
+  return "errors.files_require_google_drive";
 }
 
 export function driveFileIdFromUpload(

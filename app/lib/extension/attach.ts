@@ -1,4 +1,3 @@
-import { MAX_STORED_FILE_BYTES } from "@/app/lib/list-files";
 import {
   DEFAULT_FILE_TYPE_EXTENSIONS,
   isAllowedFileName,
@@ -13,12 +12,12 @@ import {
   type TaskFile,
 } from "@/app/lib/task-activity";
 import { textLooksLikeHtml } from "@/app/lib/email-file-preview";
+import { uploadTeamFileToConnectedClouds } from "@/app/lib/cloud-storage/upload-team-file";
 import { GOOGLE_DRIVE_UPLOAD_MAX_BYTES } from "@/app/lib/google-drive/env";
-import { uploadTeamFileToGoogleDrive } from "@/app/lib/google-drive/uploader";
 import { assertTeamActionPermission } from "@/app/lib/team/assert-team-action";
 import type { User, SupabaseClient } from "@supabase/supabase-js";
 
-/** Extension uploads follow Drive max (25 MB); DB content stays ≤ 1.5 MB. */
+/** Extension uploads go to team Google Drive or OneDrive (max 25 MB). */
 export const EXTENSION_UPLOAD_MAX_BYTES = GOOGLE_DRIVE_UPLOAD_MAX_BYTES;
 
 export type ExtensionSubtaskHit = {
@@ -31,15 +30,6 @@ export type ExtensionSubtaskHit = {
   teamId: string;
   teamName: string;
 };
-
-function bytesToDataUrl(mimeType: string, bytes: Uint8Array): string {
-  let binary = "";
-  const chunk = 0x8000;
-  for (let i = 0; i < bytes.length; i += chunk) {
-    binary += String.fromCharCode(...bytes.subarray(i, i + chunk));
-  }
-  return `data:${mimeType};base64,${btoa(binary)}`;
-}
 
 function sanitizeFileBase(name: string): string {
   const cleaned = name
@@ -324,48 +314,44 @@ export async function attachFilesToSubtask(input: {
       continue;
     }
 
-    // Mirror in-app addTaskFile: Drive first, then optional server content.
-    // Extension always keeps a DB copy for small files so preview/download work
-    // even when the team is Drive-only (store_on_server=false) or Drive fetch fails.
+    // Cloud is the only file store; skip the attachment if no Drive/OneDrive id.
     let googleDriveFileId: string | null = null;
+    let oneDriveFileId: string | null = null;
+    let skipReason = "errors.extension_upload_failed";
     try {
-      const driveResult = await uploadTeamFileToGoogleDrive({
+      const cloudResult = await uploadTeamFileToConnectedClouds({
         teamId,
         fileName: name,
         mimeType,
         bytes: file.bytes,
         pathParts,
       });
-      if (driveResult.ok && !driveResult.skipped) {
-        googleDriveFileId = driveResult.driveFileId;
-      }
+      googleDriveFileId = cloudResult.googleDriveFileId;
+      oneDriveFileId = cloudResult.oneDriveFileId;
+      skipReason = cloudResult.missingError;
     } catch (error) {
-      logError("extension Drive upload failed", error);
+      logError("extension cloud upload failed", error);
     }
 
-    const canStoreContent = file.bytes.length <= MAX_STORED_FILE_BYTES;
-    if (!canStoreContent && !googleDriveFileId) {
+    if (!googleDriveFileId && !oneDriveFileId) {
       skipped.push({
         name,
-        reason:
-          file.bytes.length > MAX_STORED_FILE_BYTES
-            ? "errors.extension_file_needs_drive"
-            : "errors.extension_upload_failed",
+        reason: skipReason,
       });
       continue;
     }
 
     const id = createTaskFileId();
     const createdAt = new Date().toISOString();
-    const content = canStoreContent ? bytesToDataUrl(mimeType, file.bytes) : null;
     const record: TaskFile = {
       id,
       taskId: input.taskId,
       name,
       mimeType,
       size: file.bytes.length,
-      hasContent: Boolean(content),
+      hasContent: false,
       googleDriveFileId,
+      oneDriveFileId,
       createdAt,
     };
 
@@ -377,9 +363,10 @@ export async function attachFilesToSubtask(input: {
       name: record.name,
       mime_type: record.mimeType,
       size: record.size,
-      content,
+      content: null,
       google_drive_file_id: record.googleDriveFileId,
-      has_content: Boolean(content),
+      onedrive_file_id: record.oneDriveFileId,
+      has_content: false,
       created_at: record.createdAt,
     });
     if (insertError) {

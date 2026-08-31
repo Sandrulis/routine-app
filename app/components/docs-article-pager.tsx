@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useTranslations } from "@/app/components/translations-provider";
 import type { DocsPagerTarget } from "@/app/lib/docs/adjacent";
+import { renderDocsPlaceholders } from "@/app/lib/docs/placeholders";
 import { localePath } from "@/app/lib/seo/locale-path";
 
 function PagerLink({
@@ -12,7 +13,7 @@ function PagerLink({
   target: DocsPagerTarget;
   direction: "previous" | "next";
 }) {
-  const { t, languageCode } = useTranslations();
+  const { t, languageCode, systemName } = useTranslations();
   const isNext = direction === "next";
   const label = isNext
     ? t("docs.next", "Nākamais")
@@ -30,7 +31,9 @@ function PagerLink({
         {label}
         {isNext ? <i className="fas fa-arrow-right text-[10px]" aria-hidden="true" /> : null}
       </span>
-      <span className="w-full truncate text-sm font-medium text-zinc-900">{target.title}</span>
+      <span className="w-full truncate text-sm font-medium text-zinc-900">
+        {renderDocsPlaceholders(target.title, systemName)}
+      </span>
     </Link>
   );
 }

@@ -12,7 +12,7 @@ Nav jāievada Routine URL vai OAuth Client ID. Spraudnis sauc [https://www.tasqi
 2. Administrācija → Moduļi: **Gmail spraudnis** ieslēgts
 3. Administrācija → Integrācijas: Google OAuth konfigurēts; Google Cloud: **Gmail API** + **Drive API**
 4. Google Cloud OAuth klientā Redirect URI: `/auth/google-oauth/callback` (login un Gmail spraudnis) un `/auth/google-drive/callback` — arī `http://localhost:3120` varianti. Rādās Integrācijās.
-5. Komandai pieslēgts **Google Drive** (bez tā popup rāda sarkanu brīdinājumu un Gmailā pogas nav)
+5. Komandai pieslēgts ieslēgtais mākonis: **Google Drive** un/vai **OneDrive** (bez tā popup rāda sarkanu brīdinājumu un Gmailā pogas nav). UI nosauc tikai tos mākoņus, kuru modulis ir ieslēgts.
 6. `module_file_upload` ieslēgts
 
 ## Ielāde Chrome
@@ -34,7 +34,7 @@ Apakšuzdevumu saraksts (3. solis) ir tajā pašā statusa secībā kā sānjosl
 
 Ja pēc spraudņa Reload Gmailā rādās kļūda par pārstartētu spraudni — pārlādē Gmail lapu (F5). Tas nav Google Drive problēma.
 
-Popup ir balta kartīte: avatars, vārds un uzvārds, e-pasts, **Iziet** tikai kā ikona augšējā labajā stūrī, komandu izvēle, Drive brīdinājums zem select, Gmail statuss kā ikona ar tooltip. Teksti ar `{SYSTEM_NAME}` ņem sistēmas nosaukumu no `GET /api/extension/config` / sesijas. Sesija paliek spraudnī (`chrome.storage.local`) arī tad, ja TASQIN cilne nav atvērta. Gmailā TASQIN pogas rādās tikai tad, ja izvēlētajai komandai ir pieslēgts Google Drive.
+Popup ir balta kartīte: avatars, vārds un uzvārds, e-pasts, **Iziet** tikai kā ikona augšējā labajā stūrī, komandu izvēle, Drive brīdinājums zem select, Gmail statuss kā ikona ar tooltip. Teksti ar `{SYSTEM_NAME}` ņem sistēmas nosaukumu no `GET /api/extension/config` / sesijas. Sesija paliek spraudnī (`chrome.storage.local`) arī tad, ja TASQIN cilne nav atvērta. Gmailā TASQIN pogas rādās tikai tad, ja izvēlētajai komandai ir pieslēgts ieslēgtais mākonis (Google Drive un/vai OneDrive).
 
 ## API (Routine)
 

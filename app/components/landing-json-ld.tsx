@@ -1,6 +1,8 @@
 import { getServerTranslations } from "@/app/lib/i18n/server";
 import { resolveSystemName } from "@/app/lib/document-title";
 import { getEnabledFrontendModuleKeys } from "@/app/lib/frontend-modules/repository";
+import { applyDocsPlaceholders } from "@/app/lib/docs/placeholders";
+import { getPublicDocsTree } from "@/app/lib/docs/repository";
 import { resolveLandingFaqItems } from "@/app/lib/landing/faq";
 import { shouldShowLandingPricing } from "@/app/lib/landing/pricing";
 import {
@@ -31,6 +33,7 @@ export async function LandingJsonLd() {
     paymentPlansEnabled,
     plans,
     earlyBird,
+    tree,
   ] = await Promise.all([
     getServerTranslations(),
     getSiteSettings(),
@@ -38,6 +41,7 @@ export async function LandingJsonLd() {
     getPaymentPlansEnabledCached(),
     listPaymentPlansCached(),
     getEarlyBirdSettings(),
+    getPublicDocsTree(),
   ]);
   const enabled = new Set(enabledKeys);
   const isEnabled = (moduleKey: string) => enabled.has(moduleKey);
@@ -114,6 +118,29 @@ export async function LandingJsonLd() {
     ...(sameAs.length > 0 ? { sameAs } : {}),
   };
 
+  const docsUrl = absoluteUrl(localePath("/docs", languageCode));
+  const docsCollection =
+    tree.enabled && tree.categories.length > 0
+      ? {
+          "@type": "CollectionPage",
+          "@id": `${docsUrl}#documentation`,
+          name: t("docs.title", "Dokumentācija"),
+          url: docsUrl,
+          inLanguage: language,
+          isPartOf: { "@id": websiteId },
+          hasPart: tree.categories.flatMap((category) =>
+            category.articles.map((article) => ({
+              "@type": "TechArticle",
+              name: applyDocsPlaceholders(article.title, systemName),
+              url: absoluteUrl(
+                localePath(`/docs/${category.slug}/${article.slug}`, languageCode),
+              ),
+              isPartOf: { "@id": `${docsUrl}#documentation` },
+            })),
+          ),
+        }
+      : null;
+
   const jsonLd = {
     "@context": "https://schema.org",
     "@graph": [
@@ -126,6 +153,7 @@ export async function LandingJsonLd() {
         description,
         inLanguage: language,
         publisher: { "@id": organizationId },
+        ...(docsCollection ? { hasPart: { "@id": `${docsUrl}#documentation` } } : {}),
       },
       {
         "@type": "SoftwareApplication",
@@ -143,6 +171,7 @@ export async function LandingJsonLd() {
         "@type": "FAQPage",
         mainEntity: faqItems,
       },
+      ...(docsCollection ? [docsCollection] : []),
     ],
   };
 

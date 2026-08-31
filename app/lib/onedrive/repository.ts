@@ -22,6 +22,13 @@ export type OneDriveStatus = {
   canConfigure: boolean;
 };
 
+/** Team can accept file uploads: OneDrive is connected and upload-to-OneDrive is on. */
+export function isOneDriveReadyForUploads(
+  status: Pick<OneDriveStatus, "connected" | "enabled"> | null | undefined,
+): boolean {
+  return Boolean(status?.connected && status?.enabled);
+}
+
 export type OneDriveSecretRow = {
   teamId: string;
   isConnected: boolean;

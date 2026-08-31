@@ -50,6 +50,7 @@ import { FileIcon } from "@/app/components/file-icon";
 import { VirtualWindow } from "@/app/components/virtual-window";
 import { useFeedbackToast } from "@/app/components/feedback-toast-provider";
 import { useTranslations } from "@/app/components/translations-provider";
+import { translateActionError } from "@/app/lib/i18n/action-errors";
 import {
   addStoredListFile,
   childListFiles,
@@ -86,13 +87,10 @@ import {
 import { FRONTEND_MODULE_KEYS } from "@/app/lib/frontend-modules/keys";
 import { useFrontendModules } from "@/app/lib/frontend-modules/context";
 import { googleDrivePathForListFile } from "@/app/lib/google-drive/path";
-import {
-  batchUploadPercent,
-  driveFileIdFromUpload,
-  shouldStoreFileOnServer,
-  uploadGoogleDriveFile,
-} from "@/app/lib/google-drive/queue-upload";
-import { queueOneDriveUpload } from "@/app/lib/onedrive/queue-upload";
+import { useTeamCloudStorage } from "@/app/lib/cloud-storage/context";
+import { uploadFileToTeamCloud } from "@/app/lib/cloud-storage/queue-upload";
+import { filesRequireCloudFallback } from "@/app/lib/cloud-storage/message-key";
+import { batchUploadPercent } from "@/app/lib/google-drive/queue-upload";
 import type { TaskFile } from "@/app/lib/task-activity";
 import { useLists } from "@/app/lib/lists-store";
 import { useListFiles } from "@/app/lib/use-list-files";
@@ -359,9 +357,11 @@ type FilesWindowEntry =
 function FilesWindow({
   entries,
   loading,
+  driveHint,
 }: {
   entries: FilesWindowEntry[];
   loading?: boolean;
+  driveHint?: string | null;
 }) {
   const { t } = useTranslations();
   const { openListFile, openTaskFile } = useFileViewer();
@@ -373,7 +373,8 @@ function FilesWindow({
   if (entries.length === 0) {
     return (
       <p className="px-1 py-8 text-center text-sm text-zinc-400">
-        {t("lists.windows.files_empty", "Šajā sarakstā vēl nav failu.")}
+        {driveHint ||
+          t("lists.windows.files_empty", "Šajā sarakstā vēl nav failu.")}
       </p>
     );
   }
@@ -953,19 +954,17 @@ export function ListWindowsBoard({
   const { isAdmin } = useIsAdmin();
   const { isEnabled: isModuleEnabled } = useFrontendModules();
   const fileUploadsEnabled = isModuleEnabled(FRONTEND_MODULE_KEYS.fileUpload);
-  const googleDriveEnabled =
-    fileUploadsEnabled && isModuleEnabled(FRONTEND_MODULE_KEYS.googleDrive);
-  const onedriveEnabled =
-    fileUploadsEnabled && isModuleEnabled(FRONTEND_MODULE_KEYS.onedrive);
+  const { ready: cloudReady, googleDriveReady, oneDriveReady, googleDriveModule, oneDriveModule, requireCloudErrorKey } = useTeamCloudStorage();
   const list = lists.find((item) => item.id === listId) ?? null;
   const windowOrderKey = parentId ?? listId;
-  const canUploadFiles = Boolean(
+  const canUploadIfCloudReady = Boolean(
     fileUploadsEnabled &&
       list &&
       resolveEffectiveListAccess(list, currentUser, roles, isAdmin)
         .canCreateTasks &&
       hasTeamActionPermission(currentUser, roles, isAdmin, "files.upload"),
   );
+  const canUploadFiles = canUploadIfCloudReady && cloudReady;
   const [order, setOrder] = useState<ListWindowId[]>(DEFAULT_LIST_WINDOW_ORDER);
   const [tasksArchiveOpen, setTasksArchiveOpen] = useState(false);
   const [overviewArchiveById, setOverviewArchiveById] = useState<
@@ -1043,6 +1042,7 @@ export function ListWindowsBoard({
       ...childListFiles(allFiles, listId, parentId),
     ]);
     const total = allowed.length;
+    let uploadError: string | null = null;
     try {
       for (let index = 0; index < allowed.length; index += 1) {
         const file = allowed[index];
@@ -1055,50 +1055,52 @@ export function ListWindowsBoard({
           });
         };
         updateProgress(0);
-        let driveResult = null;
-        if (googleDriveEnabled) {
-          driveResult = await uploadGoogleDriveFile({
-            teamId: currentTeam?.id,
+        const cloudResult = await uploadFileToTeamCloud({
+          teamId: currentTeam?.id,
+          listId,
+          file,
+          pathParts: googleDrivePathForListFile({
+            lists,
+            tasks,
             listId,
-            file,
-            pathParts: googleDrivePathForListFile({
-              lists,
-              tasks,
-              listId,
-              parentId,
-            }),
-            onProgress: updateProgress,
-          });
-        } else {
-          updateProgress(40);
+            parentId,
+          }),
+          googleDriveReady,
+          oneDriveReady,
+          googleDriveModule,
+          oneDriveModule,
+          onProgress: updateProgress,
+        });
+        if (!cloudResult.ok) {
+          uploadError = cloudResult.error;
+          updateProgress(100);
+          break;
         }
         updateProgress(85);
         const stored = await addStoredListFile(listId, file, parentId, nextOrder, {
-          storeContent: shouldStoreFileOnServer(driveResult),
-          googleDriveFileId: driveFileIdFromUpload(driveResult),
+          storeContent: false,
+          googleDriveFileId: cloudResult.googleDriveFileId,
+          oneDriveFileId: cloudResult.oneDriveFileId,
         });
         if (!stored) {
+          uploadError = "files.save.failed";
           updateProgress(100);
-          continue;
+          break;
         }
         nextOrder += 1;
-        if (onedriveEnabled) {
-          queueOneDriveUpload({
-            teamId: currentTeam?.id,
-            listId,
-            file,
-            pathParts: googleDrivePathForListFile({
-              lists,
-              tasks,
-              listId,
-              parentId,
-            }),
-          });
-        }
         updateProgress(100);
       }
     } finally {
       setUploadProgress(null);
+    }
+    if (uploadError) {
+      showFeedback({
+        type: "error",
+        text:
+          uploadError === "files.save.failed"
+            ? t("files.save.failed", "Neizdevās saglabāt failu. Mēģini vēlreiz.")
+            : translateActionError(t, uploadError),
+      });
     }
   }
 
@@ -1171,6 +1173,11 @@ export function ListWindowsBoard({
         <FilesWindow
           entries={fileEntries}
           loading={!filesReady}
+          driveHint={
+            canUploadIfCloudReady && !cloudReady
+              ? t(requireCloudErrorKey, filesRequireCloudFallback(requireCloudErrorKey))
+              : null
+          }
         />
       </WindowCard>
     ),

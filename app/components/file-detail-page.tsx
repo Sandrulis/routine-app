@@ -18,6 +18,8 @@ import {
 } from "@/app/lib/list-files";
 import { ensureListFileContent } from "@/app/lib/file-content";
 import { fileBaseName, fileExtensionFromName } from "@/app/lib/file-types";
+import { fetchGoogleDriveContentAsObjectUrl } from "@/app/lib/google-drive/content-url";
+import { fetchOneDriveContentAsObjectUrl } from "@/app/lib/onedrive/content-url";
 import { FRONTEND_MODULE_KEYS } from "@/app/lib/frontend-modules/keys";
 import { useFrontendModules } from "@/app/lib/frontend-modules/context";
 import { useLists } from "@/app/lib/lists-store";
@@ -65,10 +67,19 @@ export function FileDetailPage({
         return;
       }
       if (file.googleDriveFileId) {
-        const { fetchGoogleDriveContentAsObjectUrl } = await import(
-          "@/app/lib/google-drive/content-url"
-        );
         const url = await fetchGoogleDriveContentAsObjectUrl("list", file.id);
+        if (cancelled) {
+          if (url) URL.revokeObjectURL(url);
+          return;
+        }
+        if (url) {
+          objectUrl = url;
+          setContent(url);
+          return;
+        }
+      }
+      if (file.oneDriveFileId) {
+        const url = await fetchOneDriveContentAsObjectUrl("list", file.id);
         if (cancelled) {
           if (url) URL.revokeObjectURL(url);
           return;

@@ -4,6 +4,7 @@
 
 import { Fragment, useState, type ReactNode } from "react";
 import { useTranslations } from "@/app/components/translations-provider";
+import { applyDocsPlaceholders, renderDocsPlaceholders } from "@/app/lib/docs/placeholders";
 import { docsImageIdFromSrc } from "@/app/lib/docs/images";
 import { youtubeEmbedUrl, youtubeIdFromText } from "@/app/lib/docs/youtube";
 
@@ -187,6 +188,7 @@ function renderInline(
   text: string,
   keyPrefix: string,
   dark: boolean,
+  systemName: string,
   overrides?: Record<string, string>,
 ): ReactNode[] {
   const nodes: ReactNode[] = [];
@@ -198,16 +200,24 @@ function renderInline(
   while ((match = pattern.exec(text))) {
     if (match.index > last) {
       nodes.push(
-        <Fragment key={`${keyPrefix}-t${part++}`}>{text.slice(last, match.index)}</Fragment>,
+        <Fragment key={`${keyPrefix}-t${part++}`}>
+          {renderDocsPlaceholders(text.slice(last, match.index), systemName)}
+        </Fragment>,
       );
     }
     const token = match[0];
     if (token.startsWith("**")) {
       nodes.push(
-        <strong key={`${keyPrefix}-b${part++}`}>{token.slice(2, -2)}</strong>,
+        <strong key={`${keyPrefix}-b${part++}`}>
+          {renderDocsPlaceholders(token.slice(2, -2), systemName)}
+        </strong>,
       );
     } else if (token.startsWith("*")) {
-      nodes.push(<em key={`${keyPrefix}-i${part++}`}>{token.slice(1, -1)}</em>);
+      nodes.push(
+        <em key={`${keyPrefix}-i${part++}`}>
+          {renderDocsPlaceholders(token.slice(1, -1), systemName)}
+        </em>,
+      );
     } else if (token.startsWith("`")) {
         nodes.push(
         <code
@@ -218,7 +228,7 @@ function renderInline(
               : "rounded bg-zinc-100 px-1.5 py-0.5 font-mono text-[0.85em] text-zinc-800"
           }
         >
-          {token.slice(1, -1)}
+          {applyDocsPlaceholders(token.slice(1, -1), systemName)}
         </code>,
       );
     } else if (token.startsWith("![")) {
@@ -226,7 +236,7 @@ function renderInline(
       nodes.push(
         <DocsImage
           key={`${keyPrefix}-img${part++}`}
-          alt={image?.[1] ?? ""}
+          alt={applyDocsPlaceholders(image?.[1] ?? "", systemName)}
           src={image?.[2] ?? ""}
           dark={dark}
           overrides={overrides}
@@ -248,17 +258,25 @@ function renderInline(
             rel={href.startsWith("http") ? "noreferrer" : undefined}
             target={href.startsWith("http") ? "_blank" : undefined}
           >
-            {link[1]}
+            {renderDocsPlaceholders(link[1], systemName)}
           </a>,
         );
       } else {
-        nodes.push(<Fragment key={`${keyPrefix}-r${part++}`}>{token}</Fragment>);
+        nodes.push(
+          <Fragment key={`${keyPrefix}-r${part++}`}>
+            {renderDocsPlaceholders(token, systemName)}
+          </Fragment>,
+        );
       }
     }
     last = match.index + token.length;
   }
   if (last < text.length) {
-    nodes.push(<Fragment key={`${keyPrefix}-e`}>{text.slice(last)}</Fragment>);
+    nodes.push(
+      <Fragment key={`${keyPrefix}-e`}>
+        {renderDocsPlaceholders(text.slice(last), systemName)}
+      </Fragment>,
+    );
   }
   return nodes;
 }
@@ -266,17 +284,20 @@ function renderInline(
 function CodeBlockView({
   block,
   dark,
+  systemName,
 }: {
   block: CodeBlock;
   dark: boolean;
+  systemName: string;
 }) {
   const { t } = useTranslations();
   const [copied, setCopied] = useState(false);
-  const lines = block.code.length ? block.code.split("\n") : [""];
+  const code = applyDocsPlaceholders(block.code, systemName);
+  const lines = code.length ? code.split("\n") : [""];
 
   async function copy() {
     try {
-      await navigator.clipboard.writeText(block.code);
+      await navigator.clipboard.writeText(code);
       setCopied(true);
       window.setTimeout(() => setCopied(false), 1600);
     } catch {
@@ -344,6 +365,7 @@ export function DocsMarkdown({
   variant?: "dark" | "light";
   imageSrcOverrides?: Record<string, string>;
 }) {
+  const { systemName } = useTranslations();
   const blocks = parseBlocks(content);
   if (blocks.length === 0) return null;
   const dark = variant === "dark";
@@ -366,14 +388,14 @@ export function DocsMarkdown({
           const Tag = (`h${block.level}` as "h1" | "h2" | "h3");
           return (
             <Tag key={index} className={className}>
-              {renderInline(block.text, `h${index}`, dark, imageSrcOverrides)}
+              {renderInline(block.text, `h${index}`, dark, systemName, imageSrcOverrides)}
             </Tag>
           );
         }
         if (block.type === "paragraph") {
           return (
             <p key={index}>
-              {renderInline(block.text, `p${index}`, dark, imageSrcOverrides)}
+              {renderInline(block.text, `p${index}`, dark, systemName, imageSrcOverrides)}
             </p>
           );
         }
@@ -387,7 +409,7 @@ export function DocsMarkdown({
                   : "border-l-2 border-zinc-200 pl-4 text-zinc-500"
               }
             >
-              {renderInline(block.text, `q${index}`, dark, imageSrcOverrides)}
+              {renderInline(block.text, `q${index}`, dark, systemName, imageSrcOverrides)}
             </blockquote>
           );
         }
@@ -404,20 +426,20 @@ export function DocsMarkdown({
             >
               {block.items.map((item, itemIndex) => (
                 <li key={itemIndex}>
-                  {renderInline(item, `l${index}-${itemIndex}`, dark, imageSrcOverrides)}
+                  {renderInline(item, `l${index}-${itemIndex}`, dark, systemName, imageSrcOverrides)}
                 </li>
               ))}
             </Tag>
           );
         }
         if (block.type === "code") {
-          return <CodeBlockView key={index} block={block.block} dark={dark} />;
+          return <CodeBlockView key={index} block={block.block} dark={dark} systemName={systemName} />;
         }
         if (block.type === "image") {
           return (
             <DocsImage
               key={index}
-              alt={block.alt}
+              alt={applyDocsPlaceholders(block.alt, systemName)}
               src={block.src}
               dark={dark}
               overrides={imageSrcOverrides}

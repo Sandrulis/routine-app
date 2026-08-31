@@ -9,7 +9,7 @@ import { REQUEST_CREATE_TEAM_EVENT, type WorkTeam } from "@/app/lib/team";
 import { useTeam } from "@/app/lib/team-store";
 
 const paywallOverlayClassName =
-  "left-[var(--app-sidebar-width-expanded)] max-md:left-0";
+  "left-[var(--app-sidebar-width-expanded)]";
 
 function TeamBillingBlockedModal({
   open,

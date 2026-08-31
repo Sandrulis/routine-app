@@ -47,6 +47,7 @@ import { useFeedbackToast } from "@/app/components/feedback-toast-provider";
 import { IconActionButton } from "@/app/components/icon-action-button";
 import { useTranslations } from "@/app/components/translations-provider";
 import { translateActionError } from "@/app/lib/i18n/action-errors";
+import { DOCS_SYSTEM_NAME_PLACEHOLDER, renderDocsPlaceholders } from "@/app/lib/docs/placeholders";
 import {
   DOCS_IMAGE_MAX_BYTES,
   DOCS_IMAGE_MAX_PER_ARTICLE,
@@ -100,7 +101,7 @@ export function AdminDocsArticles({
   articles: DocsArticleSummary[];
 }) {
   const router = useRouter();
-  const { t } = useTranslations();
+  const { t, systemName } = useTranslations();
   const { showFeedback, clearFeedback } = useFeedbackToast();
   const [articles, setArticles] = useState(initialArticles);
   const [modalOpen, setModalOpen] = useState(false);
@@ -195,6 +196,24 @@ export function AdminDocsArticles({
     const next = `${before}${prefix}${snippet}\n${after}`;
     setDraft((current) => ({ ...current, content: next }));
     const cursor = before.length + prefix.length + snippet.length + 1;
+    requestAnimationFrame(() => {
+      textarea.focus();
+      textarea.setSelectionRange(cursor, cursor);
+    });
+  }
+
+  function insertPlaceholder(token: string) {
+    const textarea = contentRef.current;
+    const content = textarea?.value ?? draft.content;
+    if (!textarea) {
+      setDraft((current) => ({ ...current, content: `${current.content}${token}` }));
+      return;
+    }
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const next = `${content.slice(0, start)}${token}${content.slice(end)}`;
+    setDraft((current) => ({ ...current, content: next }));
+    const cursor = start + token.length;
     requestAnimationFrame(() => {
       textarea.focus();
       textarea.setSelectionRange(cursor, cursor);
@@ -551,6 +570,23 @@ export function AdminDocsArticles({
                     "Markdown: virsraksti ar #, treknraksts **teksts**, kods ar ```js:fails.js, YouTube saite atsevišķā rindā. Attēlus ievelc zemāk un klikšķini, lai ievietotu.",
                   )}
                 </p>
+                <button
+                  type="button"
+                  disabled={isPending}
+                  onClick={() => insertPlaceholder(DOCS_SYSTEM_NAME_PLACEHOLDER)}
+                  className="mt-2 inline-flex items-center rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 text-xs font-medium text-zinc-700 transition hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {t("admin.docs.article.insert_system_name", "Ievietot {token}", {
+                    token: DOCS_SYSTEM_NAME_PLACEHOLDER,
+                  })}
+                </button>
+                <p className="mt-1.5 text-xs leading-5 text-zinc-500">
+                  {t(
+                    "admin.docs.article.placeholder_hint",
+                    "{token} publiskajā dokumentācijā kļūst par sistēmas nosaukumu. Ja nosaukums mainās, docs nav jālabo.",
+                    { token: DOCS_SYSTEM_NAME_PLACEHOLDER },
+                  )}
+                </p>
                 <div className="mt-4">
                   <DocsArticleImages
                     images={images}
@@ -574,14 +610,14 @@ export function AdminDocsArticles({
                     <div>
                       {draft.title.trim() ? (
                         <p className="text-xl font-semibold tracking-tight text-zinc-900">
-                          {draft.title}
+                          {renderDocsPlaceholders(draft.title, systemName)}
                         </p>
                       ) : null}
                       {draft.slogan.trim() ? (
                         <p
                           className={`${draft.title.trim() ? "mt-1" : ""} text-sm font-normal text-zinc-500`}
                         >
-                          {draft.slogan}
+                          {renderDocsPlaceholders(draft.slogan, systemName)}
                         </p>
                       ) : null}
                       {draft.content.trim() ? (

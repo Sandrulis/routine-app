@@ -4,6 +4,16 @@
 
 - (none)
 
+## v0.3.19
+
+- Docs `{SYSTEM_NAME}` publiski kļūst par sistēmas nosaukumu treknrakstā un lielajiem burtiem; admin poga ievietošanai
+- Sitemap un landing JSON-LD iekļauj visus publiskos docs rakstus visās valodās
+- Mobilajā (zem 1024px): sānjosla pazūd (burger overlay `/docs` un lietotnē), ceļa joslas vietā komandas avatars un nosaukums ar pārslēgšanu, tooltipi nerādās
+- CSP nonce arī request headerī, lai Next.js skripti ielādētos; developmentā bez `strict-dynamic` (Turbopack HMR)
+- MFA vārteja caur `getUser()` un JWT, ne `getSession().user`; Google Drive failu URL bez atsevišķa async chunk
+- OneDrive ir līdzvērtīgs Google Drive: failu baiti paliek mākonī (`onedrive_file_id`); Gmail spraudnis `0.4.36` strādā ar Drive vai OneDrive
+- UI teksti nosauc tikai ieslēgtos mākoņu moduļus (izslēgto OneDrive vai Drive nepiemin)
+
 ## v0.3.18
 
 - Gmail spraudnis `0.4.35`: sesija paliek pēc tīkla kļūmes un vietnes token rotācijas, neizmet pirms ~30 dienām

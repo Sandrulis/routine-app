@@ -23,6 +23,10 @@ import {
   fetchGoogleDriveContentBlob,
   triggerBrowserDownload,
 } from "@/app/lib/google-drive/content-url";
+import {
+  fetchOneDriveContentAsObjectUrl,
+  fetchOneDriveContentBlob,
+} from "@/app/lib/onedrive/content-url";
 import type { ListFile } from "@/app/lib/list-files";
 import { ensureListFileContent, ensureTaskFileContent } from "@/app/lib/file-content";
 import { taskFilePreviewUrl, type TaskFile } from "@/app/lib/task-activity";
@@ -35,6 +39,7 @@ export type FileViewerOpenInput = {
   size: number;
   hasContent?: boolean;
   googleDriveFileId?: string | null;
+  oneDriveFileId?: string | null;
   /** Pending / already resolved content (data or blob URL). */
   contentUrl?: string | null;
   revokeContentOnClose?: boolean;
@@ -127,6 +132,10 @@ async function resolveContent(
       }
       if (input.googleDriveFileId) {
         const url = await fetchGoogleDriveContentAsObjectUrl("list", input.id);
+        if (url) return { content: url, revokeOnClose: true };
+      }
+      if (input.oneDriveFileId) {
+        const url = await fetchOneDriveContentAsObjectUrl("list", input.id);
         return { content: url, revokeOnClose: Boolean(url) };
       }
       return { content: null, revokeOnClose: false };
@@ -144,12 +153,17 @@ async function resolveContent(
           size: input.size,
           hasContent: true,
           googleDriveFileId: input.googleDriveFileId ?? null,
+          oneDriveFileId: input.oneDriveFileId ?? null,
           createdAt: "",
         });
         if (preview) return { content: preview, revokeOnClose: false };
       }
       if (input.googleDriveFileId) {
         const url = await fetchGoogleDriveContentAsObjectUrl("task", input.id);
+        if (url) return { content: url, revokeOnClose: true };
+      }
+      if (input.oneDriveFileId) {
+        const url = await fetchOneDriveContentAsObjectUrl("task", input.id);
         return { content: url, revokeOnClose: Boolean(url) };
       }
       return { content: null, revokeOnClose: false };
@@ -180,6 +194,14 @@ async function downloadResolved(input: FileViewerOpenInput): Promise<boolean> {
     }
     if (input.googleDriveFileId) {
       const blob = await fetchGoogleDriveContentBlob(input.kind, input.id);
+      if (blob) {
+        const url = URL.createObjectURL(blob);
+        triggerBrowserDownload(url, input.name, true);
+        return true;
+      }
+    }
+    if (input.oneDriveFileId) {
+      const blob = await fetchOneDriveContentBlob(input.kind, input.id);
       if (!blob) return false;
       const url = URL.createObjectURL(blob);
       triggerBrowserDownload(url, input.name, true);
@@ -267,6 +289,7 @@ export function FileViewerProvider({ children }: { children: ReactNode }) {
         size: file.size,
         hasContent: file.hasContent,
         googleDriveFileId: file.googleDriveFileId,
+        oneDriveFileId: file.oneDriveFileId,
       });
     },
     [openFile],
@@ -282,6 +305,7 @@ export function FileViewerProvider({ children }: { children: ReactNode }) {
         size: file.size,
         hasContent: file.hasContent,
         googleDriveFileId: file.googleDriveFileId,
+        oneDriveFileId: file.oneDriveFileId,
       });
     },
     [openFile],

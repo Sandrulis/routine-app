@@ -16,6 +16,7 @@ import {
   saveGoogleDriveSettingsAction,
   startGoogleDriveOAuthAction,
 } from "@/app/lib/google-drive/actions";
+import { notifyGoogleDriveStatusChanged } from "@/app/lib/google-drive/context";
 import type { GoogleDriveStatus } from "@/app/lib/google-drive/repository";
 import { canConfigureTeamGoogleDrive } from "@/app/lib/team";
 import { useTeam } from "@/app/lib/team-store";
@@ -43,16 +44,13 @@ export function TeamGoogleDrivePage() {
   const [status, setStatus] = useState<GoogleDriveStatus>(emptyStatus);
   const [folderPath, setFolderPath] = useState(DEFAULT_SYSTEM_NAME);
   const [enabled, setEnabled] = useState(false);
-  const [storeOnDrive, setStoreOnDrive] = useState(true);
   const [loaded, setLoaded] = useState(false);
   const [disconnectOpen, setDisconnectOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
   const canConfigure = canConfigureUi && status.canConfigure;
   const hasChanges =
     loaded &&
-    (folderPath.trim() !== status.folderPath ||
-      enabled !== status.enabled ||
-      storeOnDrive !== !status.storeOnServer);
+    (folderPath.trim() !== status.folderPath || enabled !== status.enabled);
   const { confirmOpen, stayOnPage, confirmLeave } = useUnsavedChangesGuard({
     isDirty: hasChanges,
   });
@@ -98,7 +96,6 @@ export function TeamGoogleDrivePage() {
       setStatus(result.data);
       setFolderPath(result.data.folderPath);
       setEnabled(result.data.enabled);
-      setStoreOnDrive(!result.data.storeOnServer);
       setLoaded(true);
     });
     return () => {
@@ -130,7 +127,7 @@ export function TeamGoogleDrivePage() {
       const result = await saveGoogleDriveSettingsAction({
         teamId: currentTeam.id,
         isEnabled: enabled,
-        storeOnServer: !storeOnDrive,
+        storeOnServer: false,
         folderPath,
       });
       if (!result.ok) {
@@ -140,11 +137,11 @@ export function TeamGoogleDrivePage() {
       setStatus((current) => ({
         ...current,
         enabled,
-        storeOnServer: result.data.storeOnServer,
+        storeOnServer: false,
         folderPath: result.data.folderPath,
       }));
       setFolderPath(result.data.folderPath);
-      setStoreOnDrive(!result.data.storeOnServer);
+      notifyGoogleDriveStatusChanged();
       showFeedback({
         type: "success",
         text: t("google_drive.feedback.saved", "Google Drive iestatījumi saglabāti."),
@@ -169,6 +166,7 @@ export function TeamGoogleDrivePage() {
         accountEmail: "",
       }));
       setEnabled(false);
+      notifyGoogleDriveStatusChanged();
       showFeedback({
         type: "success",
         text: t("google_drive.feedback.disconnected", "Google konts atvienots."),
@@ -181,7 +179,7 @@ export function TeamGoogleDrivePage() {
       title={t("nav.google_drive", "Google Drive Integrācija")}
       subtitle={t(
         "google_drive.page.subtitle",
-        "Pieslēdz komandas Google kontu, lai augšupielādētie faili nonāktu arī Drive mapē.",
+        "Pieslēdz komandas Google kontu. Faili tiek glabāti Google Drive, nevis {SYSTEM_NAME} serverī.",
       )}
     >
       {!isReady || !loaded ? (
@@ -308,31 +306,6 @@ export function TeamGoogleDrivePage() {
                 )}
               </span>
             </label>
-            <label className="mt-4 flex items-start gap-3 text-sm text-zinc-800">
-              <input
-                type="checkbox"
-                checked={storeOnDrive}
-                disabled={
-                  !canConfigure || isPending || !status.connected || !enabled
-                }
-                onChange={(event) => setStoreOnDrive(event.target.checked)}
-                className="mt-0.5"
-              />
-              <span>
-                <span className="block">
-                  {t(
-                    "google_drive.storage.drive_primary",
-                    "Glabāt failus Google Drive",
-                  )}
-                </span>
-                <span className="mt-0.5 block text-xs font-normal text-zinc-500">
-                  {t(
-                    "google_drive.storage.drive_primary_hint",
-                    "Ieslēgts pēc noklusējuma: {SYSTEM_NAME} glabā tikai saiti. Ja izķeksē, faila saturs tiek saglabāts arī {SYSTEM_NAME} serverī.",
-                  )}
-                </span>
-              </span>
-            </label>
             {canConfigure ? (
               <div className="mt-5 flex justify-end border-t border-zinc-100 pt-5">
                 <button
@@ -359,7 +332,7 @@ export function TeamGoogleDrivePage() {
         title={t("google_drive.disconnect.title", "Atvienot Google kontu?")}
         description={t(
           "google_drive.disconnect.description",
-          "Jauni faili vairs netiks sūtīti uz Drive. Esošie Drive faili paliek.",
+          "Jauni faili vairs netiks augšupielādēti, kamēr Drive nav pieslēgts. Esošie Drive faili paliek.",
         )}
         confirmLabel={t("google_drive.disconnect", "Atvienot Google kontu")}
         confirmVariant="danger"

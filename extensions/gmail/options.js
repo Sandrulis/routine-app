@@ -17,6 +17,12 @@ const FALLBACK = {
   "extension.gmail.team.label": "Komanda",
   "extension.gmail.team.drive_missing":
     "Šai komandai nav pieslēgts Google Drive. Spraudnis nestrādās.",
+  "errors.extension_team_drive_missing":
+    "Šai komandai nav pieslēgts Google Drive. Spraudnis nestrādās.",
+  "errors.extension_team_onedrive_missing":
+    "Šai komandai nav pieslēgts OneDrive. Spraudnis nestrādās.",
+  "errors.extension_team_cloud_missing":
+    "Šai komandai nav pieslēgts Google Drive vai OneDrive. Spraudnis nestrādās.",
   "extension.gmail.connect_gmail": "Savienot Gmail",
   "extension.gmail.reconnect_gmail": "Atjaunot Gmail savienojumu",
   "extension.gmail.connect_gmail_hint":
@@ -61,6 +67,14 @@ function t(key, params) {
   });
 }
 
+function extensionCloudMissingKey(session) {
+  const driveOn = session?.googleDriveEnabled !== false;
+  const odOn = session?.oneDriveEnabled === true;
+  if (driveOn && odOn) return "errors.extension_team_cloud_missing";
+  if (odOn) return "errors.extension_team_onedrive_missing";
+  return "errors.extension_team_drive_missing";
+}
+
 function applySessionI18n(data) {
   if (data?.languageCode) document.documentElement.lang = data.languageCode;
   const name = String(data?.systemName || "").trim();
@@ -97,7 +111,7 @@ function applyLabels() {
   $("passwordLogin").textContent = t("auth.login.title");
   updatePasswordToggle(false);
   $("teamLabel").textContent = t("extension.gmail.team.label");
-  $("driveWarn").textContent = t("extension.gmail.team.drive_missing");
+  $("driveWarn").textContent = t("errors.extension_team_drive_missing");
   $("pluginWarn").textContent = t("extension.gmail.plugin_disabled");
   const signOutLabel = t("user_menu.sign_out");
   $("signOut").title = signOutLabel;
@@ -172,7 +186,11 @@ function renderAccount(session) {
   }
   const current = selectedTeam(session);
   if (current) teamSelect.value = current.id;
-  const driveOk = Boolean(current?.googleDriveConnected);
+  const driveOk = Boolean(
+    (session.googleDriveEnabled !== false && current?.googleDriveConnected) ||
+      (session.oneDriveEnabled === true && current?.oneDriveConnected),
+  );
+  $("driveWarn").textContent = t(extensionCloudMissingKey(session));
   $("driveWarn").classList.toggle("hidden", !current || driveOk);
 
   const gmailConnected = Boolean(session.gmailConnected);

@@ -30,7 +30,14 @@ import {
   renameKeepingExtension,
 } from "@/app/lib/file-types";
 import { useFileViewer } from "@/app/components/file-viewer-provider";
+import {
+  downloadUrlAsFile,
+  fetchGoogleDriveContentBlob,
+  triggerBrowserDownload,
+} from "@/app/lib/google-drive/content-url";
+import { fetchOneDriveContentBlob } from "@/app/lib/onedrive/content-url";
 import { batchUploadPercent } from "@/app/lib/google-drive/queue-upload";
+import { useTeamCloudStorage } from "@/app/lib/cloud-storage/context";
 import { FRONTEND_MODULE_KEYS } from "@/app/lib/frontend-modules/keys";
 import { useFrontendModules } from "@/app/lib/frontend-modules/context";
 import { useLists } from "@/app/lib/lists-store";
@@ -269,8 +276,10 @@ export function SubtaskDetailModal({
   const { isAdmin } = useIsAdmin();
   const { isEnabled: isModuleEnabled } = useFrontendModules();
   const fileUploadsEnabled = isModuleEnabled(FRONTEND_MODULE_KEYS.fileUpload);
+  const { ready: cloudReady } = useTeamCloudStorage();
   const canUploadAttachments =
     fileUploadsEnabled &&
+    cloudReady &&
     canUploadSubtaskFiles(currentUser, roles, isAdmin);
   const canViewFiles =
     fileUploadsEnabled && canViewAttachments(currentUser, roles, isAdmin);
@@ -530,7 +539,6 @@ export function SubtaskDetailModal({
     if (isCreate ? !access.canCreateTasks : !access.canEditTasks) return;
     if (uploadProgress) return;
     if (task) {
-      let storedWithoutPreview = false;
       const total = selected.length;
       try {
         for (let index = 0; index < selected.length; index += 1) {
@@ -557,26 +565,10 @@ export function SubtaskDetailModal({
             });
             break;
           }
-          if (
-            file.size > 0 &&
-            !record.hasContent &&
-            !record.googleDriveFileId
-          ) {
-            storedWithoutPreview = true;
-          }
           updateProgress(100);
         }
       } finally {
         setUploadProgress(null);
-      }
-      if (storedWithoutPreview) {
-        showFeedback({
-          type: "info",
-          text: t(
-            "files.created_without_preview",
-            "Fails pievienots, bet saturu nevarēja saglabāt priekšskatījumam.",
-          ),
-        });
       }
       return;
     }
@@ -719,12 +711,6 @@ export function SubtaskDetailModal({
   }
 
   async function requestDownloadAttachment(fileId: string) {
-    const {
-      downloadUrlAsFile,
-      fetchGoogleDriveContentBlob,
-      triggerBrowserDownload,
-    } = await import("@/app/lib/google-drive/content-url");
-
     const pending = pendingFiles.find((item) => item.id === fileId);
     if (pending) {
       const url = URL.createObjectURL(pending.file);
@@ -743,9 +729,19 @@ export function SubtaskDetailModal({
       return true;
     }
 
-    // Drive-primary: prefer Drive when ID is known, then fall back to DB content.
+    async function downloadFromOneDrive() {
+      const blob = await fetchOneDriveContentBlob("task", stored!.id);
+      if (!blob) return false;
+      const url = URL.createObjectURL(blob);
+      triggerBrowserDownload(url, stored!.name, true);
+      return true;
+    }
+
     if (stored.googleDriveFileId) {
       if (await downloadFromDrive()) return;
+    }
+    if (stored.oneDriveFileId) {
+      if (await downloadFromOneDrive()) return;
     }
 
     const local = await ensureTaskFileContent(stored.id);
@@ -758,8 +754,8 @@ export function SubtaskDetailModal({
       }
     }
 
-    // Client may lack googleDriveFileId while DB still has it.
     if (!stored.googleDriveFileId && (await downloadFromDrive())) return;
+    if (!stored.oneDriveFileId && (await downloadFromOneDrive())) return;
 
     showFeedback({
       type: "error",

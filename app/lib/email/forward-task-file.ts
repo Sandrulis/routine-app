@@ -11,6 +11,7 @@ import {
 } from "@/app/lib/integrations/resend/client";
 import { isValidEmailAddress } from "@/app/lib/integrations/resend/from-email";
 import { downloadTeamGoogleDriveFile } from "@/app/lib/google-drive/uploader";
+import { downloadTeamOneDriveFile } from "@/app/lib/onedrive/uploader";
 import { assertListAccess } from "@/app/lib/lists/assert-list-access";
 import { logError } from "@/app/lib/security/log-error";
 import { getSiteSettings } from "@/app/lib/site-admin/repository";
@@ -101,7 +102,7 @@ async function loadStoredTaskFileAttachment(fileId: string): Promise<
   const admin = createAdminClient();
   const { data, error } = await admin
     .from("task_files")
-    .select("id, name, mime_type, size, content, google_drive_file_id, team_id, task_id")
+    .select("id, name, mime_type, size, content, google_drive_file_id, onedrive_file_id, team_id, task_id")
     .eq("id", fileId)
     .maybeSingle();
 
@@ -137,6 +138,8 @@ async function loadStoredTaskFileAttachment(fileId: string): Promise<
     typeof data.google_drive_file_id === "string"
       ? data.google_drive_file_id.trim()
       : "";
+  const oneDriveFileId =
+    typeof data.onedrive_file_id === "string" ? data.onedrive_file_id.trim() : "";
 
   if (driveFileId) {
     try {
@@ -157,6 +160,28 @@ async function loadStoredTaskFileAttachment(fileId: string): Promise<
       };
     } catch (err) {
       logError("forwardTaskFile Drive download failed", err);
+    }
+  }
+
+  if (oneDriveFileId) {
+    try {
+      const downloaded = await downloadTeamOneDriveFile({
+        teamId,
+        oneDriveFileId,
+      });
+      if (downloaded.bytes.byteLength > MAX_ATTACHMENT_BYTES) {
+        return { ok: false, error: "errors.files_forward_too_large" };
+      }
+      return {
+        ok: true,
+        filename,
+        mimeType: mimeType || downloaded.mimeType || "application/octet-stream",
+        contentBase64: bufferToBase64(downloaded.bytes),
+        teamId,
+        taskId,
+      };
+    } catch (err) {
+      logError("forwardTaskFile OneDrive download failed", err);
     }
   }
 

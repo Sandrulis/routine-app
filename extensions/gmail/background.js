@@ -1402,12 +1402,21 @@ async function fetchGmailMessageBundle(
   return { email, attachments, skipped };
 }
 
-async function getSelectedTeamId(teams) {
+function teamHasUsableCloud(team, flags) {
+  const driveOn = flags?.googleDriveEnabled !== false;
+  const odOn = flags?.oneDriveEnabled === true;
+  return Boolean(
+    (driveOn && team?.googleDriveConnected) ||
+      (odOn && team?.oneDriveConnected),
+  );
+}
+
+async function getSelectedTeamId(teams, flags) {
   const stored = await chrome.storage.sync.get(["selectedTeamId"]);
   const selected = String(stored.selectedTeamId || "");
   if (selected && teams.some((team) => team.id === selected)) return selected;
-  const withDrive = teams.find((team) => team.googleDriveConnected);
-  return withDrive?.id || teams[0]?.id || "";
+  const withCloud = teams.find((team) => teamHasUsableCloud(team, flags));
+  return withCloud?.id || teams[0]?.id || "";
 }
 
 async function sessionResponseInner() {
@@ -1460,7 +1469,7 @@ async function sessionResponseInner() {
   if (result?.data) {
     result.data.handoffPending = doneTabs.length > 0;
     const teams = Array.isArray(result.data.teams) ? result.data.teams : [];
-    const selectedTeamId = await getSelectedTeamId(teams);
+    const selectedTeamId = await getSelectedTeamId(teams, result.data);
     if (selectedTeamId) {
       await chrome.storage.sync.set({ selectedTeamId });
     }

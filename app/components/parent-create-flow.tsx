@@ -17,16 +17,13 @@ import {
   type ListFile,
 } from "@/app/lib/list-files";
 import { useFileViewer } from "@/app/components/file-viewer-provider";
+import { translateActionError } from "@/app/lib/i18n/action-errors";
 import { FRONTEND_MODULE_KEYS } from "@/app/lib/frontend-modules/keys";
 import { useFrontendModules } from "@/app/lib/frontend-modules/context";
 import { googleDrivePathForListFile } from "@/app/lib/google-drive/path";
-import {
-  batchUploadPercent,
-  driveFileIdFromUpload,
-  shouldStoreFileOnServer,
-  uploadGoogleDriveFile,
-} from "@/app/lib/google-drive/queue-upload";
-import { queueOneDriveUpload } from "@/app/lib/onedrive/queue-upload";
+import { useTeamCloudStorage } from "@/app/lib/cloud-storage/context";
+import { uploadFileToTeamCloud } from "@/app/lib/cloud-storage/queue-upload";
+import { batchUploadPercent } from "@/app/lib/google-drive/queue-upload";
 import { useLists } from "@/app/lib/lists-store";
 import { activeFolderCreatedTemplateAutomations } from "@/app/lib/list-automations";
 import { useTemplates } from "@/app/lib/templates-store";
@@ -72,10 +69,7 @@ export function ParentCreateFlow({
   }, [ensureLoaded]);
   const { isEnabled: isModuleEnabled } = useFrontendModules();
   const fileUploadsEnabled = isModuleEnabled(FRONTEND_MODULE_KEYS.fileUpload);
-  const googleDriveEnabled =
-    fileUploadsEnabled && isModuleEnabled(FRONTEND_MODULE_KEYS.googleDrive);
-  const onedriveEnabled =
-    fileUploadsEnabled && isModuleEnabled(FRONTEND_MODULE_KEYS.onedrive);
+  const { ready: cloudReady, googleDriveReady, oneDriveReady, googleDriveModule, oneDriveModule } = useTeamCloudStorage();
   const canApplyTemplate =
     canManageTemplates(currentUser, roles, isAdmin) &&
     isModuleEnabled(FRONTEND_MODULE_KEYS.templates);
@@ -86,7 +80,9 @@ export function ParentCreateFlow({
       roles,
       isAdmin,
       "files.upload",
-    ) && fileUploadsEnabled;
+    ) &&
+    fileUploadsEnabled &&
+    cloudReady;
   const { accept, filterAllowedFiles, extensionsLabel } = useFileTypes();
   const [step, setStep] = useState<"choice" | "folder" | "task" | "template">(
     "choice",
@@ -161,7 +157,6 @@ export function ParentCreateFlow({
     if (allowed.length === 0) return;
 
     const created: ListFile[] = [];
-    let skippedContent = false;
     let nextOrder = nextItemSortOrder([
       ...(current.parentId
         ? childTasks(current.parentId)
@@ -169,6 +164,7 @@ export function ParentCreateFlow({
       ...childListFiles(files, current.listId, current.parentId),
     ]);
     const total = allowed.length;
+    let uploadError: string | null = null;
     try {
       for (let index = 0; index < allowed.length; index += 1) {
         const file = allowed[index];
@@ -181,22 +177,26 @@ export function ParentCreateFlow({
           });
         };
         updateProgress(0);
-        let driveResult = null;
-        if (googleDriveEnabled) {
-          driveResult = await uploadGoogleDriveFile({
-            teamId: currentTeam?.id,
+        const cloudResult = await uploadFileToTeamCloud({
+          teamId: currentTeam?.id,
+          listId: current.listId,
+          file,
+          pathParts: googleDrivePathForListFile({
+            lists,
+            tasks,
             listId: current.listId,
-            file,
-            pathParts: googleDrivePathForListFile({
-              lists,
-              tasks,
-              listId: current.listId,
-              parentId: current.parentId,
-            }),
-            onProgress: updateProgress,
-          });
-        } else {
-          updateProgress(40);
+            parentId: current.parentId,
+          }),
+          googleDriveReady,
+          oneDriveReady,
+          googleDriveModule,
+          oneDriveModule,
+          onProgress: updateProgress,
+        });
+        if (!cloudResult.ok) {
+          uploadError = cloudResult.error;
+          updateProgress(100);
+          break;
         }
         updateProgress(85);
         const stored = await addStoredListFile(
@@ -205,47 +205,38 @@ export function ParentCreateFlow({
           current.parentId,
           nextOrder,
           {
-            storeContent: shouldStoreFileOnServer(driveResult),
-            googleDriveFileId: driveFileIdFromUpload(driveResult),
+            storeContent: false,
+            googleDriveFileId: cloudResult.googleDriveFileId,
+            oneDriveFileId: cloudResult.oneDriveFileId,
           },
         );
         if (!stored) {
+          uploadError = "files.save.failed";
           updateProgress(100);
-          continue;
+          break;
         }
         nextOrder += 1;
         created.push(stored);
-        if (!stored.hasContent && !stored.googleDriveFileId && file.size > 0) {
-          skippedContent = true;
-        }
-        if (onedriveEnabled) {
-          queueOneDriveUpload({
-            teamId: currentTeam?.id,
-            listId: current.listId,
-            file,
-            pathParts: googleDrivePathForListFile({
-              lists,
-              tasks,
-              listId: current.listId,
-              parentId: current.parentId,
-            }),
-          });
-        }
         updateProgress(100);
       }
     } finally {
       setUploadProgress(null);
     }
 
-    showFeedback({
-      type: skippedContent ? "info" : "success",
-      text: skippedContent
-        ? t(
-            "files.created_without_preview",
-            "Fails pievienots, bet saturu nevarēja saglabāt priekšskatījumam.",
-          )
-        : t("lists.windows.files_created", "Fails pievienots."),
-    });
+    if (uploadError) {
+      showFeedback({
+        type: "error",
+        text:
+          uploadError === "files.save.failed"
+            ? t("files.save.failed", "Neizdevās saglabāt failu. Mēģini vēlreiz.")
+            : translateActionError(t, uploadError),
+      });
+    } else {
+      showFeedback({
+        type: "success",
+        text: t("lists.windows.files_created", "Fails pievienots."),
+      });
+    }
     const first = created[0];
     if (first) onFileCreated?.(first);
     onClose();
@@ -256,15 +247,16 @@ export function ParentCreateFlow({
 
   return (
     <>
-      <input
-        ref={fileInputRef}
-        type="file"
-        multiple
-        accept={accept}
-        className="hidden"
-        onChange={handleFiles}
-        disabled={!canUploadFiles}
-      />
+      {canUploadFiles ? (
+        <input
+          ref={fileInputRef}
+          type="file"
+          multiple
+          accept={accept}
+          className="hidden"
+          onChange={handleFiles}
+        />
+      ) : null}
 
       <CreateItemMenu
         open={context !== null && step === "choice"}

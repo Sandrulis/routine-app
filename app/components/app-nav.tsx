@@ -24,6 +24,7 @@ import {
   type NavTreeSortableHandle,
 } from "@/app/components/nav-tree-dnd";
 import { useFileViewer } from "@/app/components/file-viewer-provider";
+import { IconActionButton } from "@/app/components/icon-action-button";
 import { OverflowTooltip, Tooltip } from "@/app/components/tooltip";
 import { useFeedbackToast } from "@/app/components/feedback-toast-provider";
 import { translateActionError } from "@/app/lib/i18n/action-errors";
@@ -593,7 +594,13 @@ function NavTreeSection({
   );
 }
 
-export function AppNav() {
+export function AppNav({
+  mobileOpen = false,
+  onClose,
+}: {
+  mobileOpen?: boolean;
+  onClose?: () => void;
+}) {
   const pathname = usePathname();
   const router = useRouter();
   const { t } = useTranslations();
@@ -1196,8 +1203,34 @@ export function AppNav() {
 
   return (
     <>
-      <aside className="fixed inset-y-0 left-0 z-40 flex w-[var(--app-sidebar-width-expanded)] flex-col border-r border-zinc-200 bg-white">
-        <TeamSwitcher />
+      <aside
+        id="app-sidebar"
+        className={`fixed inset-y-0 left-0 w-[var(--app-sidebar-width)] flex-col border-r border-zinc-200 bg-white ${
+          mobileOpen
+            ? "z-50 flex shadow-xl lg:z-40 lg:shadow-none"
+            : "hidden z-40 lg:flex"
+        }`}
+        onClickCapture={(event) => {
+          const anchor = (event.target as HTMLElement | null)?.closest("a");
+          if (!anchor || anchor.target === "_blank") return;
+          onClose?.();
+        }}
+      >
+        <div className="flex shrink-0 items-start border-b border-zinc-200">
+          <div className="min-w-0 flex-1">
+            <TeamSwitcher />
+          </div>
+          {onClose ? (
+            <div className="shrink-0 py-2 pr-2 lg:hidden">
+              <IconActionButton
+                label={t("actions.close", "Aizvērt")}
+                icon="fas fa-xmark"
+                variant="muted"
+                onClick={() => onClose()}
+              />
+            </div>
+          ) : null}
+        </div>
 
         <nav
           aria-hidden={sidebarNavBlocked ? true : undefined}

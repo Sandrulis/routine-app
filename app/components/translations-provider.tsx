@@ -18,6 +18,7 @@ type TranslateFn = (
 type TranslationsContextValue = {
   languageCode: LanguageCode;
   languages: UiLanguageOption[];
+  systemName: string;
   t: TranslateFn;
 };
 
@@ -42,6 +43,7 @@ export function TranslationsProvider({
     return {
       languageCode,
       languages,
+      systemName,
       t(key, fallback, params) {
         const fromOverlay = overlay[key]?.trim();
         return interpolate(

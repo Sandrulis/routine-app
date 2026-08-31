@@ -54,13 +54,10 @@ import { memberIdsNotifiedForAssignees } from "@/app/lib/assignees";
 import { FRONTEND_MODULE_KEYS } from "@/app/lib/frontend-modules/keys";
 import { useFrontendModules } from "@/app/lib/frontend-modules/context";
 import { googleDrivePathForTaskFile } from "@/app/lib/google-drive/path";
-import {
-  driveFileIdFromUpload,
-  queueGoogleDriveRename,
-  shouldStoreFileOnServer,
-  uploadGoogleDriveFile,
-} from "@/app/lib/google-drive/queue-upload";
-import { queueOneDriveUpload } from "@/app/lib/onedrive/queue-upload";
+import { useTeamCloudStorage } from "@/app/lib/cloud-storage/context";
+import { uploadFileToTeamCloud } from "@/app/lib/cloud-storage/queue-upload";
+import { queueGoogleDriveRename } from "@/app/lib/google-drive/queue-upload";
+import { queueOneDriveRename } from "@/app/lib/onedrive/queue-upload";
 import { useTeam } from "@/app/lib/team-store";
 import {
   appendNotifications,
@@ -85,7 +82,6 @@ import {
   createTaskFileId,
   hydrateTaskFileContents,
   cacheTaskFileContent,
-  storeTaskFileContent,
   type TaskActivity,
   type TaskFile,
 } from "@/app/lib/task-activity";
@@ -347,6 +343,11 @@ export function ListsProvider({ children }: { children: ReactNode }) {
   const templatesEnabled = isModuleEnabled(FRONTEND_MODULE_KEYS.templates);
   const googleDriveEnabled =
     fileUploadsEnabled && isModuleEnabled(FRONTEND_MODULE_KEYS.googleDrive);
+  const {
+    ready: cloudReady,
+    googleDriveReady,
+    oneDriveReady,
+  } = useTeamCloudStorage();
   const onedriveEnabled =
     fileUploadsEnabled && isModuleEnabled(FRONTEND_MODULE_KEYS.onedrive);
   const privateListsEnabledRef = useRef(privateListsEnabled);
@@ -355,14 +356,20 @@ export function ListsProvider({ children }: { children: ReactNode }) {
   const automationsEnabledRef = useRef(automationsEnabled);
   const templatesEnabledRef = useRef(templatesEnabled);
   const googleDriveEnabledRef = useRef(googleDriveEnabled);
+  const googleDriveReadyRef = useRef(googleDriveReady);
   const onedriveEnabledRef = useRef(onedriveEnabled);
+  const oneDriveReadyRef = useRef(oneDriveReady);
+  const cloudReadyRef = useRef(cloudReady);
   privateListsEnabledRef.current = privateListsEnabled;
   fileUploadsEnabledRef.current = fileUploadsEnabled;
   checklistsEnabledRef.current = checklistsEnabled;
   automationsEnabledRef.current = automationsEnabled;
   templatesEnabledRef.current = templatesEnabled;
   googleDriveEnabledRef.current = googleDriveEnabled;
+  googleDriveReadyRef.current = googleDriveReady;
   onedriveEnabledRef.current = onedriveEnabled;
+  oneDriveReadyRef.current = oneDriveReady;
+  cloudReadyRef.current = cloudReady;
   const userId = authUser?.id ?? null;
   const teamId = currentTeam?.id ?? null;
   const [lists, setLists] = useState<WorkList[]>([]);
@@ -1083,6 +1090,7 @@ export function ListsProvider({ children }: { children: ReactNode }) {
     options?: { onProgress?: (percent: number) => void },
   ) => {
     if (!fileUploadsEnabledRef.current) return null;
+    if (!cloudReadyRef.current) return null;
     const name = file.name.trim() || "file";
     if (!isAllowedFileName(name)) {
       return null;
@@ -1091,26 +1099,28 @@ export function ListsProvider({ children }: { children: ReactNode }) {
     const onProgress = options?.onProgress;
     onProgress?.(0);
 
-    let driveResult = null;
-    if (googleDriveEnabledRef.current) {
-      driveResult = await uploadGoogleDriveFile({
-        teamId: assignmentNotifyRef.current.teamId,
-        listId: tasksRef.current.find((item) => item.id === taskId)?.listId ?? "",
-        file,
-        pathParts: googleDrivePathForTaskFile({
-          lists: listsRef.current,
-          tasks: tasksRef.current,
-          taskId,
-        }),
-        onProgress,
-      });
-    } else {
-      onProgress?.(40);
+    const cloudResult = await uploadFileToTeamCloud({
+      teamId: assignmentNotifyRef.current.teamId,
+      listId: tasksRef.current.find((item) => item.id === taskId)?.listId ?? "",
+      file,
+      pathParts: googleDrivePathForTaskFile({
+        lists: listsRef.current,
+        tasks: tasksRef.current,
+        taskId,
+      }),
+      googleDriveReady: googleDriveReadyRef.current,
+      oneDriveReady: oneDriveReadyRef.current,
+      googleDriveModule: googleDriveEnabledRef.current,
+      oneDriveModule: onedriveEnabledRef.current,
+      onProgress,
+    });
+
+    if (!cloudResult.ok) {
+      onProgress?.(100);
+      return null;
     }
 
     onProgress?.(85);
-    const storeContent = shouldStoreFileOnServer(driveResult);
-    const googleDriveFileId = driveFileIdFromUpload(driveResult);
     const record: TaskFile = {
       id: createTaskFileId(),
       taskId,
@@ -1118,13 +1128,10 @@ export function ListsProvider({ children }: { children: ReactNode }) {
       mimeType: file.type || mimeFromName(name),
       size: Math.max(0, Math.round(file.size)),
       hasContent: false,
-      googleDriveFileId,
+      googleDriveFileId: cloudResult.googleDriveFileId,
+      oneDriveFileId: cloudResult.oneDriveFileId,
       createdAt: new Date().toISOString(),
     };
-    const content = storeContent
-      ? await storeTaskFileContent(record.id, file)
-      : null;
-    record.hasContent = Boolean(content);
     const activity = createActivity({
       actorId: assignmentNotifyRef.current.actorId,
       taskId,
@@ -1134,8 +1141,8 @@ export function ListsProvider({ children }: { children: ReactNode }) {
     const activeTeamId = assignmentNotifyRef.current.teamId;
     if (activeTeamId) {
       try {
-        // Await DB insert before UI/download can use /api/google-drive/content.
-        await insertTaskFile(activeTeamId, record, content);
+        // Await DB insert before UI/download can use cloud content APIs.
+        await insertTaskFile(activeTeamId, record, null);
         await insertActivity(activeTeamId, activity);
       } catch (error) {
         console.error("Failed to save task file", formatSupabaseError(error));
@@ -1164,18 +1171,6 @@ export function ListsProvider({ children }: { children: ReactNode }) {
             notify.members,
           ),
         );
-      }
-      if (onedriveEnabledRef.current) {
-        queueOneDriveUpload({
-          teamId: assignmentNotifyRef.current.teamId,
-          listId: tasksRef.current.find((item) => item.id === taskId)?.listId ?? "",
-          file,
-          pathParts: googleDrivePathForTaskFile({
-            lists: listsRef.current,
-            tasks: tasksRef.current,
-            taskId,
-          }),
-        });
       }
     }
     onProgress?.(100);
@@ -1210,6 +1205,7 @@ export function ListsProvider({ children }: { children: ReactNode }) {
     let trimmed = name.trim();
     if (!trimmed) return;
     let hasDriveFile = false;
+    let hasOneDriveFile = false;
     let renamedFrom: string | null = null;
     let renamedTaskId: string | null = null;
     setFiles((current) => {
@@ -1217,6 +1213,7 @@ export function ListsProvider({ children }: { children: ReactNode }) {
       if (!file) return current;
       trimmed = renameKeepingExtension(file.name, trimmed);
       if (file.googleDriveFileId) hasDriveFile = true;
+      if (file.oneDriveFileId) hasOneDriveFile = true;
       if (file.name !== trimmed) {
         renamedFrom = file.name;
         renamedTaskId = file.taskId;
@@ -1243,6 +1240,9 @@ export function ListsProvider({ children }: { children: ReactNode }) {
     });
     if (hasDriveFile && googleDriveEnabledRef.current) {
       queueGoogleDriveRename({ kind: "task", id: fileId, name: trimmed });
+    }
+    if (hasOneDriveFile && onedriveEnabledRef.current) {
+      queueOneDriveRename({ kind: "task", id: fileId, name: trimmed });
     }
   }, [persistActivity]);
 

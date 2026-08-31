@@ -4,6 +4,8 @@ import type { ReactNode } from "react";
 import { AppShell } from "@/app/components/app-shell";
 import { FileViewerProvider } from "@/app/components/file-viewer-provider";
 import { TeamScopedFrontendModules } from "@/app/lib/frontend-modules/team-scoped-provider";
+import { TeamGoogleDriveProvider } from "@/app/lib/google-drive/context";
+import { TeamOneDriveProvider } from "@/app/lib/onedrive/context";
 import { PaymentPlansEnabledProvider } from "@/app/lib/payment-plans/context";
 import { FileTypesProvider } from "@/app/lib/file-types-context";
 import { ListsProvider } from "@/app/lib/lists-store";
@@ -51,6 +53,8 @@ export function AppProviders({
           paymentPlansEnabled={paymentPlansEnabled}
           plans={paymentPlans}
         >
+          <TeamGoogleDriveProvider>
+          <TeamOneDriveProvider>
           <TaskStatusesProvider statuses={taskStatuses}>
             <FileTypesProvider extensions={fileTypeExtensions}>
               <TemplatesProvider>
@@ -62,6 +66,8 @@ export function AppProviders({
               </TemplatesProvider>
             </FileTypesProvider>
           </TaskStatusesProvider>
+          </TeamOneDriveProvider>
+          </TeamGoogleDriveProvider>
         </TeamScopedFrontendModules>
         </PaymentPlansEnabledProvider>
       </AdminProvider>

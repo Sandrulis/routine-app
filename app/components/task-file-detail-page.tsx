@@ -16,6 +16,8 @@ import { ensureTaskFileContent } from "@/app/lib/file-content";
 import { fileBaseName, fileExtensionFromName } from "@/app/lib/file-types";
 import { FRONTEND_MODULE_KEYS } from "@/app/lib/frontend-modules/keys";
 import { useFrontendModules } from "@/app/lib/frontend-modules/context";
+import { fetchGoogleDriveContentAsObjectUrl } from "@/app/lib/google-drive/content-url";
+import { fetchOneDriveContentAsObjectUrl } from "@/app/lib/onedrive/content-url";
 import { useLists } from "@/app/lib/lists-store";
 import { taskFilePreviewUrl } from "@/app/lib/task-activity";
 
@@ -72,10 +74,19 @@ export function TaskFileDetailPage({
         return;
       }
       if (file.googleDriveFileId) {
-        const { fetchGoogleDriveContentAsObjectUrl } = await import(
-          "@/app/lib/google-drive/content-url"
-        );
         const url = await fetchGoogleDriveContentAsObjectUrl("task", file.id);
+        if (cancelled) {
+          if (url) URL.revokeObjectURL(url);
+          return;
+        }
+        if (url) {
+          objectUrl = url;
+          setContent(url);
+          return;
+        }
+      }
+      if (file.oneDriveFileId) {
+        const url = await fetchOneDriveContentAsObjectUrl("task", file.id);
         if (cancelled) {
           if (url) URL.revokeObjectURL(url);
           return;
