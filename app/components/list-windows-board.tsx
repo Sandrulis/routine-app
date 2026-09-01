@@ -998,6 +998,7 @@ export function ListWindowsBoard({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploadProgress, setUploadProgress] =
     useState<FileUploadProgressState | null>(null);
+  const dndContextId = useId();
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
   );
@@ -1206,6 +1207,7 @@ export function ListWindowsBoard({
   return (
     <>
     <DndContext
+      id={dndContextId}
       sensors={sensors}
       collisionDetection={closestCenter}
       onDragEnd={handleDragEnd}

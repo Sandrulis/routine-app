@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import type { Metadata } from "next";
 import { AdminDocsArticles } from "@/app/components/admin-docs-articles";
 import { getDocsCategory, listDocsArticles } from "@/app/lib/docs/repository";
+import { getServerTranslations } from "@/app/lib/i18n/server";
 import { resolvedPageMetadata } from "@/app/lib/page-metadata";
 import { requireAdmin } from "@/app/lib/users/require-admin";
 
@@ -13,7 +14,8 @@ export async function generateMetadata({
   params: Promise<{ categoryId: string }>;
 }): Promise<Metadata> {
   const { categoryId } = await params;
-  const category = await getDocsCategory(categoryId);
+  const { languageCode } = await getServerTranslations();
+  const category = await getDocsCategory(categoryId, languageCode);
   return resolvedPageMetadata(category?.title, "admin.nav.docs", "Docs");
 }
 
@@ -24,9 +26,10 @@ export default async function AdminDocsCategoryPage({
 }) {
   await requireAdmin();
   const { categoryId } = await params;
-  const category = await getDocsCategory(categoryId);
+  const { languageCode } = await getServerTranslations();
+  const category = await getDocsCategory(categoryId, languageCode);
   if (!category) redirect("/admin/docs");
-  const articles = await listDocsArticles(category.id);
+  const articles = await listDocsArticles(category.id, languageCode);
 
   return <AdminDocsArticles category={category} articles={articles} />;
 }

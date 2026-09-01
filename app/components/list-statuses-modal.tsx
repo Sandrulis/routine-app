@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import {
   closestCenter,
   DndContext,
@@ -133,6 +133,7 @@ export function ListStatusesModal({
   const [editId, setEditId] = useState<string | null>(null);
   const [editDraft, setEditDraft] = useState<EditDraft>({ label: "", color: "#71717a" });
   const [deleteTarget, setDeleteTarget] = useState<ListStatus | null>(null);
+  const dndContextId = useId();
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
   );
@@ -420,6 +421,7 @@ export function ListStatusesModal({
           </div>
           <div className="overflow-hidden rounded-xl border border-zinc-200">
             <DndContext
+              id={dndContextId}
               sensors={sensors}
               collisionDetection={collisionDetection}
               onDragEnd={handleDragEnd}

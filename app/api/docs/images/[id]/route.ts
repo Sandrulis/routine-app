@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireDocsAdminJson } from "@/app/lib/docs/assert-admin";
+import { createDocsImagePreview } from "@/app/lib/docs/image-preview";
 import { isDocsImageId } from "@/app/lib/docs/images";
 import { contentDispositionForFile } from "@/app/lib/security/file-bytes";
 import { createAdminClient } from "@/app/lib/supabase/admin";
@@ -38,7 +39,7 @@ type ImageRow = {
 };
 
 export async function GET(
-  _request: Request,
+  request: Request,
   context: { params: Promise<{ id: string }> },
 ) {
   const { id } = await context.params;
@@ -81,12 +82,18 @@ export async function GET(
   }
 
   const fileName = String(row.file_name || "image");
-  return new NextResponse(new Uint8Array(parsed.bytes), {
+  const wantPreview = new URL(request.url).searchParams.get("preview") === "1";
+  const preview = wantPreview ? await createDocsImagePreview(parsed.bytes) : null;
+  const body = preview ?? parsed.bytes;
+  const mime = preview ? "image/webp" : parsed.mime;
+  const downloadName = preview ? `${fileName.replace(/\.[^.]+$/, "") || "image"}-preview.webp` : fileName;
+
+  return new NextResponse(new Uint8Array(body), {
     status: 200,
     headers: {
-      "Content-Type": parsed.mime,
-      "Content-Length": String(parsed.bytes.byteLength),
-      "Content-Disposition": contentDispositionForFile(fileName, parsed.mime, false),
+      "Content-Type": mime,
+      "Content-Length": String(body.byteLength),
+      "Content-Disposition": contentDispositionForFile(downloadName, mime, false),
       "Cache-Control": isPublic
         ? "public, max-age=31536000, immutable"
         : "private, no-store",

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useId, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   closestCenter,
@@ -96,6 +96,7 @@ export function AdminRolesManager({
   );
   const [isPending, startTransition] = useTransition();
   const [roles, setRoles] = useState(initialRoles);
+  const dndContextId = useId();
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
   );
@@ -239,6 +240,7 @@ export function AdminRolesManager({
       <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm">
         <div className="overflow-x-auto">
           <DndContext
+            id={dndContextId}
             sensors={sensors}
             collisionDetection={closestCenter}
             onDragEnd={handleDragEnd}

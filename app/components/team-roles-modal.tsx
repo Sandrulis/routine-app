@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import { useEffect, useId, useMemo, useRef, useState, type FormEvent } from "react";
 import {
   closestCenter,
   DndContext,
@@ -91,6 +91,7 @@ export function TeamRolesModal({
   const [accessRoleId, setAccessRoleId] = useState<string | null>(null);
   const [addingRole, setAddingRole] = useState(false);
   const wasOpenRef = useRef(false);
+  const dndContextId = useId();
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
   );
@@ -252,6 +253,7 @@ export function TeamRolesModal({
               ) : null}
               <div className="overflow-hidden rounded-xl border border-zinc-200">
                 <DndContext
+                  id={dndContextId}
                   sensors={sensors}
                   collisionDetection={closestCenter}
                   onDragEnd={handleDragEnd}

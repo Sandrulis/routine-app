@@ -2,11 +2,11 @@
 
 /* eslint-disable @next/next/no-img-element */
 
-import { Fragment, useEffect, useState, type ReactNode } from "react";
+import { Fragment, useEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { useTranslations } from "@/app/components/translations-provider";
 import { applyDocsPlaceholders, renderDocsPlaceholders } from "@/app/lib/docs/placeholders";
-import { docsImageIdFromSrc } from "@/app/lib/docs/images";
+import { docsImageIdFromSrc, docsImagePreviewSrc } from "@/app/lib/docs/images";
 import { youtubeEmbedUrl, youtubeIdFromText } from "@/app/lib/docs/youtube";
 
 type CodeBlock = {
@@ -177,10 +177,25 @@ function DocsImage({
   const [zoomed, setZoomed] = useState(false);
   const [mounted, setMounted] = useState(false);
   const resolved = safeImageSrc(src, overrides);
+  const imageId = resolved ? docsImageIdFromSrc(resolved) : null;
+  const previewSrc = imageId ? docsImagePreviewSrc(imageId) : null;
+  const [previewFailed, setPreviewFailed] = useState(false);
+  const showPreview = Boolean(previewSrc) && !previewFailed;
+  const [fullReady, setFullReady] = useState(!showPreview);
+  const fullRef = useRef<HTMLImageElement>(null);
 
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  useEffect(() => {
+    setPreviewFailed(false);
+    setFullReady(!previewSrc);
+    const node = fullRef.current;
+    if (previewSrc && node?.complete && node.naturalWidth > 0) {
+      setFullReady(true);
+    }
+  }, [previewSrc, resolved]);
 
   useEffect(() => {
     if (!open) {
@@ -217,11 +232,30 @@ function DocsImage({
         aria-label={enlargeLabel}
         className="mx-auto block w-full cursor-zoom-in rounded-xl border-0 bg-transparent p-0 lg:w-1/2"
       >
-        <img
-          src={resolved}
-          alt={alt}
-          className={`block h-auto w-full rounded-xl border ${frameClassName}`}
-        />
+        <span className={`relative block overflow-hidden rounded-xl border ${frameClassName}`}>
+          {showPreview ? (
+            <img
+              src={previewSrc ?? undefined}
+              alt=""
+              aria-hidden="true"
+              onError={() => setPreviewFailed(true)}
+              className={`block h-auto w-full ${fullReady ? "" : "scale-[1.08] blur-xl"}`}
+            />
+          ) : null}
+          <img
+            ref={fullRef}
+            src={resolved}
+            alt={alt}
+            onLoad={() => setFullReady(true)}
+            className={
+              showPreview
+                ? `absolute inset-0 h-full w-full object-contain transition-opacity duration-500 ${
+                    fullReady ? "opacity-100" : "opacity-0"
+                  }`
+                : "block h-auto w-full"
+            }
+          />
+        </span>
       </button>
       {mounted && open
         ? createPortal(

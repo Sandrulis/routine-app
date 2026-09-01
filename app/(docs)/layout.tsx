@@ -10,11 +10,11 @@ import { getSiteSettings } from "@/app/lib/site-admin/repository";
 export const dynamic = "force-dynamic";
 
 export default async function DocsGroupLayout({ children }: { children: ReactNode }) {
-  const [{ languageCode }, tree, settings] = await Promise.all([
+  const [{ languageCode }, settings] = await Promise.all([
     getServerTranslations(),
-    getPublicDocsTree(),
     getSiteSettings(),
   ]);
+  const tree = await getPublicDocsTree(languageCode);
 
   if (!tree.enabled) {
     redirect(localePath("/", languageCode));

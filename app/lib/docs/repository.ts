@@ -18,6 +18,7 @@ import type {
   DocsArticleImage,
   DocsArticleInput,
   DocsArticleSummary,
+  DocsArticleTranslation,
   DocsCategoryInput,
   DocsCategorySummary,
   DocsNavCategory,
@@ -83,6 +84,101 @@ export const getDocsDefaultLanguage = cache(async function getDocsDefaultLanguag
   const languages = await listSiteLanguages();
   return languages.find((language) => language.isDefault)?.code ?? DEFAULT_LANGUAGE;
 });
+
+async function listDocsLanguageCodes(): Promise<string[]> {
+  const languages = await listSiteLanguages();
+  const codes = languages.map((language) => language.code);
+  return codes.length > 0 ? codes : [DEFAULT_LANGUAGE];
+}
+
+async function resolveDocsLanguageCode(languageCode?: string): Promise<string> {
+  const fallback = await getDocsDefaultLanguage();
+  if (!languageCode) return fallback;
+  const codes = await listDocsLanguageCodes();
+  return codes.includes(languageCode) ? languageCode : fallback;
+}
+
+function translationMap(
+  rows: ArticleTranslationRow[],
+): Record<string, DocsArticleTranslation> {
+  const translations: Record<string, DocsArticleTranslation> = {};
+  for (const row of rows) {
+    translations[row.language_code] = {
+      title: row.title,
+      slogan: row.slogan ?? "",
+      content: row.content ?? "",
+    };
+  }
+  return translations;
+}
+
+function categoryTitleMap(rows: CategoryTranslationRow[]): Record<string, string> {
+  const titles: Record<string, string> = {};
+  for (const row of rows) {
+    titles[row.language_code] = row.title;
+  }
+  return titles;
+}
+
+async function copyMissingCategoryTitles(
+  categoryId: string,
+  sourceTitle: string,
+): Promise<{ ok: false; error: string } | { ok: true }> {
+  const supabase = await getClient();
+  const codes = await listDocsLanguageCodes();
+  const { data: existing, error } = await supabase
+    .from("site_docs_category_translations")
+    .select("language_code")
+    .eq("category_id", categoryId);
+  if (error) return { ok: false, error: "errors.docs_save_failed" };
+  const have = new Set(
+    ((existing ?? []) as { language_code: string }[]).map((row) => row.language_code),
+  );
+  const rows = codes
+    .filter((code) => !have.has(code))
+    .map((code) => ({
+      category_id: categoryId,
+      language_code: code,
+      title: sourceTitle,
+    }));
+  if (rows.length === 0) return { ok: true };
+  const { error: insertError } = await supabase
+    .from("site_docs_category_translations")
+    .insert(rows);
+  if (insertError) return { ok: false, error: "errors.docs_save_failed" };
+  return { ok: true };
+}
+
+async function copyMissingArticleTranslations(
+  articleId: string,
+  source: DocsArticleTranslation,
+): Promise<{ ok: false; error: string } | { ok: true }> {
+  const supabase = await getClient();
+  const codes = await listDocsLanguageCodes();
+  const { data: existing, error } = await supabase
+    .from("site_docs_article_translations")
+    .select("language_code")
+    .eq("article_id", articleId);
+  if (error) return { ok: false, error: "errors.docs_save_failed" };
+  const have = new Set(
+    ((existing ?? []) as { language_code: string }[]).map((row) => row.language_code),
+  );
+  const rows = codes
+    .filter((code) => !have.has(code))
+    .map((code) => ({
+      article_id: articleId,
+      language_code: code,
+      title: source.title,
+      slogan: source.slogan,
+      content: source.content,
+    }));
+  if (rows.length === 0) return { ok: true };
+  const { error: insertError } = await supabase
+    .from("site_docs_article_translations")
+    .insert(rows);
+  if (insertError) return { ok: false, error: "errors.docs_save_failed" };
+  return { ok: true };
+}
 
 export const isDocsEnabled = cache(async function isDocsEnabled(): Promise<boolean> {
   if (!isSupabaseConfigured()) return false;
@@ -181,6 +277,7 @@ export const listDocsCategories = cache(async function listDocsCategories(
       slug: row.slug,
       icon: row.icon,
       title: translation?.title ?? row.slug,
+      titlesByLanguage: categoryTitleMap(translationByCategory.get(row.id) ?? []),
       sortOrder: row.sort_order,
       articleCount: countByCategory.get(row.id) ?? 0,
       isVisible: row.is_visible !== false,
@@ -264,11 +361,9 @@ export const getDocsArticle = cache(async function getDocsArticle(
     .select("article_id, language_code, title, slogan, content")
     .eq("article_id", articleId);
 
-  const translation = pickTranslation(
-    (translations ?? []) as ArticleTranslationRow[],
-    preferred,
-    fallback,
-  );
+  const rows = (translations ?? []) as ArticleTranslationRow[];
+  const translation = pickTranslation(rows, preferred, fallback);
+  const byLanguage = translationMap(rows);
 
   return {
     id: row.id,
@@ -282,17 +377,18 @@ export const getDocsArticle = cache(async function getDocsArticle(
     categorySlug: category?.slug ?? "",
     categoryTitle: category?.title ?? "",
     categoryIcon: category?.icon ?? DEFAULT_ICON,
+    translations: byLanguage,
   };
 });
 
-export const getPublicDocsTree = cache(async function getPublicDocsTree(): Promise<DocsTree> {
-  const [enabled, languageCode] = await Promise.all([
-    isDocsEnabled(),
-    getDocsDefaultLanguage(),
-  ]);
+export const getPublicDocsTree = cache(async function getPublicDocsTree(
+  languageCode?: string,
+): Promise<DocsTree> {
+  const [enabled, fallback] = await Promise.all([isDocsEnabled(), getDocsDefaultLanguage()]);
+  const preferred = languageCode ?? fallback;
 
   if (!enabled || !isSupabaseConfigured()) {
-    return { enabled: false, languageCode, hasMultipleLanguages: false, categories: [] };
+    return { enabled: false, languageCode: preferred, hasMultipleLanguages: false, categories: [] };
   }
 
   const supabase = await getClient();
@@ -317,7 +413,12 @@ export const getPublicDocsTree = cache(async function getPublicDocsTree(): Promi
   ]);
 
   if (categoryError || !categories) {
-    return { enabled: true, languageCode, hasMultipleLanguages: false, categories: [] };
+    return {
+      enabled: true,
+      languageCode: preferred,
+      hasMultipleLanguages: false,
+      categories: [],
+    };
   }
 
   const translationByCategory = new Map<string, CategoryTranslationRow[]>();
@@ -342,8 +443,8 @@ export const getPublicDocsTree = cache(async function getPublicDocsTree(): Promi
     if (row.is_visible === false) continue;
     const translation = pickTranslation(
       translationByArticle.get(row.id) ?? [],
-      languageCode,
-      languageCode,
+      preferred,
+      fallback,
     );
     const list = articlesByCategory.get(row.category_id) ?? [];
     list.push({
@@ -364,8 +465,8 @@ export const getPublicDocsTree = cache(async function getPublicDocsTree(): Promi
     if (categoryArticles.length === 0) continue;
     const translation = pickTranslation(
       translationByCategory.get(row.id) ?? [],
-      languageCode,
-      languageCode,
+      preferred,
+      fallback,
     );
     nav.push({
       id: row.id,
@@ -376,10 +477,12 @@ export const getPublicDocsTree = cache(async function getPublicDocsTree(): Promi
     });
   }
 
+  const languageCodes = await listDocsLanguageCodes();
   return {
     enabled: true,
-    languageCode,
+    languageCode: preferred,
     hasMultipleLanguages:
+      languageCodes.length > 1 ||
       someEntityHasMultipleLanguages(
         ((categoryTranslations ?? []) as CategoryTranslationRow[]).map((row) => ({
           id: row.category_id,
@@ -399,8 +502,11 @@ export const getPublicDocsTree = cache(async function getPublicDocsTree(): Promi
 export const getPublicDocsArticle = cache(async function getPublicDocsArticle(
   categorySlug: string,
   articleSlug: string,
+  languageCode?: string,
 ): Promise<DocsArticleDetail | null> {
-  const tree = await getPublicDocsTree();
+  const fallback = await getDocsDefaultLanguage();
+  const preferred = languageCode ?? fallback;
+  const tree = await getPublicDocsTree(preferred);
   if (!tree.enabled) return null;
   const category = tree.categories.find((item) => item.slug === categorySlug);
   const article = category?.articles.find((item) => item.slug === articleSlug);
@@ -413,11 +519,8 @@ export const getPublicDocsArticle = cache(async function getPublicDocsArticle(
     .select("article_id, language_code, title, slogan, content")
     .eq("article_id", article.id);
 
-  const translation = pickTranslation(
-    (translations ?? []) as ArticleTranslationRow[],
-    tree.languageCode,
-    tree.languageCode,
-  );
+  const rows = (translations ?? []) as ArticleTranslationRow[];
+  const translation = pickTranslation(rows, preferred, fallback);
 
   return {
     id: article.id,
@@ -431,6 +534,7 @@ export const getPublicDocsArticle = cache(async function getPublicDocsArticle(
     categorySlug: category.slug,
     categoryTitle: category.title,
     categoryIcon: category.icon,
+    translations: translationMap(rows),
   };
 });
 
@@ -464,7 +568,7 @@ export async function createDocsCategory(
   if (!isSupabaseConfigured()) return dbNotConfigured();
   const parsed = validateCategoryInput(input);
   if (!parsed.ok) return parsed;
-  const languageCode = await getDocsDefaultLanguage();
+  const languageCode = await resolveDocsLanguageCode(input.languageCode);
   const supabase = await getClient();
   const sortOrder = await nextSortOrder("site_docs_categories");
 
@@ -482,14 +586,33 @@ export async function createDocsCategory(
   if (error || !data) return { ok: false, error: "errors.docs_save_failed" };
 
   const row = data as CategoryRow;
+  const titles = { ...(input.titles ?? {}), [languageCode]: parsed.title };
+  const translationRows = Object.entries(titles)
+    .map(([code, title]) => ({
+      category_id: row.id,
+      language_code: code,
+      title: title.trim(),
+    }))
+    .filter((item) => item.title);
+
   const { error: translationError } = await supabase
     .from("site_docs_category_translations")
-    .upsert({
+    .upsert(translationRows.length > 0 ? translationRows : [{
       category_id: row.id,
       language_code: languageCode,
       title: parsed.title,
-    });
+    }]);
   if (translationError) return { ok: false, error: "errors.docs_save_failed" };
+
+  const copied = await copyMissingCategoryTitles(row.id, parsed.title);
+  if (!copied.ok) return copied;
+
+  const titlesByLanguage = {
+    ...titles,
+    ...Object.fromEntries(
+      (await listDocsLanguageCodes()).map((code) => [code, titles[code] ?? parsed.title]),
+    ),
+  };
 
   return {
     ok: true,
@@ -499,6 +622,7 @@ export async function createDocsCategory(
         slug: row.slug,
         icon: row.icon,
         title: parsed.title,
+        titlesByLanguage,
         sortOrder: row.sort_order,
         articleCount: 0,
         isVisible: row.is_visible !== false,
@@ -514,24 +638,40 @@ export async function updateDocsCategory(
   if (!isSupabaseConfigured()) return dbNotConfigured();
   const parsed = validateCategoryInput(input);
   if (!parsed.ok) return parsed;
-  const languageCode = await getDocsDefaultLanguage();
+  const languageCode = await resolveDocsLanguageCode(input.languageCode);
+  const defaultLanguage = await getDocsDefaultLanguage();
   const supabase = await getClient();
 
+  const sharedUpdate =
+    languageCode === defaultLanguage
+      ? { slug: parsed.slug, icon: parsed.icon }
+      : { icon: parsed.icon };
   const { error } = await supabase
     .from("site_docs_categories")
-    .update({ slug: parsed.slug, icon: parsed.icon })
+    .update(sharedUpdate)
     .eq("id", categoryId);
   if (error?.code === "23505") return { ok: false, error: "errors.docs_slug_exists" };
   if (error) return { ok: false, error: "errors.docs_save_failed" };
 
+  const titles = { ...(input.titles ?? {}), [languageCode]: parsed.title };
+  const translationRows = Object.entries(titles)
+    .map(([code, title]) => ({
+      category_id: categoryId,
+      language_code: code,
+      title: title.trim(),
+    }))
+    .filter((item) => item.title);
   const { error: translationError } = await supabase
     .from("site_docs_category_translations")
-    .upsert({
-      category_id: categoryId,
-      language_code: languageCode,
-      title: parsed.title,
-    });
+    .upsert(translationRows);
   if (translationError) return { ok: false, error: "errors.docs_save_failed" };
+  const defaultTitle =
+    (input.titles?.[defaultLanguage] ?? "").trim() ||
+    (languageCode === defaultLanguage ? parsed.title : "");
+  if (defaultTitle) {
+    const copied = await copyMissingCategoryTitles(categoryId, defaultTitle);
+    if (!copied.ok) return copied;
+  }
   return { ok: true };
 }
 
@@ -550,7 +690,7 @@ export async function createDocsArticle(
   if (!isSupabaseConfigured()) return dbNotConfigured();
   const parsed = validateArticleInput(input);
   if (!parsed.ok) return parsed;
-  const languageCode = await getDocsDefaultLanguage();
+  const languageCode = await resolveDocsLanguageCode(input.languageCode);
   const supabase = await getClient();
 
   const { data: category } = await supabase
@@ -578,17 +718,29 @@ export async function createDocsArticle(
   if (error?.code === "23505") return { ok: false, error: "errors.docs_slug_exists" };
   if (error || !data) return { ok: false, error: "errors.docs_save_failed" };
   const row = data as ArticleRow;
+  const source: DocsArticleTranslation = {
+    title: parsed.title,
+    slogan: parsed.slogan,
+    content: parsed.content,
+  };
+  const translations = {
+    ...(input.translations ?? {}),
+    [languageCode]: source,
+  };
+  const translationRows = Object.entries(translations).map(([code, value]) => ({
+    article_id: row.id,
+    language_code: code,
+    title: value.title.trim() || parsed.title,
+    slogan: (value.slogan ?? "").trim().slice(0, MAX_SLOGAN_LENGTH),
+    content: (value.content ?? "").slice(0, MAX_CONTENT_LENGTH),
+  }));
 
   const { error: translationError } = await supabase
     .from("site_docs_article_translations")
-    .upsert({
-      article_id: row.id,
-      language_code: languageCode,
-      title: parsed.title,
-      slogan: parsed.slogan,
-      content: parsed.content,
-    });
+    .upsert(translationRows);
   if (translationError) return { ok: false, error: "errors.docs_save_failed" };
+  const copied = await copyMissingArticleTranslations(row.id, source);
+  if (!copied.ok) return copied;
 
   return {
     ok: true,
@@ -612,26 +764,48 @@ export async function updateDocsArticle(
   if (!isSupabaseConfigured()) return dbNotConfigured();
   const parsed = validateArticleInput(input);
   if (!parsed.ok) return parsed;
-  const languageCode = await getDocsDefaultLanguage();
+  const languageCode = await resolveDocsLanguageCode(input.languageCode);
+  const defaultLanguage = await getDocsDefaultLanguage();
   const supabase = await getClient();
 
-  const { error } = await supabase
-    .from("site_docs_articles")
-    .update({ slug: parsed.slug })
-    .eq("id", articleId);
-  if (error?.code === "23505") return { ok: false, error: "errors.docs_slug_exists" };
-  if (error) return { ok: false, error: "errors.docs_save_failed" };
+  if (languageCode === defaultLanguage) {
+    const { error } = await supabase
+      .from("site_docs_articles")
+      .update({ slug: parsed.slug })
+      .eq("id", articleId);
+    if (error?.code === "23505") return { ok: false, error: "errors.docs_slug_exists" };
+    if (error) return { ok: false, error: "errors.docs_save_failed" };
+  }
 
+  const source: DocsArticleTranslation = {
+    title: parsed.title,
+    slogan: parsed.slogan,
+    content: parsed.content,
+  };
+  const translations = {
+    ...(input.translations ?? {}),
+    [languageCode]: source,
+  };
+  const translationRows = Object.entries(translations).map(([code, value]) => ({
+    article_id: articleId,
+    language_code: code,
+    title: value.title.trim() || parsed.title,
+    slogan: (value.slogan ?? "").trim().slice(0, MAX_SLOGAN_LENGTH),
+    content: (value.content ?? "").slice(0, MAX_CONTENT_LENGTH),
+  }));
   const { error: translationError } = await supabase
     .from("site_docs_article_translations")
-    .upsert({
-      article_id: articleId,
-      language_code: languageCode,
-      title: parsed.title,
-      slogan: parsed.slogan,
-      content: parsed.content,
-    });
+    .upsert(translationRows);
   if (translationError) return { ok: false, error: "errors.docs_save_failed" };
+  const defaultTranslation = translations[defaultLanguage] ?? (languageCode === defaultLanguage ? source : null);
+  if (defaultTranslation) {
+    const copied = await copyMissingArticleTranslations(articleId, {
+      title: defaultTranslation.title.trim() || parsed.title,
+      slogan: (defaultTranslation.slogan ?? "").trim().slice(0, MAX_SLOGAN_LENGTH),
+      content: (defaultTranslation.content ?? "").slice(0, MAX_CONTENT_LENGTH),
+    });
+    if (!copied.ok) return copied;
+  }
   return { ok: true };
 }
 

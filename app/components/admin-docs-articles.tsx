@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, useTransition, type DragEvent } from "react";
+import { useEffect, useId, useRef, useState, useTransition, type DragEvent } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -39,8 +39,9 @@ import {
 } from "@/app/components/docs-article-images";
 import { DocsMarkdown } from "@/app/components/docs-markdown";
 import {
-  DocsSourceLanguageCode,
-  DocsSourceLanguageNotice,
+  DocsLanguageCode,
+  DocsLanguageTabs,
+  useDocsSourceLanguage,
 } from "@/app/components/docs-source-language-notice";
 import { DragHandle } from "@/app/components/drag-handle";
 import { useFeedbackToast } from "@/app/components/feedback-toast-provider";
@@ -62,6 +63,7 @@ import {
   stripDocsImageMarkdown,
 } from "@/app/lib/docs/images";
 import type { DocsArticleImage, DocsArticleSummary, DocsCategorySummary } from "@/app/lib/docs/types";
+import type { LanguageCode } from "@/app/lib/i18n/language";
 
 type ArticleDraft = {
   title: string;
@@ -71,6 +73,10 @@ type ArticleDraft = {
 
 function emptyDraft(): ArticleDraft {
   return { title: "", slogan: "", content: "" };
+}
+
+function emptyTranslations(): Record<string, ArticleDraft> {
+  return {};
 }
 
 type LocalImage = DocsArticleImageItem & {
@@ -138,21 +144,26 @@ export function AdminDocsArticles({
   articles: DocsArticleSummary[];
 }) {
   const router = useRouter();
-  const { t, systemName } = useTranslations();
+  const { t, systemName, languages } = useTranslations();
+  const sourceLanguage = useDocsSourceLanguage();
   const { showFeedback, clearFeedback } = useFeedbackToast();
   const [articles, setArticles] = useState(initialArticles);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [draft, setDraft] = useState(emptyDraft);
-  const [loadedArticles, setLoadedArticles] = useState<
-    Record<string, { slogan: string; content: string }>
-  >({});
+  const [editLang, setEditLang] = useState(sourceLanguage.code);
+  const [translations, setTranslations] = useState<Record<string, ArticleDraft>>(
+    emptyTranslations,
+  );
+  const [savedTranslations, setSavedTranslations] = useState<Record<string, ArticleDraft>>(
+    emptyTranslations,
+  );
   const [deleteTarget, setDeleteTarget] = useState<DocsArticleSummary | null>(null);
   const [images, setImages] = useState<LocalImage[]>([]);
   const [uploadProgress, setUploadProgress] = useState<FileUploadProgressState | null>(null);
   const [isPending, startTransition] = useTransition();
   const [openingArticleId, setOpeningArticleId] = useState<string | null>(null);
   const contentRef = useRef<HTMLTextAreaElement>(null);
+  const dndContextId = useId();
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
   );
@@ -161,35 +172,69 @@ export function AdminDocsArticles({
     setArticles(initialArticles);
   }, [initialArticles]);
 
-  const initialDraft = editingId
-    ? {
-        title: articles.find((item) => item.id === editingId)?.title ?? "",
-        slogan: loadedArticles[editingId]?.slogan ?? "",
-        content: loadedArticles[editingId]?.content ?? "",
-      }
-    : emptyDraft();
+  const draft = translations[editLang] ?? emptyDraft();
   const isDirty =
-    JSON.stringify(draft) !== JSON.stringify(initialDraft) ||
+    JSON.stringify(translations) !== JSON.stringify(savedTranslations) ||
     images.some((image) => Boolean(image.pendingFile));
+
+  function patchDraft(patch: Partial<ArticleDraft>) {
+    setTranslations((current) => ({
+      ...current,
+      [editLang]: { ...(current[editLang] ?? emptyDraft()), ...patch },
+    }));
+  }
+
+  function translationsFromDetail(
+    detail: { title: string; slogan?: string; content?: string; translations?: Record<string, ArticleDraft> } | null,
+    fallbackTitle: string,
+  ) {
+    const source =
+      detail?.translations?.[sourceLanguage.code] ??
+      ({
+        title: detail?.title ?? fallbackTitle,
+        slogan: detail?.slogan ?? "",
+        content: detail?.content ?? "",
+      } satisfies ArticleDraft);
+    return Object.fromEntries(
+      languages.map((language) => [
+        language.code,
+        detail?.translations?.[language.code] ?? { ...source },
+      ]),
+    ) as Record<string, ArticleDraft>;
+  }
 
   useEffect(() => {
     if (modalOpen) return;
     setEditingId(null);
-    setDraft(emptyDraft());
+    setEditLang(sourceLanguage.code);
+    setTranslations(emptyTranslations());
+    setSavedTranslations(emptyTranslations());
     setImages((current) => {
       for (const image of current) {
         if (image.previewSrc?.startsWith("blob:")) URL.revokeObjectURL(image.previewSrc);
       }
       return [];
     });
-  }, [modalOpen]);
+  }, [modalOpen, sourceLanguage.code]);
 
   function openCreate() {
     clearFeedback();
     setEditingId(null);
-    setDraft(emptyDraft());
+    setEditLang(sourceLanguage.code);
+    const initial = { [sourceLanguage.code]: emptyDraft() };
+    setTranslations(initial);
+    setSavedTranslations(initial);
     setImages([]);
     setModalOpen(true);
+  }
+
+  function handleEditLang(code: LanguageCode) {
+    setTranslations((current) => {
+      if (current[code]) return current;
+      const source = current[sourceLanguage.code] ?? emptyDraft();
+      return { ...current, [code]: { ...source } };
+    });
+    setEditLang(code);
   }
 
   function openEdit(article: DocsArticleSummary) {
@@ -202,11 +247,11 @@ export function AdminDocsArticles({
           getDocsArticleAction(article.id),
           listDocsArticleImagesAction(article.id),
         ]);
-        const content = detail?.content ?? "";
-        const slogan = detail?.slogan ?? "";
-        setLoadedArticles((current) => ({ ...current, [article.id]: { slogan, content } }));
+        const next = translationsFromDetail(detail, article.title);
+        setEditLang(sourceLanguage.code);
+        setTranslations(next);
+        setSavedTranslations(next);
         setEditingId(article.id);
-        setDraft({ title: detail?.title ?? article.title, slogan, content });
         setImages(articleImages);
         setModalOpen(true);
       } finally {
@@ -219,12 +264,11 @@ export function AdminDocsArticles({
     const textarea = contentRef.current;
     const content = textarea?.value ?? draft.content;
     if (!textarea) {
-      setDraft((current) => ({
-        ...current,
-        content: current.content.trim()
-          ? `${current.content.trimEnd()}\n\n${snippet}\n`
+      patchDraft({
+        content: draft.content.trim()
+          ? `${draft.content.trimEnd()}\n\n${snippet}\n`
           : `${snippet}\n`,
-      }));
+      });
       return;
     }
     const start = textarea.selectionStart;
@@ -239,7 +283,7 @@ export function AdminDocsArticles({
           ? "\n"
           : "\n\n";
     const next = `${before}${prefix}${snippet}\n${after}`;
-    setDraft((current) => ({ ...current, content: next }));
+    patchDraft({ content: next });
     const cursor = before.length + prefix.length + snippet.length + 1;
     requestAnimationFrame(() => {
       textarea.focus();
@@ -251,13 +295,13 @@ export function AdminDocsArticles({
     const textarea = contentRef.current;
     const content = textarea?.value ?? draft.content;
     if (!textarea) {
-      setDraft((current) => ({ ...current, content: `${current.content}${token}` }));
+      patchDraft({ content: `${draft.content}${token}` });
       return;
     }
     const start = textarea.selectionStart;
     const end = textarea.selectionEnd;
     const next = `${content.slice(0, start)}${token}${content.slice(end)}`;
-    setDraft((current) => ({ ...current, content: next }));
+    patchDraft({ content: next });
     const cursor = start + token.length;
     requestAnimationFrame(() => {
       textarea.focus();
@@ -365,10 +409,14 @@ export function AdminDocsArticles({
         }
       }
       setImages((current) => current.filter((item) => item.id !== image.id));
-      setDraft((current) => ({
-        ...current,
-        content: stripDocsImageMarkdown(current.content, image.id),
-      }));
+      setTranslations((current) =>
+        Object.fromEntries(
+          Object.entries(current).map(([code, value]) => [
+            code,
+            { ...value, content: stripDocsImageMarkdown(value.content, image.id) },
+          ]),
+        ),
+      );
     });
   }
 
@@ -383,16 +431,23 @@ export function AdminDocsArticles({
     event.preventDefault();
     clearFeedback();
     startTransition(async () => {
+      const payload = {
+        title: draft.title,
+        slogan: draft.slogan,
+        content: draft.content,
+        languageCode: editLang,
+        translations,
+      };
       let articleId = editingId;
       if (!editingId) {
-        const created = await createDocsArticleAction(category.id, draft);
+        const created = await createDocsArticleAction(category.id, payload);
         if (!created.ok) {
           showFeedback({ type: "error", text: translateActionError(t, created.error) });
           return;
         }
         articleId = created.data.article.id;
       } else {
-        const updated = await updateDocsArticleAction(editingId, draft);
+        const updated = await updateDocsArticleAction(editingId, payload);
         if (!updated.ok) {
           showFeedback({ type: "error", text: translateActionError(t, updated.error) });
           return;
@@ -409,10 +464,7 @@ export function AdminDocsArticles({
         }
       }
       if (editingId) {
-        setLoadedArticles((current) => ({
-          ...current,
-          [editingId]: { slogan: draft.slogan, content: draft.content },
-        }));
+        setSavedTranslations(translations);
       }
       setModalOpen(false);
       showFeedback({
@@ -529,6 +581,7 @@ export function AdminDocsArticles({
       <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm">
         <div className="overflow-x-auto">
           <DndContext
+            id={dndContextId}
             sensors={sensors}
             collisionDetection={closestCenter}
             onDragEnd={handleDragEnd}
@@ -602,33 +655,34 @@ export function AdminDocsArticles({
             disabled={isPending || Boolean(uploadProgress)}
             className="space-y-4 disabled:opacity-80"
           >
-            <DocsSourceLanguageNotice />
+            <DocsLanguageTabs
+              value={editLang}
+              onChange={handleEditLang}
+              disabled={isPending || Boolean(uploadProgress)}
+              imagesShared
+            />
             <div>
               <label htmlFor="docs-article-title" className="text-sm font-medium text-zinc-800">
                 {t("lists.fields.name", "Nosaukums")}
-                <DocsSourceLanguageCode />
+                <DocsLanguageCode code={editLang} />
               </label>
               <input
                 id="docs-article-title"
                 value={draft.title}
-                onChange={(event) =>
-                  setDraft((current) => ({ ...current, title: event.target.value }))
-                }
+                onChange={(event) => patchDraft({ title: event.target.value })}
                 className="mt-2 w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 outline-none transition focus:border-zinc-400 focus:ring-4 focus:ring-zinc-100"
               />
             </div>
             <div>
               <label htmlFor="docs-article-slogan" className="text-sm font-medium text-zinc-800">
                 {t("site_settings.form.slogan", "Slogans")}
-                <DocsSourceLanguageCode />
+                <DocsLanguageCode code={editLang} />
               </label>
               <input
                 id="docs-article-slogan"
                 value={draft.slogan}
                 maxLength={300}
-                onChange={(event) =>
-                  setDraft((current) => ({ ...current, slogan: event.target.value }))
-                }
+                onChange={(event) => patchDraft({ slogan: event.target.value })}
                 className="mt-2 w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 outline-none transition focus:border-zinc-400 focus:ring-4 focus:ring-zinc-100"
               />
             </div>
@@ -636,15 +690,13 @@ export function AdminDocsArticles({
               <div>
                 <label htmlFor="docs-article-content" className="text-sm font-medium text-zinc-800">
                   {t("admin.docs.article.content", "Saturs")}
-                  <DocsSourceLanguageCode />
+                  <DocsLanguageCode code={editLang} />
                 </label>
                 <textarea
                   id="docs-article-content"
                   ref={contentRef}
                   value={draft.content}
-                  onChange={(event) =>
-                    setDraft((current) => ({ ...current, content: event.target.value }))
-                  }
+                  onChange={(event) => patchDraft({ content: event.target.value })}
                   onDragOver={(event) => {
                     if ([...event.dataTransfer.types].includes("Files")) {
                       event.preventDefault();

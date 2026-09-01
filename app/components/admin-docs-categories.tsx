@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, useTransition } from "react";
+import { useEffect, useId, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -33,8 +33,9 @@ import { useFeedbackToast } from "@/app/components/feedback-toast-provider";
 import { IconActionButton } from "@/app/components/icon-action-button";
 import { LoadingState } from "@/app/components/loading-state";
 import {
-  DocsSourceLanguageCode,
-  DocsSourceLanguageNotice,
+  DocsLanguageCode,
+  DocsLanguageTabs,
+  useDocsSourceLanguage,
 } from "@/app/components/docs-source-language-notice";
 import { ListAppearancePicker } from "@/app/components/list-appearance-picker";
 import { ToggleSwitch } from "@/app/components/toggle-switch";
@@ -44,12 +45,12 @@ import { DEFAULT_LIST_COLOR } from "@/app/lib/lists";
 import type { DocsCategorySummary } from "@/app/lib/docs/types";
 
 type CategoryDraft = {
-  title: string;
+  titles: Record<string, string>;
   icon: string;
 };
 
 function emptyDraft(): CategoryDraft {
-  return { title: "", icon: "fas fa-book" };
+  return { titles: {}, icon: "fas fa-book" };
 }
 
 export function AdminDocsCategories({
@@ -60,12 +61,14 @@ export function AdminDocsCategories({
   enabled: boolean;
 }) {
   const router = useRouter();
-  const { t } = useTranslations();
+  const { t, languages } = useTranslations();
+  const sourceLanguage = useDocsSourceLanguage();
   const { showFeedback, clearFeedback } = useFeedbackToast();
   const [categories, setCategories] = useState(initialCategories);
   const [enabled, setEnabled] = useState(initialEnabled);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [editLang, setEditLang] = useState(sourceLanguage.code);
   const [draft, setDraft] = useState(emptyDraft);
   const [iconOpen, setIconOpen] = useState(false);
   const iconTriggerRef = useRef<HTMLButtonElement>(null);
@@ -73,6 +76,7 @@ export function AdminDocsCategories({
   const [isPending, startTransition] = useTransition();
   const [pendingToggle, setPendingToggle] = useState(false);
   const [openingCategoryId, setOpeningCategoryId] = useState<string | null>(null);
+  const dndContextId = useId();
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
   );
@@ -85,13 +89,30 @@ export function AdminDocsCategories({
     setEnabled(initialEnabled);
   }, [initialEnabled]);
 
-  const initialDraft = editingId
+  const sourceTitle =
+    (editingId
+      ? categories.find((item) => item.id === editingId)?.titlesByLanguage?.[sourceLanguage.code]
+      : "") ??
+    (editingId ? categories.find((item) => item.id === editingId)?.title : "") ??
+    "";
+  const initialDraft: CategoryDraft = editingId
     ? {
-        title: categories.find((item) => item.id === editingId)?.title ?? "",
+        titles: Object.fromEntries(
+          languages.map((language) => {
+            const category = categories.find((item) => item.id === editingId);
+            return [
+              language.code,
+              category?.titlesByLanguage?.[language.code] ??
+                category?.title ??
+                sourceTitle,
+            ];
+          }),
+        ),
         icon: categories.find((item) => item.id === editingId)?.icon ?? "fas fa-book",
       }
     : emptyDraft();
   const isDirty = JSON.stringify(draft) !== JSON.stringify(initialDraft);
+  const currentTitle = draft.titles[editLang] ?? "";
 
   useEffect(() => {
     if (!modalOpen) {
@@ -104,6 +125,7 @@ export function AdminDocsCategories({
   function openCreate() {
     clearFeedback();
     setEditingId(null);
+    setEditLang(sourceLanguage.code);
     setDraft(emptyDraft());
     setModalOpen(true);
   }
@@ -119,7 +141,18 @@ export function AdminDocsCategories({
   function openEdit(category: DocsCategorySummary) {
     clearFeedback();
     setEditingId(category.id);
-    setDraft({ title: category.title, icon: category.icon });
+    setEditLang(sourceLanguage.code);
+    const fallbackTitle =
+      category.titlesByLanguage?.[sourceLanguage.code] ?? category.title;
+    setDraft({
+      titles: Object.fromEntries(
+        languages.map((language) => [
+          language.code,
+          category.titlesByLanguage?.[language.code] ?? fallbackTitle,
+        ]),
+      ),
+      icon: category.icon,
+    });
     setModalOpen(true);
   }
 
@@ -127,9 +160,15 @@ export function AdminDocsCategories({
     event.preventDefault();
     clearFeedback();
     startTransition(async () => {
+      const payload = {
+        title: currentTitle,
+        icon: draft.icon,
+        languageCode: editLang,
+        titles: draft.titles,
+      };
       const result = editingId
-        ? await updateDocsCategoryAction(editingId, draft)
-        : await createDocsCategoryAction(draft);
+        ? await updateDocsCategoryAction(editingId, payload)
+        : await createDocsCategoryAction(payload);
       if (!result.ok) {
         showFeedback({ type: "error", text: translateActionError(t, result.error) });
         return;
@@ -236,7 +275,7 @@ export function AdminDocsCategories({
       <p className="text-sm text-zinc-500">
         {t(
           "admin.docs.hint",
-          "Kategorijas un apakškategorijas veido publisko dokumentāciju. Saturs pagaidām ir noklusējuma valodā.",
+          "Kategorijas un apakškategorijas veido publisko dokumentāciju. Tekstu var tulkot katrā valodā; attēli paliek kopīgi.",
         )}
       </p>
 
@@ -274,6 +313,7 @@ export function AdminDocsCategories({
       <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm">
         <div className="overflow-x-auto">
           <DndContext
+            id={dndContextId}
             sensors={sensors}
             collisionDetection={closestCenter}
             onDragEnd={handleDragEnd}
@@ -345,17 +385,24 @@ export function AdminDocsCategories({
       >
         <form onSubmit={handleSave} className="space-y-4">
           <fieldset disabled={isPending} className="space-y-4 disabled:opacity-80">
-            <DocsSourceLanguageNotice />
+            <DocsLanguageTabs
+              value={editLang}
+              onChange={setEditLang}
+              disabled={isPending}
+            />
             <div>
               <label htmlFor="docs-category-title" className="text-sm font-medium text-zinc-800">
                 {t("lists.fields.name", "Nosaukums")}
-                <DocsSourceLanguageCode />
+                <DocsLanguageCode code={editLang} />
               </label>
               <input
                 id="docs-category-title"
-                value={draft.title}
+                value={currentTitle}
                 onChange={(event) =>
-                  setDraft((current) => ({ ...current, title: event.target.value }))
+                  setDraft((current) => ({
+                    ...current,
+                    titles: { ...current.titles, [editLang]: event.target.value },
+                  }))
                 }
                 className="mt-2 w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 outline-none transition focus:border-zinc-400 focus:ring-4 focus:ring-zinc-100"
               />
@@ -377,7 +424,7 @@ export function AdminDocsCategories({
               <ListAppearancePicker
                 open={iconOpen}
                 triggerRef={iconTriggerRef}
-                name={draft.title}
+                name={currentTitle}
                 icon={draft.icon}
                 color={DEFAULT_LIST_COLOR}
                 showColors={false}
@@ -396,7 +443,7 @@ export function AdminDocsCategories({
             <div className="flex justify-end border-t border-zinc-100 pt-4">
               <button
                 type="submit"
-                disabled={isPending || !isDirty || !draft.title.trim()}
+                disabled={isPending || !isDirty || !currentTitle.trim()}
                 className="inline-flex items-center gap-2 rounded-lg bg-zinc-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {isPending ? (

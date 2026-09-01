@@ -4,6 +4,12 @@
 
 - (none)
 
+## v0.3.24
+
+- Publiskā dokumentācija ir iztulkota visās 15 valodās; `/docs` seko UI valodai, adminā valodu cilnes
+- Docs attēli vispirms rāda mazu izplūdušu priekšskatījumu, tad pilno failu
+- Komandas rindā `...` ir pirms izvēršanas chevron; DnD tabulas vairs nesakrīt SSR `aria-describedby`
+
 ## v0.3.23
 
 - Apakšuzdevuma kalendārā nedēļas dienas un mēneša nosaukums seko UI valodai

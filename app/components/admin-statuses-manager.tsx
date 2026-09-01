@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useTransition, type ReactNode } from "react";
+import { useEffect, useId, useState, useTransition, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import {
   closestCenter,
@@ -109,6 +109,7 @@ export function AdminStatusesManager({
   const [deleteTarget, setDeleteTarget] = useState<TaskStatusSummary | null>(null);
   const [isPending, startTransition] = useTransition();
   const [statuses, setStatuses] = useState(initialStatuses);
+  const dndContextId = useId();
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
   );
@@ -331,6 +332,7 @@ export function AdminStatusesManager({
       <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm">
         <div className="overflow-x-auto">
           <DndContext
+            id={dndContextId}
             sensors={sensors}
             collisionDetection={collisionDetection}
             onDragEnd={handleDragEnd}

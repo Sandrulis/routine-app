@@ -8,10 +8,8 @@ import { localePath } from "@/app/lib/seo/locale-path";
 export const dynamic = "force-dynamic";
 
 export async function generateMetadata(): Promise<Metadata> {
-  const [{ t }, tree] = await Promise.all([
-    getServerTranslations(),
-    getPublicDocsTree(),
-  ]);
+  const { t, languageCode } = await getServerTranslations();
+  const tree = await getPublicDocsTree(languageCode);
   return canonicalMetadata("/docs", {
     title: t("docs.title", "Dokumentācija"),
     index: tree.enabled,
@@ -19,10 +17,8 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function DocsIndexPage() {
-  const [{ t, languageCode }, tree] = await Promise.all([
-    getServerTranslations(),
-    getPublicDocsTree(),
-  ]);
+  const { t, languageCode } = await getServerTranslations();
+  const tree = await getPublicDocsTree(languageCode);
 
   if (!tree.enabled) {
     redirect(localePath("/", languageCode));

@@ -33,7 +33,6 @@ export async function LandingJsonLd() {
     paymentPlansEnabled,
     plans,
     earlyBird,
-    tree,
   ] = await Promise.all([
     getServerTranslations(),
     getSiteSettings(),
@@ -41,8 +40,8 @@ export async function LandingJsonLd() {
     getPaymentPlansEnabledCached(),
     listPaymentPlansCached(),
     getEarlyBirdSettings(),
-    getPublicDocsTree(),
   ]);
+  const tree = await getPublicDocsTree(languageCode);
   const enabled = new Set(enabledKeys);
   const isEnabled = (moduleKey: string) => enabled.has(moduleKey);
   const systemName = resolveSystemName(settings.systemName, t("app.name", "{SYSTEM_NAME}"));

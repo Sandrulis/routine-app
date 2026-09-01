@@ -22,10 +22,10 @@ export async function generateMetadata({
   params: Promise<DocsArticleParams>;
 }): Promise<Metadata> {
   const { category, article } = await params;
-  const [{ t }, detail, tree, settings] = await Promise.all([
-    getServerTranslations(),
-    getPublicDocsArticle(category, article),
-    getPublicDocsTree(),
+  const { t, languageCode } = await getServerTranslations();
+  const [detail, tree, settings] = await Promise.all([
+    getPublicDocsArticle(category, article, languageCode),
+    getPublicDocsTree(languageCode),
     getSiteSettings(),
   ]);
   const systemName = resolveSystemName(settings.systemName);
@@ -41,10 +41,10 @@ export default async function DocsArticlePage({
   params: Promise<DocsArticleParams>;
 }) {
   const { category, article } = await params;
-  const [{ t, languageCode }, tree, detail] = await Promise.all([
-    getServerTranslations(),
-    getPublicDocsTree(),
-    getPublicDocsArticle(category, article),
+  const { t, languageCode } = await getServerTranslations();
+  const [tree, detail] = await Promise.all([
+    getPublicDocsTree(languageCode),
+    getPublicDocsArticle(category, article, languageCode),
   ]);
 
   if (!tree.enabled) {

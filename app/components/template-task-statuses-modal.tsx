@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useState } from "react";
 import {
   closestCenter,
   DndContext,
@@ -151,6 +151,7 @@ export function TemplateTaskStatusesModal({
   const [deleteTarget, setDeleteTarget] = useState<TemplateTaskStatusDef | null>(
     null,
   );
+  const dndContextId = useId();
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
   );
@@ -472,6 +473,7 @@ export function TemplateTaskStatusesModal({
           </div>
           <div className="overflow-hidden rounded-xl border border-zinc-200">
             <DndContext
+              id={dndContextId}
               sensors={sensors}
               collisionDetection={collisionDetection}
               onDragEnd={handleDragEnd}

@@ -14,10 +14,14 @@ export function docsImageSrc(id: string): string {
   return `${DOCS_IMAGE_PATH_PREFIX}${id}`;
 }
 
+export function docsImagePreviewSrc(id: string): string {
+  return `${docsImageSrc(id)}?preview=1`;
+}
+
 export function docsImageIdFromSrc(src: string): string | null {
   const trimmed = src.trim();
   if (!trimmed.startsWith(DOCS_IMAGE_PATH_PREFIX)) return null;
-  const id = trimmed.slice(DOCS_IMAGE_PATH_PREFIX.length);
+  const id = trimmed.slice(DOCS_IMAGE_PATH_PREFIX.length).split(/[?#]/)[0];
   return isDocsImageId(id) ? id : null;
 }
 

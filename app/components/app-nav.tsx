@@ -516,24 +516,6 @@ function NavTreeSection({
             onActivate={rowActivate ? onActivate : undefined}
           />
 
-          {leaf ? null : listAppearance || swapOnHover ? null : (
-            <Tooltip label={toggleLabel}>
-              <button
-                type="button"
-                aria-expanded={expanded}
-                aria-label={toggleLabel}
-                onClick={(event) => {
-                  event.preventDefault();
-                  event.stopPropagation();
-                  onToggle();
-                }}
-                className="relative z-10 pointer-events-none inline-flex size-6 shrink-0 items-center justify-center rounded text-zinc-400 opacity-0 transition group-hover/row:pointer-events-auto group-hover/row:opacity-100 group-focus-within/row:pointer-events-auto group-focus-within/row:opacity-100 hover:bg-zinc-200/80 hover:text-zinc-700"
-              >
-                <ToggleChevron expanded={expanded} />
-              </button>
-            </Tooltip>
-          )}
-
           {onMore ? (
             <Tooltip label={t("nav.more", "Vairāk")} align="end">
               <button
@@ -551,6 +533,24 @@ function NavTreeSection({
               </button>
             </Tooltip>
           ) : null}
+
+          {leaf ? null : listAppearance || swapOnHover ? null : (
+            <Tooltip label={toggleLabel}>
+              <button
+                type="button"
+                aria-expanded={expanded}
+                aria-label={toggleLabel}
+                onClick={(event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  onToggle();
+                }}
+                className="relative z-10 pointer-events-none inline-flex size-6 shrink-0 items-center justify-center rounded text-zinc-400 opacity-0 transition group-hover/row:pointer-events-auto group-hover/row:opacity-100 group-focus-within/row:pointer-events-auto group-focus-within/row:opacity-100 hover:bg-zinc-200/80 hover:text-zinc-700"
+              >
+                <ToggleChevron expanded={expanded} />
+              </button>
+            </Tooltip>
+          )}
 
           {onAdd && addLabel && addAriaLabel ? (
             <Tooltip
