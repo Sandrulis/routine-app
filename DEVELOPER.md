@@ -597,7 +597,7 @@ app/
     i18n/                          # language, server overlay + table klientam
     site-admin/                   # Admin CRUD repository, tipi
     supabase/                     # env, browser/server/admin klienti, session refresh
-    auth/                         # actions (generateLink + Resend HTML), email-password, generate-strong-password, password-strength, auth-confirm-link, MFA (`getMfaGate`: AAL current/next + listFactors), OAuth, remember-session
+    auth/                         # actions (generateLink + Resend HTML), email-password, generate-strong-password, password-strength, auth-confirm-link, MFA (`getMfaGate`: enrolled TOTP via admin factors + JWT `amr`), OAuth, remember-session
     integrations/                 # Google/Microsoft OAuth (site_integrations); Stripe/Resend/Umami/Sentry/Turnstile; public-sign-in.ts / public-turnstile.ts RPC karogi
     users/ensure-profile.ts       # public.users rinda pēc OAuth
     users/display-name.ts         # vārda sadalījums/apvienošana (first + last → name)

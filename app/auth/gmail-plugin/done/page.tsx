@@ -57,6 +57,8 @@ export default async function GmailPluginDonePage({
       } = await supabase.auth.getUser();
       hasBrowserSession = Boolean(user?.id);
       if (user?.id) {
+        // Google OAuth mints an AAL1 magic-link session; JWT user.factors is
+        // often empty, so getMfaGate must look up TOTP via admin API.
         if ((await getMfaGate(supabase)) === "verify") {
           needsMfa = true;
         } else {

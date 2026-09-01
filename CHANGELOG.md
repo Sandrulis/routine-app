@@ -4,6 +4,10 @@
 
 - (none)
 
+## v0.3.34
+
+- Google / spraudņa ielogošanās ar ieslēgtu 2FA atkal prasa Authenticator kodu: TOTP meklē admin API, ne tukšajā JWT `factors` sarakstā
+
 ## v0.3.33
 
 - Gmail spraudnis `0.4.45`: Google ielogošanās ar 2FA atkal prasa Authenticator kodu; AAL1 sīkdatnes vairs neizlaiž TOTP soli

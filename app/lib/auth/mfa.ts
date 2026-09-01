@@ -16,17 +16,6 @@ type MfaClient = {
     getSession: () => Promise<{
       data: { session: { access_token: string } | null };
     }>;
-    mfa: {
-      getAuthenticatorAssuranceLevel: (jwt?: string) => Promise<{
-        data: {
-          currentLevel?: string | null;
-          nextLevel?: string | null;
-        } | null;
-      }>;
-      listFactors: () => Promise<{
-        data: { totp?: Array<{ status: string }> | null } | null;
-      }>;
-    };
   };
 };
 
@@ -36,21 +25,38 @@ export function userHasVerifiedTotp(factors?: MfaFactor[] | null): boolean {
   );
 }
 
-export function accessTokenAal(accessToken: string): string {
+function decodeJwtPayload(accessToken: string): {
+  aal?: string;
+  amr?: Array<{ method?: string } | string>;
+} | null {
   try {
-    const payload = JSON.parse(
+    return JSON.parse(
       atob(accessToken.split(".")[1]?.replace(/-/g, "+").replace(/_/g, "/") || ""),
-    ) as { aal?: string };
-    return String(payload.aal || "").trim();
+    ) as { aal?: string; amr?: Array<{ method?: string } | string> };
   } catch {
-    return "";
+    return null;
   }
+}
+
+export function accessTokenAal(accessToken: string): string {
+  return String(decodeJwtPayload(accessToken)?.aal || "").trim();
+}
+
+export function accessTokenHasTotpAmr(accessToken: string): boolean {
+  const amr = decodeJwtPayload(accessToken)?.amr;
+  if (!Array.isArray(amr)) return false;
+  return amr.some((entry) => {
+    const method = typeof entry === "string" ? entry : String(entry?.method || "");
+    return method === "totp";
+  });
 }
 
 async function adminUserHasVerifiedTotp(userId: string): Promise<boolean> {
   if (!userId || !isSupabaseAdminConfigured()) return false;
   try {
     const admin = createAdminClient();
+    const { data: listed } = await admin.auth.admin.mfa.listFactors({ userId });
+    if (userHasVerifiedTotp(listed?.factors)) return true;
     const { data } = await admin.auth.admin.getUserById(userId);
     return userHasVerifiedTotp(data.user?.factors);
   } catch {
@@ -58,20 +64,12 @@ async function adminUserHasVerifiedTotp(userId: string): Promise<boolean> {
   }
 }
 
-async function clientHasVerifiedTotp(
-  supabase: MfaClient,
-  user: { id: string; factors?: MfaFactor[] | null },
+export async function userHasEnrolledTotp(
+  user: { id?: string; factors?: MfaFactor[] | null } | null | undefined,
 ): Promise<boolean> {
+  if (!user?.id) return false;
   if (userHasVerifiedTotp(user.factors)) return true;
-  try {
-    const { data } = await supabase.auth.mfa.listFactors();
-    if ((data?.totp ?? []).some((factor) => factor.status === "verified")) {
-      return true;
-    }
-    return false;
-  } catch {
-    return adminUserHasVerifiedTotp(user.id);
-  }
+  return adminUserHasVerifiedTotp(user.id);
 }
 
 export async function accessTokenNeedsTotpChallenge(
@@ -79,9 +77,8 @@ export async function accessTokenNeedsTotpChallenge(
   accessToken: string,
 ): Promise<boolean> {
   if (!user?.id || !accessToken) return false;
-  if (accessTokenAal(accessToken) === "aal2") return false;
-  if (userHasVerifiedTotp(user.factors)) return true;
-  return adminUserHasVerifiedTotp(user.id);
+  if (accessTokenHasTotpAmr(accessToken)) return false;
+  return userHasEnrolledTotp(user);
 }
 
 export async function getMfaGate(supabase: MfaClient): Promise<MfaGate> {
@@ -96,11 +93,7 @@ export async function getMfaGate(supabase: MfaClient): Promise<MfaGate> {
   const jwt = session?.access_token;
   if (!jwt) return "ok";
 
-  // Pass the JWT so auth-js calls getUser(jwt) instead of reading session.user.
-  const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel(jwt);
-  if (aal?.currentLevel === "aal2") return "ok";
-  if (aal?.nextLevel === "aal2") return "verify";
-
-  if (await clientHasVerifiedTotp(supabase, user)) return "verify";
-  return "enroll";
+  if (!(await userHasEnrolledTotp(user))) return "enroll";
+  if (accessTokenHasTotpAmr(jwt) && accessTokenAal(jwt) === "aal2") return "ok";
+  return "verify";
 }
