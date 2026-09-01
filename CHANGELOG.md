@@ -4,6 +4,11 @@
 
 - (none)
 
+## v0.3.38
+
+- Early Bird pārsaukts uz Early access visā UI, legal tekstos, Stripe un docs (migrācija `130`)
+- SEO: login/signup `noindex`, īsākas legal/docs meta, sitemap `lastModified`, lokalizēts OG attēls, JSON-LD legal/docs lapām
+
 ## v0.3.37
 
 - Paziņojumi no visām komandām ar komandas nosaukumu; klikšķis pārslēdz aktīvo komandu un ved uz notikumu
@@ -142,7 +147,7 @@
 ## v0.3.10
 
 - Servera un personīgā laika josla (`/admin/settings`, `/settings/profile`); efektīvā josla lietotājs → serveris; datumi ar laiku timezone-aware
-- Terms §5 norēķini: vietu modelis, prorata, PVN, trial, Early Bird, atcelšana/atjaunošana; paplašināta privātuma politika; juridiskās personas lauki adminā (`115`)
+- Terms §5 norēķini: vietu modelis, prorata, PVN, trial, Early access, atcelšana/atjaunošana; paplašināta privātuma politika; juridiskās personas lauki adminā (`115`)
 - Laika joslu izvēlne kārtota pēc UTC nobīdes; blakus 12/24 h formātam; migrācija `116` lietotāja joslas notīrīšanai
 
 ## v0.3.9
@@ -204,7 +209,7 @@
 
 ## v0.3.0
 
-- Komandas vietu norēķini ar Stripe (`/team/billing`): vadītāja vieta bez maksas, samaksa pirms uzaicinājuma, Early Bird pool, `billing_due` / `seat_open`
+- Komandas vietu norēķini ar Stripe (`/team/billing`): vadītāja vieta bez maksas, samaksa pirms uzaicinājuma, Early access pool, `billing_due` / `seat_open`
 - Pilns tulkojumu komplekts visās 15 valodās; `npm run i18n:check` CI; noklusējuma lomu nosaukumi visās valodās (`member` = Lietotājs)
 - Google/Microsoft OAuth ielaiž esošu kontu ar to pašu verificēto e-pastu; Turnstile Google bez komandas
 - Uzdevuma galvenē `+` atver jauna apakšuzdevuma modāli; 404 → `/dashboard`
@@ -229,11 +234,11 @@
 - Stripe vietu norēķini (`/team/billing`): samaksa pirms piekļuves; noņemšana atstāj brīvu apmaksātu vietu līdz cikla beigām (vadītājam baneris un zvaniņa `seat_open`)
 - Kad maksas plāni ir ieslēgti, komandas vadītājam sānjoslā **aiz** Komanda rādās **Abonementi** (ne iekš koka); var iegādāties 1 vietu, un neizmantotā vieta nākamajā ciklā vairs nav
 - Komandas vadītāja vieta ir bez maksas; maksā tikai par vietām virs 1
-- Kad sistēma ieslēdz maksas plānus, komandām ar vairākiem lietotājiem vadītājs saņem paziņojumu par nākamā mēneša maksu un saiti uz `/team/billing`; pieejamās Early Bird vietas piešķir automātiski
+- Kad sistēma ieslēdz maksas plānus, komandām ar vairākiem lietotājiem vadītājs saņem paziņojumu par nākamā mēneša maksu un saiti uz `/team/billing`; pieejamās Early access vietas piešķir automātiski
 - Nederīga Stripe atslēga vairs nesalauž checkout - rāda kļūdu, ne runtime crash
 - Maksas plānus var ieslēgt tikai ar konfigurētu un ieslēgtu Stripe; jauns checkout tikai mēnesim un gadam (bez ceturkšņa)
-- Landing `#pricing` kartītes vienādā augstumā: pogas vienā līnijā; Early Bird un izmēģinājums kā birkas pie nosaukuma; bezmaksas plāns rāda `€ 0` un lietotāju limitu ar parakstu
-- Early Bird ir globāls vietu pool (`early_bird_limit` / `early_bird_claimed`): iegādātā vieta ir Early Bird, kamēr poolā ir vietas; neizmantota vieta cikla beigās pazūd un neatgriežas poolā; landing rāda atlicis / kopējais skaits
+- Landing `#pricing` kartītes vienādā augstumā: pogas vienā līnijā; Early access un izmēģinājums kā birkas pie nosaukuma; bezmaksas plāns rāda `€ 0` un lietotāju limitu ar parakstu
+- Early access ir globāls vietu pool (`early_bird_limit` / `early_bird_claimed`): iegādātā vieta ir Early access, kamēr poolā ir vietas; neizmantota vieta cikla beigās pazūd un neatgriežas poolā; landing rāda atlicis / kopējais skaits
 
 ## v0.2.40
 
@@ -498,7 +503,7 @@
 
 **Maksas plāni**
 
-- Admin `/admin/payment-plans` (apakšizvēlne pie `is_admin`) — globāls katalogs: ieslēgums, izmēģinājums jaunām komandām, Early Bird slotu limīts, opcionālas mēneša/ceturkšņa/gada un Early Bird cenas (EUR), frontend moduļi katrā plānā
+- Admin `/admin/payment-plans` (apakšizvēlne pie `is_admin`) — globāls katalogs: ieslēgums, izmēģinājums jaunām komandām, Early access slotu limīts, opcionālas mēneša/ceturkšņa/gada un Early access cenas (EUR), frontend moduļi katrā plānā
 - Migrācija `062` (`site_payment_plans`, `site_payment_plan_modules`, `teams` plāna kolonnas); ieslēgums vēl neierobežo lietotnes moduļus un komandai plānu piešķir UI vēl nav
 
 **Tiešsaiste**

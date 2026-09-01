@@ -19,17 +19,17 @@ import { brandImageMime, siteHeadIconUrl } from "@/app/lib/site-admin/branding";
 import { getSiteSettings } from "@/app/lib/site-admin/repository";
 import { isDocsEnabled } from "@/app/lib/docs/repository";
 import { getEffectiveDisplayPreferences, getCurrentUserDisplayPreferences } from "@/app/lib/users/display-preferences";
-import { htmlLang, ogLocale as openGraphLocale } from "@/app/lib/seo/locale-path";
+import { htmlLang, ogAlternateLocales, ogLocale as openGraphLocale } from "@/app/lib/seo/locale-path";
+import {
+  getGoogleSiteVerification,
+  getPublicSiteUrl,
+} from "@/app/lib/seo/site-url";
 import {
   OG_IMAGE_PATH,
   OG_IMAGE_SIZE,
   OG_IMAGE_TYPE,
   TWITTER_IMAGE_PATH,
 } from "@/app/lib/seo/share-image";
-import {
-  getGoogleSiteVerification,
-  getPublicSiteUrl,
-} from "@/app/lib/seo/site-url";
 import { INDEX_ROBOTS } from "@/app/lib/seo/metadata";
 import "./fontawesome.css";
 import "./fontawesome-brands.css";
@@ -75,6 +75,7 @@ export async function generateMetadata(): Promise<Metadata> {
     openGraph: {
       type: "website",
       locale: ogLocale,
+      alternateLocale: ogAlternateLocales(languageCode),
       siteName: systemName,
       title: systemName,
       description: slogan,

@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { getRequestLanguageCode } from "@/app/lib/i18n/server";
 import { type LanguageCode } from "@/app/lib/i18n/language";
+import { resolveSystemName } from "@/app/lib/document-title";
+import { getSiteSettings } from "@/app/lib/site-admin/repository";
 import {
   hreflangMap as buildHreflangMap,
   localePath,
@@ -63,15 +65,21 @@ export async function canonicalMetadata(
     ogDescription?: string;
     languageCode?: LanguageCode;
     index?: boolean;
+    /** Emit hreflang alternates. Default true; set false for noindex auth pages. */
+    hreflang?: boolean;
   },
 ): Promise<Metadata> {
   const languageCode = extras?.languageCode ?? (await getRequestLanguageCode());
   const localizedPath = localePath(path, languageCode);
   const url = absoluteUrl(localizedPath);
-  const languages = hreflangMap(path);
+  const includeHreflang = extras?.hreflang !== false && extras?.index !== false;
+  const languages = includeHreflang ? hreflangMap(path) : undefined;
   const title = extras?.titleAbsolute || extras?.title;
-  const images = shareImages(title || "TASQIN");
+  const settings = await getSiteSettings();
+  const siteName = resolveSystemName(settings.systemName);
+  const images = shareImages(title || siteName);
   const shareDescription = extras?.ogDescription ?? extras?.description;
+  const indexed = extras?.index !== false;
 
   return {
     ...(extras?.titleAbsolute
@@ -82,12 +90,13 @@ export async function canonicalMetadata(
     ...(extras?.description ? { description: extras.description } : {}),
     alternates: {
       canonical: url,
-      languages,
+      ...(languages ? { languages } : {}),
     },
-    robots: extras?.index === false ? NO_INDEX_ROBOTS : INDEX_ROBOTS,
+    robots: indexed ? INDEX_ROBOTS : NO_INDEX_ROBOTS,
     openGraph: {
       type: "website",
       url,
+      siteName,
       locale: ogLocale(languageCode),
       alternateLocale: ogAlternateLocales(languageCode),
       images: images.openGraph,

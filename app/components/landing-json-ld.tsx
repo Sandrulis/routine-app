@@ -152,7 +152,15 @@ export async function LandingJsonLd() {
         description,
         inLanguage: language,
         publisher: { "@id": organizationId },
-        ...(docsCollection ? { hasPart: { "@id": `${docsUrl}#documentation` } } : {}),
+        ...(docsCollection
+          ? {
+              hasPart: { "@id": `${docsUrl}#documentation` },
+              potentialAction: {
+                "@type": "ReadAction",
+                target: docsUrl,
+              },
+            }
+          : {}),
       },
       {
         "@type": "SoftwareApplication",

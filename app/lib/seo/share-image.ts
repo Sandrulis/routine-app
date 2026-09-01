@@ -1,4 +1,4 @@
-export const OG_IMAGE_ALT = "TASQIN";
+export const OG_IMAGE_ALT = "TASQIN — team task management for small and growing teams";
 
 export const OG_IMAGE_SIZE = {
   width: 1200,

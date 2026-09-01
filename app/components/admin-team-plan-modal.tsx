@@ -259,7 +259,7 @@ export function AdminTeamPlanModal({
           <p className="rounded-xl border border-zinc-100 bg-zinc-50 px-4 py-3 text-xs text-zinc-600">
             {t(
               "admin.teams.plan.early_bird_seats",
-              "Early Bird vietas: {count}",
+              "Early access vietas: {count}",
               { count: formatInteger(team.earlyBirdSeatCount) },
             )}
           </p>

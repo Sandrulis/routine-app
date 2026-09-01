@@ -6,13 +6,19 @@ import { absoluteUrl, PUBLIC_SITEMAP_PATHS } from "@/app/lib/seo/site-url";
 
 function sitemapEntry(
   path: string,
-  extras?: { changeFrequency?: MetadataRoute.Sitemap[number]["changeFrequency"]; priority?: number },
+  extras?: {
+    changeFrequency?: MetadataRoute.Sitemap[number]["changeFrequency"];
+    priority?: number;
+    lastModified?: Date;
+  },
 ): MetadataRoute.Sitemap {
   const languages = hreflangMap(path, absoluteUrl);
+  const lastModified = extras?.lastModified ?? new Date();
   return SUPPORTED_LANGUAGES.map((language) => {
     const localized = localePath(path, language.code);
     return {
       url: absoluteUrl(localized),
+      lastModified,
       changeFrequency: extras?.changeFrequency ?? (path === "/" ? "weekly" : "monthly"),
       priority: extras?.priority ?? (path === "/" ? 1 : 0.5),
       alternates: { languages },

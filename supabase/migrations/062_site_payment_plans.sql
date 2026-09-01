@@ -1,4 +1,4 @@
--- Payment plans catalog: global toggle, trial, Early Bird limit,
+-- Payment plans catalog: global toggle, trial, Early access limit,
 -- plan prices, and which frontend modules each plan includes.
 -- Authenticated admins write; anyone can read (landing pricing later).
 

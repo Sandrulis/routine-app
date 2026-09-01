@@ -1,1 +1,1 @@
-TASQIN — komandas uzdevumu pārvaldība
+TASQIN — team task management for small and growing teams

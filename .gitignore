@@ -11,3 +11,7 @@ next-env.d.ts
 *.tsbuildinfo
 *.code-workspace
 .tmp-docs-*.json
+
+# Lokāli / nejauši pievienoti faili
+stripe_backup_code.txt
+ChatGPT Image*.png

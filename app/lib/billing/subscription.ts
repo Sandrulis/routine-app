@@ -205,7 +205,7 @@ export function recurringPriceData(
     product_data: {
       name: name
         ? options.earlyBird
-          ? `${name} Early Bird`
+          ? `${name} Early access`
           : name
         : plan.planKey,
       // SaaS — business use (team seats).

@@ -14,6 +14,7 @@ export async function generateMetadata(): Promise<Metadata> {
     title: t("auth.login.title", "Ienākt"),
     description: t("auth.login.subtitle", "Pieslēdzies savam {SYSTEM_NAME} kontam."),
     index: false,
+    hreflang: false,
   });
 }
 

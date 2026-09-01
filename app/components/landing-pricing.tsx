@@ -104,7 +104,7 @@ export function LandingPricing({
           <p className="mt-3 text-sm font-medium text-emerald-800">
             {t(
               "landing.pricing.early_bird_left",
-              "Early Bird: {remaining} / {limit}",
+              "Early access: {remaining} / {limit}",
               {
                 remaining: formatInteger(earlyBirdRemaining),
                 limit: formatInteger(earlyBirdLimit),
@@ -190,7 +190,7 @@ export function LandingPricing({
                   ) : null}
                   {showEarly ? (
                     <span className="rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold tracking-wide text-emerald-800 uppercase">
-                      {t("site_payment_plans.early_bird.section", "Early Bird")}
+                      {t("site_payment_plans.early_bird.section", "Early access")}
                     </span>
                   ) : null}
                   {isTrialPlan ? (

@@ -18,6 +18,7 @@ export async function generateMetadata(): Promise<Metadata> {
       "Izveido kontu un sāc darbu ar komandu.",
     ),
     index: false,
+    hreflang: false,
   });
 }
 

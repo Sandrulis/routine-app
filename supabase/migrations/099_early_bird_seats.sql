@@ -1,4 +1,4 @@
--- Early Bird is a global pool of seats, not teams. Claimed seats stay
+-- Early access is a global pool of seats, not teams. Claimed seats stay
 -- consumed if a team drops an unused seat at cycle end.
 
 alter table public.site_settings
