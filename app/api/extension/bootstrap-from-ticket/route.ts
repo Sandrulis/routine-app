@@ -4,10 +4,7 @@ import {
 } from "@/app/lib/extension/cors";
 import { parseGmailBridgeTicket } from "@/app/lib/extension/gmail-bridge-ticket";
 import { supabaseAuthCookieName } from "@/app/lib/extension/cookie-name";
-import {
-  accessTokenNeedsTotpChallenge,
-  userHasEnrolledTotp,
-} from "@/app/lib/auth/mfa";
+import { accessTokenNeedsTotpChallenge } from "@/app/lib/auth/mfa";
 import { mintIndependentPluginSession } from "@/app/lib/extension/mint-plugin-session";
 import { getExtensionAuth } from "@/app/lib/extension/auth";
 import { requestClientIp } from "@/app/lib/security/client-ip";
@@ -94,20 +91,12 @@ export async function POST(request: Request) {
     );
   }
 
-  const enrolled = await userHasEnrolledTotp({ id: ticket.userId });
   const minted = await mintIndependentPluginSession(ticket.userId);
-  const session =
-    minted ?? (enrolled ? null : await refreshWithToken(ticket.refreshToken));
+  const session = minted ?? (await refreshWithToken(ticket.refreshToken));
   if (!session) {
     return extensionJson(
       request,
-      {
-        ok: false,
-        error: enrolled
-          ? "errors.extension_login_mfa"
-          : "errors.extension_auth_required",
-        needsMfa: enrolled,
-      },
+      { ok: false, error: "errors.extension_auth_required" },
       { status: 401 },
     );
   }

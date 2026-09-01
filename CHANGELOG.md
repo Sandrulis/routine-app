@@ -4,6 +4,10 @@
 
 - (none)
 
+## v0.3.36
+
+- Gmail spraudnis `0.4.47`: done lapa rāda zaļo stāvokli tikai pēc sesijas saglabāšanas; TOTP lietotājiem ticket bootstrap atkal izmanto post-MFA refresh token
+
 ## v0.3.35
 
 - Gmail spraudnis `0.4.46`: Google ielogošanās vienmēr atver OAuth; veca AAL1 sesija vairs neizlaiž Google lapu un MFA soli

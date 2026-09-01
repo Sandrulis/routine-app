@@ -1828,14 +1828,13 @@ async function handlePluginDoneTab(tabId, url) {
   }
   await markPluginSignedIn();
   await injectPluginAuth(tabId);
-  const painted = await paintDoneTabIfReady(tabId);
   const origin = await captureSessionFromDone(href, "", null, "", tabId);
   if (origin) {
     await paintDoneTabIfReady(tabId);
     await publishSessionUpdate(true);
     return true;
   }
-  return painted;
+  return false;
 }
 
 async function handleOpenDoneTabs() {
@@ -2180,21 +2179,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         }
         await markPluginSignedIn();
         const ticket = String(message.bootstrapTicket || "").trim();
-        const stashed = ticket ? await stashPendingBootstrap(url, ticket) : false;
-        if (stashed) {
-          sendResponse({ ok: true });
-          void markDoneTabReady(sender.tab?.id);
-          void (async () => {
-            const origin = await captureSessionFromDone(
-              url,
-              message.cookieHeader,
-              message.session,
-              ticket,
-              sender.tab?.id,
-            );
-            if (origin) await publishSessionUpdate(true);
-          })();
-          return;
+        if (ticket) {
+          await stashPendingBootstrap(url, ticket);
         }
         const origin = await captureSessionFromDone(
           url,

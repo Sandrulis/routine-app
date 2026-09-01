@@ -37,12 +37,6 @@
   });
 
   if (window.__routineGmailPluginAuthStarted) {
-    const marker = document.querySelector("[data-routine-gmail-plugin]");
-    const state = marker?.getAttribute("data-routine-gmail-plugin") || "";
-    const ticket = marker?.getAttribute("data-routine-bootstrap-ticket")?.trim();
-    if ((state === "logged-in" || state === "connected") && ticket) {
-      markReady();
-    }
     return;
   }
   window.__routineGmailPluginAuthStarted = true;
@@ -85,7 +79,6 @@
 
     const bootstrapTicket =
       marker.getAttribute("data-routine-bootstrap-ticket")?.trim() || "";
-    if (bootstrapTicket) markReady();
 
     if (window.__routineGmailPluginAuthSent) return;
     window.__routineGmailPluginAuthSent = true;
