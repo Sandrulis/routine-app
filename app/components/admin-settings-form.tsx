@@ -274,7 +274,7 @@ export function AdminSettingsForm({
                 <p className={hintClassName}>
                   {t(
                     "site_settings.form.legal_entity_name_hint",
-                    "Piem., SIA nosaukums. Rāda privātuma politikā kā datu pārzini.",
+                    "Piem., SIA nosaukums. Kopā ar reģistrācijas numuru un adresi rāda privātuma politikā un lietošanas noteikumos.",
                   )}
                 </p>
               </div>

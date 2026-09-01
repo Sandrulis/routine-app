@@ -244,9 +244,14 @@
   "legal.privacy.changes.p1": "If this policy changes in a material way, we will update this page and the date. Continuing to use {SYSTEM_NAME} after a change means you accept the updated policy to the extent allowed by applicable law.",
   "legal.terms.title": "Terms of use",
   "legal.terms.intro": "These terms govern use of the {SYSTEM_NAME} website, app and Chrome Gmail extension. By signing up, signing in with email or OAuth (Google/Microsoft), you confirm that you have read and accept them. If you do not agree, please do not use the service.",
+  "legal.terms.intro_entity": "These Terms of Use and Billing (hereinafter - the Terms) set out how the user uses the web platform and digital services (hereinafter - the System) developed by {ENTITY_IDENTITY}. By using the System, the user confirms that they have read, understood and agree to these Terms.",
   "legal.terms.service.title": "1. Service",
   "legal.terms.service.p1": "{SYSTEM_NAME} is a team work tool for lists, tasks, files and collaboration. We provide access to the software as it stands (as is) so you and your team can plan and finish work.",
   "legal.terms.service.p2": "We may improve, add or discontinue features when needed for product development or security. We will announce material changes on the site or by email.",
+  "legal.terms.service.p1_entity": "1.1. The System is provided by {ENTITY_NAME} (hereinafter - the Service Provider).",
+  "legal.terms.service.p2_entity": "1.2. The Terms apply to both natural and legal persons, regardless of how they access the System (online, via API or otherwise).",
+  "legal.terms.service.p3_entity": "1.3. The Service Provider reserves the right to change the System's functionality, prices, plans or service structure at any time.",
+  "legal.terms.service.p4_entity": "1.4. Changes take effect when they are published on {SITE_HOST}.",
   "legal.terms.account.title": "2. Account",
   "legal.terms.account.p1": "An account may be created by a person who is at least 16 and able to enter a contract. You agree to provide accurate details and keep your email address current.",
   "legal.terms.account.p2": "You are responsible for keeping your password secret and for all activity from your account. If you suspect unauthorised access, change the password at once and contact us.",
@@ -2090,7 +2095,7 @@
   "legal.cookies.local_storage.p2": "You can clear localStorage in browser settings; some preferences may be lost, but account data remains on the server.",
   "legal.cookies.local_storage.title": "7. Local storage (localStorage)",
   "site_settings.form.legal_entity_name": "Legal entity name",
-  "site_settings.form.legal_entity_name_hint": "E.g. company name. Shown in the privacy policy as the data controller.",
+  "site_settings.form.legal_entity_name_hint": "E.g. company name. Together with registration number and address, shown in the privacy policy and terms of use.",
   "site_settings.form.legal_entity_reg_no": "Registration number",
   "site_settings.form.legal_entity_address": "Registered address"
 }

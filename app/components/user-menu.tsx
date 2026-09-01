@@ -12,7 +12,7 @@ import { OverflowTooltip } from "@/app/components/tooltip";
 import { UserAvatar } from "@/app/components/user-avatar";
 import { userHasPasswordLogin } from "@/app/lib/auth/map-user-display";
 import { useAuthSession } from "@/app/lib/auth/use-auth-session";
-import { createClient } from "@/app/lib/supabase/client";
+import { signOutWebsiteLocally } from "@/app/lib/auth/sign-out-website";
 import { isSupabaseConfigured } from "@/app/lib/supabase/env";
 import { useTeam } from "@/app/lib/team-store";
 import { isCalendarIntegrationVisible } from "@/app/lib/frontend-modules/keys";
@@ -233,14 +233,14 @@ export function UserMenu({ user }: { user: TeamMember }) {
               closeAnd(() => {
                 void (async () => {
                   if (isSupabaseConfigured()) {
-                    // Local only: keep Gmail plugin refresh token / chrome.storage session.
-                    await createClient().auth.signOut({ scope: "local" });
+                    await signOutWebsiteLocally();
                   }
                   showFeedback({
                     type: "info",
                     text: t("user_menu.sign_out_done", "Tu izgāji no sistēmas."),
                   });
                   router.push("/");
+                  router.refresh();
                 })();
               })
             }

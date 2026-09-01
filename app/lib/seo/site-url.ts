@@ -85,6 +85,12 @@ function apexHost(host: string): string {
   return host.replace(/^www\./i, "");
 }
 
+/** Hostname for legal text, e.g. `tasqin.com` (no protocol, no www). */
+export function getPublicSiteHost(): string {
+  const host = hostnameOf(getPublicSiteUrl());
+  return host ? apexHost(host) : "";
+}
+
 function isLocalHost(host: string): boolean {
   return host === "localhost" || host === "127.0.0.1";
 }

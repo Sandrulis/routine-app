@@ -1632,7 +1632,7 @@
   "site_settings.form.legal_email_hint": "Shown in the privacy policy and terms for data processing and legal contact.",
   "site_settings.form.legal_entity_address": "Registered address",
   "site_settings.form.legal_entity_name": "Legal entity name",
-  "site_settings.form.legal_entity_name_hint": "E.g. company name. Shown in the privacy policy as the data controller.",
+  "site_settings.form.legal_entity_name_hint": "Nt ettevõtte nimi. Koos registrinumbri ja aadressiga kuvatakse privaatsuspoliitikas ja kasutustingimustes.",
   "site_settings.form.legal_entity_reg_no": "Registration number",
   "site_settings.form.logo": "Logo",
   "site_settings.form.logo_color_hint": "Kui logo pole üles laaditud, kasutab avatar süsteemi initsiaale valitud taustal.",
@@ -2092,5 +2092,10 @@
   "user_menu.settings_hint": "Profiil ja kuupäeva kuvamine",
   "user_menu.sign_out": "Logi välja",
   "user_menu.sign_out_done": "Logisid välja.",
-  "user_menu.sign_out_hint": "Logi süsteemist välja"
+  "user_menu.sign_out_hint": "Logi süsteemist välja",
+  "legal.terms.intro_entity": "Käesolevad kasutus- ja arveldustingimused (edaspidi - Tingimused) määravad, kuidas kasutaja kasutab {ENTITY_IDENTITY} loodud veebiplatvormi ja digiteenuseid (edaspidi - Süsteem). Süsteemi kasutades kinnitab kasutaja, et on Tingimused läbi lugenud, neist aru saanud ja nendega nõustunud.",
+  "legal.terms.service.p1_entity": "1.1. Süsteemi pakub {ENTITY_NAME} (edaspidi - Teenuseosutaja).",
+  "legal.terms.service.p2_entity": "1.2. Tingimused kehtivad nii füüsilistele kui juriidilistele isikutele sõltumata juurdepääsu viisist (veebis, API kaudu või muul viisil).",
+  "legal.terms.service.p3_entity": "1.3. Teenuseosutaja jätab endale õiguse igal ajal muuta Süsteemi funktsioone, hindu, plaane või teenuste struktuuri.",
+  "legal.terms.service.p4_entity": "1.4. Muudatused jõustuvad hetkel, mil need on avaldatud saidil {SITE_HOST}."
 }

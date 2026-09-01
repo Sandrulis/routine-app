@@ -1632,7 +1632,7 @@ export const sv: Record<string, string> = {
   "site_settings.form.legal_email_hint": "Shown in the privacy policy and terms for data processing and legal contact.",
   "site_settings.form.legal_entity_address": "Registered address",
   "site_settings.form.legal_entity_name": "Legal entity name",
-  "site_settings.form.legal_entity_name_hint": "E.g. company name. Shown in the privacy policy as the data controller.",
+  "site_settings.form.legal_entity_name_hint": "T.ex. bolagsnamn. Tillsammans med organisationsnummer och adress visas i integritetspolicyn och användarvillkoren.",
   "site_settings.form.legal_entity_reg_no": "Registration number",
   "site_settings.form.logo": "Logo",
   "site_settings.form.logo_color_hint": "If no logo is uploaded, the avatar uses system initials on the chosen background.",
@@ -2093,4 +2093,9 @@ export const sv: Record<string, string> = {
   "user_menu.sign_out": "Sign out",
   "user_menu.sign_out_done": "You signed out.",
   "user_menu.sign_out_hint": "Sign out of the system",
+  "legal.terms.intro_entity": "Dessa användar- och betalningsvillkor (nedan - Villkoren) anger hur användaren använder den webbplattform och de digitala tjänster (nedan - Systemet) som utvecklats av {ENTITY_IDENTITY}. Genom att använda Systemet bekräftar användaren att hen har läst, förstått och godkänt Villkoren.",
+  "legal.terms.service.p1_entity": "1.1. Systemet tillhandahålls av {ENTITY_NAME} (nedan - Tjänsteleverantören).",
+  "legal.terms.service.p2_entity": "1.2. Villkoren gäller både fysiska och juridiska personer oavsett åtkomstväg (online, via API eller på annat sätt).",
+  "legal.terms.service.p3_entity": "1.3. Tjänsteleverantören förbehåller sig rätten att när som helst ändra Systemets funktioner, priser, abonnemang eller struktur.",
+  "legal.terms.service.p4_entity": "1.4. Ändringar träder i kraft när de publiceras på {SITE_HOST}.",
 };

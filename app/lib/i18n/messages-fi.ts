@@ -1632,7 +1632,7 @@ export const fi: Record<string, string> = {
   "site_settings.form.legal_email_hint": "Shown in the privacy policy and terms for data processing and legal contact.",
   "site_settings.form.legal_entity_address": "Registered address",
   "site_settings.form.legal_entity_name": "Legal entity name",
-  "site_settings.form.legal_entity_name_hint": "E.g. company name. Shown in the privacy policy as the data controller.",
+  "site_settings.form.legal_entity_name_hint": "Esim. yrityksen nimi. Näkyy yhdessä rekisterinumeron ja osoitteen kanssa tietosuojakäytännössä ja käyttöehdoissa.",
   "site_settings.form.legal_entity_reg_no": "Registration number",
   "site_settings.form.logo": "Logo",
   "site_settings.form.logo_color_hint": "Jos logoa ei ole ladattu, avatar käyttää järjestelmän nimikirjaimia valitulla taustalla.",
@@ -2093,4 +2093,9 @@ export const fi: Record<string, string> = {
   "user_menu.sign_out": "Kirjaudu ulos",
   "user_menu.sign_out_done": "Kirjauduit ulos.",
   "user_menu.sign_out_hint": "Kirjaudu ulos järjestelmästä",
+  "legal.terms.intro_entity": "Nämä käyttö- ja laskutusehdot (jäljempänä - Ehdot) määrittävät, miten käyttäjä käyttää {ENTITY_IDENTITY} kehittämää verkkopalvelua ja digitaalisia palveluita (jäljempänä - Järjestelmä). Käyttämällä Järjestelmää käyttäjä vahvistaa lukeneensa, ymmärtäneensä ja hyväksyvänsä nämä Ehdot.",
+  "legal.terms.service.p1_entity": "1.1. Järjestelmän tarjoaa {ENTITY_NAME} (jäljempänä - Palveluntarjoaja).",
+  "legal.terms.service.p2_entity": "1.2. Ehdot koskevat sekä luonnollisia että oikeushenkilöitä riippumatta yhteystavasta (verkossa, API:n kautta tai muuten).",
+  "legal.terms.service.p3_entity": "1.3. Palveluntarjoaja pidättää oikeuden milloin tahansa muuttaa Järjestelmän toimintoja, hintoja, tilauksia tai rakennetta.",
+  "legal.terms.service.p4_entity": "1.4. Muutokset tulevat voimaan, kun ne on julkaistu osoitteessa {SITE_HOST}.",
 };

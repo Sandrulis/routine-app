@@ -111,6 +111,37 @@ export function toResponseCookieOptions(options?: CookieOptions) {
   return next;
 }
 
+function isWebsiteAuthCookieName(name: string): boolean {
+  return name === REMEMBER_SESSION_COOKIE || name.includes("-auth-token");
+}
+
+/** Clear Supabase auth cookies without revoking refresh tokens on the server. */
+export function clearBrowserAuthCookies() {
+  if (typeof document === "undefined") return;
+  const secure =
+    typeof window !== "undefined" && window.location.protocol === "https:";
+  const names = document.cookie.split("; ").flatMap((part) => {
+    const separator = part.indexOf("=");
+    if (separator < 0) return [];
+    const raw = part.slice(0, separator);
+    try {
+      return [decodeURIComponent(raw)];
+    } catch {
+      return [raw];
+    }
+  });
+  for (const name of names) {
+    if (!isWebsiteAuthCookieName(name)) continue;
+    serializeBrowserAuthCookie(name, "", {
+      path: "/",
+      maxAge: 0,
+      expires: new Date(0),
+      sameSite: "lax",
+      secure,
+    });
+  }
+}
+
 export function serializeBrowserAuthCookie(
   name: string,
   value: string,

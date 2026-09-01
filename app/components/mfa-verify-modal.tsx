@@ -6,6 +6,7 @@ import { AppModal } from "@/app/components/app-modal";
 import { useFeedbackToast } from "@/app/components/feedback-toast-provider";
 import { useTranslations } from "@/app/components/translations-provider";
 import { getSafeRedirectPath } from "@/app/lib/security/safe-redirect-path";
+import { signOutWebsiteLocally } from "@/app/lib/auth/sign-out-website";
 import { createClient } from "@/app/lib/supabase/client";
 import { isSupabaseConfigured } from "@/app/lib/supabase/env";
 
@@ -45,8 +46,7 @@ export function MfaVerifyModal({
 
   async function leave() {
     if (isLogin) {
-      const supabase = createClient();
-      await supabase.auth.signOut({ scope: "local" });
+      await signOutWebsiteLocally();
       router.push("/login");
       router.refresh();
       return;

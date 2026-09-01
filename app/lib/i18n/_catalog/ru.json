@@ -1632,7 +1632,7 @@
   "site_settings.form.legal_email_hint": "Shown in the privacy policy and terms for data processing and legal contact.",
   "site_settings.form.legal_entity_address": "Registered address",
   "site_settings.form.legal_entity_name": "Legal entity name",
-  "site_settings.form.legal_entity_name_hint": "E.g. company name. Shown in the privacy policy as the data controller.",
+  "site_settings.form.legal_entity_name_hint": "Например, название SIA. Вместе с регистрационным номером и адресом отображается в политике конфиденциальности и условиях использования.",
   "site_settings.form.legal_entity_reg_no": "Registration number",
   "site_settings.form.logo": "Логотип",
   "site_settings.form.logo_color_hint": "Если логотип не загружен, аватар показывает инициалы системы на выбранном фоне.",
@@ -2092,5 +2092,10 @@
   "user_menu.settings_hint": "Профиль и отображение дат",
   "user_menu.sign_out": "Выйти",
   "user_menu.sign_out_done": "Вы вышли из системы.",
-  "user_menu.sign_out_hint": "Выйти из системы"
+  "user_menu.sign_out_hint": "Выйти из системы",
+  "legal.terms.intro_entity": "Настоящие Условия использования и расчётов (далее - Условия) определяют порядок, в котором пользователь использует веб-платформу и цифровые услуги (далее - Система), разработанные {ENTITY_IDENTITY}. Используя Систему, пользователь подтверждает, что прочитал, понял и согласен с этими Условиями.",
+  "legal.terms.service.p1_entity": "1.1. Систему предоставляет {ENTITY_NAME} (далее - Поставщик услуг).",
+  "legal.terms.service.p2_entity": "1.2. Условия применяются как к физическим, так и к юридическим лицам независимо от способа доступа (онлайн, через API или иным образом).",
+  "legal.terms.service.p3_entity": "1.3. Поставщик услуг оставляет за собой право в любое время изменять функциональность Системы, цены, тарифы или структуру услуг.",
+  "legal.terms.service.p4_entity": "1.4. Изменения вступают в силу с момента их публикации на сайте {SITE_HOST}."
 }

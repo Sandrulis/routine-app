@@ -22,6 +22,7 @@ export type LegalEntityInfo = {
   legalEntityName?: string;
   legalEntityRegNo?: string;
   legalEntityAddress?: string;
+  siteHost?: string;
 };
 
 type SectionSpec = {
@@ -45,19 +46,10 @@ function getUpdatedAt(t: Translate): string {
   return t("legal.common.updated_at", "26.08.26");
 }
 
-function buildControllerIdentity(t: Translate, entity: LegalEntityInfo): string {
-  const name = entity.legalEntityName?.trim() ?? "";
+function buildEntityDetails(t: Translate, entity: LegalEntityInfo): string[] {
+  const details: string[] = [];
   const regNo = entity.legalEntityRegNo?.trim() ?? "";
   const address = entity.legalEntityAddress?.trim() ?? "";
-
-  if (!name) {
-    return t(
-      "legal.privacy.controller.identity_provider",
-      "{SYSTEM_NAME} pakalpojuma sniedzējs",
-    );
-  }
-
-  const details: string[] = [name];
   if (regNo) {
     details.push(
       t("legal.privacy.controller.identity_reg", "reģ. nr. {REG_NO}", {
@@ -72,7 +64,31 @@ function buildControllerIdentity(t: Translate, entity: LegalEntityInfo): string 
       }),
     );
   }
-  return details.join(", ");
+  return details;
+}
+
+function buildControllerIdentity(t: Translate, entity: LegalEntityInfo): string {
+  const name = entity.legalEntityName?.trim() ?? "";
+  if (!name) {
+    return t(
+      "legal.privacy.controller.identity_provider",
+      "{SYSTEM_NAME} pakalpojuma sniedzējs",
+    );
+  }
+  return [name, ...buildEntityDetails(t, entity)].join(", ");
+}
+
+function hasNamedLegalEntity(entity: LegalEntityInfo): boolean {
+  return Boolean(entity.legalEntityName?.trim());
+}
+
+/** e.g. `Perfekti SIA (reģ. nr. 40203678637, juridiskā adrese: …)` */
+function buildProviderIdentity(t: Translate, entity: LegalEntityInfo): string {
+  const name = entity.legalEntityName?.trim() ?? "";
+  if (!name) return "";
+  const details = buildEntityDetails(t, entity);
+  if (details.length === 0) return name;
+  return `${name} (${details.join(", ")})`;
 }
 
 export function getPrivacyPolicyContent(
@@ -332,31 +348,74 @@ export function getTermsContent(
   const legalContact = email
     ? t("legal.terms.contact.email", " Raksti uz {LEGAL_EMAIL}.", { LEGAL_EMAIL: email })
     : "";
+  const entityName = entity.legalEntityName?.trim() ?? "";
+  const siteHost = entity.siteHost?.trim() ?? "";
+  const withProvider = hasNamedLegalEntity(entity);
+  const providerIdentity = withProvider ? buildProviderIdentity(t, entity) : "";
+
+  const intro = withProvider
+    ? t(
+        "legal.terms.intro_entity",
+        "Šie Lietošanas un norēķinu noteikumi (turpmāk - Noteikumi) nosaka kārtību, kādā lietotājs izmanto {ENTITY_IDENTITY} izstrādāto tīmekļa platformu un digitālos pakalpojumus (turpmāk - Sistēma). Izmantojot Sistēmu, lietotājs apliecina, ka ir izlasījis, sapratis un piekrīt šiem Noteikumiem.",
+        { ENTITY_IDENTITY: providerIdentity },
+      )
+    : t(
+        "legal.terms.intro",
+        "Šie noteikumi regulē {SYSTEM_NAME} vietnes, lietotnes un Chrome Gmail spraudņa lietošanu. Reģistrējoties, ienākot ar e-pastu vai OAuth (Google/Microsoft), tu apstiprini, ka esi tos izlasījis un piekrīti. Ja nepiekrīti, lūdzu, nelieto pakalpojumu.",
+      );
+
+  const serviceParagraphs: SectionSpec["paragraphs"] = withProvider
+    ? [
+        {
+          key: "legal.terms.service.p1_entity",
+          fallback: "1.1. Sistēmu nodrošina {ENTITY_NAME} (turpmāk - Pakalpojuma sniedzējs).",
+          params: { ENTITY_NAME: entityName },
+        },
+        {
+          key: "legal.terms.service.p2_entity",
+          fallback:
+            "1.2. Noteikumi piemērojami gan fiziskām, gan juridiskām personām neatkarīgi no piekļuves veida (tiešsaistē, API vai citādi).",
+        },
+        {
+          key: "legal.terms.service.p3_entity",
+          fallback:
+            "1.3. Pakalpojuma sniedzējs patur tiesības jebkurā laikā mainīt Sistēmas funkcionalitāti, cenas, plānus vai pakalpojumu struktūru.",
+        },
+        {
+          key: "legal.terms.service.p4_entity",
+          fallback:
+            "1.4. Izmaiņas stājas spēkā brīdī, kad tās ir publicētas vietnē {SITE_HOST}.",
+          params: { SITE_HOST: siteHost },
+        },
+        {
+          key: "legal.terms.service.p1",
+          fallback:
+            "{SYSTEM_NAME} ir komandas darba rīks sarakstiem, uzdevumiem, failiem un sadarbībai. Mēs sniedzam piekļuvi programmatūrai tādā stāvoklī, kādā tā ir (as is), lai tu un tava komanda varētu plānot un izpildīt darbu.",
+        },
+      ]
+    : [
+        {
+          key: "legal.terms.service.p1",
+          fallback:
+            "{SYSTEM_NAME} ir komandas darba rīks sarakstiem, uzdevumiem, failiem un sadarbībai. Mēs sniedzam piekļuvi programmatūrai tādā stāvoklī, kādā tā ir (as is), lai tu un tava komanda varētu plānot un izpildīt darbu.",
+        },
+        {
+          key: "legal.terms.service.p2",
+          fallback:
+            "Funkcijas varam uzlabot, papildināt vai pārtraukt, ja tas nepieciešams produkta attīstībai vai drošībai. Par būtiskām izmaiņām informēsim vietnē vai e-pastā.",
+        },
+      ];
 
   return {
     title: t("legal.terms.title", "Lietošanas noteikumi"),
-    intro: t(
-      "legal.terms.intro",
-      "Šie noteikumi regulē {SYSTEM_NAME} vietnes, lietotnes un Chrome Gmail spraudņa lietošanu. Reģistrējoties, ienākot ar e-pastu vai OAuth (Google/Microsoft), tu apstiprini, ka esi tos izlasījis un piekrīti. Ja nepiekrīti, lūdzu, nelieto pakalpojumu.",
-    ),
+    intro,
     updatedAt: getUpdatedAt(t),
     sections: buildSections(t, [
       {
         id: "service",
         titleKey: "legal.terms.service.title",
         titleFallback: "1. Pakalpojums",
-        paragraphs: [
-          {
-            key: "legal.terms.service.p1",
-            fallback:
-              "{SYSTEM_NAME} ir komandas darba rīks sarakstiem, uzdevumiem, failiem un sadarbībai. Mēs sniedzam piekļuvi programmatūrai tādā stāvoklī, kādā tā ir (as is), lai tu un tava komanda varētu plānot un izpildīt darbu.",
-          },
-          {
-            key: "legal.terms.service.p2",
-            fallback:
-              "Funkcijas varam uzlabot, papildināt vai pārtraukt, ja tas nepieciešams produkta attīstībai vai drošībai. Par būtiskām izmaiņām informēsim vietnē vai e-pastā.",
-          },
-        ],
+        paragraphs: serviceParagraphs,
       },
       {
         id: "account",

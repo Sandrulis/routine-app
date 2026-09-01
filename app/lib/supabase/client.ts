@@ -74,3 +74,7 @@ export function createClient() {
 
   return browserClient;
 }
+
+export function discardBrowserClient() {
+  browserClient = null;
+}

@@ -1632,7 +1632,7 @@ export const it: Record<string, string> = {
   "site_settings.form.legal_email_hint": "Shown in the privacy policy and terms for data processing and legal contact.",
   "site_settings.form.legal_entity_address": "Registered address",
   "site_settings.form.legal_entity_name": "Legal entity name",
-  "site_settings.form.legal_entity_name_hint": "E.g. company name. Shown in the privacy policy as the data controller.",
+  "site_settings.form.legal_entity_name_hint": "Es. ragione sociale. Insieme a numero di registrazione e indirizzo, compare nell'informativa sulla privacy e nei termini d'uso.",
   "site_settings.form.legal_entity_reg_no": "Registration number",
   "site_settings.form.logo": "Logo",
   "site_settings.form.logo_color_hint": "If no logo is uploaded, the avatar uses system initials on the chosen background.",
@@ -2093,4 +2093,9 @@ export const it: Record<string, string> = {
   "user_menu.sign_out": "Sign out",
   "user_menu.sign_out_done": "You signed out.",
   "user_menu.sign_out_hint": "Sign out of the system",
+  "legal.terms.intro_entity": "I presenti Termini di utilizzo e fatturazione (di seguito - i Termini) definiscono le modalità con cui l'utente utilizza la piattaforma web e i servizi digitali (di seguito - il Sistema) sviluppati da {ENTITY_IDENTITY}. Utilizzando il Sistema, l'utente conferma di aver letto, compreso e accettato i presenti Termini.",
+  "legal.terms.service.p1_entity": "1.1. Il Sistema è fornito da {ENTITY_NAME} (di seguito - il Fornitore del servizio).",
+  "legal.terms.service.p2_entity": "1.2. I Termini si applicano sia alle persone fisiche sia a quelle giuridiche, indipendentemente dalla modalità di accesso (online, tramite API o altrimenti).",
+  "legal.terms.service.p3_entity": "1.3. Il Fornitore del servizio si riserva il diritto di modificare in qualsiasi momento funzionalità, prezzi, piani o struttura del Sistema.",
+  "legal.terms.service.p4_entity": "1.4. Le modifiche hanno effetto dal momento in cui sono pubblicate su {SITE_HOST}.",
 };

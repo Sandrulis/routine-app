@@ -1632,7 +1632,7 @@
   "site_settings.form.legal_email_hint": "Shown in the privacy policy and terms for data processing and legal contact.",
   "site_settings.form.legal_entity_address": "Registered address",
   "site_settings.form.legal_entity_name": "Legal entity name",
-  "site_settings.form.legal_entity_name_hint": "E.g. company name. Shown in the privacy policy as the data controller.",
+  "site_settings.form.legal_entity_name_hint": "P. ej., nombre de la empresa. Junto con el número de registro y la dirección, se muestra en la política de privacidad y en las condiciones de uso.",
   "site_settings.form.legal_entity_reg_no": "Registration number",
   "site_settings.form.logo": "Logo",
   "site_settings.form.logo_color_hint": "Si no hay logo, el avatar usa las iniciales del sistema sobre el fondo elegido.",
@@ -2092,5 +2092,10 @@
   "user_menu.settings_hint": "Perfil y visualización de fechas",
   "user_menu.sign_out": "Cerrar sesión",
   "user_menu.sign_out_done": "Has cerrado la sesión.",
-  "user_menu.sign_out_hint": "Cierra la sesión del sistema"
+  "user_menu.sign_out_hint": "Cierra la sesión del sistema",
+  "legal.terms.intro_entity": "Estas Condiciones de uso y facturación (en adelante - las Condiciones) establecen cómo el usuario utiliza la plataforma web y los servicios digitales (en adelante - el Sistema) desarrollados por {ENTITY_IDENTITY}. Al usar el Sistema, el usuario confirma que ha leído, comprendido y acepta estas Condiciones.",
+  "legal.terms.service.p1_entity": "1.1. El Sistema lo proporciona {ENTITY_NAME} (en adelante - el Prestador del servicio).",
+  "legal.terms.service.p2_entity": "1.2. Las Condiciones se aplican a personas físicas y jurídicas, independientemente de cómo accedan al Sistema (en línea, mediante API u otro medio).",
+  "legal.terms.service.p3_entity": "1.3. El Prestador del servicio se reserva el derecho de cambiar en cualquier momento la funcionalidad, los precios, los planes o la estructura del Sistema.",
+  "legal.terms.service.p4_entity": "1.4. Los cambios entran en vigor cuando se publican en {SITE_HOST}."
 }

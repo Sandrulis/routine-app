@@ -1632,7 +1632,7 @@ export const fr: Record<string, string> = {
   "site_settings.form.legal_email_hint": "Shown in the privacy policy and terms for data processing and legal contact.",
   "site_settings.form.legal_entity_address": "Registered address",
   "site_settings.form.legal_entity_name": "Legal entity name",
-  "site_settings.form.legal_entity_name_hint": "E.g. company name. Shown in the privacy policy as the data controller.",
+  "site_settings.form.legal_entity_name_hint": "Ex. : raison sociale. Avec le numéro d'enregistrement et l'adresse, affiché dans la politique de confidentialité et les conditions d'utilisation.",
   "site_settings.form.legal_entity_reg_no": "Registration number",
   "site_settings.form.logo": "Logo",
   "site_settings.form.logo_color_hint": "Si aucun logo n'est téléversé, l'avatar utilise les initiales du système sur le fond choisi.",
@@ -2093,4 +2093,9 @@ export const fr: Record<string, string> = {
   "user_menu.sign_out": "Se déconnecter",
   "user_menu.sign_out_done": "Tu t'es déconnecté.",
   "user_menu.sign_out_hint": "Se déconnecter du système",
+  "legal.terms.intro_entity": "Les présentes Conditions d'utilisation et de facturation (ci-après - les Conditions) définissent les règles selon lesquelles l'utilisateur utilise la plateforme web et les services numériques (ci-après - le Système) développés par {ENTITY_IDENTITY}. En utilisant le Système, l'utilisateur confirme avoir lu, compris et accepté ces Conditions.",
+  "legal.terms.service.p1_entity": "1.1. Le Système est fourni par {ENTITY_NAME} (ci-après - le Prestataire).",
+  "legal.terms.service.p2_entity": "1.2. Les Conditions s'appliquent aux personnes physiques et morales, quel que soit le mode d'accès (en ligne, via API ou autrement).",
+  "legal.terms.service.p3_entity": "1.3. Le Prestataire se réserve le droit de modifier à tout moment les fonctionnalités, les prix, les offres ou la structure du Système.",
+  "legal.terms.service.p4_entity": "1.4. Les modifications prennent effet dès leur publication sur {SITE_HOST}.",
 };

@@ -4,6 +4,7 @@ import {
 } from "@/app/lib/extension/cors";
 import { parseGmailBridgeTicket } from "@/app/lib/extension/gmail-bridge-ticket";
 import { supabaseAuthCookieName } from "@/app/lib/extension/cookie-name";
+import { mintIndependentPluginSession } from "@/app/lib/extension/mint-plugin-session";
 import { getExtensionAuth } from "@/app/lib/extension/auth";
 import { requestClientIp } from "@/app/lib/security/client-ip";
 import { consumeRateLimit } from "@/app/lib/security/rate-limit";
@@ -89,7 +90,9 @@ export async function POST(request: Request) {
     );
   }
 
-  const session = await refreshWithToken(ticket.refreshToken);
+  const session =
+    (await mintIndependentPluginSession(ticket.userId)) ||
+    (await refreshWithToken(ticket.refreshToken));
   if (!session) {
     return extensionJson(
       request,

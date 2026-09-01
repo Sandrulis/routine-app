@@ -208,8 +208,9 @@ function sessionExpiryMs(session) {
 }
 
 /**
- * Website and plugin share one GoTrue refresh family. The later expires_at
- * is the session that last won rotation. On a tie keep `right` (stored).
+ * Prefer the plugin's own chrome.storage session. Website cookies are only
+ * a bootstrap when storage is empty — sharing a refresh token with the site
+ * would log the plugin out when the site calls /logout.
  */
 function pickFresherSession(left, right) {
   const a = sessionUsable(left) ? left : null;
@@ -779,6 +780,9 @@ async function readCookieSession(origin) {
 
 async function importSessionFromKnownCookies(preferredOrigin) {
   const stored = await readStoredSession();
+  if (stored && sessionUsable(stored.session)) {
+    return stored.appBase;
+  }
   const origins = unique([
     ...originsWithWwwFirst(preferredOrigin),
     ...(await originsFromAuthCookies()),
@@ -815,6 +819,26 @@ async function getAccessToken(appBase, options = {}) {
       ? stored.session
       : null;
 
+  if (sessionUsable(storedSession)) {
+    if (!sessionExpired(storedSession)) {
+      lastTokenRefreshReason = null;
+      return storedSession.access_token;
+    }
+    if (!allowRefresh) return storedSession.access_token || null;
+    const cooldownUntil = await readRefreshCooldown();
+    if (cooldownUntil > Date.now()) {
+      lastTokenRefreshReason = "invalid";
+      return null;
+    }
+    const refreshed = await refreshSession(
+      origin || stored.appBase,
+      storedSession,
+    );
+    if (refreshed.ok) return refreshed.session.access_token;
+    lastTokenRefreshReason = refreshed.reason || "invalid";
+    return null;
+  }
+
   const fromCookies = await readCookieSession(origin);
   const cookieMerged = fromCookies
     ? mergeSessionPreserveRefresh(fromCookies.session, storedSession)
@@ -835,12 +859,8 @@ async function getAccessToken(appBase, options = {}) {
 
   if (!allowRefresh) return null;
 
-  const cookieIsNewer =
-    chosenFromCookie &&
-    cookieMerged?.refresh_token &&
-    cookieMerged.refresh_token !== storedSession?.refresh_token;
   const cooldownUntil = await readRefreshCooldown();
-  if (cooldownUntil > Date.now() && !cookieIsNewer) {
+  if (cooldownUntil > Date.now()) {
     lastTokenRefreshReason = "invalid";
     return null;
   }
@@ -1857,9 +1877,10 @@ if (chrome.cookies?.onChanged) {
           : `${protocol}//${host}`;
       const origin = preferLiveOrigin(rawOrigin) || rawOrigin;
       if (!(await pluginCookieImportAllowed())) return;
+      const stored = await readStoredSession();
+      if (sessionUsable(stored?.session)) return;
       const { session } = await readSessionFromCookies(origin);
       if (!sessionUsable(session)) return;
-      const stored = await readStoredSession();
       const merged = mergeSessionPreserveRefresh(session, stored?.session);
       const chosen = pickFresherSession(merged, stored?.session);
       if (chosen && chosen !== stored?.session && sessionUsable(chosen)) {

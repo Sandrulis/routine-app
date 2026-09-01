@@ -1632,7 +1632,7 @@ export const pl: Record<string, string> = {
   "site_settings.form.legal_email_hint": "Shown in the privacy policy and terms for data processing and legal contact.",
   "site_settings.form.legal_entity_address": "Registered address",
   "site_settings.form.legal_entity_name": "Legal entity name",
-  "site_settings.form.legal_entity_name_hint": "E.g. company name. Shown in the privacy policy as the data controller.",
+  "site_settings.form.legal_entity_name_hint": "Np. nazwa spółki. Razem z numerem rejestrowym i adresem widoczna w polityce prywatności i regulaminie.",
   "site_settings.form.legal_entity_reg_no": "Registration number",
   "site_settings.form.logo": "Logo",
   "site_settings.form.logo_color_hint": "Jeśli nie ma logo, awatar używa inicjałów systemu na wybranym tle.",
@@ -2093,4 +2093,9 @@ export const pl: Record<string, string> = {
   "user_menu.sign_out": "Wyloguj się",
   "user_menu.sign_out_done": "Wylogowałeś się.",
   "user_menu.sign_out_hint": "Wyloguj się z systemu",
+  "legal.terms.intro_entity": "Niniejsze Warunki korzystania i rozliczeń (dalej - Warunki) określają zasady, na jakich użytkownik korzysta z platformy internetowej i usług cyfrowych (dalej - System) opracowanych przez {ENTITY_IDENTITY}. Korzystając z Systemu, użytkownik potwierdza, że przeczytał, zrozumiał i akceptuje te Warunki.",
+  "legal.terms.service.p1_entity": "1.1. System zapewnia {ENTITY_NAME} (dalej - Usługodawca).",
+  "legal.terms.service.p2_entity": "1.2. Warunki dotyczą zarówno osób fizycznych, jak i prawnych, niezależnie od sposobu dostępu (online, przez API lub w inny sposób).",
+  "legal.terms.service.p3_entity": "1.3. Usługodawca zastrzega sobie prawo do zmiany funkcjonalności, cen, planów lub struktury Systemu w dowolnym momencie.",
+  "legal.terms.service.p4_entity": "1.4. Zmiany wchodzą w życie z chwilą publikacji na stronie {SITE_HOST}.",
 };

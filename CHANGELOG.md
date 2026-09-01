@@ -4,6 +4,11 @@
 
 - (none)
 
+## v0.3.26
+
+- Lietošanas noteikumi rāda uzņēmuma nosaukumu, reģ. nr. un adresi no Admin uzstādījumiem
+- Vietnes **Iziet** vairs neizlogō Gmail spraudni; spraudnis `0.4.38` tur savu sesiju
+
 ## v0.3.25
 
 - npm ci / Vercel install: `sharp` override tagad seko tiešajai atkarībai (`$sharp`)

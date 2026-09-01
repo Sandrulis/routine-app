@@ -1632,7 +1632,7 @@ export const lt: Record<string, string> = {
   "site_settings.form.legal_email_hint": "Shown in the privacy policy and terms for data processing and legal contact.",
   "site_settings.form.legal_entity_address": "Registered address",
   "site_settings.form.legal_entity_name": "Legal entity name",
-  "site_settings.form.legal_entity_name_hint": "E.g. company name. Shown in the privacy policy as the data controller.",
+  "site_settings.form.legal_entity_name_hint": "Pvz., įmonės pavadinimas. Kartu su registracijos numeriu ir adresu rodoma privatumo politikoje ir naudojimo sąlygose.",
   "site_settings.form.legal_entity_reg_no": "Registration number",
   "site_settings.form.logo": "Logotipas",
   "site_settings.form.logo_color_hint": "Jei logotipas neįkeltas, avataras naudoja sistemos inicialus pasirinktame fone.",
@@ -2093,4 +2093,9 @@ export const lt: Record<string, string> = {
   "user_menu.sign_out": "Atsijungti",
   "user_menu.sign_out_done": "Atsijungėte.",
   "user_menu.sign_out_hint": "Atsijungti nuo sistemos",
+  "legal.terms.intro_entity": "Šios Naudojimo ir atsiskaitymo sąlygos (toliau - Sąlygos) nustato tvarką, pagal kurią naudotojas naudojasi {ENTITY_IDENTITY} sukurta interneto platforma ir skaitmeninėmis paslaugomis (toliau - Sistema). Naudodamasis Sistema naudotojas patvirtina, kad perskaitė, suprato ir sutinka su šiomis Sąlygomis.",
+  "legal.terms.service.p1_entity": "1.1. Sistemą teikia {ENTITY_NAME} (toliau - Paslaugų teikėjas).",
+  "legal.terms.service.p2_entity": "1.2. Sąlygos taikomos fiziniams ir juridiniams asmenims, nepriklausomai nuo prieigos būdo (internetu, per API ar kitaip).",
+  "legal.terms.service.p3_entity": "1.3. Paslaugų teikėjas pasilieka teisę bet kada keisti Sistemos funkcijas, kainas, planus ar paslaugų struktūrą.",
+  "legal.terms.service.p4_entity": "1.4. Pakeitimai įsigalioja, kai jie paskelbiami svetainėje {SITE_HOST}.",
 };

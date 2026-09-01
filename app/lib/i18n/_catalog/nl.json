@@ -1632,7 +1632,7 @@
   "site_settings.form.legal_email_hint": "Shown in the privacy policy and terms for data processing and legal contact.",
   "site_settings.form.legal_entity_address": "Registered address",
   "site_settings.form.legal_entity_name": "Legal entity name",
-  "site_settings.form.legal_entity_name_hint": "E.g. company name. Shown in the privacy policy as the data controller.",
+  "site_settings.form.legal_entity_name_hint": "Bijv. bedrijfsnaam. Samen met registratienummer en adres zichtbaar in het privacybeleid en de gebruiksvoorwaarden.",
   "site_settings.form.legal_entity_reg_no": "Registration number",
   "site_settings.form.logo": "Logo",
   "site_settings.form.logo_color_hint": "Als er geen logo is geüpload, gebruikt de avatar de systeeminitialen op de gekozen achtergrond.",
@@ -2092,5 +2092,10 @@
   "user_menu.settings_hint": "Profiel en datumweergave",
   "user_menu.sign_out": "Uitloggen",
   "user_menu.sign_out_done": "Je bent uitgelogd.",
-  "user_menu.sign_out_hint": "Uitloggen uit het systeem"
+  "user_menu.sign_out_hint": "Uitloggen uit het systeem",
+  "legal.terms.intro_entity": "Deze Gebruiks- en betalingsvoorwaarden (hierna - de Voorwaarden) bepalen hoe de gebruiker het webplatform en de digitale diensten (hierna - het Systeem) gebruikt die zijn ontwikkeld door {ENTITY_IDENTITY}. Door het Systeem te gebruiken bevestigt de gebruiker deze Voorwaarden te hebben gelezen, begrepen en te aanvaarden.",
+  "legal.terms.service.p1_entity": "1.1. Het Systeem wordt geleverd door {ENTITY_NAME} (hierna - de Dienstverlener).",
+  "legal.terms.service.p2_entity": "1.2. De Voorwaarden gelden voor natuurlijke en rechtspersonen, ongeacht de toegangswijze (online, via API of anderszins).",
+  "legal.terms.service.p3_entity": "1.3. De Dienstverlener behoudt zich het recht voor om functionaliteit, prijzen, abonnementen of de structuur van het Systeem op elk moment te wijzigen.",
+  "legal.terms.service.p4_entity": "1.4. Wijzigingen treden in werking zodra ze zijn gepubliceerd op {SITE_HOST}."
 }
