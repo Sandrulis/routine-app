@@ -709,6 +709,7 @@
   "extension.gmail.progress_upload": "Saving to {SYSTEM_NAME} ({count})…",
   "extension.gmail.reconnect_gmail": "Ricollega Gmail",
   "extension.gmail.reconnect_gmail_hint": "Dopo modifiche di sistema o OAuth, rinnova l’accesso a Gmail qui.",
+  "extension.gmail.site_access_required": "Consenti l’accesso a {SYSTEM_NAME} così il plugin può completare l’accesso.",
   "extension.gmail.skipped": "Skipped {count}.",
   "extension.gmail.skipped_named": "Skipped {count}: {names}.",
   "extension.gmail.step_items": "2. Choose a folder or task",

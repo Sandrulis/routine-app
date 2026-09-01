@@ -709,6 +709,7 @@
   "extension.gmail.progress_upload": "Saugoma į {SYSTEM_NAME} ({count})…",
   "extension.gmail.reconnect_gmail": "Iš naujo prijungti Gmail",
   "extension.gmail.reconnect_gmail_hint": "Po sistemos ar OAuth pakeitimų atnaujinkite Gmail prieigą čia.",
+  "extension.gmail.site_access_required": "Leiskite prieigą prie {SYSTEM_NAME}, kad papildinys galėtų užbaigti prisijungimą.",
   "extension.gmail.skipped": "Praleista {count}.",
   "extension.gmail.skipped_named": "Praleista {count}: {names}.",
   "extension.gmail.step_items": "2. Pasirinkite aplanką arba užduotį",

@@ -709,6 +709,7 @@
   "extension.gmail.progress_upload": "Сохранение в {SYSTEM_NAME} ({count})…",
   "extension.gmail.reconnect_gmail": "Обновить подключение Gmail",
   "extension.gmail.reconnect_gmail_hint": "После изменений системы или OAuth обновите доступ к Gmail здесь.",
+  "extension.gmail.site_access_required": "Разрешите доступ к {SYSTEM_NAME}, чтобы плагин мог завершить вход.",
   "extension.gmail.skipped": "Пропущено: {count}.",
   "extension.gmail.skipped_named": "Пропущено {count}: {names}.",
   "extension.gmail.step_items": "2. Выберите папку или задачу",

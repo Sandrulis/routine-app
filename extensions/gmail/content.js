@@ -134,6 +134,8 @@
   "extension.gmail.checking_session": "Pārbauda TASQIN sesiju…",
   "extension.gmail.open_login": "Atvērt TASQIN login",
   "extension.gmail.login_failed": "Neizdevās ienākt.",
+  "extension.gmail.site_access_required":
+    "Atļauj piekļuvi TASQIN, lai spraudnis varētu pabeigt ielogošanos.",
   "extension.gmail.options.connecting": "Atveras Google atļauju logs…",
   "extension.gmail.connect_gmail": "Savienot Gmail",
   "extension.gmail.reconnect_gmail": "Atjaunot Gmail savienojumu",
@@ -752,6 +754,12 @@ function ensureUi() {
         void (async () => {
           setBusy(true, t("extension.gmail.options.connecting"));
           setFeedback("");
+          const granted = await ensurePluginHostAccess();
+          if (!granted) {
+            setBusy(false);
+            setFeedback(tError("extension.gmail.site_access_required"), "error");
+            return;
+          }
           const result = await send("routine.connectGmail");
           setBusy(false);
           if (result?.ok) {
@@ -1874,6 +1882,12 @@ function ensureUi() {
           event.preventDefault();
           void (async () => {
             setBusy(true, t("extension.gmail.options.connecting"));
+            const granted = await ensurePluginHostAccess();
+            if (!granted) {
+              setBusy(false);
+              setFeedback(tError("extension.gmail.site_access_required"), "error");
+              return;
+            }
             const result = await send("routine.openLogin", { google: true });
             setBusy(false);
             if (result?.ok) {
@@ -1911,6 +1925,12 @@ function ensureUi() {
         event.preventDefault();
         void (async () => {
           setBusy(true, t("extension.gmail.options.connecting"));
+          const granted = await ensurePluginHostAccess();
+          if (!granted) {
+            setBusy(false);
+            setFeedback(tError("extension.gmail.site_access_required"), "error");
+            return;
+          }
           const result = await send("routine.connectGmail");
           setBusy(false);
           if (result?.ok) {

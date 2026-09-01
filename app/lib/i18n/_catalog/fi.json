@@ -709,6 +709,7 @@
   "extension.gmail.progress_upload": "Tallennetaan {SYSTEM_NAME}-palveluun ({count})…",
   "extension.gmail.reconnect_gmail": "Yhdistä Gmail uudelleen",
   "extension.gmail.reconnect_gmail_hint": "Järjestelmä- tai OAuth-muutosten jälkeen uusi Gmail-käyttöoikeus täällä.",
+  "extension.gmail.site_access_required": "Salli pääsy palveluun {SYSTEM_NAME}, jotta liitännäinen voi viimeistellä kirjautumisen.",
   "extension.gmail.skipped": "Ohitettu {count}.",
   "extension.gmail.skipped_named": "Ohitettu {count}: {names}.",
   "extension.gmail.step_items": "2. Valitse kansio tai tehtävä",

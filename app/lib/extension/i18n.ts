@@ -147,6 +147,7 @@ export const EXTENSION_I18N_KEYS = [
   "extension.gmail.gmail_connected",
   "extension.gmail.plugin_disabled",
   "extension.gmail.login_failed",
+  "extension.gmail.site_access_required",
   "extension.gmail.checking_app",
 ] as const;
 

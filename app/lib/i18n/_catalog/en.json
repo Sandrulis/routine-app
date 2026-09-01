@@ -1895,6 +1895,7 @@
   "extension.gmail.gmail_connected": "Gmail connected: {email}",
   "extension.gmail.plugin_disabled": "The Gmail plugin is disabled. Turn it on in Administration → Modules.",
   "extension.gmail.login_failed": "Could not sign in.",
+  "extension.gmail.site_access_required": "Allow access to {SYSTEM_NAME} so the plugin can finish signing in.",
   "extension.gmail.checking_app": "Loading {SYSTEM_NAME}…",
   "extension.gmail.login_done.title": "Signed in to {SYSTEM_NAME}",
   "extension.gmail.login_done.body": "You can close this window and return to the plugin.",

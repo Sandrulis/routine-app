@@ -66,12 +66,10 @@ function unique(items) {
   return [...new Set(items.filter(Boolean))];
 }
 
-async function ensureOriginPermission(origin) {
+async function hasOriginPermission(origin) {
   const origins = [`${origin}/*`];
   try {
-    const already = await chrome.permissions.contains({ origins });
-    if (already) return true;
-    return await chrome.permissions.request({ origins });
+    return await chrome.permissions.contains({ origins });
   } catch {
     return false;
   }
@@ -164,7 +162,7 @@ async function originsFromAuthCookies() {
 
 async function probeConfig(origin) {
   try {
-    await ensureOriginPermission(origin);
+    if (!(await hasOriginPermission(origin))) return null;
     const response = await fetch(`${origin}/api/extension/config`, {
       credentials: "omit",
       redirect: "manual",
@@ -434,13 +432,6 @@ async function getAppBase(options = {}) {
   }
   if (localFallback) return adoptAppOrigin(localFallback.origin, localFallback.config);
 
-  try {
-    await chrome.permissions.request({
-      origins: ["https://*/*", "http://*/*"],
-    });
-  } catch {
-    // user dismissed
-  }
   const extraOrigins = expandOrigins([
     ...(await originsFromAuthCookies()),
     ...APP_ORIGIN_CANDIDATES,
@@ -739,7 +730,7 @@ async function syncBrowserSessionCookies(appBase) {
   const stored = await readStoredSession();
   const session = stored?.session;
   if (!session?.access_token) return false;
-  await ensureOriginPermission(origin);
+  if (!(await hasOriginPermission(origin))) return false;
   let cookieName =
     (await chrome.storage.sync.get(["authCookieName"])).authCookieName || "";
   if (!cookieName) {
@@ -2257,7 +2248,13 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       }
       if (message?.type === "routine.login") {
         const appBase = preferLiveOrigin(await getAppBase()) || DEFAULT_APP_BASE;
-        await ensureOriginPermission(appBase);
+        if (!(await hasOriginPermission(appBase))) {
+          sendResponse({
+            ok: false,
+            error: "extension.gmail.site_access_required",
+          });
+          return;
+        }
         const response = await fetch(`${appBase}/api/extension/login`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },

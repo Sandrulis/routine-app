@@ -8,6 +8,8 @@ const FALLBACK = {
   "auth.fields.password_show": "Rādīt paroli",
   "auth.fields.password_hide": "Paslēpt paroli",
   "extension.gmail.login_failed": "Neizdevās ienākt.",
+  "extension.gmail.site_access_required":
+    "Atļauj piekļuvi TASQIN, lai spraudnis varētu pabeigt ielogošanos.",
   "errors.extension_login_mfa":
     "Šim kontam ir MFA. Pabeidz ienākšanu TASQIN lapā un mēģini vēlreiz.",
   "errors.auth_invalid": "E-pasts vai parole nav pareiza.",
@@ -282,6 +284,11 @@ function fitPopup() {
 
 $("googleLogin").addEventListener("click", async () => {
   setStatus(t("extension.gmail.options.connecting"));
+  const granted = await ensurePluginHostAccess();
+  if (!granted) {
+    setStatus(t("extension.gmail.site_access_required"), false);
+    return;
+  }
   const result = await send("routine.openLogin", { google: true });
   if (!result?.ok) {
     setStatus(t(result?.error || "extension.gmail.login_failed"), false);
@@ -314,6 +321,11 @@ $("passwordToggle")?.addEventListener("click", () => {
 
 $("passwordLogin").addEventListener("click", async () => {
   setStatus(t("extension.gmail.checking_session"), true);
+  const granted = await ensurePluginHostAccess();
+  if (!granted) {
+    setStatus(t("extension.gmail.site_access_required"), false);
+    return;
+  }
   const result = await send("routine.login", {
     email: $("email").value,
     password: $("password").value,
@@ -340,6 +352,11 @@ $("team").addEventListener("change", async () => {
 
 $("connectGmail").addEventListener("click", async () => {
   setStatus(t("extension.gmail.options.connecting"), true);
+  const granted = await ensurePluginHostAccess();
+  if (!granted) {
+    setStatus(t("extension.gmail.site_access_required"), false);
+    return;
+  }
   const result = await send("routine.connectGmail");
   if (!result?.ok) {
     setStatus(t(result?.error || "extension.gmail.options.connect_failed"), false);

@@ -709,6 +709,7 @@ export const no: Record<string, string> = {
   "extension.gmail.progress_upload": "Lagrer til {SYSTEM_NAME} ({count})…",
   "extension.gmail.reconnect_gmail": "Koble til Gmail på nytt",
   "extension.gmail.reconnect_gmail_hint": "Etter system- eller OAuth-endringer fornyer du Gmail-tilgangen her.",
+  "extension.gmail.site_access_required": "Tillat tilgang til {SYSTEM_NAME} slik at tillegget kan fullføre innloggingen.",
   "extension.gmail.skipped": "Hoppet over {count}.",
   "extension.gmail.skipped_named": "Hoppet over {count}: {names}.",
   "extension.gmail.step_items": "2. Velg en mappe eller oppgave",

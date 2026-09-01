@@ -709,6 +709,7 @@ export const pl: Record<string, string> = {
   "extension.gmail.progress_upload": "Zapisywanie do {SYSTEM_NAME} ({count})…",
   "extension.gmail.reconnect_gmail": "Połącz Gmail ponownie",
   "extension.gmail.reconnect_gmail_hint": "Po zmianach systemu lub OAuth odnów dostęp do Gmail tutaj.",
+  "extension.gmail.site_access_required": "Zezwól na dostęp do {SYSTEM_NAME}, aby wtyczka mogła dokończyć logowanie.",
   "extension.gmail.skipped": "Pominięto {count}.",
   "extension.gmail.skipped_named": "Pominięto {count}: {names}.",
   "extension.gmail.step_items": "2. Wybierz folder albo zadanie",

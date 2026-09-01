@@ -709,6 +709,7 @@ export const et: Record<string, string> = {
   "extension.gmail.progress_upload": "{SYSTEM_NAME}i salvestamine ({count})…",
   "extension.gmail.reconnect_gmail": "Ühenda Gmail uuesti",
   "extension.gmail.reconnect_gmail_hint": "Pärast süsteemi või OAuthi muudatusi uuenda Gmaili juurdepääs siin.",
+  "extension.gmail.site_access_required": "Luba juurdepääs teenusele {SYSTEM_NAME}, et plugin saaks sisselogimise lõpetada.",
   "extension.gmail.skipped": "Vahele jäetud {count}.",
   "extension.gmail.skipped_named": "Vahele jäetud {count}: {names}.",
   "extension.gmail.step_items": "2. Vali kaust või ülesanne",

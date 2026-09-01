@@ -709,6 +709,7 @@ export const sv: Record<string, string> = {
   "extension.gmail.progress_upload": "Saving to {SYSTEM_NAME} ({count})…",
   "extension.gmail.reconnect_gmail": "Återanslut Gmail",
   "extension.gmail.reconnect_gmail_hint": "Efter system- eller OAuth-ändringar förnyar du Gmail-åtkomsten här.",
+  "extension.gmail.site_access_required": "Tillåt åtkomst till {SYSTEM_NAME} så att tillägget kan slutföra inloggningen.",
   "extension.gmail.skipped": "Skipped {count}.",
   "extension.gmail.skipped_named": "Skipped {count}: {names}.",
   "extension.gmail.step_items": "2. Choose a folder or task",

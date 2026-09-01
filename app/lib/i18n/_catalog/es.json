@@ -709,6 +709,7 @@
   "extension.gmail.progress_upload": "Guardando en {SYSTEM_NAME} ({count})…",
   "extension.gmail.reconnect_gmail": "Volver a conectar Gmail",
   "extension.gmail.reconnect_gmail_hint": "Tras cambios del sistema o de OAuth, renueva el acceso a Gmail aquí.",
+  "extension.gmail.site_access_required": "Permite el acceso a {SYSTEM_NAME} para que el complemento pueda terminar de iniciar sesión.",
   "extension.gmail.skipped": "Omitidos {count}.",
   "extension.gmail.skipped_named": "Omitidos {count}: {names}.",
   "extension.gmail.step_items": "2. Elige una carpeta o tarea",

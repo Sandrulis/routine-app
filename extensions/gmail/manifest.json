@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "TASQIN - Gmail",
   "description": "Pievieno Gmail e-pastu TASQIN apakšuzdevumam.",
-  "version": "0.4.43",
+  "version": "0.4.44",
   "permissions": ["storage", "cookies", "tabs", "alarms", "scripting", "webNavigation"],
   "host_permissions": [
     "https://tasqin.com/*",
@@ -12,7 +12,6 @@
     "https://mail.google.com/*",
     "https://gmail.googleapis.com/*"
   ],
-  "optional_host_permissions": ["https://*/*", "http://*/*"],
   "background": {
     "service_worker": "background.js"
   },
@@ -37,7 +36,7 @@
   "content_scripts": [
     {
       "matches": ["https://mail.google.com/*"],
-      "js": ["content.js"],
+      "js": ["plugin-permissions.js", "content.js"],
       "css": ["content.css"],
       "run_at": "document_idle"
     },

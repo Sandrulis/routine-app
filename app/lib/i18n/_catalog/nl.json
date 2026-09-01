@@ -709,6 +709,7 @@
   "extension.gmail.progress_upload": "Opslaan in {SYSTEM_NAME} ({count})…",
   "extension.gmail.reconnect_gmail": "Gmail opnieuw verbinden",
   "extension.gmail.reconnect_gmail_hint": "Na systeem- of OAuth-wijzigingen vernieuw je hier de Gmail-toegang.",
+  "extension.gmail.site_access_required": "Sta toegang tot {SYSTEM_NAME} toe, zodat de plug-in het inloggen kan afronden.",
   "extension.gmail.skipped": "{count} overgeslagen.",
   "extension.gmail.skipped_named": "{count} overgeslagen: {names}.",
   "extension.gmail.step_items": "2. Kies een map of taak",

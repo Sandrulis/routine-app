@@ -709,6 +709,7 @@ export const da: Record<string, string> = {
   "extension.gmail.progress_upload": "Gemmer til {SYSTEM_NAME} ({count})…",
   "extension.gmail.reconnect_gmail": "Genopret Gmail-forbindelse",
   "extension.gmail.reconnect_gmail_hint": "Efter system- eller OAuth-ændringer skal du forny Gmail-adgangen her.",
+  "extension.gmail.site_access_required": "Tillad adgang til {SYSTEM_NAME}, så pluginet kan afslutte login.",
   "extension.gmail.skipped": "Sprang {count} over.",
   "extension.gmail.skipped_named": "Sprang {count} over: {names}.",
   "extension.gmail.step_items": "2. Vælg en mappe eller opgave",

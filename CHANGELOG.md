@@ -4,6 +4,10 @@
 
 - (none)
 
+## v0.3.32
+
+- Gmail spraudnis `0.4.44`: Google ielogošanās piekļuvi TASQIN vietnei prasa popup klikšķī, ne izceļot ikonu (Chrome «On click»)
+
 ## v0.3.31
 
 - Gmail spraudnis `0.4.43`: Google ielogošanās pabeidzas bez popup ikonas klikšķa (webNavigation + īss alarm, kamēr done cilne ir atvērta)
