@@ -4,12 +4,14 @@
 
 import { useRef, useState, type DragEvent } from "react";
 import { IconActionButton } from "@/app/components/icon-action-button";
+import { LoadingSpinner } from "@/app/components/loading-state";
 import { useTranslations } from "@/app/components/translations-provider";
 import { docsImageSrc } from "@/app/lib/docs/images";
 import type { DocsArticleImage } from "@/app/lib/docs/types";
 
 export type DocsArticleImageItem = DocsArticleImage & {
   previewSrc?: string;
+  uploadPercent?: number;
 };
 
 export function DocsArticleImages({
@@ -111,7 +113,7 @@ export function DocsArticleImages({
             >
               <button
                 type="button"
-                disabled={disabled}
+                disabled={disabled || typeof image.uploadPercent === "number"}
                 onClick={() => onInsert(image)}
                 className="block aspect-square w-full overflow-hidden"
                 title={t("admin.docs.article.images.insert", "Ievietot saturā")}
@@ -122,9 +124,20 @@ export function DocsArticleImages({
                   className="size-full object-cover"
                 />
               </button>
-              <span className="pointer-events-none absolute inset-x-0 bottom-0 truncate bg-zinc-900/60 px-1.5 py-1 text-[10px] text-white">
+              {typeof image.uploadPercent === "number" ? (
+                <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 bg-zinc-950/55 px-2">
+                  <LoadingSpinner size="sm" className="text-white" />
+                  <span className="text-[10px] font-medium tabular-nums text-white">
+                    {t("files.upload.progress_percent", "{percent}%", {
+                      percent: String(Math.max(0, Math.min(100, Math.round(image.uploadPercent)))),
+                    })}
+                  </span>
+                </div>
+              ) : null}
+              <span className="pointer-events-none absolute inset-x-0 bottom-0 z-10 truncate bg-zinc-900/70 px-1.5 py-1 text-[10px] text-white">
                 {image.fileName}
               </span>
+              {typeof image.uploadPercent === "number" ? null : (
               <div className="absolute top-1 right-1">
                 <span className="inline-flex rounded-lg bg-white/90 shadow-sm">
                   <IconActionButton
@@ -136,6 +149,7 @@ export function DocsArticleImages({
                   />
                 </span>
               </div>
+              )}
             </li>
           ))}
         </ul>

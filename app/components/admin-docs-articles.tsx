@@ -45,9 +45,14 @@ import {
 import { DragHandle } from "@/app/components/drag-handle";
 import { useFeedbackToast } from "@/app/components/feedback-toast-provider";
 import { IconActionButton } from "@/app/components/icon-action-button";
+import {
+  FileUploadOverlay,
+  type FileUploadProgressState,
+} from "@/app/components/file-upload-overlay";
 import { LoadingState } from "@/app/components/loading-state";
 import { useTranslations } from "@/app/components/translations-provider";
 import { translateActionError } from "@/app/lib/i18n/action-errors";
+import { batchUploadPercent } from "@/app/lib/google-drive/queue-upload";
 import { DOCS_SYSTEM_NAME_PLACEHOLDER, renderDocsPlaceholders } from "@/app/lib/docs/placeholders";
 import {
   DOCS_IMAGE_MAX_BYTES,
@@ -68,7 +73,10 @@ function emptyDraft(): ArticleDraft {
   return { title: "", slogan: "", content: "" };
 }
 
-type LocalImage = DocsArticleImageItem & { pendingFile?: File };
+type LocalImage = DocsArticleImageItem & {
+  pendingFile?: File;
+  uploadPercent?: number;
+};
 
 function isDocsImageFile(file: File): boolean {
   const mime = file.type === "image/jpg" ? "image/jpeg" : file.type;
@@ -77,19 +85,47 @@ function isDocsImageFile(file: File): boolean {
   );
 }
 
-async function uploadDocsImage(articleId: string, file: File, id: string) {
+async function uploadDocsImage(
+  articleId: string,
+  file: File,
+  id: string,
+  onProgress?: (percent: number) => void,
+) {
   const form = new FormData();
   form.set("articleId", articleId);
   form.set("id", id);
   form.set("file", file);
-  const response = await fetch("/api/docs/images", { method: "POST", body: form });
-  const payload = (await response.json()) as {
+
+  const payload = await new Promise<{
     ok?: boolean;
     error?: string;
     image?: DocsArticleImage;
-  };
-  if (!payload.ok || !payload.image) {
-    return { ok: false as const, error: payload.error ?? "errors.docs_image_upload_failed" };
+  } | null>((resolve) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", "/api/docs/images");
+    xhr.withCredentials = true;
+    xhr.upload.onprogress = (event) => {
+      if (!onProgress || !event.lengthComputable || event.total <= 0) return;
+      onProgress(Math.max(0, Math.min(100, (event.loaded / event.total) * 100)));
+    };
+    xhr.onload = () => {
+      try {
+        resolve(JSON.parse(xhr.responseText) as {
+          ok?: boolean;
+          error?: string;
+          image?: DocsArticleImage;
+        });
+      } catch {
+        resolve(null);
+      }
+    };
+    xhr.onerror = () => resolve(null);
+    xhr.onabort = () => resolve(null);
+    xhr.send(form);
+  });
+
+  if (!payload?.ok || !payload.image) {
+    return { ok: false as const, error: payload?.error ?? "errors.docs_image_upload_failed" };
   }
   return { ok: true as const, image: payload.image };
 }
@@ -113,6 +149,7 @@ export function AdminDocsArticles({
   >({});
   const [deleteTarget, setDeleteTarget] = useState<DocsArticleSummary | null>(null);
   const [images, setImages] = useState<LocalImage[]>([]);
+  const [uploadProgress, setUploadProgress] = useState<FileUploadProgressState | null>(null);
   const [isPending, startTransition] = useTransition();
   const [openingArticleId, setOpeningArticleId] = useState<string | null>(null);
   const contentRef = useRef<HTMLTextAreaElement>(null);
@@ -233,6 +270,7 @@ export function AdminDocsArticles({
   }
 
   async function addImageFiles(files: File[], insert: boolean) {
+    if (uploadProgress) return;
     const accepted = files.filter(isDocsImageFile);
     if (accepted.length === 0) {
       showFeedback({
@@ -259,29 +297,59 @@ export function AdminDocsArticles({
       pendingFile: file,
     }));
 
-    const saved: LocalImage[] = [];
-    if (editingId) {
-      for (const item of nextItems) {
-        if (!item.pendingFile) continue;
-        const result = await uploadDocsImage(editingId, item.pendingFile, item.id);
-        if (!result.ok) {
-          if (item.previewSrc?.startsWith("blob:")) URL.revokeObjectURL(item.previewSrc);
-          if (saved.length) setImages((current) => [...current, ...saved]);
-          showFeedback({ type: "error", text: translateActionError(t, result.error) });
-          return;
-        }
-        saved.push({ ...item, pendingFile: undefined });
-      }
-      setImages((current) => [...current, ...saved]);
-      if (insert) {
-        insertMarkdown(saved.map((item) => docsImageMarkdown(item.id, item.fileName)).join("\n"));
-      }
-      return;
-    }
-
     setImages((current) => [...current, ...nextItems]);
     if (insert) {
       insertMarkdown(nextItems.map((item) => docsImageMarkdown(item.id, item.fileName)).join("\n"));
+    }
+
+    if (!editingId) return;
+
+    const result = await uploadPendingImages(editingId, nextItems);
+    if (!result.ok) {
+      showFeedback({ type: "error", text: translateActionError(t, result.error) });
+    }
+  }
+
+  async function uploadPendingImages(articleId: string, items: LocalImage[]) {
+    const pending = items.filter((item) => item.pendingFile);
+    if (pending.length === 0) return { ok: true as const };
+    const total = pending.length;
+    try {
+      for (let index = 0; index < pending.length; index += 1) {
+        const item = pending[index];
+        const file = item.pendingFile;
+        if (!file) continue;
+        const updateProgress = (filePercent: number) => {
+          setUploadProgress({
+            fileName: item.fileName,
+            current: index + 1,
+            total,
+            percent: batchUploadPercent(index, total, filePercent),
+          });
+          setImages((current) =>
+            current.map((image) =>
+              image.id === item.id ? { ...image, uploadPercent: filePercent } : image,
+            ),
+          );
+        };
+        updateProgress(0);
+        const result = await uploadDocsImage(articleId, file, item.id, updateProgress);
+        if (!result.ok) {
+          if (item.previewSrc?.startsWith("blob:")) URL.revokeObjectURL(item.previewSrc);
+          setImages((current) => current.filter((image) => image.id !== item.id));
+          return { ok: false as const, error: result.error };
+        }
+        setImages((current) =>
+          current.map((image) =>
+            image.id === item.id
+              ? { ...image, pendingFile: undefined, uploadPercent: undefined }
+              : image,
+          ),
+        );
+      }
+      return { ok: true as const };
+    } finally {
+      setUploadProgress(null);
     }
   }
 
@@ -307,9 +375,8 @@ export function AdminDocsArticles({
   function handleContentDrop(event: DragEvent<HTMLTextAreaElement>) {
     if (![...event.dataTransfer.types].includes("Files")) return;
     event.preventDefault();
-    startTransition(() => {
-      void addImageFiles([...event.dataTransfer.files], true);
-    });
+    if (isPending || uploadProgress) return;
+    void addImageFiles([...event.dataTransfer.files], true);
   }
 
   function handleSave(event: React.FormEvent<HTMLFormElement>) {
@@ -333,9 +400,8 @@ export function AdminDocsArticles({
       }
       if (articleId) {
         const pending = images.filter((image) => image.pendingFile);
-        for (const image of pending) {
-          if (!image.pendingFile) continue;
-          const uploaded = await uploadDocsImage(articleId, image.pendingFile, image.id);
+        if (pending.length > 0) {
+          const uploaded = await uploadPendingImages(articleId, pending);
           if (!uploaded.ok) {
             showFeedback({ type: "error", text: translateActionError(t, uploaded.error) });
             return;
@@ -528,11 +594,14 @@ export function AdminDocsArticles({
             : t("admin.docs.article.add", "Jauna apakškategorija")
         }
         panelMaxWidthClassName={appModalSplitPanelMaxWidthClassName}
-        blocking={isPending}
+        blocking={isPending || Boolean(uploadProgress)}
         dirty={isDirty}
       >
         <form onSubmit={handleSave} className="space-y-4">
-          <fieldset disabled={isPending} className="space-y-4 disabled:opacity-80">
+          <fieldset
+            disabled={isPending || Boolean(uploadProgress)}
+            className="space-y-4 disabled:opacity-80"
+          >
             <DocsSourceLanguageNotice />
             <div>
               <label htmlFor="docs-article-title" className="text-sm font-medium text-zinc-800">
@@ -611,11 +680,9 @@ export function AdminDocsArticles({
                 <div className="mt-4">
                   <DocsArticleImages
                     images={images}
-                    disabled={isPending}
+                    disabled={isPending || Boolean(uploadProgress)}
                     onAddFiles={(files) => {
-                      startTransition(() => {
-                        void addImageFiles(files, false);
-                      });
+                      void addImageFiles(files, false);
                     }}
                     onInsert={insertImage}
                     onRemove={removeImage}
@@ -670,7 +737,7 @@ export function AdminDocsArticles({
             <div className="flex justify-end border-t border-zinc-100 pt-4">
               <button
                 type="submit"
-                disabled={isPending || !isDirty || !draft.title.trim()}
+                disabled={isPending || Boolean(uploadProgress) || !isDirty || !draft.title.trim()}
                 className="inline-flex items-center gap-2 rounded-lg bg-zinc-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {isPending ? (
@@ -698,6 +765,7 @@ export function AdminDocsArticles({
         confirmVariant="danger"
         onConfirm={handleDelete}
       />
+      <FileUploadOverlay progress={uploadProgress} />
     </div>
   );
 }

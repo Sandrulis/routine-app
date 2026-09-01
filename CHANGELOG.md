@@ -4,6 +4,10 @@
 
 - (none)
 
+## v0.3.22
+
+- Admin docs attēlu augšupielāde rāda progress: faila nosaukums, skaits un procenti
+
 ## v0.3.21
 
 - Docs attēli mobilajā ir 100% no teksta platuma, datorā paliek 50%

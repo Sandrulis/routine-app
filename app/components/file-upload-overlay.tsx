@@ -1,5 +1,6 @@
 "use client";
 
+import { createPortal } from "react-dom";
 import { LoadingSpinner } from "@/app/components/loading-state";
 import { useTranslations } from "@/app/components/translations-provider";
 
@@ -18,11 +19,12 @@ export function FileUploadOverlay({
 }) {
   const { t } = useTranslations();
   if (!progress) return null;
+  if (typeof document === "undefined") return null;
 
   const percent = Math.max(0, Math.min(100, Math.round(progress.percent)));
   const showCount = progress.total > 1;
 
-  return (
+  return createPortal(
     <div
       className="fixed inset-0 z-[80] flex items-center justify-center bg-zinc-950/40 p-4"
       role="alertdialog"
@@ -70,6 +72,7 @@ export function FileUploadOverlay({
           />
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
