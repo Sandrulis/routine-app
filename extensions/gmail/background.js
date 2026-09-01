@@ -1674,6 +1674,13 @@ function isPluginLoginDoneUrl(url) {
   );
 }
 
+function isPluginHandoffUrl(url) {
+  return (
+    url.includes("/auth/gmail-plugin/done") ||
+    url.includes("/auth/gmail-plugin/login")
+  );
+}
+
 const bootstrapFromTicketCache = new Map();
 const bootstrapFromTicketInFlight = new Map();
 
@@ -1770,32 +1777,70 @@ async function injectPluginAuth(tabId) {
   }
 }
 
-async function markDoneTabReady(tabId) {
-  if (!tabId || !chrome.scripting?.executeScript) return;
-  const paintReady = () => {
-    document.documentElement.setAttribute("data-routine-plugin-ready", "1");
-    window.postMessage(
-      { source: "routine-gmail-plugin", type: "ready" },
-      location.origin,
-    );
-    window.dispatchEvent(new Event("routine-gmail-plugin-ready"));
-  };
+async function paintDoneTabIfReady(tabId) {
+  if (!tabId || !chrome.scripting?.executeScript) return false;
   try {
-    await chrome.scripting.executeScript({
+    const [{ result }] = await chrome.scripting.executeScript({
       target: { tabId },
       world: "MAIN",
-      func: paintReady,
+      func: () => {
+        const marker = document.querySelector("[data-routine-gmail-plugin]");
+        const state = marker?.getAttribute("data-routine-gmail-plugin") || "";
+        const ticket =
+          marker?.getAttribute("data-routine-bootstrap-ticket")?.trim() || "";
+        if ((state !== "logged-in" && state !== "connected") || !ticket) {
+          return false;
+        }
+        document.documentElement.setAttribute("data-routine-plugin-ready", "1");
+        window.postMessage(
+          { source: "routine-gmail-plugin", type: "ready" },
+          location.origin,
+        );
+        window.dispatchEvent(new Event("routine-gmail-plugin-ready"));
+        return true;
+      },
     });
+    return Boolean(result);
   } catch {
-    try {
-      await chrome.scripting.executeScript({
-        target: { tabId },
-        func: paintReady,
-      });
-    } catch {
-      // Tab closed or not injectable.
-    }
+    return false;
   }
+}
+
+async function markDoneTabReady(tabId) {
+  await paintDoneTabIfReady(tabId);
+}
+
+async function handlePluginDoneTab(tabId, url) {
+  const href = String(url || "");
+  if (!tabId || !isPluginLoginDoneUrl(href) || href.includes("error=")) {
+    return false;
+  }
+  await markPluginSignedIn();
+  await injectPluginAuth(tabId);
+  const painted = await paintDoneTabIfReady(tabId);
+  const origin = await captureSessionFromDone(href, "", null, "", tabId);
+  if (origin) {
+    await paintDoneTabIfReady(tabId);
+    await publishSessionUpdate(true);
+    return true;
+  }
+  return painted;
+}
+
+async function handleOpenDoneTabs() {
+  const tabs = await findOpenPluginDoneTabs();
+  let handled = false;
+  for (const tab of tabs) {
+    if (await handlePluginDoneTab(tab.id, tab.url)) handled = true;
+  }
+  return handled || tabs.length > 0;
+}
+
+async function scheduleWatchPluginDone() {
+  if (!chrome.alarms?.create) return;
+  await chrome.alarms.create("routine.watchPluginDone", {
+    when: Date.now() + 1500,
+  });
 }
 
 async function tryCaptureFromOpenDoneTabs() {
@@ -2041,29 +2086,52 @@ if (chrome.alarms) {
       void refreshStoredAccessToken();
       return;
     }
-    if (alarm.name !== "routine.pluginHandoff") return;
+    if (
+      alarm.name !== "routine.pluginHandoff" &&
+      alarm.name !== "routine.watchPluginDone"
+    ) {
+      return;
+    }
     void (async () => {
       const origin = await consumePendingBootstrap();
       if (origin) await publishSessionUpdate(true);
+      const stillWatching = await handleOpenDoneTabs();
+      if (alarm.name === "routine.watchPluginDone" && stillWatching) {
+        await scheduleWatchPluginDone();
+      }
     })();
   });
 }
 
 if (chrome.tabs?.onUpdated) {
   chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-    if (changeInfo.status !== "complete") return;
-    const url = String(tab?.url || "");
-    if (!isPluginLoginDoneUrl(url) || url.includes("error=")) return;
+    const url = String(changeInfo.url || tab?.url || "");
+    if (!isPluginHandoffUrl(url)) return;
+    if (url.includes("/auth/gmail-plugin/login")) {
+      void scheduleWatchPluginDone();
+      return;
+    }
+    if (url.includes("error=")) return;
     void (async () => {
-      await markPluginSignedIn();
-      await injectPluginAuth(tabId);
-      const origin = await captureSessionFromDone(url, "", null, "", tabId);
-      if (origin) {
-        void markDoneTabReady(tabId);
-        await publishSessionUpdate(true);
-      }
+      void scheduleWatchPluginDone();
+      await handlePluginDoneTab(tabId, url);
     })();
   });
+}
+
+if (chrome.webNavigation?.onCompleted) {
+  const doneFilter = { url: [{ urlContains: "/auth/gmail-plugin/done" }] };
+  const onNav = (details) => {
+    if (details.frameId !== 0) return;
+    void (async () => {
+      void scheduleWatchPluginDone();
+      await handlePluginDoneTab(details.tabId, details.url);
+    })();
+  };
+  chrome.webNavigation.onCompleted.addListener(onNav, doneFilter);
+  if (chrome.webNavigation.onHistoryStateUpdated) {
+    chrome.webNavigation.onHistoryStateUpdated.addListener(onNav, doneFilter);
+  }
 }
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
@@ -2162,6 +2230,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         const tab = await chrome.tabs.create({
           url: `${tabOrigin}${loginPath}`,
         });
+        void scheduleWatchPluginDone();
         if (!String(loginPath).includes("/auth/gmail-plugin/login")) {
           sendResponse({ ok: true });
           return;

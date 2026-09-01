@@ -4,6 +4,10 @@
 
 - (none)
 
+## v0.3.31
+
+- Gmail spraudnis `0.4.43`: Google ielogošanās pabeidzas bez popup ikonas klikšķa (webNavigation + īss alarm, kamēr done cilne ir atvērta)
+
 ## v0.3.30
 
 - Gmail spraudnis `0.4.42`: done lapa redz, ka ticket ir saņemts, bez popup klikšķa (DOM atribūts, ne izolētā window)
