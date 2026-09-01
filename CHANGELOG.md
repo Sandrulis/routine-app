@@ -4,6 +4,10 @@
 
 - (none)
 
+## v0.3.33
+
+- Gmail spraudnis `0.4.45`: Google ielogošanās ar 2FA atkal prasa Authenticator kodu; AAL1 sīkdatnes vairs neizlaiž TOTP soli
+
 ## v0.3.32
 
 - Gmail spraudnis `0.4.44`: Google ielogošanās piekļuvi TASQIN vietnei prasa popup klikšķī, ne izceļot ikonu (Chrome «On click»)

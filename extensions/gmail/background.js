@@ -1656,6 +1656,11 @@ async function waitForTabMatch(tabId, test, timeoutMs = 180000) {
   return "";
 }
 
+function isPluginGoogleLoginDoneUrl(url) {
+  const href = String(url || "");
+  return href.includes("/auth/gmail-plugin/done") && href.includes("logged_in=1");
+}
+
 function isPluginLoginDoneUrl(url) {
   if (!url.includes("/auth/gmail-plugin/done")) return false;
   return (
@@ -1719,26 +1724,41 @@ async function fetchBootstrapFromTicket(origin, ticket) {
   return request;
 }
 
-async function readBootstrapTicketFromTab(tabId) {
-  if (!chrome.scripting?.executeScript) return "";
+async function readPluginDoneMarker(tabId) {
+  if (!tabId || !chrome.scripting?.executeScript) {
+    return { state: "", ticket: "" };
+  }
   try {
     const [{ result }] = await chrome.scripting.executeScript({
       target: { tabId },
-      func: () =>
-        document
-          .querySelector("[data-routine-bootstrap-ticket]")
-          ?.getAttribute("data-routine-bootstrap-ticket") || "",
+      func: () => {
+        const marker = document.querySelector("[data-routine-gmail-plugin]");
+        return {
+          state: marker?.getAttribute("data-routine-gmail-plugin") || "",
+          ticket:
+            marker?.getAttribute("data-routine-bootstrap-ticket")?.trim() || "",
+        };
+      },
     });
-    return String(result || "").trim();
+    return {
+      state: String(result?.state || ""),
+      ticket: String(result?.ticket || "").trim(),
+    };
   } catch {
-    return "";
+    return { state: "", ticket: "" };
   }
+}
+
+async function readBootstrapTicketFromTab(tabId) {
+  const marker = await readPluginDoneMarker(tabId);
+  return marker.ticket;
 }
 
 async function waitForBootstrapTicketFromTab(tabId, attempts = 40) {
   for (let i = 0; i < attempts; i += 1) {
-    const ticket = await readBootstrapTicketFromTab(tabId);
-    if (ticket) return ticket;
+    const marker = await readPluginDoneMarker(tabId);
+    if (marker.state === "mfa") return "";
+    if (marker.ticket) return marker.ticket;
     await new Promise((resolve) => setTimeout(resolve, i < 8 ? 50 : 150));
   }
   return "";
@@ -1864,17 +1884,23 @@ async function captureSessionFromDone(
 ) {
   const origin = preferLiveOrigin(parseOrigin(url));
   if (!origin) return "";
+  const googleLogin = isPluginGoogleLoginDoneUrl(url);
+  const marker = tabId ? await readPluginDoneMarker(tabId) : { state: "", ticket: "" };
+  if (marker.state === "mfa") return "";
 
-  const already = await usableStoredSessionOrigin(origin);
-  if (already) {
-    if (tabId) void markDoneTabReady(tabId);
-    return already;
+  if (!googleLogin) {
+    const already = await usableStoredSessionOrigin(origin);
+    if (already) {
+      if (tabId) void markDoneTabReady(tabId);
+      return already;
+    }
   }
 
   let session = directSession?.access_token ? directSession : null;
   if (!session?.access_token) {
     const ticket =
       String(bootstrapTicket || "").trim() ||
+      marker.ticket ||
       (tabId ? await waitForBootstrapTicketFromTab(tabId) : "");
     if (ticket) {
       await stashPendingBootstrap(origin, ticket);
@@ -1882,7 +1908,7 @@ async function captureSessionFromDone(
       session = await fetchBootstrapFromTicket(origin, ticket);
     }
   }
-  if (!session?.access_token) {
+  if (!session?.access_token && !googleLogin) {
     const raced = await usableStoredSessionOrigin(origin);
     if (raced) return raced;
   }
@@ -1904,6 +1930,10 @@ async function captureSessionFromDone(
     }
     return "";
   }
+
+  // Google plugin login must wait for the post-TOTP ticket. AAL1 OAuth cookies
+  // would skip the Authenticator step.
+  if (googleLogin) return "";
 
   if (cookieHeader) {
     const fromPage = sessionFromAuthCookieList(cookiesFromHeader(cookieHeader));
