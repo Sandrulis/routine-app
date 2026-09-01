@@ -58,7 +58,12 @@ export type TaskFile = {
   googleDriveFileId: string | null;
   oneDriveFileId: string | null;
   createdAt: string;
+  note: string;
 };
+
+export function parseFileNote(value: unknown): string {
+  return typeof value === "string" ? value.trim() : "";
+}
 
 export function createActivityId(): string {
   if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
@@ -162,6 +167,7 @@ export function normalizeStoredTaskFiles(value: unknown): TaskFile[] | null {
         "createdAt" in item && item.createdAt
           ? String(item.createdAt)
           : "2026-01-01T00:00:00.000Z";
+      const note = parseFileNote("note" in item ? item.note : "");
       return {
         id,
         taskId,
@@ -172,6 +178,7 @@ export function normalizeStoredTaskFiles(value: unknown): TaskFile[] | null {
         googleDriveFileId,
         oneDriveFileId,
         createdAt,
+        note,
       };
     })
     .filter((item): item is TaskFile => item !== null);

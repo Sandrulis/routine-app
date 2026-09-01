@@ -155,6 +155,7 @@ async function resolveContent(
           googleDriveFileId: input.googleDriveFileId ?? null,
           oneDriveFileId: input.oneDriveFileId ?? null,
           createdAt: "",
+          note: "",
         });
         if (preview) return { content: preview, revokeOnClose: false };
       }

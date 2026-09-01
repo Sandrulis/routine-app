@@ -4,6 +4,12 @@
 
 - (none)
 
+## v0.3.23
+
+- Apakšuzdevuma kalendārā nedēļas dienas un mēneša nosaukums seko UI valodai
+- Apakšuzdevuma pielikumam var pievienot piezīmi; tā rādās kā tooltip uz kartītes
+- Gmail spraudnis `0.4.37`: sesija paliek pēc vietnes tokenu rotācijas; vecāks cookie vairs neizmet `chrome.storage`
+
 ## v0.3.22
 
 - Sistēmas admins var veidot globālus paziņojumus (`/admin/announcements`); lietotājiem rādās aizverams bloks līdz termiņam

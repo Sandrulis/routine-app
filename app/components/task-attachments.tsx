@@ -8,7 +8,7 @@ import {
   createMenuAnchorFromEvent,
   type CreateMenuAnchor,
 } from "@/app/components/create-item-menu";
-import { OverflowTooltip, Tooltip } from "@/app/components/tooltip";
+import { OverflowTooltip, OptionalTooltip, Tooltip } from "@/app/components/tooltip";
 import { useFeedbackToast } from "@/app/components/feedback-toast-provider";
 import { useTranslations } from "@/app/components/translations-provider";
 import { useFileTypes } from "@/app/lib/file-types-context";
@@ -21,6 +21,7 @@ export type AttachmentItem = {
   mimeType: string;
   size?: number;
   previewUrl?: string | null;
+  note?: string;
 };
 
 function overlayIconDisplay(name: string, mimeType: string, getFileIconDisplay: ReturnType<typeof useFileTypes>["getFileIconDisplay"]) {
@@ -37,6 +38,7 @@ export function TaskAttachments({
   onView,
   onDownload,
   onRename,
+  onNote,
   onRemove,
   onForward,
   forwardEnabled = false,
@@ -49,6 +51,7 @@ export function TaskAttachments({
   onView: (id: string) => void;
   onDownload: (id: string) => void;
   onRename: (id: string) => void;
+  onNote: (id: string) => void;
   onRemove: (id: string) => void;
   onForward?: (id: string) => void;
   /** Show “Forward file” when Resend and module_send_file are enabled. */
@@ -196,12 +199,18 @@ export function TaskAttachments({
                   file.mimeType,
                   getFileIconDisplay,
                 );
+                const note = file.note?.trim() ?? "";
                 return (
                 <li
                   key={file.id}
                   className="w-[10.75rem] rounded-2xl bg-zinc-50 p-2"
                 >
                   <div className="relative">
+                    <OptionalTooltip
+                      label={note}
+                      className="w-full"
+                      align="start"
+                    >
                     <button
                       type="button"
                       disabled={disabled}
@@ -229,13 +238,24 @@ export function TaskAttachments({
                             aria-hidden="true"
                           />
                         </span>
+                        {note ? (
+                          <span className="absolute bottom-2 left-2 inline-flex size-6 items-center justify-center rounded-full bg-white text-zinc-500 shadow-sm">
+                            <i className="fas fa-note-sticky text-[11px]" aria-hidden="true" />
+                          </span>
+                        ) : null}
                       </span>
                       <span className="mt-2 block min-w-0 pr-6">
-                        <OverflowTooltip label={file.name} className="min-w-0">
+                        {note ? (
                           <span className="block min-w-0 truncate text-[12px] text-zinc-600">
                             {file.name}
                           </span>
-                        </OverflowTooltip>
+                        ) : (
+                          <OverflowTooltip label={file.name} className="min-w-0">
+                            <span className="block min-w-0 truncate text-[12px] text-zinc-600">
+                              {file.name}
+                            </span>
+                          </OverflowTooltip>
+                        )}
                         {typeof file.size === "number" && file.size >= 0 ? (
                           <span className="mt-0.5 block text-[11px] text-zinc-400">
                             {formatFileSize(file.size)}
@@ -243,6 +263,7 @@ export function TaskAttachments({
                         ) : null}
                       </span>
                     </button>
+                    </OptionalTooltip>
                     <Tooltip label={t("actions.delete", "Dzēst")} align="end">
                       <button
                         type="button"
@@ -316,6 +337,11 @@ export function TaskAttachments({
             title: t("actions.rename", "Pārsaukt"),
           },
           {
+            id: "note",
+            icon: "fas fa-note-sticky",
+            title: t("files.note", "Piezīme"),
+          },
+          {
             id: "delete",
             icon: "fas fa-trash",
             title: t("actions.delete", "Dzēst"),
@@ -332,6 +358,7 @@ export function TaskAttachments({
           if (id === "download") onDownload(fileId);
           if (id === "forward") onForward?.(fileId);
           if (id === "rename") onRename(fileId);
+          if (id === "note") onNote(fileId);
           if (id === "delete") onRemove(fileId);
         }}
       />

@@ -7,6 +7,7 @@ const APP_ORIGIN_CANDIDATES = [
 ];
 const STORED_SESSION_KEY = "extensionAuth";
 const PLUGIN_SIGNED_OUT_KEY = "pluginSignedOut";
+const REFRESH_COOLDOWN_KEY = "extensionRefreshCooldown";
 const COOKIE_CHUNK = 3180;
 const AUTH_MAX_AGE_SEC = 30 * 24 * 60 * 60;
 const EXTENSION_UPLOAD_MAX_BYTES = 25 * 1024 * 1024;
@@ -191,6 +192,37 @@ function mergeSessionPreserveRefresh(primary, secondary) {
   };
 }
 
+function sessionExpiryMs(session) {
+  if (!session?.access_token) return 0;
+  const fromField = Number(session.expires_at);
+  if (fromField) return fromField * 1000;
+  try {
+    const payload = JSON.parse(
+      atob(session.access_token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/")),
+    );
+    if (payload?.exp) return payload.exp * 1000;
+  } catch {
+    // unreadable JWT
+  }
+  return 0;
+}
+
+/**
+ * Website and plugin share one GoTrue refresh family. The later expires_at
+ * is the session that last won rotation. On a tie keep `right` (stored).
+ */
+function pickFresherSession(left, right) {
+  const a = sessionUsable(left) ? left : null;
+  const b = sessionUsable(right) ? right : null;
+  if (!a) return b;
+  if (!b) return a;
+  const expA = sessionExpiryMs(a);
+  const expB = sessionExpiryMs(b);
+  if (expA > expB + 2000) return a;
+  if (expB > expA + 2000) return b;
+  return b;
+}
+
 function sessionUsable(session) {
   if (!session?.access_token) return false;
   return Boolean(session.refresh_token) || !sessionExpired(session);
@@ -230,11 +262,28 @@ async function pluginCookieImportAllowed() {
 
 async function markPluginSignedIn() {
   await chrome.storage.local.set({ [PLUGIN_SIGNED_OUT_KEY]: false });
+  await clearRefreshCooldown();
+}
+
+async function readRefreshCooldown() {
+  const data = await chrome.storage.local.get([REFRESH_COOLDOWN_KEY]);
+  return Number(data[REFRESH_COOLDOWN_KEY] || 0);
+}
+
+async function setRefreshCooldown(ms) {
+  await chrome.storage.local.set({
+    [REFRESH_COOLDOWN_KEY]: Date.now() + Math.max(0, Number(ms) || 0),
+  });
+}
+
+async function clearRefreshCooldown() {
+  await chrome.storage.local.remove([REFRESH_COOLDOWN_KEY]);
 }
 
 async function markPluginSignedOut() {
   await chrome.storage.local.set({ [PLUGIN_SIGNED_OUT_KEY]: true });
   await clearStoredSession();
+  await clearRefreshCooldown();
   invalidateRuntimeCaches();
 }
 
@@ -270,7 +319,7 @@ async function adoptAppOrigin(origin, config) {
 async function tryResolveOrigin(origin) {
   const config = await probeConfig(origin);
   if (!config) return null;
-  const token = await getAccessToken(origin);
+  const token = await getAccessToken(origin, { allowRefresh: false });
   if (token) return { origin, config, authed: true };
   return { origin, config, authed: false, local: isLocalOrigin(origin) };
 }
@@ -478,18 +527,8 @@ function sessionFromAuthCookieList(cookies) {
 
 function sessionExpired(session) {
   if (!session?.access_token) return true;
-  const expiresAtMs = Number(session.expires_at)
-    ? Number(session.expires_at) * 1000
-    : 0;
+  const expiresAtMs = sessionExpiryMs(session);
   if (expiresAtMs) return expiresAtMs < Date.now() + 60_000;
-  try {
-    const payload = JSON.parse(
-      atob(session.access_token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/")),
-    );
-    if (payload?.exp) return payload.exp * 1000 < Date.now() + 60_000;
-  } catch {
-    // unreadable JWT
-  }
   return true;
 }
 
@@ -706,6 +745,8 @@ async function refreshSessionInner(appBase, session) {
     result = await refreshSessionOnce(appBase, session);
   }
   lastTokenRefreshReason = result.ok ? null : result.reason;
+  if (result.ok) await clearRefreshCooldown();
+  else if (result.reason === "invalid") await setRefreshCooldown(10 * 60 * 1000);
   return result;
 }
 
@@ -737,6 +778,7 @@ async function readCookieSession(origin) {
 }
 
 async function importSessionFromKnownCookies(preferredOrigin) {
+  const stored = await readStoredSession();
   const origins = unique([
     ...originsWithWwwFirst(preferredOrigin),
     ...(await originsFromAuthCookies()),
@@ -747,16 +789,25 @@ async function importSessionFromKnownCookies(preferredOrigin) {
   for (const origin of expandOrigins(origins)) {
     if (preferProduction && isLocalOrigin(origin)) continue;
     const { session } = await readSessionFromCookies(origin);
-    if (sessionUsable(session)) {
-      await rememberSession(origin, session);
-      return origin;
-    }
+    if (!sessionUsable(session)) continue;
+    const merged = mergeSessionPreserveRefresh(session, stored?.session);
+    const chosen = pickFresherSession(merged, stored?.session);
+    if (!sessionUsable(chosen)) continue;
+    await rememberSession(origin, chosen);
+    return origin;
+  }
+  if (
+    stored &&
+    sessionUsable(stored.session) &&
+    originsEquivalent(stored.appBase, preferredOrigin || stored.appBase)
+  ) {
+    return stored.appBase;
   }
   return "";
 }
 
-async function getAccessToken(appBase) {
-  lastTokenRefreshReason = null;
+async function getAccessToken(appBase, options = {}) {
+  const allowRefresh = options.allowRefresh !== false;
   const origin = preferLiveOrigin(parseOrigin(appBase));
   const stored = await readStoredSession();
   const storedSession =
@@ -764,51 +815,56 @@ async function getAccessToken(appBase) {
       ? stored.session
       : null;
 
-  if (storedSession?.access_token && !sessionExpired(storedSession)) {
-    return storedSession.access_token;
-  }
-
   const fromCookies = await readCookieSession(origin);
   const cookieMerged = fromCookies
     ? mergeSessionPreserveRefresh(fromCookies.session, storedSession)
     : null;
-  if (cookieMerged?.access_token && !sessionExpired(cookieMerged)) {
-    await rememberSession(fromCookies.origin, cookieMerged);
-    return cookieMerged.access_token;
-  }
-
-  const refreshSource = cookieMerged?.refresh_token
-    ? { appBase: fromCookies.origin, session: cookieMerged }
-    : storedSession?.refresh_token
-      ? { appBase: origin || stored?.appBase, session: storedSession }
-      : null;
-  if (!refreshSource) return null;
-
-  const refreshed = await refreshSession(
-    refreshSource.appBase,
-    refreshSource.session,
+  const chosen = pickFresherSession(cookieMerged, storedSession);
+  const chosenFromCookie = Boolean(
+    chosen && cookieMerged && chosen === cookieMerged,
   );
-  if (refreshed.ok) return refreshed.session.access_token;
+  const chosenOrigin = chosenFromCookie
+    ? fromCookies.origin
+    : origin || stored?.appBase;
 
-  if (refreshed.reason !== "invalid") return null;
-
-  await new Promise((resolve) => setTimeout(resolve, 400));
-  const again = await readCookieSession(origin);
-  const merged = again
-    ? mergeSessionPreserveRefresh(again.session, storedSession)
-    : null;
-  if (merged?.access_token && !sessionExpired(merged)) {
+  if (chosen?.access_token && !sessionExpired(chosen)) {
     lastTokenRefreshReason = null;
-    await rememberSession(again.origin, merged);
-    return merged.access_token;
+    if (chosenFromCookie) await rememberSession(chosenOrigin, chosen);
+    return chosen.access_token;
   }
-  if (
-    merged?.refresh_token &&
-    merged.refresh_token !== refreshSource.session.refresh_token
-  ) {
-    const retry = await refreshSession(again.origin, merged);
-    if (retry.ok) return retry.session.access_token;
+
+  if (!allowRefresh) return null;
+
+  const cookieIsNewer =
+    chosenFromCookie &&
+    cookieMerged?.refresh_token &&
+    cookieMerged.refresh_token !== storedSession?.refresh_token;
+  const cooldownUntil = await readRefreshCooldown();
+  if (cooldownUntil > Date.now() && !cookieIsNewer) {
+    lastTokenRefreshReason = "invalid";
+    return null;
   }
+
+  const refreshOrder = [];
+  const seenTokens = new Set();
+  function queueRefresh(nextOrigin, session) {
+    const token = session?.refresh_token;
+    if (!token || seenTokens.has(token)) return;
+    seenTokens.add(token);
+    refreshOrder.push({ appBase: nextOrigin, session });
+  }
+  queueRefresh(chosenOrigin, chosen);
+  queueRefresh(origin || stored?.appBase, storedSession);
+  if (fromCookies) queueRefresh(fromCookies.origin, cookieMerged);
+
+  let lastFail = "missing";
+  for (const source of refreshOrder) {
+    const refreshed = await refreshSession(source.appBase, source.session);
+    if (refreshed.ok) return refreshed.session.access_token;
+    lastFail = refreshed.reason || lastFail;
+    if (refreshed.reason === "unavailable") break;
+  }
+  lastTokenRefreshReason = refreshOrder.length ? lastFail : "missing";
   return null;
 }
 
@@ -857,6 +913,15 @@ async function apiFetch(path, options = {}, retried = false) {
     if (nextOrigin && nextOrigin !== appBase) {
       await chrome.storage.sync.set({ appBaseUrl: nextOrigin });
       return apiFetch(path, options, true);
+    }
+  }
+
+  if (!retried && response.status === 401) {
+    invalidateSessionCache();
+    const stored = await readStoredSession();
+    if (stored?.session?.refresh_token) {
+      const refreshed = await refreshSession(appBase, stored.session);
+      if (refreshed.ok) return apiFetch(path, options, true);
     }
   }
 
@@ -1454,18 +1519,6 @@ async function sessionResponseInner() {
 
   const result = await apiFetch("/api/extension/session");
   const doneTabs = await findOpenPluginDoneTabs();
-  if (
-    result?.status === 200 &&
-    result?.data &&
-    result.data.authenticated !== true &&
-    doneTabs.length === 0 &&
-    lastTokenRefreshReason === "invalid"
-  ) {
-    const stored = await readStoredSession();
-    if (stored?.session?.access_token) {
-      await clearStoredSession();
-    }
-  }
   if (result?.data) {
     result.data.handoffPending = doneTabs.length > 0;
     const teams = Array.isArray(result.data.teams) ? result.data.teams : [];
@@ -1808,7 +1861,12 @@ if (chrome.cookies?.onChanged) {
       if (!sessionUsable(session)) return;
       const stored = await readStoredSession();
       const merged = mergeSessionPreserveRefresh(session, stored?.session);
-      if (sessionUsable(merged)) await rememberSession(origin, merged);
+      const chosen = pickFresherSession(merged, stored?.session);
+      if (chosen && chosen !== stored?.session && sessionUsable(chosen)) {
+        await rememberSession(origin, chosen);
+        await clearRefreshCooldown();
+        void publishSessionUpdate(true);
+      }
     })();
   });
 }
@@ -1878,7 +1936,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             sendResponse({ ok: true });
             return;
           }
-          await clearStoredSession();
         }
         const stored = await chrome.storage.sync.get([
           "loginPath",

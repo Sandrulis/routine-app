@@ -11,6 +11,7 @@ import {
 import { useDisplayPreferences } from "@/app/components/display-preferences-provider";
 import { useTranslations } from "@/app/components/translations-provider";
 import { todayIsoDate } from "@/app/lib/format-display-date";
+import { htmlLang } from "@/app/lib/seo/locale-path";
 
 type DatePickerPopoverProps = {
   value: string | null;
@@ -21,8 +22,33 @@ type DatePickerPopoverProps = {
   onOpenChange: (open: boolean) => void;
 };
 
-const DAY_NAMES_MON = ["P", "O", "T", "C", "Pk", "S", "Sv"];
-const DAY_NAMES_SUN = ["Sv", "P", "O", "T", "C", "Pk", "S"];
+const WEEKDAY_KEYS_MON = [
+  "mon",
+  "tue",
+  "wed",
+  "thu",
+  "fri",
+  "sat",
+  "sun",
+] as const;
+const WEEKDAY_KEYS_SUN = [
+  "sun",
+  "mon",
+  "tue",
+  "wed",
+  "thu",
+  "fri",
+  "sat",
+] as const;
+const WEEKDAY_FALLBACKS: Record<(typeof WEEKDAY_KEYS_MON)[number], string> = {
+  mon: "P",
+  tue: "O",
+  wed: "T",
+  thu: "C",
+  fri: "Pk",
+  sat: "S",
+  sun: "Sv",
+};
 
 export function DatePickerPopover({
   value,
@@ -33,10 +59,13 @@ export function DatePickerPopover({
   onOpenChange,
 }: DatePickerPopoverProps) {
   const { preferences } = useDisplayPreferences();
-  const { t } = useTranslations();
+  const { t, languageCode } = useTranslations();
   const panelRef = useRef<HTMLDivElement>(null);
   const startSunday = preferences.weekStartDay === "sunday";
-  const dayNames = startSunday ? DAY_NAMES_SUN : DAY_NAMES_MON;
+  const weekdayKeys = startSunday ? WEEKDAY_KEYS_SUN : WEEKDAY_KEYS_MON;
+  const dayNames = weekdayKeys.map((key) =>
+    t(`dates.weekday.${key}`, WEEKDAY_FALLBACKS[key]),
+  );
 
   const today = todayIsoDate();
   const initialMonth = value || today;
@@ -102,8 +131,12 @@ export function DatePickerPopover({
 
   const monthLabel = useMemo(() => {
     const d = new Date(viewYear, viewMonth, 1);
-    return d.toLocaleString("default", { month: "long", year: "numeric" });
-  }, [viewYear, viewMonth]);
+    const formatted = d.toLocaleString(htmlLang(languageCode), {
+      month: "long",
+      year: "numeric",
+    });
+    return formatted.charAt(0).toLocaleUpperCase(htmlLang(languageCode)) + formatted.slice(1);
+  }, [viewYear, viewMonth, languageCode]);
 
   const goToPrev = useCallback(() => {
     setViewMonth((m) => {
@@ -156,16 +189,16 @@ export function DatePickerPopover({
           type="button"
           className="rounded p-1 text-sm text-zinc-600 hover:bg-zinc-100"
           onClick={goToPrev}
-          aria-label="Previous month"
+          aria-label={t("dates.prev_month", "Iepriekšējais mēnesis")}
         >
           <i className="fas fa-chevron-left text-xs" />
         </button>
-        <span className="text-sm font-semibold capitalize text-zinc-900">{monthLabel}</span>
+        <span className="text-sm font-semibold text-zinc-900">{monthLabel}</span>
         <button
           type="button"
           className="rounded p-1 text-sm text-zinc-600 hover:bg-zinc-100"
           onClick={goToNext}
-          aria-label="Next month"
+          aria-label={t("dates.next_month", "Nākamais mēnesis")}
         >
           <i className="fas fa-chevron-right text-xs" />
         </button>

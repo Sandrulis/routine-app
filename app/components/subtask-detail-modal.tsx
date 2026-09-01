@@ -12,6 +12,7 @@ import {
 } from "@/app/components/file-upload-overlay";
 import { ListBadge } from "@/app/components/list-badge";
 import { NameFormModal } from "@/app/components/name-form-modal";
+import { FileNoteModal } from "@/app/components/file-note-modal";
 import { StatusControl, useStatusLabels } from "@/app/components/status-control";
 import { AssigneeCell, DateCell } from "@/app/components/subtask-table";
 import { ForwardTaskFileModal } from "@/app/components/forward-task-file-modal";
@@ -269,6 +270,7 @@ export function SubtaskDetailModal({
     updateTask,
     addTaskFile,
     renameTaskFile,
+    updateTaskFileNote,
     removeTaskFile,
     taskFiles,
   } = useLists();
@@ -305,7 +307,13 @@ export function SubtaskDetailModal({
   } | null>(null);
   const detailsSeqRef = useRef(0);
   const [pendingFiles, setPendingFiles] = useState<
-    Array<{ id: string; file: File; name: string; previewUrl: string | null }>
+    Array<{
+      id: string;
+      file: File;
+      name: string;
+      previewUrl: string | null;
+      note: string;
+    }>
   >([]);
   const [fileToDelete, setFileToDelete] = useState<{
     id: string;
@@ -314,6 +322,11 @@ export function SubtaskDetailModal({
   const [fileToRename, setFileToRename] = useState<{
     id: string;
     name: string;
+  } | null>(null);
+  const [fileToNote, setFileToNote] = useState<{
+    id: string;
+    name: string;
+    note: string;
   } | null>(null);
   const [fileToForward, setFileToForward] = useState<{
     id: string;
@@ -582,6 +595,7 @@ export function SubtaskDetailModal({
         previewUrl: file.type.startsWith("image/")
           ? URL.createObjectURL(file)
           : null,
+        note: "",
       })),
     ]);
   }
@@ -600,6 +614,18 @@ export function SubtaskDetailModal({
     const name = pending?.name ?? stored?.name;
     if (!name) return;
     setFileToRename({ id: fileId, name });
+  }
+
+  function requestNoteAttachment(fileId: string) {
+    const pending = pendingFiles.find((item) => item.id === fileId);
+    const stored = files.find((file) => file.id === fileId);
+    const name = pending?.name ?? stored?.name;
+    if (!name) return;
+    setFileToNote({
+      id: fileId,
+      name,
+      note: pending?.note ?? stored?.note ?? "",
+    });
   }
 
   function requestForwardAttachment(fileId: string) {
@@ -804,6 +830,25 @@ export function SubtaskDetailModal({
     setFileToRename(null);
   }
 
+  function confirmFileNote(note: string) {
+    if (!fileToNote) return;
+    const pending = pendingFiles.find((item) => item.id === fileToNote.id);
+    if (pending) {
+      setPendingFiles((current) =>
+        current.map((item) =>
+          item.id === fileToNote.id ? { ...item, note } : item,
+        ),
+      );
+    } else {
+      updateTaskFileNote(fileToNote.id, note);
+    }
+    showFeedback({
+      type: "success",
+      text: t("files.note.saved", "Piezīme saglabāta."),
+    });
+    setFileToNote(null);
+  }
+
   function confirmRemoveAttachment() {
     if (!fileToDelete) return;
     const pending = pendingFiles.find((item) => item.id === fileToDelete.id);
@@ -886,7 +931,7 @@ export function SubtaskDetailModal({
           item.name === item.file.name
             ? item.file
             : new File([item.file], item.name, { type: item.file.type });
-        await addTaskFile(created.id, upload);
+        await addTaskFile(created.id, upload, { note: item.note });
         if (item.previewUrl) URL.revokeObjectURL(item.previewUrl);
       }
       setPendingFiles([]);
@@ -949,6 +994,7 @@ export function SubtaskDetailModal({
       blocking={
         fileToDelete !== null ||
         fileToRename !== null ||
+        fileToNote !== null ||
         fileToForward !== null
       }
       panelMaxWidthClassName={appModalSplitPanelMaxWidthClassName}
@@ -1171,6 +1217,7 @@ export function SubtaskDetailModal({
                       mimeType: file.mimeType,
                       size: file.size,
                       previewUrl: taskFilePreviewUrl(file),
+                      note: file.note,
                     }))
                   : []),
                 ...pendingFiles.map((item) => ({
@@ -1179,6 +1226,7 @@ export function SubtaskDetailModal({
                   mimeType: item.file.type || mimeFromName(item.name),
                   size: item.file.size,
                   previewUrl: item.previewUrl,
+                  note: item.note,
                 })),
               ]}
               disabled={
@@ -1196,6 +1244,7 @@ export function SubtaskDetailModal({
               }}
               onForward={requestForwardAttachment}
               onRename={requestRenameAttachment}
+              onNote={requestNoteAttachment}
               onRemove={requestRemoveAttachment}
             />
             ) : null}
@@ -1387,6 +1436,15 @@ export function SubtaskDetailModal({
           : null
       }
       onCreate={(input) => confirmRenameAttachment(input.name)}
+    />
+    <FileNoteModal
+      open={fileToNote !== null}
+      onOpenChange={(open) => {
+        if (!open) setFileToNote(null);
+      }}
+      fileName={fileToNote?.name ?? ""}
+      initialNote={fileToNote?.note ?? ""}
+      onSave={confirmFileNote}
     />
     <ForwardTaskFileModal
       open={fileToForward !== null}

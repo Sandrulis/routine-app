@@ -13,7 +13,7 @@ import {
 } from "@/app/lib/list-access";
 import { memberInitials, type MembersByTeam, type RolesByTeam, type TeamMember, type TeamRole, type WorkTeam } from "@/app/lib/team";
 import { normalizeTeamPermissionSet } from "@/app/lib/team-permissions";
-import type { TaskActivity, TaskFile } from "@/app/lib/task-activity";
+import { parseFileNote, type TaskActivity, type TaskFile } from "@/app/lib/task-activity";
 import { isTodoStatus, type TodoItem } from "@/app/lib/team-todo";
 import {
   isListStatusGroup,
@@ -598,7 +598,7 @@ export async function fetchTeamWorkspace(teamId: string): Promise<TeamWorkspace>
     fetchAllRows((from, to) =>
       supabase
         .from("task_files")
-        .select("id, task_id, name, mime_type, size, has_content, google_drive_file_id, onedrive_file_id, created_at")
+        .select("id, task_id, name, mime_type, size, has_content, google_drive_file_id, onedrive_file_id, note, created_at")
         .eq("team_id", teamId)
         .range(from, to),
     ),
@@ -682,6 +682,7 @@ export async function fetchTeamWorkspace(teamId: string): Promise<TeamWorkspace>
       : null,
     oneDriveFileId: row.onedrive_file_id ? String(row.onedrive_file_id) : null,
     createdAt: row.created_at,
+    note: parseFileNote(row.note),
   }));
 
   const listFiles: ListFile[] = listFileRows.map((row) => ({
@@ -1126,6 +1127,7 @@ export async function insertTaskFile(
     google_drive_file_id: file.googleDriveFileId,
     onedrive_file_id: file.oneDriveFileId,
     has_content: false,
+    note: parseFileNote(file.note),
     created_at: file.createdAt,
   });
   if (error) throw error;
@@ -1135,6 +1137,14 @@ export async function updateTaskFileName(fileId: string, name: string, mimeType:
   const { error } = await db()
     .from("task_files")
     .update({ name, mime_type: mimeType })
+    .eq("id", fileId);
+  if (error) throw error;
+}
+
+export async function updateTaskFileNote(fileId: string, note: string) {
+  const { error } = await db()
+    .from("task_files")
+    .update({ note: parseFileNote(note) })
     .eq("id", fileId);
   if (error) throw error;
 }

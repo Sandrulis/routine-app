@@ -353,6 +353,7 @@ export async function attachFilesToSubtask(input: {
       googleDriveFileId,
       oneDriveFileId,
       createdAt,
+      note: "",
     };
 
     // Same columns as insertTaskFile() in work-data.ts (incl. has_content).
@@ -367,6 +368,7 @@ export async function attachFilesToSubtask(input: {
       google_drive_file_id: record.googleDriveFileId,
       onedrive_file_id: record.oneDriveFileId,
       has_content: false,
+      note: record.note,
       created_at: record.createdAt,
     });
     if (insertError) {

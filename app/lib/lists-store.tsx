@@ -82,6 +82,7 @@ import {
   createTaskFileId,
   hydrateTaskFileContents,
   cacheTaskFileContent,
+  parseFileNote,
   type TaskActivity,
   type TaskFile,
 } from "@/app/lib/task-activity";
@@ -114,6 +115,7 @@ import {
   updateWorkTaskStatusRow,
   deleteWorkTaskStatusRow,
   updateTaskFileName,
+  updateTaskFileNote,
   formatSupabaseError,
   updateTaskRow,
   updateTaskSortOrders,
@@ -230,9 +232,10 @@ type ListsContextValue = {
   addTaskFile: (
     taskId: string,
     file: File,
-    options?: { onProgress?: (percent: number) => void },
+    options?: { onProgress?: (percent: number) => void; note?: string },
   ) => Promise<TaskFile | null>;
   renameTaskFile: (fileId: string, name: string) => void;
+  updateTaskFileNote: (fileId: string, note: string) => void;
   removeTaskFile: (fileId: string) => void;
   taskActivities: (taskId: string) => TaskActivity[];
   taskFiles: (taskId: string) => TaskFile[];
@@ -1087,7 +1090,7 @@ export function ListsProvider({ children }: { children: ReactNode }) {
   const addTaskFile = useCallback(async (
     taskId: string,
     file: File,
-    options?: { onProgress?: (percent: number) => void },
+    options?: { onProgress?: (percent: number) => void; note?: string },
   ) => {
     if (!fileUploadsEnabledRef.current) return null;
     if (!cloudReadyRef.current) return null;
@@ -1131,6 +1134,7 @@ export function ListsProvider({ children }: { children: ReactNode }) {
       googleDriveFileId: cloudResult.googleDriveFileId,
       oneDriveFileId: cloudResult.oneDriveFileId,
       createdAt: new Date().toISOString(),
+      note: parseFileNote(options?.note),
     };
     const activity = createActivity({
       actorId: assignmentNotifyRef.current.actorId,
@@ -1245,6 +1249,23 @@ export function ListsProvider({ children }: { children: ReactNode }) {
       queueOneDriveRename({ kind: "task", id: fileId, name: trimmed });
     }
   }, [persistActivity]);
+
+  const updateTaskFileNoteAction = useCallback((fileId: string, note: string) => {
+    const nextNote = parseFileNote(note);
+    let changed = false;
+    setFiles((current) => {
+      const file = current.find((item) => item.id === fileId);
+      if (!file || file.note === nextNote) return current;
+      changed = true;
+      return current.map((item) =>
+        item.id === fileId ? { ...item, note: nextNote } : item,
+      );
+    });
+    if (!changed) return;
+    void updateTaskFileNote(fileId, nextNote).catch((error) => {
+      console.error("Failed to update task file note", error);
+    });
+  }, []);
 
   const hideTask = useCallback(
     (taskId: string) => {
@@ -2114,6 +2135,7 @@ export function ListsProvider({ children }: { children: ReactNode }) {
       addTaskComment,
       addTaskFile,
       renameTaskFile,
+      updateTaskFileNote: updateTaskFileNoteAction,
       removeTaskFile,
       reorderTasks,
       addListStatus,
@@ -2163,6 +2185,7 @@ export function ListsProvider({ children }: { children: ReactNode }) {
       updateListAutomation,
       updateListStatus,
       updateTask,
+      updateTaskFileNoteAction,
       updateTaskStatus,
       updateWorkTaskStatus,
     ],
