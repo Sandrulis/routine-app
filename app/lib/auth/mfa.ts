@@ -21,6 +21,23 @@ type MfaClient = {
   };
 };
 
+export function userHasVerifiedTotp(factors?: MfaFactor[] | null): boolean {
+  return (factors ?? []).some(
+    (factor) => factor.status === "verified" && factor.factor_type === "totp",
+  );
+}
+
+export function accessTokenAal(accessToken: string): string {
+  try {
+    const payload = JSON.parse(
+      atob(accessToken.split(".")[1]?.replace(/-/g, "+").replace(/_/g, "/") || ""),
+    ) as { aal?: string };
+    return String(payload.aal || "").trim();
+  } catch {
+    return "";
+  }
+}
+
 export async function getMfaGate(supabase: MfaClient): Promise<MfaGate> {
   const {
     data: { user },
@@ -37,9 +54,6 @@ export async function getMfaGate(supabase: MfaClient): Promise<MfaGate> {
   const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel(jwt);
   if (aal?.currentLevel === "aal2") return "ok";
 
-  const verified = (user.factors ?? []).filter(
-    (factor) => factor.status === "verified" && factor.factor_type === "totp",
-  );
-  if (verified.length === 0) return "enroll";
+  if (!userHasVerifiedTotp(user.factors as MfaFactor[] | null)) return "enroll";
   return "verify";
 }

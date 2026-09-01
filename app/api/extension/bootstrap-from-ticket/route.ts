@@ -4,6 +4,7 @@ import {
 } from "@/app/lib/extension/cors";
 import { parseGmailBridgeTicket } from "@/app/lib/extension/gmail-bridge-ticket";
 import { supabaseAuthCookieName } from "@/app/lib/extension/cookie-name";
+import { accessTokenAal, userHasVerifiedTotp } from "@/app/lib/auth/mfa";
 import { mintIndependentPluginSession } from "@/app/lib/extension/mint-plugin-session";
 import { getExtensionAuth } from "@/app/lib/extension/auth";
 import { requestClientIp } from "@/app/lib/security/client-ip";
@@ -114,6 +115,17 @@ export async function POST(request: Request) {
     return extensionJson(
       request,
       { ok: false, error: "errors.extension_auth_required" },
+      { status: 401 },
+    );
+  }
+
+  if (
+    userHasVerifiedTotp(verified.user.factors) &&
+    accessTokenAal(session.access_token) !== "aal2"
+  ) {
+    return extensionJson(
+      request,
+      { ok: false, error: "errors.extension_login_mfa", needsMfa: true },
       { status: 401 },
     );
   }

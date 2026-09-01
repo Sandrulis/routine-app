@@ -4,6 +4,12 @@
 
 - (none)
 
+## v0.3.28
+
+- Gmail spraudnis `0.4.39`: Google ielogošanās ticket paliek spraudnī, arī ja done cilni aizver
+- Gmail spraudņa Google ielogošanās prasa TOTP, ja kontam ir 2FA; AAL1 sesiju vairs neizsniedz
+- Done lapā «Pagaidi, kamēr spraudnis saņem sesiju…» ir sarkans, lai cilni neaizver pārāk agri
+
 ## v0.3.27
 
 - MFA kods ievadāms 3+3 ciparu blokos; pēc 6 cipariem pārbaude ir automātiska, **Iziet** ir ikona augšējā labajā stūrī

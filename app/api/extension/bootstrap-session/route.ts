@@ -1,4 +1,5 @@
 import { getExtensionAuth } from "@/app/lib/extension/auth";
+import { accessTokenAal, userHasVerifiedTotp } from "@/app/lib/auth/mfa";
 import { supabaseAuthCookieName } from "@/app/lib/extension/cookie-name";
 import {
   extensionJson,
@@ -70,6 +71,17 @@ export async function GET(request: Request) {
     return extensionJson(
       request,
       { ok: false, error: "errors.auth_required" },
+      { status: 401 },
+    );
+  }
+
+  if (
+    userHasVerifiedTotp(auth.user.factors) &&
+    accessTokenAal(accessToken) !== "aal2"
+  ) {
+    return extensionJson(
+      request,
+      { ok: false, error: "errors.extension_login_mfa", needsMfa: true },
       { status: 401 },
     );
   }

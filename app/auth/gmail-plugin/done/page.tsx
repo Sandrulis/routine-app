@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
+import { getMfaGate } from "@/app/lib/auth/mfa";
 import { createClient } from "@/app/lib/supabase/server";
 import { createGmailBridgeTicket } from "@/app/lib/extension/gmail-bridge-ticket";
 import { sessionFromRequestCookies } from "@/app/lib/extension/session-from-cookies";
 import { getServerTranslations } from "@/app/lib/i18n/server";
 import { translatedPageMetadata } from "@/app/lib/page-metadata";
+import { GmailPluginMfaGate } from "./gmail-plugin-mfa";
 import { GmailPluginHandoffBody } from "./handoff-status";
 
 export const dynamic = "force-dynamic";
@@ -46,6 +48,7 @@ export default async function GmailPluginDonePage({
 
   let bootstrapTicket = "";
   let hasBrowserSession = false;
+  let needsMfa = false;
   if (wantsLogin || wantsConnect) {
     try {
       const supabase = await createClient();
@@ -54,18 +57,22 @@ export default async function GmailPluginDonePage({
       } = await supabase.auth.getUser();
       hasBrowserSession = Boolean(user?.id);
       if (user?.id) {
-        const {
-          data: { session },
-        } = await supabase.auth.getSession();
-        const refreshToken =
-          session?.refresh_token ||
-          (await sessionFromRequestCookies())?.refresh_token ||
-          "";
-        if (refreshToken) {
-          bootstrapTicket = tryCreateBootstrapTicket({
-            refreshToken,
-            userId: user.id,
-          });
+        if ((await getMfaGate(supabase)) === "verify") {
+          needsMfa = true;
+        } else {
+          const {
+            data: { session },
+          } = await supabase.auth.getSession();
+          const refreshToken =
+            session?.refresh_token ||
+            (await sessionFromRequestCookies())?.refresh_token ||
+            "";
+          if (refreshToken) {
+            bootstrapTicket = tryCreateBootstrapTicket({
+              refreshToken,
+              userId: user.id,
+            });
+          }
         }
       }
     } catch {
@@ -73,19 +80,21 @@ export default async function GmailPluginDonePage({
     }
   }
 
-  const loggedIn = wantsLogin && hasBrowserSession;
+  const loggedIn = wantsLogin && hasBrowserSession && !needsMfa;
   // Gmail connection is stored server-side; success does not depend on browser cookies.
   const connected = wantsConnect;
   const sessionMissing = wantsLogin && !hasBrowserSession;
   const title = sessionMissing
     ? t("extension.gmail.login_done.error_title", "Neizdevās ienākt")
-    : loggedIn
-      ? t("extension.gmail.login_done.title", "Ienāci {SYSTEM_NAME}")
-      : connected
-        ? t("extension.gmail.done.title", "Gmail savienots")
-        : loginFlow
-          ? t("extension.gmail.login_done.error_title", "Neizdevās ienākt")
-          : t("extension.gmail.done.error_title", "Neizdevās savienot Gmail");
+    : needsMfa
+      ? t("auth.mfa.title", "Divfaktoru autentifikācija")
+      : loggedIn
+        ? t("extension.gmail.login_done.title", "Ienāci {SYSTEM_NAME}")
+        : connected
+          ? t("extension.gmail.done.title", "Gmail savienots")
+          : loginFlow
+            ? t("extension.gmail.login_done.error_title", "Neizdevās ienākt")
+            : t("extension.gmail.done.error_title", "Neizdevās savienot Gmail");
   const readyBody = loggedIn
     ? t(
         "extension.gmail.login_done.body",
@@ -98,7 +107,7 @@ export default async function GmailPluginDonePage({
         )
       : "";
   const waitingBody =
-    loggedIn || connected
+    !needsMfa && (loggedIn || connected)
       ? t(
           "extension.gmail.handoff.waiting",
           "Pagaidi, kamēr spraudnis saņem sesiju…",
@@ -109,27 +118,34 @@ export default async function GmailPluginDonePage({
         "extension.gmail.login_done.session_missing",
         "Pārlūkā nav aktīvas sesijas. Mēģini vēlreiz no Gmail spraudņa.",
       )
-    : loggedIn || connected
-      ? readyBody
-      : loginFlow
-        ? t(
-            "extension.gmail.login_done.error_body",
-            "Mēģini vēlreiz no Gmail spraudņa.",
-          )
-        : t(
-            "extension.gmail.done.error_body",
-            "Mēģini vēlreiz no Gmail spraudņa. Pārliecinies, ka Google OAuth un Gmail API ir ieslēgti.",
-          );
+    : needsMfa
+      ? t(
+          "auth.mfa.verify_login",
+          "Ievadi Authenticator kodu, lai pabeigtu ielogošanos.",
+        )
+      : loggedIn || connected
+        ? readyBody
+        : loginFlow
+          ? t(
+              "extension.gmail.login_done.error_body",
+              "Mēģini vēlreiz no Gmail spraudņa.",
+            )
+          : t(
+              "extension.gmail.done.error_body",
+              "Mēģini vēlreiz no Gmail spraudņa. Pārliecinies, ka Google OAuth un Gmail API ir ieslēgti.",
+            );
 
   const pluginState = sessionMissing
     ? "error"
-    : loggedIn
-      ? "logged-in"
-      : connected
-        ? "connected"
-        : error
-          ? "error"
-          : "done";
+    : needsMfa
+      ? "mfa"
+      : loggedIn
+        ? "logged-in"
+        : connected
+          ? "connected"
+          : error
+            ? "error"
+            : "done";
 
   return (
     <main
@@ -140,11 +156,12 @@ export default async function GmailPluginDonePage({
         : {})}
     >
       <h1 className="text-2xl font-semibold text-zinc-900">{title}</h1>
-      {waitingBody && readyBody ? (
+      {waitingBody && readyBody && !needsMfa ? (
         <GmailPluginHandoffBody waiting={waitingBody} ready={readyBody} />
       ) : (
         <p className="mt-3 text-sm text-zinc-600">{body}</p>
       )}
+      {needsMfa ? <GmailPluginMfaGate /> : null}
     </main>
   );
 }

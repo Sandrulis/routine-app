@@ -7,6 +7,8 @@ const APP_ORIGIN_CANDIDATES = [
 ];
 const STORED_SESSION_KEY = "extensionAuth";
 const PLUGIN_SIGNED_OUT_KEY = "pluginSignedOut";
+const PENDING_BOOTSTRAP_KEY = "pendingBootstrapTicket";
+const PENDING_BOOTSTRAP_TTL_MS = 2 * 60 * 1000;
 const REFRESH_COOLDOWN_KEY = "extensionRefreshCooldown";
 const COOKIE_CHUNK = 3180;
 const AUTH_MAX_AGE_SEC = 30 * 24 * 60 * 60;
@@ -46,12 +48,17 @@ function invalidateRuntimeCaches() {
 
 function broadcastSessionUpdate(result) {
   try {
-    chrome.runtime.sendMessage({
-      type: "routine.sessionUpdated",
-      result: result || null,
-    });
+    chrome.runtime.sendMessage(
+      {
+        type: "routine.sessionUpdated",
+        result: result || null,
+      },
+      () => {
+        void chrome.runtime.lastError;
+      },
+    );
   } catch {
-    // no listeners (popup/content closed)
+    // Popup/content closed: no listener for this broadcast.
   }
 }
 
@@ -293,6 +300,61 @@ async function rememberSession(appBase, session) {
   await writeStoredSession(origin, session);
   if (origin) await chrome.storage.sync.set({ appBaseUrl: origin });
   invalidateSessionCache();
+}
+
+async function stashPendingBootstrap(origin, ticket) {
+  const value = String(ticket || "").trim();
+  const appBase = preferLiveOrigin(parseOrigin(origin));
+  if (!value || !appBase) return false;
+  await chrome.storage.local.set({
+    [PENDING_BOOTSTRAP_KEY]: {
+      origin: appBase,
+      ticket: value,
+      at: Date.now(),
+    },
+  });
+  if (chrome.alarms?.create) {
+    await chrome.alarms.create("routine.pluginHandoff", {
+      delayInMinutes: 0.05,
+      periodInMinutes: 0.5,
+    });
+  }
+  return true;
+}
+
+async function readPendingBootstrap() {
+  const data = await chrome.storage.local.get([PENDING_BOOTSTRAP_KEY]);
+  const pending = data[PENDING_BOOTSTRAP_KEY];
+  const ticket = String(pending?.ticket || "").trim();
+  const origin = preferLiveOrigin(parseOrigin(pending?.origin));
+  const at = Number(pending?.at) || 0;
+  if (!ticket || !origin) return null;
+  if (at && Date.now() - at > PENDING_BOOTSTRAP_TTL_MS) {
+    await chrome.storage.local.remove([PENDING_BOOTSTRAP_KEY]);
+    return null;
+  }
+  return { origin, ticket };
+}
+
+async function clearPendingBootstrap() {
+  await chrome.storage.local.remove([PENDING_BOOTSTRAP_KEY]);
+  if (chrome.alarms?.clear) {
+    await chrome.alarms.clear("routine.pluginHandoff");
+  }
+}
+
+async function consumePendingBootstrap() {
+  const pending = await readPendingBootstrap();
+  if (!pending) return "";
+  const origin = await captureSessionFromDone(
+    pending.origin,
+    "",
+    null,
+    pending.ticket,
+    0,
+  );
+  if (origin) await clearPendingBootstrap();
+  return origin;
 }
 
 function isLocalOrigin(origin) {
@@ -1511,6 +1573,12 @@ async function sessionResponseInner() {
     Boolean(await getAccessToken(existing.appBase));
   const refreshFailedNetwork = lastTokenRefreshReason === "unavailable";
   if (!alreadyAuthed) {
+    const pendingOrigin = await consumePendingBootstrap();
+    if (pendingOrigin && (await getAccessToken(pendingOrigin))) {
+      alreadyAuthed = true;
+    }
+  }
+  if (!alreadyAuthed) {
     await tryCaptureFromOpenDoneTabs();
     const captured = await readStoredSession();
     if (captured?.session && (await getAccessToken(captured.appBase))) {
@@ -1631,7 +1699,12 @@ async function fetchBootstrapFromTicket(origin, ticket) {
           body: JSON.stringify({ ticket: value }),
         },
       );
-      if (response.status >= 300 && response.status < 400) return null;
+      if (response.status >= 300 && response.status < 400) {
+        if (base.includes("://tasqin.com")) {
+          return fetchBootstrapFromTicket("https://www.tasqin.com", value);
+        }
+        return null;
+      }
       const data = await response.json().catch(() => null);
       const session =
         data?.ok && data?.session?.access_token ? data.session : null;
@@ -1664,7 +1737,7 @@ async function readBootstrapTicketFromTab(tabId) {
   }
 }
 
-async function waitForBootstrapTicketFromTab(tabId, attempts = 15) {
+async function waitForBootstrapTicketFromTab(tabId, attempts = 40) {
   for (let i = 0; i < attempts; i += 1) {
     const ticket = await readBootstrapTicketFromTab(tabId);
     if (ticket) return ticket;
@@ -1682,6 +1755,18 @@ async function findOpenPluginDoneTabs() {
     });
   } catch {
     return [];
+  }
+}
+
+async function injectPluginAuth(tabId) {
+  if (!chrome.scripting?.executeScript) return;
+  try {
+    await chrome.scripting.executeScript({
+      target: { tabId },
+      files: ["plugin-auth.js"],
+    });
+  } catch {
+    // Tab may not be a TASQIN origin yet.
   }
 }
 
@@ -1725,6 +1810,7 @@ async function captureSessionFromDone(
       String(bootstrapTicket || "").trim() ||
       (tabId ? await waitForBootstrapTicketFromTab(tabId) : "");
     if (ticket) {
+      await stashPendingBootstrap(origin, ticket);
       session = await fetchBootstrapFromTicket(origin, ticket);
     }
   }
@@ -1738,6 +1824,7 @@ async function captureSessionFromDone(
 
   if (session?.access_token) {
     await rememberSession(origin, session);
+    await clearPendingBootstrap();
     if (sessionUsable(session)) return origin;
     if (await getAccessToken(origin)) return origin;
     const stored = await readStoredSession();
@@ -1783,6 +1870,7 @@ async function waitForPluginSession(tabId, preferredOrigin, timeoutMs = 180000) 
     }
     void (async () => {
       await markPluginSignedIn();
+      await injectPluginAuth(tabId);
       await captureSessionFromDone(url, "", null, "", tabId);
     })();
   };
@@ -1794,6 +1882,13 @@ async function waitForPluginSession(tabId, preferredOrigin, timeoutMs = 180000) 
       if (readyStored) {
         const check = await apiFetch("/api/extension/session");
         if (check?.data?.authenticated) return readyStored;
+        if (await getAccessToken(readyStored)) return readyStored;
+      }
+      const pendingOrigin = await consumePendingBootstrap();
+      if (pendingOrigin) {
+        const check = await apiFetch("/api/extension/session");
+        if (check?.data?.authenticated) return pendingOrigin;
+        if (await getAccessToken(pendingOrigin)) return pendingOrigin;
       }
       try {
         const tab = await chrome.tabs.get(tabId);
@@ -1801,6 +1896,7 @@ async function waitForPluginSession(tabId, preferredOrigin, timeoutMs = 180000) 
         if (url.includes("/auth/gmail-plugin/done")) {
           sawDone = true;
           if (url.includes("error=")) return "";
+          await injectPluginAuth(tabId);
           const ready = await captureSessionFromDone(
             url,
             "",
@@ -1811,10 +1907,15 @@ async function waitForPluginSession(tabId, preferredOrigin, timeoutMs = 180000) 
           if (ready) {
             const check = await apiFetch("/api/extension/session");
             if (check?.data?.authenticated) return ready;
+            if (await getAccessToken(ready)) return ready;
           }
         }
       } catch {
         if (!sawDone) return "";
+        const pendingOrigin = await consumePendingBootstrap();
+        if (pendingOrigin && (await getAccessToken(pendingOrigin))) {
+          return pendingOrigin;
+        }
         const readyAfterClose = await usableStoredSessionOrigin(preferredOrigin);
         if (readyAfterClose) {
           const check = await apiFetch("/api/extension/session");
@@ -1894,17 +1995,26 @@ if (chrome.cookies?.onChanged) {
 
 if (chrome.alarms) {
   chrome.alarms.onAlarm.addListener((alarm) => {
-    if (alarm.name !== "routine.refreshSession") return;
-    void refreshStoredAccessToken();
+    if (alarm.name === "routine.refreshSession") {
+      void refreshStoredAccessToken();
+      return;
+    }
+    if (alarm.name !== "routine.pluginHandoff") return;
+    void (async () => {
+      const origin = await consumePendingBootstrap();
+      if (origin) await publishSessionUpdate(true);
+    })();
   });
 }
 
 if (chrome.tabs?.onUpdated) {
   chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-    const url = String(changeInfo.url || tab?.url || "");
+    if (changeInfo.status !== "complete") return;
+    const url = String(tab?.url || "");
     if (!isPluginLoginDoneUrl(url) || url.includes("error=")) return;
     void (async () => {
       await markPluginSignedIn();
+      await injectPluginAuth(tabId);
       const origin = await captureSessionFromDone(url, "", null, "", tabId);
       if (origin) await publishSessionUpdate(true);
     })();
@@ -1935,15 +2045,21 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           return;
         }
         await markPluginSignedIn();
+        const ticket = String(message.bootstrapTicket || "").trim();
+        const stashed = ticket ? await stashPendingBootstrap(url, ticket) : false;
         const origin = await captureSessionFromDone(
           url,
           message.cookieHeader,
           message.session,
-          message.bootstrapTicket,
+          ticket,
           sender.tab?.id,
         );
-        if (origin) await publishSessionUpdate(true);
-        sendResponse({ ok: Boolean(origin) });
+        if (origin) {
+          await publishSessionUpdate(true);
+          sendResponse({ ok: true });
+          return;
+        }
+        sendResponse({ ok: Boolean(stashed) });
         return;
       }
       if (message?.type === "routine.openLogin") {

@@ -20,10 +20,12 @@ export function MfaVerifyModal({
   open,
   mode = "admin",
   nextPath,
+  onVerified,
 }: {
   open: boolean;
   mode?: "admin" | "login";
   nextPath?: string;
+  onVerified?: () => void;
 }) {
   const { t } = useTranslations();
   const router = useRouter();
@@ -125,6 +127,10 @@ export function MfaVerifyModal({
       if (nextPath) {
         router.push(getSafeRedirectPath(nextPath));
       }
+    }
+    if (onVerified) {
+      onVerified();
+      return;
     }
     router.refresh();
   }
