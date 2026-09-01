@@ -1,5 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
-import { userHasVerifiedTotp } from "@/app/lib/auth/mfa";
+import { userHasEnrolledTotp } from "@/app/lib/auth/mfa";
 import { createAdminClient } from "@/app/lib/supabase/admin";
 import {
   getSupabasePublicEnv,
@@ -55,7 +55,7 @@ export async function mintIndependentPluginSession(
       logError("mint plugin session: user", userError?.message);
       return null;
     }
-    if (userHasVerifiedTotp(userData.user?.factors)) {
+    if (await userHasEnrolledTotp(userData.user)) {
       // Magic-link mint is AAL1 and would skip TOTP. Caller must use the
       // post-MFA refresh token instead.
       return null;

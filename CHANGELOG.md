@@ -4,6 +4,11 @@
 
 - (none)
 
+## v0.3.35
+
+- Gmail spraudnis `0.4.46`: Google ielogošanās vienmēr atver OAuth; veca AAL1 sesija vairs neizlaiž Google lapu un MFA soli
+- Pēc Google OAuth MFA vārti izmanto AAL līmeni un admin TOTP lookup; ticket un spraudņa sesija noraida AAL1 bez Authenticator koda
+
 ## v0.3.34
 
 - Google / spraudņa ielogošanās ar ieslēgtu 2FA atkal prasa Authenticator kodu: TOTP meklē admin API, ne tukšajā JWT `factors` sarakstā

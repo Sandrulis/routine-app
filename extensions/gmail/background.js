@@ -2225,22 +2225,29 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         return;
       }
       if (message?.type === "routine.openLogin") {
-        await markPluginSignedIn();
-        const appBase = await getAppBase();
-        const imported = await importSessionFromKnownCookies(appBase);
-        if (imported && (await getAccessToken(imported))) {
-          const check = await apiFetch("/api/extension/session");
-          if (check?.data?.authenticated) {
-            await publishSessionUpdate(true);
-            sendResponse({ ok: true });
-            return;
-          }
-        }
         const stored = await chrome.storage.sync.get([
           "loginPath",
           "canonicalOrigin",
         ]);
         const wantGoogle = message.google === true;
+        if (wantGoogle) {
+          // Always run Google OAuth; stale AAL1 storage/cookies must not skip it.
+          await clearStoredSession();
+          await clearPendingBootstrap();
+        } else {
+          await markPluginSignedIn();
+          const appBase = await getAppBase();
+          const imported = await importSessionFromKnownCookies(appBase);
+          if (imported && (await getAccessToken(imported))) {
+            const check = await apiFetch("/api/extension/session");
+            if (check?.data?.authenticated) {
+              await publishSessionUpdate(true);
+              sendResponse({ ok: true });
+              return;
+            }
+          }
+        }
+        await markPluginSignedIn();
         const loginPath = wantGoogle
           ? "/auth/gmail-plugin/login"
           : stored.loginPath || "/auth/gmail-plugin/login";

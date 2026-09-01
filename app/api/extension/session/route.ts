@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { accessTokenNeedsTotpChallenge } from "@/app/lib/auth/mfa";
 import { getExtensionAuth } from "@/app/lib/extension/auth";
 import {
   extensionJson,
@@ -31,6 +32,12 @@ import { isGoogleSignInEnabled } from "@/app/lib/integrations/google-oauth/repos
 import { FRONTEND_MODULE_KEYS } from "@/app/lib/frontend-modules/keys";
 
 export const runtime = "nodejs";
+
+function bearerToken(request: Request): string {
+  const header = request.headers.get("authorization")?.trim() ?? "";
+  const match = /^Bearer\s+(.+)$/i.exec(header);
+  return match?.[1]?.trim() ?? "";
+}
 
 export function OPTIONS(request: Request) {
   return extensionOptionsResponse(request);
@@ -95,6 +102,20 @@ export async function GET(request: Request) {
       authenticated: false,
       ...publicFlags,
       error: "errors.extension_auth_required",
+    });
+  }
+
+  const accessToken = bearerToken(request);
+  if (
+    accessToken &&
+    (await accessTokenNeedsTotpChallenge(auth.user, accessToken))
+  ) {
+    return extensionJson(request, {
+      ok: false,
+      authenticated: false,
+      needsMfa: true,
+      ...publicFlags,
+      error: "errors.extension_login_mfa",
     });
   }
 
