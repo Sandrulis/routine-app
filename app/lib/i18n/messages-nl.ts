@@ -669,6 +669,7 @@ export const nl: Record<string, string> = {
   "extension.gmail.empty": "Niets hier",
   "extension.gmail.empty_folder": "Lege map",
   "extension.gmail.gmail_connected": "Gmail gekoppeld: {email}",
+  "extension.gmail.handoff.closing_in": "Dit tabblad sluit over {seconds} s.",
   "extension.gmail.handoff.waiting": "Wacht tot de plugin de sessie heeft ontvangen…",
   "extension.gmail.load_failed": "Laden is mislukt",
   "extension.gmail.load_lists": "Lijsten laden…",

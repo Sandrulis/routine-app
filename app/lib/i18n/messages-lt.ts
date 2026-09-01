@@ -669,6 +669,7 @@ export const lt: Record<string, string> = {
   "extension.gmail.empty": "Čia nieko nėra",
   "extension.gmail.empty_folder": "Tuščias aplankas",
   "extension.gmail.gmail_connected": "Gmail prijungtas: {email}",
+  "extension.gmail.handoff.closing_in": "Skirtukas užsidarys po {seconds} s.",
   "extension.gmail.handoff.waiting": "Palaukite, kol papildinys gaus sesiją…",
   "extension.gmail.load_failed": "Nepavyko įkelti",
   "extension.gmail.load_lists": "Įkeliami sąrašai…",

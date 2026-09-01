@@ -669,6 +669,7 @@ export const no: Record<string, string> = {
   "extension.gmail.empty": "Ingenting her",
   "extension.gmail.empty_folder": "Tom mappe",
   "extension.gmail.gmail_connected": "Gmail tilkoblet: {email}",
+  "extension.gmail.handoff.closing_in": "Fanen lukkes om {seconds} s.",
   "extension.gmail.handoff.waiting": "Vent til tillegget har mottatt økten…",
   "extension.gmail.load_failed": "Kunne ikke laste",
   "extension.gmail.load_lists": "Laster lister…",

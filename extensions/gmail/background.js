@@ -1741,7 +1741,7 @@ async function waitForBootstrapTicketFromTab(tabId, attempts = 40) {
   for (let i = 0; i < attempts; i += 1) {
     const ticket = await readBootstrapTicketFromTab(tabId);
     if (ticket) return ticket;
-    await new Promise((resolve) => setTimeout(resolve, 200));
+    await new Promise((resolve) => setTimeout(resolve, i < 8 ? 50 : 150));
   }
   return "";
 }
@@ -1767,6 +1767,21 @@ async function injectPluginAuth(tabId) {
     });
   } catch {
     // Tab may not be a TASQIN origin yet.
+  }
+}
+
+async function markDoneTabReady(tabId) {
+  if (!tabId || !chrome.scripting?.executeScript) return;
+  try {
+    await chrome.scripting.executeScript({
+      target: { tabId },
+      func: () => {
+        window.__routineGmailPluginReady = true;
+        window.dispatchEvent(new Event("routine-gmail-plugin-ready"));
+      },
+    });
+  } catch {
+    // Tab closed or not injectable.
   }
 }
 
@@ -1802,7 +1817,10 @@ async function captureSessionFromDone(
   if (!origin) return "";
 
   const already = await usableStoredSessionOrigin(origin);
-  if (already) return already;
+  if (already) {
+    if (tabId) void markDoneTabReady(tabId);
+    return already;
+  }
 
   let session = directSession?.access_token ? directSession : null;
   if (!session?.access_token) {
@@ -1811,6 +1829,7 @@ async function captureSessionFromDone(
       (tabId ? await waitForBootstrapTicketFromTab(tabId) : "");
     if (ticket) {
       await stashPendingBootstrap(origin, ticket);
+      if (tabId) void markDoneTabReady(tabId);
       session = await fetchBootstrapFromTicket(origin, ticket);
     }
   }
@@ -1993,6 +2012,16 @@ if (chrome.cookies?.onChanged) {
   });
 }
 
+if (chrome.storage?.onChanged) {
+  chrome.storage.onChanged.addListener((changes, area) => {
+    if (area !== "local" || !changes[PENDING_BOOTSTRAP_KEY]?.newValue) return;
+    void (async () => {
+      const origin = await consumePendingBootstrap();
+      if (origin) await publishSessionUpdate(true);
+    })();
+  });
+}
+
 if (chrome.alarms) {
   chrome.alarms.onAlarm.addListener((alarm) => {
     if (alarm.name === "routine.refreshSession") {
@@ -2016,7 +2045,10 @@ if (chrome.tabs?.onUpdated) {
       await markPluginSignedIn();
       await injectPluginAuth(tabId);
       const origin = await captureSessionFromDone(url, "", null, "", tabId);
-      if (origin) await publishSessionUpdate(true);
+      if (origin) {
+        void markDoneTabReady(tabId);
+        await publishSessionUpdate(true);
+      }
     })();
   });
 }
@@ -2047,6 +2079,21 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         await markPluginSignedIn();
         const ticket = String(message.bootstrapTicket || "").trim();
         const stashed = ticket ? await stashPendingBootstrap(url, ticket) : false;
+        if (stashed) {
+          sendResponse({ ok: true });
+          void markDoneTabReady(sender.tab?.id);
+          void (async () => {
+            const origin = await captureSessionFromDone(
+              url,
+              message.cookieHeader,
+              message.session,
+              ticket,
+              sender.tab?.id,
+            );
+            if (origin) await publishSessionUpdate(true);
+          })();
+          return;
+        }
         const origin = await captureSessionFromDone(
           url,
           message.cookieHeader,
@@ -2056,10 +2103,23 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         );
         if (origin) {
           await publishSessionUpdate(true);
+          void markDoneTabReady(sender.tab?.id);
           sendResponse({ ok: true });
           return;
         }
-        sendResponse({ ok: Boolean(stashed) });
+        sendResponse({ ok: false });
+        return;
+      }
+      if (message?.type === "routine.closePluginDoneTab") {
+        const tabId = sender.tab?.id;
+        if (tabId) {
+          try {
+            await chrome.tabs.remove(tabId);
+          } catch {
+            // Tab already closed.
+          }
+        }
+        sendResponse({ ok: true });
         return;
       }
       if (message?.type === "routine.openLogin") {

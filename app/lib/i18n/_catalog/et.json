@@ -669,6 +669,7 @@
   "extension.gmail.empty": "Siin pole midagi",
   "extension.gmail.empty_folder": "Tühi kaust",
   "extension.gmail.gmail_connected": "Gmail ühendatud: {email}",
+  "extension.gmail.handoff.closing_in": "See kaart suletakse {seconds} s pärast.",
   "extension.gmail.handoff.waiting": "Oota, kuni plugin on seansi kätte saanud…",
   "extension.gmail.load_failed": "Laadimine ebaõnnestus",
   "extension.gmail.load_lists": "Nimekirjade laadimine…",

@@ -669,6 +669,7 @@ export const ru: Record<string, string> = {
   "extension.gmail.empty": "Здесь ничего нет",
   "extension.gmail.empty_folder": "Пустая папка",
   "extension.gmail.gmail_connected": "Gmail подключён: {email}",
+  "extension.gmail.handoff.closing_in": "Вкладка закроется через {seconds} с.",
   "extension.gmail.handoff.waiting": "Подожди, пока плагин получит сессию…",
   "extension.gmail.load_failed": "Не удалось загрузить",
   "extension.gmail.load_lists": "Загрузка списков…",

@@ -4,6 +4,11 @@
 
 - (none)
 
+## v0.3.29
+
+- Gmail spraudnis `0.4.41`: pēc ticket saņemšanas done teksts kļūst zaļš, 5 s atskaite un cilne aizveras pati, bez popup klikšķa
+- Gmail spraudnis saglabā Google ielogošanās ticket uzreiz un negaida, kamēr mostas background
+
 ## v0.3.28
 
 - Gmail spraudnis `0.4.39`: Google ielogošanās ticket paliek spraudnī, arī ja done cilni aizver

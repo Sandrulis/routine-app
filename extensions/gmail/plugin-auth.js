@@ -3,8 +3,40 @@
   if (window.__routineGmailPluginAuthStarted) return;
   window.__routineGmailPluginAuthStarted = true;
 
+  const PENDING_BOOTSTRAP_KEY = "pendingBootstrapTicket";
+
   function markReady() {
-    window.dispatchEvent(new Event("routine-gmail-plugin-ready"));
+    window.__routineGmailPluginReady = true;
+    function ping() {
+      window.dispatchEvent(new Event("routine-gmail-plugin-ready"));
+    }
+    ping();
+    [50, 200, 600, 1500].forEach((ms) => window.setTimeout(ping, ms));
+  }
+
+  function requestTabClose() {
+    chrome.runtime.sendMessage({ type: "routine.closePluginDoneTab" }, () => {
+      void chrome.runtime.lastError;
+    });
+  }
+
+  window.addEventListener("routine-gmail-plugin-close", requestTabClose);
+
+  async function stashTicketLocally(ticket) {
+    const value = String(ticket || "").trim();
+    if (!value) return false;
+    try {
+      await chrome.storage.local.set({
+        [PENDING_BOOTSTRAP_KEY]: {
+          origin: location.origin,
+          ticket: value,
+          at: Date.now(),
+        },
+      });
+      return true;
+    } catch {
+      return false;
+    }
   }
 
   async function loadSessionFromBootstrap() {
@@ -72,8 +104,12 @@
       );
     }
 
-    // Background is the ticket consumer; ACK means the plugin stored it.
-    sendAuth({}, 0);
+    void (async () => {
+      if (bootstrapTicket && (await stashTicketLocally(bootstrapTicket))) {
+        markReady();
+      }
+      sendAuth({}, 0);
+    })();
   }
 
   function waitForMarker(attempt) {

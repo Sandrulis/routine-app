@@ -669,6 +669,7 @@ export const fi: Record<string, string> = {
   "extension.gmail.empty": "Täällä ei ole mitään",
   "extension.gmail.empty_folder": "Tyhjä kansio",
   "extension.gmail.gmail_connected": "Gmail yhdistetty: {email}",
+  "extension.gmail.handoff.closing_in": "Tämä välilehti sulkeutuu {seconds} s kuluttua.",
   "extension.gmail.handoff.waiting": "Odota, kunnes lisäosa on vastaanottanut istunnon…",
   "extension.gmail.load_failed": "Ei voitu ladata",
   "extension.gmail.load_lists": "Ladataan listoja…",

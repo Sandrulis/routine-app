@@ -669,6 +669,7 @@
   "extension.gmail.empty": "Nichts hier",
   "extension.gmail.empty_folder": "Leerer Ordner",
   "extension.gmail.gmail_connected": "Gmail verbunden: {email}",
+  "extension.gmail.handoff.closing_in": "Dieser Tab schließt sich in {seconds} s.",
   "extension.gmail.handoff.waiting": "Warte, bis das Plugin die Sitzung erhalten hat…",
   "extension.gmail.load_failed": "Konnte nicht geladen werden",
   "extension.gmail.load_lists": "Listen werden geladen…",

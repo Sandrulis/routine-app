@@ -669,6 +669,7 @@ export const da: Record<string, string> = {
   "extension.gmail.empty": "Intet her",
   "extension.gmail.empty_folder": "Tom mappe",
   "extension.gmail.gmail_connected": "Gmail tilsluttet: {email}",
+  "extension.gmail.handoff.closing_in": "Fanen lukker om {seconds} s.",
   "extension.gmail.handoff.waiting": "Vent, til pluginnet har modtaget sessionen…",
   "extension.gmail.load_failed": "Kunne ikke indlæse",
   "extension.gmail.load_lists": "Indlæser lister…",

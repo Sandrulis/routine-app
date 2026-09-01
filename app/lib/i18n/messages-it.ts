@@ -669,6 +669,7 @@ export const it: Record<string, string> = {
   "extension.gmail.empty": "Nothing here",
   "extension.gmail.empty_folder": "Empty folder",
   "extension.gmail.gmail_connected": "Gmail connected: {email}",
+  "extension.gmail.handoff.closing_in": "Questa scheda si chiuderà tra {seconds} s.",
   "extension.gmail.handoff.waiting": "Attendi che il plugin riceva la sessione…",
   "extension.gmail.load_failed": "Could not load",
   "extension.gmail.load_lists": "Loading lists…",
