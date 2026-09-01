@@ -223,6 +223,7 @@ export const pl: Record<string, string> = {
   "auth.login.title": "Zaloguj się",
   "auth.mfa.admin_note": "MFA jest wymagane w panelu administracyjnym.",
   "auth.mfa.code": "Kod",
+  "auth.mfa.digit": "Cyfra {index} z {total}",
   "auth.mfa.enabled": "Uwierzytelnianie dwuskładnikowe jest włączone.",
   "auth.mfa.enroll": "Włącz MFA",
   "auth.mfa.qr_alt": "Kod QR MFA",

@@ -223,6 +223,7 @@
   "auth.login.title": "Prisijungti",
   "auth.mfa.admin_note": "Administravimo skydeliui reikalingas MFA.",
   "auth.mfa.code": "Kodas",
+  "auth.mfa.digit": "Skaitmuo {index} iš {total}",
   "auth.mfa.enabled": "Dviejų veiksnių autentifikavimas įjungtas.",
   "auth.mfa.enroll": "Įjungti MFA",
   "auth.mfa.qr_alt": "MFA QR kodas",

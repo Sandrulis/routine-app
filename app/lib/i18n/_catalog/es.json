@@ -223,6 +223,7 @@
   "auth.login.title": "Iniciar sesión",
   "auth.mfa.admin_note": "La MFA es obligatoria para el panel de administración.",
   "auth.mfa.code": "Código",
+  "auth.mfa.digit": "Dígito {index} de {total}",
   "auth.mfa.enabled": "La autenticación en dos pasos está activada.",
   "auth.mfa.enroll": "Activar MFA",
   "auth.mfa.qr_alt": "Código QR de MFA",

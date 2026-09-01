@@ -223,6 +223,7 @@
   "auth.login.title": "Logi sisse",
   "auth.mfa.admin_note": "Halduspaneelile on MFA kohustuslik.",
   "auth.mfa.code": "Kood",
+  "auth.mfa.digit": "Number {index} / {total}",
   "auth.mfa.enabled": "Kaheastmeline autentimine on sisse lülitatud.",
   "auth.mfa.enroll": "Lülita MFA sisse",
   "auth.mfa.qr_alt": "MFA QR-kood",

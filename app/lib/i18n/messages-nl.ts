@@ -223,6 +223,7 @@ export const nl: Record<string, string> = {
   "auth.login.title": "Inloggen",
   "auth.mfa.admin_note": "MFA is verplicht voor het beheerpaneel.",
   "auth.mfa.code": "Code",
+  "auth.mfa.digit": "Cijfer {index} van {total}",
   "auth.mfa.enabled": "Tweestapsverificatie is ingeschakeld.",
   "auth.mfa.enroll": "MFA inschakelen",
   "auth.mfa.qr_alt": "MFA QR-code",

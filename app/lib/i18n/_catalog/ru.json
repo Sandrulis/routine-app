@@ -223,6 +223,7 @@
   "auth.login.title": "Войти",
   "auth.mfa.admin_note": "Для панели администрирования MFA обязательна.",
   "auth.mfa.code": "Код",
+  "auth.mfa.digit": "Цифра {index} из {total}",
   "auth.mfa.enabled": "Двухфакторная аутентификация включена.",
   "auth.mfa.enroll": "Включить MFA",
   "auth.mfa.qr_alt": "QR-код MFA",

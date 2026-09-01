@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { OtpCodeInput } from "@/app/components/otp-code-input";
 import { useFeedbackToast } from "@/app/components/feedback-toast-provider";
 import { useTranslations } from "@/app/components/translations-provider";
 import { createClient } from "@/app/lib/supabase/client";
@@ -18,8 +19,13 @@ export function MfaSettingsCard() {
   const [code, setCode] = useState("");
   const [enabled, setEnabled] = useState(false);
   const [pending, setPending] = useState(false);
+  const [otpNonce, setOtpNonce] = useState(0);
+  const factorIdRef = useRef<string | null>(null);
+  const verifyingRef = useRef(false);
 
   const reason = searchParams.get("mfa");
+  const codeLabelId = useId();
+  factorIdRef.current = factorId;
 
   useEffect(() => {
     void (async () => {
@@ -53,32 +59,43 @@ export function MfaSettingsCard() {
     setQr(data.totp.qr_code.startsWith("data:") ? data.totp.qr_code : "");
   }
 
-  async function verify() {
-    if (!factorId || code.trim().length < 6) return;
+  async function verify(raw?: string) {
+    const digits = (raw ?? code).replace(/\D/g, "").slice(0, 6);
+    const currentFactorId = factorIdRef.current;
+    if (!currentFactorId || digits.length < 6 || verifyingRef.current) return;
+
+    verifyingRef.current = true;
     setPending(true);
     const supabase = createClient();
-    const challenge = await supabase.auth.mfa.challenge({ factorId });
+    const challenge = await supabase.auth.mfa.challenge({ factorId: currentFactorId });
     if (challenge.error || !challenge.data) {
+      verifyingRef.current = false;
       setPending(false);
+      setCode("");
+      setOtpNonce((value) => value + 1);
       showFeedback({
         type: "error",
-        text: t("errors.mfa_invalid", "MFA iestatīšana neizdevās."),
+        text: t("errors.mfa_code_invalid", "Nepareizs kods. Mēģini vēlreiz."),
       });
       return;
     }
     const verified = await supabase.auth.mfa.verify({
-      factorId,
+      factorId: currentFactorId,
       challengeId: challenge.data.id,
-      code: code.trim(),
+      code: digits,
     });
     setPending(false);
     if (verified.error) {
+      verifyingRef.current = false;
+      setCode("");
+      setOtpNonce((value) => value + 1);
       showFeedback({
         type: "error",
-        text: t("errors.mfa_invalid", "MFA iestatīšana neizdevās."),
+        text: t("errors.mfa_code_invalid", "Nepareizs kods. Mēģini vēlreiz."),
       });
       return;
     }
+    verifyingRef.current = false;
     setEnabled(true);
     setQr("");
     setSecret("");
@@ -107,6 +124,7 @@ export function MfaSettingsCard() {
   }
 
   const showCode = Boolean(secret) || (enabled && reason === "verify");
+  const showActions = (enabled && reason !== "verify") || (!enabled && !secret);
 
   return (
     <div className="space-y-3 rounded-3xl border border-zinc-200 bg-white px-5 py-6">
@@ -152,51 +170,55 @@ export function MfaSettingsCard() {
         </p>
       ) : null}
       {showCode ? (
-        <label className="block">
-          <span className="text-sm font-semibold text-zinc-700">
+        <div className="block" aria-busy={pending}>
+          <span
+            id={codeLabelId}
+            className="block text-center text-sm font-semibold text-zinc-700"
+          >
             {t("auth.mfa.code", "Kods")}
           </span>
-          <input
+          <OtpCodeInput
+            key={otpNonce}
+            id="mfa-settings-code"
             value={code}
-            onChange={(event) => setCode(event.target.value)}
-            inputMode="numeric"
-            autoComplete="one-time-code"
-            className="mt-1 w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm"
+            onChange={setCode}
+            onComplete={(next) => void verify(next)}
+            disabled={pending}
+            autoFocus
+            labelledBy={codeLabelId}
           />
-        </label>
+          {pending ? (
+            <p className="mt-3 flex items-center justify-center gap-2 text-sm text-zinc-500">
+              <i className="fas fa-spinner fa-spin text-xs" aria-hidden="true" />
+              {t("common.loading", "Ielādē…")}
+            </p>
+          ) : null}
+        </div>
       ) : null}
-      <div className="flex gap-2">
-        {enabled && reason !== "verify" ? (
-          <button
-            type="button"
-            disabled={pending}
-            onClick={() => void unenroll()}
-            className="rounded-xl border border-zinc-200 px-3 py-2 text-sm font-medium text-zinc-700"
-          >
-            {t("auth.mfa.unenroll", "Izslēgt MFA")}
-          </button>
-        ) : null}
-        {!enabled && !secret ? (
-          <button
-            type="button"
-            disabled={pending}
-            onClick={() => void enroll()}
-            className="rounded-xl bg-zinc-900 px-3 py-2 text-sm font-medium text-white"
-          >
-            {t("auth.mfa.enroll", "Ieslēgt MFA")}
-          </button>
-        ) : null}
-        {showCode ? (
-          <button
-            type="button"
-            disabled={pending}
-            onClick={() => void verify()}
-            className="rounded-xl bg-zinc-900 px-3 py-2 text-sm font-medium text-white"
-          >
-            {t("auth.mfa.verify", "Apstiprināt")}
-          </button>
-        ) : null}
-      </div>
+      {showActions ? (
+        <div className="flex gap-2">
+          {enabled && reason !== "verify" ? (
+            <button
+              type="button"
+              disabled={pending}
+              onClick={() => void unenroll()}
+              className="rounded-xl border border-zinc-200 px-3 py-2 text-sm font-medium text-zinc-700"
+            >
+              {t("auth.mfa.unenroll", "Izslēgt MFA")}
+            </button>
+          ) : null}
+          {!enabled && !secret ? (
+            <button
+              type="button"
+              disabled={pending}
+              onClick={() => void enroll()}
+              className="rounded-xl bg-zinc-900 px-3 py-2 text-sm font-medium text-white"
+            >
+              {t("auth.mfa.enroll", "Ieslēgt MFA")}
+            </button>
+          ) : null}
+        </div>
+      ) : null}
     </div>
   );
 }

@@ -4,6 +4,10 @@
 
 - (none)
 
+## v0.3.27
+
+- MFA kods ievadāms 3+3 ciparu blokos; pēc 6 cipariem pārbaude ir automātiska, **Iziet** ir ikona augšējā labajā stūrī
+
 ## v0.3.26
 
 - Lietošanas noteikumi rāda uzņēmuma nosaukumu, reģ. nr. un adresi no Admin uzstādījumiem

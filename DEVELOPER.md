@@ -431,8 +431,9 @@ app/
     forgot-password-form.tsx      # Aizmirsi paroli (forma tikai ar Resend)
     work-progress.tsx             # done/total, josla, sānjoslas fona aizpildījums
     update-password-form.tsx      # Jauna parole pēc e-pasta saites; PasswordInput + stipruma josla
-    mfa-settings-card.tsx         # TOTP enroll/verify/unenroll profilā (visiem)
-    mfa-verify-modal.tsx          # TOTP pie ielogošanās un admin sesijas
+    mfa-settings-card.tsx         # TOTP enroll/auto-verify/unenroll profilā (visiem)
+    mfa-verify-modal.tsx          # TOTP pie ielogošanās un admin sesijas; 3+3 bloki, auto-verify
+    otp-code-input.tsx            # 6 ciparu TOTP lauki, grupēti 3+3
     legal-document-view.tsx       # Legal lapas + fiksēta satura TOC
     cookie-consent-provider.tsx   # Piekrišanas stāvoklis
     cookie-consent-dialog.tsx     # Popup un iestatījumi

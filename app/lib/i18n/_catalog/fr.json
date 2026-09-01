@@ -223,6 +223,7 @@
   "auth.login.title": "Connexion",
   "auth.mfa.admin_note": "Le MFA est obligatoire pour le panneau d'administration.",
   "auth.mfa.code": "Code",
+  "auth.mfa.digit": "Chiffre {index} sur {total}",
   "auth.mfa.enabled": "L'authentification à deux facteurs est activée.",
   "auth.mfa.enroll": "Activer le MFA",
   "auth.mfa.qr_alt": "QR code MFA",

@@ -223,6 +223,7 @@
   "auth.login.title": "Logg inn",
   "auth.mfa.admin_note": "MFA er påkrevd for administrasjonspanelet.",
   "auth.mfa.code": "Kode",
+  "auth.mfa.digit": "Siffer {index} av {total}",
   "auth.mfa.enabled": "Tofaktorautentisering er slått på.",
   "auth.mfa.enroll": "Aktiver MFA",
   "auth.mfa.qr_alt": "MFA QR-kode",

@@ -223,6 +223,7 @@ export const da: Record<string, string> = {
   "auth.login.title": "Log ind",
   "auth.mfa.admin_note": "MFA er påkrævet til administrationspanelet.",
   "auth.mfa.code": "Kode",
+  "auth.mfa.digit": "Ciffer {index} af {total}",
   "auth.mfa.enabled": "Tofaktorgodkendelse er slået til.",
   "auth.mfa.enroll": "Aktivér MFA",
   "auth.mfa.qr_alt": "MFA QR-kode",

@@ -223,6 +223,7 @@ export const it: Record<string, string> = {
   "auth.login.title": "Sign in",
   "auth.mfa.admin_note": "MFA is required for the administration panel.",
   "auth.mfa.code": "Code",
+  "auth.mfa.digit": "Cifra {index} di {total}",
   "auth.mfa.enabled": "Two-factor authentication is enabled.",
   "auth.mfa.enroll": "Enable MFA",
   "auth.mfa.qr_alt": "MFA QR code",

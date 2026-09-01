@@ -223,6 +223,7 @@ export const fi: Record<string, string> = {
   "auth.login.title": "Kirjaudu sisään",
   "auth.mfa.admin_note": "Hallintapaneeli vaatii MFA:n.",
   "auth.mfa.code": "Koodi",
+  "auth.mfa.digit": "Numero {index} / {total}",
   "auth.mfa.enabled": "Kaksivaiheinen tunnistus on käytössä.",
   "auth.mfa.enroll": "Ota MFA käyttöön",
   "auth.mfa.qr_alt": "MFA QR-koodi",

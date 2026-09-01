@@ -203,6 +203,7 @@
   "auth.mfa.verify_login": "Enter your Authenticator code to finish signing in.",
   "auth.mfa.secret": "Secret",
   "auth.mfa.code": "Code",
+  "auth.mfa.digit": "Digit {index} of {total}",
   "auth.mfa.enroll": "Enable MFA",
   "auth.mfa.verify": "Confirm",
   "auth.mfa.unenroll": "Turn off MFA",
