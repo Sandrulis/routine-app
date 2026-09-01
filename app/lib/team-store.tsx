@@ -26,7 +26,10 @@ import {
 } from "@/app/lib/db/work-data";
 import { inviteTeamMemberAction } from "@/app/lib/team/actions";
 import { clearLegacyDemoStorage } from "@/app/lib/clear-legacy-demo-storage";
-import { mapUserDisplay } from "@/app/lib/auth/map-user-display";
+import {
+  mapUserDisplay,
+  resolveUserDisplayName,
+} from "@/app/lib/auth/map-user-display";
 import { useAuthSession } from "@/app/lib/auth/use-auth-session";
 import {
   TEAM_CHANGE_EVENT,
@@ -294,20 +297,21 @@ export function TeamProvider({ children }: { children: ReactNode }) {
     const overlayId = authUser.id;
     const isSelf = (member: TeamMember) =>
       member.id === overlayId || member.userId === overlayId;
-    const next = list.map((member) =>
-      isSelf(member)
-        ? {
-            ...member,
-            name: display.name || member.name,
-            email: display.email || member.email,
-            initials: initialsFromName(display.name || member.name),
-            avatarUrl: display.avatarUrl ?? member.avatarUrl,
-            role: member.role || OWNER_TEAM_ROLE,
-            roleId: member.roleId,
-            userId: overlayId,
-          }
-        : member,
-    );
+    const next = list.map((member) => {
+      if (!isSelf(member)) return member;
+
+      const name = resolveUserDisplayName(authUser, member.name);
+      return {
+        ...member,
+        name,
+        email: display.email || member.email,
+        initials: initialsFromName(name),
+        avatarUrl: display.avatarUrl ?? member.avatarUrl,
+        role: member.role || OWNER_TEAM_ROLE,
+        roleId: member.roleId,
+        userId: overlayId,
+      };
+    });
 
     const selfIndex = next.findIndex(isSelf);
     if (selfIndex > 0) {
@@ -320,10 +324,16 @@ export function TeamProvider({ children }: { children: ReactNode }) {
   const currentUser = useMemo(() => {
     if (authUser) {
       const display = mapUserDisplay(authUser);
+      const fromTeamRaw = currentTeam
+        ? (membersByTeam[currentTeam.id] ?? []).find(
+            (member) =>
+              member.id === authUser.id || member.userId === authUser.id,
+          )
+        : undefined;
       const fromTeam = members.find(
         (member) => member.id === authUser.id || member.userId === authUser.id,
       );
-      const name = display.name || fromTeam?.name || "";
+      const name = resolveUserDisplayName(authUser, fromTeamRaw?.name);
       return {
         id: fromTeam?.id ?? authUser.id,
         userId: authUser.id,
@@ -340,7 +350,7 @@ export function TeamProvider({ children }: { children: ReactNode }) {
 
     const base = emptyTeamMember();
     return currentTeam ? base : { ...base, role: "" };
-  }, [authUser, currentTeam, members]);
+  }, [authUser, currentTeam, members, membersByTeam]);
 
   const roles = useMemo(() => {
     const list = currentTeam

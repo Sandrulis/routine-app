@@ -13,6 +13,7 @@ import {
 } from "@/app/lib/auth/remember-session";
 import { getSafeRedirectPath } from "@/app/lib/security/safe-redirect-path";
 import { getSupabasePublicEnv } from "@/app/lib/supabase/env";
+import { completeAuthSessionAction } from "@/app/lib/auth/actions";
 
 const OTP_TYPES = new Set<string>([
   "signup",
@@ -219,6 +220,7 @@ export function AuthSessionFromUrl({
           return;
         }
         if (result === "ok") {
+          await completeAuthSessionAction();
           redirectAfterAuth(next);
         }
         return;
@@ -234,6 +236,7 @@ export function AuthSessionFromUrl({
       }
 
       if (result === "ok") {
+        await completeAuthSessionAction();
         redirectAfterAuth(next);
         return;
       }

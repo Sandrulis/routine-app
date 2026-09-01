@@ -89,6 +89,8 @@ function createStakeholderNotification(input: {
     href: input.href,
     createdAt: now,
     readAt: null,
+    teamId: null,
+    teamName: null,
   };
 }
 

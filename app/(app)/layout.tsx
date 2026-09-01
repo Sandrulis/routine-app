@@ -25,6 +25,10 @@ export const metadata: Metadata = {
 
 export default async function AppLayout({ children }: { children: ReactNode }) {
   await ensureCurrentUserProfile();
+  if (isSupabaseConfigured()) {
+    const { syncPendingTeamInvitesForCurrentUser } = await import("@/app/lib/team/actions");
+    await syncPendingTeamInvitesForCurrentUser();
+  }
 
   if (isSupabaseConfigured()) {
     const supabase = await createClient();

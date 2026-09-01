@@ -30,6 +30,7 @@ import {
   serializePendingOAuthSignIn,
 } from "@/app/lib/auth/oauth-turnstile";
 import {
+  isEmailPlaceholderDisplayName,
   joinDisplayName,
   splitDisplayName,
 } from "@/app/lib/users/display-name";
@@ -68,12 +69,17 @@ function buildOAuthUserMetadata(
     typeof existing?.given_name === "string" ? existing.given_name.trim() : "";
   const existingFamily =
     typeof existing?.family_name === "string" ? existing.family_name.trim() : "";
-  const existingName =
+  let existingName =
     typeof existing?.name === "string"
       ? existing.name.trim()
       : typeof existing?.full_name === "string"
         ? existing.full_name.trim()
         : "";
+  const email = profile.email.trim().toLowerCase();
+  const nameIsPlaceholder = isEmailPlaceholderDisplayName(existingName, email);
+  if (nameIsPlaceholder) {
+    existingName = "";
+  }
   const avatarUrl =
     profile.avatarUrl.trim() ||
     (typeof existing?.avatar_url === "string" ? existing.avatar_url.trim() : "") ||
@@ -86,7 +92,7 @@ function buildOAuthUserMetadata(
     provider: profile.provider,
   };
 
-  if (!existingGiven && !existingFamily) {
+  if ((!existingGiven && !existingFamily) || nameIsPlaceholder) {
     const split = existingName
       ? splitDisplayName(existingName)
       : { firstName: resolved.givenName, lastName: resolved.familyName };
@@ -94,7 +100,7 @@ function buildOAuthUserMetadata(
     next.family_name = split.lastName || resolved.familyName;
   }
 
-  if (!existingName) {
+  if (!existingName || nameIsPlaceholder) {
     next.name = resolved.fullName;
     next.full_name = resolved.fullName;
   }

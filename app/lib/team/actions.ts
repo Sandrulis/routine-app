@@ -1058,3 +1058,165 @@ export async function getInviteSignupContextAction(token: string): Promise<
     },
   };
 }
+
+function normalizeInviteEmail(email: string) {
+  return email.trim().toLowerCase();
+}
+
+export async function syncPendingTeamInvitesForCurrentUser(): Promise<
+  ActionResult<{ synced: number }>
+> {
+  const user = await getCurrentUser();
+  if (!user) {
+    return { ok: false, error: "errors.auth_required" };
+  }
+  if (!isSupabaseConfigured() || !isSupabaseAdminConfigured()) {
+    return { ok: true, data: { synced: 0 } };
+  }
+
+  const { ensureCurrentUserProfile } = await import("@/app/lib/users/ensure-profile");
+  await ensureCurrentUserProfile();
+
+  const email = normalizeInviteEmail(user.email ?? "");
+  if (!email) {
+    return { ok: true, data: { synced: 0 } };
+  }
+
+  const admin = createAdminClient();
+  const { data: invitations, error } = await admin
+    .from("team_invitations")
+    .select("id, team_id, member_id, invited_by_member_id, email, invited_user_id")
+    .eq("status", "pending")
+    .ilike("email", email);
+
+  if (error) {
+    logError("syncPendingTeamInvitesForCurrentUser", error.message);
+    return { ok: false, error: "errors.team_invite_failed" };
+  }
+
+  let synced = 0;
+  for (const invitation of invitations ?? []) {
+    const { data: memberRow } = await admin
+      .from("team_members")
+      .select("seat_status, user_id")
+      .eq("id", invitation.member_id)
+      .maybeSingle();
+
+    if (isPendingPaymentSeat(memberRow?.seat_status)) {
+      continue;
+    }
+    if (memberRow?.user_id && memberRow.user_id !== user.id) {
+      continue;
+    }
+
+    const { data: existingMember } = await admin
+      .from("team_members")
+      .select("id")
+      .eq("team_id", invitation.team_id)
+      .eq("user_id", user.id)
+      .neq("id", invitation.member_id)
+      .maybeSingle();
+    if (existingMember?.id) {
+      continue;
+    }
+
+    if (!invitation.invited_user_id) {
+      await admin
+        .from("team_invitations")
+        .update({ invited_user_id: user.id })
+        .eq("id", invitation.id);
+    }
+
+    const notificationResult = await ensureTeamInviteNotification({
+      supabase: admin as unknown as Awaited<ReturnType<typeof createClient>>,
+      teamId: invitation.team_id,
+      memberId: invitation.member_id,
+      actorMemberId: invitation.invited_by_member_id,
+      targetUserId: user.id,
+      invitationId: invitation.id,
+      refreshExisting: true,
+    });
+    if (notificationResult.ok) {
+      synced += 1;
+    }
+  }
+
+  return { ok: true, data: { synced } };
+}
+
+export async function getPendingTeamInvitePromptAction(): Promise<
+  ActionResult<{
+    invitationId: string;
+    teamName: string;
+    inviterName: string;
+  } | null>
+> {
+  const sync = await syncPendingTeamInvitesForCurrentUser();
+  if (!sync.ok) {
+    return sync;
+  }
+
+  const user = await getCurrentUser();
+  if (!user || !isSupabaseAdminConfigured()) {
+    return { ok: true, data: null };
+  }
+
+  const admin = createAdminClient();
+  const email = normalizeInviteEmail(user.email ?? "");
+  const { data: invitations, error } = await admin
+    .from("team_invitations")
+    .select("id, team_id, member_id, invited_by_member_id, email, invited_user_id")
+    .eq("status", "pending")
+    .ilike("email", email);
+
+  if (error) {
+    logError("getPendingTeamInvitePromptAction", error.message);
+    return { ok: false, error: "errors.team_invite_failed" };
+  }
+
+  for (const invitation of invitations ?? []) {
+    const { data: memberRow } = await admin
+      .from("team_members")
+      .select("seat_status, user_id")
+      .eq("id", invitation.member_id)
+      .maybeSingle();
+
+    if (isPendingPaymentSeat(memberRow?.seat_status)) {
+      continue;
+    }
+    if (memberRow?.user_id && memberRow.user_id !== user.id) {
+      continue;
+    }
+
+    const { data: existingMember } = await admin
+      .from("team_members")
+      .select("id")
+      .eq("team_id", invitation.team_id)
+      .eq("user_id", user.id)
+      .neq("id", invitation.member_id)
+      .maybeSingle();
+    if (existingMember?.id) {
+      continue;
+    }
+
+    const [{ data: teamRow }, { data: inviterRow }] = await Promise.all([
+      admin.from("teams").select("name").eq("id", invitation.team_id).maybeSingle(),
+      admin
+        .from("team_members")
+        .select("name")
+        .eq("id", invitation.invited_by_member_id)
+        .maybeSingle(),
+    ]);
+
+    return {
+      ok: true,
+      data: {
+        invitationId: invitation.id,
+        teamName: String(teamRow?.name ?? ""),
+        inviterName: String(inviterRow?.name ?? ""),
+      },
+    };
+  }
+
+  return { ok: true, data: null };
+}

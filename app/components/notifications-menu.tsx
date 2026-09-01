@@ -22,8 +22,49 @@ import {
   acceptTeamInvitationAction,
   rejectTeamInvitationAction,
 } from "@/app/lib/team/actions";
-import { getTeamMember } from "@/app/lib/team";
+import {
+  currentTeamIdStorageKey,
+  getTeamMember,
+  type MembersByTeam,
+} from "@/app/lib/team";
 import { useTeam } from "@/app/lib/team-store";
+
+function findMemberAcrossTeams(
+  membersByTeam: MembersByTeam,
+  id: string | null,
+) {
+  if (!id) return null;
+  for (const list of Object.values(membersByTeam)) {
+    const member = getTeamMember(list, id);
+    if (member) return member;
+  }
+  return null;
+}
+
+function NotificationMeta({
+  item,
+  now,
+  showTeamLabel,
+  t,
+}: {
+  item: AppNotification;
+  now: number;
+  showTeamLabel: boolean;
+  t: (key: string, fallback: string, params?: Record<string, string | number>) => string;
+}) {
+  return (
+    <>
+      {showTeamLabel && item.teamName ? (
+        <span className="mt-0.5 block truncate text-[11px] font-medium text-indigo-600/90">
+          {item.teamName}
+        </span>
+      ) : null}
+      <span className="mt-0.5 block text-[11px] tabular-nums text-zinc-400">
+        {notificationTime(item.createdAt, now, t)}
+      </span>
+    </>
+  );
+}
 
 function notificationText(
   item: AppNotification,
@@ -150,9 +191,18 @@ export function NotificationsMenu() {
   const { formatDate } = useDisplayPreferences();
   const { showFeedback } = useFeedbackToast();
   const { user: authUser } = useAuthSession();
-  const { members, currentUser, refreshTeams } = useTeam();
+  const {
+    teams,
+    membersByTeam,
+    currentTeam,
+    currentUser,
+    refreshTeams,
+    selectTeam,
+  } = useTeam();
   const { items, isLoading, unreadCount, markRead, markAllRead, dismiss, dismissAll } =
     useNotifications();
+  const showTeamLabels = teams.length > 1;
+  const notificationItemHeight = showTeamLabels ? 92 : 80;
   const [open, setOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [clearAllOpen, setClearAllOpen] = useState(false);
@@ -187,9 +237,25 @@ export function NotificationsMenu() {
     };
   }, [open]);
 
+  function activateTeamForNotification(teamId: string | null | undefined) {
+    if (!teamId || !authUser?.id || currentTeam?.id === teamId) return;
+    window.localStorage.setItem(currentTeamIdStorageKey(authUser.id), teamId);
+    selectTeam(teamId);
+  }
+
+  function openNotification(item: AppNotification) {
+    markRead(item.id);
+    setOpen(false);
+    activateTeamForNotification(item.teamId);
+    if (item.href) {
+      router.push(item.href);
+    }
+  }
+
   async function handleInviteResponse(
     invitationId: string,
     action: "accept" | "reject",
+    teamId?: string | null,
   ) {
     if (pendingInviteId) return;
     setPendingInviteId(invitationId);
@@ -206,6 +272,7 @@ export function NotificationsMenu() {
         return;
       }
       if (action === "accept") {
+        activateTeamForNotification(teamId);
         await refreshTeams();
         showFeedback({
           type: "success",
@@ -310,14 +377,14 @@ export function NotificationsMenu() {
           ) : (
             <VirtualWindow
               count={items.length}
-              itemHeight={80}
+              itemHeight={notificationItemHeight}
               threshold={40}
               className="max-h-[min(24rem,calc(100vh-6rem))] overflow-y-auto"
             >
               {(index) => {
                 const item = items[index];
-                const actor = getTeamMember(members, item.actorId);
-                const recipient = getTeamMember(members, item.recipientId);
+                const actor = findMemberAcrossTeams(membersByTeam, item.actorId);
+                const recipient = findMemberAcrossTeams(membersByTeam, item.recipientId);
                 const unread = item.readAt === null;
                 const isTeamInvite =
                   item.kind === "team_invite" &&
@@ -358,16 +425,23 @@ export function NotificationsMenu() {
                             item.taskTitle.trim() ? formatDate(item.taskTitle) : "",
                           )}
                         </span>
-                        <span className="mt-0.5 block text-[11px] tabular-nums text-zinc-400">
-                          {notificationTime(item.createdAt, now, t)}
-                        </span>
+                        <NotificationMeta
+                          item={item}
+                          now={now}
+                          showTeamLabel={showTeamLabels}
+                          t={t}
+                        />
                         {unread ? (
                           <span className="mt-2 flex flex-wrap gap-2">
                             <button
                               type="button"
                               disabled={inviteBusy}
                               onClick={() => {
-                                void handleInviteResponse(item.invitationId!, "accept");
+                                void handleInviteResponse(
+                                  item.invitationId!,
+                                  "accept",
+                                  item.teamId,
+                                );
                               }}
                               className="inline-flex min-h-8 items-center justify-center rounded-xl bg-blue-700 px-3 text-[12px] font-semibold text-white transition hover:bg-blue-800 disabled:opacity-60"
                             >
@@ -379,7 +453,11 @@ export function NotificationsMenu() {
                               type="button"
                               disabled={inviteBusy}
                               onClick={() => {
-                                void handleInviteResponse(item.invitationId!, "reject");
+                                void handleInviteResponse(
+                                  item.invitationId!,
+                                  "reject",
+                                  item.teamId,
+                                );
                               }}
                               className="inline-flex min-h-8 items-center justify-center rounded-xl bg-zinc-100 px-3 text-[12px] font-semibold text-zinc-700 transition hover:bg-zinc-200 disabled:opacity-60"
                             >
@@ -436,9 +514,12 @@ export function NotificationsMenu() {
                             item.taskTitle.trim() ? formatDate(item.taskTitle) : "",
                           )}
                         </span>
-                        <span className="mt-0.5 block text-[11px] tabular-nums text-zinc-400">
-                          {notificationTime(item.createdAt, now, t)}
-                        </span>
+                        <NotificationMeta
+                          item={item}
+                          now={now}
+                          showTeamLabel={showTeamLabels}
+                          t={t}
+                        />
                       </span>
                       {unread ? (
                         <span
@@ -467,16 +548,9 @@ export function NotificationsMenu() {
                     key={item.id}
                     role="menuitem"
                     tabIndex={0}
-                    onClick={() => {
-                      markRead(item.id);
-                      setOpen(false);
-                      if (item.href) router.push(item.href);
-                    }}
+                    onClick={() => openNotification(item)}
                     onKeyDown={(event) => {
-                      if (event.key !== "Enter") return;
-                      markRead(item.id);
-                      setOpen(false);
-                      if (item.href) router.push(item.href);
+                      if (event.key === "Enter") openNotification(item);
                     }}
                     className={`group/notif flex w-full cursor-pointer items-start gap-3 px-3 py-2.5 text-left transition hover:bg-zinc-100 ${
                       unread ? "bg-sky-50/70" : ""
@@ -523,9 +597,12 @@ export function NotificationsMenu() {
                           item.taskTitle.trim() ? formatDate(item.taskTitle) : "",
                         )}
                       </span>
-                      <span className="mt-0.5 block text-[11px] tabular-nums text-zinc-400">
-                        {notificationTime(item.createdAt, now, t)}
-                      </span>
+                      <NotificationMeta
+                        item={item}
+                        now={now}
+                        showTeamLabel={showTeamLabels}
+                        t={t}
+                      />
                     </span>
                     {unread ? (
                       <span

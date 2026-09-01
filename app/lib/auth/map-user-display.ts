@@ -1,4 +1,5 @@
 import type { User } from "@supabase/supabase-js";
+import { resolveDisplayName } from "@/app/lib/users/display-name";
 
 export type UserDisplay = {
   name: string;
@@ -96,4 +97,16 @@ export function mapUserDisplay(user: User): UserDisplay {
     email: user.email?.trim() || "",
     avatarUrl: resolveAvatarUrl(user),
   };
+}
+
+export function resolveUserDisplayName(
+  user: User,
+  storedName?: string | null,
+): string {
+  const display = mapUserDisplay(user);
+  return resolveDisplayName({
+    authName: display.name,
+    email: display.email || user.email?.trim() || "",
+    storedName,
+  });
 }

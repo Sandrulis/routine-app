@@ -462,6 +462,8 @@ async function runJob(
           href,
           createdAt,
           readAt: null,
+          teamId: null,
+          teamName: null,
         },
       });
     }
@@ -500,13 +502,22 @@ async function runJob(
     notifiedCount += items.length;
   }
 
+  const { sendCronReminderEmails } = await import(
+    "@/app/lib/email/notification-email-sender"
+  );
+  const emailRows = batched.map((row) => ({
+    teamId: row.teamId,
+    item: row.item,
+  }));
+  const emailsSent = await sendCronReminderEmails(supabase, emailRows);
+
   const remainingNote =
     remainingUsers > 0
       ? ` ${remainingUsers} user(s) left for the next hourly run.`
       : "";
   return {
     ok: true,
-    message: `Created ${notifiedCount} notification(s) for ${batchUserIds.size} user(s).${remainingNote}`,
+    message: `Created ${notifiedCount} notification(s) for ${batchUserIds.size} user(s); sent ${emailsSent} email(s).${remainingNote}`,
     notifiedCount,
     scannedCount: candidates.length,
   };

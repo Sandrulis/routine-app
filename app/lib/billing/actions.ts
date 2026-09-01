@@ -464,14 +464,13 @@ export async function buyExtraTeamSeatAction(
     return { ok: false, error: "errors.billing_vip_no_payment" };
   }
 
-  // Race guard: another click already opened a seat — do not charge again.
   const members = await loadTeamMembersForSeats(trimmed);
   const seats = resolveSeatCounts({
     paidSeatCount: team.paid_seat_count ?? 0,
     members: members.map((row) => ({ seatStatus: row.seat_status })),
   });
   if (seats.openSeatCount > 0) {
-    return { ok: true, data: { url: `${getPublicSiteUrl()}/team/billing` } };
+    return { ok: false, error: "errors.billing_open_seat_available" };
   }
 
   if (!team.stripe_subscription_id) {

@@ -89,6 +89,11 @@ export function useStartTeamInvite() {
         try {
           const result = await buyExtraTeamSeatAction(currentTeam.id);
           if (!result.ok) {
+            if (result.error === "errors.billing_open_seat_available") {
+              await refreshTeams();
+              openModal();
+              return;
+            }
             showFeedback({
               type: "error",
               text: translateActionError(t, result.error),

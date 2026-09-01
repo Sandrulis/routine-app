@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { AppNav } from "@/app/components/app-nav";
 import { GlobalAnnouncementsBanner } from "@/app/components/global-announcements-banner";
 import { OpenPaidSeatBanner } from "@/app/components/open-paid-seat-banner";
+import { PendingTeamInviteModal } from "@/app/components/pending-team-invite-modal";
 import { TeamBillingMemberPaywall } from "@/app/components/team-billing-member-paywall";
 import { TeamPlanInactiveBanner } from "@/app/components/team-plan-inactive-banner";
 import { TeamSubscriptionEndingBanner } from "@/app/components/team-subscription-ending-banner";
@@ -67,6 +68,7 @@ export function AppShell({
     <div className="min-h-dvh bg-zinc-100">
       <TeamBillingLiveSync />
       <AccountDeletionReactivatedToast />
+      <PendingTeamInviteModal />
       {menuOpen ? (
         <button
           type="button"

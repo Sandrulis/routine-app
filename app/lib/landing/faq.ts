@@ -121,7 +121,7 @@ export function resolveLandingFaqItems(
       questionFallback: "Kāda ir atšķirība starp plāniem?",
       answerKey: "landing.faq.plans.answer",
       answerFallback:
-        "Bezmaksas plānam ir ierobežots lietotāju skaits un funkcijas. Maksas plāns ir cena par lietotāju un iekļauj pieejamos moduļus. Salīdzinājumu skatiet sadaļā Cenas.",
+        "Bezmaksas plānam ir ierobežots lietotāju skaits un mazāk moduļu. Maksas plāns ir cena par lietotāja vietu; visi plāna moduļi pieejami visai komandai. Salīdzinājumu skatiet sadaļā Cenas.",
     });
   }
 

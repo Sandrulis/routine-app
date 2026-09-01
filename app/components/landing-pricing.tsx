@@ -263,6 +263,15 @@ export function LandingPricing({
             <h3 className="text-xl font-semibold tracking-tight text-zinc-900">
               {t("landing.pricing.compare.title", "Salīdzinājums")}
             </h3>
+            <div
+              role="note"
+              className="mt-4 max-w-3xl rounded-2xl border border-emerald-200/80 bg-emerald-50/80 px-5 py-4 text-base leading-relaxed font-medium text-emerald-950 sm:text-lg"
+            >
+              {t(
+                "landing.pricing.compare.modules_hint",
+                "Moduļi attiecas uz visu komandu, kad ir aktīvs maksas plāns.",
+              )}
+            </div>
             <div className="mt-6 overflow-x-auto rounded-4xl border border-zinc-200/70">
               <table className="min-w-full border-collapse text-left text-sm">
                 <thead>

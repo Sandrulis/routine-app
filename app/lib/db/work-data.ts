@@ -1330,18 +1330,23 @@ export async function fetchAppNotifications(teamId: string): Promise<AppNotifica
   return (data ?? []).map(mapNotificationRow);
 }
 
-function mapNotificationRow(row: {
-  id: string;
-  kind: AppNotification["kind"];
-  actor_id: string | null;
-  recipient_id: string | null;
-  target_user_id?: string | null;
-  invitation_id?: string | null;
-  task_title: string;
-  href: string | null;
-  created_at: string;
-  read_at: string | null;
-}): AppNotification {
+function mapNotificationRow(
+  row: {
+    id: string;
+    kind: AppNotification["kind"];
+    actor_id: string | null;
+    recipient_id: string | null;
+    target_user_id?: string | null;
+    invitation_id?: string | null;
+    task_title: string;
+    href: string | null;
+    created_at: string;
+    read_at: string | null;
+    team_id?: string | null;
+  },
+  teamNameById: Map<string, string> = new Map(),
+): AppNotification {
+  const teamId = row.team_id ?? null;
   return {
     id: row.id,
     kind: row.kind,
@@ -1353,51 +1358,79 @@ function mapNotificationRow(row: {
     href: row.href,
     createdAt: row.created_at,
     readAt: row.read_at,
+    teamId,
+    teamName: teamId ? teamNameById.get(teamId) ?? null : null,
   };
 }
 
 export async function fetchVisibleNotifications(
-  teamId: string | null,
+  _teamId: string | null,
   userId: string,
 ): Promise<AppNotification[]> {
-  let selfMemberId: string | null = null;
-  if (teamId) {
-    const { data: selfRow } = await db()
-      .from("team_members")
-      .select("id")
-      .eq("team_id", teamId)
-      .eq("user_id", userId)
-      .maybeSingle();
-    selfMemberId = selfRow?.id ?? null;
+  const { data: memberships, error: memberError } = await db()
+    .from("team_members")
+    .select("id, team_id")
+    .eq("user_id", userId);
+
+  if (memberError) throw memberError;
+
+  const memberRows = (memberships ?? []) as Array<{ id: string; team_id: string | null }>;
+  const memberIds = memberRows.map((row) => row.id);
+  const memberIdSet = new Set(memberIds);
+  const teamIds = [
+    ...new Set(
+      memberRows
+        .map((row) => row.team_id)
+        .filter((value): value is string => typeof value === "string" && value.length > 0),
+    ),
+  ];
+
+  const teamNameById = new Map<string, string>();
+  if (teamIds.length > 0) {
+    const { data: teamRows, error: teamError } = await db()
+      .from("teams")
+      .select("id, name")
+      .in("id", teamIds);
+    if (teamError) throw teamError;
+    for (const team of teamRows ?? []) {
+      if (team.id) {
+        teamNameById.set(team.id, String(team.name ?? "").trim());
+      }
+    }
   }
 
-  const filters = [`target_user_id.eq.${userId}`];
-  if (selfMemberId) {
-    filters.push(`recipient_id.eq.${selfMemberId}`);
-  }
-
-  const { data, error } = await db()
+  let query = db()
     .from("app_notifications")
     .select(
       "id, kind, actor_id, recipient_id, target_user_id, invitation_id, task_title, href, created_at, read_at, team_id",
     )
-    .or(filters.join(","))
     .order("created_at", { ascending: false })
-    .limit(50);
+    .limit(100);
+
+  if (memberIds.length > 0) {
+    query = query.or(
+      `target_user_id.eq.${userId},recipient_id.in.(${memberIds.join(",")})`,
+    );
+  } else {
+    query = query.eq("target_user_id", userId);
+  }
+
+  const { data, error } = await query;
   if (error) throw error;
+
   return ((data ?? []) as Parameters<typeof mapNotificationRow>[0][])
-    .map(mapNotificationRow)
+    .map((row) => mapNotificationRow(row, teamNameById))
     .filter((item: AppNotification) => {
       if (item.kind === "team_invite") {
         return item.targetUserId === userId;
       }
       if (item.kind === "team_invite_rejected") {
-        return selfMemberId !== null && item.recipientId === selfMemberId;
+        return item.recipientId !== null && memberIdSet.has(item.recipientId);
       }
-      if (!teamId || selfMemberId === null) {
-        return item.targetUserId === userId;
+      if (item.targetUserId === userId) {
+        return true;
       }
-      return item.recipientId === selfMemberId || item.targetUserId === userId;
+      return item.recipientId !== null && memberIdSet.has(item.recipientId);
     });
 }
 

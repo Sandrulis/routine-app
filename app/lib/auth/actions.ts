@@ -21,6 +21,7 @@ import {
   requestPasswordResetEmail,
 } from "@/app/lib/auth/email-password";
 import { isPasswordStrongEnough } from "@/app/lib/auth/password-strength";
+import type { ActionResult } from "@/app/lib/actions/action-result";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -93,6 +94,8 @@ export async function signInWithPasswordAction(input: {
   }
   await clearAuthFailures(email);
   await ensureCurrentUserProfile(supabase);
+  const { syncPendingTeamInvitesForCurrentUser } = await import("@/app/lib/team/actions");
+  await syncPendingTeamInvitesForCurrentUser();
   const gate = await getMfaGate(supabase);
   return {
     ok: true,
@@ -215,6 +218,25 @@ export async function updatePasswordAction(input: {
     return { ok: false, error: "errors.auth_password_update_failed" };
   }
   return { ok: true, next: "/dashboard" };
+}
+
+export async function completeAuthSessionAction(): Promise<ActionResult> {
+  if (!isSupabaseConfigured()) {
+    return { ok: true };
+  }
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    return { ok: false, error: "errors.auth_required" };
+  }
+
+  await ensureCurrentUserProfile(supabase);
+  const { syncPendingTeamInvitesForCurrentUser } = await import("@/app/lib/team/actions");
+  await syncPendingTeamInvitesForCurrentUser();
+  return { ok: true };
 }
 
 export async function completePendingGoogleOAuthAction(input: {

@@ -431,6 +431,7 @@ export function TeamBillingPage() {
   const canBuyExtra =
     !summary.isVip &&
     summary.stripeEnabled &&
+    summary.openSeatCount <= 0 &&
     (summary.hasSubscription || summary.billableSeatCount < 1);
 
   if (summary.isVip) {

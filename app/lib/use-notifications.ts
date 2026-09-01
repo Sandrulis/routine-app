@@ -14,19 +14,16 @@ import {
   unreadNotificationCount,
   type AppNotification,
 } from "@/app/lib/notifications";
-import { useTeam } from "@/app/lib/team-store";
 
 export function useNotifications() {
   const { user: authUser, isReady: authReady } = useAuthSession();
-  const { isReady: teamReady, currentTeam } = useTeam();
   const userId = authUser?.id ?? null;
-  const teamId = currentTeam?.id ?? null;
   const [items, setItems] = useState<AppNotification[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const refreshGenerationRef = useRef(0);
 
   const refresh = useCallback((options?: { silent?: boolean }) => {
-    if (!authReady || !teamReady) return;
+    if (!authReady) return;
     if (!userId) {
       setItems([]);
       setIsLoading(false);
@@ -35,7 +32,7 @@ export function useNotifications() {
     const generation = ++refreshGenerationRef.current;
     if (!options?.silent) setIsLoading(true);
     void purgeOldNotificationsOnce(30).catch(() => undefined);
-    void fetchVisibleNotifications(teamId, userId)
+    void fetchVisibleNotifications(null, userId)
       .then((next) => {
         if (generation !== refreshGenerationRef.current) return;
         setItems(next);
@@ -50,14 +47,10 @@ export function useNotifications() {
           setIsLoading(false);
         }
       });
-  }, [authReady, teamId, teamReady, userId]);
+  }, [authReady, userId]);
 
   useEffect(() => {
     if (!authReady) return;
-    if (!teamReady) {
-      setIsLoading(true);
-      return;
-    }
     refresh();
     function handleChange() {
       refresh({ silent: true });
@@ -67,7 +60,7 @@ export function useNotifications() {
       refreshGenerationRef.current += 1;
       window.removeEventListener(NOTIFICATIONS_CHANGE_EVENT, handleChange);
     };
-  }, [authReady, refresh, teamReady]);
+  }, [authReady, refresh]);
 
   const unreadCount = useMemo(() => unreadNotificationCount(items), [items]);
 

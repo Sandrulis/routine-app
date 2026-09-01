@@ -171,6 +171,8 @@ async function notifyTeamBillingDue(
         href: "/team/billing",
         createdAt: now,
         readAt: null,
+        teamId: null,
+        teamName: null,
       },
     ];
   });

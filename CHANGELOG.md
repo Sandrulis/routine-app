@@ -4,6 +4,12 @@
 
 - (none)
 
+## v0.3.37
+
+- Paziņojumi no visām komandām ar komandas nosaukumu; klikšķis pārslēdz aktīvo komandu un ved uz notikumu
+- Pēc reģistrācijas/e-pasta apstiprinājuma automātiski sinhronizē komandas uzaicinājumus un rāda apstiprinājuma modāli
+- Brīva apmaksāta vieta bloķē papildu vietas pirkumu; landing skaidro, ka maksas moduļi attiecas uz visu komandu
+
 ## v0.3.36
 
 - Gmail spraudnis `0.4.47`: done lapa rāda zaļo stāvokli tikai pēc sesijas saglabāšanas; TOTP lietotājiem ticket bootstrap atkal izmanto post-MFA refresh token

@@ -100,6 +100,8 @@ export async function notifyOpenPaidSeats(teamId: string) {
         href: "/team/billing",
         createdAt: now,
         readAt: null,
+        teamId: null,
+        teamName: null,
       },
     ];
   });

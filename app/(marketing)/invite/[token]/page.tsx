@@ -12,6 +12,7 @@ import {
   acceptTeamInvitationByTokenAction,
   getTeamInvitationByTokenAction,
   rejectTeamInvitationAction,
+  syncPendingTeamInvitesForCurrentUser,
 } from "@/app/lib/team/actions";
 
 export default function InviteTokenPage({
@@ -52,6 +53,17 @@ export default function InviteTokenPage({
       })
       .finally(() => setLoading(false));
   }, [token]);
+
+  useEffect(() => {
+    if (!authReady || !user || !token) return;
+    void syncPendingTeamInvitesForCurrentUser().then(() =>
+      getTeamInvitationByTokenAction(token).then((result) => {
+        if (result.ok) {
+          setInvite(result.data);
+        }
+      }),
+    );
+  }, [authReady, token, user]);
 
   useEffect(() => {
     if (!authReady || loading || !token || !invite || user) return;

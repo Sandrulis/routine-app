@@ -30,6 +30,10 @@ export function AuthSessionProvider({
   const [isReady, setIsReady] = useState(true);
 
   useEffect(() => {
+    setUser(initialUser);
+  }, [initialUser]);
+
+  useEffect(() => {
     if (!isSupabaseConfigured()) {
       setUser(null);
       setIsReady(true);
@@ -40,7 +44,11 @@ export function AuthSessionProvider({
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event: AuthChangeEvent, session: Session | null) => {
-      if (event === "INITIAL_SESSION") return;
+      if (event === "INITIAL_SESSION") {
+        setUser(session?.user ?? initialUser);
+        setIsReady(true);
+        return;
+      }
       setUser(session?.user ?? null);
       setIsReady(true);
     });
@@ -48,7 +56,7 @@ export function AuthSessionProvider({
     return () => {
       subscription.unsubscribe();
     };
-  }, []);
+  }, [initialUser]);
 
   const value = useMemo(() => ({ user, isReady }), [isReady, user]);
 

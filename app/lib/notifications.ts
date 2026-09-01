@@ -25,6 +25,8 @@ export type AppNotification = {
   href: string | null;
   createdAt: string;
   readAt: string | null;
+  teamId: string | null;
+  teamName: string | null;
 };
 
 export const NOTIFICATIONS_STORAGE_KEY = "routine-app-notifications";
@@ -78,6 +80,8 @@ export function notificationsForNewAssignees(input: {
       href: input.href,
       createdAt: now,
       readAt: null,
+      teamId: null,
+      teamName: null,
     }));
 }
 
@@ -157,6 +161,14 @@ export function normalizeStoredNotifications(
         href,
         createdAt,
         readAt,
+        teamId:
+          "teamId" in item && typeof item.teamId === "string" && item.teamId
+            ? item.teamId
+            : null,
+        teamName:
+          "teamName" in item && typeof item.teamName === "string" && item.teamName
+            ? item.teamName
+            : null,
       };
     })
     .filter((item): item is AppNotification => item !== null);

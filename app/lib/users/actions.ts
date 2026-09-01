@@ -2,8 +2,9 @@
 
 import { revalidatePath } from "next/cache";
 import { getCurrentUser } from "@/app/lib/auth/get-current-user";
+import { createAdminClient } from "@/app/lib/supabase/admin";
 import { createClient } from "@/app/lib/supabase/server";
-import { isSupabaseConfigured } from "@/app/lib/supabase/env";
+import { isSupabaseAdminConfigured, isSupabaseConfigured } from "@/app/lib/supabase/env";
 import type { UserDisplayPreferences } from "@/app/lib/site-admin/display-preferences";
 import { isValidTimeZone } from "@/app/lib/cron-jobs/timezone";
 import { joinDisplayName } from "@/app/lib/users/display-name";
@@ -41,6 +42,25 @@ export async function saveUserPersonalInfoAction(
 
   if (error) {
     return { ok: false, error: "errors.user_profile_failed" };
+  }
+
+  if (isSupabaseAdminConfigured()) {
+    try {
+      const admin = createAdminClient();
+      const { data: authData } = await admin.auth.admin.getUserById(user.id);
+      const existing = (authData.user?.user_metadata ?? {}) as Record<string, unknown>;
+      await admin.auth.admin.updateUserById(user.id, {
+        user_metadata: {
+          ...existing,
+          given_name: firstName,
+          family_name: lastName,
+          name: fullName,
+          full_name: fullName,
+        },
+      });
+    } catch {
+      return { ok: false, error: "errors.user_profile_failed" };
+    }
   }
 
   revalidatePath("/", "layout");
