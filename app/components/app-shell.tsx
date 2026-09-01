@@ -3,6 +3,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { usePathname } from "next/navigation";
 import { AppNav } from "@/app/components/app-nav";
+import { GlobalAnnouncementsBanner } from "@/app/components/global-announcements-banner";
 import { OpenPaidSeatBanner } from "@/app/components/open-paid-seat-banner";
 import { TeamBillingMemberPaywall } from "@/app/components/team-billing-member-paywall";
 import { TeamPlanInactiveBanner } from "@/app/components/team-plan-inactive-banner";
@@ -13,6 +14,7 @@ import { StripeInvalidKeyBanner } from "@/app/components/stripe-invalid-key-bann
 import { useTranslations } from "@/app/components/translations-provider";
 import { useTeamBillingLiveSync } from "@/app/lib/billing/use-team-billing-live-sync";
 import { AccountDeletionReactivatedToast } from "@/app/components/account-deletion-reactivated-toast";
+import type { SiteAnnouncementSummary } from "@/app/lib/announcements/types";
 
 function TeamBillingLiveSync() {
   useTeamBillingLiveSync();
@@ -22,9 +24,11 @@ function TeamBillingLiveSync() {
 export function AppShell({
   children,
   stripeKeyInvalid = false,
+  announcements = [],
 }: {
   children: ReactNode;
   stripeKeyInvalid?: boolean;
+  announcements?: SiteAnnouncementSummary[];
 }) {
   const pathname = usePathname();
   const { t } = useTranslations();
@@ -77,6 +81,7 @@ export function AppShell({
           menuOpen={menuOpen}
           onOpenMenu={() => setMenuOpen(true)}
         />
+        <GlobalAnnouncementsBanner announcements={announcements} />
         <StripeInvalidKeyBanner visible={stripeKeyInvalid} />
         <TeamPlanInactiveBanner />
         <TeamSubscriptionEndingBanner />

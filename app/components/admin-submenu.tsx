@@ -68,6 +68,12 @@ const GROUPS = [
         labelKey: "admin.nav.docs",
         fallback: "Docs",
       },
+      {
+        href: "/admin/announcements",
+        icon: "fas fa-bullhorn",
+        labelKey: "admin.nav.announcements",
+        fallback: "Paziņojumi",
+      },
     ],
   },
   {

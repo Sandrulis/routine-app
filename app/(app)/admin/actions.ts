@@ -91,6 +91,13 @@ import type {
 } from "@/app/lib/site-admin/types";
 import { SITE_INTEGRATION_KEYS } from "@/app/lib/integrations/keys";
 import { saveSimpleIntegrationCredentials } from "@/app/lib/integrations/simple/repository";
+import {
+  createSiteAnnouncement,
+  deleteSiteAnnouncement,
+  updateSiteAnnouncement,
+  updateSiteAnnouncementEnabled,
+} from "@/app/lib/announcements/repository";
+import type { SiteAnnouncementInput } from "@/app/lib/announcements/types";
 import { requireAdmin } from "@/app/lib/users/require-admin";
 
 function refreshAdmin() {
@@ -548,6 +555,40 @@ export async function listDocsArticleImagesAction(articleId: string) {
 export async function deleteDocsArticleImageAction(imageId: string) {
   await requireAdmin({ action: "admin.docs.article.image.delete", target: imageId });
   const result = await deleteDocsArticleImage(imageId);
+  if (result.ok) refreshAdmin();
+  return result;
+}
+
+export async function createSiteAnnouncementAction(input: SiteAnnouncementInput) {
+  await requireAdmin({ action: "admin.announcement.create" });
+  const result = await createSiteAnnouncement(input);
+  if (result.ok) refreshAdmin();
+  return result;
+}
+
+export async function updateSiteAnnouncementAction(
+  id: string,
+  input: SiteAnnouncementInput,
+) {
+  await requireAdmin({ action: "admin.announcement.update", target: id });
+  const result = await updateSiteAnnouncement(id, input);
+  if (result.ok) refreshAdmin();
+  return result;
+}
+
+export async function updateSiteAnnouncementEnabledAction(
+  id: string,
+  isEnabled: boolean,
+) {
+  await requireAdmin({ action: "admin.announcement.enabled", target: id });
+  const result = await updateSiteAnnouncementEnabled(id, isEnabled);
+  if (result.ok) refreshAdmin();
+  return result;
+}
+
+export async function deleteSiteAnnouncementAction(id: string) {
+  await requireAdmin({ action: "admin.announcement.delete", target: id });
+  const result = await deleteSiteAnnouncement(id);
   if (result.ok) refreshAdmin();
   return result;
 }

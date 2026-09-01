@@ -3,6 +3,7 @@
 import type { ReactNode } from "react";
 import { AppShell } from "@/app/components/app-shell";
 import { FileViewerProvider } from "@/app/components/file-viewer-provider";
+import type { SiteAnnouncementSummary } from "@/app/lib/announcements/types";
 import { TeamScopedFrontendModules } from "@/app/lib/frontend-modules/team-scoped-provider";
 import { TeamGoogleDriveProvider } from "@/app/lib/google-drive/context";
 import { TeamOneDriveProvider } from "@/app/lib/onedrive/context";
@@ -32,6 +33,7 @@ export function AppProviders({
   paymentPlansEnabled = false,
   paymentPlans = [],
   stripeKeyInvalid = false,
+  announcements = [],
 }: {
   children: ReactNode;
   taskStatuses?: TaskStatusSummary[];
@@ -40,6 +42,7 @@ export function AppProviders({
   paymentPlansEnabled?: boolean;
   paymentPlans?: PaymentPlanModuleSnapshot[];
   stripeKeyInvalid?: boolean;
+  announcements?: SiteAnnouncementSummary[];
 }) {
   return (
     <TeamProvider>
@@ -60,7 +63,12 @@ export function AppProviders({
               <TemplatesProvider>
                 <ListsProvider>
                   <FileViewerProvider>
-                    <AppShell stripeKeyInvalid={stripeKeyInvalid}>{children}</AppShell>
+                    <AppShell
+                      stripeKeyInvalid={stripeKeyInvalid}
+                      announcements={announcements}
+                    >
+                      {children}
+                    </AppShell>
                   </FileViewerProvider>
                 </ListsProvider>
               </TemplatesProvider>

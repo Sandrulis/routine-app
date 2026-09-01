@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import type { Metadata } from "next";
 import { AppProviders } from "@/app/components/app-providers";
 import { MfaVerifyModal } from "@/app/components/mfa-verify-modal";
+import { listVisibleSiteAnnouncements } from "@/app/lib/announcements/visible";
 import { getMfaGate } from "@/app/lib/auth/mfa";
 import { getEnabledFrontendModuleKeys } from "@/app/lib/frontend-modules/repository";
 import { stripeInvalidKeyNoticeForCurrentAdmin } from "@/app/lib/integrations/stripe/notice";
@@ -43,6 +44,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
     paymentPlansEnabled,
     paymentPlans,
     stripeKeyInvalid,
+    announcements,
   ] =
     await Promise.all([
       listTaskStatuses(),
@@ -51,6 +53,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
       getPaymentPlansEnabledCached(),
       listPaymentPlans(),
       stripeInvalidKeyNoticeForCurrentAdmin(),
+      listVisibleSiteAnnouncements(),
     ]);
 
   return (
@@ -65,6 +68,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
         isFree: plan.isFree,
       }))}
       stripeKeyInvalid={stripeKeyInvalid}
+      announcements={announcements}
     >
       {children}
     </AppProviders>

@@ -6,6 +6,7 @@
 
 ## v0.3.22
 
+- Sistēmas admins var veidot globālus paziņojumus (`/admin/announcements`); lietotājiem rādās aizverams bloks līdz termiņam
 - Admin docs attēlu augšupielāde rāda progress: faila nosaukums, skaits un procenti
 
 ## v0.3.21

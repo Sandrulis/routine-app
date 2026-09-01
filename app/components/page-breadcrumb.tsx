@@ -266,6 +266,7 @@ export function PageBreadcrumb({
         languages: t("admin.nav.languages", "Valodas"),
         translations: t("admin.nav.translations", "Tulkojumi"),
         docs: t("admin.nav.docs", "Docs"),
+        announcements: t("admin.nav.announcements", "Paziņojumi"),
         modules: t("nav.modules", "Moduļi"),
         "payment-plans": t("admin.nav.payment_plans", "Maksas plāni"),
         integrations: t("admin.nav.integrations", "Integrācijas"),
