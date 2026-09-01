@@ -1,17 +1,17 @@
 (() => {
   if (!chrome?.runtime?.id) return;
-  if (window.__routineGmailPluginAuthStarted) return;
-  window.__routineGmailPluginAuthStarted = true;
 
   const PENDING_BOOTSTRAP_KEY = "pendingBootstrapTicket";
+  const READY_ATTR = "data-routine-plugin-ready";
+  const CLOSE_ATTR = "data-routine-plugin-close";
 
   function markReady() {
-    window.__routineGmailPluginReady = true;
-    function ping() {
-      window.dispatchEvent(new Event("routine-gmail-plugin-ready"));
-    }
-    ping();
-    [50, 200, 600, 1500].forEach((ms) => window.setTimeout(ping, ms));
+    document.documentElement.setAttribute(READY_ATTR, "1");
+    window.postMessage(
+      { source: "routine-gmail-plugin", type: "ready" },
+      location.origin,
+    );
+    window.dispatchEvent(new Event("routine-gmail-plugin-ready"));
   }
 
   function requestTabClose() {
@@ -20,7 +20,32 @@
     });
   }
 
-  window.addEventListener("routine-gmail-plugin-close", requestTabClose);
+  window.addEventListener("message", (event) => {
+    if (event.origin !== location.origin) return;
+    if (event.data?.source !== "routine-gmail-plugin") return;
+    if (event.data?.type === "close") requestTabClose();
+  });
+
+  const closeObserver = new MutationObserver(() => {
+    if (document.documentElement.getAttribute(CLOSE_ATTR) === "1") {
+      requestTabClose();
+    }
+  });
+  closeObserver.observe(document.documentElement, {
+    attributes: true,
+    attributeFilter: [CLOSE_ATTR],
+  });
+
+  if (window.__routineGmailPluginAuthStarted) {
+    const marker = document.querySelector("[data-routine-gmail-plugin]");
+    const state = marker?.getAttribute("data-routine-gmail-plugin") || "";
+    const ticket = marker?.getAttribute("data-routine-bootstrap-ticket")?.trim();
+    if ((state === "logged-in" || state === "connected") && ticket) {
+      markReady();
+    }
+    return;
+  }
+  window.__routineGmailPluginAuthStarted = true;
 
   async function stashTicketLocally(ticket) {
     const value = String(ticket || "").trim();
@@ -57,11 +82,13 @@
   function begin(marker) {
     const state = marker.getAttribute("data-routine-gmail-plugin") || "";
     if (state !== "logged-in" && state !== "connected") return;
-    if (window.__routineGmailPluginAuthSent) return;
-    window.__routineGmailPluginAuthSent = true;
 
     const bootstrapTicket =
       marker.getAttribute("data-routine-bootstrap-ticket")?.trim() || "";
+    if (bootstrapTicket) markReady();
+
+    if (window.__routineGmailPluginAuthSent) return;
+    window.__routineGmailPluginAuthSent = true;
 
     function sendAuth(payload, attempt) {
       chrome.runtime.sendMessage(
@@ -105,9 +132,7 @@
     }
 
     void (async () => {
-      if (bootstrapTicket && (await stashTicketLocally(bootstrapTicket))) {
-        markReady();
-      }
+      if (bootstrapTicket) await stashTicketLocally(bootstrapTicket);
       sendAuth({}, 0);
     })();
   }

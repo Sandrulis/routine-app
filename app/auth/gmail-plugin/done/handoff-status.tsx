@@ -3,12 +3,19 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "@/app/components/translations-provider";
 
-type PluginWindow = Window & { __routineGmailPluginReady?: boolean };
-
+const READY_ATTR = "data-routine-plugin-ready";
 const CLOSE_AFTER_SEC = 5;
 
+function pluginPageIsReady() {
+  return document.documentElement.getAttribute(READY_ATTR) === "1";
+}
+
 function requestPluginTabClose() {
-  window.dispatchEvent(new Event("routine-gmail-plugin-close"));
+  document.documentElement.setAttribute("data-routine-plugin-close", "1");
+  window.postMessage(
+    { source: "routine-gmail-plugin", type: "close" },
+    window.location.origin,
+  );
   window.close();
 }
 
@@ -31,16 +38,33 @@ export function GmailPluginHandoffBody({
       setIsReady(true);
       setSecondsLeft(CLOSE_AFTER_SEC);
     }
-    const pluginWindow = window as PluginWindow;
-    if (pluginWindow.__routineGmailPluginReady) {
-      onReady();
+
+    function onMessage(event: MessageEvent) {
+      if (event.origin !== window.location.origin) return;
+      const data = event.data as { source?: string; type?: string } | null;
+      if (data?.source === "routine-gmail-plugin" && data.type === "ready") {
+        onReady();
+      }
     }
+
+    if (pluginPageIsReady()) onReady();
     window.addEventListener("routine-gmail-plugin-ready", onReady);
+    window.addEventListener("message", onMessage);
+    const observer = new MutationObserver(() => {
+      if (pluginPageIsReady()) onReady();
+    });
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: [READY_ATTR],
+    });
     const poll = window.setInterval(() => {
-      if ((window as PluginWindow).__routineGmailPluginReady) onReady();
+      if (pluginPageIsReady()) onReady();
     }, 100);
+
     return () => {
       window.removeEventListener("routine-gmail-plugin-ready", onReady);
+      window.removeEventListener("message", onMessage);
+      observer.disconnect();
       window.clearInterval(poll);
     };
   }, []);

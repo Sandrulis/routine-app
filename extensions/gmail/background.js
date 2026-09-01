@@ -1772,16 +1772,29 @@ async function injectPluginAuth(tabId) {
 
 async function markDoneTabReady(tabId) {
   if (!tabId || !chrome.scripting?.executeScript) return;
+  const paintReady = () => {
+    document.documentElement.setAttribute("data-routine-plugin-ready", "1");
+    window.postMessage(
+      { source: "routine-gmail-plugin", type: "ready" },
+      location.origin,
+    );
+    window.dispatchEvent(new Event("routine-gmail-plugin-ready"));
+  };
   try {
     await chrome.scripting.executeScript({
       target: { tabId },
-      func: () => {
-        window.__routineGmailPluginReady = true;
-        window.dispatchEvent(new Event("routine-gmail-plugin-ready"));
-      },
+      world: "MAIN",
+      func: paintReady,
     });
   } catch {
-    // Tab closed or not injectable.
+    try {
+      await chrome.scripting.executeScript({
+        target: { tabId },
+        func: paintReady,
+      });
+    } catch {
+      // Tab closed or not injectable.
+    }
   }
 }
 

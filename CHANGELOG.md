@@ -4,6 +4,10 @@
 
 - (none)
 
+## v0.3.30
+
+- Gmail spraudnis `0.4.42`: done lapa redz, ka ticket ir saņemts, bez popup klikšķa (DOM atribūts, ne izolētā window)
+
 ## v0.3.29
 
 - Gmail spraudnis `0.4.41`: pēc ticket saņemšanas done teksts kļūst zaļš, 5 s atskaite un cilne aizveras pati, bez popup klikšķa
