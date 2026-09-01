@@ -4,6 +4,10 @@
 
 - (none)
 
+## v0.3.25
+
+- npm ci / Vercel install: `sharp` override tagad seko tiešajai atkarībai (`$sharp`)
+
 ## v0.3.24
 
 - Publiskā dokumentācija ir iztulkota visās 15 valodās; `/docs` seko UI valodai, adminā valodu cilnes
