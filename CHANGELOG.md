@@ -4,6 +4,10 @@
 
 - (none)
 
+## v0.3.43
+
+- OAuth „Atcerēties mani” blakus Google/Microsoft ir tikai ķeksītis ar tooltip tekstu
+
 ## v0.3.42
 
 - Login: „Atcerēties mani” un „Aizmirsi paroli?” vienā rindā; ķeksītis arī Google/Microsoft pogas kreisajā pusē

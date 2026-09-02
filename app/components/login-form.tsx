@@ -141,7 +141,8 @@ export function LoginForm({
       <RememberMeCheckbox
         checked={remember}
         onChange={updateRemember}
-        className="max-w-[7.5rem] shrink-0"
+        tooltipOnly
+        className="shrink-0"
       />
       <div className="min-w-0 flex-1 space-y-2">
         {googleSignInEnabled ? (

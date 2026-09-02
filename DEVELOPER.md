@@ -428,7 +428,7 @@ app/
     admin-cron-jobs-form.tsx      # /admin/cron-jobs: ieslēgt darbus (loading uz slēdža), kopēt cron-job.org saiti
     timezone-sync.tsx             # Pārlūka IANA josla → users.timezone (RPC)
     auth-session-from-url.tsx     # /auth/confirm: verifyOtp no token_hash; hash redirect PKCE
-    remember-me-checkbox.tsx      # Atcerēties mani (noklusējums izslēgts; 30 dienas ar ķeksi; optional className)
+    remember-me-checkbox.tsx      # Atcerēties mani (noklusējums izslēgts; 30 dienas ar ķeksi; OAuth: tooltipOnly)
     forgot-password-form.tsx      # Aizmirsi paroli (forma tikai ar Resend)
     work-progress.tsx             # done/total, josla, sānjoslas fona aizpildījums
     update-password-form.tsx      # Jauna parole pēc e-pasta saites; PasswordInput + stipruma josla
