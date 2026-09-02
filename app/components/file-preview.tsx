@@ -261,11 +261,12 @@ export function FilePreview({
         </div>
       );
     }
+    // No sandbox: Chrome’s PDF viewer is blocked inside sandboxed iframes
+    // (“This page has been blocked by Chrome”). Content is a same-origin blob:.
     return (
       <iframe
         src={`${embedUrl}#navpanes=0`}
         title={file.name}
-        sandbox="allow-scripts allow-same-origin"
         className="min-h-[70vh] w-full rounded-2xl border border-zinc-200 bg-white"
       />
     );

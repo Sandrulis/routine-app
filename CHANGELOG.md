@@ -4,6 +4,10 @@
 
 - (none)
 
+## v0.3.50
+
+- Labots PDF priekšskatījums Chrome: noņemts iframe `sandbox`, kas bloķēja iebūvēto PDF skatītāju
+
 ## v0.3.49
 
 - Failu logam mapē: hover uz pielikuma ar piezīmi rāda piezīmes tooltip
