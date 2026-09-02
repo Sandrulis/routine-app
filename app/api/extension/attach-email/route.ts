@@ -115,6 +115,7 @@ type AttachEmailInput = {
   bodyHtml: string;
   permalink: string;
   includeEmailBody: boolean;
+  note: string;
   attachments: { name: string; mimeType: string; bytes: Uint8Array }[];
 };
 
@@ -132,6 +133,12 @@ function readIncludeEmailBody(value: unknown, fallback = true) {
   return fallback;
 }
 
+function readAttachNote(value: unknown) {
+  return String(value ?? "")
+    .trim()
+    .slice(0, 500);
+}
+
 async function parseAttachEmailRequest(request: Request): Promise<AttachEmailInput | null> {
   const contentType = request.headers.get("content-type") || "";
   if (contentType.includes("application/json")) {
@@ -147,6 +154,7 @@ async function parseAttachEmailRequest(request: Request): Promise<AttachEmailInp
         bodyHtml: String(json.bodyHtml ?? ""),
         permalink: String(json.permalink ?? ""),
         includeEmailBody: readIncludeEmailBody(json.includeEmailBody, true),
+        note: readAttachNote(json.note),
         attachments: readJsonAttachments(json.attachments),
       };
     } catch {
@@ -166,6 +174,7 @@ async function parseAttachEmailRequest(request: Request): Promise<AttachEmailInp
       bodyHtml: String(form.get("bodyHtml") ?? ""),
       permalink: String(form.get("permalink") ?? ""),
       includeEmailBody: readIncludeEmailBody(form.get("includeEmailBody"), true),
+      note: readAttachNote(form.get("note")),
       attachments: await readAttachmentFiles(form),
     };
   } catch {
@@ -264,6 +273,7 @@ export async function POST(request: Request) {
     taskId,
     files,
     catalog,
+    note: input.note,
   });
 
   if (!result.ok) {

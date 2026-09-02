@@ -45,14 +45,11 @@ export function TeamOneDrivePage() {
   const suggestedFolderPath = defaultCloudFolderFromTeamName(currentTeam?.name);
   const [status, setStatus] = useState(() => emptyOneDriveStatus(suggestedFolderPath));
   const [folderPath, setFolderPath] = useState(suggestedFolderPath);
-  const [enabled, setEnabled] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [disconnectOpen, setDisconnectOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
   const canConfigure = canConfigureUi && status.canConfigure;
-  const hasChanges =
-    loaded &&
-    (folderPath.trim() !== status.folderPath || enabled !== status.enabled);
+  const hasChanges = loaded && folderPath.trim() !== status.folderPath;
   const { confirmOpen, stayOnPage, confirmLeave } = useUnsavedChangesGuard({
     isDirty: hasChanges,
   });
@@ -98,7 +95,6 @@ export function TeamOneDrivePage() {
       }
       setStatus(result.data);
       setFolderPath(result.data.folderPath);
-      setEnabled(result.data.enabled);
       setLoaded(true);
     });
     return () => {
@@ -129,7 +125,6 @@ export function TeamOneDrivePage() {
     startTransition(async () => {
       const result = await saveOneDriveSettingsAction({
         teamId: currentTeam.id,
-        isEnabled: enabled,
         folderPath,
       });
       if (!result.ok) {
@@ -138,7 +133,7 @@ export function TeamOneDrivePage() {
       }
       setStatus((current) => ({
         ...current,
-        enabled,
+        enabled: true,
         folderPath: result.data.folderPath,
       }));
       setFolderPath(result.data.folderPath);
@@ -166,7 +161,6 @@ export function TeamOneDrivePage() {
         enabled: false,
         accountEmail: "",
       }));
-      setEnabled(false);
       notifyOneDriveStatusChanged();
       showFeedback({
         type: "success",
@@ -293,21 +287,6 @@ export function TeamOneDrivePage() {
                 { name: suggestedFolderPath },
               )}
             </p>
-            <label className="mt-5 flex items-start gap-3 text-sm text-zinc-800">
-              <input
-                type="checkbox"
-                checked={enabled}
-                disabled={!canConfigure || isPending || !status.connected}
-                onChange={(event) => setEnabled(event.target.checked)}
-                className="mt-0.5"
-              />
-              <span>
-                {t(
-                  "onedrive.upload.enabled",
-                  "Augšupielādēt failus uz OneDrive, kad tos pievieno {SYSTEM_NAME}",
-                )}
-              </span>
-            </label>
             {canConfigure ? (
               <div className="mt-5 flex justify-end border-t border-zinc-100 pt-5">
                 <button

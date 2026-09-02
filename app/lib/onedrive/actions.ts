@@ -92,7 +92,6 @@ export async function startOneDriveOAuthAction(
 
 export async function saveOneDriveSettingsAction(input: {
   teamId: string;
-  isEnabled: boolean;
   folderPath: string;
 }): Promise<ActionResult<{ folderPath: string }>> {
   const modules = await requireOneDriveModules();
@@ -103,7 +102,6 @@ export async function saveOneDriveSettingsAction(input: {
   if (!allowed.ok) return allowed;
   const result = await saveOneDriveSettings({
     teamId: input.teamId.trim(),
-    isEnabled: input.isEnabled,
     folderPath: sanitizeOneDriveFolderPath(input.folderPath),
   });
   if (!result.ok) return result;

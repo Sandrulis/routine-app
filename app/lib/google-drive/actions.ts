@@ -92,7 +92,6 @@ export async function startGoogleDriveOAuthAction(
 
 export async function saveGoogleDriveSettingsAction(input: {
   teamId: string;
-  isEnabled: boolean;
   storeOnServer: boolean;
   folderPath: string;
 }): Promise<ActionResult<{ folderPath: string; storeOnServer: boolean }>> {
@@ -104,7 +103,6 @@ export async function saveGoogleDriveSettingsAction(input: {
   if (!allowed.ok) return allowed;
   const result = await saveGoogleDriveSettings({
     teamId: input.teamId.trim(),
-    isEnabled: input.isEnabled,
     storeOnServer: false,
     folderPath: sanitizeDriveFolderPath(input.folderPath),
   });

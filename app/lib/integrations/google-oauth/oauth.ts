@@ -50,7 +50,13 @@ export function googleOAuthRedirectUri(origin: string) {
 export async function buildGoogleOAuthAuthorizeUrl(
   origin: string,
   state: string,
-  options?: { prompt?: string; accessType?: string; loginHint?: string },
+  options?: {
+    prompt?: string;
+    accessType?: string;
+    loginHint?: string;
+    scopes?: string;
+    includeGrantedScopes?: boolean;
+  },
 ) {
   const credentials = await getGoogleOAuthCredentials();
   if (!credentials) return null;
@@ -58,7 +64,7 @@ export async function buildGoogleOAuthAuthorizeUrl(
     client_id: credentials.clientId,
     redirect_uri: googleOAuthRedirectUri(origin),
     response_type: "code",
-    scope: GOOGLE_OAUTH_SCOPES,
+    scope: options?.scopes?.trim() || GOOGLE_OAUTH_SCOPES,
     access_type: options?.accessType ?? "offline",
     prompt: options?.prompt ?? "consent",
     state,
@@ -66,6 +72,9 @@ export async function buildGoogleOAuthAuthorizeUrl(
   const loginHint = options?.loginHint?.trim();
   if (loginHint) {
     params.set("login_hint", loginHint);
+  }
+  if (options?.includeGrantedScopes) {
+    params.set("include_granted_scopes", "true");
   }
   return `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
 }

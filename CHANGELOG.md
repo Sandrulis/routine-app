@@ -4,6 +4,11 @@
 
 - (none)
 
+## v0.3.46
+
+- Gmail spraudnī pie failiem var ierakstīt piezīmi (kā sistēmā); Google login arī savieno Gmail pieeju
+- Drive / OneDrive iestatījumos noņemts liekais upload ķeksītis — pietiek ar konta pieslēgšanu
+
 ## v0.3.45
 
 - Komandas augstākā loma UI ir Vadītājs (nevis Īpašnieks), visās valodās

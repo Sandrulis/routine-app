@@ -177,7 +177,7 @@ export async function uploadTeamFileToGoogleDrive(input: {
   pathParts: string[];
 }) {
   const row = await fetchGoogleDriveSecretRow(input.teamId);
-  if (!row?.isConnected || !row.isEnabled || !row.refreshToken) {
+  if (!row?.isConnected || !row.refreshToken) {
     return {
       ok: false as const,
       error: "errors.files_require_google_drive",
@@ -240,7 +240,7 @@ export async function renameTeamGoogleDriveFile(input: {
   fileName: string;
 }) {
   const row = await fetchGoogleDriveSecretRow(input.teamId);
-  if (!row?.isConnected || !row.isEnabled || !row.refreshToken) {
+  if (!row?.isConnected || !row.refreshToken) {
     return { ok: true as const, skipped: true as const };
   }
 

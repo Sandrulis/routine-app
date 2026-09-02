@@ -9,6 +9,7 @@ import type { FileTypeExtensionSummary } from "@/app/lib/site-admin/types";
 import {
   createActivity,
   createTaskFileId,
+  parseFileNote,
   type TaskFile,
 } from "@/app/lib/task-activity";
 import { textLooksLikeHtml } from "@/app/lib/email-file-preview";
@@ -241,6 +242,8 @@ export async function attachFilesToSubtask(input: {
   taskId: string;
   files: { name: string; mimeType: string; bytes: Uint8Array }[];
   catalog: FileTypeExtensionSummary[];
+  /** Same note applied to every file attached in this request. */
+  note?: string;
 }): Promise<{
   ok: true;
   attached: { id: string; name: string }[];
@@ -280,6 +283,7 @@ export async function attachFilesToSubtask(input: {
     list_id: task.list_id as string,
     parent_id: (task.parent_id as string | null) ?? null,
   });
+  const fileNote = parseFileNote(input.note).slice(0, 500);
 
   const attached: { id: string; name: string }[] = [];
   const skipped: { name: string; reason: string }[] = [];
@@ -353,7 +357,7 @@ export async function attachFilesToSubtask(input: {
       googleDriveFileId,
       oneDriveFileId,
       createdAt,
-      note: "",
+      note: fileNote,
     };
 
     // Same columns as insertTaskFile() in work-data.ts (incl. has_content).

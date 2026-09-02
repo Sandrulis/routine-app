@@ -2482,6 +2482,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                   }))
                 : null;
         const includeEmailBody = message.includeEmailBody !== false;
+        const note = String(message.note || "")
+          .trim()
+          .slice(0, 500);
         const wantsFileAttachments =
           selectedAttachments === null ||
           (Array.isArray(selectedAttachments) &&
@@ -2577,6 +2580,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             bodyHtml: email.bodyHtml || "",
             permalink: email.permalink,
             includeEmailBody,
+            note,
             attachments: attachmentFiles.map((attachment) => ({
               name: attachment.name || "attachment.bin",
               mimeType: attachment.mimeType || "application/octet-stream",

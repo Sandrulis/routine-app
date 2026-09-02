@@ -26,7 +26,7 @@ Nav jāievada Routine URL vai OAuth Client ID. Spraudnis sauc [https://www.tasqi
 1. Atver e-pastu Gmailā (pilns skats)
 2. Nospied **Routine** pogu e-pasta skatā
 3. Izvēlies **saraksts** → (mape) → **uzdevums** → **apakšuzdevums** (vai **Jauns apakšuzdevums** atver jaunu modāli: nosaukums, pēc izvēles sākums, termiņš, statuss, atbildīgais ar live-search hintiem, apraksts). Jaunais apakšuzdevums TASQIN parādās tikai pēc **Pievienot** ar izvēlētajiem pielikumiem.
-4. Zem saraksta atzīmē pielikumus (checkbox) → **Pievienot**
+4. Zem saraksta atzīmē pielikumus (checkbox), pēc izvēles ieraksti **Piezīmi** (tā pati kā sistēmā uz pielikuma) → **Pievienot**
 
 Ja pielikumi neredzami vai rāda OAuth kļūdu: Chrome → `chrome://extensions` → TASQIN - Gmail → **Reload** (versija `0.4.31`), tad Gmail cilnē **F5**. Spraudņa popup → **Atjaunot Gmail savienojumu** (tas nav tas pats, kas «Turpināt ar Google»). Modālī zem saraksta jābūt sadaļai **Pielikumi**.
 
@@ -49,7 +49,7 @@ Popup ir balta kartīte: avatars, vārds un uzvārds, e-pasts, **Iziet** tikai k
 - `POST /api/extension/gmail-bridge-ticket`
 - `POST /api/extension/attach-email`
 - `GET /auth/gmail-plugin/bridge?t=…` → sesija pārlūkā → `/auth/gmail-plugin/start` (Gmail OAuth)
-- `GET /auth/gmail-plugin/login` → Google OAuth (`/auth/google-oauth/callback`) → `/auth/gmail-plugin/done?logged_in=1`
+- `GET /auth/gmail-plugin/login` → Google OAuth ar Gmail pieeju (`openid email profile gmail.readonly`, offline) → callback saglabā arī `user_gmail_connections` → `/auth/gmail-plugin/done?logged_in=1` (+ `connected=1` ja Gmail saglabājās)
 - `GET /auth/gmail-plugin/start` → Google OAuth (`/auth/google-oauth/callback`) → `/auth/gmail-plugin/done`
 
 ## Ikona

@@ -46,14 +46,11 @@ export function TeamGoogleDrivePage() {
   const suggestedFolderPath = defaultCloudFolderFromTeamName(currentTeam?.name);
   const [status, setStatus] = useState(() => emptyGoogleDriveStatus(suggestedFolderPath));
   const [folderPath, setFolderPath] = useState(suggestedFolderPath);
-  const [enabled, setEnabled] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [disconnectOpen, setDisconnectOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
   const canConfigure = canConfigureUi && status.canConfigure;
-  const hasChanges =
-    loaded &&
-    (folderPath.trim() !== status.folderPath || enabled !== status.enabled);
+  const hasChanges = loaded && folderPath.trim() !== status.folderPath;
   const { confirmOpen, stayOnPage, confirmLeave } = useUnsavedChangesGuard({
     isDirty: hasChanges,
   });
@@ -99,7 +96,6 @@ export function TeamGoogleDrivePage() {
       }
       setStatus(result.data);
       setFolderPath(result.data.folderPath);
-      setEnabled(result.data.enabled);
       setLoaded(true);
     });
     return () => {
@@ -130,7 +126,6 @@ export function TeamGoogleDrivePage() {
     startTransition(async () => {
       const result = await saveGoogleDriveSettingsAction({
         teamId: currentTeam.id,
-        isEnabled: enabled,
         storeOnServer: false,
         folderPath,
       });
@@ -140,7 +135,7 @@ export function TeamGoogleDrivePage() {
       }
       setStatus((current) => ({
         ...current,
-        enabled,
+        enabled: true,
         storeOnServer: false,
         folderPath: result.data.folderPath,
       }));
@@ -169,7 +164,6 @@ export function TeamGoogleDrivePage() {
         enabled: false,
         accountEmail: "",
       }));
-      setEnabled(false);
       notifyGoogleDriveStatusChanged();
       showFeedback({
         type: "success",
@@ -296,21 +290,6 @@ export function TeamGoogleDrivePage() {
                 { name: suggestedFolderPath },
               )}
             </p>
-            <label className="mt-5 flex items-start gap-3 text-sm text-zinc-800">
-              <input
-                type="checkbox"
-                checked={enabled}
-                disabled={!canConfigure || isPending || !status.connected}
-                onChange={(event) => setEnabled(event.target.checked)}
-                className="mt-0.5"
-              />
-              <span>
-                {t(
-                  "google_drive.upload.enabled",
-                  "Augšupielādēt failus uz Google Drive, kad tos pievieno {SYSTEM_NAME}",
-                )}
-              </span>
-            </label>
             {canConfigure ? (
               <div className="mt-5 flex justify-end border-t border-zinc-100 pt-5">
                 <button

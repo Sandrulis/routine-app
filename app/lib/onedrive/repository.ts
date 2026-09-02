@@ -23,11 +23,11 @@ export type OneDriveStatus = {
   canConfigure: boolean;
 };
 
-/** Team can accept file uploads: OneDrive is connected and upload-to-OneDrive is on. */
+/** Team can accept file uploads when OneDrive is connected. */
 export function isOneDriveReadyForUploads(
-  status: Pick<OneDriveStatus, "connected" | "enabled"> | null | undefined,
+  status: Pick<OneDriveStatus, "connected"> | null | undefined,
 ): boolean {
-  return Boolean(status?.connected && status?.enabled);
+  return Boolean(status?.connected);
 }
 
 export type OneDriveSecretRow = {
@@ -194,7 +194,7 @@ export async function saveOneDriveTokens(input: {
   const { error } = await admin.from("team_onedrive_integrations").upsert({
     team_id: input.teamId,
     is_connected: true,
-    is_enabled: existing?.isEnabled ?? true,
+    is_enabled: true,
     folder_path: folderPath,
     account_email: input.accountEmail,
     refresh_token: persistSecret(refreshToken),
@@ -232,7 +232,6 @@ export async function updateOneDriveAccessToken(
 
 export async function saveOneDriveSettings(input: {
   teamId: string;
-  isEnabled: boolean;
   folderPath: string;
 }) {
   if (!isSupabaseAdminConfigured()) {
@@ -242,7 +241,7 @@ export async function saveOneDriveSettings(input: {
   const existing = await fetchOneDriveSecretRow(input.teamId);
   const folderPath = sanitizeOneDriveFolderPath(input.folderPath);
   const payload = {
-    is_enabled: input.isEnabled,
+    is_enabled: true,
     folder_path: folderPath,
   };
   const { error } = existing

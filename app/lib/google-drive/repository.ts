@@ -25,11 +25,11 @@ export type GoogleDriveStatus = {
   canConfigure: boolean;
 };
 
-/** Team can accept file uploads: Drive is connected and upload-to-Drive is on. */
+/** Team can accept file uploads when Drive is connected. */
 export function isGoogleDriveReadyForUploads(
-  status: Pick<GoogleDriveStatus, "connected" | "enabled"> | null | undefined,
+  status: Pick<GoogleDriveStatus, "connected"> | null | undefined,
 ): boolean {
-  return Boolean(status?.connected && status?.enabled);
+  return Boolean(status?.connected);
 }
 
 export type GoogleDriveSecretRow = {
@@ -214,7 +214,7 @@ export async function saveGoogleDriveTokens(input: {
   const { error } = await admin.from("team_google_drive_integrations").upsert({
     team_id: input.teamId,
     is_connected: true,
-    is_enabled: existing?.isEnabled ?? true,
+    is_enabled: true,
     store_on_server: false,
     folder_path: folderPath,
     account_email: input.accountEmail,
@@ -252,7 +252,6 @@ export async function updateGoogleDriveAccessToken(
 
 export async function saveGoogleDriveSettings(input: {
   teamId: string;
-  isEnabled: boolean;
   storeOnServer: boolean;
   folderPath: string;
 }) {
@@ -264,7 +263,7 @@ export async function saveGoogleDriveSettings(input: {
   const folderPath = sanitizeDriveFolderPath(input.folderPath);
   const folderChanged = existing?.folderPath !== folderPath;
   const payload = {
-    is_enabled: input.isEnabled,
+    is_enabled: true,
     store_on_server: false,
     folder_path: folderPath,
     folder_id_cache: folderChanged ? {} : (existing?.folderIdCache ?? {}),

@@ -125,7 +125,7 @@ export async function uploadTeamFileToOneDrive(input: {
   pathParts: string[];
 }) {
   const row = await fetchOneDriveSecretRow(input.teamId);
-  if (!row?.isConnected || !row.isEnabled || !row.refreshToken) {
+  if (!row?.isConnected || !row.refreshToken) {
     return {
       ok: false as const,
       error: "errors.files_require_onedrive",
@@ -183,7 +183,7 @@ export async function renameTeamOneDriveFile(input: {
   fileName: string;
 }) {
   const row = await fetchOneDriveSecretRow(input.teamId);
-  if (!row?.isConnected || !row.isEnabled || !row.refreshToken) {
+  if (!row?.isConnected || !row.refreshToken) {
     return { ok: true as const, skipped: true as const };
   }
 

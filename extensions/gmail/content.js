@@ -87,6 +87,9 @@
   "extension.gmail.email_always": "E-pasta saturs (.txt) ir izvēles iespēja.",
   "extension.gmail.email_body": "E-pasta saturs (.txt)",
   "extension.gmail.email_body_hint": "Noņem atzīmi, ja e-pasta tekstu nevēlies pievienot.",
+  "files.note": "Piezīme",
+  "files.note.help": "Piezīme parādās, kad uzvelc peli uz pielikuma.",
+  "lists.windows.files_note_placeholder": "Īsa piezīme",
   "extension.gmail.too_large": "{size} — pārāk liels (>25 MB)",
   "extension.gmail.empty": "Šeit nav ierakstu",
   "extension.gmail.load_lists": "Ielādē sarakstus…",
@@ -400,7 +403,7 @@ function emailBodyAttachmentName(from) {
 
 function ensureUi() {
   const existing = document.getElementById("routine-gmail-root");
-  if (existing?.dataset?.routineUi === "21") {
+  if (existing?.dataset?.routineUi === "24") {
     existing.querySelector("#routine-gmail-fab")?.remove();
     return;
   }
@@ -408,7 +411,7 @@ function ensureUi() {
 
   const root = document.createElement("div");
   root.id = "routine-gmail-root";
-  root.dataset.routineUi = "23";
+  root.dataset.routineUi = "24";
   root.innerHTML = `
     <div id="routine-gmail-modal" hidden>
       <div class="routine-gmail-backdrop" data-close="1"></div>
@@ -430,6 +433,11 @@ function ensureUi() {
               <button type="button" id="routine-gmail-att-toggle" class="routine-gmail-link-btn"></button>
             </div>
             <ul id="routine-gmail-attach-list"></ul>
+            <label class="routine-gmail-field routine-gmail-file-note">
+              <span id="routine-gmail-note-label"></span>
+              <textarea id="routine-gmail-note" rows="2" maxlength="500"></textarea>
+              <span class="routine-gmail-hint" id="routine-gmail-note-help"></span>
+            </label>
             <p class="routine-gmail-hint" id="routine-gmail-att-hint"></p>
           </section>
         </div>
@@ -523,6 +531,7 @@ function ensureUi() {
   const attachmentsSection = root.querySelector("#routine-gmail-attachments");
   const attachList = root.querySelector("#routine-gmail-attach-list");
   const attToggleBtn = root.querySelector("#routine-gmail-att-toggle");
+  const noteInput = root.querySelector("#routine-gmail-note");
   const createModal = root.querySelector("#routine-gmail-create-modal");
   const createForm = root.querySelector("#routine-gmail-create");
   const createFeedback = root.querySelector("#routine-gmail-create-feedback");
@@ -584,6 +593,13 @@ function ensureUi() {
     if (!isBusy) attachLabel.textContent = t("actions.add");
     const attLabel = root.querySelector("#routine-gmail-att-label");
     if (attLabel) attLabel.textContent = t("extension.gmail.attachments");
+    const noteLabel = root.querySelector("#routine-gmail-note-label");
+    if (noteLabel) noteLabel.textContent = t("files.note");
+    if (noteInput) {
+      noteInput.placeholder = t("lists.windows.files_note_placeholder");
+    }
+    const noteHelp = root.querySelector("#routine-gmail-note-help");
+    if (noteHelp) noteHelp.textContent = t("files.note.help");
     const attHint = root.querySelector("#routine-gmail-att-hint");
     if (attHint) attHint.textContent = t("extension.gmail.email_body_hint");
     paintEmailBodyOptionName();
@@ -723,6 +739,7 @@ function ensureUi() {
     listedGmailMessageId = "";
     listedGmailFrom = "";
     attachList.innerHTML = "";
+    if (noteInput) noteInput.value = "";
     attachmentsSection.hidden = true;
     attToggleBtn.hidden = true;
     attToggleBtn.dataset.mode = "toggle";
@@ -2236,6 +2253,7 @@ function ensureUi() {
         email,
         selectedAttachments: selected,
         includeEmailBody,
+        note: String(noteInput?.value || "").trim().slice(0, 500),
       });
     } catch (error) {
       setBusy(false);

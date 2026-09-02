@@ -92,19 +92,19 @@ export async function listExtensionTeams(
     const admin = createAdminClient();
     const { data: rows } = await admin
       .from("team_google_drive_integrations")
-      .select("team_id, is_connected, is_enabled, refresh_token")
+      .select("team_id, is_connected, refresh_token")
       .in("team_id", teamIds);
     for (const row of rows ?? []) {
-      if (row.is_connected && row.is_enabled && decryptSecret(row.refresh_token)) {
+      if (row.is_connected && decryptSecret(row.refresh_token)) {
         connected.add(String(row.team_id));
       }
     }
     const { data: oneDriveRows } = await admin
       .from("team_onedrive_integrations")
-      .select("team_id, is_connected, is_enabled, refresh_token")
+      .select("team_id, is_connected, refresh_token")
       .in("team_id", teamIds);
     for (const row of oneDriveRows ?? []) {
-      if (row.is_connected && row.is_enabled && decryptSecret(row.refresh_token)) {
+      if (row.is_connected && decryptSecret(row.refresh_token)) {
         oneDriveConnected.add(String(row.team_id));
       }
     }

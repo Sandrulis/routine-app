@@ -2,6 +2,7 @@ import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { getCurrentUser } from "@/app/lib/auth/get-current-user";
+import { findAuthUserByEmailExact } from "@/app/lib/auth/find-auth-user-by-email";
 import {
   oauthLoginStatesMatch,
   parseOAuthLoginState,
@@ -10,10 +11,12 @@ import {
   completeOAuthSignIn,
   oauthSignInErrorRedirect,
 } from "@/app/lib/auth/oauth-session";
+import { saveUserGmailConnection } from "@/app/lib/extension/gmail-connection";
 import {
   handleGmailPluginOAuthCallback,
   isGmailPluginOAuthCallback,
 } from "@/app/lib/extension/gmail-oauth-callback";
+import { logError } from "@/app/lib/security/log-error";
 import {
   GOOGLE_OAUTH_ADMIN_PAGE_PATH,
   GOOGLE_OAUTH_CALLBACK_PATH,
@@ -52,6 +55,20 @@ function clearOAuthCookie(response: NextResponse) {
     ...oauthTurnstileCookieOptions(0),
     maxAge: 0,
   });
+  return response;
+}
+
+function withPluginGmailConnectedFlag(response: NextResponse) {
+  const location = response.headers.get("location");
+  if (!location) return response;
+  try {
+    const url = new URL(location);
+    if (!url.pathname.includes("/auth/gmail-plugin/done")) return response;
+    url.searchParams.set("connected", "1");
+    response.headers.set("location", url.toString());
+  } catch {
+    // Keep original redirect.
+  }
   return response;
 }
 
@@ -97,6 +114,35 @@ async function handleLogin(request: Request, origin: string, code: string) {
     },
     turnstileToken: cookieStore.get(OAUTH_TURNSTILE_TOKEN_COOKIE)?.value,
   });
+
+  // Plugin login requested Gmail scopes — persist API tokens in the same step.
+  if (errorPage === "plugin" && profile.email) {
+    try {
+      const authUser = await findAuthUserByEmailExact(profile.email);
+      if (authUser?.id) {
+        const saved = await saveUserGmailConnection({
+          userId: authUser.id,
+          googleEmail: profile.email,
+          refreshToken: tokens.refresh_token || "",
+          accessToken: tokens.access_token,
+          expiresIn: Number(tokens.expires_in) || 3600,
+          givenName: profile.givenName,
+          familyName: profile.familyName,
+          name: profile.name,
+          avatarUrl: profile.avatarUrl,
+        });
+        if (saved.ok) {
+          withPluginGmailConnectedFlag(response);
+        }
+      }
+    } catch (error) {
+      logError(
+        "Plugin login Gmail connection save failed",
+        error instanceof Error ? error.message : String(error),
+      );
+    }
+  }
+
   return clearOAuthCookie(response);
 }
 
