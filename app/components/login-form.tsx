@@ -136,40 +136,33 @@ export function LoginForm({
     router.refresh();
   }
 
-  const oauthProviderButtons = (
-    <>
-      {googleSignInEnabled ? (
-        <GoogleAuthButton
-          disabled={pending}
-          rememberMe={remember}
-          returnPath={oauthReturnPath}
-          errorPage="login"
-        />
-      ) : null}
-      {microsoftSignInEnabled ? (
-        <MicrosoftAuthButton
-          disabled={pending}
-          rememberMe={remember}
-          returnPath={oauthReturnPath}
-          errorPage="login"
-        />
-      ) : null}
-    </>
-  );
-
-  // OAuth-only: Remember me sits left of Google/Microsoft (email form already has its own checkbox).
-  const oauthButtons = !oauthEnabled ? null : emailPasswordEnabled ? (
-    <div className="space-y-2">{oauthProviderButtons}</div>
-  ) : (
+  const oauthButtons = oauthEnabled ? (
     <div className="flex items-center gap-3">
       <RememberMeCheckbox
         checked={remember}
         onChange={updateRemember}
         className="max-w-[7.5rem] shrink-0"
       />
-      <div className="min-w-0 flex-1 space-y-2">{oauthProviderButtons}</div>
+      <div className="min-w-0 flex-1 space-y-2">
+        {googleSignInEnabled ? (
+          <GoogleAuthButton
+            disabled={pending}
+            rememberMe={remember}
+            returnPath={oauthReturnPath}
+            errorPage="login"
+          />
+        ) : null}
+        {microsoftSignInEnabled ? (
+          <MicrosoftAuthButton
+            disabled={pending}
+            rememberMe={remember}
+            returnPath={oauthReturnPath}
+            errorPage="login"
+          />
+        ) : null}
+      </div>
     </div>
-  );
+  ) : null;
 
   return (
     <>
@@ -227,11 +220,11 @@ export function LoginForm({
 
         {emailPasswordEnabled ? (
           <>
-            <RememberMeCheckbox checked={remember} onChange={updateRemember} />
-            <div className="flex justify-end">
+            <div className="flex items-center justify-between gap-3">
+              <RememberMeCheckbox checked={remember} onChange={updateRemember} />
               <Link
                 href="/forgot-password"
-                className="text-sm font-medium text-zinc-500 transition hover:text-zinc-900"
+                className="shrink-0 text-sm font-medium text-zinc-500 transition hover:text-zinc-900"
               >
                 {t("auth.login.forgot", "Aizmirsi paroli?")}
               </Link>

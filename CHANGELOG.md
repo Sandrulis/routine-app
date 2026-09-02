@@ -4,6 +4,10 @@
 
 - (none)
 
+## v0.3.42
+
+- Login: „Atcerēties mani” un „Aizmirsi paroli?” vienā rindā; ķeksītis arī Google/Microsoft pogas kreisajā pusē
+
 ## v0.3.41
 
 - Google-only login rāda „Atcerēties mani” kreisajā pusē pie OAuth pogas, lai sesija var turēties 30 dienas

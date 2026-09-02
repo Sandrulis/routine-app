@@ -416,7 +416,7 @@ app/
     landing-pricing.tsx           # Publiskie plāni: vienāda augstuma kartītes, CTA apakšā, Early access/izmēģinājums birkās, salīdzinājuma tabula
     landing-json-ld.tsx           # schema.org Organization / WebSite / SoftwareApplication / FAQPage; docs CollectionPage + TechArticle
     landing-app-preview.tsx       # Hero dashboard vizuālis (moduļu fīčas tikai ja ieslēgtas)
-    login-form.tsx                # Ienākt; e-pasts/Atcerēties/signup ar Resend; OAuth-only: Atcerēties kreisajā no Google/Microsoft
+    login-form.tsx                # Ienākt; Atcerēties + Aizmirsi vienā rindā; Atcerēties arī OAuth pogas kreisajā; PasswordInput
     signup-form.tsx               # Reģistrēties; `?invite=`; spēcīgas paroles ieteikums + stipruma josla; sava parole → notīra atkārtoto; noteikumi e-pasta formai
     password-input.tsx            # Parole + rādīt/paslēpt acu ikona (var kontrolēt `visible`)
     password-strength-meter.tsx   # Paroles stipruma josla (Ļoti vāja → Stipra)
