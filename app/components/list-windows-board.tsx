@@ -413,32 +413,42 @@ function FilesWindow({
           );
         }
 
+        const note = entry.file.note?.trim() ?? "";
         return (
           <div key={`task:${entry.file.id}`}>
-            <button
-              type="button"
-              onClick={() => openTaskFile(entry.file)}
-              className="flex w-full items-center gap-2 rounded-xl px-2 py-2 text-left transition hover:bg-zinc-50"
-            >
-              <FileIcon
-                name={entry.file.name}
-                className="w-4 text-center text-[13px]"
-              />
-              <span className="min-w-0 flex-1">
-                <span className="block truncate text-sm font-medium text-zinc-900">
-                  {entry.file.name}
+            <OptionalTooltip label={note} className="w-full" align="start">
+              <button
+                type="button"
+                onClick={() => openTaskFile(entry.file)}
+                className="flex w-full items-center gap-2 rounded-xl px-2 py-2 text-left transition hover:bg-zinc-50"
+              >
+                <FileIcon
+                  name={entry.file.name}
+                  className="w-4 text-center text-[13px]"
+                />
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-sm font-medium text-zinc-900">
+                    {entry.file.name}
+                  </span>
+                  <span className="mt-0.5 block truncate text-[11px] text-zinc-400">
+                    {formatFileSize(entry.file.size)}
+                    {entry.task.title ? ` - ${entry.task.title}` : ""}
+                  </span>
                 </span>
-                <span className="mt-0.5 block truncate text-[11px] text-zinc-400">
-                  {formatFileSize(entry.file.size)}
-                  {entry.task.title ? ` - ${entry.task.title}` : ""}
-                </span>
-              </span>
-              <i
-                className="fas fa-paperclip shrink-0 text-[11px] text-zinc-400"
-                aria-hidden="true"
-                title={t("subtasks.attachments.title", "Pielikumi")}
-              />
-            </button>
+                {note ? (
+                  <i
+                    className="fas fa-note-sticky shrink-0 text-[11px] text-zinc-400"
+                    aria-hidden="true"
+                  />
+                ) : (
+                  <i
+                    className="fas fa-paperclip shrink-0 text-[11px] text-zinc-400"
+                    aria-hidden="true"
+                    title={t("subtasks.attachments.title", "Pielikumi")}
+                  />
+                )}
+              </button>
+            </OptionalTooltip>
           </div>
         );
       }}

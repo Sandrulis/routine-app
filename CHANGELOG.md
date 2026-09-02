@@ -4,6 +4,10 @@
 
 - (none)
 
+## v0.3.49
+
+- Failu logam mapē: hover uz pielikuma ar piezīmi rāda piezīmes tooltip
+
 ## v0.3.48
 
 - Gmail spraudņa veiksmīgajā logā rāda atskaiti, pēc cik sekundēm logs aizvērsies
