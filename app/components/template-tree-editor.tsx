@@ -1,6 +1,6 @@
 "use client";
 
-import { type KeyboardEvent, type ReactNode } from "react";
+import { type KeyboardEvent, type ReactNode, useState } from "react";
 import { DragHandle } from "@/app/components/drag-handle";
 import { IconActionButton } from "@/app/components/icon-action-button";
 import {
@@ -202,6 +202,21 @@ export function TemplateTreeEditor({
 }) {
   const { t } = useTranslations();
   const hasFilledRoots = hasFilledTreeItems(items, templateId, null);
+  /** Task id → expanded; missing = open (default). */
+  const [expandedTasks, setExpandedTasks] = useState<Record<string, boolean>>(
+    {},
+  );
+
+  function isTaskExpanded(taskId: string) {
+    return expandedTasks[taskId] !== false;
+  }
+
+  function toggleTaskExpanded(taskId: string) {
+    setExpandedTasks((current) => ({
+      ...current,
+      [taskId]: !(current[taskId] !== false),
+    }));
+  }
 
   function createEmptyItem(
     parentId: string | null,
@@ -501,6 +516,7 @@ export function TemplateTreeEditor({
       isRoot && hasFilledRoots ? item.title.trim() : !isRoot && item.title.trim();
     const subtasks = templateSubtasks(items, item.id);
     const showSubtasks = item.kind === "task" && item.title.trim();
+    const taskExpanded = showSubtasks ? isTaskExpanded(item.id) : true;
     const filledSubtaskCount = subtasks.filter((entry) => entry.title.trim()).length;
     const customStatusCount = item.taskStatuses?.length ?? 0;
     const hasCustomStatuses = item.kind === "task" && customStatusCount > 0;
@@ -537,6 +553,26 @@ export function TemplateTreeEditor({
                   attributes={handle.attributes}
                   listeners={item.title.trim() ? handle.listeners : undefined}
                 />
+                {showSubtasks ? (
+                  <button
+                    type="button"
+                    aria-expanded={taskExpanded}
+                    aria-label={
+                      taskExpanded
+                        ? t("nav.collapse", "Sakļaut")
+                        : t("nav.expand", "Izvērst")
+                    }
+                    onClick={() => toggleTaskExpanded(item.id)}
+                    className="inline-flex size-7 shrink-0 items-center justify-center rounded-lg text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-700"
+                  >
+                    <i
+                      className={`fas fa-chevron-down text-[10px] transition-transform ${
+                        taskExpanded ? "" : "-rotate-90"
+                      }`}
+                      aria-hidden="true"
+                    />
+                  </button>
+                ) : null}
                 <TemplateKindBadge
                   kind={item.kind}
                   hasCustomStatuses={hasCustomStatuses}
@@ -565,6 +601,11 @@ export function TemplateTreeEditor({
                   }
                 />
                 <div className="flex shrink-0 items-center gap-1">
+                  {showSubtasks && !taskExpanded && filledSubtaskCount > 0 ? (
+                    <span className="rounded-full bg-zinc-100 px-2 py-0.5 text-[11px] font-medium text-zinc-500">
+                      {filledSubtaskCount}
+                    </span>
+                  ) : null}
                   {isFolder ? (
                     <IconActionButton
                       label={t("templates.items.add_folder", "Apakšmape")}
@@ -609,7 +650,7 @@ export function TemplateTreeEditor({
                 </div>
               </div>
 
-              {showSubtasks ? (
+              {showSubtasks && taskExpanded ? (
                 <div className="px-3 py-3 sm:px-4">
                   <div className="mb-2 flex items-center justify-between gap-2">
                     <p className="text-[11px] font-semibold uppercase tracking-wider text-zinc-400">

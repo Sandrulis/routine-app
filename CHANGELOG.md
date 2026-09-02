@@ -4,6 +4,10 @@
 
 - (none)
 
+## v0.3.40
+
+- Šablonu uzdevumus var sakļaut, lai apakšuzdevumi nerādās visu laiku
+
 ## v0.3.39
 
 - Google Drive un OneDrive jaunām integrācijām noklusējuma mape ir komandas nosaukums (nevis TASQIN/Routine)
