@@ -403,7 +403,7 @@ function emailBodyAttachmentName(from) {
 
 function ensureUi() {
   const existing = document.getElementById("routine-gmail-root");
-  if (existing?.dataset?.routineUi === "24") {
+  if (existing?.dataset?.routineUi === "25") {
     existing.querySelector("#routine-gmail-fab")?.remove();
     return;
   }
@@ -411,7 +411,7 @@ function ensureUi() {
 
   const root = document.createElement("div");
   root.id = "routine-gmail-root";
-  root.dataset.routineUi = "24";
+  root.dataset.routineUi = "25";
   root.innerHTML = `
     <div id="routine-gmail-modal" hidden>
       <div class="routine-gmail-backdrop" data-close="1"></div>
@@ -433,11 +433,6 @@ function ensureUi() {
               <button type="button" id="routine-gmail-att-toggle" class="routine-gmail-link-btn"></button>
             </div>
             <ul id="routine-gmail-attach-list"></ul>
-            <label class="routine-gmail-field routine-gmail-file-note">
-              <span id="routine-gmail-note-label"></span>
-              <textarea id="routine-gmail-note" rows="2" maxlength="500"></textarea>
-              <span class="routine-gmail-hint" id="routine-gmail-note-help"></span>
-            </label>
             <p class="routine-gmail-hint" id="routine-gmail-att-hint"></p>
           </section>
         </div>
@@ -531,7 +526,6 @@ function ensureUi() {
   const attachmentsSection = root.querySelector("#routine-gmail-attachments");
   const attachList = root.querySelector("#routine-gmail-attach-list");
   const attToggleBtn = root.querySelector("#routine-gmail-att-toggle");
-  const noteInput = root.querySelector("#routine-gmail-note");
   const createModal = root.querySelector("#routine-gmail-create-modal");
   const createForm = root.querySelector("#routine-gmail-create");
   const createFeedback = root.querySelector("#routine-gmail-create-feedback");
@@ -593,15 +587,9 @@ function ensureUi() {
     if (!isBusy) attachLabel.textContent = t("actions.add");
     const attLabel = root.querySelector("#routine-gmail-att-label");
     if (attLabel) attLabel.textContent = t("extension.gmail.attachments");
-    const noteLabel = root.querySelector("#routine-gmail-note-label");
-    if (noteLabel) noteLabel.textContent = t("files.note");
-    if (noteInput) {
-      noteInput.placeholder = t("lists.windows.files_note_placeholder");
-    }
-    const noteHelp = root.querySelector("#routine-gmail-note-help");
-    if (noteHelp) noteHelp.textContent = t("files.note.help");
     const attHint = root.querySelector("#routine-gmail-att-hint");
     if (attHint) attHint.textContent = t("extension.gmail.email_body_hint");
+    paintAttachmentNotePlaceholders();
     paintEmailBodyOptionName();
     const titleLabel = root.querySelector("#routine-gmail-create-title-label");
     if (titleLabel) titleLabel.textContent = t("tasks.fields.title");
@@ -739,7 +727,6 @@ function ensureUi() {
     listedGmailMessageId = "";
     listedGmailFrom = "";
     attachList.innerHTML = "";
-    if (noteInput) noteInput.value = "";
     attachmentsSection.hidden = true;
     attToggleBtn.hidden = true;
     attToggleBtn.dataset.mode = "toggle";
@@ -810,6 +797,36 @@ function ensureUi() {
     if (nameEl) nameEl.textContent = emailBodyAttachmentName(emailBodyFromHeader());
   }
 
+  function paintAttachmentNotePlaceholders() {
+    for (const note of attachList.querySelectorAll(".routine-gmail-att-note")) {
+      note.placeholder = t("lists.windows.files_note_placeholder");
+      note.setAttribute("aria-label", t("files.note"));
+      note.title = t("files.note.help");
+    }
+  }
+
+  function syncAttachmentNoteVisibility(input) {
+    const note = input
+      ?.closest("li")
+      ?.querySelector(".routine-gmail-att-note");
+    if (!note) return;
+    const show = Boolean(input.checked) && !input.disabled;
+    note.hidden = !show;
+  }
+
+  function createAttachmentNoteInput() {
+    const note = document.createElement("input");
+    note.type = "text";
+    note.className = "routine-gmail-att-note";
+    note.maxLength = 500;
+    note.autocomplete = "off";
+    note.placeholder = t("lists.windows.files_note_placeholder");
+    note.setAttribute("aria-label", t("files.note"));
+    note.title = t("files.note.help");
+    note.addEventListener("click", (event) => event.stopPropagation());
+    return note;
+  }
+
   function ensureEmailBodyOption() {
     const existing = attachList.querySelector("#routine-att-email-body");
     if (existing) {
@@ -830,7 +847,15 @@ function ensureUi() {
     const sizeEl = li.querySelector(".routine-gmail-att-size");
     if (nameEl) nameEl.textContent = emailBodyAttachmentName(emailBodyFromHeader());
     if (sizeEl) sizeEl.textContent = ".txt";
-    li.querySelector("input")?.addEventListener("change", updateAttToggleLabel);
+    const note = createAttachmentNoteInput();
+    note.dataset.emailBody = "1";
+    li.appendChild(note);
+    const input = li.querySelector("input[type='checkbox']");
+    input?.addEventListener("change", () => {
+      syncAttachmentNoteVisibility(input);
+      updateAttToggleLabel();
+    });
+    syncAttachmentNoteVisibility(input);
     attachList.prepend(li);
   }
 
@@ -840,6 +865,16 @@ function ensureUi() {
     return Boolean(input.checked);
   }
 
+  function emailBodyNoteSelected() {
+    if (!includeEmailBodySelected()) return "";
+    const note = attachList.querySelector(
+      '.routine-gmail-att-note[data-email-body="1"]',
+    );
+    return String(note?.value || "")
+      .trim()
+      .slice(0, 500);
+  }
+
   function selectedAttachments() {
     return [...attachList.querySelectorAll('input[type="checkbox"]:not([data-email-body])')]
       .map((input) => {
@@ -847,13 +882,19 @@ function ensureUi() {
         const item = attachmentOptions.find(
           (row) => String(row.attachmentId) === String(id),
         );
-        return { input, item };
+        const note = input
+          .closest("li")
+          ?.querySelector(".routine-gmail-att-note");
+        return { input, item, note };
       })
       .filter(({ input, item }) => Boolean(item) && input.checked && !item.tooLarge)
-      .map(({ item }) => ({
+      .map(({ item, note }) => ({
         attachmentId: String(item.attachmentId || ""),
         name: String(item.name || "attachment"),
         mimeType: String(item.mimeType || ""),
+        note: String(note?.value || "")
+          .trim()
+          .slice(0, 500),
       }))
       .filter((item) => item.attachmentId);
   }
@@ -904,7 +945,14 @@ function ensureUi() {
       li.querySelector(".routine-gmail-att-size").textContent = tooLarge
         ? t("extension.gmail.too_large", { size: formatBytes(item.size) })
         : formatBytes(item.size);
-      input.addEventListener("change", updateAttToggleLabel);
+      const note = createAttachmentNoteInput();
+      note.dataset.attachmentId = String(item.attachmentId || "");
+      li.appendChild(note);
+      input.addEventListener("change", () => {
+        syncAttachmentNoteVisibility(input);
+        updateAttToggleLabel();
+      });
+      syncAttachmentNoteVisibility(input);
       attachList.appendChild(li);
     });
     updateAttToggleLabel();
@@ -2181,7 +2229,10 @@ function ensureUi() {
     const boxes = [...attachList.querySelectorAll('input[type="checkbox"]:not(:disabled)')];
     if (!boxes.length) return;
     const allOn = boxes.every((box) => box.checked);
-    for (const box of boxes) box.checked = !allOn;
+    for (const box of boxes) {
+      box.checked = !allOn;
+      syncAttachmentNoteVisibility(box);
+    }
     updateAttToggleLabel();
   });
 
@@ -2253,7 +2304,7 @@ function ensureUi() {
         email,
         selectedAttachments: selected,
         includeEmailBody,
-        note: String(noteInput?.value || "").trim().slice(0, 500),
+        emailBodyNote: emailBodyNoteSelected(),
       });
     } catch (error) {
       setBusy(false);

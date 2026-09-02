@@ -1497,6 +1497,9 @@ async function fetchGmailMessageBundle(
         attachmentId: String(item?.attachmentId || ""),
         name: String(item?.name || "attachment"),
         mimeType: String(item?.mimeType || ""),
+        note: String(item?.note || "")
+          .trim()
+          .slice(0, 500),
       }))
       .filter((item) => item.attachmentId);
   }
@@ -1530,6 +1533,9 @@ async function fetchGmailMessageBundle(
         attachmentId: item.attachmentId,
         name: meta.name,
         mimeType: meta.mimeType,
+        note: String(item.note || "")
+          .trim()
+          .slice(0, 500),
         bytes,
       });
     } catch {
@@ -2482,9 +2488,22 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                   }))
                 : null;
         const includeEmailBody = message.includeEmailBody !== false;
-        const note = String(message.note || "")
+        const emailBodyNote = String(message.emailBodyNote || message.note || "")
           .trim()
           .slice(0, 500);
+        const selectedNoteById = new Map();
+        if (Array.isArray(selectedAttachments)) {
+          for (const item of selectedAttachments) {
+            const id = String(item?.attachmentId || "").trim();
+            if (!id) continue;
+            selectedNoteById.set(
+              id,
+              String(item?.note || "")
+                .trim()
+                .slice(0, 500),
+            );
+          }
+        }
         const wantsFileAttachments =
           selectedAttachments === null ||
           (Array.isArray(selectedAttachments) &&
@@ -2580,11 +2599,16 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             bodyHtml: email.bodyHtml || "",
             permalink: email.permalink,
             includeEmailBody,
-            note,
+            emailBodyNote,
             attachments: attachmentFiles.map((attachment) => ({
               name: attachment.name || "attachment.bin",
               mimeType: attachment.mimeType || "application/octet-stream",
               data: bytesToBase64(attachment.bytes),
+              note:
+                selectedNoteById.get(String(attachment.attachmentId || "")) ||
+                String(attachment.note || "")
+                  .trim()
+                  .slice(0, 500),
             })),
           }),
         });

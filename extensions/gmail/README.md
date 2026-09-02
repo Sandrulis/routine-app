@@ -26,7 +26,7 @@ Nav jāievada Routine URL vai OAuth Client ID. Spraudnis sauc [https://www.tasqi
 1. Atver e-pastu Gmailā (pilns skats)
 2. Nospied **Routine** pogu e-pasta skatā
 3. Izvēlies **saraksts** → (mape) → **uzdevums** → **apakšuzdevums** (vai **Jauns apakšuzdevums** atver jaunu modāli: nosaukums, pēc izvēles sākums, termiņš, statuss, atbildīgais ar live-search hintiem, apraksts). Jaunais apakšuzdevums TASQIN parādās tikai pēc **Pievienot** ar izvēlētajiem pielikumiem.
-4. Zem saraksta atzīmē pielikumus (checkbox), pēc izvēles ieraksti **Piezīmi** (tā pati kā sistēmā uz pielikuma) → **Pievienot**
+4. Zem saraksta atzīmē pielikumus (checkbox); katram atzīmētajam failam (un e-pasta `.txt`) pēc izvēles ieraksti **Piezīmi** → **Pievienot**
 
 Ja pielikumi neredzami vai rāda OAuth kļūdu: Chrome → `chrome://extensions` → TASQIN - Gmail → **Reload** (versija `0.4.31`), tad Gmail cilnē **F5**. Spraudņa popup → **Atjaunot Gmail savienojumu** (tas nav tas pats, kas «Turpināt ar Google»). Modālī zem saraksta jābūt sadaļai **Pielikumi**.
 

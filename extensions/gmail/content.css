@@ -179,19 +179,34 @@
   line-height: 1.35;
 }
 
-.routine-gmail-file-note {
-  margin-top: 10px;
-  color: #334155;
+#routine-gmail-attach-list > li {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
-.routine-gmail-file-note textarea {
-  min-height: 52px;
-  max-height: 120px;
+.routine-gmail-att-note {
+  width: 100%;
+  box-sizing: border-box;
+  margin: 0 0 0 28px;
+  max-width: calc(100% - 28px);
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 6px 10px;
+  font: inherit;
+  font-size: 12px;
+  color: #0f172a;
+  background: #fff;
 }
 
-.routine-gmail-file-note .routine-gmail-hint {
-  margin: 0;
-  font-weight: 500;
+.routine-gmail-att-note[hidden] {
+  display: none !important;
+}
+
+.routine-gmail-att-note:focus {
+  outline: 2px solid #99f6e4;
+  outline-offset: 1px;
+  border-color: #14b8a6;
 }
 
 #routine-gmail-modal[hidden] {

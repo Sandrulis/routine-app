@@ -41,14 +41,20 @@ function normalizeAttachment(
   name: string,
   mimeType: string,
   bytes: Uint8Array,
-): { name: string; mimeType: string; bytes: Uint8Array } | null {
+  note?: unknown,
+): { name: string; mimeType: string; bytes: Uint8Array; note: string } | null {
   if (bytes.length <= 0) return null;
   let fileName = name.trim() || "attachment";
   const mime = mimeType.trim() || "application/octet-stream";
   if (mime.toLowerCase() === "application/pdf" && !fileName.toLowerCase().endsWith(".pdf")) {
     fileName = `${fileName}.pdf`;
   }
-  return { name: fileName, mimeType: mime, bytes };
+  return {
+    name: fileName,
+    mimeType: mime,
+    bytes,
+    note: readAttachNote(note),
+  };
 }
 
 function bytesFromFormValue(value: FormDataEntryValue): Promise<Uint8Array> | Uint8Array {
@@ -59,16 +65,28 @@ function bytesFromFormValue(value: FormDataEntryValue): Promise<Uint8Array> | Ui
   return new Uint8Array();
 }
 
+function readAttachNote(value: unknown) {
+  return String(value ?? "")
+    .trim()
+    .slice(0, 500);
+}
+
 function readJsonAttachments(raw: unknown) {
   if (!Array.isArray(raw)) return [];
-  const files: { name: string; mimeType: string; bytes: Uint8Array }[] = [];
+  const files: { name: string; mimeType: string; bytes: Uint8Array; note: string }[] = [];
   for (const item of raw) {
     if (!item || typeof item !== "object") continue;
-    const row = item as { name?: unknown; mimeType?: unknown; data?: unknown };
+    const row = item as {
+      name?: unknown;
+      mimeType?: unknown;
+      data?: unknown;
+      note?: unknown;
+    };
     const parsed = normalizeAttachment(
       String(row.name || "attachment"),
       String(row.mimeType || "application/octet-stream"),
       decodeBase64ToBytes(String(row.data || "")),
+      row.note,
     );
     if (parsed) files.push(parsed);
   }
@@ -76,9 +94,10 @@ function readJsonAttachments(raw: unknown) {
 }
 
 async function readAttachmentFiles(form: FormData) {
-  const files: { name: string; mimeType: string; bytes: Uint8Array }[] = [];
+  const files: { name: string; mimeType: string; bytes: Uint8Array; note: string }[] = [];
   const names = form.getAll("attachmentName").map((value) => String(value));
   const mimes = form.getAll("attachmentMime").map((value) => String(value));
+  const notes = form.getAll("attachmentNote").map((value) => String(value));
   const payloads = form.getAll("attachmentB64");
   const encodedCount = Math.max(names.length, mimes.length, payloads.length);
   for (let index = 0; index < encodedCount; index += 1) {
@@ -87,6 +106,7 @@ async function readAttachmentFiles(form: FormData) {
       names[index] || "attachment",
       mimes[index] || "application/octet-stream",
       bytes,
+      notes[index] || "",
     );
     if (parsed) files.push(parsed);
   }
@@ -115,8 +135,8 @@ type AttachEmailInput = {
   bodyHtml: string;
   permalink: string;
   includeEmailBody: boolean;
-  note: string;
-  attachments: { name: string; mimeType: string; bytes: Uint8Array }[];
+  emailBodyNote: string;
+  attachments: { name: string; mimeType: string; bytes: Uint8Array; note: string }[];
 };
 
 function readIncludeEmailBody(value: unknown, fallback = true) {
@@ -131,12 +151,6 @@ function readIncludeEmailBody(value: unknown, fallback = true) {
     }
   }
   return fallback;
-}
-
-function readAttachNote(value: unknown) {
-  return String(value ?? "")
-    .trim()
-    .slice(0, 500);
 }
 
 async function parseAttachEmailRequest(request: Request): Promise<AttachEmailInput | null> {
@@ -154,7 +168,7 @@ async function parseAttachEmailRequest(request: Request): Promise<AttachEmailInp
         bodyHtml: String(json.bodyHtml ?? ""),
         permalink: String(json.permalink ?? ""),
         includeEmailBody: readIncludeEmailBody(json.includeEmailBody, true),
-        note: readAttachNote(json.note),
+        emailBodyNote: readAttachNote(json.emailBodyNote ?? json.note),
         attachments: readJsonAttachments(json.attachments),
       };
     } catch {
@@ -174,7 +188,7 @@ async function parseAttachEmailRequest(request: Request): Promise<AttachEmailInp
       bodyHtml: String(form.get("bodyHtml") ?? ""),
       permalink: String(form.get("permalink") ?? ""),
       includeEmailBody: readIncludeEmailBody(form.get("includeEmailBody"), true),
-      note: readAttachNote(form.get("note")),
+      emailBodyNote: readAttachNote(form.get("emailBodyNote") ?? form.get("note")),
       attachments: await readAttachmentFiles(form),
     };
   } catch {
@@ -255,9 +269,12 @@ export async function POST(request: Request) {
         permalink: input.permalink,
       })
     : null;
-  const files = emailFile
-    ? [emailFile, ...input.attachments]
-    : [...input.attachments];
+  const files = [
+    ...(emailFile
+      ? [{ ...emailFile, note: input.emailBodyNote }]
+      : []),
+    ...input.attachments,
+  ];
   if (files.length === 0) {
     return extensionJson(
       request,
@@ -273,7 +290,6 @@ export async function POST(request: Request) {
     taskId,
     files,
     catalog,
-    note: input.note,
   });
 
   if (!result.ok) {

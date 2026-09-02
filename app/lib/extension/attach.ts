@@ -240,10 +240,8 @@ export async function attachFilesToSubtask(input: {
   supabase: SupabaseClient;
   user: User;
   taskId: string;
-  files: { name: string; mimeType: string; bytes: Uint8Array }[];
+  files: { name: string; mimeType: string; bytes: Uint8Array; note?: string }[];
   catalog: FileTypeExtensionSummary[];
-  /** Same note applied to every file attached in this request. */
-  note?: string;
 }): Promise<{
   ok: true;
   attached: { id: string; name: string }[];
@@ -283,7 +281,6 @@ export async function attachFilesToSubtask(input: {
     list_id: task.list_id as string,
     parent_id: (task.parent_id as string | null) ?? null,
   });
-  const fileNote = parseFileNote(input.note).slice(0, 500);
 
   const attached: { id: string; name: string }[] = [];
   const skipped: { name: string; reason: string }[] = [];
@@ -307,6 +304,7 @@ export async function attachFilesToSubtask(input: {
       mimeFromFileName(name, input.catalog) ||
       file.mimeType.trim() ||
       "application/octet-stream";
+    const fileNote = parseFileNote(file.note).slice(0, 500);
     if (
       !mimeMatchesBytes(name, mimeType, file.bytes) ||
       (looksLikeHtml(file.bytes) &&

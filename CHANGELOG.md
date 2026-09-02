@@ -4,6 +4,10 @@
 
 - (none)
 
+## v0.3.47
+
+- Gmail spraudnī piezīme ir katram atzīmētajam failam atsevišķi (ne kopīga visiem)
+
 ## v0.3.46
 
 - Gmail spraudnī pie failiem var ierakstīt piezīmi (kā sistēmā); Google login arī savieno Gmail pieeju
