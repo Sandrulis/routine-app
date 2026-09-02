@@ -60,6 +60,8 @@ type OAuthButtonProps = {
   returnPath?: string;
   rememberMe?: boolean;
   errorPage?: OAuthLoginErrorPage;
+  /** Prefill Google/Microsoft account picker with this email (invite flows). */
+  loginHint?: string;
   onBeforeSignIn?: () => boolean;
   getTurnstileToken?: () => string | null;
 };
@@ -69,6 +71,7 @@ export function GoogleAuthButton({
   returnPath = "/dashboard",
   rememberMe = true,
   errorPage = "login",
+  loginHint,
   onBeforeSignIn,
   getTurnstileToken,
 }: OAuthButtonProps) {
@@ -88,6 +91,10 @@ export function GoogleAuthButton({
     const params = new URLSearchParams({ next: returnPath });
     if (errorPage !== "login") {
       params.set("errorPage", errorPage);
+    }
+    const hint = loginHint?.trim();
+    if (hint) {
+      params.set("login_hint", hint);
     }
     const turnstileToken = getTurnstileToken?.();
     if (turnstileToken) {
@@ -116,6 +123,7 @@ export function MicrosoftAuthButton({
   returnPath = "/dashboard",
   rememberMe = true,
   errorPage = "login",
+  loginHint,
   onBeforeSignIn,
   getTurnstileToken,
 }: OAuthButtonProps) {
@@ -135,6 +143,10 @@ export function MicrosoftAuthButton({
     const params = new URLSearchParams({ next: returnPath });
     if (errorPage !== "login") {
       params.set("errorPage", errorPage);
+    }
+    const hint = loginHint?.trim();
+    if (hint) {
+      params.set("login_hint", hint);
     }
     const turnstileToken = getTurnstileToken?.();
     if (turnstileToken) {

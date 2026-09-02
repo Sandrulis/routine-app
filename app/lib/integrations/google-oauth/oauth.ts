@@ -50,7 +50,7 @@ export function googleOAuthRedirectUri(origin: string) {
 export async function buildGoogleOAuthAuthorizeUrl(
   origin: string,
   state: string,
-  options?: { prompt?: string; accessType?: string },
+  options?: { prompt?: string; accessType?: string; loginHint?: string },
 ) {
   const credentials = await getGoogleOAuthCredentials();
   if (!credentials) return null;
@@ -63,6 +63,10 @@ export async function buildGoogleOAuthAuthorizeUrl(
     prompt: options?.prompt ?? "consent",
     state,
   });
+  const loginHint = options?.loginHint?.trim();
+  if (loginHint) {
+    params.set("login_hint", loginHint);
+  }
   return `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
 }
 

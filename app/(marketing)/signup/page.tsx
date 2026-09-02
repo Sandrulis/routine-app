@@ -31,7 +31,7 @@ export default async function SignupPage() {
       getPublicTurnstileConfig(),
     ]);
 
-  if (!emailPasswordEnabled) {
+  if (!emailPasswordEnabled && !googleSignInEnabled && !microsoftSignInEnabled) {
     redirect("/login");
   }
 

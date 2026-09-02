@@ -41,6 +41,7 @@ export async function GET(request: Request) {
   }
 
   const next = getSafeRedirectPath(searchParams.get("next"));
+  const loginHint = searchParams.get("login_hint")?.trim() ?? "";
 
   if (!(await isMicrosoftOAuthEnabled())) {
     return NextResponse.redirect(
@@ -57,6 +58,7 @@ export async function GET(request: Request) {
   const serialized = serializeOAuthLoginState(state);
   const url = await buildMicrosoftOAuthAuthorizeUrl(oauthOrigin, serialized, {
     prompt: "select_account",
+    loginHint: loginHint || undefined,
   });
   if (!url) {
     return NextResponse.redirect(

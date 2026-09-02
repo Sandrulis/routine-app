@@ -50,7 +50,7 @@ export function microsoftOAuthRedirectUri(origin: string) {
 export async function buildMicrosoftOAuthAuthorizeUrl(
   origin: string,
   state: string,
-  options?: { prompt?: string },
+  options?: { prompt?: string; loginHint?: string },
 ) {
   const credentials = await getMicrosoftOAuthCredentials();
   if (!credentials) return null;
@@ -65,6 +65,10 @@ export async function buildMicrosoftOAuthAuthorizeUrl(
   const prompt = options?.prompt ?? "consent";
   if (prompt) {
     params.set("prompt", prompt);
+  }
+  const loginHint = options?.loginHint?.trim();
+  if (loginHint) {
+    params.set("login_hint", loginHint);
   }
   return `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?${params.toString()}`;
 }

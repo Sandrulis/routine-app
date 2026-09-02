@@ -230,6 +230,7 @@ export function oauthSignInErrorRedirect(
   errorPage: OAuthLoginErrorPage,
   provider: "google" | "microsoft",
   errorCode?: string,
+  nextPath?: string,
 ) {
   const code = errorCode || provider;
   if (errorPage === "plugin") {
@@ -240,6 +241,12 @@ export function oauthSignInErrorRedirect(
   }
   const url = new URL(`/${errorPage}`, origin);
   url.searchParams.set("error", code);
+  if (errorPage === "signup" && nextPath) {
+    const inviteMatch = /^\/invite\/([^/?#]+)/.exec(nextPath);
+    if (inviteMatch?.[1]) {
+      url.searchParams.set("invite", inviteMatch[1]);
+    }
+  }
   return NextResponse.redirect(url);
 }
 
@@ -258,7 +265,13 @@ export async function completeOAuthSignIn(
 ) {
   const email = input.profile.email.trim().toLowerCase();
   const fail = () =>
-    oauthSignInErrorRedirect(input.origin, input.errorPage, input.profile.provider);
+    oauthSignInErrorRedirect(
+      input.origin,
+      input.errorPage,
+      input.profile.provider,
+      undefined,
+      input.next,
+    );
 
   if (!email || !isSupabaseConfigured() || !isSupabaseAdminConfigured()) {
     return fail();
@@ -286,6 +299,7 @@ export async function completeOAuthSignIn(
             input.errorPage === "plugin" ? "login" : input.errorPage,
             "google",
             "turnstile",
+            input.next,
           );
         }
         const pending = serializePendingOAuthSignIn({
@@ -299,12 +313,19 @@ export async function completeOAuthSignIn(
             input.errorPage === "plugin" ? "login" : input.errorPage,
             "google",
             "turnstile",
+            input.next,
           );
         }
         const path = input.errorPage === "signup" ? "/signup" : "/login";
-        const redirect = NextResponse.redirect(
-          new URL(`${path}?pending=google`, input.origin),
-        );
+        const pendingUrl = new URL(path, input.origin);
+        pendingUrl.searchParams.set("pending", "google");
+        if (input.errorPage === "signup") {
+          const inviteMatch = /^\/invite\/([^/?#]+)/.exec(input.next);
+          if (inviteMatch?.[1]) {
+            pendingUrl.searchParams.set("invite", inviteMatch[1]);
+          }
+        }
+        const redirect = NextResponse.redirect(pendingUrl);
         redirect.cookies.set(
           OAUTH_PENDING_SIGNIN_COOKIE,
           pending,

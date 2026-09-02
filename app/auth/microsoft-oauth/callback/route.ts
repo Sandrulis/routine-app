@@ -51,16 +51,28 @@ async function handleLogin(request: Request, origin: string, code: string) {
   const errorPage = loginState?.errorPage ?? urlState?.errorPage ?? "login";
 
   if (!oauthLoginStatesMatch(loginState, urlState) || !loginState) {
-    return clearOAuthCookie(oauthSignInErrorRedirect(origin, errorPage, "microsoft"));
+    return clearOAuthCookie(
+      oauthSignInErrorRedirect(
+        origin,
+        errorPage,
+        "microsoft",
+        undefined,
+        loginState?.next ?? urlState?.next,
+      ),
+    );
   }
 
   if (!(await isMicrosoftOAuthEnabled())) {
-    return clearOAuthCookie(oauthSignInErrorRedirect(origin, errorPage, "microsoft"));
+    return clearOAuthCookie(
+      oauthSignInErrorRedirect(origin, errorPage, "microsoft", undefined, loginState.next),
+    );
   }
 
   const tokens = await exchangeMicrosoftOAuthCode(origin, code);
   if (!tokens?.access_token) {
-    return clearOAuthCookie(oauthSignInErrorRedirect(origin, errorPage, "microsoft"));
+    return clearOAuthCookie(
+      oauthSignInErrorRedirect(origin, errorPage, "microsoft", undefined, loginState.next),
+    );
   }
 
   const profile = await fetchMicrosoftOAuthUserInfo(
@@ -69,7 +81,13 @@ async function handleLogin(request: Request, origin: string, code: string) {
   );
   if (!profile.email) {
     return clearOAuthCookie(
-      oauthSignInErrorRedirect(origin, errorPage, "microsoft", "email_unverified"),
+      oauthSignInErrorRedirect(
+        origin,
+        errorPage,
+        "microsoft",
+        "email_unverified",
+        loginState.next,
+      ),
     );
   }
   const response = await completeOAuthSignIn(request, {
@@ -112,11 +130,27 @@ export async function GET(request: Request) {
   if (loginCookie || loginUrl) {
     if (searchParams.get("error") === "access_denied") {
       const errorPage = loginCookie?.errorPage ?? loginUrl?.errorPage ?? "login";
-      return clearOAuthCookie(NextResponse.redirect(new URL(`/${errorPage}`, origin)));
+      return clearOAuthCookie(
+        oauthSignInErrorRedirect(
+          origin,
+          errorPage,
+          "microsoft",
+          undefined,
+          loginCookie?.next ?? loginUrl?.next,
+        ),
+      );
     }
     if (!code) {
       const errorPage = loginCookie?.errorPage ?? loginUrl?.errorPage ?? "login";
-      return clearOAuthCookie(oauthSignInErrorRedirect(origin, errorPage, "microsoft"));
+      return clearOAuthCookie(
+        oauthSignInErrorRedirect(
+          origin,
+          errorPage,
+          "microsoft",
+          undefined,
+          loginCookie?.next ?? loginUrl?.next,
+        ),
+      );
     }
     return handleLogin(request, origin, code);
   }

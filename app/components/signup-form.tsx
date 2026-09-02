@@ -67,8 +67,8 @@ export function SignupForm({
     nextPath: string;
   } | null>(null);
   const emailLocked = Boolean(inviteContext);
-  const oauthEnabled =
-    !emailLocked && (googleSignInEnabled || microsoftSignInEnabled);
+  const oauthEnabled = googleSignInEnabled || microsoftSignInEnabled;
+  const oauthReturnPath = inviteContext?.nextPath ?? "/dashboard";
   const turnstileRequired = Boolean(turnstileSiteKey);
   const googlePending = searchParams.get("pending") === "google";
   const [turnstileModalOpen, setTurnstileModalOpen] = useState(false);
@@ -318,15 +318,19 @@ export function SignupForm({
     <div className="space-y-2">
       {googleSignInEnabled ? (
         <GoogleAuthButton
-          disabled={pending}
+          disabled={pending || (Boolean(inviteToken) && !inviteContext)}
           rememberMe={false}
+          returnPath={oauthReturnPath}
+          loginHint={inviteContext?.email}
           errorPage="signup"
         />
       ) : null}
       {microsoftSignInEnabled ? (
         <MicrosoftAuthButton
-          disabled={pending}
+          disabled={pending || (Boolean(inviteToken) && !inviteContext)}
           rememberMe={false}
+          returnPath={oauthReturnPath}
+          loginHint={inviteContext?.email}
           errorPage="signup"
         />
       ) : null}
@@ -350,6 +354,14 @@ export function SignupForm({
             : t("auth.signup.subtitle", "Izveido kontu un sāc darbu ar komandu.")}
         </p>
       </div>
+
+      {/* Invite from Gmail: offer OAuth first so password signup is optional. */}
+      {inviteContext && oauthEnabled ? (
+        <>
+          {oauthButtons}
+          {emailPasswordEnabled ? <AuthDivider /> : null}
+        </>
+      ) : null}
 
       {emailPasswordEnabled ? (
         <>
@@ -534,8 +546,10 @@ export function SignupForm({
         </>
       ) : null}
 
-      {emailPasswordEnabled && oauthEnabled ? <AuthDivider /> : null}
-      {oauthButtons}
+      {!inviteContext && emailPasswordEnabled && oauthEnabled ? (
+        <AuthDivider />
+      ) : null}
+      {!inviteContext ? oauthButtons : null}
 
       <p className="text-center text-sm text-zinc-500">
         {t("auth.signup.has_account", "Jau ir konts?")}{" "}

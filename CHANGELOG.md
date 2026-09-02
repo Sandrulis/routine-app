@@ -4,6 +4,10 @@
 
 - (none)
 
+## v0.3.44
+
+- Uzaicinājuma signup rāda Google/Microsoft augšā, lai var pievienoties bez paroles reģistrācijas
+
 ## v0.3.43
 
 - OAuth „Atcerēties mani” blakus Google/Microsoft ir tikai ķeksītis ar tooltip tekstu

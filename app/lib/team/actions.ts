@@ -575,6 +575,15 @@ export async function acceptTeamInvitationByTokenAction(
     return { ok: false, error: "errors.db_not_configured" };
   }
 
+  const preview = await getTeamInvitationByTokenAction(token);
+  if (preview.ok) {
+    const inviteEmail = preview.data.email.trim().toLowerCase();
+    const userEmail = (user.email ?? "").trim().toLowerCase();
+    if (inviteEmail && userEmail && inviteEmail !== userEmail) {
+      return { ok: false, error: "errors.team_invite_email_mismatch" };
+    }
+  }
+
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("accept_team_invitation_by_token", {
     p_token: token.trim(),

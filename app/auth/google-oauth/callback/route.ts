@@ -64,16 +64,22 @@ async function handleLogin(request: Request, origin: string, code: string) {
   const errorPage = loginState?.errorPage ?? urlState?.errorPage ?? "login";
 
   if (!oauthLoginStatesMatch(loginState, urlState) || !loginState) {
-    return clearOAuthCookie(oauthSignInErrorRedirect(origin, errorPage, "google"));
+    return clearOAuthCookie(
+      oauthSignInErrorRedirect(origin, errorPage, "google", undefined, loginState?.next ?? urlState?.next),
+    );
   }
 
   if (!(await isGoogleSignInEnabled())) {
-    return clearOAuthCookie(oauthSignInErrorRedirect(origin, errorPage, "google"));
+    return clearOAuthCookie(
+      oauthSignInErrorRedirect(origin, errorPage, "google", undefined, loginState.next),
+    );
   }
 
   const tokens = await exchangeGoogleOAuthCode(origin, code);
   if (!tokens?.access_token) {
-    return clearOAuthCookie(oauthSignInErrorRedirect(origin, errorPage, "google"));
+    return clearOAuthCookie(
+      oauthSignInErrorRedirect(origin, errorPage, "google", undefined, loginState.next),
+    );
   }
 
   const profile = await fetchGoogleOAuthUserInfo(tokens.access_token);
@@ -122,12 +128,26 @@ export async function GET(request: Request) {
     if (searchParams.get("error") === "access_denied") {
       const errorPage = loginCookie?.errorPage ?? loginUrl?.errorPage ?? "login";
       return clearOAuthCookie(
-        oauthSignInErrorRedirect(origin, errorPage, "google"),
+        oauthSignInErrorRedirect(
+          origin,
+          errorPage,
+          "google",
+          undefined,
+          loginCookie?.next ?? loginUrl?.next,
+        ),
       );
     }
     if (!code) {
       const errorPage = loginCookie?.errorPage ?? loginUrl?.errorPage ?? "login";
-      return clearOAuthCookie(oauthSignInErrorRedirect(origin, errorPage, "google"));
+      return clearOAuthCookie(
+        oauthSignInErrorRedirect(
+          origin,
+          errorPage,
+          "google",
+          undefined,
+          loginCookie?.next ?? loginUrl?.next,
+        ),
+      );
     }
     return handleLogin(request, origin, code);
   }

@@ -45,6 +45,7 @@ export async function GET(request: Request) {
   }
 
   const next = getSafeRedirectPath(searchParams.get("next"));
+  const loginHint = searchParams.get("login_hint")?.trim() ?? "";
 
   if (!(await isGoogleSignInEnabled())) {
     return NextResponse.redirect(
@@ -62,6 +63,7 @@ export async function GET(request: Request) {
   const url = await buildGoogleOAuthAuthorizeUrl(oauthOrigin, serialized, {
     prompt: "select_account",
     accessType: "online",
+    loginHint: loginHint || undefined,
   });
   if (!url) {
     return NextResponse.redirect(
