@@ -10,19 +10,23 @@ import {
 export function RememberMeCheckbox({
   checked,
   onChange,
+  className = "",
 }: {
   checked: boolean;
   onChange: (value: boolean) => void;
+  className?: string;
 }) {
   const { t } = useTranslations();
 
   return (
-    <label className="flex items-center gap-3 text-sm text-zinc-600">
+    <label
+      className={`flex items-center gap-2 text-sm leading-tight text-zinc-600 ${className}`.trim()}
+    >
       <input
         type="checkbox"
         checked={checked}
         onChange={(event) => onChange(event.target.checked)}
-        className="size-4 rounded border-zinc-300"
+        className="size-4 shrink-0 rounded border-zinc-300"
       />
       <span>{t("auth.login.remember", "Atcerēties mani")}</span>
     </label>

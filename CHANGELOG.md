@@ -4,6 +4,10 @@
 
 - (none)
 
+## v0.3.41
+
+- Google-only login rāda „Atcerēties mani” kreisajā pusē pie OAuth pogas, lai sesija var turēties 30 dienas
+
 ## v0.3.40
 
 - Šablonu uzdevumus var sakļaut, lai apakšuzdevumi nerādās visu laiku

@@ -136,8 +136,8 @@ export function LoginForm({
     router.refresh();
   }
 
-  const oauthButtons = oauthEnabled ? (
-    <div className="space-y-2">
+  const oauthProviderButtons = (
+    <>
       {googleSignInEnabled ? (
         <GoogleAuthButton
           disabled={pending}
@@ -154,8 +154,22 @@ export function LoginForm({
           errorPage="login"
         />
       ) : null}
+    </>
+  );
+
+  // OAuth-only: Remember me sits left of Google/Microsoft (email form already has its own checkbox).
+  const oauthButtons = !oauthEnabled ? null : emailPasswordEnabled ? (
+    <div className="space-y-2">{oauthProviderButtons}</div>
+  ) : (
+    <div className="flex items-center gap-3">
+      <RememberMeCheckbox
+        checked={remember}
+        onChange={updateRemember}
+        className="max-w-[7.5rem] shrink-0"
+      />
+      <div className="min-w-0 flex-1 space-y-2">{oauthProviderButtons}</div>
     </div>
-  ) : null;
+  );
 
   return (
     <>

@@ -416,7 +416,7 @@ app/
     landing-pricing.tsx           # Publiskie plāni: vienāda augstuma kartītes, CTA apakšā, Early access/izmēģinājums birkās, salīdzinājuma tabula
     landing-json-ld.tsx           # schema.org Organization / WebSite / SoftwareApplication / FAQPage; docs CollectionPage + TechArticle
     landing-app-preview.tsx       # Hero dashboard vizuālis (moduļu fīčas tikai ja ieslēgtas)
-    login-form.tsx                # Ienākt; e-pasts/Atcerēties/signup saite tikai ar Resend; Google/Microsoft; PasswordInput
+    login-form.tsx                # Ienākt; e-pasts/Atcerēties/signup ar Resend; OAuth-only: Atcerēties kreisajā no Google/Microsoft
     signup-form.tsx               # Reģistrēties; `?invite=`; spēcīgas paroles ieteikums + stipruma josla; sava parole → notīra atkārtoto; noteikumi e-pasta formai
     password-input.tsx            # Parole + rādīt/paslēpt acu ikona (var kontrolēt `visible`)
     password-strength-meter.tsx   # Paroles stipruma josla (Ļoti vāja → Stipra)
@@ -428,7 +428,7 @@ app/
     admin-cron-jobs-form.tsx      # /admin/cron-jobs: ieslēgt darbus (loading uz slēdža), kopēt cron-job.org saiti
     timezone-sync.tsx             # Pārlūka IANA josla → users.timezone (RPC)
     auth-session-from-url.tsx     # /auth/confirm: verifyOtp no token_hash; hash redirect PKCE
-    remember-me-checkbox.tsx      # Atcerēties mani (noklusējums izslēgts; 30 dienas ar ķeksi)
+    remember-me-checkbox.tsx      # Atcerēties mani (noklusējums izslēgts; 30 dienas ar ķeksi; optional className)
     forgot-password-form.tsx      # Aizmirsi paroli (forma tikai ar Resend)
     work-progress.tsx             # done/total, josla, sānjoslas fona aizpildījums
     update-password-form.tsx      # Jauna parole pēc e-pasta saites; PasswordInput + stipruma josla
