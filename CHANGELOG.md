@@ -4,6 +4,10 @@
 
 - (none)
 
+## v0.3.39
+
+- Google Drive un OneDrive jaunām integrācijām noklusējuma mape ir komandas nosaukums (nevis TASQIN/Routine)
+
 ## v0.3.38
 
 - Early Bird pārsaukts uz Early access visā UI, legal tekstos, Stripe un docs (migrācija `130`)

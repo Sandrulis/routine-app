@@ -10,3 +10,10 @@ export function sanitizeCloudFolderPath(value: string): string {
     .filter((part) => part !== "." && part !== "..");
   return parts.join("/") || LEGACY_CLOUD_FOLDER;
 }
+
+/** Suggested Drive/OneDrive root when the team has no saved folder path yet. */
+export function defaultCloudFolderFromTeamName(
+  teamName: string | null | undefined,
+): string {
+  return sanitizeCloudFolderPath(teamName?.trim() ?? "");
+}

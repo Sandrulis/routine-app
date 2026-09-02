@@ -21,17 +21,19 @@ import type { GoogleDriveStatus } from "@/app/lib/google-drive/repository";
 import { canConfigureTeamGoogleDrive } from "@/app/lib/team";
 import { useTeam } from "@/app/lib/team-store";
 import { useIsAdmin } from "@/app/lib/users/use-is-admin";
-import { DEFAULT_SYSTEM_NAME } from "@/app/lib/document-title";
+import { defaultCloudFolderFromTeamName } from "@/app/lib/cloud-storage/sanitize-folder-path";
 
-const emptyStatus: GoogleDriveStatus = {
-  configured: false,
-  connected: false,
-  enabled: false,
-  storeOnServer: false,
-  folderPath: DEFAULT_SYSTEM_NAME,
-  accountEmail: "",
-  canConfigure: false,
-};
+function emptyGoogleDriveStatus(folderPath: string): GoogleDriveStatus {
+  return {
+    configured: false,
+    connected: false,
+    enabled: false,
+    storeOnServer: false,
+    folderPath,
+    accountEmail: "",
+    canConfigure: false,
+  };
+}
 
 export function TeamGoogleDrivePage() {
   const { t } = useTranslations();
@@ -41,8 +43,9 @@ export function TeamGoogleDrivePage() {
   const { currentTeam, currentUser, roles, isReady } = useTeam();
   const { isAdmin } = useIsAdmin();
   const canConfigureUi = canConfigureTeamGoogleDrive(currentUser, roles, isAdmin);
-  const [status, setStatus] = useState<GoogleDriveStatus>(emptyStatus);
-  const [folderPath, setFolderPath] = useState(DEFAULT_SYSTEM_NAME);
+  const suggestedFolderPath = defaultCloudFolderFromTeamName(currentTeam?.name);
+  const [status, setStatus] = useState(() => emptyGoogleDriveStatus(suggestedFolderPath));
+  const [folderPath, setFolderPath] = useState(suggestedFolderPath);
   const [enabled, setEnabled] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [disconnectOpen, setDisconnectOpen] = useState(false);
@@ -81,7 +84,8 @@ export function TeamGoogleDrivePage() {
   useEffect(() => {
     if (!currentTeam) {
       setLoaded(true);
-      setStatus(emptyStatus);
+      setStatus(emptyGoogleDriveStatus(suggestedFolderPath));
+      setFolderPath(suggestedFolderPath);
       return;
     }
     let cancelled = false;
@@ -101,7 +105,7 @@ export function TeamGoogleDrivePage() {
     return () => {
       cancelled = true;
     };
-  }, [currentTeam, showFeedback, t]);
+  }, [currentTeam, showFeedback, suggestedFolderPath, t]);
 
   function handleConnect() {
     if (!currentTeam || !canConfigure) return;
@@ -282,13 +286,14 @@ export function TeamGoogleDrivePage() {
               value={folderPath}
               onChange={(event) => setFolderPath(event.target.value)}
               disabled={!canConfigure || isPending}
-              placeholder={t("app.name", "{SYSTEM_NAME}")}
+              placeholder={suggestedFolderPath}
               className="mt-1.5 w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 outline-none ring-zinc-300 transition focus:ring-2 disabled:cursor-not-allowed disabled:bg-zinc-50"
             />
             <p className="mt-1.5 text-xs text-zinc-500">
               {t(
                 "google_drive.folder.hint",
-                "Piemēram {SYSTEM_NAME} vai Komanda/Faili. Mape tiek izveidota, ja tās vēl nav.",
+                "Piemēram {name} vai Komanda/Faili. Mape tiek izveidota, ja tās vēl nav.",
+                { name: suggestedFolderPath },
               )}
             </p>
             <label className="mt-5 flex items-start gap-3 text-sm text-zinc-800">

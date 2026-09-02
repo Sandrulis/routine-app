@@ -21,16 +21,18 @@ import type { OneDriveStatus } from "@/app/lib/onedrive/repository";
 import { canConfigureTeamOneDrive } from "@/app/lib/team";
 import { useTeam } from "@/app/lib/team-store";
 import { useIsAdmin } from "@/app/lib/users/use-is-admin";
-import { DEFAULT_SYSTEM_NAME } from "@/app/lib/document-title";
+import { defaultCloudFolderFromTeamName } from "@/app/lib/cloud-storage/sanitize-folder-path";
 
-const emptyStatus: OneDriveStatus = {
-  configured: false,
-  connected: false,
-  enabled: false,
-  folderPath: DEFAULT_SYSTEM_NAME,
-  accountEmail: "",
-  canConfigure: false,
-};
+function emptyOneDriveStatus(folderPath: string): OneDriveStatus {
+  return {
+    configured: false,
+    connected: false,
+    enabled: false,
+    folderPath,
+    accountEmail: "",
+    canConfigure: false,
+  };
+}
 
 export function TeamOneDrivePage() {
   const { t } = useTranslations();
@@ -40,8 +42,9 @@ export function TeamOneDrivePage() {
   const { currentTeam, currentUser, roles, isReady } = useTeam();
   const { isAdmin } = useIsAdmin();
   const canConfigureUi = canConfigureTeamOneDrive(currentUser, roles, isAdmin);
-  const [status, setStatus] = useState<OneDriveStatus>(emptyStatus);
-  const [folderPath, setFolderPath] = useState(DEFAULT_SYSTEM_NAME);
+  const suggestedFolderPath = defaultCloudFolderFromTeamName(currentTeam?.name);
+  const [status, setStatus] = useState(() => emptyOneDriveStatus(suggestedFolderPath));
+  const [folderPath, setFolderPath] = useState(suggestedFolderPath);
   const [enabled, setEnabled] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [disconnectOpen, setDisconnectOpen] = useState(false);
@@ -80,7 +83,8 @@ export function TeamOneDrivePage() {
   useEffect(() => {
     if (!currentTeam) {
       setLoaded(true);
-      setStatus(emptyStatus);
+      setStatus(emptyOneDriveStatus(suggestedFolderPath));
+      setFolderPath(suggestedFolderPath);
       return;
     }
     let cancelled = false;
@@ -100,7 +104,7 @@ export function TeamOneDrivePage() {
     return () => {
       cancelled = true;
     };
-  }, [currentTeam, showFeedback, t]);
+  }, [currentTeam, showFeedback, suggestedFolderPath, t]);
 
   function handleConnect() {
     if (!currentTeam || !canConfigure) return;
@@ -279,13 +283,14 @@ export function TeamOneDrivePage() {
               value={folderPath}
               onChange={(event) => setFolderPath(event.target.value)}
               disabled={!canConfigure || isPending}
-              placeholder={t("app.name", "{SYSTEM_NAME}")}
+              placeholder={suggestedFolderPath}
               className="mt-1.5 w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 outline-none ring-zinc-300 transition focus:ring-2 disabled:cursor-not-allowed disabled:bg-zinc-50"
             />
             <p className="mt-1.5 text-xs text-zinc-500">
               {t(
                 "onedrive.folder.hint",
-                "Piemēram {SYSTEM_NAME} vai Komanda/Faili. Mape tiek izveidota, ja tās vēl nav.",
+                "Piemēram {name} vai Komanda/Faili. Mape tiek izveidota, ja tās vēl nav.",
+                { name: suggestedFolderPath },
               )}
             </p>
             <label className="mt-5 flex items-start gap-3 text-sm text-zinc-800">

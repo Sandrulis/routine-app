@@ -8,6 +8,7 @@ import {
   isEncryptedSecret,
   persistSecret,
 } from "@/app/lib/security/secret-box";
+import { resolveDefaultCloudFolderPath } from "@/app/lib/cloud-storage/default-folder";
 import {
   LEGACY_CLOUD_FOLDER,
   sanitizeCloudFolderPath,
@@ -164,7 +165,7 @@ export async function fetchOneDriveStatus(
     configured,
     connected: Boolean(row?.isConnected && row.refreshToken),
     enabled: Boolean(row?.isEnabled),
-    folderPath: row?.folderPath ?? LEGACY_CLOUD_FOLDER,
+    folderPath: row?.folderPath ?? (await resolveDefaultCloudFolderPath(teamId)),
     accountEmail: row?.accountEmail ?? "",
     canConfigure,
   };
@@ -188,11 +189,13 @@ export async function saveOneDriveTokens(input: {
   }
   const admin = createAdminClient();
   const expiresAt = new Date(Date.now() + Math.max(30, input.expiresIn) * 1000).toISOString();
+  const folderPath =
+    existing?.folderPath ?? (await resolveDefaultCloudFolderPath(input.teamId));
   const { error } = await admin.from("team_onedrive_integrations").upsert({
     team_id: input.teamId,
     is_connected: true,
     is_enabled: existing?.isEnabled ?? true,
-    folder_path: existing?.folderPath ?? LEGACY_CLOUD_FOLDER,
+    folder_path: folderPath,
     account_email: input.accountEmail,
     refresh_token: persistSecret(refreshToken),
     access_token: persistSecret(input.accessToken),
@@ -265,11 +268,13 @@ export async function disconnectOneDrive(teamId: string) {
   }
   const admin = createAdminClient();
   const existing = await fetchOneDriveSecretRow(teamId);
+  const folderPath =
+    existing?.folderPath ?? (await resolveDefaultCloudFolderPath(teamId));
   const { error } = await admin.from("team_onedrive_integrations").upsert({
     team_id: teamId,
     is_connected: false,
     is_enabled: false,
-    folder_path: existing?.folderPath ?? LEGACY_CLOUD_FOLDER,
+    folder_path: folderPath,
     account_email: "",
     refresh_token: null,
     access_token: null,
