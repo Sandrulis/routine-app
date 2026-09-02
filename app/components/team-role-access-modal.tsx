@@ -112,7 +112,7 @@ export function TeamRoleAccessModal({
           <p className="text-sm text-zinc-500">
             {t(
               "team.access.owner_only",
-              "Lomu pieejas var mainīt tikai komandas īpašnieks.",
+              "Lomu pieejas var mainīt tikai komandas vadītājs.",
             )}
           </p>
         ) : null}

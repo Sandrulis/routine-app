@@ -68,7 +68,7 @@ export function TeamSwitcher({ compact = false }: { compact?: boolean }) {
   const showCurrentTeamActions = canEditCurrentTeam || canDeleteCurrentTeam;
   const needsTeam = isReady && teams.length === 0;
   const rank = teamRankLabel(currentUser.role, t, roles);
-  const teamRank = rank ?? t("teams.rank.owner", "Īpašnieks");
+  const teamRank = rank ?? t("teams.rank.owner", "Vadītājs");
   const [open, setOpen] = useState(false);
   const [formTeam, setFormTeam] = useState<WorkTeam | "new" | null>(null);
   const [deleteTeamTarget, setDeleteTeamTarget] = useState<WorkTeam | null>(null);

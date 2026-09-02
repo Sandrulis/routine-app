@@ -377,7 +377,7 @@ export function teamRankLabel(
   const trimmed = role.trim();
   if (!trimmed) return null;
   if (trimmed === OWNER_TEAM_ROLE) {
-    return t("teams.rank.owner", "Īpašnieks");
+    return t("teams.rank.owner", "Vadītājs");
   }
   if (trimmed === MEMBER_TEAM_ROLE) {
     return t("team.roles.member", "Lietotājs");
@@ -477,7 +477,7 @@ export function defaultTeamRoles(teamId: string): TeamRole[] {
       id: defaultTeamRoleId(teamId, "owner"),
       teamId,
       slug: OWNER_TEAM_ROLE,
-      name: "Īpašnieks",
+      name: "Vadītājs",
       sortOrder: 0,
       isSystem: true,
       permissions: createFullTeamPermissions(true),

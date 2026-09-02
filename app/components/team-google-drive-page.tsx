@@ -259,7 +259,7 @@ export function TeamGoogleDrivePage() {
               <p className="mt-4 text-sm text-zinc-500">
                 {t(
                   "google_drive.configure_owner_only",
-                  "Integrāciju var mainīt tikai komandas īpašnieks vai lietotājs ar tiesībām labot komandas datus.",
+                  "Integrāciju var mainīt tikai komandas vadītājs vai lietotājs ar tiesībām labot komandas datus.",
                 )}
               </p>
             )}

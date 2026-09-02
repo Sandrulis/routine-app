@@ -10,7 +10,7 @@ import {
 export type TeamBillingAccessState = {
   /** Maksas plāni ieslēgti un komandai nav aktīva maksas/trial piekļuve (nav bezmaksas plāns). */
   subscriptionRequired: boolean;
-  /** Īpašnieks vai sistēmas admins — redz saturu bez paywall. */
+  /** Vadītājs vai sistēmas admins — redz saturu bez paywall. */
   canUseAppDespiteUnpaid: boolean;
   /** Var redzēt vadītāja brīdinājumu un iet uz /team/billing. */
   canManageBilling: boolean;

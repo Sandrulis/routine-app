@@ -256,7 +256,7 @@ export function TeamOneDrivePage() {
               <p className="mt-4 text-sm text-zinc-500">
                 {t(
                   "onedrive.configure_owner_only",
-                  "Integrāciju var mainīt tikai komandas īpašnieks vai lietotājs ar tiesībām labot komandas datus.",
+                  "Integrāciju var mainīt tikai komandas vadītājs vai lietotājs ar tiesībām labot komandas datus.",
                 )}
               </p>
             )}

@@ -420,7 +420,7 @@ export function TeamRolesModal({
             <p className="text-sm text-zinc-500">
               {t(
                 "team.roles.owner_only",
-                "Lomas var mainīt tikai komandas īpašnieks.",
+                "Lomas var mainīt tikai komandas vadītājs.",
               )}
             </p>
           ) : null}

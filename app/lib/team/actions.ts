@@ -575,18 +575,46 @@ export async function acceptTeamInvitationByTokenAction(
     return { ok: false, error: "errors.db_not_configured" };
   }
 
-  const preview = await getTeamInvitationByTokenAction(token);
-  if (preview.ok) {
-    const inviteEmail = preview.data.email.trim().toLowerCase();
-    const userEmail = (user.email ?? "").trim().toLowerCase();
-    if (inviteEmail && userEmail && inviteEmail !== userEmail) {
-      return { ok: false, error: "errors.team_invite_email_mismatch" };
+  const trimmed = token.trim();
+  if (!trimmed) {
+    return { ok: false, error: "errors.team_invite_not_found" };
+  }
+
+  // preview_team_invitation masks the email (s***@domain) — never compare that.
+  if (isSupabaseAdminConfigured() && user.email) {
+    const admin = createAdminClient();
+    const tokenHash = sha256Hex(trimmed);
+    const { data: invitation } = await admin
+      .from("team_invitations")
+      .select("email, invited_user_id")
+      .eq("status", "pending")
+      .eq("token_hash", tokenHash)
+      .maybeSingle();
+
+    if (invitation) {
+      const inviteEmail = String(invitation.email ?? "")
+        .trim()
+        .toLowerCase();
+      const userEmail = user.email.trim().toLowerCase();
+      if (
+        invitation.invited_user_id == null &&
+        inviteEmail &&
+        inviteEmail !== userEmail
+      ) {
+        return { ok: false, error: "errors.team_invite_email_mismatch" };
+      }
+      if (
+        invitation.invited_user_id &&
+        invitation.invited_user_id !== user.id
+      ) {
+        return { ok: false, error: "errors.team_invite_forbidden" };
+      }
     }
   }
 
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("accept_team_invitation_by_token", {
-    p_token: token.trim(),
+    p_token: trimmed,
   });
 
   if (error) {
@@ -595,7 +623,7 @@ export async function acceptTeamInvitationByTokenAction(
       return { ok: false, error: "errors.team_invite_not_found" };
     }
     if (message.includes("invitation_forbidden")) {
-      return { ok: false, error: "errors.team_invite_forbidden" };
+      return { ok: false, error: "errors.team_invite_email_mismatch" };
     }
     if (message.includes("invitation_payment_required")) {
       return { ok: false, error: "errors.team_invite_awaiting_payment" };

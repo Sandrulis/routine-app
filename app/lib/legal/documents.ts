@@ -252,7 +252,7 @@ export function getPrivacyPolicyContent(
           {
             key: "legal.privacy.retention.p2",
             fallback:
-              "Ja pieslēdzies atkārtoti deaktivizācijas periodā, konts automātiski tiek atjaunots. Komandas īpašnieka konta dzēšana var ietekmēt komandas datus saskaņā ar konta dzēšanas plūsmu.",
+              "Ja pieslēdzies atkārtoti deaktivizācijas periodā, konts automātiski tiek atjaunots. Komandas vadītāja konta dzēšana var ietekmēt komandas datus saskaņā ar konta dzēšanas plūsmu.",
           },
           {
             key: "legal.privacy.retention.p3",
@@ -496,12 +496,12 @@ export function getTermsContent(
           {
             key: "legal.terms.billing.p4",
             fallback:
-              "Katram komandai ir viens Stripe abonements. Norēķini notiek par lietotāju vietām: komandas īpašnieka vai vadītāja vieta ir bez maksas (1 vieta); par katru papildu aktīvo lietotāju nepieciešama atsevišķa apmaksāta vieta saskaņā ar izvēlēto plānu un norēķinu periodu (mēnesis vai gads).",
+              "Katram komandai ir viens Stripe abonements. Norēķini notiek par lietotāju vietām: komandas vadītāja vieta ir bez maksas (1 vieta); par katru papildu aktīvo lietotāju nepieciešama atsevišķa apmaksāta vieta saskaņā ar izvēlēto plānu un norēķinu periodu (mēnesis vai gads).",
           },
           {
             key: "legal.terms.billing.p5",
             fallback:
-              "Norēķinus par komandas abonementu veic komandas īpašnieks vai cits dalībnieks ar tiesībām pārvaldīt komandas uzstādījumus un norēķinus (sadaļa Komanda → Norēķini). Pārējie komandas lietotāji neapmaksā pakalpojumu individuāli; viņu piekļuve komandas datiem un funkcijām ir atkarīga no aktīva un apmaksāta komandas abonementa.",
+              "Norēķinus par komandas abonementu veic komandas vadītājs vai cits dalībnieks ar tiesībām pārvaldīt komandas uzstādījumus un norēķinus (sadaļa Komanda → Norēķini). Pārējie komandas lietotāji neapmaksā pakalpojumu individuāli; viņu piekļuve komandas datiem un funkcijām ir atkarīga no aktīva un apmaksāta komandas abonementa.",
           },
           {
             key: "legal.terms.billing.p6",
@@ -531,7 +531,7 @@ export function getTermsContent(
           {
             key: "legal.terms.billing.p11",
             fallback:
-              "Ja maksājums netiek saņemts, Stripe mēģina to atkārtoti; varam ierobežot piekļuvi komandas funkcijām lietotājiem, kas nav īpašnieks vai nav ar norēķinu tiesībām, līdz parāds ir nomaksāts vai abonements atjaunots. Pēc abonementa beigām vai ilgstošas neapmaksas piekļuve maksas funkcijām var tikt bloķēta visiem komandas lietotājiem, izņemot personu ar tiesībām pārvaldīt norēķinus.",
+              "Ja maksājums netiek saņemts, Stripe mēģina to atkārtoti; varam ierobežot piekļuvi komandas funkcijām lietotājiem, kas nav vadītājs vai nav ar norēķinu tiesībām, līdz parāds ir nomaksāts vai abonements atjaunots. Pēc abonementa beigām vai ilgstošas neapmaksas piekļuve maksas funkcijām var tikt bloķēta visiem komandas lietotājiem, izņemot personu ar tiesībām pārvaldīt norēķinus.",
           },
         ],
       },

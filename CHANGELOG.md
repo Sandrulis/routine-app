@@ -4,6 +4,11 @@
 
 - (none)
 
+## v0.3.45
+
+- Komandas augstākā loma UI ir Vadītājs (nevis Īpašnieks), visās valodās
+- Labots Google uzaicinājuma pieņemšana: e-pasta salīdzināšana vairs nelieto maskētu preview adresi
+
 ## v0.3.44
 
 - Uzaicinājuma signup rāda Google/Microsoft augšā, lai var pievienoties bez paroles reģistrācijas
