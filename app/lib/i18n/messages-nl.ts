@@ -2110,4 +2110,5 @@ export const nl: Record<string, string> = {
   "legal.cookies.meta_description": "Welke cookies {SYSTEM_NAME} gebruikt, welke verplicht zijn, hoe analytics werkt en hoe je toestemming wijzigt.",
   "docs.seo.description": "{name} helpcentrum: aan de slag, teaminstellingen, integraties en veelgestelde vragen.",
   "docs.seo.article_description": "{title} — {name} documentatie-artikel.",
+  "extension.gmail.result.closing_in": "Sluit over {seconds} s.",
 };

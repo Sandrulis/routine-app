@@ -2110,4 +2110,5 @@ export const da: Record<string, string> = {
   "legal.cookies.meta_description": "Hvilke cookies {SYSTEM_NAME} bruger, hvilke der er påkrævet, hvordan statistik virker, og hvordan du ændrer samtykke.",
   "docs.seo.description": "{name} hjælpecenter: kom i gang, teamindstillinger, integrationer og ofte stillede spørgsmål.",
   "docs.seo.article_description": "{title} — {name} dokumentationsartikel.",
+  "extension.gmail.result.closing_in": "Lukker om {seconds} s.",
 };

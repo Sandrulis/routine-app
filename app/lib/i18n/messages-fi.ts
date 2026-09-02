@@ -2110,4 +2110,5 @@ export const fi: Record<string, string> = {
   "legal.cookies.meta_description": "Mitä evästeitä {SYSTEM_NAME} käyttää, mitkä ovat pakollisia, miten analytiikka toimii ja miten muutat suostumusta.",
   "docs.seo.description": "{name} ohjekeskus: aloitus, tiimi-asetukset, integraatiot ja yleiset kysymykset.",
   "docs.seo.article_description": "{title} — {name} dokumentaatioartikkeli.",
+  "extension.gmail.result.closing_in": "Sulkeutuu {seconds} s kuluttua.",
 };

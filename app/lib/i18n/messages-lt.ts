@@ -2110,4 +2110,5 @@ export const lt: Record<string, string> = {
   "legal.cookies.meta_description": "Kokius slapukus naudoja {SYSTEM_NAME}, kurie privalomi, kaip veikia statistika ir kaip keisti sutikimą.",
   "docs.seo.description": "{name} pagalbos centras: pradžia, komandos nustatymai, integracijos ir dažniausi klausimai.",
   "docs.seo.article_description": "{title} — {name} dokumentacijos straipsnis.",
+  "extension.gmail.result.closing_in": "Užsidarys po {seconds} s.",
 };

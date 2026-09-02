@@ -2110,4 +2110,5 @@ export const ru: Record<string, string> = {
   "legal.cookies.meta_description": "Какие cookie использует {SYSTEM_NAME}, обязательные и необязательные, аналитика и как изменить согласие.",
   "docs.seo.description": "Справочный центр {name}: начало работы, настройки команды, интеграции и частые вопросы.",
   "docs.seo.article_description": "{title} — статья документации {name}.",
+  "extension.gmail.result.closing_in": "Закроется через {seconds} с.",
 };

@@ -1878,6 +1878,7 @@
   "extension.gmail.attach_failed": "Could not attach.",
   "extension.gmail.attached_one": "Done. Attached “{name}”.",
   "extension.gmail.attached_many": "Done. Attached {count} files.",
+  "extension.gmail.result.closing_in": "Closes in {seconds} s.",
   "extension.gmail.skipped": "Skipped {count}.",
   "extension.gmail.skipped_named": "Skipped {count}: {names}.",
   "extension.gmail.options.app_url": "{SYSTEM_NAME} URL",

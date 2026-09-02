@@ -2110,4 +2110,5 @@ export const no: Record<string, string> = {
   "legal.cookies.meta_description": "Hvilke informasjonskapsler {SYSTEM_NAME} bruker, hvilke som er nødvendige, hvordan statistikk fungerer, og hvordan du endrer samtykke.",
   "docs.seo.description": "{name} hjelpesenter: kom i gang, teaminnstillinger, integrasjoner og vanlige spørsmål.",
   "docs.seo.article_description": "{title} — {name} dokumentasjonsartikkel.",
+  "extension.gmail.result.closing_in": "Lukkes om {seconds} s.",
 };

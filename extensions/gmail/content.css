@@ -976,6 +976,22 @@
   border-color: #e2e8f0;
 }
 
+.routine-gmail-closing {
+  margin: 0 18px 18px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #64748b;
+  text-align: center;
+}
+
+.routine-gmail-closing[hidden] {
+  display: none !important;
+}
+
+.routine-gmail-panel.is-result .routine-gmail-closing {
+  margin-top: -8px;
+}
+
 .routine-gmail-login-link {
   margin: 0 18px 18px;
   font-size: 13px;

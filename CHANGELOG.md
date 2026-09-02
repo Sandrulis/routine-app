@@ -4,6 +4,10 @@
 
 - (none)
 
+## v0.3.48
+
+- Gmail spraudņa veiksmīgajā logā rāda atskaiti, pēc cik sekundēm logs aizvērsies
+
 ## v0.3.47
 
 - Gmail spraudnī piezīme ir katram atzīmētajam failam atsevišķi (ne kopīga visiem)

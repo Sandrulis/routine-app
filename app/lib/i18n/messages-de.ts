@@ -2110,4 +2110,5 @@ export const de: Record<string, string> = {
   "legal.cookies.meta_description": "Welche Cookies {SYSTEM_NAME} verwendet, welche erforderlich sind, wie Analytics funktioniert und wie Sie die Einwilligung ändern.",
   "docs.seo.description": "{name} Hilfe-Center: Einstieg, Teameinstellungen, Integrationen und häufige Fragen.",
   "docs.seo.article_description": "{title} — {name} Dokumentationsartikel.",
+  "extension.gmail.result.closing_in": "Schließt in {seconds} s.",
 };

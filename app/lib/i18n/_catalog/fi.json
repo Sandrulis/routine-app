@@ -2109,5 +2109,6 @@
   "legal.terms.meta_description": "{SYSTEM_NAME} käyttöehdot: tili, tiimitiedot, laskutus, sallittu käyttö, vastuu ja sovellettava laki.",
   "legal.cookies.meta_description": "Mitä evästeitä {SYSTEM_NAME} käyttää, mitkä ovat pakollisia, miten analytiikka toimii ja miten muutat suostumusta.",
   "docs.seo.description": "{name} ohjekeskus: aloitus, tiimi-asetukset, integraatiot ja yleiset kysymykset.",
-  "docs.seo.article_description": "{title} — {name} dokumentaatioartikkeli."
+  "docs.seo.article_description": "{title} — {name} dokumentaatioartikkeli.",
+  "extension.gmail.result.closing_in": "Sulkeutuu {seconds} s kuluttua."
 }

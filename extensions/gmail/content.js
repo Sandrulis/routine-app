@@ -150,6 +150,7 @@
   "extension.gmail.attach_failed": "Neizdevās pievienot.",
   "extension.gmail.attached_one": "Veiksmīgi! Pievienots «{name}».",
   "extension.gmail.attached_many": "Veiksmīgi! Pievienoti {count} faili.",
+  "extension.gmail.result.closing_in": "Aizvērsies pēc {seconds} s.",
   "extension.gmail.skipped": "Izlaisti {count}.",
   "extension.gmail.skipped_named": "Izlaisti {count}: {names}.",
 };
@@ -403,7 +404,7 @@ function emailBodyAttachmentName(from) {
 
 function ensureUi() {
   const existing = document.getElementById("routine-gmail-root");
-  if (existing?.dataset?.routineUi === "25") {
+  if (existing?.dataset?.routineUi === "26") {
     existing.querySelector("#routine-gmail-fab")?.remove();
     return;
   }
@@ -411,7 +412,7 @@ function ensureUi() {
 
   const root = document.createElement("div");
   root.id = "routine-gmail-root";
-  root.dataset.routineUi = "25";
+  root.dataset.routineUi = "26";
   root.innerHTML = `
     <div id="routine-gmail-modal" hidden>
       <div class="routine-gmail-backdrop" data-close="1"></div>
@@ -421,6 +422,7 @@ function ensureUi() {
           <button type="button" class="routine-gmail-x" id="routine-gmail-close" data-close="1" aria-label="">×</button>
         </header>
         <div id="routine-gmail-feedback" class="routine-gmail-feedback" hidden role="status" aria-live="polite"></div>
+        <p id="routine-gmail-closing" class="routine-gmail-closing" hidden aria-live="polite"></p>
         <div id="routine-gmail-picker" class="routine-gmail-picker">
           <p id="routine-gmail-meta" class="routine-gmail-meta"></p>
           <div id="routine-gmail-crumbs" class="routine-gmail-crumbs" hidden></div>
@@ -514,6 +516,7 @@ function ensureUi() {
   const attachLabel = root.querySelector(".routine-gmail-btn-label");
   const backBtn = root.querySelector("#routine-gmail-back");
   const feedback = root.querySelector("#routine-gmail-feedback");
+  const closingEl = root.querySelector("#routine-gmail-closing");
   const meta = root.querySelector("#routine-gmail-meta");
   const crumbsEl = root.querySelector("#routine-gmail-crumbs");
   const stepEl = root.querySelector("#routine-gmail-step");
@@ -553,6 +556,7 @@ function ensureUi() {
   let session = null;
   let isBusy = false;
   let closeTimer = null;
+  let closeInterval = null;
   /** @type {{ attachmentId: string, name: string, mimeType?: string, size: number, tooLarge?: boolean }[]} */
   let attachmentOptions = [];
   let listedGmailMessageId = "";
@@ -628,11 +632,48 @@ function ensureUi() {
       clearTimeout(closeTimer);
       closeTimer = null;
     }
+    if (closeInterval) {
+      clearInterval(closeInterval);
+      closeInterval = null;
+    }
+    if (closingEl) {
+      closingEl.hidden = true;
+      closingEl.textContent = "";
+    }
+  }
+
+  function scheduleResultClose(durationMs) {
+    clearCloseTimer();
+    const totalMs = Math.max(1000, durationMs);
+    let remaining = Math.max(1, Math.ceil(totalMs / 1000));
+    const paint = () => {
+      if (!closingEl) return;
+      closingEl.hidden = false;
+      closingEl.textContent = t("extension.gmail.result.closing_in", {
+        seconds: remaining,
+      });
+    };
+    paint();
+    closeInterval = setInterval(() => {
+      remaining -= 1;
+      if (remaining <= 0) {
+        if (closeInterval) {
+          clearInterval(closeInterval);
+          closeInterval = null;
+        }
+        return;
+      }
+      paint();
+    }, 1000);
+    closeTimer = setTimeout(() => {
+      closeModal();
+    }, totalMs);
   }
 
   function setResultMode(active) {
     panel.classList.toggle("is-result", active);
     picker.hidden = active;
+    if (!active) clearCloseTimer();
   }
 
   function setFeedback(text, variant) {
@@ -2329,6 +2370,7 @@ function ensureUi() {
     setBusy(false);
 
     if (!result?.ok || !result.data?.ok) {
+      clearCloseTimer();
       setResultMode(true);
       setFeedback(tError(result?.data?.error || result?.error), "error");
       return;
@@ -2358,9 +2400,7 @@ function ensureUi() {
 
     setResultMode(true);
     setFeedback(msg, skippedCount > 0 && attachedCount > 0 ? "info" : "success");
-    closeTimer = setTimeout(() => {
-      closeModal();
-    }, skippedCount > 0 ? 4500 : 2800);
+    scheduleResultClose(skippedCount > 0 ? 4500 : 2800);
   });
 
   function onAttachProgress(message) {

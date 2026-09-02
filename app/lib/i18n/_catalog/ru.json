@@ -2109,5 +2109,6 @@
   "legal.terms.meta_description": "Условия использования {SYSTEM_NAME}: аккаунт, данные команды, оплата, допустимое использование, ответственность и применимое право.",
   "legal.cookies.meta_description": "Какие cookie использует {SYSTEM_NAME}, обязательные и необязательные, аналитика и как изменить согласие.",
   "docs.seo.description": "Справочный центр {name}: начало работы, настройки команды, интеграции и частые вопросы.",
-  "docs.seo.article_description": "{title} — статья документации {name}."
+  "docs.seo.article_description": "{title} — статья документации {name}.",
+  "extension.gmail.result.closing_in": "Закроется через {seconds} с."
 }

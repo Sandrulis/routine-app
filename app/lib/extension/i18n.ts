@@ -127,6 +127,7 @@ export const EXTENSION_I18N_KEYS = [
   "extension.gmail.attach_failed",
   "extension.gmail.attached_one",
   "extension.gmail.attached_many",
+  "extension.gmail.result.closing_in",
   "extension.gmail.skipped",
   "extension.gmail.skipped_named",
   "extension.gmail.options.app_url",
