@@ -167,6 +167,7 @@ export function AdminTeamMembersModal({
                         initials: initialsFromName(member.name),
                         role: member.role,
                         roleId: null,
+                        dutyIds: [],
                         email: member.email,
                         toneClassName: "bg-zinc-100 text-zinc-700",
                         lastOnlineAt: member.lastOnlineAt,

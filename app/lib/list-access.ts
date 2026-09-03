@@ -64,8 +64,10 @@ export type ListAccessSource = {
   defaultAccessLevel: ListAccessLevel;
   viewerUserIds: string[];
   viewerRoleIds: string[];
+  viewerDutyIds: string[];
   viewerUserAccess: Record<string, ListAccessLevel>;
   viewerRoleAccess: Record<string, ListAccessLevel>;
+  viewerDutyAccess: Record<string, ListAccessLevel>;
 };
 
 export type ListAccessCapabilities = {
@@ -132,7 +134,7 @@ export function listAccessCapabilities(
 
 export function resolveListAccessLevel(
   list: ListAccessSource,
-  currentUser: Pick<TeamMember, "id" | "userId" | "role" | "roleId">,
+  currentUser: Pick<TeamMember, "id" | "userId" | "role" | "roleId" | "dutyIds">,
   roles: TeamRole[],
   isAdmin: boolean,
 ): ListAccessLevel | null {
@@ -145,17 +147,38 @@ export function resolveListAccessLevel(
 
   const memberLevel = userId ? list.viewerUserAccess[userId] : undefined;
   const roleLevel = role ? list.viewerRoleAccess[role.id] : undefined;
+  const dutyLevels = (currentUser.dutyIds ?? [])
+    .map((dutyId) => list.viewerDutyAccess[dutyId])
+    .filter((level): level is ListAccessLevel => Boolean(level));
+  const dutyLevel =
+    dutyLevels.length > 0
+      ? dutyLevels.reduce((best, level) =>
+          LIST_ACCESS_RANK[level] > LIST_ACCESS_RANK[best] ? level : best,
+        )
+      : undefined;
 
   if (list.isPrivate) {
     const canSee =
       Boolean(memberLevel) ||
       Boolean(roleLevel) ||
+      Boolean(dutyLevel) ||
       list.viewerUserIds.includes(userId) ||
-      (role ? list.viewerRoleIds.includes(role.id) : false);
+      (role ? list.viewerRoleIds.includes(role.id) : false) ||
+      (currentUser.dutyIds ?? []).some((dutyId) =>
+        list.viewerDutyIds.includes(dutyId),
+      );
     if (!canSee) return null;
   }
 
-  return memberLevel ?? roleLevel ?? list.defaultAccessLevel;
+  const candidates = [memberLevel, roleLevel, dutyLevel].filter(
+    (level): level is ListAccessLevel => Boolean(level),
+  );
+  if (candidates.length > 0) {
+    return candidates.reduce((best, level) =>
+      LIST_ACCESS_RANK[level] > LIST_ACCESS_RANK[best] ? level : best,
+    );
+  }
+  return list.defaultAccessLevel;
 }
 
 export function applyTeamPermissionsToListAccess(
@@ -193,7 +216,7 @@ export function applyTeamPermissionsToListAccess(
 
 export function resolveEffectiveListAccess(
   list: ListAccessSource | null | undefined,
-  currentUser: Pick<TeamMember, "id" | "userId" | "role" | "roleId">,
+  currentUser: Pick<TeamMember, "id" | "userId" | "role" | "roleId" | "dutyIds">,
   roles: TeamRole[],
   isAdmin: boolean,
   options?: { isAssignee?: boolean },
@@ -207,13 +230,18 @@ export function resolveEffectiveListAccess(
 
 export function userIsAssignee(
   assigneeIds: string[],
-  currentUser: Pick<TeamMember, "id" | "userId" | "roleId">,
+  currentUser: Pick<TeamMember, "id" | "userId" | "roleId" | "dutyIds">,
 ): boolean {
   if (assigneeIds.includes(currentUser.id)) return true;
   if (currentUser.userId && assigneeIds.includes(currentUser.userId)) {
     return true;
   }
-  return Boolean(currentUser.roleId && assigneeIds.includes(currentUser.roleId));
+  if (currentUser.roleId && assigneeIds.includes(currentUser.roleId)) {
+    return true;
+  }
+  return (currentUser.dutyIds ?? []).some((dutyId) =>
+    assigneeIds.includes(dutyId),
+  );
 }
 
 export function accessIds(map: Record<string, ListAccessLevel>): string[] {
@@ -228,6 +256,20 @@ export function listHasCustomRoleAccess(
 ): boolean {
   return roles.some((role) => {
     const level = viewerRoleAccess[role.id];
+    if (!level) return false;
+    if (isPrivate) return true;
+    return level !== defaultAccessLevel;
+  });
+}
+
+export function listHasCustomDutyAccess(
+  duties: Pick<{ id: string }, "id">[],
+  viewerDutyAccess: Record<string, ListAccessLevel>,
+  defaultAccessLevel: ListAccessLevel,
+  isPrivate: boolean,
+): boolean {
+  return duties.some((duty) => {
+    const level = viewerDutyAccess[duty.id];
     if (!level) return false;
     if (isPrivate) return true;
     return level !== defaultAccessLevel;

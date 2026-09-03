@@ -11,7 +11,7 @@ import {
   parseListAccessLevel,
   type ListAccessLevel,
 } from "@/app/lib/list-access";
-import { memberInitials, type MembersByTeam, type RolesByTeam, type TeamMember, type TeamRole, type WorkTeam } from "@/app/lib/team";
+import { memberInitials, type DutiesByTeam, type MembersByTeam, type RolesByTeam, type TeamDuty, type TeamMember, type TeamRole, type WorkTeam } from "@/app/lib/team";
 import { normalizeTeamPermissionSet } from "@/app/lib/team-permissions";
 import { parseFileNote, type TaskActivity, type TaskFile } from "@/app/lib/task-activity";
 import { isTodoStatus, type TodoItem } from "@/app/lib/team-todo";
@@ -229,6 +229,7 @@ function memberFromRow(row: {
   avatar_url: string | null;
   last_online_at: string | null;
   seat_status?: string | null;
+  dutyIds?: string[];
 }): TeamMember {
   return {
     id: row.id,
@@ -237,6 +238,7 @@ function memberFromRow(row: {
     email: row.email,
     role: row.role,
     roleId: row.role_id,
+    dutyIds: row.dutyIds ?? [],
     initials: memberInitials({ name: row.name, email: row.email }),
     toneClassName: row.tone_class_name,
     lastOnlineAt: row.last_online_at,
@@ -249,6 +251,7 @@ export async function fetchUserTeams(): Promise<{
   teams: WorkTeam[];
   membersByTeam: MembersByTeam;
   rolesByTeam: RolesByTeam;
+  dutiesByTeam: DutiesByTeam;
 }> {
   return withJwtClockSkewRetry(async () => {
   const supabase = db();
@@ -256,7 +259,7 @@ export async function fetchUserTeams(): Promise<{
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) {
-    return { teams: [], membersByTeam: {}, rolesByTeam: {} };
+    return { teams: [], membersByTeam: {}, rolesByTeam: {}, dutiesByTeam: {} };
   }
 
   const { data: membershipRows, error: membershipError } = await supabase
@@ -274,10 +277,10 @@ export async function fetchUserTeams(): Promise<{
     ),
   ] as string[];
   if (teamIds.length === 0) {
-    return { teams: [], membersByTeam: {}, rolesByTeam: {} };
+    return { teams: [], membersByTeam: {}, rolesByTeam: {}, dutiesByTeam: {} };
   }
 
-  const [teamRows, memberRows, roleRows] = await Promise.all([
+  const [teamRows, memberRows, roleRows, dutyRows] = await Promise.all([
     fetchInChunks(teamIds, (chunk) =>
       supabase
         .from("teams")
@@ -302,6 +305,13 @@ export async function fetchUserTeams(): Promise<{
         .in("team_id", chunk)
         .order("sort_order", { ascending: true }),
     ),
+    fetchInChunks(teamIds, (chunk) =>
+      supabase
+        .from("team_duties")
+        .select("id, team_id, name, sort_order")
+        .in("team_id", chunk)
+        .order("sort_order", { ascending: true }),
+    ),
   ]);
 
   teamRows.sort((left, right) => {
@@ -310,10 +320,32 @@ export async function fetchUserTeams(): Promise<{
     return leftAt.localeCompare(rightAt) || String(left.id).localeCompare(String(right.id));
   });
 
+  const memberIds = (memberRows ?? []).map((row) => row.id as string);
+  const memberDutyRows = memberIds.length
+    ? await fetchInChunks(memberIds, (chunk) =>
+        supabase
+          .from("team_member_duties")
+          .select("member_id, duty_id")
+          .in("member_id", chunk),
+      )
+    : [];
+
+  const dutyIdsByMember = new Map<string, string[]>();
+  for (const row of memberDutyRows) {
+    const list = dutyIdsByMember.get(row.member_id) ?? [];
+    list.push(row.duty_id);
+    dutyIdsByMember.set(row.member_id, list);
+  }
+
   const membersByTeam: MembersByTeam = {};
   for (const row of memberRows ?? []) {
     const list = membersByTeam[row.team_id] ?? [];
-    list.push(memberFromRow(row));
+    list.push(
+      memberFromRow({
+        ...row,
+        dutyIds: dutyIdsByMember.get(row.id) ?? [],
+      }),
+    );
     membersByTeam[row.team_id] = list;
   }
 
@@ -324,12 +356,34 @@ export async function fetchUserTeams(): Promise<{
     rolesByTeam[row.team_id] = list;
   }
 
+  const dutiesByTeam: DutiesByTeam = {};
+  for (const row of dutyRows ?? []) {
+    const list = dutiesByTeam[row.team_id] ?? [];
+    list.push(dutyFromRow(row));
+    dutiesByTeam[row.team_id] = list;
+  }
+
   return {
     teams: (teamRows ?? []).map(teamFromRow),
     membersByTeam,
     rolesByTeam,
+    dutiesByTeam,
   };
   });
+}
+
+function dutyFromRow(row: {
+  id: string;
+  team_id: string;
+  name: string;
+  sort_order: number;
+}): TeamDuty {
+  return {
+    id: row.id,
+    teamId: row.team_id,
+    name: row.name,
+    sortOrder: row.sort_order,
+  };
 }
 
 function roleFromRow(row: {
@@ -401,6 +455,52 @@ export async function updateMemberRoleRow(memberId: string, roleId: string) {
     .update({ role_id: roleId })
     .eq("id", memberId);
   if (error) throw error;
+}
+
+export async function insertTeamDuty(duty: TeamDuty) {
+  const { error } = await db().from("team_duties").insert({
+    id: duty.id,
+    team_id: duty.teamId,
+    name: duty.name,
+    sort_order: duty.sortOrder,
+  });
+  if (error) {
+    console.error("insertTeamDuty failed:", error.message, error.code);
+    throw error;
+  }
+}
+
+export async function updateTeamDutyRow(
+  dutyId: string,
+  patch: Partial<Pick<TeamDuty, "name" | "sortOrder">>,
+) {
+  const row: Record<string, unknown> = {};
+  if (patch.name !== undefined) row.name = patch.name;
+  if (patch.sortOrder !== undefined) row.sort_order = patch.sortOrder;
+  if (Object.keys(row).length === 0) return;
+  const { error } = await db().from("team_duties").update(row).eq("id", dutyId);
+  if (error) throw error;
+}
+
+export async function reorderTeamDutyRows(orderedIds: string[]) {
+  if (orderedIds.length === 0) return;
+  const { error } = await db().rpc("update_team_duty_sort_orders", {
+    p_ids: orderedIds,
+  });
+  if (error) throw new Error(formatSupabaseError(error));
+}
+
+export async function deleteTeamDutyRow(dutyId: string) {
+  const { error } = await db().from("team_duties").delete().eq("id", dutyId);
+  if (error) throw error;
+}
+
+export async function updateMemberDutiesRow(memberId: string, dutyIds: string[]) {
+  const { error } = await db().rpc("set_member_duties", {
+    p_member_id: memberId,
+    p_duty_ids: [...new Set(dutyIds.filter((id) => id.trim()))],
+  });
+  if (error) throw new Error(formatSupabaseError(error));
 }
 
 export async function insertTeam(
@@ -649,12 +749,15 @@ export async function fetchTeamWorkspace(teamId: string): Promise<TeamWorkspace>
   ]);
 
   const taskIds = tasks.map((row) => row.id);
-  const [assigneeRows, assigneeRoleRows] = await Promise.all([
+  const [assigneeRows, assigneeRoleRows, assigneeDutyRows] = await Promise.all([
     fetchInChunks(taskIds, (chunk) =>
       supabase.from("task_assignees").select("task_id, member_id").in("task_id", chunk),
     ),
     fetchInChunks(taskIds, (chunk) =>
       supabase.from("task_assignee_roles").select("task_id, role_id").in("task_id", chunk),
+    ),
+    fetchInChunks(taskIds, (chunk) =>
+      supabase.from("task_assignee_duties").select("task_id, duty_id").in("task_id", chunk),
     ),
   ]);
 
@@ -667,6 +770,11 @@ export async function fetchTeamWorkspace(teamId: string): Promise<TeamWorkspace>
   for (const row of assigneeRoleRows) {
     const list = assigneesByTask.get(row.task_id) ?? [];
     list.push(row.role_id);
+    assigneesByTask.set(row.task_id, list);
+  }
+  for (const row of assigneeDutyRows) {
+    const list = assigneesByTask.get(row.task_id) ?? [];
+    list.push(row.duty_id);
     assigneesByTask.set(row.task_id, list);
   }
 
@@ -704,7 +812,8 @@ export async function fetchTeamWorkspace(teamId: string): Promise<TeamWorkspace>
   const listIds = lists.map((row) => row.id);
   const viewersByList = new Map<string, Record<string, ListAccessLevel>>();
   const viewerRolesByList = new Map<string, Record<string, ListAccessLevel>>();
-  const [viewerRows, viewerRoleRows] = await Promise.all([
+  const viewerDutiesByList = new Map<string, Record<string, ListAccessLevel>>();
+  const [viewerRows, viewerRoleRows, viewerDutyRows] = await Promise.all([
     fetchInChunks(listIds, (chunk) =>
       supabase
         .from("work_list_viewers")
@@ -715,6 +824,12 @@ export async function fetchTeamWorkspace(teamId: string): Promise<TeamWorkspace>
       supabase
         .from("work_list_viewer_roles")
         .select("list_id, role_id, access_level")
+        .in("list_id", chunk),
+    ),
+    fetchInChunks(listIds, (chunk) =>
+      supabase
+        .from("work_list_viewer_duties")
+        .select("list_id, duty_id, access_level")
         .in("list_id", chunk),
     ),
   ]);
@@ -728,11 +843,17 @@ export async function fetchTeamWorkspace(teamId: string): Promise<TeamWorkspace>
     list[row.role_id] = parseListAccessLevel(row.access_level);
     viewerRolesByList.set(row.list_id, list);
   }
+  for (const row of viewerDutyRows) {
+    const list = viewerDutiesByList.get(row.list_id) ?? {};
+    list[row.duty_id] = parseListAccessLevel(row.access_level);
+    viewerDutiesByList.set(row.list_id, list);
+  }
 
   return {
     lists: lists.map((row) => {
       const viewerUserAccess = viewersByList.get(row.id) ?? {};
       const viewerRoleAccess = viewerRolesByList.get(row.id) ?? {};
+      const viewerDutyAccess = viewerDutiesByList.get(row.id) ?? {};
       return {
         id: row.id,
         name: row.name,
@@ -749,8 +870,10 @@ export async function fetchTeamWorkspace(teamId: string): Promise<TeamWorkspace>
         ),
         viewerUserIds: Object.keys(viewerUserAccess),
         viewerRoleIds: Object.keys(viewerRoleAccess),
+        viewerDutyIds: Object.keys(viewerDutyAccess),
         viewerUserAccess,
         viewerRoleAccess,
+        viewerDutyAccess,
         hiddenStatusIds: Array.isArray(row.hidden_status_ids)
           ? row.hidden_status_ids.filter(
               (id: unknown): id is string =>
@@ -812,8 +935,10 @@ export async function insertList(
     createdBy?: string | null;
     viewerUserIds?: string[];
     viewerRoleIds?: string[];
+    viewerDutyIds?: string[];
     viewerUserAccess?: Record<string, ListAccessLevel>;
     viewerRoleAccess?: Record<string, ListAccessLevel>;
+    viewerDutyAccess?: Record<string, ListAccessLevel>;
   },
 ) {
   const supabase = db();
@@ -838,7 +963,8 @@ export async function insertList(
   const createdBy = options?.createdBy ?? list.createdBy ?? null;
   const userAccess = options?.viewerUserAccess ?? list.viewerUserAccess;
   const roleAccess = options?.viewerRoleAccess ?? list.viewerRoleAccess;
-  await replaceListAccessRows(list.id, createdBy, userAccess, roleAccess);
+  const dutyAccess = options?.viewerDutyAccess ?? list.viewerDutyAccess;
+  await replaceListAccessRows(list.id, createdBy, userAccess, roleAccess, dutyAccess);
 }
 
 async function replaceListAccessRows(
@@ -846,6 +972,7 @@ async function replaceListAccessRows(
   createdBy: string | null,
   userAccess: Record<string, ListAccessLevel>,
   roleAccess: Record<string, ListAccessLevel>,
+  dutyAccess: Record<string, ListAccessLevel> = {},
 ) {
   const supabase = db();
   const { error: deleteUsersError } = await supabase
@@ -858,6 +985,11 @@ async function replaceListAccessRows(
     .delete()
     .eq("list_id", listId);
   if (deleteRolesError) throw deleteRolesError;
+  const { error: deleteDutiesError } = await supabase
+    .from("work_list_viewer_duties")
+    .delete()
+    .eq("list_id", listId);
+  if (deleteDutiesError) throw deleteDutiesError;
 
   const userRows = Object.entries(userAccess)
     .filter(([userId]) => userId && userId !== createdBy)
@@ -882,6 +1014,18 @@ async function replaceListAccessRows(
     const { error: roleError } = await supabase.from("work_list_viewer_roles").insert(roleRows);
     if (roleError) throw roleError;
   }
+
+  const dutyRows = Object.entries(dutyAccess)
+    .filter(([, level]) => Boolean(level))
+    .map(([dutyId, accessLevel]) => ({
+      list_id: listId,
+      duty_id: dutyId,
+      access_level: accessLevel,
+    }));
+  if (dutyRows.length > 0) {
+    const { error: dutyError } = await supabase.from("work_list_viewer_duties").insert(dutyRows);
+    if (dutyError) throw dutyError;
+  }
 }
 
 export async function updateListRow(
@@ -898,8 +1042,10 @@ export async function updateListRow(
       | "defaultAccessLevel"
       | "viewerUserIds"
       | "viewerRoleIds"
+      | "viewerDutyIds"
       | "viewerUserAccess"
       | "viewerRoleAccess"
+      | "viewerDutyAccess"
       | "hiddenStatusIds"
       | "statusOrder"
       | "statusGroupOverrides"
@@ -935,17 +1081,21 @@ export async function updateListRow(
   if (
     patch.viewerUserAccess !== undefined ||
     patch.viewerRoleAccess !== undefined ||
+    patch.viewerDutyAccess !== undefined ||
     patch.viewerUserIds !== undefined ||
     patch.viewerRoleIds !== undefined ||
+    patch.viewerDutyIds !== undefined ||
     patch.isPrivate !== undefined
   ) {
     const userAccess = patch.viewerUserAccess ?? {};
     const roleAccess = patch.viewerRoleAccess ?? {};
+    const dutyAccess = patch.viewerDutyAccess ?? {};
     await replaceListAccessRows(
       listId,
       patch.createdBy ?? null,
       userAccess,
       roleAccess,
+      dutyAccess,
     );
   }
 }

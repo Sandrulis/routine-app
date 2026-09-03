@@ -186,6 +186,7 @@ export function AdminUsersManager({
                             initials: initialsFromName(user.name),
                             role: "",
                             roleId: null,
+                            dutyIds: [],
                             email: user.email,
                             toneClassName: "bg-zinc-100 text-zinc-700",
                             lastOnlineAt,

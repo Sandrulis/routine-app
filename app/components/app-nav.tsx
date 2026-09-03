@@ -691,7 +691,8 @@ export function AppNav({
     if (parts[1] === "lists" && parts[3] === "tasks" && parts[4]) {
       const opened = tasks.find((item) => item.id === parts[4]);
       if (opened) {
-        if (!isWorkSubtask(opened)) ids.add(opened.id);
+        // Keep folder/task path visible, but do not auto-expand the opened
+        // task itself (subtasks stay collapsed until the user opens them).
         for (const ancestor of getTaskAncestors(tasks, opened)) {
           ids.add(ancestor.id);
         }
@@ -1945,8 +1946,10 @@ export function AppNav({
             defaultAccessLevel: editTarget.list.defaultAccessLevel,
             viewerUserIds: editTarget.list.viewerUserIds,
             viewerRoleIds: editTarget.list.viewerRoleIds,
+            viewerDutyIds: editTarget.list.viewerDutyIds,
             viewerUserAccess: editTarget.list.viewerUserAccess,
             viewerRoleAccess: editTarget.list.viewerRoleAccess,
+            viewerDutyAccess: editTarget.list.viewerDutyAccess,
           }}
           onCreate={(input) => {
             updateList(editTarget.list.id, input);

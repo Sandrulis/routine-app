@@ -166,8 +166,10 @@ type ListsContextValue = {
     defaultAccessLevel?: ListAccessLevel;
     viewerUserIds?: string[];
     viewerRoleIds?: string[];
+    viewerDutyIds?: string[];
     viewerUserAccess?: Record<string, ListAccessLevel>;
     viewerRoleAccess?: Record<string, ListAccessLevel>;
+    viewerDutyAccess?: Record<string, ListAccessLevel>;
   }) => WorkList;
   updateList: (
     listId: string,
@@ -183,8 +185,10 @@ type ListsContextValue = {
         | "defaultAccessLevel"
         | "viewerUserIds"
         | "viewerRoleIds"
+        | "viewerDutyIds"
         | "viewerUserAccess"
         | "viewerRoleAccess"
+        | "viewerDutyAccess"
         | "hiddenStatusIds"
         | "statusOrder"
         | "statusGroupOverrides"
@@ -523,8 +527,10 @@ export function ListsProvider({ children }: { children: ReactNode }) {
       defaultAccessLevel?: ListAccessLevel;
       viewerUserIds?: string[];
       viewerRoleIds?: string[];
+      viewerDutyIds?: string[];
       viewerUserAccess?: Record<string, ListAccessLevel>;
       viewerRoleAccess?: Record<string, ListAccessLevel>;
+      viewerDutyAccess?: Record<string, ListAccessLevel>;
     }) => {
       const kind = input.kind ?? "list";
       const isPrivate =
@@ -533,8 +539,10 @@ export function ListsProvider({ children }: { children: ReactNode }) {
         input.defaultAccessLevel ?? DEFAULT_LIST_ACCESS_LEVEL;
       const viewerUserAccess = input.viewerUserAccess ?? {};
       const viewerRoleAccess = input.viewerRoleAccess ?? {};
+      const viewerDutyAccess = input.viewerDutyAccess ?? {};
       const viewerUserIds = accessIds(viewerUserAccess);
       const viewerRoleIds = accessIds(viewerRoleAccess);
+      const viewerDutyIds = accessIds(viewerDutyAccess);
       const list: WorkList = {
         id: createListId(),
         name: input.name.trim(),
@@ -550,8 +558,10 @@ export function ListsProvider({ children }: { children: ReactNode }) {
         defaultAccessLevel,
         viewerUserIds,
         viewerRoleIds,
+        viewerDutyIds,
         viewerUserAccess,
         viewerRoleAccess,
+        viewerDutyAccess,
         hiddenStatusIds: [],
         statusOrder: [],
         statusGroupOverrides: {},
@@ -563,8 +573,10 @@ export function ListsProvider({ children }: { children: ReactNode }) {
           createdBy: userId,
           viewerUserIds,
           viewerRoleIds,
+          viewerDutyIds,
           viewerUserAccess,
           viewerRoleAccess,
+          viewerDutyAccess,
         }).catch((error) => {
           console.error("Failed to save list", error);
         });
@@ -589,8 +601,10 @@ export function ListsProvider({ children }: { children: ReactNode }) {
           | "defaultAccessLevel"
           | "viewerUserIds"
           | "viewerRoleIds"
+          | "viewerDutyIds"
           | "viewerUserAccess"
           | "viewerRoleAccess"
+          | "viewerDutyAccess"
           | "hiddenStatusIds"
           | "statusOrder"
           | "statusGroupOverrides"
@@ -617,6 +631,10 @@ export function ListsProvider({ children }: { children: ReactNode }) {
             patch.viewerRoleAccess !== undefined
               ? patch.viewerRoleAccess
               : list.viewerRoleAccess;
+          const viewerDutyAccess =
+            patch.viewerDutyAccess !== undefined
+              ? patch.viewerDutyAccess
+              : list.viewerDutyAccess;
           return {
             ...list,
             ...patch,
@@ -637,8 +655,10 @@ export function ListsProvider({ children }: { children: ReactNode }) {
               patch.defaultAccessLevel ?? list.defaultAccessLevel,
             viewerUserAccess,
             viewerRoleAccess,
+            viewerDutyAccess,
             viewerUserIds: accessIds(viewerUserAccess),
             viewerRoleIds: accessIds(viewerRoleAccess),
+            viewerDutyIds: accessIds(viewerDutyAccess),
           };
         }),
       );
@@ -655,6 +675,7 @@ export function ListsProvider({ children }: { children: ReactNode }) {
         createdBy: current?.createdBy ?? userId,
         viewerUserAccess: patch.viewerUserAccess,
         viewerRoleAccess: patch.viewerRoleAccess,
+        viewerDutyAccess: patch.viewerDutyAccess,
       }).catch((error) => {
         console.error("Failed to update list", error);
       });

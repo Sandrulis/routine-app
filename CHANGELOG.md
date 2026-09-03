@@ -4,6 +4,10 @@
 
 - (none)
 
+## v0.3.52
+
+- Komandas pienākumi blakus lomām: viens cilvēks var būt vairākos amatos (piem. komandas vadītājs, tāmētājs); uzdevumu un sarakstu piesaiste pēc pienākuma
+
 ## v0.3.51
 
 - Apakšuzdevuma atbildīgo (personu/grupu) maiņa saglabājas uzreiz, bez Saglabāt pogas

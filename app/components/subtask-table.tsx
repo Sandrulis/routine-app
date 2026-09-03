@@ -39,7 +39,7 @@ import { UserAvatar } from "@/app/components/user-avatar";
 import { DatePickerPopover } from "@/app/components/date-picker-popover";
 import { useDisplayPreferences } from "@/app/components/display-preferences-provider";
 import { useTranslations } from "@/app/components/translations-provider";
-import { assignedMembersOf, assignedRolesOf } from "@/app/lib/assignees";
+import { assignedDutiesOf, assignedMembersOf, assignedRolesOf } from "@/app/lib/assignees";
 import {
   taskDateRelativeHint,
   type TaskDateFieldKind,
@@ -278,7 +278,7 @@ export function AssigneeCell({
   disabled?: boolean;
 }) {
   const { t } = useTranslations();
-  const { members, roles } = useTeam();
+  const { members, roles, duties } = useTeam();
   const { updateTask } = useLists();
   const [open, setOpen] = useState(false);
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -289,7 +289,11 @@ export function AssigneeCell({
   const ids = assigneeIds ?? task?.assigneeIds ?? [];
   const assignedMembers = assignedMembersOf(ids, members);
   const assignedRoles = assignedRolesOf(ids, roles);
-  const hasAssignees = assignedMembers.length > 0 || assignedRoles.length > 0;
+  const assignedDuties = assignedDutiesOf(ids, duties);
+  const hasAssignees =
+    assignedMembers.length > 0 ||
+    assignedRoles.length > 0 ||
+    assignedDuties.length > 0;
   const assigneeKey = ids.join("\0");
 
   useLayoutEffect(() => {
@@ -326,7 +330,7 @@ export function AssigneeCell({
       window.removeEventListener("resize", reposition);
       resizeObserver?.disconnect();
     };
-  }, [open, assigneeKey, members.length, roles.length]);
+  }, [open, assigneeKey, members.length, roles.length, duties.length]);
 
   useEffect(() => {
     if (!open) return;
@@ -448,6 +452,36 @@ export function AssigneeCell({
                           <i className="fas fa-user-group text-[9px]" aria-hidden="true" />
                         </span>
                         <span className="min-w-0 flex-1 truncate">{label}</span>
+                        {selected ? (
+                          <i className="fas fa-check text-[10px] text-emerald-600" aria-hidden="true" />
+                        ) : null}
+                      </button>
+                    );
+                  })}
+                </>
+              ) : null}
+              {duties.length > 0 ? (
+                <>
+                  <p className="px-2 pt-1.5 pb-0.5 text-[11px] font-medium text-zinc-400">
+                    {t("team.duties.title", "Pienākumi")}
+                  </p>
+                  {duties.map((duty) => {
+                    const selected = ids.includes(duty.id);
+                    return (
+                      <button
+                        key={duty.id}
+                        type="button"
+                        role="option"
+                        aria-selected={selected}
+                        onClick={() => toggleAssignee(duty.id)}
+                        className={`flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-[13px] ${
+                          selected ? "bg-zinc-100 text-zinc-900" : "text-zinc-600 hover:bg-zinc-50"
+                        }`}
+                      >
+                        <span className="inline-flex size-5 shrink-0 items-center justify-center rounded-full bg-zinc-100 text-zinc-500">
+                          <i className="fas fa-briefcase text-[9px]" aria-hidden="true" />
+                        </span>
+                        <span className="min-w-0 flex-1 truncate">{duty.name}</span>
                         {selected ? (
                           <i className="fas fa-check text-[10px] text-emerald-600" aria-hidden="true" />
                         ) : null}

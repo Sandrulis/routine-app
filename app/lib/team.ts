@@ -15,6 +15,7 @@ export type TeamMember = {
   initials: string;
   role: string;
   roleId: string | null;
+  dutyIds: string[];
   email: string;
   toneClassName: string;
   lastOnlineAt: string | null;
@@ -33,7 +34,15 @@ export type TeamRole = {
   permissions: TeamPermissionSet;
 };
 
+export type TeamDuty = {
+  id: string;
+  teamId: string;
+  name: string;
+  sortOrder: number;
+};
+
 export type RolesByTeam = Record<string, TeamRole[]>;
+export type DutiesByTeam = Record<string, TeamDuty[]>;
 
 export const TEAM_STORAGE_KEY = "routine-app-team-members";
 export const TEAM_CHANGE_EVENT = "routine-app-team-change";
@@ -445,6 +454,7 @@ export function emptyTeamMember(): TeamMember {
     initials: "",
     role: "",
     roleId: null,
+    dutyIds: [],
     email: "",
     toneClassName: toneForIndex(0),
     lastOnlineAt: null,
@@ -458,6 +468,13 @@ export function createRoleId(): string {
     return `role-${crypto.randomUUID()}`;
   }
   return `role-${Date.now()}`;
+}
+
+export function createDutyId(): string {
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
+    return `duty-${crypto.randomUUID()}`;
+  }
+  return `duty-${Date.now()}`;
 }
 
 export function slugFromRoleName(name: string): string {
@@ -553,6 +570,7 @@ export function createOwnerMember(input: {
     initials: initialsFromName(name),
     role: OWNER_TEAM_ROLE,
     roleId: null,
+    dutyIds: [],
     email: input.email.trim(),
     toneClassName: toneForIndex(0),
     lastOnlineAt: new Date().toISOString(),
@@ -687,6 +705,12 @@ export function normalizeStoredMembers(value: unknown): TeamMember[] | null {
         "roleId" in item && typeof item.roleId === "string" && item.roleId
           ? item.roleId
           : null;
+      const dutyIds =
+        "dutyIds" in item && Array.isArray(item.dutyIds)
+          ? (item.dutyIds as unknown[]).filter(
+              (id): id is string => typeof id === "string" && id.trim().length > 0,
+            )
+          : [];
       const email =
         "email" in item && typeof item.email === "string" ? item.email.trim() : "";
       const initials =
@@ -718,6 +742,7 @@ export function normalizeStoredMembers(value: unknown): TeamMember[] | null {
         initials,
         role,
         roleId,
+        dutyIds,
         email,
         toneClassName,
         lastOnlineAt,

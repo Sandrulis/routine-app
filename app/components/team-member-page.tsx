@@ -39,7 +39,7 @@ export function TeamMemberPage({ memberId }: { memberId: string }) {
   const router = useRouter();
   const { showFeedback } = useFeedbackToast();
   const { isAdmin } = useIsAdmin();
-  const { members, isReady, roles, currentUser, refreshTeams } = useTeam();
+  const { members, isReady, roles, duties, currentUser, refreshTeams } = useTeam();
   const member = members.find((item) => item.id === memberId) ?? null;
   const [pendingAction, setPendingAction] = useState<PendingAction>(null);
   const [removeConfirmOpen, setRemoveConfirmOpen] = useState(false);
@@ -233,6 +233,20 @@ export function TeamMemberPage({ memberId }: { memberId: string }) {
             <UserAvatar member={member} />
             <div className="min-w-0 flex-1 text-sm text-zinc-500">
               {member.email ? <p>{member.email}</p> : null}
+              {(member.dutyIds ?? []).length > 0 ? (
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  {duties
+                    .filter((duty) => member.dutyIds.includes(duty.id))
+                    .map((duty) => (
+                      <span
+                        key={duty.id}
+                        className="inline-flex rounded-full bg-zinc-100 px-2.5 py-0.5 text-[12px] font-medium text-zinc-600"
+                      >
+                        {duty.name}
+                      </span>
+                    ))}
+                </div>
+              ) : null}
               {isPending ? (
                 <p className="mt-2 inline-flex rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-800">
                   {awaitingPayment

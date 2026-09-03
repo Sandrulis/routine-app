@@ -1,4 +1,4 @@
-import { teamRankLabel, type TeamMember, type TeamRole } from "@/app/lib/team";
+import { teamRankLabel, type TeamDuty, type TeamMember, type TeamRole } from "@/app/lib/team";
 
 export function assignedMembersOf(
   assigneeIds: string[],
@@ -18,17 +18,26 @@ export function assignedRolesOf(
   return roles.filter((role) => assigneeIds.includes(role.id));
 }
 
+export function assignedDutiesOf(
+  assigneeIds: string[],
+  duties: TeamDuty[],
+): TeamDuty[] {
+  return duties.filter((duty) => assigneeIds.includes(duty.id));
+}
+
 export function assigneeDisplayNames(
   assigneeIds: string[],
   members: TeamMember[],
   roles: TeamRole[],
   t: (key: string, fallback: string) => string,
+  duties: TeamDuty[] = [],
 ): string {
   return [
     ...assignedMembersOf(assigneeIds, members).map((member) => member.name),
     ...assignedRolesOf(assigneeIds, roles).map(
       (role) => teamRankLabel(role.slug, t, roles) ?? role.name,
     ),
+    ...assignedDutiesOf(assigneeIds, duties).map((duty) => duty.name),
   ]
     .filter(Boolean)
     .join(", ");
@@ -41,5 +50,10 @@ export function memberIdsNotifiedForAssignees(
   const fromRoles = members
     .filter((member) => member.roleId && addedIds.includes(member.roleId))
     .map((member) => member.id);
-  return [...new Set([...addedIds, ...fromRoles])];
+  const fromDuties = members
+    .filter((member) =>
+      (member.dutyIds ?? []).some((dutyId) => addedIds.includes(dutyId)),
+    )
+    .map((member) => member.id);
+  return [...new Set([...addedIds, ...fromRoles, ...fromDuties])];
 }

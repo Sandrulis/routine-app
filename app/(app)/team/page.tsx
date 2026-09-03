@@ -62,6 +62,7 @@ export default function TeamPage() {
     currentUser,
     isReady,
     roles,
+    duties,
     refreshTeams,
   } = useTeam();
   const [inviteOpen, setInviteOpen] = useState(false);
@@ -382,6 +383,20 @@ export default function TeamPage() {
                           .filter(Boolean)
                           .join(" - ")}
                       </p>
+                      {(member.dutyIds ?? []).length > 0 ? (
+                        <div className="mt-1.5 flex flex-wrap gap-1">
+                          {duties
+                            .filter((duty) => member.dutyIds.includes(duty.id))
+                            .map((duty) => (
+                              <span
+                                key={duty.id}
+                                className="inline-flex rounded-full bg-zinc-100 px-2 py-0.5 text-[11px] font-medium text-zinc-600"
+                              >
+                                {duty.name}
+                              </span>
+                            ))}
+                        </div>
+                      ) : null}
                       {currentTeam ? (
                         <MemberSeatBillingHintLine
                           member={member}

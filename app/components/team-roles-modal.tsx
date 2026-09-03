@@ -33,6 +33,7 @@ import {
   canManageTeamSettings,
   isMemberTeamOwner,
   teamRankLabel,
+  type TeamDuty,
   type TeamRole,
 } from "@/app/lib/team";
 import { useTeam } from "@/app/lib/team-store";
@@ -40,18 +41,30 @@ import { useIsAdmin } from "@/app/lib/users/use-is-admin";
 
 type RolesDraft = {
   roleNames: Record<string, string>;
+  dutyNames: Record<string, string>;
   memberRoleIds: Record<string, string>;
+  memberDutyIds: Record<string, string[]>;
   newRoleName: string;
+  newDutyName: string;
 };
+
+function sameDutyIds(left: string[], right: string[]) {
+  if (left.length !== right.length) return false;
+  const sortedLeft = [...left].sort();
+  const sortedRight = [...right].sort();
+  return sortedLeft.every((id, index) => id === sortedRight[index]);
+}
 
 function snapshotFrom(
   roles: TeamRole[],
-  members: { id: string; roleId: string | null; role: string }[],
+  duties: TeamDuty[],
+  members: { id: string; roleId: string | null; role: string; dutyIds?: string[] }[],
 ): RolesDraft {
   const memberFallback =
     roles.find((role) => role.slug === MEMBER_TEAM_ROLE)?.id ?? roles[0]?.id ?? "";
   return {
     roleNames: Object.fromEntries(roles.map((role) => [role.id, role.name])),
+    dutyNames: Object.fromEntries(duties.map((duty) => [duty.id, duty.name])),
     memberRoleIds: Object.fromEntries(
       members.map((member) => [
         member.id,
@@ -60,7 +73,11 @@ function snapshotFrom(
           memberFallback,
       ]),
     ),
+    memberDutyIds: Object.fromEntries(
+      members.map((member) => [member.id, [...(member.dutyIds ?? [])]]),
+    ),
     newRoleName: "",
+    newDutyName: "",
   };
 }
 
@@ -77,21 +94,30 @@ export function TeamRolesModal({
   const {
     members,
     roles,
+    duties,
     currentUser,
     addTeamRole,
     reorderTeamRoles,
     renameTeamRole,
     deleteTeamRole,
     assignMemberRole,
+    addTeamDuty,
+    reorderTeamDuties,
+    renameTeamDuty,
+    deleteTeamDuty,
+    assignMemberDuties,
   } = useTeam();
   const [draft, setDraft] = useState<RolesDraft>(() =>
-    snapshotFrom(roles, members),
+    snapshotFrom(roles, duties, members),
   );
   const [deleteRole, setDeleteRole] = useState<TeamRole | null>(null);
+  const [deleteDuty, setDeleteDuty] = useState<TeamDuty | null>(null);
   const [accessRoleId, setAccessRoleId] = useState<string | null>(null);
   const [addingRole, setAddingRole] = useState(false);
+  const [addingDuty, setAddingDuty] = useState(false);
   const wasOpenRef = useRef(false);
-  const dndContextId = useId();
+  const rolesDndId = useId();
+  const dutiesDndId = useId();
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
   );
@@ -105,31 +131,43 @@ export function TeamRolesModal({
     }
     if (!wasOpenRef.current) {
       wasOpenRef.current = true;
-      setDraft(snapshotFrom(roles, members));
+      setDraft(snapshotFrom(roles, duties, members));
       return;
     }
     setDraft((current) => {
-      const next = snapshotFrom(roles, members);
+      const next = snapshotFrom(roles, duties, members);
       return {
         ...next,
         roleNames: { ...next.roleNames, ...current.roleNames },
+        dutyNames: { ...next.dutyNames, ...current.dutyNames },
         memberRoleIds: { ...next.memberRoleIds, ...current.memberRoleIds },
+        memberDutyIds: { ...next.memberDutyIds, ...current.memberDutyIds },
         newRoleName: current.newRoleName,
+        newDutyName: current.newDutyName,
       };
     });
-  }, [members, open, roles]);
+  }, [duties, members, open, roles]);
 
-  const initial = useMemo(() => snapshotFrom(roles, members), [members, roles]);
+  const initial = useMemo(
+    () => snapshotFrom(roles, duties, members),
+    [duties, members, roles],
+  );
   const isDirty =
     JSON.stringify({
       roleNames: draft.roleNames,
+      dutyNames: draft.dutyNames,
       memberRoleIds: draft.memberRoleIds,
+      memberDutyIds: draft.memberDutyIds,
       newRoleName: draft.newRoleName.trim(),
+      newDutyName: draft.newDutyName.trim(),
     }) !==
     JSON.stringify({
       roleNames: initial.roleNames,
+      dutyNames: initial.dutyNames,
       memberRoleIds: initial.memberRoleIds,
+      memberDutyIds: initial.memberDutyIds,
       newRoleName: "",
+      newDutyName: "",
     });
 
   function roleLabel(role: TeamRole) {
@@ -171,6 +209,44 @@ export function TeamRolesModal({
     }
   }
 
+  async function handleAddDuty(options?: { silent?: boolean }) {
+    if (!canManage || addingDuty) return false;
+    const newName = draft.newDutyName.trim();
+    if (!newName) {
+      showFeedback({
+        type: "error",
+        text: t("errors.name_required", "Ievadi nosaukumu."),
+      });
+      return false;
+    }
+
+    setAddingDuty(true);
+    try {
+      const created = await addTeamDuty(newName);
+      if (!created) {
+        showFeedback({
+          type: "error",
+          text: t(
+            "errors.duty_create_failed",
+            "Neizdevās pievienot pienākumu.",
+          ),
+        });
+        return false;
+      }
+
+      setDraft((current) => ({ ...current, newDutyName: "" }));
+      if (!options?.silent) {
+        showFeedback({
+          type: "success",
+          text: t("team.duties.feedback.created", "Pienākums pievienots."),
+        });
+      }
+      return true;
+    } finally {
+      setAddingDuty(false);
+    }
+  }
+
   async function handleSave(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!canManage) return;
@@ -179,12 +255,23 @@ export function TeamRolesModal({
       const created = await handleAddRole({ silent: true });
       if (!created) return;
     }
+    if (draft.newDutyName.trim()) {
+      const created = await handleAddDuty({ silent: true });
+      if (!created) return;
+    }
 
     for (const role of roles) {
       if (role.isSystem) continue;
       const nextName = draft.roleNames[role.id]?.trim();
       if (nextName && nextName !== role.name) {
         renameTeamRole(role.id, nextName);
+      }
+    }
+
+    for (const duty of duties) {
+      const nextName = draft.dutyNames[duty.id]?.trim();
+      if (nextName && nextName !== duty.name) {
+        renameTeamDuty(duty.id, nextName);
       }
     }
 
@@ -198,6 +285,13 @@ export function TeamRolesModal({
       }
     }
 
+    for (const member of members) {
+      const nextDutyIds = draft.memberDutyIds[member.id] ?? [];
+      if (!sameDutyIds(nextDutyIds, member.dutyIds ?? [])) {
+        assignMemberDuties(member.id, nextDutyIds);
+      }
+    }
+
     showFeedback({
       type: "success",
       text: t("team.roles.feedback.saved", "Komandas lomas saglabātas."),
@@ -205,7 +299,7 @@ export function TeamRolesModal({
     onOpenChange(false);
   }
 
-  function handleDragEnd(event: DragEndEvent) {
+  function handleRoleDragEnd(event: DragEndEvent) {
     if (!canManage) return;
     const { active, over } = event;
     if (!over || active.id === over.id) return;
@@ -221,6 +315,44 @@ export function TeamRolesModal({
         type: "error",
         text: t("errors.role_reorder_failed", "Neizdevās mainīt lomu secību."),
       });
+    });
+  }
+
+  function handleDutyDragEnd(event: DragEndEvent) {
+    if (!canManage) return;
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    const oldIndex = duties.findIndex((duty) => duty.id === active.id);
+    const newIndex = duties.findIndex((duty) => duty.id === over.id);
+    if (oldIndex < 0 || newIndex < 0) return;
+
+    const next = arrayMove(duties, oldIndex, newIndex);
+    void reorderTeamDuties(next.map((duty) => duty.id)).then((ok) => {
+      if (ok) return;
+      showFeedback({
+        type: "error",
+        text: t(
+          "errors.duty_reorder_failed",
+          "Neizdevās mainīt pienākumu secību.",
+        ),
+      });
+    });
+  }
+
+  function toggleMemberDuty(memberId: string, dutyId: string) {
+    setDraft((current) => {
+      const existing = current.memberDutyIds[memberId] ?? [];
+      const next = existing.includes(dutyId)
+        ? existing.filter((id) => id !== dutyId)
+        : [...existing, dutyId];
+      return {
+        ...current,
+        memberDutyIds: {
+          ...current.memberDutyIds,
+          [memberId]: next,
+        },
+      };
     });
   }
 
@@ -253,10 +385,10 @@ export function TeamRolesModal({
               ) : null}
               <div className="overflow-hidden rounded-xl border border-zinc-200">
                 <DndContext
-                  id={dndContextId}
+                  id={rolesDndId}
                   sensors={sensors}
                   collisionDetection={closestCenter}
-                  onDragEnd={handleDragEnd}
+                  onDragEnd={handleRoleDragEnd}
                 >
                   <table className="min-w-full text-sm">
                     <thead className="bg-zinc-50 text-left text-[11px] font-semibold uppercase tracking-wider text-zinc-400">
@@ -346,6 +478,107 @@ export function TeamRolesModal({
 
             <section className="space-y-3">
               <h3 className="text-sm font-semibold text-zinc-800">
+                {t("team.duties.title", "Pienākumi")}
+              </h3>
+              <p className="text-[13px] text-zinc-500">
+                {t(
+                  "team.duties.description",
+                  "Amata birkas (piem. komandas vadītājs, tāmētājs u.c.). Viens cilvēks var būt vairākos pienākumos. Pieejas joprojām nosaka loma.",
+                )}
+              </p>
+              <div className="overflow-hidden rounded-xl border border-zinc-200">
+                {duties.length === 0 ? (
+                  <p className="px-4 py-3 text-sm text-zinc-500">
+                    {t("team.duties.empty", "Nav neviena pienākuma.")}
+                  </p>
+                ) : (
+                  <DndContext
+                    id={dutiesDndId}
+                    sensors={sensors}
+                    collisionDetection={closestCenter}
+                    onDragEnd={handleDutyDragEnd}
+                  >
+                    <table className="min-w-full text-sm">
+                      <thead className="bg-zinc-50 text-left text-[11px] font-semibold uppercase tracking-wider text-zinc-400">
+                        <tr>
+                          <th className="w-10 px-2 py-2.5" />
+                          <th className="px-4 py-2.5">
+                            {t("lists.fields.name", "Nosaukums")}
+                          </th>
+                          <th className="px-4 py-2.5 text-right">
+                            {t("common.actions", "Darbības")}
+                          </th>
+                        </tr>
+                      </thead>
+                      <SortableContext
+                        items={duties.map((duty) => duty.id)}
+                        strategy={verticalListSortingStrategy}
+                      >
+                        <tbody className="divide-y divide-zinc-100">
+                          {duties.map((duty) => (
+                            <SortableDutyRow
+                              key={duty.id}
+                              duty={duty}
+                              name={draft.dutyNames[duty.id] ?? duty.name}
+                              canManage={canManage}
+                              dragLabel={t("subtasks.drag", "Mainīt secību")}
+                              onNameChange={(value) =>
+                                setDraft((current) => ({
+                                  ...current,
+                                  dutyNames: {
+                                    ...current.dutyNames,
+                                    [duty.id]: value,
+                                  },
+                                }))
+                              }
+                              onDelete={() => setDeleteDuty(duty)}
+                              deleteLabel={t("actions.delete", "Dzēst")}
+                            />
+                          ))}
+                        </tbody>
+                      </SortableContext>
+                    </table>
+                  </DndContext>
+                )}
+              </div>
+              <div className="flex gap-2">
+                <input
+                  value={draft.newDutyName}
+                  onChange={(event) =>
+                    setDraft((current) => ({
+                      ...current,
+                      newDutyName: event.target.value,
+                    }))
+                  }
+                  onKeyDown={(event) => {
+                    if (event.key !== "Enter") return;
+                    event.preventDefault();
+                    void handleAddDuty();
+                  }}
+                  placeholder={t(
+                    "team.duties.new_placeholder",
+                    "Jauna pienākuma nosaukums",
+                  )}
+                  className="min-h-10 flex-1 rounded-xl border border-zinc-200 bg-white px-3 text-sm text-zinc-900 outline-none focus:border-zinc-400 focus:ring-2 focus:ring-zinc-100"
+                />
+                <button
+                  type="button"
+                  disabled={!canManage || addingDuty || !draft.newDutyName.trim()}
+                  onClick={() => void handleAddDuty()}
+                  className="inline-flex min-h-10 shrink-0 items-center gap-2 rounded-xl bg-zinc-900 px-4 text-sm font-medium text-white transition hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {addingDuty ? (
+                    <i className="fas fa-circle-notch fa-spin text-xs" aria-hidden="true" />
+                  ) : (
+                    <i className="fas fa-plus text-xs" aria-hidden="true" />
+                  )}
+                  {t("actions.add", "Pievienot")}
+                </button>
+              </div>
+            </section>
+
+            <section className="space-y-3">
+              <h3 className="text-sm font-semibold text-zinc-800">
                 {t("nav.team", "Komanda")}
               </h3>
               <div className="overflow-hidden rounded-xl border border-zinc-200">
@@ -354,6 +587,9 @@ export function TeamRolesModal({
                     <tr>
                       <th className="px-4 py-2.5">{t("common.name", "Vārds")}</th>
                       <th className="px-4 py-2.5">{t("team.fields.role", "Loma")}</th>
+                      <th className="px-4 py-2.5">
+                        {t("team.duties.title", "Pienākumi")}
+                      </th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-zinc-100">
@@ -362,6 +598,7 @@ export function TeamRolesModal({
                       const assignableRoles = memberIsOwner
                         ? roles.filter((role) => role.slug === OWNER_TEAM_ROLE)
                         : roles.filter((role) => role.slug !== OWNER_TEAM_ROLE);
+                      const selectedDutyIds = draft.memberDutyIds[member.id] ?? [];
                       return (
                       <tr key={member.id}>
                         <td className="px-4 py-2.5">
@@ -400,6 +637,32 @@ export function TeamRolesModal({
                               </option>
                             ))}
                           </select>
+                        </td>
+                        <td className="px-4 py-2.5">
+                          {duties.length === 0 ? (
+                            <span className="text-xs text-zinc-400">—</span>
+                          ) : (
+                            <div className="flex flex-wrap gap-1.5">
+                              {duties.map((duty) => {
+                                const selected = selectedDutyIds.includes(duty.id);
+                                return (
+                                  <button
+                                    key={duty.id}
+                                    type="button"
+                                    aria-pressed={selected}
+                                    onClick={() => toggleMemberDuty(member.id, duty.id)}
+                                    className={`rounded-full px-2.5 py-1 text-[12px] font-medium transition ${
+                                      selected
+                                        ? "bg-zinc-900 text-white"
+                                        : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
+                                    }`}
+                                  >
+                                    {draft.dutyNames[duty.id] ?? duty.name}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          )}
                         </td>
                       </tr>
                       );
@@ -457,6 +720,29 @@ export function TeamRolesModal({
           showFeedback({
             type: "success",
             text: t("team.roles.feedback.deleted", "Loma dzēsta."),
+          });
+        }}
+      />
+      <ConfirmModal
+        open={deleteDuty !== null}
+        onOpenChange={(nextOpen) => {
+          if (!nextOpen) setDeleteDuty(null);
+        }}
+        title={t("team.duties.delete.title", "Dzēst pienākumu?")}
+        description={t(
+          "team.duties.delete.description",
+          "Pienākums “{name}” tiks dzēsts un noņemts no lietotājiem.",
+          { name: deleteDuty?.name ?? "" },
+        )}
+        confirmLabel={t("actions.delete", "Dzēst")}
+        confirmVariant="danger"
+        onConfirm={() => {
+          if (!deleteDuty) return;
+          deleteTeamDuty(deleteDuty.id);
+          setDeleteDuty(null);
+          showFeedback({
+            type: "success",
+            text: t("team.duties.feedback.deleted", "Pienākums dzēsts."),
           });
         }}
       />
@@ -547,6 +833,74 @@ function SortableRoleRow({
             icon="fas fa-trash"
             variant="delete"
             disabled={role.isSystem || !canManage}
+            onClick={onDelete}
+          />
+        </div>
+      </td>
+    </tr>
+  );
+}
+
+function SortableDutyRow({
+  duty,
+  name,
+  canManage,
+  dragLabel,
+  onNameChange,
+  onDelete,
+  deleteLabel,
+}: {
+  duty: TeamDuty;
+  name: string;
+  canManage: boolean;
+  dragLabel: string;
+  onNameChange: (value: string) => void;
+  onDelete: () => void;
+  deleteLabel: string;
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: duty.id, disabled: !canManage });
+
+  return (
+    <tr
+      ref={setNodeRef}
+      style={{
+        transform: CSS.Transform.toString(transform),
+        transition,
+      }}
+      className={isDragging ? "relative z-10 bg-white shadow-sm" : ""}
+    >
+      <td className="px-2 py-2.5">
+        <DragHandle
+          label={dragLabel}
+          attributes={attributes}
+          listeners={listeners}
+        />
+      </td>
+      <td className="px-4 py-2.5">
+        <input
+          value={name}
+          onChange={(event) => onNameChange(event.target.value)}
+          className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-sm text-zinc-900 outline-none focus:border-zinc-400 focus:ring-2 focus:ring-zinc-100"
+        />
+      </td>
+      <td
+        className="px-4 py-2.5"
+        onPointerDown={(event) => event.stopPropagation()}
+        onMouseDown={(event) => event.stopPropagation()}
+      >
+        <div className="flex justify-end gap-1">
+          <IconActionButton
+            label={deleteLabel}
+            icon="fas fa-trash"
+            variant="delete"
+            disabled={!canManage}
             onClick={onDelete}
           />
         </div>

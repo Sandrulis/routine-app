@@ -25,8 +25,10 @@ export type WorkList = {
   defaultAccessLevel: ListAccessLevel;
   viewerUserIds: string[];
   viewerRoleIds: string[];
+  viewerDutyIds: string[];
   viewerUserAccess: Record<string, ListAccessLevel>;
   viewerRoleAccess: Record<string, ListAccessLevel>;
+  viewerDutyAccess: Record<string, ListAccessLevel>;
   hiddenStatusIds: string[];
   statusOrder: string[];
   statusGroupOverrides: Record<string, string>;
@@ -412,17 +414,29 @@ export function normalizeStoredLists(value: unknown): WorkList[] | null {
               (id): id is string => typeof id === "string",
             )
           : [];
+      const viewerDutyIds =
+        "viewerDutyIds" in item && Array.isArray(item.viewerDutyIds)
+          ? (item.viewerDutyIds as unknown[]).filter(
+              (id): id is string => typeof id === "string",
+            )
+          : [];
       const viewerUserAccess = parseAccessMap(
         "viewerUserAccess" in item ? item.viewerUserAccess : undefined,
       );
       const viewerRoleAccess = parseAccessMap(
         "viewerRoleAccess" in item ? item.viewerRoleAccess : undefined,
       );
+      const viewerDutyAccess = parseAccessMap(
+        "viewerDutyAccess" in item ? item.viewerDutyAccess : undefined,
+      );
       for (const id of viewerUserIds) {
         if (!viewerUserAccess[id]) viewerUserAccess[id] = DEFAULT_LIST_ACCESS_LEVEL;
       }
       for (const id of viewerRoleIds) {
         if (!viewerRoleAccess[id]) viewerRoleAccess[id] = DEFAULT_LIST_ACCESS_LEVEL;
+      }
+      for (const id of viewerDutyIds) {
+        if (!viewerDutyAccess[id]) viewerDutyAccess[id] = DEFAULT_LIST_ACCESS_LEVEL;
       }
       return {
         id,
@@ -438,8 +452,10 @@ export function normalizeStoredLists(value: unknown): WorkList[] | null {
         ),
         viewerUserIds: Object.keys(viewerUserAccess),
         viewerRoleIds: Object.keys(viewerRoleAccess),
+        viewerDutyIds: Object.keys(viewerDutyAccess),
         viewerUserAccess,
         viewerRoleAccess,
+        viewerDutyAccess,
         hiddenStatusIds: parseIdList(
           "hiddenStatusIds" in item ? item.hiddenStatusIds : [],
         ),

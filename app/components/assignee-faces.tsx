@@ -5,6 +5,7 @@ import { OptionalTooltip } from "@/app/components/tooltip";
 import { UserAvatar } from "@/app/components/user-avatar";
 import { useTranslations } from "@/app/components/translations-provider";
 import {
+  assignedDutiesOf,
   assignedMembersOf,
   assignedRolesOf,
   assigneeDisplayNames,
@@ -20,14 +21,19 @@ export const AssigneeFaces = memo(function AssigneeFaces({
   className?: string;
 }) {
   const { t } = useTranslations();
-  const { members, roles } = useTeam();
+  const { members, roles, duties } = useTeam();
   const assignedMembers = assignedMembersOf(assigneeIds, members);
   const assignedRoles = assignedRolesOf(assigneeIds, roles);
-  if (assignedMembers.length === 0 && assignedRoles.length === 0) {
+  const assignedDuties = assignedDutiesOf(assigneeIds, duties);
+  if (
+    assignedMembers.length === 0 &&
+    assignedRoles.length === 0 &&
+    assignedDuties.length === 0
+  ) {
     return null;
   }
 
-  const label = assigneeDisplayNames(assigneeIds, members, roles, t);
+  const label = assigneeDisplayNames(assigneeIds, members, roles, t, duties);
 
   return (
     <OptionalTooltip label={label} align="end">
@@ -50,6 +56,15 @@ export const AssigneeFaces = memo(function AssigneeFaces({
             <span className="truncate">
               {teamRankLabel(role.slug, t, roles) ?? role.name}
             </span>
+          </span>
+        ))}
+        {assignedDuties.map((duty) => (
+          <span
+            key={duty.id}
+            className="inline-flex max-w-[5.5rem] items-center gap-1 rounded-full bg-zinc-100 px-1.5 py-0.5 text-[10px] font-medium text-zinc-600"
+          >
+            <i className="fas fa-briefcase text-[8px]" aria-hidden="true" />
+            <span className="truncate">{duty.name}</span>
           </span>
         ))}
       </span>

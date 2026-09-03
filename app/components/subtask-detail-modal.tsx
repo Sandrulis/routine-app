@@ -274,7 +274,7 @@ export function SubtaskDetailModal({
     removeTaskFile,
     taskFiles,
   } = useLists();
-  const { members, currentUser, roles } = useTeam();
+  const { members, currentUser, roles, duties } = useTeam();
   const { isAdmin } = useIsAdmin();
   const { isEnabled: isModuleEnabled } = useFrontendModules();
   const fileUploadsEnabled = isModuleEnabled(FRONTEND_MODULE_KEYS.fileUpload);
@@ -541,7 +541,7 @@ export function SubtaskDetailModal({
       item,
       t,
       assigneeName: (assigneeIds) =>
-        assigneeDisplayNames(assigneeIds ?? [], members, roles, t),
+        assigneeDisplayNames(assigneeIds ?? [], members, roles, t, duties),
       formatDate,
       parentTaskTitle: (parentId) => {
         if (!parentId) return "—";

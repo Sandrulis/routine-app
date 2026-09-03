@@ -334,6 +334,7 @@ Saraksta statusi: `ListStatusesModal` (`app/components/list-statuses-modal.tsx`)
 - Jauna komanda: izveidotājs kļūst **Vadītājs** (`OWNER_TEAM_ROLE` / `teams.rank.owner`); rangs zem vārda, komandas nosaukuma un modālī tikai ja ir komanda
 - Vadītāja iecelšana: `canAppointTeamLeader` + `transferTeamLeadershipAction` / RPC `transfer_team_leadership` (`117`). Tikai pašreizējais `owner` ieceļ citu **apstiprinātu** komandas lietotāju; lomas tiek apmainītas, `teams.created_by` seko jaunajam vadītājam. UI `/team` (ikona) un `/team/[id]` (poga blakus noņemšanai). `TeamRolesModal` un uzaicinājums neļauj piešķirt `owner` lomu. Trigger `team_members_guard_single_owner` bloķē otro vadītāju ārpus RPC.
 - Lomas: `team_roles` (komandai) + `system_default_roles` (admin `/admin/roles`, seed jaunām komandām). Pieejas `TeamPermissionSet` (`actions`; `nav` tukšs) — `app/lib/team-permissions.ts`. Sākums, Saraksts, Komanda lapa un personīgie Uzstādījumi ir vienmēr pieejami. `team.options` (**Komandas opcijas**) rāda komandas `...` izvēlni; iekšējās opcijas joprojām prasa savas pieejas (`templates.manage`, lomas, Drive u.c.). `actions` kontrolē darbības (lists.*, tasks.manage, `subtasks.status.change`, folders.create, `folders.archive`, `tasks.archive`, `lists.archive.view`, `subtasks.archive.view`, `files.upload` / `files.upload.subtask` / `files.view` / `files.forward`, `templates.manage`, `team.invite`, `team.members.remove`, lomas/pieejas, `team.settings.edit`, integrācijas, komandas dzēšana u.c.). Grupas slēdzis atjaunina visas atslēgas vienā `updateRolePermissions` izsaukumā. Īpašniekam un `is_admin` visas pieejas. UI: `TeamRolesModal` no sānjoslas; katrai lomai saraksta ikona atver `TeamRoleAccessModal` (`TeamPermissionFields` ar divkolonnu izkārtojumu); toggle automātiski saglabā (bez Saglabāt pogas)
+- Pienākumi (`133`): `team_duties` + `team_member_duties` — M:N amata birkas blakus vienai pieejas lomai (piem. komandas vadītājs, tāmētājs). Bez savām `permissions`; uzdevumu assignee (`task_assignee_duties`) un sarakstu skatītāji (`work_list_viewer_duties`) var piesaistīt pienākumam. UI: `TeamRolesModal` sekcija **Pienākumi** + biedru čipi; rādīšana `/team` un `/team/[id]`
 - UI: `app/components/team-switcher.tsx`; jauna/labot komanda caur `NameFormModal` (`showLogo` + `showIcons={false}`); bez komandas modālis nav bloķējošs, atveras no pārslēdzēja vai dashboard pogas (`REQUEST_CREATE_TEAM_EVENT`)
 
 ### Uzaicinājumi (`044`–`049`)
@@ -487,7 +488,7 @@ app/
     status-control.tsx            # Statusa poga, picker, čeklista josla
     relative-time.tsx             # Relatīvais laiks (min / h / d / m)
     loading-state.tsx             # Ielādes spinneris lapās, kokā un modāļos
-    team-roles-modal.tsx          # Komandas lomu saraksts
+    team-roles-modal.tsx          # Komandas lomas + pienākumi
     team-role-access-modal.tsx    # Pieejas pašai lomai
     team-permission-fields.tsx    # Nav + actions slēdži
     admin-roles-manager.tsx       # Sistēmas noklusējuma lomas
@@ -779,6 +780,10 @@ RLS (`005_work_data.sql`): `authenticated` drīkst SELECT/INSERT/UPDATE/DELETE t
 | `team_members` | Lietotāji; apstiprinātam `user_id = auth.uid()`; pending uzaicinājumam `user_id` null; `seat_status` `active` / `pending_payment` (`097`) |
 | `team_invitations` | Uzaicinājumi (`pending` / `accepted` / `rejected`), `token`, `invited_user_id` |
 | `team_roles` | Komandas lomas un `permissions` JSON |
+| `team_duties` | Komandas pienākumi / amata birkas (`133`) |
+| `team_member_duties` | Biedra M:N pienākumi |
+| `task_assignee_duties` | Uzdevuma izpildītājs = pienākums |
+| `work_list_viewer_duties` | Saraksta skatītājs pēc pienākuma + `access_level` |
 | `system_default_roles` | Admin noklusējuma lomas jaunām komandām |
 | `task_statuses` | Uzdevumu statusu katalogs (nosaukumi, krāsa, grupa) |
 | `file_type_extensions` | Atļautie failu tipi (paplašinājums, MIME, ikona, krāsa); SELECT authenticated, raksta `is_admin` |

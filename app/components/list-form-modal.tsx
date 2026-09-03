@@ -11,6 +11,7 @@ import { useAuthSession } from "@/app/lib/auth/use-auth-session";
 import {
   DEFAULT_LIST_ACCESS_LEVEL,
   LIST_ACCESS_OPTIONS,
+  listHasCustomDutyAccess,
   listHasCustomRoleAccess,
   parseListAccessLevel,
   type ListAccessChoice,
@@ -28,8 +29,10 @@ export type ListFormInput = NameFormInput & {
   defaultAccessLevel: ListAccessLevel;
   viewerUserIds: string[];
   viewerRoleIds: string[];
+  viewerDutyIds: string[];
   viewerUserAccess: Record<string, ListAccessLevel>;
   viewerRoleAccess: Record<string, ListAccessLevel>;
+  viewerDutyAccess: Record<string, ListAccessLevel>;
 };
 
 type ListFormInitialValue = ListFormInput | null;
@@ -98,7 +101,7 @@ export function ListFormModal({
 }) {
   const { t } = useTranslations();
   const { user: authUser } = useAuthSession();
-  const { members, roles } = useTeam();
+  const { members, roles, duties } = useTeam();
   const { isEnabled: isModuleEnabled } = useFrontendModules();
   const privateListsEnabled = isModuleEnabled(FRONTEND_MODULE_KEYS.privateList);
   const badgeRef = useRef<HTMLButtonElement>(null);
@@ -114,6 +117,7 @@ export function ListFormModal({
   );
   const [customizeRoles, setCustomizeRoles] = useState(false);
   const [roleAccess, setRoleAccess] = useState<Record<string, ListAccessChoice>>({});
+  const [dutyAccess, setDutyAccess] = useState<Record<string, ListAccessChoice>>({});
   const [memberAccess, setMemberAccess] = useState<Record<string, ListAccessChoice>>(
     {},
   );
@@ -152,13 +156,28 @@ export function ListFormModal({
         initialValue?.viewerRoleAccess ?? {},
         nextDefault,
         nextPrivate,
-      ),
+      ) ||
+        listHasCustomDutyAccess(
+          duties,
+          initialValue?.viewerDutyAccess ?? {},
+          nextDefault,
+          nextPrivate,
+        ),
     );
     setRoleAccess(
       Object.fromEntries(
         roles.map((role) => [
           role.id,
           initialValue?.viewerRoleAccess[role.id] ??
+            (nextPrivate ? "none" : nextDefault),
+        ]),
+      ),
+    );
+    setDutyAccess(
+      Object.fromEntries(
+        duties.map((duty) => [
+          duty.id,
+          initialValue?.viewerDutyAccess?.[duty.id] ??
             (nextPrivate ? "none" : nextDefault),
         ]),
       ),
@@ -171,7 +190,7 @@ export function ListFormModal({
         ).map((userId) => [userId, initialValue?.viewerUserAccess[userId] ?? "none"]),
       ),
     );
-  }, [initialValue, open, privateListsEnabled, roles]);
+  }, [duties, initialValue, open, privateListsEnabled, roles]);
 
   const trimmedName = name.trim();
   const trimmedDetails = details.trim();
@@ -180,12 +199,19 @@ export function ListFormModal({
     LIST_ACCESS_OPTIONS[0];
   const inheritRoleLevel = (privateList: boolean): ListAccessChoice =>
     privateList ? "none" : defaultAccessLevel;
-  const initialCustomizeRoles = listHasCustomRoleAccess(
-    roles,
-    initialValue?.viewerRoleAccess ?? {},
-    initialValue?.defaultAccessLevel ?? DEFAULT_LIST_ACCESS_LEVEL,
-    privateListsEnabled && (initialValue?.isPrivate ?? false),
-  );
+  const initialCustomizeRoles =
+    listHasCustomRoleAccess(
+      roles,
+      initialValue?.viewerRoleAccess ?? {},
+      initialValue?.defaultAccessLevel ?? DEFAULT_LIST_ACCESS_LEVEL,
+      privateListsEnabled && (initialValue?.isPrivate ?? false),
+    ) ||
+    listHasCustomDutyAccess(
+      duties,
+      initialValue?.viewerDutyAccess ?? {},
+      initialValue?.defaultAccessLevel ?? DEFAULT_LIST_ACCESS_LEVEL,
+      privateListsEnabled && (initialValue?.isPrivate ?? false),
+    );
   const dirty = Boolean(
     trimmedName ||
       trimmedDetails ||
@@ -207,6 +233,17 @@ export function ListFormModal({
               ]),
             ),
           )) ||
+      (customizeRoles &&
+        JSON.stringify(dutyAccess) !==
+          JSON.stringify(
+            Object.fromEntries(
+              duties.map((duty) => [
+                duty.id,
+                initialValue?.viewerDutyAccess?.[duty.id] ??
+                  (initialValue?.isPrivate ? "none" : defaultAccessLevel),
+              ]),
+            ),
+          )) ||
       JSON.stringify(memberAccess) !==
         JSON.stringify(initialValue?.viewerUserAccess ?? {}),
   );
@@ -215,10 +252,15 @@ export function ListFormModal({
     return Object.fromEntries(roles.map((role) => [role.id, level]));
   }
 
+  function fillDutyAccess(level: ListAccessChoice) {
+    return Object.fromEntries(duties.map((duty) => [duty.id, level]));
+  }
+
   function changeDefaultAccess(next: ListAccessLevel) {
     setDefaultAccessLevel(next);
     if (!customizeRoles) {
       setRoleAccess(fillRoleAccess(isPrivate ? "none" : next));
+      setDutyAccess(fillDutyAccess(isPrivate ? "none" : next));
     }
   }
 
@@ -232,17 +274,30 @@ export function ListFormModal({
         }
         return updated;
       });
+      setDutyAccess((current) => {
+        const updated = { ...current };
+        for (const duty of duties) {
+          updated[duty.id] = current[duty.id] ?? inheritRoleLevel(isPrivate);
+        }
+        return updated;
+      });
       return;
     }
     setRoleAccess(fillRoleAccess(inheritRoleLevel(isPrivate)));
+    setDutyAccess(fillDutyAccess(inheritRoleLevel(isPrivate)));
   }
 
   function accessMaps() {
     const viewerRoleAccess: Record<string, ListAccessLevel> = {};
+    const viewerDutyAccess: Record<string, ListAccessLevel> = {};
     if (customizeRoles) {
       for (const [roleId, level] of Object.entries(roleAccess)) {
         if (level === "none") continue;
         viewerRoleAccess[roleId] = level;
+      }
+      for (const [dutyId, level] of Object.entries(dutyAccess)) {
+        if (level === "none") continue;
+        viewerDutyAccess[dutyId] = level;
       }
     }
     const viewerUserAccess: Record<string, ListAccessLevel> = {};
@@ -250,13 +305,13 @@ export function ListFormModal({
       if (level === "none") continue;
       viewerUserAccess[userId] = level;
     }
-    return { viewerRoleAccess, viewerUserAccess };
+    return { viewerRoleAccess, viewerDutyAccess, viewerUserAccess };
   }
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!trimmedName) return;
-    const { viewerRoleAccess, viewerUserAccess } = accessMaps();
+    const { viewerRoleAccess, viewerDutyAccess, viewerUserAccess } = accessMaps();
     onCreate({
       name: trimmedName,
       description: trimmedDetails,
@@ -266,8 +321,10 @@ export function ListFormModal({
       defaultAccessLevel,
       viewerUserIds: Object.keys(viewerUserAccess),
       viewerRoleIds: Object.keys(viewerRoleAccess),
+      viewerDutyIds: Object.keys(viewerDutyAccess),
       viewerUserAccess,
       viewerRoleAccess,
+      viewerDutyAccess,
     });
     onOpenChange(false);
   }
@@ -382,6 +439,45 @@ export function ListFormModal({
                   {t("team.roles.empty", "Nav nevienas lomas.")}
                 </p>
               )}
+              {duties.length > 0 ? (
+                <div className="mt-4">
+                  <p className="text-sm font-medium text-zinc-800">
+                    {t("team.duties.title", "Pienākumi")}
+                  </p>
+                  <p className="mt-0.5 text-xs text-zinc-500">
+                    {t(
+                      "lists.access.duties_hint",
+                      "Katram pienākumam norādi, ko tā lietotāji drīkst darīt šajā sarakstā.",
+                    )}
+                  </p>
+                  <ul className="mt-2 max-h-48 space-y-1 overflow-y-auto">
+                    {duties.map((duty) => (
+                      <li
+                        key={duty.id}
+                        className="flex items-center gap-2.5 rounded-lg px-2 py-1.5"
+                      >
+                        <span className="inline-flex size-6 shrink-0 items-center justify-center rounded-full bg-zinc-100 text-zinc-500">
+                          <i className="fas fa-briefcase text-[10px]" aria-hidden="true" />
+                        </span>
+                        <span className="min-w-0 flex-1 truncate text-sm text-zinc-800">
+                          {duty.name}
+                        </span>
+                        <ListAccessSelect
+                          value={dutyAccess[duty.id] ?? inheritRoleLevel(isPrivate)}
+                          includeNone={isPrivate}
+                          ariaLabel={duty.name}
+                          onChange={(next) =>
+                            setDutyAccess((current) => ({
+                              ...current,
+                              [duty.id]: next,
+                            }))
+                          }
+                        />
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
             </div>
           ) : (
             <div className="flex items-start justify-between gap-3">
@@ -452,6 +548,18 @@ export function ListFormModal({
                   }
                   if (!next && current[role.id] === "none") {
                     updated[role.id] = defaultAccessLevel;
+                  }
+                }
+                return updated;
+              });
+              setDutyAccess((current) => {
+                const updated = { ...current };
+                for (const duty of duties) {
+                  if (next && current[duty.id] === defaultAccessLevel) {
+                    updated[duty.id] = "none";
+                  }
+                  if (!next && current[duty.id] === "none") {
+                    updated[duty.id] = defaultAccessLevel;
                   }
                 }
                 return updated;

@@ -308,7 +308,7 @@ async function runJob(
   }
 
   const taskIds = matching.map((task) => task.id);
-  const [assigneeRows, roleAssigneeRows] = await Promise.all([
+  const [assigneeRows, roleAssigneeRows, dutyAssigneeRows] = await Promise.all([
     fetchInChunks(taskIds, (chunk) =>
       supabase
         .from("task_assignees")
@@ -321,10 +321,17 @@ async function runJob(
         .select("task_id, role_id")
         .in("task_id", chunk),
     ) as Promise<{ task_id: string; role_id: string }[]>,
+    fetchInChunks(taskIds, (chunk) =>
+      supabase
+        .from("task_assignee_duties")
+        .select("task_id, duty_id")
+        .in("task_id", chunk),
+    ) as Promise<{ task_id: string; duty_id: string }[]>,
   ]);
 
   const memberIdsByTask = new Map<string, Set<string>>();
   const roleIdsByTask = new Map<string, Set<string>>();
+  const dutyIdsByTask = new Map<string, Set<string>>();
   for (const row of assigneeRows) {
     const set = memberIdsByTask.get(row.task_id) ?? new Set<string>();
     set.add(row.member_id);
@@ -335,6 +342,11 @@ async function runJob(
     set.add(row.role_id);
     roleIdsByTask.set(row.task_id, set);
   }
+  for (const row of dutyAssigneeRows) {
+    const set = dutyIdsByTask.get(row.task_id) ?? new Set<string>();
+    set.add(row.duty_id);
+    dutyIdsByTask.set(row.task_id, set);
+  }
 
   const teamIds = [...new Set(matching.map((task) => task.team_id))];
   const members = (await fetchInChunks(teamIds, (chunk) =>
@@ -343,6 +355,21 @@ async function runJob(
       .select("id, team_id, user_id, role_id")
       .in("team_id", chunk),
   )) as MemberRow[];
+  const memberIds = members.map((member) => member.id);
+  const memberDutyRows = memberIds.length
+    ? ((await fetchInChunks(memberIds, (chunk) =>
+        supabase
+          .from("team_member_duties")
+          .select("member_id, duty_id")
+          .in("member_id", chunk),
+      )) as { member_id: string; duty_id: string }[])
+    : [];
+  const dutyIdsByMember = new Map<string, string[]>();
+  for (const row of memberDutyRows) {
+    const list = dutyIdsByMember.get(row.member_id) ?? [];
+    list.push(row.duty_id);
+    dutyIdsByMember.set(row.member_id, list);
+  }
   const membersById = new Map(members.map((member) => [member.id, member]));
   const membersByTeamRole = new Map<string, MemberRow[]>();
   for (const member of members) {
@@ -352,12 +379,26 @@ async function runJob(
     list.push(member);
     membersByTeamRole.set(key, list);
   }
+  const membersByTeamDuty = new Map<string, MemberRow[]>();
+  for (const member of members) {
+    for (const dutyId of dutyIdsByMember.get(member.id) ?? []) {
+      const key = `${member.team_id}:${dutyId}`;
+      const list = membersByTeamDuty.get(key) ?? [];
+      list.push(member);
+      membersByTeamDuty.set(key, list);
+    }
+  }
 
   const recipientsByTask = new Map<string, MemberRow[]>();
   for (const task of matching) {
     const recipientIds = new Set(memberIdsByTask.get(task.id) ?? []);
     for (const roleId of roleIdsByTask.get(task.id) ?? []) {
       for (const member of membersByTeamRole.get(`${task.team_id}:${roleId}`) ?? []) {
+        recipientIds.add(member.id);
+      }
+    }
+    for (const dutyId of dutyIdsByTask.get(task.id) ?? []) {
+      for (const member of membersByTeamDuty.get(`${task.team_id}:${dutyId}`) ?? []) {
         recipientIds.add(member.id);
       }
     }

@@ -13,14 +13,19 @@ import type { User } from "@supabase/supabase-js";
 import { hasCompletedLocalImport, importLocalWorkIfNeeded, readStoredCurrentTeamId } from "@/app/lib/db/import-local-work";
 import {
   deleteTeamRow,
+  deleteTeamDutyRow,
   deleteTeamRoleRow,
   fetchUserTeams,
   insertTeam,
+  insertTeamDuty,
   insertTeamRole,
+  reorderTeamDutyRows,
   reorderTeamRoleRows,
   isUnauthenticatedDbError,
   touchMemberOnline,
+  updateMemberDutiesRow,
   updateMemberRoleRow,
+  updateTeamDutyRow,
   updateTeamRoleRow,
   updateTeamRow,
 } from "@/app/lib/db/work-data";
@@ -33,6 +38,7 @@ import {
 import { useAuthSession } from "@/app/lib/auth/use-auth-session";
 import {
   TEAM_CHANGE_EVENT,
+  createDutyId,
   createMemberId,
   createOwnerMember,
   createRoleId,
@@ -48,8 +54,10 @@ import {
   OWNER_TEAM_ROLE,
   slugFromRoleName,
   toneForIndex,
+  type DutiesByTeam,
   type MembersByTeam,
   type RolesByTeam,
+  type TeamDuty,
   type TeamMember,
   type TeamRole,
   type WorkTeam,
@@ -81,11 +89,14 @@ type TeamContextValue = {
   currentTeam: WorkTeam | null;
   roles: TeamRole[];
   rolesByTeam: RolesByTeam;
+  duties: TeamDuty[];
+  dutiesByTeam: DutiesByTeam;
   inviteMember: (input: InviteMemberInput) => Promise<TeamMember>;
   refreshTeams: () => Promise<{
     teams: WorkTeam[];
     membersByTeam: MembersByTeam;
     rolesByTeam: RolesByTeam;
+    dutiesByTeam: DutiesByTeam;
   }>;
   addTeam: (input: AddTeamInput) => Promise<WorkTeam>;
   updateTeam: (teamId: string, input: AddTeamInput) => void;
@@ -97,6 +108,11 @@ type TeamContextValue = {
   deleteTeamRole: (roleId: string) => boolean;
   assignMemberRole: (memberId: string, roleId: string) => void;
   updateRolePermissions: (roleId: string, permissions: TeamPermissionSet) => void;
+  addTeamDuty: (name: string) => Promise<TeamDuty | null>;
+  reorderTeamDuties: (orderedIds: string[]) => Promise<boolean>;
+  renameTeamDuty: (dutyId: string, name: string) => void;
+  deleteTeamDuty: (dutyId: string) => boolean;
+  assignMemberDuties: (memberId: string, dutyIds: string[]) => void;
 };
 
 const TeamContext = createContext<TeamContextValue | null>(null);
@@ -130,6 +146,7 @@ export function TeamProvider({ children }: { children: ReactNode }) {
   const { user: authUser, isReady: authReady } = useAuthSession();
   const [membersByTeam, setMembersByTeam] = useState<MembersByTeam>({});
   const [rolesByTeam, setRolesByTeam] = useState<RolesByTeam>({});
+  const [dutiesByTeam, setDutiesByTeam] = useState<DutiesByTeam>({});
   const [teams, setTeams] = useState<WorkTeam[]>([]);
   const [currentTeamId, setCurrentTeamId] = useState("");
   const [loadedScope, setLoadedScope] = useState<string | null>(null);
@@ -148,6 +165,7 @@ export function TeamProvider({ children }: { children: ReactNode }) {
       setCurrentTeamId("");
       setMembersByTeam({});
       setRolesByTeam({});
+      setDutiesByTeam({});
       setLoadedScope(userId);
       setIsReady(true);
       return;
@@ -161,12 +179,17 @@ export function TeamProvider({ children }: { children: ReactNode }) {
         if (!hasCompletedLocalImport(userId)) {
           await importLocalWorkIfNeeded(userId, owner);
         }
-        const { teams: nextTeams, membersByTeam: nextMembers, rolesByTeam: nextRoles } =
-          await fetchUserTeams();
+        const {
+          teams: nextTeams,
+          membersByTeam: nextMembers,
+          rolesByTeam: nextRoles,
+          dutiesByTeam: nextDuties,
+        } = await fetchUserTeams();
         if (cancelled) return;
         setTeams(nextTeams);
         setMembersByTeam(nextMembers);
         setRolesByTeam(nextRoles);
+        setDutiesByTeam(nextDuties);
         setCurrentTeamId(readStoredCurrentTeamId(userId, nextTeams.map((team) => team.id)));
       } catch (error) {
         console.error("Failed to load teams", error);
@@ -175,6 +198,7 @@ export function TeamProvider({ children }: { children: ReactNode }) {
           setCurrentTeamId("");
           setMembersByTeam({});
           setRolesByTeam({});
+          setDutiesByTeam({});
         }
       } finally {
         if (!cancelled) {
@@ -198,11 +222,16 @@ export function TeamProvider({ children }: { children: ReactNode }) {
   }, [authUser?.id, currentTeamId, isReady, loadedScope]);
 
   const refreshTeams = useCallback(async () => {
-    const { teams: nextTeams, membersByTeam: nextMembers, rolesByTeam: nextRoles } =
-      await fetchUserTeams();
+    const {
+      teams: nextTeams,
+      membersByTeam: nextMembers,
+      rolesByTeam: nextRoles,
+      dutiesByTeam: nextDuties,
+    } = await fetchUserTeams();
     setTeams(nextTeams);
     setMembersByTeam(nextMembers);
     setRolesByTeam(nextRoles);
+    setDutiesByTeam(nextDuties);
     if (nextTeams.length > 0 && authUser?.id) {
       setCurrentTeamId((current) => {
         if (current && nextTeams.some((team) => team.id === current)) {
@@ -215,7 +244,12 @@ export function TeamProvider({ children }: { children: ReactNode }) {
       });
     }
     window.dispatchEvent(new Event(TEAM_CHANGE_EVENT));
-    return { teams: nextTeams, membersByTeam: nextMembers, rolesByTeam: nextRoles };
+    return {
+      teams: nextTeams,
+      membersByTeam: nextMembers,
+      rolesByTeam: nextRoles,
+      dutiesByTeam: nextDuties,
+    };
   }, [authUser]);
 
   const inviteMember = useCallback(
@@ -342,6 +376,7 @@ export function TeamProvider({ children }: { children: ReactNode }) {
         initials: initialsFromName(name),
         role: currentTeam ? fromTeam?.role || OWNER_TEAM_ROLE : "",
         roleId: fromTeam?.roleId ?? null,
+        dutyIds: fromTeam?.dutyIds ?? [],
         toneClassName: fromTeam?.toneClassName ?? toneForIndex(0),
         lastOnlineAt: fromTeam?.lastOnlineAt ?? null,
         avatarUrl: display.avatarUrl,
@@ -358,6 +393,11 @@ export function TeamProvider({ children }: { children: ReactNode }) {
       : [];
     return [...list].sort((left, right) => left.sortOrder - right.sortOrder);
   }, [currentTeam, rolesByTeam]);
+
+  const duties = useMemo(() => {
+    const list = currentTeam ? (dutiesByTeam[currentTeam.id] ?? []) : [];
+    return [...list].sort((left, right) => left.sortOrder - right.sortOrder);
+  }, [currentTeam, dutiesByTeam]);
 
   const addTeam = useCallback(
     async (input: AddTeamInput) => {
@@ -414,6 +454,10 @@ export function TeamProvider({ children }: { children: ReactNode }) {
         ...current,
         [team.id]: seededRoles,
       }));
+      setDutiesByTeam((current) => ({
+        ...current,
+        [team.id]: [],
+      }));
       return team;
     },
     [authUser],
@@ -463,6 +507,11 @@ export function TeamProvider({ children }: { children: ReactNode }) {
         return next;
       });
       setRolesByTeam((current) => {
+        const next = { ...current };
+        delete next[teamId];
+        return next;
+      });
+      setDutiesByTeam((current) => {
         const next = { ...current };
         delete next[teamId];
         return next;
@@ -638,6 +687,137 @@ export function TeamProvider({ children }: { children: ReactNode }) {
     [currentTeam],
   );
 
+  const addTeamDuty = useCallback(
+    async (name: string) => {
+      if (!currentTeam) return null;
+      const trimmed = name.trim();
+      if (!trimmed) return null;
+      const existing = dutiesByTeam[currentTeam.id] ?? [];
+      if (
+        existing.some(
+          (duty) => duty.name.trim().toLowerCase() === trimmed.toLowerCase(),
+        )
+      ) {
+        return null;
+      }
+      const duty: TeamDuty = {
+        id: createDutyId(),
+        teamId: currentTeam.id,
+        name: trimmed,
+        sortOrder:
+          existing.reduce((max, item) => Math.max(max, item.sortOrder), -1) + 1,
+      };
+      try {
+        await insertTeamDuty(duty);
+        setDutiesByTeam((current) => ({
+          ...current,
+          [currentTeam.id]: [...(current[currentTeam.id] ?? []), duty],
+        }));
+        return duty;
+      } catch (error) {
+        console.error("Failed to create team duty", error);
+        return null;
+      }
+    },
+    [currentTeam, dutiesByTeam],
+  );
+
+  const reorderTeamDuties = useCallback(
+    async (orderedIds: string[]) => {
+      if (!currentTeam) return false;
+      const previous = dutiesByTeam[currentTeam.id] ?? [];
+      const byId = new Map(previous.map((duty) => [duty.id, duty]));
+      const next = orderedIds.flatMap((id, index) => {
+        const duty = byId.get(id);
+        return duty ? [{ ...duty, sortOrder: index }] : [];
+      });
+      if (next.length === 0) return false;
+
+      setDutiesByTeam((current) => ({
+        ...current,
+        [currentTeam.id]: next,
+      }));
+      try {
+        await reorderTeamDutyRows(next.map((duty) => duty.id));
+        return true;
+      } catch (error) {
+        console.error("Failed to reorder team duties", error);
+        setDutiesByTeam((current) => ({
+          ...current,
+          [currentTeam.id]: previous,
+        }));
+        return false;
+      }
+    },
+    [currentTeam, dutiesByTeam],
+  );
+
+  const renameTeamDuty = useCallback(
+    (dutyId: string, name: string) => {
+      if (!currentTeam) return;
+      const trimmed = name.trim();
+      if (!trimmed) return;
+      setDutiesByTeam((current) => ({
+        ...current,
+        [currentTeam.id]: (current[currentTeam.id] ?? []).map((duty) =>
+          duty.id === dutyId ? { ...duty, name: trimmed } : duty,
+        ),
+      }));
+      void updateTeamDutyRow(dutyId, { name: trimmed }).catch((error) => {
+        console.error("Failed to rename team duty", error);
+      });
+    },
+    [currentTeam],
+  );
+
+  const deleteTeamDuty = useCallback(
+    (dutyId: string) => {
+      if (!currentTeam) return false;
+      const teamDuties = dutiesByTeam[currentTeam.id] ?? [];
+      const target = teamDuties.find((duty) => duty.id === dutyId);
+      if (!target) return false;
+
+      setDutiesByTeam((current) => ({
+        ...current,
+        [currentTeam.id]: (current[currentTeam.id] ?? []).filter(
+          (duty) => duty.id !== dutyId,
+        ),
+      }));
+      setMembersByTeam((current) => ({
+        ...current,
+        [currentTeam.id]: (current[currentTeam.id] ?? []).map((member) => ({
+          ...member,
+          dutyIds: (member.dutyIds ?? []).filter((id) => id !== dutyId),
+        })),
+      }));
+      void deleteTeamDutyRow(dutyId).catch((error) => {
+        console.error("Failed to delete team duty", error);
+      });
+      return true;
+    },
+    [currentTeam, dutiesByTeam],
+  );
+
+  const assignMemberDuties = useCallback(
+    (memberId: string, dutyIds: string[]) => {
+      if (!currentTeam) return;
+      const uniqueIds = [...new Set(dutyIds.filter((id) => id.trim()))];
+      const validIds = uniqueIds.filter((id) =>
+        (dutiesByTeam[currentTeam.id] ?? []).some((duty) => duty.id === id),
+      );
+      setMembersByTeam((current) => ({
+        ...current,
+        [currentTeam.id]: (current[currentTeam.id] ?? []).map((member) =>
+          member.id === memberId ? { ...member, dutyIds: validIds } : member,
+        ),
+      }));
+      void updateMemberDutiesRow(memberId, validIds).catch((error) => {
+        console.error("Failed to assign member duties", error);
+      });
+    },
+    [currentTeam, dutiesByTeam],
+  );
+
   const value = useMemo(
     () => ({
       isReady,
@@ -648,6 +828,8 @@ export function TeamProvider({ children }: { children: ReactNode }) {
       currentTeam,
       roles,
       rolesByTeam,
+      duties,
+      dutiesByTeam,
       inviteMember,
       refreshTeams,
       addTeam,
@@ -660,21 +842,33 @@ export function TeamProvider({ children }: { children: ReactNode }) {
       deleteTeamRole,
       assignMemberRole,
       updateRolePermissions,
+      addTeamDuty,
+      reorderTeamDuties,
+      renameTeamDuty,
+      deleteTeamDuty,
+      assignMemberDuties,
     }),
     [
       addTeam,
+      addTeamDuty,
       addTeamRole,
+      assignMemberDuties,
       assignMemberRole,
       currentTeam,
       currentUser,
       deleteTeam,
+      deleteTeamDuty,
       deleteTeamRole,
+      duties,
+      dutiesByTeam,
       inviteMember,
       refreshTeams,
       isReady,
       members,
       membersByTeam,
+      renameTeamDuty,
       renameTeamRole,
+      reorderTeamDuties,
       reorderTeamRoles,
       roles,
       rolesByTeam,
