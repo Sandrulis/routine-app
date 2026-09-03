@@ -352,12 +352,16 @@ export function SubtaskDetailModal({
   const access = resolveEffectiveListAccess(list, currentUser, roles, isAdmin, {
     isAssignee: userIsAssignee(draft.assigneeIds, currentUser),
   });
-  // Sync assigneeIds from store when automation adds a person
+  // Sync assigneeIds from store when automation (or live save) updates them
   useEffect(() => {
     if (!task) return;
     setDraft((current) => {
       if (sameIds(current.assigneeIds, task.assigneeIds)) return current;
-      return { ...current, assigneeIds: [...task.assigneeIds] };
+      const assigneeIds = [...task.assigneeIds];
+      if (sameIds(snapshotRef.current.assigneeIds, current.assigneeIds)) {
+        snapshotRef.current = { ...snapshotRef.current, assigneeIds };
+      }
+      return { ...current, assigneeIds };
     });
   }, [task]);
 
@@ -1181,10 +1185,17 @@ export function SubtaskDetailModal({
                 <div className="mt-1.5">
                   <AssigneeCell
                     assigneeIds={draft.assigneeIds}
-                    disabled={!access.canEditTasks}
-                    onChange={(assigneeIds) =>
-                      setDraft((current) => ({ ...current, assigneeIds }))
-                    }
+                    disabled={!access.canEditTasks || deleted}
+                    onChange={(assigneeIds) => {
+                      setDraft((current) => ({ ...current, assigneeIds }));
+                      if (!isCreate && task && !deleted && access.canEditTasks) {
+                        updateTask(task.id, { assigneeIds });
+                        snapshotRef.current = {
+                          ...snapshotRef.current,
+                          assigneeIds: [...assigneeIds],
+                        };
+                      }
+                    }}
                   />
                 </div>
               </div>

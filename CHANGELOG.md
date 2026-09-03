@@ -4,6 +4,10 @@
 
 - (none)
 
+## v0.3.51
+
+- Apakšuzdevuma atbildīgo (personu/grupu) maiņa saglabājas uzreiz, bez Saglabāt pogas
+
 ## v0.3.50
 
 - Labots PDF priekšskatījums Chrome: noņemts iframe `sandbox`, kas bloķēja iebūvēto PDF skatītāju
