@@ -291,7 +291,8 @@ Hierarhija: **Saraksts → mape / uzdevumu saraksts / fails → apakšuzdevumi t
 - Vilkšana: `app/components/task-drop-line.tsx` (`TaskDropLine`, `dropHintFromEvent`, `frozenSortingStrategy`, `groupedStatusCollisionDetection`). Vilkšanas laikā saraksts neslīd; drop ir bieza zila līnija. Starp statusu grupām vilkšana **tikai maina statusu**, nesamaina vietām ar cita grupas pēdējo uzdevumu
 - Kopsavilkums (`ListSummary` Sākumā un `/lists`) un uzdevuma apakšuzdevumu tabula: tā pati secība kā sānjoslas kokā (`sortTasksLikeNavTree` / `compareTasksByStatusPriority` — vispirms grupa slēgts → aktīvs → nav sākts, tad kataloga indekss, tad `sortOrder`). `SubtaskTable` vienmēr kārto pati. Pretēji picker. Slēgtie paliek ārpus aktīvā saraksta
 - Gmail browse (`listExtensionSubtasksForTask`): tā pati statusa prioritāte kā UI, ne tikai `sort_order`
-- Projekta **Saraksts** logs: uzdevumu kartītes `repeat(auto-fit, minmax(min(100%, 16rem), 1fr))` tādā pašā statusa secībā. Mape rāda nested uzdevumus un to apakšuzdevumus (`OverviewSubtaskList`); grupēšana pēc statusa; aplītis hover rāda check + tooltip `status.complete_ask` (pabeidz / atver atpakaļ); arhīva poga kartītē parāda pabeigtos, progresa josla paliek. Apakšuzdevumam ar pielikumiem `fa-paperclip` aiz nosaukuma. Klikšķis uz apakšuzdevuma iet caur `ListWindowsBoard` `onOpenSubtask` → vienu `SubtaskDetailModal` lapā (`TaskDetailPage`). Apakšuzdevuma aplītis un nosaukums ir statusa krāsā. Logs **Faili**: tiešie `list_files` + `task_files` no `getDescendantSubtasks` (klikšķis: bildes/PDF/txt modālī, pārējie lejupielādējas caur FileViewerProvider; pielikumam ar piezīmi hover rāda tooltip). Logs **Uzdevumi** paliek vilktā `sortOrder` secībā; tā arhīva poga (`handleTasksArchiveChange`) sinhronizē arhīvu visām Saraksts loga kartītēm (`overviewArchiveById`), bet katru kartīti var pārslēgt atsevišķi
+- Projekta **Saraksts** logs: uzdevumu kartītes `repeat(auto-fit, minmax(min(100%, 16rem), 1fr))` tādā pašā statusa secībā. Mape rāda nested uzdevumus un to apakšuzdevumus (`OverviewSubtaskList`); grupēšana pēc statusa ar `mergeByLabel` (vienādi atvērto nosaukumi, piem. DARĀMS, saplūst); aplītis hover rāda check + tooltip `status.complete_ask` (pabeidz / atver atpakaļ); arhīva poga kartītē parāda pabeigtos, progresa josla paliek. Apakšuzdevumam ar pielikumiem `fa-paperclip` aiz nosaukuma. Klikšķis uz apakšuzdevuma iet caur `ListWindowsBoard` `onOpenSubtask` → vienu `SubtaskDetailModal` lapā (`TaskDetailPage`). Apakšuzdevuma aplītis un nosaukums ir statusa krāsā. Logs **Faili**: tiešie `list_files` + `task_files` no `getDescendantSubtasks` (klikšķis: bildes/PDF/txt modālī, pārējie lejupielādējas caur FileViewerProvider; pielikumam ar piezīmi hover rāda tooltip). Logs **Uzdevumi** paliek vilktā `sortOrder` secībā; tā arhīva poga (`handleTasksArchiveChange`) sinhronizē arhīvu visām Saraksts loga kartītēm (`overviewArchiveById`), bet katru kartīti var pārslēgt atsevišķi. Logs **Vēsture**: pēdējās darbības no apakškoka (`fetchTaskActivitiesForTaskIds`)
+- Failu saturs no Drive/OneDrive: `contentDispositionForFile` lieto ASCII `filename` + RFC 5987 `filename*` (latviešu burti `Content-Disposition` galvenē citādi krīt Fetch/undici). Lejupielāde caur `downloadUrlAsFile` (sesijas `fetch` → blob); priekšskatījuma modālī pogā spinneris, kamēr iet lejupielāde
 
 ## Sarakstu pieejas
 
@@ -468,7 +469,7 @@ app/
     list-detail-page.tsx          # Saraksta kopsavilkums + arhīva skats
     list-form-modal.tsx           # Jauns/labot sarakstu + pieejas; privāts slēdzis pēc `module_private_list`
     list-summary.tsx              # Uzdevumu kartītes ar progresu, statusu grupām + arhīva ikona
-    list-windows-board.tsx        # Uzdevumi | Faili + Saraksts ar progresu, paperclip, DnD; `onOpenSubtask` → lapas modalim
+    list-windows-board.tsx        # Uzdevumi | Faili + Saraksts (arhīvs kartītē) + Vēsture; `onOpenSubtask` → lapas modalim
     templates-page.tsx            # Komandas šablonu saraksts
     template-detail-page.tsx      # Šablona nosaukums + apraksts + koks; auto-save
     template-tree-editor.tsx      # Šablona koks: mapes/uzdevumi/apakšuzdevumi, assignee, checklist, statusi, DnD
@@ -482,7 +483,7 @@ app/
     task-drop-line.tsx            # Zila drop līnija, frozen sort, grupu collision
     move-subtask-modal.tsx        # Apakšuzdevuma pārvietošana pie cita uzdevuma
     move-subtask-destination-button.tsx # Pārvietošanas mērķis ar PATH zem nosaukuma
-    subtask-detail-modal.tsx      # Apakšuzdevuma modālis; unikāli checklist/attachments key; vēsture; failu pārsūtīšana
+    subtask-detail-modal.tsx      # Apakšuzdevuma modālis; mobilajā Detaļas/Vēsture; PATH fill; vēsture; failu pārsūtīšana
     forward-task-file-modal.tsx   # Resend: pārsūtīt pielikumu; From/Reply-To = Vārds Uzvārds <…>; HTML galvene ar (e-pasts); vēsture `file_forwarded`
     task-checklists.tsx           # Check List pirms pielikumiem; tukšs sakļauts; forceCollapsed
     status-control.tsx            # Statusa poga, picker, čeklista josla
@@ -497,7 +498,7 @@ app/
     task-attachments.tsx          # Pielikumu drop zona, kartītes; `…` → view/download/forward/rename/note/delete; tukšs sakļauts
     file-note-modal.tsx           # Apakšuzdevuma pielikuma piezīme
     file-icon.tsx                 # Faila ikona + krāsa no kataloga
-    file-preview.tsx              # Faila priekšskatījums
+    file-preview.tsx              # Faila priekšskatījums; Lejupielādēt ar spinneri
     create-item-menu.tsx          # Darbību izvēlne
     confirm-modal.tsx             # Dzēšanas apstiprinājums
     name-form-modal.tsx           # Nosaukums, izskats, logotips
@@ -752,7 +753,7 @@ Sentry nav HTML/DNS verifikācija kā Search Console. Pārbaude ir pirmais event
 
 ## Google Drive (komandas faili)
 
-Kad `module_google_drive` un `module_file_upload` ir ieslēgti, komandas `...` rāda **Google Drive Integrācija** lietotājiem ar `team.integrations.google_drive`. Lapa `/team/google-drive`: pieslēgt Google kontu (`drive.file`), mapes ceļš (jaunai integrācijai noklusējums = komandas nosaukums; esošās `Routine` mapes paliek). Pieslēgts konts = faili tiek augšupielādēti uz Drive (`store_on_server = false`: Routine glabā metadatus + `google_drive_file_id`, bez `content`; jaunie inserti vienmēr bez `content`, `123`; migrācija `132`). Konfigurēt var vadītājs / `team.integrations.google_drive` / `is_admin` (neatkarīgi no `team.settings.edit`). Refresh token: `team_google_drive_integrations` (tikai service role). Credentials no admin **Google OAuth** (`site_integrations`); fallback env: `GOOGLE_DRIVE_CLIENT_ID`, `GOOGLE_DRIVE_CLIENT_SECRET`. Redirect URI: `/auth/google-drive/callback` (tam pašam Google OAuth klientam). Google Cloud: ieslēgt Drive API. Augšupielāde: `POST /api/google-drive/upload` (XHR progress); Drive-only priekšskatījums/lejupielāde: `GET /api/google-drive/content?kind=list|task&id=…` (`download=1` → `Content-Disposition: attachment`); pārsaukšana: `POST /api/google-drive/rename`. Klienta URL palīgi `google-drive/content-url.ts` (statisks imports no file viewer / failu lapām, bez atsevišķa async chunk). UI overlay: `FileUploadOverlay`. Faila pārsaukšanā paplašinājums ir fiksēts (`renameKeepingExtension` / `NameFormModal` `nameSuffix`).
+Kad `module_google_drive` un `module_file_upload` ir ieslēgti, komandas `...` rāda **Google Drive Integrācija** lietotājiem ar `team.integrations.google_drive`. Lapa `/team/google-drive`: pieslēgt Google kontu (`drive.file`), mapes ceļš (jaunai integrācijai noklusējums = komandas nosaukums; esošās `Routine` mapes paliek). Pieslēgts konts = faili tiek augšupielādēti uz Drive (`store_on_server = false`: Routine glabā metadatus + `google_drive_file_id`, bez `content`; jaunie inserti vienmēr bez `content`, `123`; migrācija `132`). Konfigurēt var vadītājs / `team.integrations.google_drive` / `is_admin` (neatkarīgi no `team.settings.edit`). Refresh token: `team_google_drive_integrations` (tikai service role). Credentials no admin **Google OAuth** (`site_integrations`); fallback env: `GOOGLE_DRIVE_CLIENT_ID`, `GOOGLE_DRIVE_CLIENT_SECRET`. Redirect URI: `/auth/google-drive/callback` (tam pašam Google OAuth klientam). Google Cloud: ieslēgt Drive API. Augšupielāde: `POST /api/google-drive/upload` (XHR progress); Drive-only priekšskatījums/lejupielāde: `GET /api/google-drive/content?kind=list|task&id=…` (`download=1` → `Content-Disposition: attachment` ar ASCII `filename` + `filename*`); pārsaukšana: `POST /api/google-drive/rename`. Klienta URL palīgi `google-drive/content-url.ts` (statisks imports no file viewer / failu lapām, bez atsevišķa async chunk). UI overlay: `FileUploadOverlay`. Faila pārsaukšanā paplašinājums ir fiksēts (`renameKeepingExtension` / `NameFormModal` `nameSuffix`).
 
 ## OneDrive (komandas faili)
 

@@ -5,6 +5,7 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "@/app/components/translations-provider";
 import { FileIcon } from "@/app/components/file-icon";
+import { LoadingSpinner } from "@/app/components/loading-state";
 import { buildEmailPreviewDocument } from "@/app/lib/email-file-preview";
 import {
   decodeDataUrlText,
@@ -179,14 +180,72 @@ function useEmailPreviewUrl(text: string | null, enabled: boolean) {
   return url;
 }
 
+function PreviewFallback({
+  fileName,
+  message,
+  hint,
+  downloadLabel,
+  downloading = false,
+  onDownload,
+}: {
+  fileName: string;
+  message: string;
+  hint?: string | null;
+  downloadLabel: string;
+  downloading?: boolean;
+  onDownload?: () => void;
+}) {
+  return (
+    <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-zinc-200 bg-white px-6 py-16 text-center">
+      <FileIcon name={fileName} className="text-3xl" />
+      <p className="text-sm text-zinc-500">{message}</p>
+      {hint ? <p className="text-sm text-zinc-400">{hint}</p> : null}
+      {onDownload ? (
+        <button
+          type="button"
+          onClick={onDownload}
+          disabled={downloading}
+          aria-busy={downloading}
+          className="mt-1 inline-flex min-h-10 items-center justify-center gap-2 rounded-2xl bg-zinc-900 px-4 text-sm font-semibold text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-80"
+        >
+          {downloading ? (
+            <>
+              <LoadingSpinner size="sm" className="text-white" />
+              <span>{downloadLabel}</span>
+            </>
+          ) : (
+            <>
+              <i className="fas fa-download text-xs" aria-hidden="true" />
+              {downloadLabel}
+            </>
+          )}
+        </button>
+      ) : null}
+    </div>
+  );
+}
+
 export function FilePreview({
   file,
   content,
+  downloading = false,
+  onDownload,
 }: {
   file: FilePreviewSource;
   content: string | null;
+  downloading?: boolean;
+  onDownload?: () => void;
 }) {
   const { t } = useTranslations();
+  const downloadLabel = t("files.detail.download", "Lejupielādēt");
+  const previewUnavailable = t(
+    "files.detail.preview_unavailable",
+    "Šo faila veidu nevar parādīt pārlūkā.",
+  );
+  const downloadHint = t(
+    "files.detail.download_to_open",
+    "Lejupielādē failu, lai to atvērtu.",
+  );
   const isPdf =
     file.mimeType === "application/pdf" ||
     file.name.toLowerCase().endsWith(".pdf");
@@ -209,20 +268,26 @@ export function FilePreview({
 
   if (!content) {
     return (
-      <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-zinc-200 bg-white px-6 py-16 text-center">
-        <FileIcon name={file.name} className="text-3xl" />
-        <p className="text-sm text-zinc-500">
-          {file.size > 0
-            ? t(
-                "files.detail.too_large",
-                "Faila saturu nevar parādīt. Tas ir pārāk liels vai nav saglabāts.",
-              )
-            : t(
-                "files.detail.empty_content",
-                "Šim failam nav saglabāts saturs.",
-              )}
-        </p>
-      </div>
+      <PreviewFallback
+        fileName={file.name}
+        message={
+          onDownload
+            ? previewUnavailable
+            : file.size > 0
+              ? t(
+                  "files.detail.too_large",
+                  "Faila saturu nevar parādīt. Tas ir pārāk liels vai nav saglabāts.",
+                )
+              : t(
+                  "files.detail.empty_content",
+                  "Šim failam nav saglabāts saturs.",
+                )
+        }
+        hint={onDownload ? downloadHint : null}
+        downloadLabel={downloadLabel}
+        downloading={downloading}
+        onDownload={onDownload}
+      />
     );
   }
 
@@ -241,15 +306,14 @@ export function FilePreview({
   if (isPdf) {
     if (embedFailed) {
       return (
-        <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-zinc-200 bg-white px-6 py-16 text-center">
-          <FileIcon name={file.name} className="text-3xl" />
-          <p className="text-sm text-zinc-500">
-            {t(
-              "files.detail.preview_unavailable",
-              "Šo faila veidu nevar parādīt pārlūkā.",
-            )}
-          </p>
-        </div>
+        <PreviewFallback
+          fileName={file.name}
+          message={previewUnavailable}
+          hint={onDownload ? downloadHint : null}
+          downloadLabel={downloadLabel}
+          downloading={downloading}
+          onDownload={onDownload}
+        />
       );
     }
     if (!embedUrl) {
@@ -329,14 +393,13 @@ export function FilePreview({
   }
 
   return (
-    <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-zinc-200 bg-white px-6 py-16 text-center">
-      <FileIcon name={file.name} className="text-3xl" />
-      <p className="text-sm text-zinc-500">
-        {t(
-          "files.detail.preview_unavailable",
-          "Šo faila veidu nevar parādīt pārlūkā.",
-        )}
-      </p>
-    </div>
+    <PreviewFallback
+      fileName={file.name}
+      message={previewUnavailable}
+      hint={onDownload ? downloadHint : null}
+      downloadLabel={downloadLabel}
+      downloading={downloading}
+      onDownload={onDownload}
+    />
   );
 }

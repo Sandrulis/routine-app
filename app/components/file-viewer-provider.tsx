@@ -16,6 +16,7 @@ import { FilePreview } from "@/app/components/file-preview";
 import { LoadingSpinner, LoadingState } from "@/app/components/loading-state";
 import { useFeedbackToast } from "@/app/components/feedback-toast-provider";
 import { useTranslations } from "@/app/components/translations-provider";
+import { cloudFileDownloadHref } from "@/app/lib/cloud-storage/content-url";
 import { isBrowserPreviewableFile } from "@/app/lib/file-types";
 import {
   downloadUrlAsFile,
@@ -66,9 +67,15 @@ type FileViewerContextValue = {
 
 const FileViewerContext = createContext<FileViewerContextValue | null>(null);
 
-function FileBusyOverlay({ busy }: { busy: BusyState | null }) {
+function FileBusyOverlay({
+  busy,
+  hide,
+}: {
+  busy: BusyState | null;
+  hide?: boolean;
+}) {
   const { t } = useTranslations();
-  if (!busy) return null;
+  if (!busy || hide) return null;
 
   const title =
     busy.mode === "download"
@@ -176,37 +183,66 @@ async function resolveContent(
   }
 }
 
-async function downloadResolved(input: FileViewerOpenInput): Promise<boolean> {
-  if (input.contentUrl) {
-    await downloadUrlAsFile(input.contentUrl, input.name);
+async function tryDownloadUrl(url: string | null | undefined, filename: string) {
+  if (!url) return false;
+  try {
+    await downloadUrlAsFile(url, filename);
     return true;
+  } catch {
+    return false;
   }
+}
+
+async function downloadResolved(
+  input: FileViewerOpenInput,
+  previewContent?: string | null,
+): Promise<boolean> {
+  if (await tryDownloadUrl(previewContent, input.name)) return true;
+  if (await tryDownloadUrl(input.contentUrl, input.name)) return true;
 
   if (input.kind === "list" || input.kind === "task") {
+    const href = cloudFileDownloadHref({
+      kind: input.kind,
+      id: input.id,
+      googleDriveFileId: input.googleDriveFileId,
+      oneDriveFileId: input.oneDriveFileId,
+    });
+    if (await tryDownloadUrl(href, input.name)) return true;
+
     if (input.hasContent || input.kind === "task") {
-      const local =
-        input.kind === "list"
-          ? await ensureListFileContent(input.id)
-          : await ensureTaskFileContent(input.id);
-      if (local) {
-        await downloadUrlAsFile(local, input.name);
-        return true;
+      try {
+        const local =
+          input.kind === "list"
+            ? await ensureListFileContent(input.id)
+            : await ensureTaskFileContent(input.id);
+        if (await tryDownloadUrl(local, input.name)) return true;
+      } catch {
+        // continue
       }
     }
     if (input.googleDriveFileId) {
-      const blob = await fetchGoogleDriveContentBlob(input.kind, input.id);
-      if (blob) {
-        const url = URL.createObjectURL(blob);
-        triggerBrowserDownload(url, input.name, true);
-        return true;
+      try {
+        const blob = await fetchGoogleDriveContentBlob(input.kind, input.id);
+        if (blob) {
+          const url = URL.createObjectURL(blob);
+          triggerBrowserDownload(url, input.name, true);
+          return true;
+        }
+      } catch {
+        // continue
       }
     }
     if (input.oneDriveFileId) {
-      const blob = await fetchOneDriveContentBlob(input.kind, input.id);
-      if (!blob) return false;
-      const url = URL.createObjectURL(blob);
-      triggerBrowserDownload(url, input.name, true);
-      return true;
+      try {
+        const blob = await fetchOneDriveContentBlob(input.kind, input.id);
+        if (blob) {
+          const url = URL.createObjectURL(blob);
+          triggerBrowserDownload(url, input.name, true);
+          return true;
+        }
+      } catch {
+        return false;
+      }
     }
   }
 
@@ -232,52 +268,46 @@ export function FileViewerProvider({ children }: { children: ReactNode }) {
     (input: FileViewerOpenInput) => {
       if (busy) return;
 
-      if (isBrowserPreviewableFile(input.name, input.mimeType)) {
-        setBusy({ mode: "preview", fileName: input.name });
+      const canPreview = isBrowserPreviewableFile(input.name, input.mimeType);
+      if (!canPreview) {
         setPreview({
           file: input,
           content: null,
-          loading: true,
+          loading: false,
           revokeOnClose: false,
         });
-        void resolveContent(input)
-          .then((resolved) => {
-            setPreview({
-              file: input,
-              content: resolved.content,
-              loading: false,
-              revokeOnClose: resolved.revokeOnClose,
-            });
-          })
-          .catch(() => {
-            setPreview({
-              file: input,
-              content: null,
-              loading: false,
-              revokeOnClose: false,
-            });
-          })
-          .finally(() => {
-            setBusy(null);
-          });
         return;
       }
 
-      setBusy({ mode: "download", fileName: input.name });
-      void downloadResolved(input)
-        .then((ok) => {
-          if (!ok) {
-            showFeedback({
-              type: "error",
-              text: t("files.download.failed", "Neizdevās lejupielādēt failu."),
-            });
-          }
+      setBusy({ mode: "preview", fileName: input.name });
+      setPreview({
+        file: input,
+        content: null,
+        loading: true,
+        revokeOnClose: false,
+      });
+      void resolveContent(input)
+        .then((resolved) => {
+          setPreview({
+            file: input,
+            content: resolved.content,
+            loading: false,
+            revokeOnClose: resolved.revokeOnClose,
+          });
+        })
+        .catch(() => {
+          setPreview({
+            file: input,
+            content: null,
+            loading: false,
+            revokeOnClose: false,
+          });
         })
         .finally(() => {
           setBusy(null);
         });
     },
-    [busy, showFeedback, t],
+    [busy],
   );
 
   const openListFile = useCallback(
@@ -312,6 +342,32 @@ export function FileViewerProvider({ children }: { children: ReactNode }) {
     [openFile],
   );
 
+  const handleDownload = useCallback(
+    (input: FileViewerOpenInput, previewContent?: string | null) => {
+      if (busy) return;
+      setBusy({ mode: "download", fileName: input.name });
+      void downloadResolved(input, previewContent)
+        .then((ok) => {
+          if (!ok) {
+            showFeedback({
+              type: "error",
+              text: t("files.download.failed", "Neizdevās lejupielādēt failu."),
+            });
+          }
+        })
+        .catch(() => {
+          showFeedback({
+            type: "error",
+            text: t("files.download.failed", "Neizdevās lejupielādēt failu."),
+          });
+        })
+        .finally(() => {
+          setBusy(null);
+        });
+    },
+    [busy, showFeedback, t],
+  );
+
   const value = useMemo(
     () => ({ openFile, openListFile, openTaskFile, busy }),
     [openFile, openListFile, openTaskFile, busy],
@@ -320,7 +376,10 @@ export function FileViewerProvider({ children }: { children: ReactNode }) {
   return (
     <FileViewerContext.Provider value={value}>
       {children}
-      <FileBusyOverlay busy={busy} />
+      <FileBusyOverlay
+        busy={busy}
+        hide={preview !== null && busy?.mode === "download"}
+      />
       <AppModal
         open={preview !== null}
         onOpenChange={(open) => {
@@ -342,6 +401,8 @@ export function FileViewerProvider({ children }: { children: ReactNode }) {
               size: preview.file.size,
             }}
             content={preview.content}
+            downloading={busy?.mode === "download"}
+            onDownload={() => handleDownload(preview.file, preview.content)}
           />
         ) : null}
       </AppModal>

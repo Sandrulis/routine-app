@@ -13,10 +13,14 @@ import { useDisplayPreferences } from "@/app/components/display-preferences-prov
 import { useTranslations } from "@/app/components/translations-provider";
 import { formatFileSize } from "@/app/lib/list-files";
 import { ensureTaskFileContent } from "@/app/lib/file-content";
+import { cloudFileDownloadHref } from "@/app/lib/cloud-storage/content-url";
 import { fileBaseName, fileExtensionFromName } from "@/app/lib/file-types";
 import { FRONTEND_MODULE_KEYS } from "@/app/lib/frontend-modules/keys";
 import { useFrontendModules } from "@/app/lib/frontend-modules/context";
-import { fetchGoogleDriveContentAsObjectUrl } from "@/app/lib/google-drive/content-url";
+import {
+  fetchGoogleDriveContentAsObjectUrl,
+  triggerBrowserDownload,
+} from "@/app/lib/google-drive/content-url";
 import { fetchOneDriveContentAsObjectUrl } from "@/app/lib/onedrive/content-url";
 import { useLists } from "@/app/lib/lists-store";
 import { taskFilePreviewUrl } from "@/app/lib/task-activity";
@@ -157,6 +161,13 @@ export function TaskFileDetailPage({
   const subtitle =
     [sizeLabel, dateLabel, task.title].filter(Boolean).join(" - ") ||
     t("files.detail.empty_description", "Augšupielādēts fails.");
+  const downloadHref = cloudFileDownloadHref({
+    kind: "task",
+    id: file.id,
+    googleDriveFileId: file.googleDriveFileId,
+    oneDriveFileId: file.oneDriveFileId,
+  });
+  const canDownload = Boolean(downloadHref || content);
 
   return (
     <SectionPage
@@ -164,10 +175,15 @@ export function TaskFileDetailPage({
       subtitle={subtitle}
       actions={
         <div className="flex items-center gap-2">
-          {content ? (
+          {canDownload ? (
             <a
-              href={content}
+              href={downloadHref || content || "#"}
               download={file.name}
+              onClick={(event) => {
+                if (downloadHref) return;
+                event.preventDefault();
+                if (content) triggerBrowserDownload(content, file.name);
+              }}
               className="inline-flex min-h-10 items-center justify-center gap-2 rounded-2xl bg-zinc-100 px-4 text-sm font-semibold text-zinc-700 transition hover:bg-zinc-200"
             >
               <i className="fas fa-download text-xs" aria-hidden="true" />
@@ -193,7 +209,21 @@ export function TaskFileDetailPage({
         </div>
       }
     >
-      <FilePreview file={file} content={content} />
+      <FilePreview
+        file={file}
+        content={content}
+        onDownload={
+          canDownload
+            ? () => {
+                if (downloadHref) {
+                  triggerBrowserDownload(downloadHref, file.name);
+                  return;
+                }
+                if (content) triggerBrowserDownload(content, file.name);
+              }
+            : undefined
+        }
+      />
 
       <NameFormModal
         open={renameOpen}

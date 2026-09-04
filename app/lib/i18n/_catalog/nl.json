@@ -760,6 +760,7 @@
   "files.delete.title": "Bestand verwijderen?",
   "files.deleted": "Bestand verwijderd.",
   "files.detail.download": "Downloaden",
+  "files.detail.download_to_open": "Download het bestand om het te openen.",
   "files.detail.empty_content": "Dit bestand heeft geen opgeslagen inhoud.",
   "files.detail.empty_description": "Geüpload bestand.",
   "files.detail.loading": "Bestand laden",
@@ -1768,6 +1769,7 @@
   "subtasks.history.status": "Status: {from} → {to}",
   "subtasks.history.title": "Titel: {from} → {to}",
   "subtasks.modal.attach": "Bestand bijvoegen",
+  "subtasks.modal.details": "Details",
   "subtasks.modal.comment": "Reactie",
   "subtasks.modal.comment_add": "Reactie toevoegen",
   "subtasks.modal.comment_placeholder": "Schrijf een reactie over deze subtaak",
@@ -2121,5 +2123,6 @@
   "user_menu.settings_hint": "Profiel en datumweergave",
   "user_menu.sign_out": "Uitloggen",
   "user_menu.sign_out_done": "Je bent uitgelogd.",
-  "user_menu.sign_out_hint": "Uitloggen uit het systeem"
+  "user_menu.sign_out_hint": "Uitloggen uit het systeem",
+  "lists.windows.history": "Geschiedenis"
 }

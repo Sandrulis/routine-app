@@ -105,8 +105,8 @@ export function TaskDetailPage({
   return (
     <SectionPage
       title={
-        <span className="inline-flex items-center gap-2">
-          <span>{parent.title}</span>
+        <span className="flex min-w-0 items-center gap-2">
+          <span className="min-w-0 truncate">{parent.title}</span>
           {progress ? (
             <WorkProgressLabel
               progress={progress}
@@ -144,7 +144,7 @@ export function TaskDetailPage({
                   anchor: createMenuAnchorFromEvent(event),
                 });
               }}
-              className="inline-flex min-h-10 items-center justify-center gap-2 rounded-2xl bg-blue-700 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-800"
+              className="inline-flex min-h-9 items-center justify-center gap-2 rounded-2xl bg-blue-700 px-3 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-800 sm:min-h-10 sm:px-4"
             >
               <i className="fas fa-plus text-xs" aria-hidden="true" />
               {t("create.menu.title", "Izveidot")}
@@ -169,7 +169,7 @@ export function TaskDetailPage({
           onOpenSubtask={(task) => setBoardSubtaskId(task.id)}
         />
       ) : (
-        <div className="overflow-hidden rounded-xl border border-zinc-200 bg-white px-3 py-3">
+        <div className="overflow-x-auto rounded-xl border border-zinc-200 bg-white px-3 py-3">
           <GroupedSubtaskTables
             listId={list.id}
             tasks={children}

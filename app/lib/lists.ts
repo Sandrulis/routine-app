@@ -742,8 +742,10 @@ export function isClosedTaskStatus(
   status: string,
   catalog?: { id: string; groupKey: string }[],
 ): boolean {
-  const row = catalog?.find((item) => item.id === status);
-  if (row) return row.groupKey === "closed";
+  const matches = catalog?.filter((item) => item.id === status) ?? [];
+  if (matches.length > 0) {
+    return matches.every((row) => row.groupKey === "closed");
+  }
   return status === "done";
 }
 

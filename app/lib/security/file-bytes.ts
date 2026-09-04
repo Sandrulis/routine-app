@@ -62,12 +62,28 @@ export function isUnsafeInlineFile(name: string, mimeType: string) {
   );
 }
 
+function rfc5987Encode(value: string) {
+  return encodeURIComponent(value).replace(/['()*]/g, (char) => {
+    const hex = char.charCodeAt(0).toString(16).toUpperCase();
+    return `%${hex.padStart(2, "0")}`;
+  });
+}
+
+function asciiFileNameFallback(name: string) {
+  const cleaned = name.replace(/["\\\r\n]/g, " ").trim() || "file";
+  const ascii = Array.from(cleaned, (char) =>
+    char.charCodeAt(0) <= 0x7e && char.charCodeAt(0) >= 0x20 ? char : "_",
+  ).join("");
+  return ascii.replace(/_+/g, "_").replace(/^_+|_+$/g, "") || "file";
+}
+
 export function contentDispositionForFile(name: string, mimeType: string, asDownload: boolean) {
-  const safeName = name.replace(/["\r\n]/g, "");
-  if (asDownload || isUnsafeInlineFile(name, mimeType)) {
-    return `attachment; filename="${safeName}"`;
-  }
-  return `inline; filename="${safeName}"`;
+  const utf8Name = name.replace(/[\r\n]/g, "").trim() || "file";
+  const fallback = asciiFileNameFallback(utf8Name);
+  const kind =
+    asDownload || isUnsafeInlineFile(name, mimeType) ? "attachment" : "inline";
+  // Header values must be Latin-1. Non-ASCII names (ē, ķ, …) throw in fetch/undici.
+  return `${kind}; filename="${fallback}"; filename*=UTF-8''${rfc5987Encode(utf8Name)}`;
 }
 
 /** Reject executable disguises: claimed image/pdf must match magic bytes. */

@@ -760,6 +760,7 @@ export const de: Record<string, string> = {
   "files.delete.title": "Datei löschen?",
   "files.deleted": "Datei gelöscht.",
   "files.detail.download": "Herunterladen",
+  "files.detail.download_to_open": "Lade die Datei herunter, um sie zu öffnen.",
   "files.detail.empty_content": "Diese Datei hat keine gespeicherten Inhalte.",
   "files.detail.empty_description": "Hochgeladene Datei.",
   "files.detail.loading": "Datei wird geladen",
@@ -1768,6 +1769,7 @@ export const de: Record<string, string> = {
   "subtasks.history.status": "Status: {from} → {to}",
   "subtasks.history.title": "Titel: {from} → {to}",
   "subtasks.modal.attach": "Datei anhängen",
+  "subtasks.modal.details": "Details",
   "subtasks.modal.comment": "Kommentar",
   "subtasks.modal.comment_add": "Kommentar hinzufügen",
   "subtasks.modal.comment_placeholder": "Schreibe einen Kommentar zu dieser Teilaufgabe",
@@ -2122,4 +2124,5 @@ export const de: Record<string, string> = {
   "user_menu.sign_out": "Abmelden",
   "user_menu.sign_out_done": "Du hast dich abgemeldet.",
   "user_menu.sign_out_hint": "Vom System abmelden",
+  "lists.windows.history": "Verlauf",
 };

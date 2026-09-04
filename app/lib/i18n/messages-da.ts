@@ -760,6 +760,7 @@ export const da: Record<string, string> = {
   "files.delete.title": "Slet fil?",
   "files.deleted": "Fil slettet.",
   "files.detail.download": "Download",
+  "files.detail.download_to_open": "Download filen for at åbne den.",
   "files.detail.empty_content": "Denne fil har intet gemt indhold.",
   "files.detail.empty_description": "Uploadet fil.",
   "files.detail.loading": "Indlæser fil",
@@ -1768,6 +1769,7 @@ export const da: Record<string, string> = {
   "subtasks.history.status": "Status: {from} → {to}",
   "subtasks.history.title": "Titel: {from} → {to}",
   "subtasks.modal.attach": "Vedhæft fil",
+  "subtasks.modal.details": "Detaljer",
   "subtasks.modal.comment": "Kommentar",
   "subtasks.modal.comment_add": "Tilføj kommentar",
   "subtasks.modal.comment_placeholder": "Skriv en kommentar om denne underopgave",
@@ -2122,4 +2124,5 @@ export const da: Record<string, string> = {
   "user_menu.sign_out": "Log ud",
   "user_menu.sign_out_done": "Du er logget ud.",
   "user_menu.sign_out_hint": "Log ud af systemet",
+  "lists.windows.history": "Historik",
 };

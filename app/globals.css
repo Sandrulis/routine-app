@@ -94,6 +94,7 @@ button:disabled,
 .page {
   width: 100%;
   min-width: 0;
+  overflow-x: clip;
   padding: 1.5rem 1rem 2.5rem var(--app-content-inset-left);
 }
 

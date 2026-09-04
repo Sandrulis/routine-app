@@ -760,6 +760,7 @@ export const sv: Record<string, string> = {
   "files.delete.title": "Delete file?",
   "files.deleted": "File deleted.",
   "files.detail.download": "Download",
+  "files.detail.download_to_open": "Ladda ner filen för att öppna den.",
   "files.detail.empty_content": "This file has no stored contents.",
   "files.detail.empty_description": "Uploaded file.",
   "files.detail.loading": "Loading file",
@@ -1768,6 +1769,7 @@ export const sv: Record<string, string> = {
   "subtasks.history.status": "Status: {from} → {to}",
   "subtasks.history.title": "Title: {from} → {to}",
   "subtasks.modal.attach": "Attach file",
+  "subtasks.modal.details": "Detaljer",
   "subtasks.modal.comment": "Comment",
   "subtasks.modal.comment_add": "Add comment",
   "subtasks.modal.comment_placeholder": "Write a comment about this subtask",
@@ -2122,4 +2124,5 @@ export const sv: Record<string, string> = {
   "user_menu.sign_out": "Sign out",
   "user_menu.sign_out_done": "You signed out.",
   "user_menu.sign_out_hint": "Sign out of the system",
+  "lists.windows.history": "Historik",
 };

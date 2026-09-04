@@ -760,6 +760,7 @@ export const et: Record<string, string> = {
   "files.delete.title": "Kustutada fail?",
   "files.deleted": "Fail kustutatud.",
   "files.detail.download": "Laadi alla",
+  "files.detail.download_to_open": "Laadi fail alla, et see avada.",
   "files.detail.empty_content": "Sellel failil pole salvestatud sisu.",
   "files.detail.empty_description": "Üles laaditud fail.",
   "files.detail.loading": "Faili laadimine",
@@ -1768,6 +1769,7 @@ export const et: Record<string, string> = {
   "subtasks.history.status": "Olek: {from} → {to}",
   "subtasks.history.title": "Pealkiri: {from} → {to}",
   "subtasks.modal.attach": "Lisa fail",
+  "subtasks.modal.details": "Üksikasjad",
   "subtasks.modal.comment": "Kommentaar",
   "subtasks.modal.comment_add": "Lisa kommentaar",
   "subtasks.modal.comment_placeholder": "Kirjuta selle alamülesande kohta kommentaar",
@@ -2122,4 +2124,5 @@ export const et: Record<string, string> = {
   "user_menu.sign_out": "Logi välja",
   "user_menu.sign_out_done": "Logisid välja.",
   "user_menu.sign_out_hint": "Logi süsteemist välja",
+  "lists.windows.history": "Ajalugu",
 };

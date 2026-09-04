@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/app/lib/auth/get-current-user";
 import { FRONTEND_MODULE_KEYS } from "@/app/lib/frontend-modules/keys";
 import { isFrontendModuleEnabled } from "@/app/lib/frontend-modules/repository";
-import { downloadTeamGoogleDriveFile } from "@/app/lib/google-drive/uploader";
+import { openTeamGoogleDriveFile } from "@/app/lib/google-drive/uploader";
 import { assertListAccess } from "@/app/lib/lists/assert-list-access";
 import { contentDispositionForFile } from "@/app/lib/security/file-bytes";
 import { logError } from "@/app/lib/security/log-error";
@@ -101,25 +101,29 @@ export async function GET(request: Request) {
     return NextResponse.json({ ok: false, error: access.error }, { status: 403 });
   }
 
+  const asDownload = searchParams.get("download") === "1";
+
   try {
-    const downloaded = await downloadTeamGoogleDriveFile({
+    const opened = await openTeamGoogleDriveFile({
       teamId,
       driveFileId,
+      preferPdf: !asDownload,
     });
-    const resolvedMime = mimeType || downloaded.mimeType;
-    const asDownload = searchParams.get("download") === "1";
-    return new NextResponse(Buffer.from(downloaded.bytes), {
-      status: 200,
-      headers: {
-        "Content-Type": resolvedMime,
-        "Content-Disposition": contentDispositionForFile(
-          fileName,
-          resolvedMime,
-          asDownload,
-        ),
-        "Cache-Control": "private, no-store",
-      },
-    });
+    const resolvedMime = opened.mimeType || mimeType || "application/octet-stream";
+    const headers = {
+      "Content-Type": resolvedMime,
+      "Content-Disposition": contentDispositionForFile(
+        fileName,
+        resolvedMime,
+        asDownload,
+      ),
+      "Cache-Control": "private, no-store",
+    };
+    if (!opened.response.body) {
+      const bytes = await opened.response.arrayBuffer();
+      return new NextResponse(Buffer.from(bytes), { status: 200, headers });
+    }
+    return new NextResponse(opened.response.body, { status: 200, headers });
   } catch (err) {
     logError("Google Drive content fetch failed", err);
     return NextResponse.json(

@@ -13,6 +13,7 @@ import { SubtaskTable } from "@/app/components/subtask-table";
 import { useTranslations } from "@/app/components/translations-provider";
 import { UserAvatar } from "@/app/components/user-avatar";
 import { userIsAssignee } from "@/app/lib/list-access";
+import { mergeKnownStatusCatalogs } from "@/app/lib/list-statuses";
 import {
   getListTasks,
   isTaskActiveInLists,
@@ -21,7 +22,7 @@ import {
   type WorkTask,
 } from "@/app/lib/lists";
 import { useLists } from "@/app/lib/lists-store";
-import { useTaskStatuses } from "@/app/lib/task-statuses";
+import { useSystemTaskStatuses, useTaskStatuses } from "@/app/lib/task-statuses";
 import { REQUEST_CREATE_TEAM_EVENT } from "@/app/lib/team";
 import { useTeam } from "@/app/lib/team-store";
 import { useNotifications } from "@/app/lib/use-notifications";
@@ -92,6 +93,7 @@ function MyTasksSection({
             <SubtaskTable
               embedded
               groupByStatus
+              mergeStatusByLabel
               tasks={orderedTasks}
               onOpenTask={onOpenTask}
             />
@@ -105,11 +107,22 @@ function MyTasksSection({
 export function DashboardHomePage() {
   const { t } = useTranslations();
   const router = useRouter();
-  const { lists, tasks, allTaskFiles, isReady } = useLists();
+  const { lists, tasks, allTaskFiles, listStatuses, workTaskStatuses, isReady } = useLists();
   const { currentTeam, currentUser } = useTeam();
   const { unreadCount } = useNotifications();
   const { statuses } = useTaskStatuses();
+  const { statuses: systemStatuses } = useSystemTaskStatuses();
   const [openedSubtaskId, setOpenedSubtaskId] = useState<string | null>(null);
+  const statusCatalog = useMemo(
+    () =>
+      mergeKnownStatusCatalogs(
+        statuses,
+        systemStatuses,
+        listStatuses,
+        workTaskStatuses,
+      ),
+    [listStatuses, statuses, systemStatuses, workTaskStatuses],
+  );
 
   const myTasks = useMemo(
     () =>
@@ -117,11 +130,11 @@ export function DashboardHomePage() {
         .filter(
           (task) =>
             !isWorkFolder(task) &&
-            isTaskActiveInLists(task, statuses) &&
+            isTaskActiveInLists(task, statusCatalog) &&
             userIsAssignee(task.assigneeIds, currentUser),
         )
         .sort(compareAssignedTasks),
-    [currentUser, statuses, tasks],
+    [currentUser, statusCatalog, tasks],
   );
 
   function openTask(task: WorkTask) {

@@ -5,9 +5,10 @@ import { Fragment, type MouseEvent } from "react";
 import { useTranslations } from "@/app/components/translations-provider";
 import type { TaskLocationSegment } from "@/app/lib/lists";
 
-const segmentClassName =
-  "inline-flex min-w-0 max-w-[9rem] items-center gap-1 text-zinc-500 sm:max-w-[12rem]";
-const linkClassName = `${segmentClassName} underline-offset-2 transition hover:text-blue-700 hover:underline`;
+const truncatedSegmentClassName =
+  "inline-flex min-w-0 max-w-[9rem] items-center gap-1 whitespace-nowrap text-zinc-500 sm:max-w-[12rem]";
+const expandedSegmentClassName =
+  "inline-flex min-w-0 items-center gap-1 whitespace-nowrap text-zinc-500";
 
 function segmentIconClass(type: TaskLocationSegment["type"]): string {
   if (type === "list") return "fas fa-list-ul";
@@ -18,9 +19,11 @@ function segmentIconClass(type: TaskLocationSegment["type"]): string {
 function SegmentLabel({
   type,
   label,
+  truncate,
 }: {
   type: TaskLocationSegment["type"];
   label: string;
+  truncate: boolean;
 }) {
   return (
     <>
@@ -28,7 +31,7 @@ function SegmentLabel({
         className={`${segmentIconClass(type)} shrink-0 text-[9px] text-zinc-400`}
         aria-hidden="true"
       />
-      <span className="truncate">{label}</span>
+      <span className={truncate ? "truncate" : ""}>{label}</span>
     </>
   );
 }
@@ -37,16 +40,23 @@ export function TaskLocationPath({
   segments,
   align = "right",
   interactive = true,
+  nowrap = false,
+  fill = false,
   onNavigate,
   className = "",
 }: {
   segments: TaskLocationSegment[];
   align?: "left" | "right";
   interactive?: boolean;
+  nowrap?: boolean;
+  fill?: boolean;
   onNavigate?: () => void;
   className?: string;
 }) {
   const { t } = useTranslations();
+  const segmentClassName =
+    nowrap || fill ? expandedSegmentClassName : truncatedSegmentClassName;
+  const linkClassName = `${segmentClassName} underline-offset-2 transition hover:text-blue-700 hover:underline`;
 
   if (segments.length === 0) return null;
 
@@ -60,9 +70,13 @@ export function TaskLocationPath({
   return (
     <Wrapper
       aria-label={t("breadcrumb.label", "Ceļš")}
-      className={`flex min-w-0 flex-wrap items-center gap-1 text-[11px] ${
-        align === "right" ? "justify-end" : "justify-start"
-      } ${className}`.trim()}
+      className={`flex min-w-0 items-center gap-1 text-[11px] ${
+        fill ? "w-full" : ""
+      } ${
+        nowrap
+          ? "flex-nowrap overflow-x-auto overscroll-x-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          : "flex-wrap"
+      } ${align === "right" ? "justify-end" : "justify-start"} ${className}`.trim()}
     >
       {segments.map((segment, index) => {
         const href =
@@ -90,11 +104,19 @@ export function TaskLocationPath({
                 className={linkClassName}
                 title={segment.label}
               >
-                <SegmentLabel type={segment.type} label={segment.label} />
+                <SegmentLabel
+                  type={segment.type}
+                  label={segment.label}
+                  truncate={!nowrap}
+                />
               </Link>
             ) : (
               <span className={segmentClassName} title={segment.label}>
-                <SegmentLabel type={segment.type} label={segment.label} />
+                <SegmentLabel
+                  type={segment.type}
+                  label={segment.label}
+                  truncate={!nowrap}
+                />
               </span>
             )}
           </Fragment>

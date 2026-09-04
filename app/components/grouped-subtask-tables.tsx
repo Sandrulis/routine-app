@@ -24,6 +24,7 @@ export function GroupedSubtaskTables({
       embedded={embedded}
       view={includeClosed ? "with-archive" : "active"}
       groupByStatus
+      mergeStatusByLabel
     />
   );
 }

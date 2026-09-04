@@ -231,9 +231,12 @@ export function NotificationsMenu() {
 
     document.addEventListener("pointerdown", handlePointerDown);
     window.addEventListener("keydown", handleKeyDown);
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
     return () => {
       document.removeEventListener("pointerdown", handlePointerDown);
       window.removeEventListener("keydown", handleKeyDown);
+      document.body.style.overflow = previousOverflow;
     };
   }, [open]);
 
@@ -316,7 +319,7 @@ export function NotificationsMenu() {
       {open ? (
         <div
           role="menu"
-          className="absolute top-full right-0 z-[70] mt-1 w-[22rem] overflow-hidden rounded-xl bg-white py-2 shadow-[0_12px_40px_rgba(15,23,42,0.16)] ring-1 ring-zinc-200/80"
+          className="fixed top-16 right-3 left-3 z-[70] max-h-[min(24rem,calc(100dvh-5.5rem))] overflow-hidden rounded-xl bg-white py-2 shadow-[0_12px_40px_rgba(15,23,42,0.16)] ring-1 ring-zinc-200/80 sm:absolute sm:top-full sm:right-0 sm:left-auto sm:mt-1 sm:w-[22rem] sm:max-w-[calc(100vw-1.5rem)]"
         >
           <div className="flex items-center justify-between gap-2 px-3 pb-1.5">
             <p className="text-[11px] font-medium tracking-wide text-zinc-400 uppercase">
@@ -379,7 +382,7 @@ export function NotificationsMenu() {
               count={items.length}
               itemHeight={notificationItemHeight}
               threshold={40}
-              className="max-h-[min(24rem,calc(100vh-6rem))] overflow-y-auto"
+              className="max-h-[min(24rem,calc(100dvh-8rem))] overflow-y-auto overscroll-contain"
             >
               {(index) => {
                 const item = items[index];

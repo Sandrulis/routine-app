@@ -760,6 +760,7 @@ export const ru: Record<string, string> = {
   "files.delete.title": "Удалить файл?",
   "files.deleted": "Файл удалён.",
   "files.detail.download": "Скачать",
+  "files.detail.download_to_open": "Скачайте файл, чтобы открыть его.",
   "files.detail.empty_content": "Для этого файла не сохранено содержимое.",
   "files.detail.empty_description": "Загруженный файл.",
   "files.detail.loading": "Загрузка файла",
@@ -1768,6 +1769,7 @@ export const ru: Record<string, string> = {
   "subtasks.history.status": "Статус: {from} → {to}",
   "subtasks.history.title": "Название: {from} → {to}",
   "subtasks.modal.attach": "Прикрепить файл",
+  "subtasks.modal.details": "Детали",
   "subtasks.modal.comment": "Комментарий",
   "subtasks.modal.comment_add": "Добавить комментарий",
   "subtasks.modal.comment_placeholder": "Напишите комментарий к подзадаче",
@@ -2122,4 +2124,5 @@ export const ru: Record<string, string> = {
   "user_menu.sign_out": "Выйти",
   "user_menu.sign_out_done": "Вы вышли из системы.",
   "user_menu.sign_out_hint": "Выйти из системы",
+  "lists.windows.history": "История",
 };

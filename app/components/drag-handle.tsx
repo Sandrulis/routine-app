@@ -33,6 +33,8 @@ type StatusReorderHandleProps = {
   status: string;
   listId?: string | null;
   parentTaskId?: string | null;
+  color?: string | null;
+  groupKey?: string | null;
   label: string;
   attributes: DraggableAttributes;
   listeners: SyntheticListenerMap | undefined;
@@ -47,6 +49,8 @@ export function StatusReorderHandle({
   status,
   listId = null,
   parentTaskId = null,
+  color,
+  groupKey,
   label,
   attributes,
   listeners,
@@ -59,8 +63,8 @@ export function StatusReorderHandle({
   const { colorFor, groupKeyFor } = useTaskStatuses(listId, parentTaskId);
   const glyph = (
     <StatusGlyph
-      color={colorFor(status) ?? "#a1a1aa"}
-      groupKey={groupKeyFor(status)}
+      color={color || colorFor(status) || "#a1a1aa"}
+      groupKey={groupKey || groupKeyFor(status)}
     />
   );
 

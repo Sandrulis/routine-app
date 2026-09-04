@@ -78,8 +78,8 @@ export function ListDetailPage({ listId }: { listId: string }) {
   return (
     <SectionPage
       title={
-        <span className="inline-flex items-center gap-2">
-          <span>{list.name}</span>
+        <span className="flex min-w-0 items-center gap-2">
+          <span className="min-w-0 truncate">{list.name}</span>
           <WorkProgressLabel
             progress={progress}
             className="text-sm font-medium tabular-nums text-zinc-400"
@@ -113,7 +113,7 @@ export function ListDetailPage({ listId }: { listId: string }) {
                   anchor: createMenuAnchorFromEvent(event),
                 })
               }
-              className="inline-flex min-h-10 items-center justify-center gap-2 rounded-2xl bg-blue-700 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-800"
+              className="inline-flex min-h-9 items-center justify-center gap-2 rounded-2xl bg-blue-700 px-3 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-800 sm:min-h-10 sm:px-4"
             >
               <i className="fas fa-plus text-xs" aria-hidden="true" />
               {t("create.menu.title", "Izveidot")}

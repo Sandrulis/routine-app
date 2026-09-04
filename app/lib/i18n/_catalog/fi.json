@@ -760,6 +760,7 @@
   "files.delete.title": "Poistetaanko tiedosto?",
   "files.deleted": "Tiedosto poistettu.",
   "files.detail.download": "Lataa",
+  "files.detail.download_to_open": "Lataa tiedosto avataksesi sen.",
   "files.detail.empty_content": "Tällä tiedostolla ei ole tallennettua sisältöä.",
   "files.detail.empty_description": "Ladattu tiedosto.",
   "files.detail.loading": "Ladataan tiedostoa",
@@ -1768,6 +1769,7 @@
   "subtasks.history.status": "Tila: {from} → {to}",
   "subtasks.history.title": "Otsikko: {from} → {to}",
   "subtasks.modal.attach": "Liitä tiedosto",
+  "subtasks.modal.details": "Tiedot",
   "subtasks.modal.comment": "Kommentti",
   "subtasks.modal.comment_add": "Lisää kommentti",
   "subtasks.modal.comment_placeholder": "Kirjoita kommentti tästä osatehtävästä",
@@ -2121,5 +2123,6 @@
   "user_menu.settings_hint": "Profiili ja päivämäärän näyttö",
   "user_menu.sign_out": "Kirjaudu ulos",
   "user_menu.sign_out_done": "Kirjauduit ulos.",
-  "user_menu.sign_out_hint": "Kirjaudu ulos järjestelmästä"
+  "user_menu.sign_out_hint": "Kirjaudu ulos järjestelmästä",
+  "lists.windows.history": "Historia"
 }

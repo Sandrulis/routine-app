@@ -17,7 +17,16 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import Link from "next/link";
-import { useEffect, useId, useMemo, useRef, useState, type ChangeEvent, type ReactNode } from "react";
+import {
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+  type ChangeEvent,
+  type ReactNode,
+} from "react";
 import { AssigneeFaces } from "@/app/components/assignee-faces";
 import { DragHandle, StatusReorderHandle } from "@/app/components/drag-handle";
 import {
@@ -34,7 +43,7 @@ import {
   TaskDropLine,
   type DropHint,
 } from "@/app/components/task-drop-line";
-import { statusClassName, statusTextClassName } from "@/app/components/status-control";
+import { statusClassName, statusTextClassName, useStatusLabels } from "@/app/components/status-control";
 import {
   useSystemTaskStatuses,
   useTaskStatuses,
@@ -42,6 +51,9 @@ import {
 import { WorkProgressBar, WorkProgressLabel } from "@/app/components/work-progress";
 import { OptionalTooltip, Tooltip } from "@/app/components/tooltip";
 import { LoadingState } from "@/app/components/loading-state";
+import { RelativeTime } from "@/app/components/relative-time";
+import { UserAvatar } from "@/app/components/user-avatar";
+import { useDisplayPreferences } from "@/app/components/display-preferences-provider";
 import {
   FileUploadOverlay,
   type FileUploadProgressState,
@@ -51,6 +63,9 @@ import { VirtualWindow } from "@/app/components/virtual-window";
 import { useFeedbackToast } from "@/app/components/feedback-toast-provider";
 import { useTranslations } from "@/app/components/translations-provider";
 import { translateActionError } from "@/app/lib/i18n/action-errors";
+import { assigneeDisplayNames } from "@/app/lib/assignees";
+import { fetchTaskActivitiesForTaskIds } from "@/app/lib/db/work-data";
+import { formatTaskActivityText } from "@/app/lib/format-task-activity-text";
 import {
   addStoredListFile,
   childListFiles,
@@ -67,17 +82,20 @@ import {
   type ListWindowId,
 } from "@/app/lib/list-windows";
 import {
+  groupTasksByStatus,
+  mergeKnownStatusCatalogs,
   mergeStatusCatalog,
   resolveStatusIdForTask,
   sortTasksLikeNavTree,
-  statusesByPriorityDesc,
 } from "@/app/lib/list-statuses";
 import {
+  collectTaskSubtreeIds,
   getDescendantSubtasks,
   getDescendantWorkItems,
   isClosedTaskStatus,
   isTaskDeleted,
   isWorkFolder,
+  isWorkSubtask,
   taskProgress,
   workProgressById,
   type WorkProgress,
@@ -91,11 +109,15 @@ import { useTeamCloudStorage } from "@/app/lib/cloud-storage/context";
 import { uploadFileToTeamCloud } from "@/app/lib/cloud-storage/queue-upload";
 import { filesRequireCloudFallback } from "@/app/lib/cloud-storage/message-key";
 import { batchUploadPercent } from "@/app/lib/google-drive/queue-upload";
-import type { TaskFile } from "@/app/lib/task-activity";
+import type { TaskActivity, TaskFile } from "@/app/lib/task-activity";
 import { useLists } from "@/app/lib/lists-store";
 import { useListFiles } from "@/app/lib/use-list-files";
 import { useTeam } from "@/app/lib/team-store";
-import { canViewAttachments, hasTeamActionPermission } from "@/app/lib/team";
+import {
+  canViewAttachments,
+  canViewSubtaskArchive,
+  hasTeamActionPermission,
+} from "@/app/lib/team";
 import { useIsAdmin } from "@/app/lib/users/use-is-admin";
 import {
   resolveEffectiveListAccess,
@@ -103,10 +125,12 @@ import {
 } from "@/app/lib/list-access";
 import { taskHasIncompleteChecklists } from "@/app/lib/task-checklists";
 
+const FOLDER_HISTORY_PAGE_SIZE = 80;
+
 function isListedInWindow(
   item: WorkTask,
   statuses: { id: string; groupKey: string }[] | undefined,
-  archiveOpen: boolean,
+  archiveOpen = false,
 ): boolean {
   if (isTaskDeleted(item)) return false;
   if (isWorkFolder(item)) return true;
@@ -129,7 +153,11 @@ function ArchiveToggle({
         type="button"
         aria-label={label}
         aria-pressed={pressed}
-        onClick={() => onPressedChange(!pressed)}
+        onClick={(event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          onPressedChange(!pressed);
+        }}
         className={`inline-flex size-7 shrink-0 items-center justify-center rounded-lg transition ${
           pressed
             ? "bg-zinc-200 text-zinc-800"
@@ -139,6 +167,48 @@ function ArchiveToggle({
         <i className="fas fa-archive text-[11px]" aria-hidden="true" />
       </button>
     </Tooltip>
+  );
+}
+
+function WindowPanel({
+  title,
+  icon,
+  action,
+  className = "",
+  dragHandle,
+  sectionRef,
+  style,
+  isDragging = false,
+  children,
+}: {
+  title: string;
+  icon: string;
+  action?: ReactNode;
+  className?: string;
+  dragHandle?: ReactNode;
+  sectionRef?: (node: HTMLElement | null) => void;
+  style?: CSSProperties;
+  isDragging?: boolean;
+  children: ReactNode;
+}) {
+  return (
+    <section
+      ref={sectionRef}
+      style={style}
+      className={`flex min-h-[16rem] min-w-0 w-full flex-col overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm ${
+        isDragging ? "z-10 shadow-lg ring-2 ring-blue-200" : ""
+      } ${className}`.trim()}
+    >
+      <header className="flex items-center gap-2 border-b border-zinc-100 px-3 py-2.5">
+        {dragHandle}
+        <i className={`${icon} text-[12px] text-zinc-400`} aria-hidden="true" />
+        <h2 className="min-w-0 flex-1 truncate text-sm font-semibold text-zinc-900">
+          {title}
+        </h2>
+        {action}
+      </header>
+      <div className="min-h-0 flex-1 overflow-y-auto p-3">{children}</div>
+    </section>
   );
 }
 
@@ -168,30 +238,27 @@ function WindowCard({
   } = useSortable({ id });
 
   return (
-    <section
-      ref={setNodeRef}
+    <WindowPanel
+      title={title}
+      icon={icon}
+      action={action}
+      className={className}
+      sectionRef={setNodeRef}
       style={{
         transform: CSS.Transform.toString(transform),
         transition,
       }}
-      className={`flex min-h-[16rem] flex-col rounded-2xl border border-zinc-200 bg-white shadow-sm ${
-        isDragging ? "z-10 shadow-lg ring-2 ring-blue-200" : ""
-      } ${className}`.trim()}
-    >
-      <header className="flex items-center gap-2 border-b border-zinc-100 px-3 py-2.5">
+      isDragging={isDragging}
+      dragHandle={
         <DragHandle
           label={t("lists.windows.drag", "Pārvietot logu")}
           attributes={attributes}
           listeners={listeners}
         />
-        <i className={`${icon} text-[12px] text-zinc-400`} aria-hidden="true" />
-        <h2 className="min-w-0 flex-1 truncate text-sm font-semibold text-zinc-900">
-          {title}
-        </h2>
-        {action}
-      </header>
-      <div className="min-h-0 flex-1 overflow-y-auto p-3">{children}</div>
-    </section>
+      }
+    >
+      {children}
+    </WindowPanel>
   );
 }
 
@@ -199,13 +266,13 @@ function TasksWindowItem({
   listId,
   task,
   nested = false,
-  archiveOpen,
+  archiveOpen = false,
   progressById,
 }: {
   listId: string;
   task: WorkTask;
   nested?: boolean;
-  archiveOpen: boolean;
+  archiveOpen?: boolean;
   progressById: Map<string, WorkProgress>;
 }) {
   const { t } = useTranslations();
@@ -281,13 +348,15 @@ function TasksWindowItem({
 function TasksWindow({
   listId,
   tasks,
-  archiveOpen,
+  archiveOpen = false,
   contextId,
+  emptyMessage,
 }: {
   listId: string;
   tasks: WorkTask[];
-  archiveOpen: boolean;
+  archiveOpen?: boolean;
   contextId: string;
+  emptyMessage?: string;
 }) {
   const { t } = useTranslations();
   const { tasks: allTasks } = useLists();
@@ -300,7 +369,7 @@ function TasksWindow({
   if (tasks.length === 0) {
     return (
       <p className="px-1 py-8 text-center text-sm text-zinc-400">
-        {t("tasks.empty", "Šajā sarakstā vēl nav uzdevumu.")}
+        {emptyMessage || t("tasks.empty", "Šajā sarakstā vēl nav uzdevumu.")}
       </p>
     );
   }
@@ -494,6 +563,8 @@ function OverviewSubtaskRow({
   canDrag,
   canToggle,
   checklistBlocked,
+  statusColor,
+  statusGroupKey,
   onOpen,
   onComplete,
 }: {
@@ -502,11 +573,13 @@ function OverviewSubtaskRow({
   canDrag: boolean;
   canToggle: boolean;
   checklistBlocked: boolean;
+  statusColor: string | null;
+  statusGroupKey: string;
   onOpen: () => void;
   onComplete: () => void;
 }) {
   const { t } = useTranslations();
-  const { colorFor, statuses } = useTaskStatuses(listId);
+  const { statuses } = useTaskStatuses(listId, task.parentId);
   const { taskFiles } = useLists();
   const { currentUser, roles } = useTeam();
   const { isAdmin } = useIsAdmin();
@@ -517,8 +590,9 @@ function OverviewSubtaskRow({
     fileUploadsEnabled &&
     canViewFiles &&
     taskFiles(task.id).length > 0;
-  const done = isClosedTaskStatus(task.status, statuses);
-  const statusColor = colorFor(task.status);
+  const done =
+    statusGroupKey === "closed" || isClosedTaskStatus(task.status, statuses);
+  const resolvedColor = statusColor;
   const {
     attributes,
     listeners,
@@ -557,6 +631,9 @@ function OverviewSubtaskRow({
       <StatusReorderHandle
         status={task.status}
         listId={listId}
+        parentTaskId={task.parentId}
+        color={resolvedColor}
+        groupKey={statusGroupKey}
         label={handleLabel}
         attributes={attributes}
         listeners={listeners}
@@ -578,9 +655,9 @@ function OverviewSubtaskRow({
         type="button"
         onClick={onOpen}
         className={`flex min-w-0 flex-1 items-center gap-1.5 text-left text-[13px] ${
-          statusColor ? "" : statusTextClassName(task.status)
+          resolvedColor ? "" : statusTextClassName(task.status)
         } ${done ? "line-through" : "hover:opacity-80"}`}
-        style={statusColor ? { color: statusColor } : undefined}
+        style={resolvedColor ? { color: resolvedColor } : undefined}
       >
         <span className="truncate">{task.title}</span>
         {hasAttachments ? (
@@ -600,15 +677,17 @@ function OverviewSubtaskList({
   listId,
   parentTaskId = null,
   tasks,
+  includeClosed = false,
   onOpenSubtask,
 }: {
   listId: string;
   parentTaskId?: string | null;
   tasks: WorkTask[];
+  includeClosed?: boolean;
   onOpenSubtask: (task: WorkTask) => void;
 }) {
   const dndContextId = useId();
-  const { lists, listStatuses, updateTask, updateTaskStatus, reorderTasks } =
+  const { lists, listStatuses, workTaskStatuses, updateTask, updateTaskStatus, reorderTasks } =
     useLists();
   const { currentUser, roles } = useTeam();
   const { isAdmin } = useIsAdmin();
@@ -617,6 +696,12 @@ function OverviewSubtaskList({
     parentTaskId,
   );
   const { statuses: systemStatuses } = useSystemTaskStatuses();
+  const groupingCatalog = mergeKnownStatusCatalogs(
+    statuses,
+    systemStatuses,
+    listStatuses,
+    workTaskStatuses,
+  );
   const { isEnabled: isModuleEnabled } = useFrontendModules();
   const checklistsEnabled = isModuleEnabled(FRONTEND_MODULE_KEYS.checklist);
   const [dropHint, setDropHint] = useState<DropHint | null>(null);
@@ -625,15 +710,11 @@ function OverviewSubtaskList({
   );
   const list = lists.find((item) => item.id === listId) ?? null;
   const access = resolveEffectiveListAccess(list, currentUser, roles, isAdmin);
-  const groups = statusesByPriorityDesc(statuses)
-    .map((status) => ({
-      status,
-      items: sortTasksLikeNavTree(
-        tasks.filter((task) => task.status === status.id),
-        statuses,
-      ),
-    }))
-    .filter((group) => group.items.length > 0);
+  const groups = groupTasksByStatus(
+    sortTasksLikeNavTree(tasks, groupingCatalog),
+    groupingCatalog,
+    { includeClosed, mergeByLabel: true },
+  );
   const closedStatusId =
     [...statuses].reverse().find((status) => status.groupKey === "closed")
       ?.id ?? "done";
@@ -734,9 +815,9 @@ function OverviewSubtaskList({
               <div key={group.status.id}>
                 <OverviewStatusHeader
                   statusId={group.status.id}
-                  label={labelFor(group.status.id) || group.status.label}
+                  label={group.status.label || labelFor(group.status.id)}
                   count={group.items.length}
-                  color={groupColor}
+                  color={group.status.color || groupColor}
                 />
                 <SortableContext
                   items={groupIds}
@@ -761,6 +842,8 @@ function OverviewSubtaskList({
                           canDrag={access.canEditTasks}
                           canToggle={canToggle}
                           checklistBlocked={checklistBlocked}
+                          statusColor={group.status.color || groupColor}
+                          statusGroupKey={group.status.groupKey}
                           onOpen={() => onOpenSubtask(task)}
                           onComplete={() =>
                             updateTaskStatus(
@@ -791,6 +874,7 @@ function OverviewItem({
   nested = false,
   archiveOpen = false,
   onArchiveOpenChange,
+  canViewArchive = false,
   onOpenSubtask,
   progressById,
 }: {
@@ -799,6 +883,7 @@ function OverviewItem({
   nested?: boolean;
   archiveOpen?: boolean;
   onArchiveOpenChange?: (next: boolean) => void;
+  canViewArchive?: boolean;
   onOpenSubtask: (task: WorkTask) => void;
   progressById: Map<string, WorkProgress>;
 }) {
@@ -854,7 +939,7 @@ function OverviewItem({
           </OptionalTooltip>
         </Link>
         <WorkProgressLabel progress={progress} />
-        {nested ? null : (
+        {nested || !canViewArchive ? null : (
           <ArchiveToggle
             pressed={archiveOpen}
             onPressedChange={(next) => onArchiveOpenChange?.(next)}
@@ -890,6 +975,7 @@ function OverviewItem({
           listId={listId}
           parentTaskId={folder ? null : task.id}
           tasks={visibleChildren}
+          includeClosed={archiveOpen}
           onOpenSubtask={onOpenSubtask}
         />
       ) : null}
@@ -903,12 +989,16 @@ function OverviewWindow({
   onOpenSubtask,
   overviewArchiveById,
   onOverviewArchiveChange,
+  canViewArchive,
+  emptyMessage,
 }: {
   listId: string;
   tasks: WorkTask[];
   onOpenSubtask: (task: WorkTask) => void;
   overviewArchiveById: Record<string, boolean>;
   onOverviewArchiveChange: (taskId: string, next: boolean) => void;
+  canViewArchive: boolean;
+  emptyMessage?: string;
 }) {
   const { t } = useTranslations();
   const { tasks: allTasks } = useLists();
@@ -917,31 +1007,217 @@ function OverviewWindow({
     () => workProgressById(allTasks, statuses),
     [allTasks, statuses],
   );
-  const orderedTasks = sortTasksLikeNavTree(tasks, statuses);
+  const visibleTasks = tasks.filter((task) =>
+    isListedInWindow(
+      task,
+      statuses,
+      canViewArchive && (overviewArchiveById[task.id] ?? false),
+    ),
+  );
+  const orderedTasks = sortTasksLikeNavTree(visibleTasks, statuses);
 
-  if (tasks.length === 0) {
+  if (visibleTasks.length === 0) {
     return (
       <p className="px-1 py-8 text-center text-sm text-zinc-400">
-        {t("tasks.empty", "Šajā sarakstā vēl nav uzdevumu.")}
+        {emptyMessage || t("tasks.empty", "Šajā sarakstā vēl nav uzdevumu.")}
       </p>
     );
   }
 
   return (
-    <ul className="grid gap-3 [grid-template-columns:repeat(auto-fit,minmax(min(100%,16rem),1fr))]">
+    <ul className="grid min-w-0 gap-3 [grid-template-columns:repeat(auto-fit,minmax(min(100%,16rem),1fr))]">
       {orderedTasks.map((task) => (
         <li key={task.id} className="min-w-0 rounded-xl bg-zinc-50 px-3 py-2.5">
           <OverviewItem
             listId={listId}
             task={task}
-            archiveOpen={overviewArchiveById[task.id] ?? false}
+            archiveOpen={canViewArchive && (overviewArchiveById[task.id] ?? false)}
             onArchiveOpenChange={(next) => onOverviewArchiveChange(task.id, next)}
+            canViewArchive={canViewArchive}
             onOpenSubtask={onOpenSubtask}
             progressById={progressById}
           />
         </li>
       ))}
     </ul>
+  );
+}
+
+function FolderHistoryWindow({
+  listId,
+  parentId,
+  onOpenSubtask,
+}: {
+  listId: string;
+  parentId: string | null;
+  onOpenSubtask: (task: WorkTask) => void;
+}) {
+  const { t } = useTranslations();
+  const { formatDate } = useDisplayPreferences();
+  const { tasks: allTasks } = useLists();
+  const { members, roles, duties } = useTeam();
+  const statusLabel = useStatusLabels();
+  const { labelFor } = useTaskStatuses(listId, parentId);
+  const taskIds = useMemo(() => {
+    if (!parentId) {
+      return allTasks
+        .filter((task) => task.listId === listId && !isTaskDeleted(task))
+        .map((task) => task.id);
+    }
+    return collectTaskSubtreeIds(allTasks, parentId).filter(
+      (id) => id !== parentId,
+    );
+  }, [allTasks, listId, parentId]);
+  const tasksById = useMemo(() => {
+    const map = new Map<string, WorkTask>();
+    for (const task of allTasks) map.set(task.id, task);
+    return map;
+  }, [allTasks]);
+  const [activities, setActivities] = useState<TaskActivity[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadingOlder, setLoadingOlder] = useState(false);
+  const [hasMore, setHasMore] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    setActivities([]);
+    setHasMore(false);
+    void fetchTaskActivitiesForTaskIds(taskIds, FOLDER_HISTORY_PAGE_SIZE)
+      .then((items) => {
+        if (cancelled) return;
+        setActivities(items);
+        setHasMore(items.length >= FOLDER_HISTORY_PAGE_SIZE);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setActivities([]);
+        setHasMore(false);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [taskIds]);
+
+  function historyStatusName(statusId: string | undefined) {
+    if (!statusId) return "—";
+    const catalogLabel = labelFor(statusId);
+    if (catalogLabel && catalogLabel !== statusId) return catalogLabel;
+    return statusLabel[statusId as WorkTaskStatus] || catalogLabel || "—";
+  }
+
+  function activityText(item: TaskActivity) {
+    return formatTaskActivityText({
+      item,
+      t,
+      assigneeName: (assigneeIds) =>
+        assigneeDisplayNames(assigneeIds ?? [], members, roles, t, duties),
+      formatDate,
+      parentTaskTitle: (id) => {
+        if (!id) return "—";
+        return tasksById.get(id)?.title ?? "—";
+      },
+      historyStatusName,
+    });
+  }
+
+  async function loadOlder() {
+    if (loadingOlder || !hasMore || activities.length === 0) return;
+    const oldest = activities[activities.length - 1]?.at;
+    if (!oldest) return;
+    setLoadingOlder(true);
+    try {
+      const older = await fetchTaskActivitiesForTaskIds(
+        taskIds,
+        FOLDER_HISTORY_PAGE_SIZE,
+        oldest,
+      );
+      setActivities((current) => {
+        const seen = new Set(current.map((item) => item.id));
+        return [...current, ...older.filter((item) => !seen.has(item.id))];
+      });
+      setHasMore(older.length >= FOLDER_HISTORY_PAGE_SIZE);
+    } finally {
+      setLoadingOlder(false);
+    }
+  }
+
+  if (loading) {
+    return <LoadingState compact />;
+  }
+
+  if (activities.length === 0) {
+    return (
+      <p className="px-1 py-8 text-center text-sm text-zinc-400">
+        {t("subtasks.history.empty", "Vēl nav vēstures ierakstu.")}
+      </p>
+    );
+  }
+
+  return (
+    <ol className="space-y-3">
+      {activities.map((item) => {
+        const actor = members.find((member) => member.id === item.actorId);
+        const task = tasksById.get(item.taskId);
+        return (
+          <li key={item.id} className="flex gap-2">
+            {actor ? (
+              <UserAvatar member={actor} size="xs" />
+            ) : (
+              <span className="inline-flex size-5 shrink-0 items-center justify-center rounded-full bg-zinc-200 text-[9px] text-zinc-500">
+                ?
+              </span>
+            )}
+            <div className="min-w-0 flex-1">
+              <p className="text-[12px] font-medium text-zinc-700">
+                {actor?.name ?? t("todo.fields.unassigned", "Nepiešķirts")}
+              </p>
+              {task ? (
+                isWorkSubtask(task) ? (
+                  <button
+                    type="button"
+                    onClick={() => onOpenSubtask(task)}
+                    className="mt-0.5 block max-w-full truncate text-left text-[12px] font-medium text-zinc-500 transition hover:text-zinc-800"
+                  >
+                    {task.title}
+                  </button>
+                ) : (
+                  <Link
+                    href={`/lists/${listId}/tasks/${task.id}`}
+                    className="mt-0.5 block max-w-full truncate text-[12px] font-medium text-zinc-500 transition hover:text-zinc-800"
+                  >
+                    {task.title}
+                  </Link>
+                )
+              ) : null}
+              <p className="mt-0.5 whitespace-pre-wrap text-[13px] text-zinc-600">
+                {activityText(item)}
+              </p>
+              <p className="mt-0.5">
+                <RelativeTime at={item.at} />
+              </p>
+            </div>
+          </li>
+        );
+      })}
+      {hasMore ? (
+        <li>
+          <button
+            type="button"
+            disabled={loadingOlder}
+            onClick={() => {
+              void loadOlder();
+            }}
+            className="w-full rounded-xl px-2 py-2 text-left text-[12px] font-semibold text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-700 disabled:opacity-60"
+          >
+            {t("subtasks.history.load_older", "Ielādēt vecākus")}
+          </button>
+        </li>
+      ) : null}
+    </ol>
   );
 }
 
@@ -962,6 +1238,7 @@ export function ListWindowsBoard({
   const { lists, tasks: allTasks, allTaskFiles } = useLists();
   const { currentTeam, currentUser, roles } = useTeam();
   const { isAdmin } = useIsAdmin();
+  const { statuses } = useTaskStatuses(listId);
   const { isEnabled: isModuleEnabled } = useFrontendModules();
   const fileUploadsEnabled = isModuleEnabled(FRONTEND_MODULE_KEYS.fileUpload);
   const { ready: cloudReady, googleDriveReady, oneDriveReady, googleDriveModule, oneDriveModule, requireCloudErrorKey } = useTeamCloudStorage();
@@ -975,6 +1252,7 @@ export function ListWindowsBoard({
       hasTeamActionPermission(currentUser, roles, isAdmin, "files.upload"),
   );
   const canUploadFiles = canUploadIfCloudReady && cloudReady;
+  const canViewArchive = canViewSubtaskArchive(currentUser, roles, isAdmin);
   const [order, setOrder] = useState<ListWindowId[]>(DEFAULT_LIST_WINDOW_ORDER);
   const [tasksArchiveOpen, setTasksArchiveOpen] = useState(false);
   const [overviewArchiveById, setOverviewArchiveById] = useState<
@@ -1005,6 +1283,11 @@ export function ListWindowsBoard({
 
     return [...listEntries, ...taskEntries];
   }, [allTaskFiles, allTasks, listScopedFiles, parentId]);
+  const showTasksArchive = tasksArchiveOpen && canViewArchive;
+  const activeTasks = useMemo(
+    () => tasks.filter((task) => isListedInWindow(task, statuses, showTasksArchive)),
+    [showTasksArchive, statuses, tasks],
+  );
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploadProgress, setUploadProgress] =
     useState<FileUploadProgressState | null>(null);
@@ -1137,16 +1420,18 @@ export function ListWindowsBoard({
         title={t("lists.windows.tasks", "Uzdevumi")}
         icon="fas fa-list-check"
         action={
-          <ArchiveToggle
-            pressed={tasksArchiveOpen}
-            onPressedChange={handleTasksArchiveChange}
-          />
+          canViewArchive ? (
+            <ArchiveToggle
+              pressed={tasksArchiveOpen}
+              onPressedChange={handleTasksArchiveChange}
+            />
+          ) : undefined
         }
       >
         <TasksWindow
           listId={listId}
-          tasks={tasks}
-          archiveOpen={tasksArchiveOpen}
+          tasks={activeTasks}
+          archiveOpen={showTasksArchive}
           contextId={`list-tasks-${windowOrderKey}`}
         />
       </WindowCard>
@@ -1193,9 +1478,8 @@ export function ListWindowsBoard({
       </WindowCard>
     ),
     overview: (
-      <WindowCard
+      <WindowPanel
         key="overview"
-        id="overview"
         title={t("lists.windows.overview", "Saraksts")}
         icon="fas fa-layer-group"
       >
@@ -1205,14 +1489,33 @@ export function ListWindowsBoard({
           onOpenSubtask={onOpenSubtask}
           overviewArchiveById={overviewArchiveById}
           onOverviewArchiveChange={handleOverviewArchiveChange}
+          canViewArchive={canViewArchive}
         />
-      </WindowCard>
+      </WindowPanel>
     ),
   };
+
+  const historyWindow = (
+    <WindowPanel
+      key="history"
+      className="h-full min-h-[16rem] max-h-[24rem] xl:max-h-none xl:min-h-0"
+      title={t("lists.windows.history", "Vēsture")}
+      icon="fas fa-clock-rotate-left"
+    >
+      <FolderHistoryWindow
+        listId={listId}
+        parentId={parentId}
+        onOpenSubtask={onOpenSubtask}
+      />
+    </WindowPanel>
+  );
 
   const visibleOrder = fileUploadsEnabled
     ? order
     : order.filter((id) => id !== "files");
+  const swappableOrder = visibleOrder.filter(
+    (id) => id === "tasks" || id === "files",
+  );
 
   return (
     <>
@@ -1222,20 +1525,27 @@ export function ListWindowsBoard({
       collisionDetection={closestCenter}
       onDragEnd={handleDragEnd}
     >
-      <SortableContext items={visibleOrder} strategy={rectSortingStrategy}>
-        <div className="flex flex-col gap-4">
-          <div
-            className={
-              fileUploadsEnabled
-                ? "grid gap-4 md:grid-cols-2"
-                : "grid gap-4"
-            }
-          >
-            {visibleOrder
-              .filter((id) => id !== "overview")
-              .map((id) => windows[id])}
+      <SortableContext items={swappableOrder} strategy={rectSortingStrategy}>
+        <div
+          className={
+            fileUploadsEnabled
+              ? "flex min-w-0 flex-col gap-4 xl:grid xl:grid-cols-[minmax(0,1fr)_minmax(0,28.33%)] xl:items-stretch"
+              : "flex min-w-0 flex-col gap-4 md:grid md:grid-cols-[minmax(0,1fr)_minmax(0,42.5%)] md:items-stretch"
+          }
+        >
+          <div className="flex min-w-0 flex-col gap-4">
+            <div
+              className={
+                fileUploadsEnabled ? "grid min-w-0 gap-4 md:grid-cols-2" : undefined
+              }
+            >
+              {swappableOrder.map((id) => windows[id])}
+            </div>
+            {windows.overview}
           </div>
-          {windows.overview}
+          <div className="relative min-h-[16rem] min-w-0 max-h-[24rem] xl:max-h-none xl:min-h-0 xl:self-stretch">
+            <div className="h-full xl:absolute xl:inset-0">{historyWindow}</div>
+          </div>
         </div>
       </SortableContext>
     </DndContext>

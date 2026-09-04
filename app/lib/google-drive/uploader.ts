@@ -12,6 +12,38 @@ import { refreshGoogleDriveAccessToken } from "@/app/lib/google-drive/oauth";
 const DRIVE_API = "https://www.googleapis.com/drive/v3";
 const DRIVE_UPLOAD = "https://www.googleapis.com/upload/drive/v3";
 const FOLDER_MIME = "application/vnd.google-apps.folder";
+const GOOGLE_APPS_SHORTCUT = "application/vnd.google-apps.shortcut";
+
+const GOOGLE_APPS_EXPORT: Record<string, { binary: string; pdf: string }> = {
+  "application/vnd.google-apps.document": {
+    binary:
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    pdf: "application/pdf",
+  },
+  "application/vnd.google-apps.spreadsheet": {
+    binary:
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    pdf: "application/pdf",
+  },
+  "application/vnd.google-apps.presentation": {
+    binary:
+      "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+    pdf: "application/pdf",
+  },
+  "application/vnd.google-apps.drawing": {
+    binary: "application/pdf",
+    pdf: "application/pdf",
+  },
+};
+
+function withDriveQuery(url: string, params: Record<string, string> = {}) {
+  const parsed = new URL(url);
+  parsed.searchParams.set("supportsAllDrives", "true");
+  for (const [key, value] of Object.entries(params)) {
+    parsed.searchParams.set(key, value);
+  }
+  return parsed.toString();
+}
 
 function sanitizeSegment(value: string) {
   return value.replace(/[\\/]+/g, " ").replace(/\s+/g, " ").trim();
@@ -70,7 +102,10 @@ async function createFolder(
   name: string,
   parentId: string,
 ) {
-  const data = await driveJson(accessToken, `${DRIVE_API}/files?fields=id`, {
+  const data = await driveJson(
+    accessToken,
+    withDriveQuery(`${DRIVE_API}/files`, { fields: "id" }),
+    {
     method: "POST",
     body: JSON.stringify({
       name,
@@ -119,7 +154,12 @@ async function multipartUpload(
   body.set(bytes, headerBytes.length);
   body.set(footerBytes, headerBytes.length + bytes.length);
 
-  const response = await fetch(`${DRIVE_UPLOAD}/files?uploadType=multipart&fields=id`, {
+  const response = await fetch(
+    withDriveQuery(`${DRIVE_UPLOAD}/files`, {
+      uploadType: "multipart",
+      fields: "id",
+    }),
+    {
     method: "POST",
     headers: {
       Authorization: `Bearer ${accessToken}`,
@@ -140,7 +180,12 @@ async function resumableUpload(
   bytes: Uint8Array,
   mimeType: string,
 ) {
-  const start = await fetch(`${DRIVE_UPLOAD}/files?uploadType=resumable&fields=id`, {
+  const start = await fetch(
+    withDriveQuery(`${DRIVE_UPLOAD}/files`, {
+      uploadType: "resumable",
+      fields: "id",
+    }),
+    {
     method: "POST",
     headers: {
       Authorization: `Bearer ${accessToken}`,
@@ -210,28 +255,90 @@ export async function uploadTeamFileToGoogleDrive(input: {
   };
 }
 
-export async function downloadTeamGoogleDriveFile(input: {
+async function authorizedDriveGet(accessToken: string, url: string) {
+  return fetch(url, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+}
+
+async function requestDriveFile(
+  accessToken: string,
+  driveFileId: string,
+  preferPdf: boolean,
+): Promise<{ response: Response; mimeType: string }> {
+  const metaResponse = await authorizedDriveGet(
+    accessToken,
+    withDriveQuery(`${DRIVE_API}/files/${encodeURIComponent(driveFileId)}`, {
+      fields: "id,mimeType,shortcutDetails",
+    }),
+  );
+  const meta = (await metaResponse.json().catch(() => null)) as {
+    mimeType?: string;
+    shortcutDetails?: { targetId?: string };
+    error?: { message?: string };
+  } | null;
+
+  if (metaResponse.ok && meta?.mimeType === GOOGLE_APPS_SHORTCUT) {
+    const targetId = meta.shortcutDetails?.targetId?.trim();
+    if (targetId && targetId !== driveFileId) {
+      return requestDriveFile(accessToken, targetId, preferPdf);
+    }
+  }
+
+  const driveMime = metaResponse.ok ? meta?.mimeType ?? "" : "";
+  const exportAs = GOOGLE_APPS_EXPORT[driveMime];
+  if (exportAs) {
+    const wanted = preferPdf ? exportAs.pdf : exportAs.binary;
+    const exported = await authorizedDriveGet(
+      accessToken,
+      withDriveQuery(
+        `${DRIVE_API}/files/${encodeURIComponent(driveFileId)}/export`,
+        { mimeType: wanted },
+      ),
+    );
+    if (!exported.ok) {
+      throw new Error(`Google Drive export failed (${exported.status})`);
+    }
+    return { response: exported, mimeType: wanted };
+  }
+
+  const media = await authorizedDriveGet(
+    accessToken,
+    withDriveQuery(`${DRIVE_API}/files/${encodeURIComponent(driveFileId)}`, {
+      alt: "media",
+      acknowledgeAbuse: "true",
+    }),
+  );
+  if (!media.ok) {
+    const detail = meta?.error?.message || `Google Drive download failed (${media.status})`;
+    throw new Error(detail);
+  }
+  return {
+    response: media,
+    mimeType: media.headers.get("content-type") || "application/octet-stream",
+  };
+}
+
+export async function openTeamGoogleDriveFile(input: {
   teamId: string;
   driveFileId: string;
+  preferPdf?: boolean;
 }) {
   const row = await fetchGoogleDriveSecretRow(input.teamId);
   if (!row?.isConnected || !row.refreshToken) {
     throw new Error("Google Drive not connected");
   }
   const accessToken = await getAccessToken(row);
-  const response = await fetch(
-    `${DRIVE_API}/files/${encodeURIComponent(input.driveFileId)}?alt=media`,
-    {
-      headers: { Authorization: `Bearer ${accessToken}` },
-    },
-  );
-  if (!response.ok) {
-    throw new Error(`Google Drive download failed (${response.status})`);
-  }
-  const mimeType =
-    response.headers.get("content-type") || "application/octet-stream";
-  const bytes = new Uint8Array(await response.arrayBuffer());
-  return { bytes, mimeType };
+  return requestDriveFile(accessToken, input.driveFileId, Boolean(input.preferPdf));
+}
+
+export async function downloadTeamGoogleDriveFile(input: {
+  teamId: string;
+  driveFileId: string;
+}) {
+  const opened = await openTeamGoogleDriveFile(input);
+  const bytes = new Uint8Array(await opened.response.arrayBuffer());
+  return { bytes, mimeType: opened.mimeType };
 }
 
 export async function renameTeamGoogleDriveFile(input: {
@@ -248,7 +355,10 @@ export async function renameTeamGoogleDriveFile(input: {
   const fileName = sanitizeSegment(input.fileName) || "file";
   await driveJson(
     accessToken,
-    `${DRIVE_API}/files/${encodeURIComponent(input.driveFileId)}?fields=id`,
+    withDriveQuery(
+      `${DRIVE_API}/files/${encodeURIComponent(input.driveFileId)}`,
+      { fields: "id" },
+    ),
     {
       method: "PATCH",
       body: JSON.stringify({ name: fileName }),

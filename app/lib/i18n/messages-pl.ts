@@ -760,6 +760,7 @@ export const pl: Record<string, string> = {
   "files.delete.title": "Usunąć plik?",
   "files.deleted": "Plik usunięty.",
   "files.detail.download": "Pobierz",
+  "files.detail.download_to_open": "Pobierz plik, aby go otworzyć.",
   "files.detail.empty_content": "Ten plik nie ma zapisanej treści.",
   "files.detail.empty_description": "Przesłany plik.",
   "files.detail.loading": "Ładowanie pliku",
@@ -1768,6 +1769,7 @@ export const pl: Record<string, string> = {
   "subtasks.history.status": "Status: {from} → {to}",
   "subtasks.history.title": "Tytuł: {from} → {to}",
   "subtasks.modal.attach": "Dołącz plik",
+  "subtasks.modal.details": "Szczegóły",
   "subtasks.modal.comment": "Komentarz",
   "subtasks.modal.comment_add": "Dodaj komentarz",
   "subtasks.modal.comment_placeholder": "Napisz komentarz o tym podzadaniu",
@@ -2122,4 +2124,5 @@ export const pl: Record<string, string> = {
   "user_menu.sign_out": "Wyloguj się",
   "user_menu.sign_out_done": "Wylogowałeś się.",
   "user_menu.sign_out_hint": "Wyloguj się z systemu",
+  "lists.windows.history": "Historia",
 };

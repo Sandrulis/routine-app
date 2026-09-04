@@ -173,6 +173,94 @@ function groupIndex(groupKey: string): number {
  * Opposite of the status picker: closed → active → not started.
  * Within a group, later catalog entries come first (matches layout reverse).
  */
+export function unknownStatusSummary(statusId: string): TaskStatusSummary {
+  return {
+    id: statusId,
+    labels: {},
+    label: statusId,
+    color: "#a1a1aa",
+    sortOrder: 0,
+    groupKey: "active",
+  };
+}
+
+export function mergeKnownStatusCatalogs(
+  ...catalogs: Array<Iterable<TaskStatusSummary> | null | undefined>
+): TaskStatusSummary[] {
+  const merged: TaskStatusSummary[] = [];
+  const seen = new Set<string>();
+  for (const catalog of catalogs) {
+    if (!catalog) continue;
+    for (const status of catalog) {
+      if (seen.has(status.id)) continue;
+      seen.add(status.id);
+      merged.push(status);
+    }
+  }
+  return merged;
+}
+
+function statusLabelForMerge(
+  status: Pick<TaskStatusSummary, "id" | "label" | "labels">,
+): string {
+  return (
+    status.label.trim() ||
+    primaryStatusLabel(status.labels) ||
+    status.id
+  ).toLowerCase();
+}
+
+export function statusMergeKey(
+  status: Pick<TaskStatusSummary, "id" | "label" | "labels" | "groupKey">,
+  mergeByLabel = false,
+): string {
+  if (!mergeByLabel) return status.id;
+  const bucket = status.groupKey === "closed" ? "closed" : "open";
+  return `${bucket}:${statusLabelForMerge(status)}`;
+}
+
+export function groupTasksByStatus<T extends { status: string }>(
+  tasks: T[],
+  catalog: TaskStatusSummary[],
+  options?: { includeClosed?: boolean; mergeByLabel?: boolean },
+): { status: TaskStatusSummary; items: T[] }[] {
+  const mergeByLabel = Boolean(options?.mergeByLabel);
+  const byId = new Map(catalog.map((status) => [status.id, status]));
+  const itemsByKey = new Map<string, T[]>();
+  const statusByKey = new Map<string, TaskStatusSummary>();
+  for (const task of tasks) {
+    const status = byId.get(task.status) ?? unknownStatusSummary(task.status);
+    const key = statusMergeKey(status, mergeByLabel);
+    let items = itemsByKey.get(key);
+    if (!items) {
+      items = [];
+      itemsByKey.set(key, items);
+      statusByKey.set(key, status);
+    } else if (
+      mergeByLabel &&
+      groupIndex(status.groupKey) <
+        groupIndex(statusByKey.get(key)?.groupKey ?? "")
+    ) {
+      statusByKey.set(key, status);
+    }
+    items.push(task);
+  }
+  const groups = [...itemsByKey.entries()].map(([key, items]) => ({
+    status: statusByKey.get(key) ?? unknownStatusSummary(key),
+    items,
+  }));
+  return statusesByPriorityDesc(groups.map((group) => group.status))
+    .filter((status) => options?.includeClosed || status.groupKey !== "closed")
+    .map((status) => ({
+      status,
+      items:
+        itemsByKey.get(statusMergeKey(status, mergeByLabel)) ??
+        groups.find((group) => group.status === status)?.items ??
+        [],
+    }))
+    .filter((group) => group.items.length > 0);
+}
+
 export function statusesByPriorityDesc<T extends { id: string; groupKey: string }>(
   catalog: T[],
 ): T[] {

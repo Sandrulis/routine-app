@@ -760,6 +760,7 @@ export const lt: Record<string, string> = {
   "files.delete.title": "Ištrinti failą?",
   "files.deleted": "Failas ištrintas.",
   "files.detail.download": "Atsisiųsti",
+  "files.detail.download_to_open": "Atsisiųskite failą, kad jį atidarytumėte.",
   "files.detail.empty_content": "Šis failas neturi išsaugoto turinio.",
   "files.detail.empty_description": "Įkeltas failas.",
   "files.detail.loading": "Įkeliamas failas",
@@ -1768,6 +1769,7 @@ export const lt: Record<string, string> = {
   "subtasks.history.status": "Būsena: {from} → {to}",
   "subtasks.history.title": "Pavadinimas: {from} → {to}",
   "subtasks.modal.attach": "Pridėti failą",
+  "subtasks.modal.details": "Informacija",
   "subtasks.modal.comment": "Komentaras",
   "subtasks.modal.comment_add": "Pridėti komentarą",
   "subtasks.modal.comment_placeholder": "Parašykite komentarą apie šią použduotį",
@@ -2122,4 +2124,5 @@ export const lt: Record<string, string> = {
   "user_menu.sign_out": "Atsijungti",
   "user_menu.sign_out_done": "Atsijungėte.",
   "user_menu.sign_out_hint": "Atsijungti nuo sistemos",
+  "lists.windows.history": "Istorija",
 };

@@ -618,6 +618,9 @@ function mapActivityRow(row: {
   };
 }
 
+const TASK_ACTIVITY_SELECT =
+  "id, task_id, actor_id, kind, from_status, to_status, assignee_ids, from_assignee_ids, date_value, from_date_value, text, previous_text, file_name, from_parent_id, to_parent_id, metadata, created_at";
+
 export async function fetchTaskActivities(
   taskId: string,
   limit = 80,
@@ -625,9 +628,7 @@ export async function fetchTaskActivities(
 ): Promise<TaskActivity[]> {
   let query = db()
     .from("task_activities")
-    .select(
-      "id, task_id, actor_id, kind, from_status, to_status, assignee_ids, from_assignee_ids, date_value, from_date_value, text, previous_text, file_name, from_parent_id, to_parent_id, metadata, created_at",
-    )
+    .select(TASK_ACTIVITY_SELECT)
     .eq("task_id", taskId)
     .order("created_at", { ascending: false })
     .limit(limit);
@@ -635,6 +636,35 @@ export async function fetchTaskActivities(
   const { data, error } = await query;
   if (error) throw new Error(formatSupabaseError(error));
   return ((data ?? []) as Parameters<typeof mapActivityRow>[0][]).map(mapActivityRow);
+}
+
+/** Newest activities across many tasks (folder / subtree summary). */
+export async function fetchTaskActivitiesForTaskIds(
+  taskIds: string[],
+  limit = 80,
+  before?: string,
+): Promise<TaskActivity[]> {
+  const unique = [...new Set(taskIds.map((id) => id.trim()).filter(Boolean))];
+  if (unique.length === 0 || limit <= 0) return [];
+
+  const rows = await fetchInChunks<Parameters<typeof mapActivityRow>[0]>(
+    unique,
+    async (chunk) => {
+      let query = db()
+        .from("task_activities")
+        .select(TASK_ACTIVITY_SELECT)
+        .in("task_id", chunk)
+        .order("created_at", { ascending: false })
+        .limit(limit);
+      if (before) query = query.lt("created_at", before);
+      return query;
+    },
+  );
+
+  return rows
+    .map(mapActivityRow)
+    .sort((left, right) => right.at.localeCompare(left.at))
+    .slice(0, limit);
 }
 
 export async function fetchTaskDetails(taskId: string): Promise<{

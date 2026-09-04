@@ -31,6 +31,7 @@ import {
   renameKeepingExtension,
 } from "@/app/lib/file-types";
 import { useFileViewer } from "@/app/components/file-viewer-provider";
+import { cloudFileDownloadHref } from "@/app/lib/cloud-storage/content-url";
 import {
   downloadUrlAsFile,
   fetchGoogleDriveContentBlob,
@@ -339,6 +340,7 @@ export function SubtaskDetailModal({
   const [resendEnabled, setResendEnabled] = useState(false);
   const [uploadProgress, setUploadProgress] =
     useState<FileUploadProgressState | null>(null);
+  const [mobilePane, setMobilePane] = useState<"details" | "history">("details");
 
   const isCreate = forceCreate || (Boolean(createFor) && !taskId && !createdTaskId);
   const activeTaskId = forceCreate ? null : (taskId ?? createdTaskId);
@@ -499,6 +501,10 @@ export function SubtaskDetailModal({
       return [];
     });
   }, [flushChecklistPersist, open]);
+
+  useEffect(() => {
+    if (open) setMobilePane("details");
+  }, [open]);
 
   useEffect(() => {
     if (!open || !fileUploadsEnabled) {
@@ -751,6 +757,21 @@ export function SubtaskDetailModal({
     const stored = files.find((file) => file.id === fileId);
     if (!stored) return;
 
+    const cloudHref = cloudFileDownloadHref({
+      kind: "task",
+      id: stored.id,
+      googleDriveFileId: stored.googleDriveFileId,
+      oneDriveFileId: stored.oneDriveFileId,
+    });
+    if (cloudHref) {
+      try {
+        await downloadUrlAsFile(cloudHref, stored.name);
+        return;
+      } catch (error) {
+        console.error("Cloud file download failed", error);
+      }
+    }
+
     async function downloadFromDrive() {
       const blob = await fetchGoogleDriveContentBlob("task", stored!.id);
       if (!blob) return false;
@@ -995,6 +1016,7 @@ export function SubtaskDetailModal({
             )
       }
       dirty={dirty}
+      compact
       blocking={
         fileToDelete !== null ||
         fileToRename !== null ||
@@ -1006,7 +1028,7 @@ export function SubtaskDetailModal({
         createdOn ? (
           <time
             dateTime={createdAt ?? undefined}
-            className="whitespace-nowrap px-1 text-[13px] text-zinc-400"
+            className="whitespace-nowrap px-1 text-[11px] text-zinc-400 sm:text-[13px]"
           >
             {t("subtasks.created_on", "izveidots {date}", {
               date: createdOn,
@@ -1019,6 +1041,7 @@ export function SubtaskDetailModal({
           <TaskLocationPath
             segments={locationSegments}
             align="left"
+            fill
             onNavigate={() => onOpenChange(false)}
           />
         ) : null
@@ -1032,8 +1055,44 @@ export function SubtaskDetailModal({
         onDrop={(event) => event.preventDefault()}
         className="space-y-4"
       >
+        <div
+          className="flex border-b border-zinc-200 md:hidden"
+          role="tablist"
+          aria-label={t("subtasks.modal.details", "Detaļas")}
+        >
+          <button
+            type="button"
+            role="tab"
+            aria-selected={mobilePane === "details"}
+            onClick={() => setMobilePane("details")}
+            className={`min-h-10 flex-1 border-b-2 px-2 text-sm font-semibold transition ${
+              mobilePane === "details"
+                ? "border-zinc-900 text-zinc-900"
+                : "border-transparent text-zinc-400"
+            }`}
+          >
+            {t("subtasks.modal.details", "Detaļas")}
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={mobilePane === "history"}
+            onClick={() => setMobilePane("history")}
+            className={`min-h-10 flex-1 border-b-2 px-2 text-sm font-semibold transition ${
+              mobilePane === "history"
+                ? "border-zinc-900 text-zinc-900"
+                : "border-transparent text-zinc-400"
+            }`}
+          >
+            {t("subtasks.modal.history", "Vēsture")}
+          </button>
+        </div>
         <div className="relative grid gap-6 md:grid-cols-[minmax(0,1fr)_18rem]">
-          <div className="space-y-4">
+          <div
+            className={`space-y-4 ${
+              mobilePane === "details" ? "" : "hidden"
+            } md:block`}
+          >
             <div>
               <label htmlFor="subtask-title" className="sr-only">
                 {t("tasks.fields.title", "Nosaukums")}
@@ -1261,8 +1320,12 @@ export function SubtaskDetailModal({
             ) : null}
           </div>
 
-          <aside className="flex min-h-0 flex-col overflow-hidden rounded-2xl border border-zinc-100 bg-zinc-50 p-3 md:absolute md:inset-y-0 md:right-0 md:w-[18rem]">
-            <h3 className="shrink-0 px-1 text-[12px] font-semibold tracking-wide text-zinc-400 uppercase">
+          <aside
+            className={`${
+              mobilePane === "history" ? "flex min-h-[min(28rem,65dvh)]" : "hidden"
+            } min-h-0 flex-col overflow-hidden rounded-2xl border border-zinc-100 bg-zinc-50 p-3 md:absolute md:inset-y-0 md:right-0 md:flex md:min-h-0 md:w-[18rem]`}
+          >
+            <h3 className="hidden shrink-0 px-1 text-[12px] font-semibold tracking-wide text-zinc-400 uppercase md:block">
               {t("subtasks.modal.history", "Vēsture")}
             </h3>
             {activities.length === 0 ? (
@@ -1374,7 +1437,11 @@ export function SubtaskDetailModal({
           </aside>
         </div>
 
-        <div className="flex justify-end gap-2 border-t border-zinc-100 pt-4">
+        <div
+          className={`justify-end gap-2 border-t border-zinc-100 pt-4 ${
+            mobilePane === "details" ? "flex" : "hidden"
+          } md:flex`}
+        >
           <button
             type="button"
             onClick={() => onOpenChange(false)}

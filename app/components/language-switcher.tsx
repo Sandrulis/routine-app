@@ -74,9 +74,12 @@ export function LanguageSwitcher({
 
     document.addEventListener("pointerdown", handlePointerDown);
     window.addEventListener("keydown", handleKeyDown);
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
     return () => {
       document.removeEventListener("pointerdown", handlePointerDown);
       window.removeEventListener("keydown", handleKeyDown);
+      document.body.style.overflow = previousOverflow;
     };
   }, [open]);
 
@@ -109,7 +112,8 @@ export function LanguageSwitcher({
         {open ? (
           <div
             role="menu"
-            className="absolute top-full right-0 z-[70] mt-1 min-w-[12rem] overflow-hidden rounded-xl bg-white py-1 shadow-[0_12px_40px_rgba(15,23,42,0.16)] ring-1 ring-zinc-200/80"
+            className="absolute top-full right-0 z-[70] mt-1 max-h-[min(20rem,calc(100dvh-5.5rem))] w-56 overflow-y-auto overscroll-contain rounded-xl bg-white py-1 shadow-[0_12px_40px_rgba(15,23,42,0.16)] ring-1 ring-zinc-200/80"
+            onWheel={(event) => event.stopPropagation()}
           >
             {options.map((language) => {
               const active = language.code === languageCode;

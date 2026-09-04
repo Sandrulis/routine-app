@@ -56,10 +56,12 @@ import {
   userIsAssignee,
 } from "@/app/lib/list-access";
 import {
+  groupTasksByStatus,
+  mergeKnownStatusCatalogs,
   mergeStatusCatalog,
   resolveStatusIdForTask,
   sortTasksLikeNavTree,
-  statusesByPriorityDesc,
+  statusMergeKey,
 } from "@/app/lib/list-statuses";
 import {
   emptyWorkProgress,
@@ -506,6 +508,7 @@ export function SubtaskTable({
   view = "active",
   reorderable = true,
   groupByStatus = false,
+  mergeStatusByLabel = false,
 }: {
   listId?: string;
   tasks: WorkTask[];
@@ -514,6 +517,7 @@ export function SubtaskTable({
   view?: "active" | "with-archive";
   reorderable?: boolean;
   groupByStatus?: boolean;
+  mergeStatusByLabel?: boolean;
 }) {
   const { t } = useTranslations();
   const dndContextId = useId();
@@ -536,6 +540,16 @@ export function SubtaskTable({
   }, [tasks]);
   const { statuses, colorFor, labelFor } = useTaskStatuses(listId, parentTaskId);
   const { statuses: systemStatuses } = useSystemTaskStatuses();
+  const groupingCatalog = useMemo(
+    () =>
+      mergeKnownStatusCatalogs(
+        statuses,
+        systemStatuses,
+        listStatuses,
+        workTaskStatuses,
+      ),
+    [listStatuses, statuses, systemStatuses, workTaskStatuses],
+  );
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
   );
@@ -543,16 +557,14 @@ export function SubtaskTable({
     const visible =
       view === "with-archive"
         ? tasks
-        : tasks.filter((task) => isTaskActiveInLists(task, statuses));
-    const ordered = sortTasksLikeNavTree(visible, statuses);
+        : tasks.filter((task) => isTaskActiveInLists(task, groupingCatalog));
+    const ordered = sortTasksLikeNavTree(visible, groupingCatalog);
     if (!groupByStatus) return ordered;
-    const known = new Set(statuses.map((status) => status.id));
-    const grouped = statusesByPriorityDesc(statuses).flatMap((status) =>
-      ordered.filter((task) => task.status === status.id),
-    );
-    const unmatched = ordered.filter((task) => !known.has(task.status));
-    return [...grouped, ...unmatched];
-  }, [groupByStatus, statuses, tasks, view]);
+    return groupTasksByStatus(ordered, groupingCatalog, {
+      includeClosed: view === "with-archive",
+      mergeByLabel: mergeStatusByLabel,
+    }).flatMap((group) => group.items);
+  }, [groupByStatus, groupingCatalog, mergeStatusByLabel, tasks, view]);
   const displayedRows = useDisplayedTasks(matching, view);
   const displayed = displayedRows.map((row) => row.task);
   const exitingIds = new Set(
@@ -564,14 +576,11 @@ export function SubtaskTable({
   );
   const groups = useMemo(() => {
     if (!groupByStatus) return [];
-    return statusesByPriorityDesc(statuses)
-      .filter((status) => view === "with-archive" || status.groupKey !== "closed")
-      .map((status) => ({
-        status,
-        items: displayed.filter((task) => task.status === status.id),
-      }))
-      .filter((group) => group.items.length > 0);
-  }, [displayed, groupByStatus, statuses, view]);
+    return groupTasksByStatus(displayed, groupingCatalog, {
+      includeClosed: view === "with-archive",
+      mergeByLabel: mergeStatusByLabel,
+    });
+  }, [displayed, groupByStatus, groupingCatalog, mergeStatusByLabel, view]);
   const selectableTasks = displayed.filter(
     (task) => !exitingIds.has(task.id) && !isTaskDeleted(task),
   );
@@ -690,7 +699,7 @@ export function SubtaskTable({
     const resolvedStatus = resolveStatusIdForTask(
       targetStatusId,
       taskCatalog,
-      statuses,
+      groupingCatalog,
     );
     if (!resolvedStatus) return;
 
@@ -765,7 +774,7 @@ export function SubtaskTable({
       <SortableSubtaskRow
         key={task.id}
         listId={task.listId}
-        parentTaskId={parentTaskId}
+        parentTaskId={task.parentId}
         task={task}
         exiting={exitingIds.has(task.id)}
         reorderable={reorderable}
@@ -814,8 +823,8 @@ export function SubtaskTable({
       ref={tableScrollRef}
       className={
         embedded
-          ? `w-full overflow-x-auto ${virtualizeUngrouped ? "max-h-[min(70vh,42rem)] overflow-y-auto" : "overflow-y-clip"} ${someSelectableSelected ? "pb-16" : ""}`
-          : `w-full overflow-x-auto ${virtualizeUngrouped ? "max-h-[min(70vh,42rem)] overflow-y-auto" : "overflow-y-clip"} rounded-2xl border border-zinc-200 bg-white ${
+          ? `w-full overflow-x-auto ${virtualizeUngrouped ? "max-h-[min(70vh,42rem)] overflow-y-auto" : "overflow-y-visible"} ${someSelectableSelected ? "pb-16" : ""}`
+          : `w-full overflow-x-auto ${virtualizeUngrouped ? "max-h-[min(70vh,42rem)] overflow-y-auto" : "overflow-y-visible"} rounded-2xl border border-zinc-200 bg-white ${
               someSelectableSelected ? "pb-16" : ""
             }`
       }
@@ -879,31 +888,31 @@ export function SubtaskTable({
             </tr>
           </thead>
             <tbody>
-              {groupByStatus
-                ? groups.map((group, groupIndex) => {
+              {groupByStatus ? (
+                <SortableContext
+                  items={displayed.map((task) => task.id)}
+                  strategy={frozenSortingStrategy}
+                >
+                  {groups.map((group, groupIndex) => {
                     const groupColor = colorFor(group.status.id);
-                    const groupIds = group.items.map((task) => task.id);
                     return (
-                      <Fragment key={group.status.id}>
+                      <Fragment key={statusMergeKey(group.status, mergeStatusByLabel)}>
                         <StatusGroupHeaderRow
                           statusId={group.status.id}
                           label={
-                            labelFor(group.status.id) || group.status.label
+                            group.status.label ||
+                            labelFor(group.status.id)
                           }
                           count={group.items.filter((task) => !exitingIds.has(task.id)).length}
-                          color={groupColor}
+                          color={group.status.color || groupColor}
                           first={groupIndex === 0}
                         />
-                        <SortableContext
-                          items={groupIds}
-                          strategy={frozenSortingStrategy}
-                        >
-                          {group.items.map((task) => renderRow(task))}
-                        </SortableContext>
+                        {group.items.map((task) => renderRow(task))}
                       </Fragment>
                     );
-                  })
-                : (
+                  })}
+                </SortableContext>
+              ) : (
                     <SortableContext
                       items={displayed.map((task) => task.id)}
                       strategy={frozenSortingStrategy}

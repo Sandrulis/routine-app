@@ -760,6 +760,7 @@
   "files.delete.title": "Slette fil?",
   "files.deleted": "Fil er slettet.",
   "files.detail.download": "Last ned",
+  "files.detail.download_to_open": "Last ned filen for å åpne den.",
   "files.detail.empty_content": "Denne filen har ikke lagret innhold.",
   "files.detail.empty_description": "Opplastet fil.",
   "files.detail.loading": "Laster fil",
@@ -1768,6 +1769,7 @@
   "subtasks.history.status": "Status: {from} → {to}",
   "subtasks.history.title": "Tittel: {from} → {to}",
   "subtasks.modal.attach": "Legg ved fil",
+  "subtasks.modal.details": "Detaljer",
   "subtasks.modal.comment": "Kommentar",
   "subtasks.modal.comment_add": "Legg til kommentar",
   "subtasks.modal.comment_placeholder": "Skriv en kommentar om denne underoppgaven",
@@ -2121,5 +2123,6 @@
   "user_menu.settings_hint": "Profil og datovisning",
   "user_menu.sign_out": "Logg ut",
   "user_menu.sign_out_done": "Du er logget ut.",
-  "user_menu.sign_out_hint": "Logg ut av systemet"
+  "user_menu.sign_out_hint": "Logg ut av systemet",
+  "lists.windows.history": "Historikk"
 }

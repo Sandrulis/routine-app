@@ -4,6 +4,12 @@
 
 - (none)
 
+## v0.3.53
+
+- Failu priekšskatījumā **Lejupielādēt** rāda loading; labota lejupielāde (un PDF atvēršana), ja nosaukumā ir latviešu burti
+- Saraksta kartītēs atkal arhīva poga un **Vēsture** logs; vienādi statusu nosaukumi (DARĀMS) dashboardā vairs nedalās
+- Apakšuzdevuma modālis mobilajā ar Detaļas / Vēsture cilnēm; PATH un apraksts visā platumā
+
 ## v0.3.52
 
 - Komandas pienākumi blakus lomām: viens cilvēks var būt vairākos amatos (piem. komandas vadītājs, tāmētājs); uzdevumu un sarakstu piesaiste pēc pienākuma

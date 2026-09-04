@@ -56,6 +56,8 @@ type AppModalProps = {
   overlayClassName?: string;
   headerMeta?: ReactNode;
   headerSubtitle?: ReactNode;
+  /** Mazāks padding un atstarpe; apraksts paliek tikai ekrāna lasītājiem. */
+  compact?: boolean;
 };
 
 export function AppModal({
@@ -72,6 +74,7 @@ export function AppModal({
   overlayClassName = "",
   headerMeta,
   headerSubtitle,
+  compact = false,
 }: AppModalProps) {
   const titleId = useId();
   const descriptionId = useId();
@@ -212,21 +215,14 @@ export function AppModal({
           ref={panelRef}
           className={`${panelBaseClassName} ${panelMaxWidthClassName}`}
         >
-          <div className="p-6">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <h2 id={titleId} className="text-lg font-semibold text-zinc-900">
-                  {title}
-                </h2>
-                {headerSubtitle ? (
-                  <div className="mt-0.5">{headerSubtitle}</div>
-                ) : null}
-                {description ? (
-                  <p id={descriptionId} className="mt-1 text-sm text-zinc-500">
-                    {description}
-                  </p>
-                ) : null}
-              </div>
+          <div className={compact ? "p-4 sm:p-6" : "p-6"}>
+            <div className="flex min-w-0 items-center justify-between gap-3">
+              <h2
+                id={titleId}
+                className="min-w-0 flex-1 truncate text-lg font-semibold text-zinc-900"
+              >
+                {title}
+              </h2>
               <div className="flex shrink-0 items-center gap-1">
                 {headerMeta}
                 {blocking ? null : (
@@ -241,7 +237,18 @@ export function AppModal({
                 )}
               </div>
             </div>
-            <div className="mt-6">{children}</div>
+            {headerSubtitle ? (
+              <div className="mt-1 w-full min-w-0">{headerSubtitle}</div>
+            ) : null}
+            {description ? (
+              <p
+                id={descriptionId}
+                className="mt-1 w-full text-sm text-zinc-500"
+              >
+                {description}
+              </p>
+            ) : null}
+            <div className={compact ? "mt-3" : "mt-6"}>{children}</div>
           </div>
         </div>
       </div>
