@@ -249,23 +249,36 @@ export function groupTasksByStatus<T extends { status: string }>(
     status: statusByKey.get(key) ?? unknownStatusSummary(key),
     items,
   }));
-  return statusesByPriorityDesc(groups.map((group) => group.status))
-    .filter((status) => options?.includeClosed || status.groupKey !== "closed")
-    .map((status) => ({
-      status,
-      items:
-        itemsByKey.get(statusMergeKey(status, mergeByLabel)) ??
-        groups.find((group) => group.status === status)?.items ??
-        [],
-    }))
+  const catalogIndexByKey = new Map<string, number>();
+  catalog.forEach((status, index) => {
+    const key = statusMergeKey(status, mergeByLabel);
+    if (!catalogIndexByKey.has(key)) catalogIndexByKey.set(key, index);
+  });
+  return groups
+    .filter(
+      (group) => options?.includeClosed || group.status.groupKey !== "closed",
+    )
+    .sort((left, right) => {
+      const groupDiff =
+        groupIndex(right.status.groupKey) - groupIndex(left.status.groupKey);
+      if (groupDiff !== 0) return groupDiff;
+      const leftIndex =
+        catalogIndexByKey.get(statusMergeKey(left.status, mergeByLabel)) ?? -1;
+      const rightIndex =
+        catalogIndexByKey.get(statusMergeKey(right.status, mergeByLabel)) ?? -1;
+      return rightIndex - leftIndex;
+    })
     .filter((group) => group.items.length > 0);
 }
 
 export function statusesByPriorityDesc<T extends { id: string; groupKey: string }>(
-  catalog: T[],
+  items: T[],
+  catalogOrder: { id: string }[] = items,
 ): T[] {
-  const indexOf = new Map(catalog.map((status, index) => [status.id, index]));
-  return catalog.slice().sort((left, right) => {
+  const indexOf = new Map(
+    catalogOrder.map((status, index) => [status.id, index]),
+  );
+  return items.slice().sort((left, right) => {
     const groupDiff = groupIndex(right.groupKey) - groupIndex(left.groupKey);
     if (groupDiff !== 0) return groupDiff;
     return (indexOf.get(right.id) ?? -1) - (indexOf.get(left.id) ?? -1);

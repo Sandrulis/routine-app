@@ -10,6 +10,7 @@ import { LoadingState } from "@/app/components/loading-state";
 import { SectionPage } from "@/app/components/section-page";
 import { SubtaskDetailModal } from "@/app/components/subtask-detail-modal";
 import { SubtaskTable } from "@/app/components/subtask-table";
+import { useFeedbackToast } from "@/app/components/feedback-toast-provider";
 import { useTranslations } from "@/app/components/translations-provider";
 import { UserAvatar } from "@/app/components/user-avatar";
 import { userIsAssignee } from "@/app/lib/list-access";
@@ -26,6 +27,7 @@ import { useSystemTaskStatuses, useTaskStatuses } from "@/app/lib/task-statuses"
 import { REQUEST_CREATE_TEAM_EVENT } from "@/app/lib/team";
 import { useTeam } from "@/app/lib/team-store";
 import { useNotifications } from "@/app/lib/use-notifications";
+import { useUserTaskSnoozes } from "@/app/lib/use-user-task-snoozes";
 
 function compareAssignedTasks(a: WorkTask, b: WorkTask) {
   if (a.dueDate && b.dueDate && a.dueDate !== b.dueDate) {
@@ -39,17 +41,28 @@ function compareAssignedTasks(a: WorkTask, b: WorkTask) {
 
 function MyTasksSection({
   tasks,
+  snoozedTasks,
   onOpenTask,
+  onSnooze,
+  onUnsnooze,
 }: {
   tasks: WorkTask[];
+  snoozedTasks: WorkTask[];
   onOpenTask: (task: WorkTask) => void;
+  onSnooze?: (task: WorkTask, untilIso: string) => void;
+  onUnsnooze?: (task: WorkTask) => void;
 }) {
   const { t } = useTranslations();
   const { currentUser } = useTeam();
   const [expanded, setExpanded] = useState(true);
+  const [snoozedExpanded, setSnoozedExpanded] = useState(false);
   const orderedTasks = useMemo(
     () => tasks.slice().sort(compareAssignedTasks),
     [tasks],
+  );
+  const orderedSnoozed = useMemo(
+    () => snoozedTasks.slice().sort(compareAssignedTasks),
+    [snoozedTasks],
   );
 
   return (
@@ -84,10 +97,15 @@ function MyTasksSection({
         <div className="border-t border-zinc-100 px-3 py-3">
           {tasks.length === 0 ? (
             <p className="px-1 py-2 text-sm text-zinc-400">
-              {t(
-                "dashboard.my_tasks.empty",
-                "Tev vēl nav piesaistītu uzdevumu.",
-              )}
+              {snoozedTasks.length > 0
+                ? t(
+                    "dashboard.my_tasks.snoozed_only",
+                    "Visi tavi uzdevumi ir atlikti uz vēlāku laiku.",
+                  )
+                : t(
+                    "dashboard.my_tasks.empty",
+                    "Tev vēl nav piesaistītu uzdevumu.",
+                  )}
             </p>
           ) : (
             <SubtaskTable
@@ -96,8 +114,51 @@ function MyTasksSection({
               mergeStatusByLabel
               tasks={orderedTasks}
               onOpenTask={onOpenTask}
+              onSnooze={onSnooze}
             />
           )}
+        </div>
+      ) : null}
+
+      {snoozedTasks.length > 0 ? (
+        <div className="border-t border-zinc-100">
+          <header className="flex items-center gap-2 px-3 py-2">
+            <button
+              type="button"
+              aria-expanded={snoozedExpanded}
+              aria-label={
+                snoozedExpanded
+                  ? t("nav.collapse", "Sakļaut")
+                  : t("nav.expand", "Izvērst")
+              }
+              onClick={() => setSnoozedExpanded((current) => !current)}
+              className="inline-flex size-7 shrink-0 items-center justify-center rounded-lg text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-700"
+            >
+              <i
+                className={`fas fa-chevron-down text-[10px] transition-transform ${
+                  snoozedExpanded ? "" : "-rotate-90"
+                }`}
+                aria-hidden="true"
+              />
+            </button>
+            <i className="fas fa-clock text-[11px] text-zinc-400" aria-hidden="true" />
+            <span className="min-w-0 flex-1 truncate text-sm font-medium text-zinc-600">
+              {t("dashboard.snoozed", "Atliktie")}
+            </span>
+            <span className="text-[12px] text-zinc-400">{snoozedTasks.length}</span>
+          </header>
+          {snoozedExpanded ? (
+            <div className="border-t border-zinc-100 px-3 py-3">
+              <SubtaskTable
+                embedded
+                groupByStatus
+                mergeStatusByLabel
+                tasks={orderedSnoozed}
+                onOpenTask={onOpenTask}
+                onUnsnooze={onUnsnooze}
+              />
+            </div>
+          ) : null}
         </div>
       ) : null}
     </section>
@@ -107,11 +168,15 @@ function MyTasksSection({
 export function DashboardHomePage() {
   const { t } = useTranslations();
   const router = useRouter();
+  const { showFeedback } = useFeedbackToast();
   const { lists, tasks, allTaskFiles, listStatuses, workTaskStatuses, isReady } = useLists();
   const { currentTeam, currentUser } = useTeam();
   const { unreadCount } = useNotifications();
   const { statuses } = useTaskStatuses();
   const { statuses: systemStatuses } = useSystemTaskStatuses();
+  const { isSnoozed, snoozeTask, unsnoozeTask } = useUserTaskSnoozes(
+    currentUser.userId,
+  );
   const [openedSubtaskId, setOpenedSubtaskId] = useState<string | null>(null);
   const statusCatalog = useMemo(
     () =>
@@ -124,7 +189,7 @@ export function DashboardHomePage() {
     [listStatuses, statuses, systemStatuses, workTaskStatuses],
   );
 
-  const myTasks = useMemo(
+  const assignedTasks = useMemo(
     () =>
       tasks
         .filter(
@@ -136,6 +201,15 @@ export function DashboardHomePage() {
         .sort(compareAssignedTasks),
     [currentUser, statusCatalog, tasks],
   );
+  const myTasks = useMemo(
+    () => assignedTasks.filter((task) => !isSnoozed(task.id)),
+    [assignedTasks, isSnoozed],
+  );
+  const snoozedTasks = useMemo(
+    () => assignedTasks.filter((task) => isSnoozed(task.id)),
+    [assignedTasks, isSnoozed],
+  );
+  const showMyTasks = myTasks.length > 0 || snoozedTasks.length > 0;
 
   function openTask(task: WorkTask) {
     if (isWorkSubtask(task)) {
@@ -143,6 +217,31 @@ export function DashboardHomePage() {
       return;
     }
     router.push(`/lists/${task.listId}/tasks/${task.id}`);
+  }
+
+  async function handleSnooze(task: WorkTask, untilIso: string) {
+    try {
+      await snoozeTask(task.id, untilIso);
+    } catch {
+      showFeedback({
+        type: "error",
+        text: t("dashboard.snooze.failed", "Neizdevās atlikt uzdevumu."),
+      });
+    }
+  }
+
+  async function handleUnsnooze(task: WorkTask) {
+    try {
+      await unsnoozeTask(task.id);
+    } catch {
+      showFeedback({
+        type: "error",
+        text: t(
+          "dashboard.snooze.show_again.failed",
+          "Neizdevās atkal parādīt uzdevumu.",
+        ),
+      });
+    }
   }
 
   if (!isReady) {
@@ -214,14 +313,17 @@ export function DashboardHomePage() {
             onOpenTask={openTask}
           />
 
-          {myTasks.length > 0 ? (
+          {showMyTasks ? (
             <MyTasksSection
               tasks={myTasks}
+              snoozedTasks={snoozedTasks}
               onOpenTask={openTask}
+              onSnooze={currentUser.userId ? handleSnooze : undefined}
+              onUnsnooze={currentUser.userId ? handleUnsnooze : undefined}
             />
           ) : null}
 
-          {myTasks.length > 0 && listsWithTasks.length > 0 ? (
+          {showMyTasks && listsWithTasks.length > 0 ? (
             <div
               role="separator"
               aria-label={t("dashboard.other_tasks", "Pārējie uzdevumi")}

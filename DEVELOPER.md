@@ -41,7 +41,7 @@ Provider-specifiskie OAuth moduļi (`google-drive/`, `onedrive/`, `integrations/
 
 | Rinda | Saturs |
 |---|---|
-| Sākums | `/dashboard` `DashboardHomePage` — live meklēšana visiem uzdevumiem/apakšuzdevumiem pēc nosaukuma, apraksta, kontrolsaraksta un pielikuma nosaukuma (arī arhīvā); Mani uzdevumi (tikai ja ir piesaistīti) un darbs pa sarakstiem; bez komandas — tukšs stāvoklis + jaunas komandas poga |
+| Sākums | `/dashboard` `DashboardHomePage` — live meklēšana visiem uzdevumiem/apakšuzdevumiem pēc nosaukuma, apraksta, kontrolsaraksta un pielikuma nosaukuma (arī arhīvā); Mani uzdevumi (tikai ja ir piesaistīti) ar personīgo Atlikt (`user_task_snoozes`, tikai šajā sarakstā); tad darbs pa sarakstiem; bez komandas — tukšs stāvoklis + jaunas komandas poga |
 | Saraksts | `/lists` visu uzdevumu kopsavilkums; chevron izver koku |
 | Saraksts (bērns) | `/lists/[listId]` projekta logi: Uzdevumi | Faili augšā, Saraksts pilnā platumā |
 | Uzdevums | `/lists/[listId]/tasks/[taskId]` apakšuzdevumu tabula; ikona `fas fa-list-check` |
@@ -133,7 +133,7 @@ URL ceļos vārdus atdala ar defisi (`/forgot-password`, `/admin/file-types`), n
 
 | Klikšķis | Lapa | UI |
 |---|---|---|
-| Sākums | `/dashboard` | `DashboardHomePage` — live meklēšana (`DashboardTaskSearch`) visiem uzdevumiem/apakšuzdevumiem pēc nosaukuma, apraksta, kontrolsaraksta un pielikuma nosaukuma (arī arhivā, arhivētie blāvi); Mani uzdevumi tikai tad, ja ir piesaistīti (bez slēgtiem); tad atdalītājs un sarakstu kopsavilkums; grupēšana pēc statusa pretēji picker; apakšuzdevuma klikšķis atver modāli |
+| Sākums | `/dashboard` | `DashboardHomePage` — live meklēšana (`DashboardTaskSearch`) visiem uzdevumiem/apakšuzdevumiem pēc nosaukuma, apraksta, kontrolsaraksta un pielikuma nosaukuma (arī arhivā, arhivētie blāvi); Mani uzdevumi tikai tad, ja ir piesaistīti (bez slēgtiem); personīgs Atlikt (`TaskSnoozeButton`, 1h / līdz rītdienai / 1 nedēļa / datums) slēpj rindu līdz laikam; sakļauta sadaļa **Atliktie** + **Rādīt atkal**; tad atdalītājs un sarakstu kopsavilkums; grupēšana pēc statusa pretēji picker; apakšuzdevuma klikšķis atver modāli |
 | Saraksts | `/lists` | `ListsOverviewPage` — kartītes ar uzdevumiem, apakšuzdevumiem un progresu; klikšķis atver `SubtaskDetailModal` uz vietas |
 | Projekts (saraksts) | `/lists/[listId]` | `ListDetailPage` + `ListSummary` — kopsavilkums ar `done/total` un vienu joslu (`work-progress.tsx`); labajā malā arhīva poga (`fas fa-archive`) rāda tikai arhivētos uzdevumus/mapes; aiz nosaukuma `WorkItemArchiveButton` (`fa-folder-open` / `fa-folder`) |
 | Uzdevums | `/lists/[listId]/tasks/[taskId]` | Mape: `ListWindowsBoard` (Uzdevumi/Saraksts ar progresu; Faili logs + apakšuzdevumu pielikumi no apakškoka; Sarakstā paperclip pie pielikumiem). Uzdevums: `GroupedSubtaskTables` / `SubtaskTable` — viena tabula ar statusu galvenēm un `done/total` pie nosaukuma, apakšuzdevumu arhīvs, pārvietošana, mīkstā dzēšana; aiz nosaukuma paperclip ja ir pielikumi; aiz nosaukuma arhivēšanas ikona |
@@ -291,7 +291,7 @@ Hierarhija: **Saraksts → mape / uzdevumu saraksts / fails → apakšuzdevumi t
 - Vilkšana: `app/components/task-drop-line.tsx` (`TaskDropLine`, `dropHintFromEvent`, `frozenSortingStrategy`, `groupedStatusCollisionDetection`). Vilkšanas laikā saraksts neslīd; drop ir bieza zila līnija. Starp statusu grupām vilkšana **tikai maina statusu**, nesamaina vietām ar cita grupas pēdējo uzdevumu
 - Kopsavilkums (`ListSummary` Sākumā un `/lists`) un uzdevuma apakšuzdevumu tabula: tā pati secība kā sānjoslas kokā (`sortTasksLikeNavTree` / `compareTasksByStatusPriority` — vispirms grupa slēgts → aktīvs → nav sākts, tad kataloga indekss, tad `sortOrder`). `SubtaskTable` vienmēr kārto pati. Pretēji picker. Slēgtie paliek ārpus aktīvā saraksta
 - Gmail browse (`listExtensionSubtasksForTask`): tā pati statusa prioritāte kā UI, ne tikai `sort_order`
-- Projekta **Saraksts** logs: uzdevumu kartītes `repeat(auto-fit, minmax(min(100%, 16rem), 1fr))` tādā pašā statusa secībā. Mape rāda nested uzdevumus un to apakšuzdevumus (`OverviewSubtaskList`); grupēšana pēc statusa ar `mergeByLabel` (vienādi atvērto nosaukumi, piem. DARĀMS, saplūst); aplītis hover rāda check + tooltip `status.complete_ask` (pabeidz / atver atpakaļ); arhīva poga kartītē parāda pabeigtos, progresa josla paliek. Apakšuzdevumam ar pielikumiem `fa-paperclip` aiz nosaukuma. Klikšķis uz apakšuzdevuma iet caur `ListWindowsBoard` `onOpenSubtask` → vienu `SubtaskDetailModal` lapā (`TaskDetailPage`). Apakšuzdevuma aplītis un nosaukums ir statusa krāsā. Logs **Faili**: tiešie `list_files` + `task_files` no `getDescendantSubtasks` (klikšķis: bildes/PDF/txt modālī, pārējie lejupielādējas caur FileViewerProvider; pielikumam ar piezīmi hover rāda tooltip). Logs **Uzdevumi** paliek vilktā `sortOrder` secībā; tā arhīva poga (`handleTasksArchiveChange`) sinhronizē arhīvu visām Saraksts loga kartītēm (`overviewArchiveById`), bet katru kartīti var pārslēgt atsevišķi. Logs **Vēsture**: pēdējās darbības no apakškoka (`fetchTaskActivitiesForTaskIds`)
+- Projekta **Saraksts** logs: uzdevumu kartītes `repeat(auto-fit, minmax(min(100%, 16rem), 1fr))` tādā pašā statusa secībā. Mape rāda nested uzdevumus un to apakšuzdevumus (`OverviewSubtaskList`); grupēšana pēc statusa ar `mergeByLabel` (vienādi atvērto nosaukumi, piem. DARĀMS, saplūst) un `groupTasksByStatus` kārto pēc **kataloga** indeksa pretēji picker (ne pēc uzdevumu parādīšanās); aplītis hover rāda check + tooltip `status.complete_ask` (pabeidz / atver atpakaļ); arhīva poga kartītē parāda pabeigtos, progresa josla paliek. Apakšuzdevumam ar pielikumiem `fa-paperclip` aiz nosaukuma. Klikšķis uz apakšuzdevuma iet caur `ListWindowsBoard` `onOpenSubtask` → vienu `SubtaskDetailModal` lapā (`TaskDetailPage`). Apakšuzdevuma aplītis un nosaukums ir statusa krāsā. Logs **Faili**: tiešie `list_files` + `task_files` no `getDescendantSubtasks` (klikšķis: bildes/PDF/txt modālī, pārējie lejupielādējas caur FileViewerProvider; pielikumam ar piezīmi hover rāda tooltip). Logs **Uzdevumi** paliek vilktā `sortOrder` secībā; tā arhīva poga (`handleTasksArchiveChange`) sinhronizē arhīvu visām Saraksts loga kartītēm (`overviewArchiveById`), bet katru kartīti var pārslēgt atsevišķi. Logs **Vēsture**: pēdējās darbības no apakškoka (`fetchTaskActivitiesForTaskIds`)
 - Failu saturs no Drive/OneDrive: `contentDispositionForFile` lieto ASCII `filename` + RFC 5987 `filename*` (latviešu burti `Content-Disposition` galvenē citādi krīt Fetch/undici). Lejupielāde caur `downloadUrlAsFile` (sesijas `fetch` → blob); priekšskatījuma modālī pogā spinneris, kamēr iet lejupielāde
 
 ## Sarakstu pieejas
@@ -318,7 +318,7 @@ Prioritāte: biedra rinda (`work_list_viewers.access_level`) → lomas rinda (`w
 - Koka / Saraksta loga aplītis: `statusDotClassName` (fons + apmale tās pašas); teksts: `statusTextClassName`
 - Picker portal `z-80`, `data-app-modal-ignore-backdrop`; ESC aizver tikai picker
 - Nākamais statuss: `nextStatusId` pēc kataloga `sort_order` (ne tikai todo → in_progress → done)
-- Sākuma / saraksta kopsavilkuma grupēšana ir **pretēja** picker: `statusesByPriorityDesc` (piem. IZM → IN PROGRESS → TO DO). Picker paliek Nav sākts → Aktīvs → Slēgts
+- Sākuma / saraksta kopsavilkuma un Folder kartīšu grupēšana ir **pretēja** picker: `groupTasksByStatus` / `statusesByPriorityDesc` pēc kataloga (piem. IZM → IN PROGRESS → TO DO), ne pēc uzdevumu secības. Picker paliek Nav sākts → Aktīvs → Slēgts
 - `work_tasks.status` ir brīvs teksts pēc `025_work_tasks_catalog_status.sql` (noņemts check tikai uz todo / in_progress / done)
 - Tabulā `revealActionsOnHover`: bez hover tikai statusa nosaukums; hover (vai atvērts picker / pārvietošana) rāda `>` un trailing pogas, vieta rezervēta, bez animācijas
 - Zem pogas `RelativeTime` (`app/components/relative-time.tsx`, `getLastOnlineDisplay`); tooltipā precīzais `dd.mm.yy hh:mm`
@@ -464,7 +464,8 @@ app/
     resume-subscription-button.tsx # Zaļa Atjaunot abonementu (billing lapa + TeamSubscriptionEndingBanner)
     team-leave-section.tsx        # Pamest komandu (profils, biedra lapa)
     app-shell.tsx                 # Layout ar sānjoslu; zem 1024px sānjosla slēpta, burger overlay
-    dashboard-home-page.tsx       # Sākums: Mani uzdevumi (ja ir) + saraksti
+    dashboard-home-page.tsx       # Sākums: Mani uzdevumi (ja ir, ar Atlikt) + saraksti
+    task-snooze-button.tsx        # Personīgs Atlikt tikai Mani uzdevumi (1h / rītdiena / nedēļa / datums)
     lists-overview-page.tsx       # Saraksta kopsavilkums
     list-detail-page.tsx          # Saraksta kopsavilkums + arhīva skats
     list-form-modal.tsx           # Jauns/labot sarakstu + pieejas; privāts slēdzis pēc `module_private_list`
@@ -546,7 +547,9 @@ app/
     legal/documents.ts            # Privacy / terms / cookies teksti
     lists.ts                      # Sarakstu/uzdevumu tipi, krāsas, location PATH, parseIdList, parseStatusGroupMap, `workProgressById` / `listProgress`
     task-checklists.ts            # Čeklistu tipi, progress, incomplete helper
-    list-statuses.ts              # Saraksta statusu tipi un kataloga merge
+    list-statuses.ts              # Saraksta statusu tipi, kataloga merge, `groupTasksByStatus` pēc kataloga
+    task-snooze.ts                # Personīgā Atlikt laika helperi
+    use-user-task-snoozes.ts      # `user_task_snoozes` fetch / upsert / delete (`134`)
     list-automations.ts           # Automatizāciju tipi, mapRow, activeFolderCreatedTemplateAutomations
     docs/                         # Publiskā dokumentācija: tipi, repository, slug, attēli, `{SYSTEM_NAME}` placeholders, `image-preview.ts` (sharp WebP 32px)
     fontawesome-icons.ts          # FA free katalogs ikonu pickerim (`scripts/generate-fa-icons.mjs`)
@@ -625,7 +628,7 @@ app/auth/onedrive/callback/route.ts # OneDrive OAuth code → team refresh token
 app/api/google-drive/             # upload, content, rename
 app/api/onedrive/                 # upload, content, rename
 scripts/                          # audit-check.mjs, apply-migrations.mjs, test-supabase.mjs, sync-i18n-catalogs.mjs (`npm run i18n:check`), generate-fa-icons.mjs
-supabase/migrations/              # 001–125: shēma, admin, work data, Drive, drošība, ielādes ātrums, e-pasta šabloni, Gmail spraudnis, publiskie login karogi, extra valodas, legal_email, invite preview `account_exists`, `file_forwarded` vēsture, Resend email id indekss, user feedback + feature votes, cron jobs, hashed tokeni, timezone batchi, Turnstile, payment plan max_members, free/paid plānu seed, Stripe vietu norēķini, brīvas vietas paziņojums, Early access vietu pool, `billing_due`, noklusējuma lomu labels visās valodās (`101`), publiskā dokumentācija (`118`–`121`), VIP (`122`), failu `content` strip (`123`), `onedrive_file_id` (`124`), globāli paziņojumi (`125`)
+supabase/migrations/              # 001–134: shēma, admin, work data, Drive, drošība, ielādes ātrums, e-pasta šabloni, Gmail spraudnis, publiskie login karogi, extra valodas, legal_email, invite preview `account_exists`, `file_forwarded` vēsture, Resend email id indekss, user feedback + feature votes, cron jobs, hashed tokeni, timezone batchi, Turnstile, payment plan max_members, free/paid plānu seed, Stripe vietu norēķini, brīvas vietas paziņojums, Early access vietu pool, `billing_due`, noklusējuma lomu labels visās valodās (`101`), publiskā dokumentācija (`118`–`121`), VIP (`122`), failu `content` strip (`123`), `onedrive_file_id` (`124`), globāli paziņojumi (`125`), personīgs uzdevumu Atlikt (`134`)
 .github/workflows/                # secret-scan.yml, security-audit.yml, security-smoke.yml
 .gitleaks.toml                    # default rules + i18n translation key allowlist
 .cursor/rules/                    # README bump, commits

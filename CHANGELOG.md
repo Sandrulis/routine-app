@@ -4,6 +4,11 @@
 
 - (none)
 
+## v0.3.54
+
+- Sākumā **Mani uzdevumi**: Atlikt (1 stunda, līdz rītdienai, 1 nedēļa vai datums); atliktie sakļauti ar **Rādīt atkal**
+- Folder / Saraksts kartītēs statusu grupas pēc kataloga svarīguma (pretēji picker), ne pēc uzdevumu secības
+
 ## v0.3.53
 
 - Failu priekšskatījumā **Lejupielādēt** rāda loading; labota lejupielāde (un PDF atvēršana), ja nosaukumā ir latviešu burti

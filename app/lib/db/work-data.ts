@@ -1673,6 +1673,49 @@ export async function upsertUserNotificationPreferences(
   if (error) throw error;
 }
 
+export async function fetchUserTaskSnoozes(
+  userId: string,
+): Promise<Map<string, string>> {
+  const map = new Map<string, string>();
+  const { data, error } = await db()
+    .from("user_task_snoozes")
+    .select("task_id, snooze_until")
+    .eq("user_id", userId);
+  if (error) throw error;
+  for (const row of data ?? []) {
+    if (row.task_id && row.snooze_until) {
+      map.set(String(row.task_id), String(row.snooze_until));
+    }
+  }
+  return map;
+}
+
+export async function upsertUserTaskSnooze(
+  userId: string,
+  taskId: string,
+  snoozeUntil: string,
+) {
+  const { error } = await db().from("user_task_snoozes").upsert(
+    {
+      user_id: userId,
+      task_id: taskId,
+      snooze_until: snoozeUntil,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "user_id,task_id" },
+  );
+  if (error) throw error;
+}
+
+export async function deleteUserTaskSnooze(userId: string, taskId: string) {
+  const { error } = await db()
+    .from("user_task_snoozes")
+    .delete()
+    .eq("user_id", userId)
+    .eq("task_id", taskId);
+  if (error) throw error;
+}
+
 export async function fetchTeamTodos(teamId: string): Promise<TodoItem[]> {
   const { data, error } = await db()
     .from("team_todos")

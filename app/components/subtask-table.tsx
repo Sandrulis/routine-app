@@ -25,6 +25,7 @@ import { MoveSubtaskModal } from "@/app/components/move-subtask-modal";
 import { SubtaskBulkBar, SubtaskSelectCheckbox } from "@/app/components/subtask-bulk-bar";
 import { TaskLocationPath } from "@/app/components/task-location-path";
 import { StatusControl, statusClassName } from "@/app/components/status-control";
+import { TaskSnoozeButton } from "@/app/components/task-snooze-button";
 import {
   dropHintFromEvent,
   frozenSortingStrategy,
@@ -509,6 +510,8 @@ export function SubtaskTable({
   reorderable = true,
   groupByStatus = false,
   mergeStatusByLabel = false,
+  onSnooze,
+  onUnsnooze,
 }: {
   listId?: string;
   tasks: WorkTask[];
@@ -518,6 +521,8 @@ export function SubtaskTable({
   reorderable?: boolean;
   groupByStatus?: boolean;
   mergeStatusByLabel?: boolean;
+  onSnooze?: (task: WorkTask, untilIso: string) => void;
+  onUnsnooze?: (task: WorkTask) => void;
 }) {
   const { t } = useTranslations();
   const dndContextId = useId();
@@ -811,6 +816,14 @@ export function SubtaskTable({
         onToggleSelect={(shiftKey) => toggleSelected(task.id, shiftKey)}
         canEdit={access.canEditTasks && !deleted}
         canChangeStatus={access.canChangeStatus && !deleted}
+        onSnooze={
+          onSnooze && !deleted
+            ? (untilIso) => onSnooze(task, untilIso)
+            : undefined
+        }
+        onUnsnooze={
+          onUnsnooze && !deleted ? () => onUnsnooze(task) : undefined
+        }
       />
     );
   }
@@ -1020,6 +1033,8 @@ function SortableSubtaskRow({
   moveOpen = false,
   reorderable = true,
   locationSegments = [],
+  onSnooze,
+  onUnsnooze,
 }: {
   listId: string;
   parentTaskId?: string | null;
@@ -1046,8 +1061,11 @@ function SortableSubtaskRow({
   moveOpen?: boolean;
   reorderable?: boolean;
   locationSegments?: TaskLocationSegment[];
+  onSnooze?: (untilIso: string) => void;
+  onUnsnooze?: () => void;
 }) {
   const { t } = useTranslations();
+  const [snoozeOpen, setSnoozeOpen] = useState(false);
   const { taskFiles } = useLists();
   const { currentUser, roles } = useTeam();
   const { isAdmin } = useIsAdmin();
@@ -1212,10 +1230,24 @@ function SortableSubtaskRow({
           onRestore={onRestore}
           onChange={(status) => onUpdate(task.id, { status })}
           revealActionsOnHover
-          actionsForced={moveOpen}
+          actionsForced={moveOpen || snoozeOpen}
           trailing={
-            onMove || onHide ? (
+            onMove || onHide || onSnooze || onUnsnooze ? (
               <>
+                {onSnooze ? (
+                  <TaskSnoozeButton
+                    onSnooze={onSnooze}
+                    onOpenChange={setSnoozeOpen}
+                  />
+                ) : null}
+                {onUnsnooze ? (
+                  <IconActionButton
+                    label={t("dashboard.snooze.show_again", "Rādīt atkal")}
+                    icon="fas fa-eye"
+                    variant="muted"
+                    onClick={onUnsnooze}
+                  />
+                ) : null}
                 {onMove ? (
                   <IconActionButton
                     label={moveLabel}
