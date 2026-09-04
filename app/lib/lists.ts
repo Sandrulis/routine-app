@@ -746,6 +746,19 @@ export function isClosedTaskStatus(
   if (matches.length > 0) {
     return matches.every((row) => row.groupKey === "closed");
   }
+  return false;
+}
+
+export function isDoneTaskStatus(
+  status: string,
+  catalog?: { id: string; groupKey: string }[],
+): boolean {
+  const matches = catalog?.filter((item) => item.id === status) ?? [];
+  if (matches.length > 0) {
+    return matches.some(
+      (row) => row.groupKey === "done" || row.groupKey === "closed",
+    );
+  }
   return status === "done";
 }
 

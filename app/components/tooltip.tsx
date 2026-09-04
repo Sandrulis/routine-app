@@ -7,6 +7,7 @@ import {
   useLayoutEffect,
   useRef,
   useState,
+  useSyncExternalStore,
   type ReactNode,
 } from "react";
 import { createPortal } from "react-dom";
@@ -27,20 +28,26 @@ const GAP_PX = 6;
 const VIEWPORT_PADDING_PX = 12;
 const DESKTOP_HOVER_UI = "(min-width: 1024px)";
 
+function subscribeDesktopHoverUi(onStoreChange: () => void) {
+  const media = window.matchMedia(DESKTOP_HOVER_UI);
+  media.addEventListener("change", onStoreChange);
+  return () => media.removeEventListener("change", onStoreChange);
+}
+
+function getDesktopHoverUiSnapshot() {
+  return window.matchMedia(DESKTOP_HOVER_UI).matches;
+}
+
+function getDesktopHoverUiServerSnapshot() {
+  return false;
+}
+
 function useDesktopHoverUi() {
-  const [enabled, setEnabled] = useState(false);
-
-  useEffect(() => {
-    const media = window.matchMedia(DESKTOP_HOVER_UI);
-    function sync() {
-      setEnabled(media.matches);
-    }
-    sync();
-    media.addEventListener("change", sync);
-    return () => media.removeEventListener("change", sync);
-  }, []);
-
-  return enabled;
+  return useSyncExternalStore(
+    subscribeDesktopHoverUi,
+    getDesktopHoverUiSnapshot,
+    getDesktopHoverUiServerSnapshot,
+  );
 }
 
 function computeTooltipPosition(
@@ -105,6 +112,8 @@ export function Tooltip({
   className = "",
   align = "center",
 }: TooltipProps) {
+  const text = label.trim();
+  const hasLabel = text.length > 0;
   const tooltipId = useId();
   const triggerRef = useRef<HTMLSpanElement>(null);
   const tooltipRef = useRef<HTMLSpanElement>(null);
@@ -134,10 +143,10 @@ export function Tooltip({
   }, [align]);
 
   const show = useCallback(() => {
-    if (!desktopHover) return;
+    if (!desktopHover || !hasLabel) return;
     setIsPositioned(false);
     setVisible(true);
-  }, [desktopHover]);
+  }, [desktopHover, hasLabel]);
 
   const hide = useCallback(() => {
     setVisible(false);
@@ -150,9 +159,9 @@ export function Tooltip({
   }, [desktopHover, hide]);
 
   useLayoutEffect(() => {
-    if (!visible || !mounted) return;
+    if (!visible || !mounted || !hasLabel) return;
     updatePosition();
-  }, [visible, mounted, label, align, updatePosition]);
+  }, [visible, mounted, hasLabel, text, align, updatePosition]);
 
   useEffect(() => {
     if (!visible) return;
@@ -190,7 +199,7 @@ export function Tooltip({
             }}
             className={`w-max max-w-[min(22rem,calc(100vw-1.5rem))] whitespace-pre-wrap rounded-md bg-black px-3 py-1.5 text-[11px] font-medium leading-snug text-white shadow-lg ${textAlignClass}`}
           >
-            {label}
+            {text}
           </span>,
           document.body,
         )
@@ -201,14 +210,18 @@ export function Tooltip({
       <span
         ref={triggerRef}
         className={`inline-flex ${className}`.trim()}
-        onMouseEnter={show}
-        onMouseLeave={hide}
-        onFocus={show}
-        onBlur={(event) => {
-          if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
-            hide();
-          }
-        }}
+        onMouseEnter={hasLabel ? show : undefined}
+        onMouseLeave={hasLabel ? hide : undefined}
+        onFocus={hasLabel ? show : undefined}
+        onBlur={
+          hasLabel
+            ? (event) => {
+                if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
+                  hide();
+                }
+              }
+            : undefined
+        }
       >
         {children}
       </span>
@@ -261,17 +274,11 @@ export function OverflowTooltip({
     ? [label.trim(), extra].filter(Boolean).join("\n")
     : extra;
 
-  const content = (
-    <span ref={measureRef} className={`min-w-0 ${className}`.trim()}>
-      {children}
-    </span>
-  );
-
-  if (!tooltipText) return content;
-
   return (
     <Tooltip label={tooltipText} className={className} align={align}>
-      {content}
+      <span ref={measureRef} className="min-w-0">
+        {children}
+      </span>
     </Tooltip>
   );
 }

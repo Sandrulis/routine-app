@@ -116,15 +116,42 @@ function StatusIcon({
 export function StatusGlyph({
   color,
   groupKey,
+  icon = null,
   className = "",
 }: {
   color: string;
   groupKey: string;
+  icon?: string | null;
   className?: string;
 }) {
   const fill = color.trim() || "#a1a1aa";
+  const customIcon = icon?.trim();
+
+  if (customIcon) {
+    return (
+      <span
+        className={`inline-flex size-3.5 shrink-0 items-center justify-center rounded-full text-white ${className}`}
+        style={{ backgroundColor: fill }}
+        aria-hidden="true"
+      >
+        <i className={`${customIcon} text-[8px]`} />
+      </span>
+    );
+  }
 
   if (groupKey === "closed") {
+    return (
+      <span
+        className={`inline-flex size-3.5 shrink-0 items-center justify-center rounded-full text-white ${className}`}
+        style={{ backgroundColor: fill }}
+        aria-hidden="true"
+      >
+        <i className="fas fa-box-archive text-[8px]" />
+      </span>
+    );
+  }
+
+  if (groupKey === "done") {
     return (
       <span
         className={`inline-flex size-3.5 shrink-0 items-center justify-center rounded-full text-white ${className}`}
@@ -208,8 +235,14 @@ export function StatusControl({
   const nextBlocked = completeBlocked && nextIsClosed;
   const currentStatus = statuses.find((row) => row.id === status);
   const closedStatus =
-    [...statuses].reverse().find((row) => row.groupKey === "closed")?.id ?? "done";
-  const isDone = currentStatus?.groupKey === "closed" || status === "done";
+    [...statuses].reverse().find((row) => row.groupKey === "done")?.id ??
+    [...statuses].reverse().find((row) => row.groupKey === "closed")?.id ??
+    "done";
+  const currentGroup = currentStatus?.groupKey;
+  const isDone =
+    currentGroup === "done" ||
+    currentGroup === "closed" ||
+    status === "done";
   const muted = isDone || deleted;
   const statusColor = deleted ? DELETED_STATUS_COLOR : colorFor(status);
   const statusLabel = deleted
@@ -288,6 +321,7 @@ export function StatusControl({
   const groupLabel = {
     not_started: t("status.group.not_started", "Nav sākts"),
     active: t("status.group.active", "Aktīvs"),
+    done: t("status.group.done", "Pabeigts"),
     closed: t("status.group.closed", "Slēgts"),
   };
 
@@ -669,6 +703,7 @@ export function StatusPickerDropdown({
   const groupLabel = {
     not_started: t("status.group.not_started", "Nav sākts"),
     active: t("status.group.active", "Aktīvs"),
+    done: t("status.group.done", "Pabeigts"),
     closed: t("status.group.closed", "Slēgts"),
   };
 

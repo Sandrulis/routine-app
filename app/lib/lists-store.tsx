@@ -256,7 +256,7 @@ type ListsContextValue = {
   ) => ListStatus | null;
   updateListStatus: (
     statusId: string,
-    patch: Partial<Pick<ListStatus, "label" | "color" | "groupKey">>,
+    patch: Partial<Pick<ListStatus, "label" | "color" | "icon" | "groupKey">>,
   ) => void;
   deleteListStatus: (statusId: string) => void;
   reorderListStatuses: (listId: string, orderedIds: string[]) => void;
@@ -274,7 +274,7 @@ type ListsContextValue = {
   ) => WorkTaskStatusDef | null;
   updateWorkTaskStatus: (
     statusId: string,
-    patch: Partial<Pick<WorkTaskStatusDef, "label" | "color" | "groupKey">>,
+    patch: Partial<Pick<WorkTaskStatusDef, "label" | "color" | "icon" | "groupKey">>,
   ) => void;
   deleteWorkTaskStatus: (statusId: string) => void;
   reassignSubtasksOffStatus: (
@@ -1482,6 +1482,7 @@ export function ListsProvider({ children }: { children: ReactNode }) {
         labels: {},
         label,
         color: normalizeStatusColor(input.color),
+        icon: null,
         sortOrder,
         groupKey: isListStatusGroup(input.groupKey) ? input.groupKey : "active",
       };
@@ -1499,7 +1500,7 @@ export function ListsProvider({ children }: { children: ReactNode }) {
   const updateListStatus = useCallback(
     (
       statusId: string,
-      patch: Partial<Pick<ListStatus, "label" | "color" | "groupKey">>,
+      patch: Partial<Pick<ListStatus, "label" | "color" | "icon" | "groupKey">>,
     ) => {
       setListStatuses((current) =>
         current.map((status) => {
@@ -1513,6 +1514,7 @@ export function ListsProvider({ children }: { children: ReactNode }) {
               patch.color !== undefined
                 ? normalizeStatusColor(patch.color)
                 : status.color,
+            icon: patch.icon !== undefined ? patch.icon?.trim() || null : status.icon,
             groupKey:
               patch.groupKey !== undefined
                 ? isListStatusGroup(patch.groupKey)
@@ -1555,6 +1557,7 @@ export function ListsProvider({ children }: { children: ReactNode }) {
         labels: {},
         label,
         color: normalizeStatusColor(input.color),
+        icon: null,
         sortOrder,
         groupKey: isListStatusGroup(input.groupKey) ? input.groupKey : "active",
       };
@@ -1579,7 +1582,7 @@ export function ListsProvider({ children }: { children: ReactNode }) {
   const updateWorkTaskStatus = useCallback(
     (
       statusId: string,
-      patch: Partial<Pick<WorkTaskStatusDef, "label" | "color" | "groupKey">>,
+      patch: Partial<Pick<WorkTaskStatusDef, "label" | "color" | "icon" | "groupKey">>,
     ) => {
       setWorkTaskStatuses((current) =>
         current.map((status) => {
@@ -1593,6 +1596,7 @@ export function ListsProvider({ children }: { children: ReactNode }) {
               patch.color !== undefined
                 ? normalizeStatusColor(patch.color)
                 : status.color,
+            icon: patch.icon !== undefined ? patch.icon?.trim() || null : status.icon,
             groupKey:
               patch.groupKey !== undefined
                 ? isListStatusGroup(patch.groupKey)

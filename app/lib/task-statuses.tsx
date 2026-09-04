@@ -4,6 +4,7 @@ import { createContext, useContext, useMemo, type ReactNode } from "react";
 import { useTranslations } from "@/app/components/translations-provider";
 import {
   applyTeamStatusLabels,
+  LIST_STATUS_GROUPS,
   resolveStatusCatalogs,
 } from "@/app/lib/list-statuses";
 import { useListsOptional } from "@/app/lib/lists-store";
@@ -31,6 +32,7 @@ const FALLBACK_STATUSES: TaskStatusSummary[] = [
     },
     label: "Darāms",
     color: "#a1a1aa",
+    icon: null,
     sortOrder: 0,
     groupKey: "not_started",
   },
@@ -55,6 +57,7 @@ const FALLBACK_STATUSES: TaskStatusSummary[] = [
     },
     label: "Procesā",
     color: "#f97316",
+    icon: null,
     sortOrder: 1,
     groupKey: "active",
   },
@@ -79,12 +82,13 @@ const FALLBACK_STATUSES: TaskStatusSummary[] = [
     },
     label: "Gatavs",
     color: "#10b981",
+    icon: null,
     sortOrder: 2,
-    groupKey: "closed",
+    groupKey: "done",
   },
 ];
 
-const GROUP_ORDER = ["not_started", "active", "closed"] as const;
+const GROUP_ORDER = LIST_STATUS_GROUPS;
 
 type TaskStatusesContextValue = {
   statuses: TaskStatusSummary[];

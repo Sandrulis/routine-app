@@ -142,6 +142,7 @@ export type TaskStatusSummary = {
   labels: Record<string, string>;
   label: string;
   color: string;
+  icon?: string | null;
   sortOrder: number;
   groupKey: string;
 };
@@ -150,6 +151,7 @@ export type TaskStatusInput = {
   id: string;
   labels: Record<string, string>;
   color: string;
+  icon?: string | null;
   groupKey: string;
 };
 

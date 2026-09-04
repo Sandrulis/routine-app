@@ -1,46 +1,45 @@
 "use client";
 
+export { GroupSeparator, SortableStatusRow } from "@/app/components/status-settings-row";
+
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import {
-  closestCenter,
   DndContext,
   PointerSensor,
-  pointerWithin,
-  useDroppable,
   useSensor,
   useSensors,
-  type CollisionDetection,
   type DragEndEvent,
 } from "@dnd-kit/core";
 import {
   SortableContext,
-  useSortable,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
 import {
   AppModal,
   appModalExtraWidePanelMaxWidthClassName,
 } from "@/app/components/app-modal";
 import { ConfirmModal } from "@/app/components/confirm-modal";
-import { DragHandle } from "@/app/components/drag-handle";
-import { IconActionButton } from "@/app/components/icon-action-button";
 import { StatusGlyph } from "@/app/components/status-control";
+import {
+  GroupSeparator,
+  SortableStatusRow,
+  STATUS_GROUP_OPTIONS,
+  statusDnDCollisionDetection,
+  statusGroupLabel,
+} from "@/app/components/status-settings-row";
 import { useFeedbackToast } from "@/app/components/feedback-toast-provider";
 import { useTranslations } from "@/app/components/translations-provider";
 import type { WorkTaskStatusDef } from "@/app/lib/list-statuses";
 import {
   applyStatusGroupOverrides,
   canRemoveStatus,
-  enforceSingletonGroups,
   flattenGroupedStatusIds,
   groupedStatusLayout,
   insertStatusInGroupOrder,
-  groupWouldBeEmpty,
   isCustomListStatus,
   isCustomWorkTaskStatus,
   isListStatusGroup,
-  isSingletonStatusGroup,
+  isScopedCustomStatus,
   mergeStatusCatalog,
   moveStatusInLayout,
   normalizeStatusColor,
@@ -48,22 +47,20 @@ import {
   visibleStatusIdsAfter,
   type ListStatusGroup,
 } from "@/app/lib/list-statuses";
+import {
+  canToggleStatusVisibility,
+  hiddenIdsEqual,
+  normalizeHiddenStatusIds,
+  toggleStatusVisibility,
+} from "@/app/lib/status-visibility";
 import { useLists } from "@/app/lib/lists-store";
 import type { WorkTask } from "@/app/lib/lists";
 import { useSystemTaskStatuses } from "@/app/lib/task-statuses";
 import type { TaskStatusSummary } from "@/app/lib/site-admin/types";
 
-const GROUP_OPTIONS = [
-  { value: "not_started", labelKey: "status.group.not_started", fallback: "Nav sākts" },
-  { value: "active", labelKey: "status.group.active", fallback: "Aktīvs" },
-  { value: "closed", labelKey: "status.group.closed", fallback: "Slēgts" },
-] as const;
+const GROUP_OPTIONS = STATUS_GROUP_OPTIONS;
 
-const collisionDetection: CollisionDetection = (args) => {
-  const pointerHits = pointerWithin(args);
-  if (pointerHits.length > 0) return pointerHits;
-  return closestCenter(args);
-};
+const collisionDetection = statusDnDCollisionDetection;
 
 type StatusDraft = {
   label: string;
@@ -125,7 +122,7 @@ export function TaskStatusesModal({
   );
   const catalog = useMemo(() => {
     if (!liveTask) return [];
-    const merged = applyStatusGroupOverrides(
+    return applyStatusGroupOverrides(
       mergeStatusCatalog(
         systemStatuses,
         listStatuses.filter((status) => status.listId === liveTask.listId),
@@ -138,7 +135,6 @@ export function TaskStatusesModal({
         ...liveTask.statusGroupOverrides,
       },
     );
-    return enforceSingletonGroups(merged).catalog;
   }, [custom, liveList?.statusGroupOverrides, liveTask, listStatuses, systemStatuses]);
   const groups = useMemo(
     () =>
@@ -149,6 +145,19 @@ export function TaskStatusesModal({
           : (liveList?.statusOrder ?? []),
       ),
     [catalog, liveList, liveTask],
+  );
+  const laidOutStatuses = useMemo(
+    () => groups.flatMap((group) => group.statuses),
+    [groups],
+  );
+  const effectiveHiddenIds = useMemo(
+    () =>
+      normalizeHiddenStatusIds(
+        laidOutStatuses,
+        liveTask?.hiddenStatusIds ?? [],
+        (status) => !isScopedCustomStatus(status),
+      ),
+    [laidOutStatuses, liveTask?.hiddenStatusIds],
   );
   const groupOverrides = {
     ...(liveList?.statusGroupOverrides ?? {}),
@@ -197,56 +206,23 @@ export function TaskStatusesModal({
     setDraft(emptyDraft());
   }, [open]);
 
-  function groupLabel(groupKey: string) {
-    const option = GROUP_OPTIONS.find((item) => item.value === groupKey);
-    return option ? t(option.labelKey, option.fallback) : groupKey;
-  }
-
-  function persistDisplaced(
-    displacedIds: string[],
-    nextCatalog: TaskStatusSummary[],
-  ) {
-    for (const statusId of displacedIds) {
-      const status = nextCatalog.find((item) => item.id === statusId);
-      if (status && isCustomWorkTaskStatus(status)) {
-        updateWorkTaskStatus(statusId, { groupKey: "active" });
-      } else if (status && isCustomListStatus(status)) {
-        updateListStatus(statusId, { groupKey: "active" });
-      }
+  useEffect(() => {
+    if (!open || !liveTask) return;
+    const current = liveTask.hiddenStatusIds ?? [];
+    if (!hiddenIdsEqual(effectiveHiddenIds, current)) {
+      updateTask(liveTask.id, { hiddenStatusIds: effectiveHiddenIds });
     }
-  }
-
-  function saveLayout(patch: {
-    statusOrder?: string[];
-    statusGroupOverrides?: Record<string, string>;
-    hiddenStatusIds?: string[];
-    catalog?: TaskStatusSummary[];
-    keepIds?: Partial<Record<ListStatusGroup, string>>;
-  }) {
-    if (!liveTask) return;
-    const nextCatalog = patch.catalog ?? catalog;
-    const enforced = enforceSingletonGroups(nextCatalog, patch.keepIds);
-    updateTask(liveTask.id, {
-      statusOrder:
-        patch.statusOrder ??
-        flattenGroupedStatusIds(enforced.catalog, liveTask.statusOrder),
-      statusGroupOverrides: {
-        ...(patch.statusGroupOverrides ?? groupOverrides),
-        ...enforced.overrides,
-      },
-      ...(patch.hiddenStatusIds !== undefined
-        ? { hiddenStatusIds: patch.hiddenStatusIds }
-        : {}),
-    });
-    persistDisplaced(enforced.displacedIds, enforced.catalog);
-  }
+  }, [effectiveHiddenIds, liveTask, open, updateTask]);
 
   function toggleHidden(statusId: string) {
     if (!liveTask) return;
-    const hidden = new Set(liveTask.hiddenStatusIds ?? []);
-    if (hidden.has(statusId)) {
-      hidden.delete(statusId);
-    } else if (groupWouldBeEmpty(catalog, [...hidden], statusId)) {
+    const nextHidden = toggleStatusVisibility(
+      catalog,
+      effectiveHiddenIds,
+      statusId,
+      (status) => !isScopedCustomStatus(status),
+    );
+    if (!nextHidden) {
       showFeedback({
         type: "error",
         text: t(
@@ -255,10 +231,38 @@ export function TaskStatusesModal({
         ),
       });
       return;
-    } else {
-      hidden.add(statusId);
     }
-    updateTask(liveTask.id, { hiddenStatusIds: [...hidden] });
+    const normalized = normalizeHiddenStatusIds(
+      laidOutStatuses,
+      nextHidden,
+      (status) => !isScopedCustomStatus(status),
+    );
+    updateTask(liveTask.id, { hiddenStatusIds: normalized });
+  }
+
+  function groupLabel(groupKey: string) {
+    return statusGroupLabel(groupKey, t);
+  }
+
+  function saveLayout(patch: {
+    statusOrder?: string[];
+    statusGroupOverrides?: Record<string, string>;
+    hiddenStatusIds?: string[];
+    catalog?: TaskStatusSummary[];
+  }) {
+    if (!liveTask) return;
+    const nextCatalog = patch.catalog ?? catalog;
+    updateTask(liveTask.id, {
+      statusOrder:
+        patch.statusOrder ??
+        flattenGroupedStatusIds(nextCatalog, liveTask.statusOrder),
+      statusGroupOverrides: {
+        ...(patch.statusGroupOverrides ?? groupOverrides),
+      },
+      ...(patch.hiddenStatusIds !== undefined
+        ? { hiddenStatusIds: patch.hiddenStatusIds }
+        : {}),
+    });
   }
 
   function openCreate() {
@@ -362,9 +366,6 @@ export function TaskStatusesModal({
         [created.id]: draft.groupKey,
       },
       catalog: nextCatalog,
-      keepIds: isSingletonStatusGroup(draft.groupKey)
-        ? { [draft.groupKey]: created.id }
-        : undefined,
     });
     showFeedback({
       type: "success",
@@ -458,9 +459,6 @@ export function TaskStatusesModal({
         [String(active.id)]: moved.toGroup,
       },
       catalog: moved.catalog,
-      keepIds: isSingletonStatusGroup(moved.toGroup)
-        ? { [moved.toGroup]: String(active.id) }
-        : undefined,
     });
   }
 
@@ -495,24 +493,22 @@ export function TaskStatusesModal({
               collisionDetection={collisionDetection}
               onDragEnd={handleDragEnd}
             >
-              <SortableContext
-                items={groups.flatMap((group) =>
-                  group.statuses.map((status) => status.id),
-                )}
-                strategy={verticalListSortingStrategy}
-              >
-                <ul>
-                  {groups.map((group) => (
-                    <li key={group.id}>
-                      <GroupSeparator
-                        id={statusGroupDroppableId(group.id)}
-                        label={groupLabel(group.id)}
-                        empty={group.statuses.length === 0}
-                        emptyLabel={t(
-                          "lists.statuses.group.empty",
-                          "Šajā grupā vēl nav statusu.",
-                        )}
-                      />
+              <ul>
+                {groups.map((group) => (
+                  <li key={group.id}>
+                    <GroupSeparator
+                      id={statusGroupDroppableId(group.id)}
+                      label={groupLabel(group.id)}
+                      empty={group.statuses.length === 0}
+                      emptyLabel={t(
+                        "lists.statuses.group.empty",
+                        "Velc statusu šeit, lai pievienotu grupai.",
+                      )}
+                    />
+                    <SortableContext
+                      items={group.statuses.map((status) => status.id)}
+                      strategy={verticalListSortingStrategy}
+                    >
                       <ul className="divide-y divide-zinc-100">
                         {group.statuses.map((status) => {
                           const taskCustom = isCustomWorkTaskStatus(status)
@@ -530,11 +526,15 @@ export function TaskStatusesModal({
                             : listCustom
                               ? listCustom.label
                               : labelFor(status.id);
-                          const hiddenIds = new Set(liveTask?.hiddenStatusIds ?? []);
+                          const hiddenIds = new Set(effectiveHiddenIds);
                           const isHidden = hiddenIds.has(status.id);
-                          const canHide =
-                            !isHidden &&
-                            !groupWouldBeEmpty(catalog, [...hiddenIds], status.id);
+                          const canToggleVisibility = canToggleStatusVisibility(
+                            laidOutStatuses,
+                            catalog,
+                            liveTask?.hiddenStatusIds ?? [],
+                            status.id,
+                            (item) => !isScopedCustomStatus(item),
+                          );
                           return (
                             <SortableStatusRow
                               key={status.id}
@@ -551,13 +551,13 @@ export function TaskStatusesModal({
                                 Boolean(taskCustom) &&
                                 canRemoveStatus(catalog, status.id)
                               }
-                              canHide={canHide}
-                              dragLabel={t("admin.statuses.drag", "Mainīt secību")}
-                              deleteDisabledLabel={t(
+                              canToggleVisibility={canToggleVisibility}
+                              visibilityDisabledLabel={t(
                                 "errors.status_group_min_one",
                                 "Katrā grupā jābūt vismaz vienam statusam.",
                               )}
-                              hideDisabledLabel={t(
+                              dragLabel={t("admin.statuses.drag", "Mainīt secību")}
+                              deleteDisabledLabel={t(
                                 "errors.status_group_min_one",
                                 "Katrā grupā jābūt vismaz vienam statusam.",
                               )}
@@ -577,6 +577,18 @@ export function TaskStatusesModal({
                                 "lists.statuses.renamed",
                                 "Pārsaukts",
                               )}
+                              scopeKind={
+                                taskCustom
+                                  ? "task"
+                                  : listCustom
+                                    ? "list"
+                                    : "system"
+                              }
+                              menuActions={{
+                                changeColor: Boolean(taskCustom || listCustom),
+                                changeIcon: Boolean(taskCustom || listCustom),
+                                delete: Boolean(taskCustom),
+                              }}
                               onStartEdit={() =>
                                 startEdit(status.id, displayLabel, status.color)
                               }
@@ -588,7 +600,21 @@ export function TaskStatusesModal({
                               }
                               onSaveEdit={saveEdit}
                               onCancelEdit={cancelEdit}
-                              onToggleHidden={() => toggleHidden(status.id)}
+                              onToggleVisibility={() => toggleHidden(status.id)}
+                              onChangeColor={
+                                taskCustom
+                                  ? (color) => updateWorkTaskStatus(status.id, { color })
+                                  : listCustom
+                                    ? (color) => updateListStatus(status.id, { color })
+                                    : undefined
+                              }
+                              onChangeIcon={
+                                taskCustom
+                                  ? (icon) => updateWorkTaskStatus(status.id, { icon })
+                                  : listCustom
+                                    ? (icon) => updateListStatus(status.id, { icon })
+                                    : undefined
+                              }
                               onReset={
                                 renamed
                                   ? () => {
@@ -609,22 +635,15 @@ export function TaskStatusesModal({
                                   ? () => setDeleteTarget(taskCustom)
                                   : undefined
                               }
-                              scopeKind={
-                                taskCustom
-                                  ? "task"
-                                  : listCustom
-                                    ? "list"
-                                    : "system"
-                              }
                               t={t}
                             />
                           );
                         })}
                       </ul>
-                    </li>
-                  ))}
-                </ul>
-              </SortableContext>
+                    </SortableContext>
+                  </li>
+                ))}
+              </ul>
             </DndContext>
           </div>
         </div>
@@ -737,244 +756,5 @@ export function TaskStatusesModal({
         onConfirm={handleDelete}
       />
     </>
-  );
-}
-
-export function GroupSeparator({
-  id,
-  label,
-  empty,
-  emptyLabel,
-}: {
-  id: string;
-  label: string;
-  empty: boolean;
-  emptyLabel: string;
-}) {
-  const { setNodeRef, isOver } = useDroppable({ id });
-
-  return (
-    <div
-      ref={setNodeRef}
-      className={`border-b border-zinc-200 bg-zinc-50 px-4 py-2 ${
-        isOver ? "bg-sky-50" : ""
-      }`}
-    >
-      <p className="text-[11px] font-semibold uppercase tracking-wider text-zinc-400">
-        {label}
-      </p>
-      {empty ? (
-        <p className="pt-1 text-sm text-zinc-400">{emptyLabel}</p>
-      ) : null}
-    </div>
-  );
-}
-
-export function SortableStatusRow({
-  status,
-  label,
-  system,
-  hidden,
-  renamed,
-  editing,
-  editValue,
-  editColor,
-  editDirty,
-  canDelete,
-  canHide,
-  dragLabel,
-  deleteDisabledLabel,
-  hideDisabledLabel,
-  systemBadge,
-  listBadge,
-  taskBadge,
-  renamedBadge,
-  scopeKind,
-  onStartEdit,
-  onEditValueChange,
-  onEditColorChange,
-  onSaveEdit,
-  onCancelEdit,
-  onToggleHidden,
-  onReset,
-  onDelete,
-  t,
-}: {
-  status: TaskStatusSummary;
-  label: string;
-  system: boolean;
-  hidden: boolean;
-  renamed: boolean;
-  editing: boolean;
-  editValue: string;
-  editColor: string;
-  editDirty: boolean;
-  canDelete: boolean;
-  canHide: boolean;
-  dragLabel: string;
-  deleteDisabledLabel: string;
-  hideDisabledLabel: string;
-  systemBadge: string;
-  listBadge: string;
-  taskBadge: string;
-  renamedBadge: string;
-  scopeKind: "system" | "list" | "task";
-  onStartEdit: () => void;
-  onEditValueChange: (value: string) => void;
-  onEditColorChange: (value: string) => void;
-  onSaveEdit: () => void;
-  onCancelEdit: () => void;
-  onToggleHidden: () => void;
-  onReset?: () => void;
-  onDelete?: () => void;
-  t: ReturnType<typeof useTranslations>["t"];
-}) {
-  const inputRef = useRef<HTMLInputElement>(null);
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: status.id });
-
-  useEffect(() => {
-    if (!editing) return;
-    const input = inputRef.current;
-    if (!input) return;
-    input.focus();
-    const length = input.value.length;
-    input.setSelectionRange(length, length);
-  }, [editing]);
-
-  return (
-    <li
-      ref={setNodeRef}
-      style={{
-        transform: CSS.Transform.toString(transform),
-        transition,
-      }}
-      className={`flex items-center gap-2 px-3 py-2.5 ${
-        isDragging ? "relative z-10 bg-white shadow-sm" : ""
-      } ${hidden ? "bg-zinc-50/80 opacity-70" : ""}`}
-    >
-      <DragHandle label={dragLabel} attributes={attributes} listeners={listeners} />
-      {editing && !system ? (
-        <label
-          className="relative inline-flex shrink-0 cursor-pointer"
-          title={t("admin.statuses.color", "Krāsa")}
-          onPointerDown={(event) => event.stopPropagation()}
-        >
-          <StatusGlyph color={editColor} groupKey={status.groupKey} />
-          <input
-            type="color"
-            value={editColor}
-            aria-label={t("admin.statuses.color", "Krāsa")}
-            onChange={(event) => onEditColorChange(event.target.value)}
-            className="absolute inset-0 size-full cursor-pointer opacity-0"
-          />
-        </label>
-      ) : (
-        <StatusGlyph color={status.color} groupKey={status.groupKey} />
-      )}
-      {editing ? (
-        <input
-          ref={inputRef}
-          value={editValue}
-          aria-label={label}
-          onChange={(event) => onEditValueChange(event.target.value)}
-          onKeyDown={(event) => {
-            if (event.key === "Enter") {
-              event.preventDefault();
-              if (editDirty) onSaveEdit();
-              else onCancelEdit();
-            }
-            if (event.key === "Escape") {
-              event.preventDefault();
-              onCancelEdit();
-            }
-          }}
-          onPointerDown={(event) => event.stopPropagation()}
-          className="min-w-0 flex-1 rounded-lg border border-zinc-300 bg-white px-2 py-1 text-sm font-medium text-zinc-900 outline-none transition focus:border-zinc-400 focus:ring-2 focus:ring-zinc-100"
-        />
-      ) : (
-        <button
-          type="button"
-          onClick={onStartEdit}
-          className="min-w-0 flex-1 truncate rounded-lg px-2 py-1 text-left text-sm font-medium text-zinc-900 transition hover:bg-zinc-50"
-        >
-          {label}
-        </button>
-      )}
-      {editDirty ? (
-        <button
-          type="button"
-          onClick={onSaveEdit}
-          onPointerDown={(event) => event.stopPropagation()}
-          className="inline-flex shrink-0 items-center rounded-lg bg-zinc-900 px-2.5 py-1 text-xs font-medium text-white transition hover:bg-zinc-700"
-        >
-          {t("actions.save", "Saglabāt")}
-        </button>
-      ) : null}
-      {editing ? null : (
-        <>
-          {scopeKind === "system" ? (
-            <span className="hidden text-[11px] font-medium uppercase tracking-wide text-zinc-400 sm:inline">
-              {systemBadge}
-            </span>
-          ) : null}
-          {scopeKind === "list" ? (
-            <span className="hidden text-[11px] font-medium uppercase tracking-wide text-sky-600/80 sm:inline">
-              {listBadge}
-            </span>
-          ) : null}
-          {scopeKind === "task" ? (
-            <span className="hidden text-[11px] font-medium uppercase tracking-wide text-violet-600/80 sm:inline">
-              {taskBadge}
-            </span>
-          ) : null}
-          {renamed ? (
-            <span className="hidden text-[11px] text-zinc-400 sm:inline">
-              {renamedBadge}
-            </span>
-          ) : null}
-        </>
-      )}
-      <IconActionButton
-        label={
-          hidden
-            ? t("lists.statuses.show", "Rādīt")
-            : canHide
-              ? t("lists.statuses.hide", "Paslēpt")
-              : hideDisabledLabel
-        }
-        icon={hidden ? "fas fa-eye" : "fas fa-eye-slash"}
-        variant="muted"
-        disabled={!hidden && !canHide}
-        onClick={onToggleHidden}
-      />
-      {onReset ? (
-        <IconActionButton
-          label={t("lists.statuses.reset_default", "Atjaunot noklusējuma nosaukumu")}
-          icon="fas fa-rotate-left"
-          variant="muted"
-          onClick={onReset}
-        />
-      ) : null}
-      {onDelete ? (
-        <IconActionButton
-          label={
-            canDelete
-              ? t("actions.delete", "Dzēst")
-              : deleteDisabledLabel
-          }
-          icon="fas fa-trash"
-          variant="delete"
-          disabled={!canDelete}
-          onClick={() => onDelete()}
-        />
-      ) : null}
-    </li>
   );
 }

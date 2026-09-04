@@ -4,6 +4,11 @@
 
 - (none)
 
+## v0.3.56
+
+- Statusu pārvaldība: **Pabeigts** grupa, pielāgojamas ikonas, redzamības checkbox, `...` izvēlne un vilkšana starp grupām (nevis apmaiņa)
+- `not_started` un `closed` — viens redzams statuss; labots tooltip bezgalīgas atjaunināšanas cikla kļūda
+
 ## v0.3.55
 
 - Sākumā piesaistītie uzdevumi grupējas pēc statusa prioritātes (augstākais augšā), arī ja statusi nāk no dažādiem sarakstiem un mapēm

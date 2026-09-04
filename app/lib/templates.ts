@@ -14,6 +14,7 @@ export type TemplateTaskStatusDef = {
   id: string;
   label: string;
   color: string;
+  icon?: string | null;
   groupKey: ListStatusGroup;
   sortOrder: number;
 };
@@ -76,7 +77,9 @@ function parseTemplateTaskStatus(value: unknown): TemplateTaskStatusDef | null {
       : "sort_order" in value && typeof value.sort_order === "number"
         ? value.sort_order
         : 0;
-  return { id, label, color, groupKey, sortOrder };
+  const icon =
+    "icon" in value && typeof value.icon === "string" ? value.icon.trim() || null : null;
+  return { id, label, color, icon, groupKey, sortOrder };
 }
 
 export function parseTemplateTaskStatuses(value: unknown): TemplateTaskStatusDef[] {

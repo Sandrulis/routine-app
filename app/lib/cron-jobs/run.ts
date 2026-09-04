@@ -95,6 +95,7 @@ function mapSystemStatus(row: {
   const groupKey =
     row.group_key === "not_started" ||
     row.group_key === "active" ||
+    row.group_key === "done" ||
     row.group_key === "closed"
       ? row.group_key
       : "active";
@@ -103,6 +104,7 @@ function mapSystemStatus(row: {
     labels,
     label: String(row.label ?? ""),
     color: String(row.color ?? "#71717a"),
+    icon: null,
     sortOrder: Number(row.sort_order) || 0,
     groupKey,
   };
@@ -246,7 +248,7 @@ async function runJob(
     fetchInChunks(listIds, (chunk) =>
       supabase
         .from("list_statuses")
-        .select("id, list_id, label, labels, color, sort_order, group_key")
+        .select("id, list_id, label, labels, color, icon, sort_order, group_key")
         .in("list_id", chunk),
     ),
     parentIds.length > 0
@@ -254,7 +256,7 @@ async function runJob(
           supabase
             .from("work_task_statuses")
             .select(
-              "id, parent_task_id, list_id, label, labels, color, sort_order, group_key",
+              "id, parent_task_id, list_id, label, labels, color, icon, sort_order, group_key",
             )
             .in("parent_task_id", chunk),
         ) as Promise<Parameters<typeof mapWorkTaskStatusRow>[0][]>)

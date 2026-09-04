@@ -1,14 +1,11 @@
 "use client";
 
-import { useEffect, useId, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useState, useCallback } from "react";
 import {
-  closestCenter,
   DndContext,
   PointerSensor,
-  pointerWithin,
   useSensor,
   useSensors,
-  type CollisionDetection,
   type DragEndEvent,
 } from "@dnd-kit/core";
 import {
@@ -24,19 +21,19 @@ import { StatusGlyph } from "@/app/components/status-control";
 import {
   GroupSeparator,
   SortableStatusRow,
-} from "@/app/components/task-statuses-modal";
+  STATUS_GROUP_OPTIONS,
+  statusDnDCollisionDetection,
+  statusGroupLabel,
+} from "@/app/components/status-settings-row";
 import { useFeedbackToast } from "@/app/components/feedback-toast-provider";
 import { useTranslations } from "@/app/components/translations-provider";
 import {
   applyStatusGroupOverrides,
   canRemoveStatus,
-  enforceSingletonGroups,
   flattenGroupedStatusIds,
   groupedStatusLayout,
   insertStatusInGroupOrder,
-  groupWouldBeEmpty,
   isListStatusGroup,
-  isSingletonStatusGroup,
   mergeStatusCatalog,
   moveStatusInLayout,
   normalizeStatusColor,
@@ -44,6 +41,12 @@ import {
   type ListStatusGroup,
   type WorkTaskStatusDef,
 } from "@/app/lib/list-statuses";
+import {
+  canToggleStatusVisibility,
+  hiddenIdsEqual,
+  normalizeHiddenStatusIds,
+  toggleStatusVisibility,
+} from "@/app/lib/status-visibility";
 import { useLists } from "@/app/lib/lists-store";
 import { useSystemTaskStatuses } from "@/app/lib/task-statuses";
 import type { TaskStatusSummary } from "@/app/lib/site-admin/types";
@@ -53,17 +56,9 @@ import {
   type WorkTemplateItem,
 } from "@/app/lib/templates";
 
-const GROUP_OPTIONS = [
-  { value: "not_started", labelKey: "status.group.not_started", fallback: "Nav sākts" },
-  { value: "active", labelKey: "status.group.active", fallback: "Aktīvs" },
-  { value: "closed", labelKey: "status.group.closed", fallback: "Slēgts" },
-] as const;
+const GROUP_OPTIONS = STATUS_GROUP_OPTIONS;
 
-const collisionDetection: CollisionDetection = (args) => {
-  const pointerHits = pointerWithin(args);
-  if (pointerHits.length > 0) return pointerHits;
-  return closestCenter(args);
-};
+const collisionDetection = statusDnDCollisionDetection;
 
 type StatusDraft = {
   label: string;
@@ -86,6 +81,7 @@ function templateCustomAsCatalog(item: WorkTemplateItem): WorkTaskStatusDef[] {
     label: status.label,
     labels: {},
     color: status.color,
+    icon: status.icon ?? null,
     sortOrder: status.sortOrder,
     groupKey: status.groupKey,
     parentTaskId: item.id,
@@ -122,7 +118,7 @@ export function TemplateTaskStatusesModal({
 
   const catalog = useMemo(() => {
     if (!liveItem) return [];
-    const merged = applyStatusGroupOverrides(
+    return applyStatusGroupOverrides(
       mergeStatusCatalog(
         systemStatuses,
         [],
@@ -132,12 +128,29 @@ export function TemplateTaskStatusesModal({
       ),
       liveItem.statusGroupOverrides ?? {},
     );
-    return enforceSingletonGroups(merged).catalog;
   }, [liveItem, systemStatuses]);
 
   const groups = useMemo(
     () => groupedStatusLayout(catalog, liveItem?.statusOrder ?? []),
     [catalog, liveItem?.statusOrder],
+  );
+  const laidOutStatuses = useMemo(
+    () => groups.flatMap((group) => group.statuses),
+    [groups],
+  );
+  const isTemplateSystemStatus = useCallback(
+    (status: TaskStatusSummary) =>
+      !isTemplateCustomStatus(status, liveItem?.taskStatuses ?? []),
+    [liveItem?.taskStatuses],
+  );
+  const effectiveHiddenIds = useMemo(
+    () =>
+      normalizeHiddenStatusIds(
+        laidOutStatuses,
+        liveItem?.hiddenStatusIds ?? [],
+        isTemplateSystemStatus,
+      ),
+    [isTemplateSystemStatus, laidOutStatuses, liveItem?.hiddenStatusIds],
   );
 
   const groupOverrides = liveItem?.statusGroupOverrides ?? {};
@@ -187,47 +200,23 @@ export function TemplateTaskStatusesModal({
     setDraft(emptyDraft());
   }, [open]);
 
-  function groupLabel(groupKey: string) {
-    const option = GROUP_OPTIONS.find((row) => row.value === groupKey);
-    return option ? t(option.labelKey, option.fallback) : groupKey;
-  }
-
-  function saveLayout(patch: {
-    statusOrder?: string[];
-    statusGroupOverrides?: Record<string, string>;
-    hiddenStatusIds?: string[];
-    taskStatuses?: TemplateTaskStatusDef[];
-    catalog?: TaskStatusSummary[];
-    keepIds?: Partial<Record<ListStatusGroup, string>>;
-  }) {
-    if (!liveItem) return;
-    const nextCatalog = patch.catalog ?? catalog;
-    const enforced = enforceSingletonGroups(nextCatalog, patch.keepIds);
-    onItemChange({
-      ...liveItem,
-      statusOrder:
-        patch.statusOrder ??
-        flattenGroupedStatusIds(enforced.catalog, liveItem.statusOrder),
-      statusGroupOverrides: {
-        ...groupOverrides,
-        ...enforced.overrides,
-        ...(patch.statusGroupOverrides ?? {}),
-      },
-      ...(patch.hiddenStatusIds !== undefined
-        ? { hiddenStatusIds: patch.hiddenStatusIds }
-        : {}),
-      ...(patch.taskStatuses !== undefined
-        ? { taskStatuses: patch.taskStatuses }
-        : {}),
-    });
-  }
+  useEffect(() => {
+    if (!open || !liveItem) return;
+    const current = liveItem.hiddenStatusIds ?? [];
+    if (!hiddenIdsEqual(effectiveHiddenIds, current)) {
+      saveLayout({ hiddenStatusIds: effectiveHiddenIds });
+    }
+  }, [effectiveHiddenIds, liveItem, open]);
 
   function toggleHidden(statusId: string) {
     if (!liveItem) return;
-    const hidden = new Set(liveItem.hiddenStatusIds ?? []);
-    if (hidden.has(statusId)) {
-      hidden.delete(statusId);
-    } else if (groupWouldBeEmpty(catalog, [...hidden], statusId)) {
+    const nextHidden = toggleStatusVisibility(
+      catalog,
+      effectiveHiddenIds,
+      statusId,
+      isTemplateSystemStatus,
+    );
+    if (!nextHidden) {
       showFeedback({
         type: "error",
         text: t(
@@ -236,12 +225,43 @@ export function TemplateTaskStatusesModal({
         ),
       });
       return;
-    } else {
-      hidden.add(statusId);
     }
+    const normalized = normalizeHiddenStatusIds(
+      laidOutStatuses,
+      nextHidden,
+      isTemplateSystemStatus,
+    );
+    saveLayout({ hiddenStatusIds: normalized });
+  }
+
+  function groupLabel(groupKey: string) {
+    return statusGroupLabel(groupKey, t);
+  }
+
+  function saveLayout(patch: {
+    statusOrder?: string[];
+    statusGroupOverrides?: Record<string, string>;
+    hiddenStatusIds?: string[];
+    taskStatuses?: TemplateTaskStatusDef[];
+    catalog?: TaskStatusSummary[];
+  }) {
+    if (!liveItem) return;
+    const nextCatalog = patch.catalog ?? catalog;
     onItemChange({
       ...liveItem,
-      hiddenStatusIds: [...hidden],
+      statusOrder:
+        patch.statusOrder ??
+        flattenGroupedStatusIds(nextCatalog, liveItem.statusOrder),
+      statusGroupOverrides: {
+        ...groupOverrides,
+        ...(patch.statusGroupOverrides ?? {}),
+      },
+      ...(patch.hiddenStatusIds !== undefined
+        ? { hiddenStatusIds: patch.hiddenStatusIds }
+        : {}),
+      ...(patch.taskStatuses !== undefined
+        ? { taskStatuses: patch.taskStatuses }
+        : {}),
     });
   }
 
@@ -332,6 +352,7 @@ export function TemplateTaskStatusesModal({
       label: created.label,
       labels: {},
       color: created.color,
+      icon: created.icon ?? null,
       sortOrder: created.sortOrder,
       groupKey: created.groupKey,
     };
@@ -350,9 +371,6 @@ export function TemplateTaskStatusesModal({
         [created.id]: draft.groupKey,
       },
       catalog: nextCatalog,
-      keepIds: isSingletonStatusGroup(draft.groupKey)
-        ? { [draft.groupKey]: created.id }
-        : undefined,
     });
     showFeedback({
       type: "success",
@@ -441,9 +459,6 @@ export function TemplateTaskStatusesModal({
         [String(active.id)]: moved.toGroup,
       },
       catalog: moved.catalog,
-      keepIds: isSingletonStatusGroup(moved.toGroup)
-        ? { [moved.toGroup]: String(active.id) }
-        : undefined,
     });
   }
 
@@ -478,24 +493,22 @@ export function TemplateTaskStatusesModal({
               collisionDetection={collisionDetection}
               onDragEnd={handleDragEnd}
             >
-              <SortableContext
-                items={groups.flatMap((group) =>
-                  group.statuses.map((status) => status.id),
-                )}
-                strategy={verticalListSortingStrategy}
-              >
-                <ul>
-                  {groups.map((group) => (
-                    <li key={group.id}>
-                      <GroupSeparator
-                        id={statusGroupDroppableId(group.id)}
-                        label={groupLabel(group.id)}
-                        empty={group.statuses.length === 0}
-                        emptyLabel={t(
-                          "lists.statuses.group.empty",
-                          "Šajā grupā vēl nav statusu.",
-                        )}
-                      />
+              <ul>
+                {groups.map((group) => (
+                  <li key={group.id}>
+                    <GroupSeparator
+                      id={statusGroupDroppableId(group.id)}
+                      label={groupLabel(group.id)}
+                      empty={group.statuses.length === 0}
+                      emptyLabel={t(
+                        "lists.statuses.group.empty",
+                        "Velc statusu šeit, lai pievienotu grupai.",
+                      )}
+                    />
+                    <SortableContext
+                      items={group.statuses.map((status) => status.id)}
+                      strategy={verticalListSortingStrategy}
+                    >
                       <ul className="divide-y divide-zinc-100">
                         {group.statuses.map((status) => {
                           const taskCustom = isTemplateCustomStatus(status, custom)
@@ -508,11 +521,15 @@ export function TemplateTaskStatusesModal({
                           const displayLabel = taskCustom
                             ? taskCustom.label
                             : labelFor(status.id);
-                          const hiddenIds = new Set(liveItem?.hiddenStatusIds ?? []);
+                          const hiddenIds = new Set(effectiveHiddenIds);
                           const isHidden = hiddenIds.has(status.id);
-                          const canHide =
-                            !isHidden &&
-                            !groupWouldBeEmpty(catalog, [...hiddenIds], status.id);
+                          const canToggleVisibility = canToggleStatusVisibility(
+                            laidOutStatuses,
+                            catalog,
+                            liveItem?.hiddenStatusIds ?? [],
+                            status.id,
+                            isTemplateSystemStatus,
+                          );
                           return (
                             <SortableStatusRow
                               key={status.id}
@@ -533,13 +550,13 @@ export function TemplateTaskStatusesModal({
                                 Boolean(taskCustom) &&
                                 canRemoveStatus(catalog, status.id)
                               }
-                              canHide={canHide}
-                              dragLabel={t("admin.statuses.drag", "Mainīt secību")}
-                              deleteDisabledLabel={t(
+                              canToggleVisibility={canToggleVisibility}
+                              visibilityDisabledLabel={t(
                                 "errors.status_group_min_one",
                                 "Katrā grupā jābūt vismaz vienam statusam.",
                               )}
-                              hideDisabledLabel={t(
+                              dragLabel={t("admin.statuses.drag", "Mainīt secību")}
+                              deleteDisabledLabel={t(
                                 "errors.status_group_min_one",
                                 "Katrā grupā jābūt vismaz vienam statusam.",
                               )}
@@ -560,6 +577,11 @@ export function TemplateTaskStatusesModal({
                                 "Pārsaukts",
                               )}
                               scopeKind={taskCustom ? "task" : "system"}
+                              menuActions={{
+                                changeColor: Boolean(taskCustom),
+                                changeIcon: Boolean(taskCustom),
+                                delete: Boolean(taskCustom),
+                              }}
                               onStartEdit={() =>
                                 startEdit(status.id, displayLabel, status.color)
                               }
@@ -571,7 +593,27 @@ export function TemplateTaskStatusesModal({
                               }
                               onSaveEdit={saveEdit}
                               onCancelEdit={cancelEdit}
-                              onToggleHidden={() => toggleHidden(status.id)}
+                              onToggleVisibility={() => toggleHidden(status.id)}
+                              onChangeColor={
+                                taskCustom
+                                  ? (color) => {
+                                      const nextCustom = custom.map((row) =>
+                                        row.id === status.id ? { ...row, color } : row,
+                                      );
+                                      saveLayout({ taskStatuses: nextCustom });
+                                    }
+                                  : undefined
+                              }
+                              onChangeIcon={
+                                taskCustom
+                                  ? (icon) => {
+                                      const nextCustom = custom.map((row) =>
+                                        row.id === status.id ? { ...row, icon } : row,
+                                      );
+                                      saveLayout({ taskStatuses: nextCustom });
+                                    }
+                                  : undefined
+                              }
                               onReset={
                                 renamed
                                   ? () => {
@@ -597,10 +639,10 @@ export function TemplateTaskStatusesModal({
                           );
                         })}
                       </ul>
-                    </li>
-                  ))}
-                </ul>
-              </SortableContext>
+                    </SortableContext>
+                  </li>
+                ))}
+              </ul>
             </DndContext>
           </div>
         </div>

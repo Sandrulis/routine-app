@@ -1,44 +1,42 @@
 "use client";
 
-import { useEffect, useId, useMemo, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useState } from "react";
 import {
-  closestCenter,
   DndContext,
   PointerSensor,
-  pointerWithin,
-  useDroppable,
   useSensor,
   useSensors,
-  type CollisionDetection,
   type DragEndEvent,
 } from "@dnd-kit/core";
 import {
   SortableContext,
-  useSortable,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
 import {
   AppModal,
   appModalExtraWidePanelMaxWidthClassName,
 } from "@/app/components/app-modal";
 import { ConfirmModal } from "@/app/components/confirm-modal";
 import { DragHandle } from "@/app/components/drag-handle";
-import { IconActionButton } from "@/app/components/icon-action-button";
 import { StatusGlyph } from "@/app/components/status-control";
+import {
+  GroupSeparator,
+  SortableStatusRow,
+  STATUS_GROUP_OPTIONS,
+  statusDnDCollisionDetection,
+  statusGroupLabel,
+} from "@/app/components/status-settings-row";
 import { useFeedbackToast } from "@/app/components/feedback-toast-provider";
 import { useTranslations } from "@/app/components/translations-provider";
 import type { ListStatus } from "@/app/lib/list-statuses";
 import {
   applyStatusGroupOverrides,
   canRemoveStatus,
-  enforceSingletonGroups,
   flattenGroupedStatusIds,
   groupedStatusLayout,
   insertStatusInGroupOrder,
   isCustomListStatus,
   isListStatusGroup,
-  isSingletonStatusGroup,
   mergeStatusCatalog,
   moveStatusInLayout,
   normalizeStatusColor,
@@ -46,22 +44,20 @@ import {
   visibleStatusIdsAfter,
   type ListStatusGroup,
 } from "@/app/lib/list-statuses";
+import {
+  canToggleStatusVisibility,
+  hiddenIdsEqual,
+  normalizeHiddenStatusIds,
+  toggleStatusVisibility,
+} from "@/app/lib/status-visibility";
 import { useLists } from "@/app/lib/lists-store";
 import type { WorkList } from "@/app/lib/lists";
 import { useSystemTaskStatuses } from "@/app/lib/task-statuses";
 import type { TaskStatusSummary } from "@/app/lib/site-admin/types";
 
-const GROUP_OPTIONS = [
-  { value: "not_started", labelKey: "status.group.not_started", fallback: "Nav sākts" },
-  { value: "active", labelKey: "status.group.active", fallback: "Aktīvs" },
-  { value: "closed", labelKey: "status.group.closed", fallback: "Slēgts" },
-] as const;
+const GROUP_OPTIONS = STATUS_GROUP_OPTIONS;
 
-const collisionDetection: CollisionDetection = (args) => {
-  const pointerHits = pointerWithin(args);
-  if (pointerHits.length > 0) return pointerHits;
-  return closestCenter(args);
-};
+const collisionDetection = statusDnDCollisionDetection;
 
 type StatusDraft = {
   label: string;
@@ -117,15 +113,27 @@ export function ListStatusesModal({
   );
   const catalog = useMemo(() => {
     if (!liveList) return [];
-    const merged = applyStatusGroupOverrides(
+    return applyStatusGroupOverrides(
       mergeStatusCatalog(systemStatuses, custom, liveList.id),
       liveList.statusGroupOverrides,
     );
-    return enforceSingletonGroups(merged).catalog;
   }, [custom, liveList, systemStatuses]);
   const groups = useMemo(
     () => groupedStatusLayout(catalog, liveList?.statusOrder ?? []),
     [catalog, liveList?.statusOrder],
+  );
+  const laidOutStatuses = useMemo(
+    () => groups.flatMap((group) => group.statuses),
+    [groups],
+  );
+  const effectiveHiddenIds = useMemo(
+    () =>
+      normalizeHiddenStatusIds(
+        laidOutStatuses,
+        liveList?.hiddenStatusIds ?? [],
+        (status) => !isCustomListStatus(status),
+      ),
+    [laidOutStatuses, liveList?.hiddenStatusIds],
   );
   const groupOverrides = liveList?.statusGroupOverrides ?? {};
   const [formOpen, setFormOpen] = useState(false);
@@ -168,41 +176,60 @@ export function ListStatusesModal({
   }, [open]);
 
   function groupLabel(groupKey: string) {
-    const option = GROUP_OPTIONS.find((item) => item.value === groupKey);
-    return option ? t(option.labelKey, option.fallback) : groupKey;
-  }
-
-  function persistDisplaced(
-    displacedIds: string[],
-    nextCatalog: TaskStatusSummary[],
-  ) {
-    for (const statusId of displacedIds) {
-      const status = nextCatalog.find((item) => item.id === statusId);
-      if (status && isCustomListStatus(status)) {
-        updateListStatus(statusId, { groupKey: "active" });
-      }
-    }
+    return statusGroupLabel(groupKey, t);
   }
 
   function saveLayout(patch: {
     statusOrder?: string[];
     statusGroupOverrides?: Record<string, string>;
+    hiddenStatusIds?: string[];
     catalog?: TaskStatusSummary[];
-    keepIds?: Partial<Record<ListStatusGroup, string>>;
   }) {
     if (!liveList) return;
     const nextCatalog = patch.catalog ?? catalog;
-    const enforced = enforceSingletonGroups(nextCatalog, patch.keepIds);
     updateList(liveList.id, {
       statusOrder:
         patch.statusOrder ??
-        flattenGroupedStatusIds(enforced.catalog, liveList.statusOrder),
-      statusGroupOverrides: {
-        ...(patch.statusGroupOverrides ?? groupOverrides),
-        ...enforced.overrides,
-      },
+        flattenGroupedStatusIds(nextCatalog, liveList.statusOrder),
+      statusGroupOverrides: patch.statusGroupOverrides ?? groupOverrides,
+      ...(patch.hiddenStatusIds !== undefined
+        ? { hiddenStatusIds: patch.hiddenStatusIds }
+        : {}),
     });
-    persistDisplaced(enforced.displacedIds, enforced.catalog);
+  }
+
+  useEffect(() => {
+    if (!open || !liveList) return;
+    const current = liveList.hiddenStatusIds ?? [];
+    if (!hiddenIdsEqual(effectiveHiddenIds, current)) {
+      updateList(liveList.id, { hiddenStatusIds: effectiveHiddenIds });
+    }
+  }, [effectiveHiddenIds, liveList, open, updateList]);
+
+  function toggleHidden(statusId: string) {
+    if (!liveList) return;
+    const nextHidden = toggleStatusVisibility(
+      catalog,
+      effectiveHiddenIds,
+      statusId,
+      (status) => !isCustomListStatus(status),
+    );
+    if (!nextHidden) {
+      showFeedback({
+        type: "error",
+        text: t(
+          "errors.status_group_min_one",
+          "Katrā grupā jābūt vismaz vienam statusam.",
+        ),
+      });
+      return;
+    }
+    const normalized = normalizeHiddenStatusIds(
+      laidOutStatuses,
+      nextHidden,
+      (status) => !isCustomListStatus(status),
+    );
+    updateList(liveList.id, { hiddenStatusIds: normalized });
   }
 
   function openCreate() {
@@ -298,9 +325,6 @@ export function ListStatusesModal({
         [created.id]: draft.groupKey,
       },
       catalog: nextCatalog,
-      keepIds: isSingletonStatusGroup(draft.groupKey)
-        ? { [draft.groupKey]: created.id }
-        : undefined,
     });
     showFeedback({
       type: "success",
@@ -341,6 +365,9 @@ export function ListStatusesModal({
       ),
       statusGroupOverrides: Object.fromEntries(
         Object.entries(groupOverrides).filter(([id]) => id !== deleteTarget.id),
+      ),
+      hiddenStatusIds: (liveList.hiddenStatusIds ?? []).filter(
+        (id) => id !== deleteTarget.id,
       ),
       catalog: catalog.filter((status) => status.id !== deleteTarget.id),
     });
@@ -389,9 +416,6 @@ export function ListStatusesModal({
         [String(active.id)]: moved.toGroup,
       },
       catalog: moved.catalog,
-      keepIds: isSingletonStatusGroup(moved.toGroup)
-        ? { [moved.toGroup]: String(active.id) }
-        : undefined,
     });
   }
 
@@ -403,7 +427,7 @@ export function ListStatusesModal({
         title={t("lists.statuses.title", "Statusi")}
         description={t(
           "lists.statuses.description",
-          "Bīdi statusus arī starp grupām — tad grupa nomainās automātiski. Sistēmas statusu var pārsaukt šīs komandas ietvaros. Katrā grupā jābūt vismaz vienam statusam. Grupās Nav sākts un Slēgts drīkst būt tikai viens statuss.",
+          "Atzīmē statusus, lai tie būtu redzami sarakstā. Grupā Nav sākts vienlaikus var būt aktīvs tikai viens. Bīdi statusus starp grupām — grupa nomainās automātiski.",
         )}
         dirty={editDirty}
         panelMaxWidthClassName={appModalExtraWidePanelMaxWidthClassName}
@@ -426,24 +450,22 @@ export function ListStatusesModal({
               collisionDetection={collisionDetection}
               onDragEnd={handleDragEnd}
             >
-              <SortableContext
-                items={groups.flatMap((group) =>
-                  group.statuses.map((status) => status.id),
-                )}
-                strategy={verticalListSortingStrategy}
-              >
-                <ul>
-                  {groups.map((group) => (
-                    <li key={group.id}>
-                      <GroupSeparator
-                        id={statusGroupDroppableId(group.id)}
-                        label={groupLabel(group.id)}
-                        empty={group.statuses.length === 0}
-                        emptyLabel={t(
-                          "lists.statuses.group.empty",
-                          "Šajā grupā vēl nav statusu.",
-                        )}
-                      />
+              <ul>
+                {groups.map((group) => (
+                  <li key={group.id}>
+                    <GroupSeparator
+                      id={statusGroupDroppableId(group.id)}
+                      label={groupLabel(group.id)}
+                      empty={group.statuses.length === 0}
+                      emptyLabel={t(
+                        "lists.statuses.group.empty",
+                        "Velc statusu šeit, lai pievienotu grupai.",
+                      )}
+                    />
+                    <SortableContext
+                      items={group.statuses.map((status) => status.id)}
+                      strategy={verticalListSortingStrategy}
+                    >
                       <ul className="divide-y divide-zinc-100">
                         {group.statuses.map((status) => {
                           const customStatus = isCustomListStatus(status)
@@ -455,12 +477,22 @@ export function ListStatusesModal({
                           const displayLabel = customStatus
                             ? customStatus.label
                             : labelFor(status.id);
+                          const hiddenIds = new Set(effectiveHiddenIds);
+                          const isHidden = hiddenIds.has(status.id);
+                          const canToggleVisibility = canToggleStatusVisibility(
+                            laidOutStatuses,
+                            catalog,
+                            liveList?.hiddenStatusIds ?? [],
+                            status.id,
+                            (item) => !isCustomListStatus(item),
+                          );
                           return (
                             <SortableStatusRow
                               key={status.id}
                               status={status}
                               label={displayLabel}
                               system={!customStatus}
+                              hidden={isHidden}
                               renamed={renamed}
                               editing={editId === status.id}
                               editValue={editId === status.id ? editDraft.label : displayLabel}
@@ -470,6 +502,11 @@ export function ListStatusesModal({
                                 Boolean(customStatus) &&
                                 canRemoveStatus(catalog, status.id)
                               }
+                              canToggleVisibility={canToggleVisibility}
+                              visibilityDisabledLabel={t(
+                                "errors.status_group_min_one",
+                                "Katrā grupā jābūt vismaz vienam statusam.",
+                              )}
                               dragLabel={t("admin.statuses.drag", "Mainīt secību")}
                               deleteDisabledLabel={t(
                                 "errors.status_group_min_one",
@@ -483,6 +520,11 @@ export function ListStatusesModal({
                                 "lists.statuses.renamed",
                                 "Pārsaukts",
                               )}
+                              menuActions={{
+                                changeColor: Boolean(customStatus),
+                                changeIcon: Boolean(customStatus),
+                                delete: Boolean(customStatus),
+                              }}
                               onStartEdit={() =>
                                 startEdit(status.id, displayLabel, status.color)
                               }
@@ -494,6 +536,17 @@ export function ListStatusesModal({
                               }
                               onSaveEdit={saveEdit}
                               onCancelEdit={cancelEdit}
+                              onToggleVisibility={() => toggleHidden(status.id)}
+                              onChangeColor={
+                                customStatus
+                                  ? (color) => updateListStatus(status.id, { color })
+                                  : undefined
+                              }
+                              onChangeIcon={
+                                customStatus
+                                  ? (icon) => updateListStatus(status.id, { icon })
+                                  : undefined
+                              }
                               onReset={
                                 renamed
                                   ? () => {
@@ -519,10 +572,10 @@ export function ListStatusesModal({
                           );
                         })}
                       </ul>
-                    </li>
-                  ))}
-                </ul>
-              </SortableContext>
+                    </SortableContext>
+                  </li>
+                ))}
+              </ul>
             </DndContext>
           </div>
         </div>
@@ -635,207 +688,5 @@ export function ListStatusesModal({
         onConfirm={handleDelete}
       />
     </>
-  );
-}
-
-function GroupSeparator({
-  id,
-  label,
-  empty,
-  emptyLabel,
-}: {
-  id: string;
-  label: string;
-  empty: boolean;
-  emptyLabel: string;
-}) {
-  const { setNodeRef, isOver } = useDroppable({ id });
-
-  return (
-    <div
-      ref={setNodeRef}
-      className={`border-b border-zinc-200 bg-zinc-50 px-4 py-2 ${
-        isOver ? "bg-sky-50" : ""
-      }`}
-    >
-      <p className="text-[11px] font-semibold uppercase tracking-wider text-zinc-400">
-        {label}
-      </p>
-      {empty ? (
-        <p className="pt-1 text-sm text-zinc-400">{emptyLabel}</p>
-      ) : null}
-    </div>
-  );
-}
-
-function SortableStatusRow({
-  status,
-  label,
-  system,
-  renamed,
-  editing,
-  editValue,
-  editColor,
-  editDirty,
-  canDelete,
-  dragLabel,
-  deleteDisabledLabel,
-  systemBadge,
-  renamedBadge,
-  onStartEdit,
-  onEditValueChange,
-  onEditColorChange,
-  onSaveEdit,
-  onCancelEdit,
-  onReset,
-  onDelete,
-  t,
-}: {
-  status: TaskStatusSummary;
-  label: string;
-  system: boolean;
-  renamed: boolean;
-  editing: boolean;
-  editValue: string;
-  editColor: string;
-  editDirty: boolean;
-  canDelete: boolean;
-  dragLabel: string;
-  deleteDisabledLabel: string;
-  systemBadge: string;
-  renamedBadge: string;
-  onStartEdit: () => void;
-  onEditValueChange: (value: string) => void;
-  onEditColorChange: (value: string) => void;
-  onSaveEdit: () => void;
-  onCancelEdit: () => void;
-  onReset?: () => void;
-  onDelete?: () => void;
-  t: ReturnType<typeof useTranslations>["t"];
-}) {
-  const inputRef = useRef<HTMLInputElement>(null);
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: status.id });
-
-  useEffect(() => {
-    if (!editing) return;
-    const input = inputRef.current;
-    if (!input) return;
-    input.focus();
-    const length = input.value.length;
-    input.setSelectionRange(length, length);
-  }, [editing]);
-
-  return (
-    <li
-      ref={setNodeRef}
-      style={{
-        transform: CSS.Transform.toString(transform),
-        transition,
-      }}
-      className={`flex items-center gap-2 px-3 py-2.5 ${
-        isDragging ? "relative z-10 bg-white shadow-sm" : ""
-      }`}
-    >
-      <DragHandle label={dragLabel} attributes={attributes} listeners={listeners} />
-      {editing && !system ? (
-        <label
-          className="relative inline-flex shrink-0 cursor-pointer"
-          title={t("admin.statuses.color", "Krāsa")}
-          onPointerDown={(event) => event.stopPropagation()}
-        >
-          <StatusGlyph color={editColor} groupKey={status.groupKey} />
-          <input
-            type="color"
-            value={editColor}
-            aria-label={t("admin.statuses.color", "Krāsa")}
-            onChange={(event) => onEditColorChange(event.target.value)}
-            className="absolute inset-0 size-full cursor-pointer opacity-0"
-          />
-        </label>
-      ) : (
-        <StatusGlyph color={status.color} groupKey={status.groupKey} />
-      )}
-      {editing ? (
-        <input
-          ref={inputRef}
-          value={editValue}
-          aria-label={label}
-          onChange={(event) => onEditValueChange(event.target.value)}
-          onKeyDown={(event) => {
-            if (event.key === "Enter") {
-              event.preventDefault();
-              if (editDirty) onSaveEdit();
-              else onCancelEdit();
-            }
-            if (event.key === "Escape") {
-              event.preventDefault();
-              onCancelEdit();
-            }
-          }}
-          onPointerDown={(event) => event.stopPropagation()}
-          className="min-w-0 flex-1 rounded-lg border border-zinc-300 bg-white px-2 py-1 text-sm font-medium text-zinc-900 outline-none transition focus:border-zinc-400 focus:ring-2 focus:ring-zinc-100"
-        />
-      ) : (
-        <button
-          type="button"
-          onClick={onStartEdit}
-          className="min-w-0 flex-1 truncate rounded-lg px-2 py-1 text-left text-sm font-medium text-zinc-900 transition hover:bg-zinc-50"
-        >
-          {label}
-        </button>
-      )}
-      {editDirty ? (
-        <button
-          type="button"
-          onClick={onSaveEdit}
-          onPointerDown={(event) => event.stopPropagation()}
-          className="inline-flex shrink-0 items-center rounded-lg bg-zinc-900 px-2.5 py-1 text-xs font-medium text-white transition hover:bg-zinc-700"
-        >
-          {t("actions.save", "Saglabāt")}
-        </button>
-      ) : null}
-      {editing ? null : (
-        <>
-          {system ? (
-            <span className="hidden text-[11px] font-medium uppercase tracking-wide text-zinc-400 sm:inline">
-              {systemBadge}
-            </span>
-          ) : null}
-          {renamed ? (
-            <span className="hidden text-[11px] text-zinc-400 sm:inline">
-              {renamedBadge}
-            </span>
-          ) : null}
-        </>
-      )}
-      {onReset ? (
-        <IconActionButton
-          label={t("lists.statuses.reset_default", "Atjaunot noklusējuma nosaukumu")}
-          icon="fas fa-rotate-left"
-          variant="muted"
-          onClick={onReset}
-        />
-      ) : null}
-      {system ? null : (
-        <IconActionButton
-          label={
-            canDelete
-              ? t("actions.delete", "Dzēst")
-              : deleteDisabledLabel
-          }
-          icon="fas fa-trash"
-          variant="delete"
-          disabled={!canDelete}
-          onClick={() => onDelete?.()}
-        />
-      )}
-    </li>
   );
 }

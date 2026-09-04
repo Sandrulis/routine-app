@@ -1,16 +1,21 @@
 "use client";
 
-import { useEffect, useId, useState, useTransition, type ReactNode } from "react";
+import {
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  useTransition,
+  type ReactNode,
+} from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import {
-  closestCenter,
   DndContext,
   PointerSensor,
-  pointerWithin,
   useDroppable,
   useSensor,
   useSensors,
-  type CollisionDetection,
   type DragEndEvent,
 } from "@dnd-kit/core";
 import {
@@ -32,8 +37,12 @@ import {
 import { ConfirmModal } from "@/app/components/confirm-modal";
 import { DragHandle } from "@/app/components/drag-handle";
 import { useFeedbackToast } from "@/app/components/feedback-toast-provider";
-import { IconActionButton } from "@/app/components/icon-action-button";
 import { StatusGlyph } from "@/app/components/status-control";
+import { StatusIconPickerModal } from "@/app/components/status-icon-picker-modal";
+import {
+  STATUS_GROUP_OPTIONS,
+  statusDnDCollisionDetection,
+} from "@/app/components/status-settings-row";
 import { useTranslations } from "@/app/components/translations-provider";
 import { translateActionError } from "@/app/lib/i18n/action-errors";
 import {
@@ -48,22 +57,15 @@ import type {
   TaskStatusSummary,
 } from "@/app/lib/site-admin/types";
 
-const GROUP_OPTIONS = [
-  { value: "not_started", labelKey: "status.group.not_started", fallback: "Nav sākts" },
-  { value: "active", labelKey: "status.group.active", fallback: "Aktīvs" },
-  { value: "closed", labelKey: "status.group.closed", fallback: "Slēgts" },
-] as const;
+const GROUP_OPTIONS = STATUS_GROUP_OPTIONS;
 
-const collisionDetection: CollisionDetection = (args) => {
-  const pointerHits = pointerWithin(args);
-  if (pointerHits.length > 0) return pointerHits;
-  return closestCenter(args);
-};
+const collisionDetection = statusDnDCollisionDetection;
 
 type StatusDraft = {
   id: string;
   labels: Record<string, string>;
   color: string;
+  icon: string | null;
   groupKey: string;
 };
 
@@ -72,6 +74,7 @@ function emptyDraft(languages: SiteLanguageSummary[]): StatusDraft {
     id: "",
     labels: Object.fromEntries(languages.map((language) => [language.code, ""])),
     color: "#71717a",
+    icon: null,
     groupKey: "active",
   };
 }
@@ -89,6 +92,16 @@ function draftFromStatus(
       ]),
     ),
     color: status.color,
+    icon: status.icon ?? null,
+    groupKey: status.groupKey,
+  };
+}
+
+function statusInput(status: TaskStatusSummary) {
+  return {
+    labels: status.labels,
+    color: status.color,
+    icon: status.icon ?? null,
     groupKey: status.groupKey,
   };
 }
@@ -107,6 +120,7 @@ export function AdminStatusesManager({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draft, setDraft] = useState(() => emptyDraft(languages));
   const [deleteTarget, setDeleteTarget] = useState<TaskStatusSummary | null>(null);
+  const [iconPickerOpen, setIconPickerOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
   const [statuses, setStatuses] = useState(initialStatuses);
   const dndContextId = useId();
@@ -125,6 +139,7 @@ export function AdminStatusesManager({
           labels: {},
           label: "",
           color: "#71717a",
+          icon: null,
           sortOrder: 0,
           groupKey: "active",
         },
@@ -137,6 +152,7 @@ export function AdminStatusesManager({
     if (!modalOpen) {
       setEditingId(null);
       setDraft(emptyDraft(languages));
+      setIconPickerOpen(false);
     }
   }, [languages, modalOpen]);
 
@@ -152,6 +168,28 @@ export function AdminStatusesManager({
     setEditingId(status.id);
     setDraft(draftFromStatus(status, languages));
     setModalOpen(true);
+  }
+
+  function quickUpdate(
+    status: TaskStatusSummary,
+    patch: Partial<Pick<StatusDraft, "color" | "icon">>,
+  ) {
+    clearFeedback();
+    startTransition(async () => {
+      const result = await updateTaskStatusAction(status.id, {
+        ...statusInput(status),
+        ...patch,
+      });
+      if (!result.ok) {
+        showFeedback({ type: "error", text: translateActionError(t, result.error) });
+        return;
+      }
+      showFeedback({
+        type: "success",
+        text: t("admin.statuses.feedback.saved", "Statuss saglabāts."),
+      });
+      router.refresh();
+    });
   }
 
   function handleSave(event: React.FormEvent<HTMLFormElement>) {
@@ -178,6 +216,7 @@ export function AdminStatusesManager({
         ? await updateTaskStatusAction(editingId, {
             labels: draft.labels,
             color: draft.color,
+            icon: draft.icon,
             groupKey: draft.groupKey,
           })
         : await createTaskStatusAction(draft);
@@ -277,8 +316,7 @@ export function AdminStatusesManager({
     startTransition(async () => {
       if (moved.fromGroup !== moved.toGroup && current) {
         const updateResult = await updateTaskStatusAction(current.id, {
-          labels: current.labels,
-          color: current.color,
+          ...statusInput(current),
           groupKey: moved.toGroup,
         });
         if (!updateResult.ok) {
@@ -292,8 +330,7 @@ export function AdminStatusesManager({
       }
       for (const status of displaced) {
         const result = await updateTaskStatusAction(status.id, {
-          labels: status.labels,
-          color: status.color,
+          ...statusInput(status),
           groupKey: "active",
         });
         if (!result.ok) {
@@ -352,29 +389,25 @@ export function AdminStatusesManager({
                   </th>
                 </tr>
               </thead>
-              <SortableContext
-                items={LIST_STATUS_GROUPS.flatMap((groupId) =>
-                  statuses
-                    .filter((status) => status.groupKey === groupId)
-                    .map((status) => status.id),
-                )}
-                strategy={verticalListSortingStrategy}
-              >
-                <tbody>
-                  {GROUP_OPTIONS.map((group) => {
-                    const groupStatuses = statuses.filter(
-                      (status) => status.groupKey === group.value,
-                    );
-                    return (
-                      <GroupSection
-                        key={group.value}
-                        id={statusGroupDroppableId(group.value)}
-                        label={t(group.labelKey, group.fallback)}
-                        empty={groupStatuses.length === 0}
-                        emptyLabel={t(
-                          "lists.statuses.group.empty",
-                          "Šajā grupā vēl nav statusu.",
-                        )}
+              <tbody>
+                {GROUP_OPTIONS.map((group) => {
+                  const groupStatuses = statuses.filter(
+                    (status) => status.groupKey === group.value,
+                  );
+                  return (
+                    <GroupSection
+                      key={group.value}
+                      id={statusGroupDroppableId(group.value)}
+                      label={t(group.labelKey, group.fallback)}
+                      empty={groupStatuses.length === 0}
+                      emptyLabel={t(
+                        "lists.statuses.group.empty",
+                        "Velc statusu šeit, lai pievienotu grupai.",
+                      )}
+                    >
+                      <SortableContext
+                        items={groupStatuses.map((status) => status.id)}
+                        strategy={verticalListSortingStrategy}
                       >
                         {groupStatuses.map((status) => (
                           <SortableStatusRow
@@ -390,14 +423,16 @@ export function AdminStatusesManager({
                             )}
                             onEdit={openEdit}
                             onDelete={setDeleteTarget}
+                            onChangeColor={(color) => quickUpdate(status, { color })}
+                            onChangeIcon={(icon) => quickUpdate(status, { icon })}
                             t={t}
                           />
                         ))}
-                      </GroupSection>
-                    );
-                  })}
-                </tbody>
-              </SortableContext>
+                      </SortableContext>
+                    </GroupSection>
+                  );
+                })}
+              </tbody>
             </table>
           </DndContext>
         </div>
@@ -455,7 +490,11 @@ export function AdminStatusesManager({
                 {t("admin.statuses.color", "Krāsa")}
               </label>
               <div className="mt-2 flex items-center gap-3">
-                <StatusGlyph color={draft.color} groupKey={draft.groupKey} />
+                <StatusGlyph
+                  color={draft.color}
+                  groupKey={draft.groupKey}
+                  icon={draft.icon}
+                />
                 <input
                   id="status-color"
                   type="color"
@@ -474,6 +513,27 @@ export function AdminStatusesManager({
                   className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 font-mono text-sm text-zinc-900 outline-none transition focus:border-zinc-400 focus:ring-4 focus:ring-zinc-100"
                 />
               </div>
+            </div>
+            <div>
+              <p className="text-sm font-medium text-zinc-800">
+                {t("lists.statuses.menu.change_icon", "Mainīt ikonu")}
+              </p>
+              <button
+                type="button"
+                onClick={() => setIconPickerOpen(true)}
+                className="mt-2 inline-flex items-center gap-2 rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-700 transition hover:bg-zinc-50"
+              >
+                <StatusGlyph
+                  color={draft.color}
+                  groupKey={draft.groupKey}
+                  icon={draft.icon}
+                />
+                <span>
+                  {draft.icon
+                    ? draft.icon.replace(/^fas fa-/, "")
+                    : t("lists.statuses.icon.default", "Nokl.")}
+                </span>
+              </button>
             </div>
             <div>
               <label htmlFor="status-group" className="text-sm font-medium text-zinc-800">
@@ -509,6 +569,15 @@ export function AdminStatusesManager({
           </fieldset>
         </form>
       </AppModal>
+
+      <StatusIconPickerModal
+        open={iconPickerOpen}
+        onOpenChange={setIconPickerOpen}
+        color={draft.color}
+        groupKey={draft.groupKey}
+        value={draft.icon}
+        onSave={(icon) => setDraft((current) => ({ ...current, icon }))}
+      />
 
       <ConfirmModal
         open={deleteTarget !== null}
@@ -553,8 +622,8 @@ function GroupSection({
           colSpan={4}
           ref={setNodeRef}
           className={`border-t border-zinc-200 bg-zinc-50 px-5 py-2.5 ${
-            isOver ? "bg-sky-50" : ""
-          }`}
+            isOver ? "bg-sky-50 ring-2 ring-inset ring-sky-200" : ""
+          } ${empty ? "min-h-14" : "min-h-9"}`}
         >
           <p className="text-[11px] font-semibold uppercase tracking-wider text-zinc-400">
             {label}
@@ -578,6 +647,8 @@ function SortableStatusRow({
   deleteDisabledLabel,
   onEdit,
   onDelete,
+  onChangeColor,
+  onChangeIcon,
   t,
 }: {
   status: TaskStatusSummary;
@@ -588,8 +659,18 @@ function SortableStatusRow({
   deleteDisabledLabel: string;
   onEdit: (status: TaskStatusSummary) => void;
   onDelete: (status: TaskStatusSummary) => void;
+  onChangeColor: (color: string) => void;
+  onChangeIcon: (icon: string | null) => void;
   t: ReturnType<typeof useTranslations>["t"];
 }) {
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
+  const colorInputRef = useRef<HTMLInputElement>(null);
+  const menuId = useId();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [menuPosition, setMenuPosition] = useState<{ top: number; left: number } | null>(
+    null,
+  );
+  const [iconPickerOpen, setIconPickerOpen] = useState(false);
   const {
     attributes,
     listeners,
@@ -599,64 +680,186 @@ function SortableStatusRow({
     isDragging,
   } = useSortable({ id: status.id, disabled });
 
+  useEffect(() => {
+    if (!menuOpen || !menuButtonRef.current) {
+      setMenuPosition(null);
+      return;
+    }
+    const rect = menuButtonRef.current.getBoundingClientRect();
+    setMenuPosition({
+      top: rect.bottom + 4,
+      left: Math.max(12, rect.right - 176),
+    });
+  }, [menuOpen]);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    function handlePointer(event: MouseEvent) {
+      const target = event.target as Node;
+      if (menuButtonRef.current?.contains(target)) return;
+      const menu = document.getElementById(menuId);
+      if (menu?.contains(target)) return;
+      setMenuOpen(false);
+    }
+    function handleKey(event: KeyboardEvent) {
+      if (event.key === "Escape") setMenuOpen(false);
+    }
+    document.addEventListener("mousedown", handlePointer);
+    window.addEventListener("keydown", handleKey, true);
+    return () => {
+      document.removeEventListener("mousedown", handlePointer);
+      window.removeEventListener("keydown", handleKey, true);
+    };
+  }, [menuId, menuOpen]);
+
   return (
-    <tr
-      ref={setNodeRef}
-      style={{
-        transform: CSS.Transform.toString(transform),
-        transition,
-      }}
-      className={`align-top ${isDragging ? "relative z-10 bg-white shadow-sm" : ""}`}
-    >
-      <td className="px-3 py-4">
-        <DragHandle
-          label={dragLabel}
-          attributes={attributes}
-          listeners={listeners}
-        />
-      </td>
-      <td className="px-5 py-4">
-        <div className="flex items-start gap-2.5">
-          <StatusGlyph
-            color={status.color}
-            groupKey={status.groupKey}
-            className="mt-1"
+    <>
+      <tr
+        ref={setNodeRef}
+        style={{
+          transform: CSS.Transform.toString(transform),
+          transition,
+        }}
+        className={`align-top ${isDragging ? "relative z-10 bg-white shadow-sm" : ""}`}
+      >
+        <td className="px-3 py-4">
+          <DragHandle
+            label={dragLabel}
+            attributes={attributes}
+            listeners={listeners}
           />
-          <div className="min-w-0 space-y-1">
-            <p className="font-mono text-[11px] text-zinc-400">{status.id}</p>
-            {languages.map((language) => (
-              <p key={language.code} className="text-sm text-zinc-600">
-                <span className="font-mono text-xs uppercase text-zinc-400">
-                  {language.code}
-                </span>{" "}
-                {status.labels[language.code] || "—"}
-              </p>
-            ))}
+        </td>
+        <td className="px-5 py-4">
+          <div className="flex items-start gap-2.5">
+            <StatusGlyph
+              color={status.color}
+              groupKey={status.groupKey}
+              icon={status.icon}
+              className="mt-1"
+            />
+            <div className="min-w-0 space-y-1">
+              <p className="font-mono text-[11px] text-zinc-400">{status.id}</p>
+              {languages.map((language) => (
+                <p key={language.code} className="text-sm text-zinc-600">
+                  <span className="font-mono text-xs uppercase text-zinc-400">
+                    {language.code}
+                  </span>{" "}
+                  {status.labels[language.code] || "—"}
+                </p>
+              ))}
+            </div>
           </div>
-        </div>
-      </td>
-      <td className="px-5 py-4">
-        <div className="flex items-center gap-2">
-          <StatusGlyph color={status.color} groupKey={status.groupKey} />
-          <span className="font-mono text-[11px] text-zinc-500">{status.color}</span>
-        </div>
-      </td>
-      <td className="px-5 py-4">
-        <div className="flex justify-end gap-1">
-          <IconActionButton
-            label={t("actions.edit", "Labot")}
-            icon="fas fa-pen"
-            onClick={() => onEdit(status)}
-          />
-          <IconActionButton
-            label={canDelete ? t("actions.delete", "Dzēst") : deleteDisabledLabel}
-            icon="fas fa-trash"
-            variant="delete"
-            disabled={!canDelete}
-            onClick={() => onDelete(status)}
-          />
-        </div>
-      </td>
-    </tr>
+        </td>
+        <td className="px-5 py-4">
+          <div className="flex items-center gap-2">
+            <StatusGlyph
+              color={status.color}
+              groupKey={status.groupKey}
+              icon={status.icon}
+            />
+            <span className="font-mono text-[11px] text-zinc-500">{status.color}</span>
+          </div>
+        </td>
+        <td className="px-5 py-4">
+          <div className="flex justify-end">
+            <button
+              ref={menuButtonRef}
+              type="button"
+              aria-label={t("common.actions", "Darbības")}
+              aria-expanded={menuOpen}
+              disabled={disabled}
+              onClick={() => setMenuOpen((current) => !current)}
+              className="inline-flex size-8 items-center justify-center rounded-lg text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-700 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <i className="fas fa-ellipsis text-[13px]" aria-hidden="true" />
+            </button>
+            <input
+              ref={colorInputRef}
+              type="color"
+              className="sr-only"
+              value={status.color}
+              onChange={(event) => onChangeColor(event.target.value)}
+            />
+          </div>
+        </td>
+      </tr>
+
+      {menuOpen && menuPosition
+        ? createPortal(
+            <div
+              id={menuId}
+              role="menu"
+              style={{
+                position: "fixed",
+                top: menuPosition.top,
+                left: menuPosition.left,
+                zIndex: 70,
+              }}
+              className="w-44 overflow-hidden rounded-lg border border-zinc-200 bg-white py-1 shadow-lg"
+            >
+              <button
+                type="button"
+                role="menuitem"
+                className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-zinc-700 transition hover:bg-zinc-50"
+                onClick={() => {
+                  setMenuOpen(false);
+                  onEdit(status);
+                }}
+              >
+                <i className="fas fa-pen w-4 text-center text-xs text-zinc-400" aria-hidden="true" />
+                {t("lists.statuses.menu.rename", "Pārsaukt")}
+              </button>
+              <button
+                type="button"
+                role="menuitem"
+                className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-zinc-700 transition hover:bg-zinc-50"
+                onClick={() => {
+                  setMenuOpen(false);
+                  colorInputRef.current?.click();
+                }}
+              >
+                <i className="fas fa-palette w-4 text-center text-xs text-zinc-400" aria-hidden="true" />
+                {t("lists.statuses.menu.change_color", "Mainīt krāsu")}
+              </button>
+              <button
+                type="button"
+                role="menuitem"
+                className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-zinc-700 transition hover:bg-zinc-50"
+                onClick={() => {
+                  setMenuOpen(false);
+                  setIconPickerOpen(true);
+                }}
+              >
+                <i className="fas fa-icons w-4 text-center text-xs text-zinc-400" aria-hidden="true" />
+                {t("lists.statuses.menu.change_icon", "Mainīt ikonu")}
+              </button>
+              <button
+                type="button"
+                role="menuitem"
+                disabled={!canDelete}
+                className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+                onClick={() => {
+                  if (!canDelete) return;
+                  setMenuOpen(false);
+                  onDelete(status);
+                }}
+              >
+                <i className="fas fa-trash w-4 text-center text-xs" aria-hidden="true" />
+                {canDelete ? t("actions.delete", "Dzēst") : deleteDisabledLabel}
+              </button>
+            </div>,
+            document.body,
+          )
+        : null}
+
+      <StatusIconPickerModal
+        open={iconPickerOpen}
+        onOpenChange={setIconPickerOpen}
+        color={status.color}
+        groupKey={status.groupKey}
+        value={status.icon ?? null}
+        onSave={onChangeIcon}
+      />
+    </>
   );
 }

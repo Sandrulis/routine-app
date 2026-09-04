@@ -1,7 +1,13 @@
 import type { TaskStatusSummary } from "@/app/lib/site-admin/types";
 import { parseHexColor } from "@/app/lib/lists";
+import { isOptionalVisibleGroup, normalizeHiddenStatusIds } from "@/app/lib/status-visibility";
 
-export const LIST_STATUS_GROUPS = ["not_started", "active", "closed"] as const;
+export const LIST_STATUS_GROUPS = [
+  "not_started",
+  "active",
+  "done",
+  "closed",
+] as const;
 
 export type ListStatusGroup = (typeof LIST_STATUS_GROUPS)[number];
 
@@ -75,6 +81,7 @@ export function mapListStatusRow(row: {
   label: string;
   labels: unknown;
   color: string;
+  icon?: string | null;
   sort_order: number;
   group_key: string;
 }): ListStatus {
@@ -87,6 +94,7 @@ export function mapListStatusRow(row: {
     labels,
     label: legacy || primaryStatusLabel(labels),
     color: normalizeStatusColor(row.color),
+    icon: row.icon?.trim() || null,
     sortOrder: row.sort_order,
     groupKey,
   };
@@ -99,6 +107,7 @@ export function mapWorkTaskStatusRow(row: {
   label: string;
   labels: unknown;
   color: string;
+  icon?: string | null;
   sort_order: number;
   group_key: string;
 }): WorkTaskStatusDef {
@@ -112,6 +121,7 @@ export function mapWorkTaskStatusRow(row: {
     labels,
     label: legacy || primaryStatusLabel(labels),
     color: normalizeStatusColor(row.color),
+    icon: row.icon?.trim() || null,
     sortOrder: row.sort_order,
     groupKey,
   };
@@ -179,6 +189,7 @@ export function unknownStatusSummary(statusId: string): TaskStatusSummary {
     labels: {},
     label: statusId,
     color: "#a1a1aa",
+    icon: null,
     sortOrder: 0,
     groupKey: "active",
   };
@@ -377,18 +388,16 @@ export function resolveStatusCatalogs(
       ? parentTask.statusOrder
       : (list?.statusOrder ?? []);
   const laidOut = applyListStatusLayout(merged, layoutOrder);
-  const hiddenIds = new Set(
+  const rawHidden =
     parentTaskId && parentTask
       ? (parentTask.hiddenStatusIds ?? [])
       : listId && list
         ? (list.hiddenStatusIds ?? [])
-        : [],
+        : [];
+  const hiddenIds = new Set(
+    normalizeHiddenStatusIds(laidOut, rawHidden, (status) => !isScopedCustomStatus(status)),
   );
-  const withoutHidden = laidOut.filter((status) => !hiddenIds.has(status.id));
-  const visible =
-    (listId && list) || (parentTaskId && parentTask)
-      ? enforceSingletonGroups(withoutHidden).catalog
-      : withoutHidden;
+  const visible = laidOut.filter((status) => !hiddenIds.has(status.id));
   return { laidOut, visible };
 }
 
@@ -450,6 +459,28 @@ export function statusGroupDroppableId(groupKey: ListStatusGroup): string {
   return `${STATUS_GROUP_DROPPABLE_PREFIX}${groupKey}`;
 }
 
+function arrayMove<T>(array: T[], from: number, to: number): T[] {
+  const next = [...array];
+  const [item] = next.splice(from, 1);
+  next.splice(to, 0, item);
+  return next;
+}
+
+function appendIndexForGroup(
+  items: TaskStatusSummary[],
+  groupKey: ListStatusGroup,
+): number {
+  let lastInGroup = -1;
+  for (let index = 0; index < items.length; index += 1) {
+    if (items[index].groupKey === groupKey) lastInGroup = index;
+  }
+  if (lastInGroup >= 0) return lastInGroup + 1;
+  const firstHigher = items.findIndex(
+    (status) => groupIndex(status.groupKey) > groupIndex(groupKey),
+  );
+  return firstHigher >= 0 ? firstHigher : items.length;
+}
+
 export function parseStatusGroupDroppableId(
   value: string,
 ): ListStatusGroup | null {
@@ -500,48 +531,47 @@ export function moveStatusInLayout(
   const flat = groupedStatusLayout(catalog, order).flatMap(
     (group) => group.statuses,
   );
-  const active = flat.find((status) => status.id === activeId);
+  const activeIndex = flat.findIndex((status) => status.id === activeId);
+  const active = flat[activeIndex];
   if (!active || !isListStatusGroup(active.groupKey)) return null;
   if (activeId === overId) return null;
 
-  const without = flat.filter((status) => status.id !== activeId);
   const droppedGroup = parseStatusGroupDroppableId(overId);
-  let toGroup: ListStatusGroup | null = droppedGroup;
-  let insertAt = -1;
+  let toGroup: ListStatusGroup;
+  let nextFlat: TaskStatusSummary[];
 
   if (droppedGroup) {
-    let lastInGroup = -1;
-    for (let index = without.length - 1; index >= 0; index -= 1) {
-      if (without[index].groupKey === droppedGroup) {
-        lastInGroup = index;
-        break;
-      }
-    }
-    insertAt =
-      lastInGroup >= 0
-        ? lastInGroup + 1
-        : without.findIndex(
-            (status) => groupIndex(status.groupKey) > groupIndex(droppedGroup),
-          );
-    if (insertAt < 0) insertAt = without.length;
+    toGroup = droppedGroup;
+    const without = flat.filter((status) => status.id !== activeId);
+    const insertAt = appendIndexForGroup(without, toGroup);
+    const moved = { ...active, groupKey: toGroup };
+    nextFlat = [
+      ...without.slice(0, insertAt),
+      moved,
+      ...without.slice(insertAt),
+    ];
   } else {
-    const overIndex = without.findIndex((status) => status.id === overId);
-    const overStatus = without[overIndex];
+    const overIndex = flat.findIndex((status) => status.id === overId);
+    const overStatus = flat[overIndex];
     if (overIndex < 0 || !overStatus || !isListStatusGroup(overStatus.groupKey)) {
       return null;
     }
     toGroup = overStatus.groupKey;
-    insertAt = overIndex;
+
+    if (active.groupKey === toGroup) {
+      nextFlat = arrayMove(flat, activeIndex, overIndex);
+    } else {
+      const without = flat.filter((status) => status.id !== activeId);
+      const insertAt = appendIndexForGroup(without, toGroup);
+      const moved = { ...active, groupKey: toGroup };
+      nextFlat = [
+        ...without.slice(0, insertAt),
+        moved,
+        ...without.slice(insertAt),
+      ];
+    }
   }
 
-  if (!toGroup) return null;
-
-  const moved = { ...active, groupKey: toGroup };
-  const nextFlat = [
-    ...without.slice(0, insertAt),
-    moved,
-    ...without.slice(insertAt),
-  ];
   const nextCatalog = catalog.map((status) =>
     status.id === activeId ? { ...status, groupKey: toGroup } : status,
   );
@@ -587,7 +617,7 @@ export function insertStatusInGroupOrder(
   });
 }
 
-export const SINGLETON_STATUS_GROUPS = ["not_started", "closed"] as const;
+export const SINGLETON_STATUS_GROUPS = ["not_started"] as const;
 
 export function isSingletonStatusGroup(
   groupKey: string,
@@ -627,46 +657,16 @@ export function parseTeamStatusLabels(
   return labels;
 }
 
-/** Extra not_started / closed statuses are moved to active. */
+/** @deprecated Visibility is controlled via hidden_status_ids. Kept for layout saves. */
 export function enforceSingletonGroups(
   catalog: TaskStatusSummary[],
-  keepIds: Partial<Record<ListStatusGroup, string>> = {},
+  _keepIds: Partial<Record<ListStatusGroup, string>> = {},
 ): {
   catalog: TaskStatusSummary[];
   overrides: Record<string, ListStatusGroup>;
   displacedIds: string[];
 } {
-  const byId = new Map(catalog.map((status) => [status.id, { ...status }]));
-  const overrides: Record<string, ListStatusGroup> = {};
-  const displacedIds: string[] = [];
-
-  for (const groupKey of SINGLETON_STATUS_GROUPS) {
-    const inGroup = [...byId.values()].filter(
-      (status) => status.groupKey === groupKey,
-    );
-    if (inGroup.length <= 1) continue;
-    const preferred = keepIds[groupKey];
-    const keep =
-      (preferred && inGroup.some((status) => status.id === preferred)
-        ? preferred
-        : inGroup[0]?.id) ?? null;
-    if (!keep) continue;
-    for (const status of inGroup) {
-      if (status.id === keep) continue;
-      const next = byId.get(status.id);
-      if (!next) continue;
-      next.groupKey = "active";
-      byId.set(status.id, next);
-      overrides[status.id] = "active";
-      displacedIds.push(status.id);
-    }
-  }
-
-  return {
-    catalog: catalog.map((status) => byId.get(status.id) ?? status),
-    overrides,
-    displacedIds,
-  };
+  return { catalog, overrides: {}, displacedIds: [] };
 }
 
 export function groupWouldBeEmpty(
@@ -677,6 +677,7 @@ export function groupWouldBeEmpty(
   const hidden = new Set(hiddenIds);
   const target = items.find((item) => item.id === removeId);
   if (!target) return false;
+  if (isOptionalVisibleGroup(target.groupKey)) return false;
   return !items.some(
     (item) =>
       item.id !== removeId &&

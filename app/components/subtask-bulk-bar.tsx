@@ -239,6 +239,7 @@ export function SubtaskBulkBar({
   const groupLabel = {
     not_started: t("status.group.not_started", "Nav sākts"),
     active: t("status.group.active", "Aktīvs"),
+    done: t("status.group.done", "Pabeigts"),
     closed: t("status.group.closed", "Slēgts"),
   };
 

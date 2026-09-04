@@ -744,7 +744,7 @@ export async function fetchTeamWorkspace(teamId: string): Promise<TeamWorkspace>
     fetchAllRows((from, to) =>
       supabase
         .from("list_statuses")
-        .select("id, list_id, label, labels, color, sort_order, group_key")
+        .select("id, list_id, label, labels, color, icon, sort_order, group_key")
         .eq("team_id", teamId)
         .order("sort_order", { ascending: true })
         .range(from, to),
@@ -753,7 +753,7 @@ export async function fetchTeamWorkspace(teamId: string): Promise<TeamWorkspace>
       supabase
         .from("work_task_statuses")
         .select(
-          "id, parent_task_id, list_id, label, labels, color, sort_order, group_key",
+          "id, parent_task_id, list_id, label, labels, color, icon, sort_order, group_key",
         )
         .eq("team_id", teamId)
         .order("sort_order", { ascending: true })
@@ -1773,6 +1773,7 @@ export async function insertListStatus(teamId: string, status: ListStatus) {
     label,
     labels: {},
     color: normalizeStatusColor(status.color),
+    icon: status.icon?.trim() || null,
     sort_order: status.sortOrder,
     group_key: status.groupKey,
   });
@@ -1781,7 +1782,9 @@ export async function insertListStatus(teamId: string, status: ListStatus) {
 
 export async function updateListStatusRow(
   statusId: string,
-  patch: Partial<Pick<ListStatus, "labels" | "label" | "color" | "groupKey" | "sortOrder">>,
+  patch: Partial<
+    Pick<ListStatus, "labels" | "label" | "color" | "icon" | "groupKey" | "sortOrder">
+  >,
 ) {
   const supabase = db();
   const next: Record<string, unknown> = {};
@@ -1794,6 +1797,7 @@ export async function updateListStatusRow(
     next.label = primaryStatusLabel(labels, "");
   }
   if (patch.color !== undefined) next.color = normalizeStatusColor(patch.color);
+  if (patch.icon !== undefined) next.icon = patch.icon?.trim() || null;
   if (patch.groupKey !== undefined) {
     next.group_key = isListStatusGroup(patch.groupKey) ? patch.groupKey : "active";
   }
@@ -1822,6 +1826,7 @@ export async function insertWorkTaskStatus(
     label,
     labels: {},
     color: normalizeStatusColor(status.color),
+    icon: status.icon?.trim() || null,
     sort_order: status.sortOrder,
     group_key: status.groupKey,
   });
@@ -1831,7 +1836,10 @@ export async function insertWorkTaskStatus(
 export async function updateWorkTaskStatusRow(
   statusId: string,
   patch: Partial<
-    Pick<WorkTaskStatusDef, "labels" | "label" | "color" | "groupKey" | "sortOrder">
+    Pick<
+      WorkTaskStatusDef,
+      "labels" | "label" | "color" | "icon" | "groupKey" | "sortOrder"
+    >
   >,
 ) {
   const supabase = db();
@@ -1845,6 +1853,7 @@ export async function updateWorkTaskStatusRow(
     next.label = primaryStatusLabel(labels, "");
   }
   if (patch.color !== undefined) next.color = normalizeStatusColor(patch.color);
+  if (patch.icon !== undefined) next.icon = patch.icon?.trim() || null;
   if (patch.groupKey !== undefined) {
     next.group_key = isListStatusGroup(patch.groupKey) ? patch.groupKey : "active";
   }

@@ -1226,6 +1226,7 @@ type TaskStatusRow = {
   label: string;
   labels: Record<string, string> | null;
   color: string;
+  icon: string | null;
   sort_order: number;
   group_key: string;
 };
@@ -1242,6 +1243,7 @@ function mapTaskStatusRow(row: TaskStatusRow): TaskStatusSummary {
     labels,
     label: primaryStatusLabel(labels, legacyLabel),
     color: row.color,
+    icon: row.icon?.trim() || null,
     sortOrder: row.sort_order,
     groupKey: row.group_key,
   };
@@ -1255,7 +1257,7 @@ export const listTaskStatuses = cache(async function listTaskStatuses(): Promise
   const supabase = await getSessionClient();
   const { data, error } = await supabase
     .from("task_statuses")
-    .select("id, label, labels, color, sort_order, group_key")
+    .select("id, label, labels, color, icon, sort_order, group_key")
     .order("sort_order", { ascending: true });
 
   if (error) {
@@ -1267,7 +1269,7 @@ export const listTaskStatuses = cache(async function listTaskStatuses(): Promise
 });
 
 const STATUS_ID_RE = /^[a-z][a-z0-9_]*$/;
-const VALID_GROUPS = ["not_started", "active", "closed"];
+const VALID_GROUPS = ["not_started", "active", "done", "closed"];
 
 function slugifyStatusId(value: string): string {
   const translit: Record<string, string> = {
@@ -1354,6 +1356,7 @@ export async function createTaskStatus(input: TaskStatusInput): Promise<ActionRe
     label,
     labels,
     color,
+    icon: input.icon?.trim() || null,
     sort_order: nextOrder,
     group_key: groupKey,
   });
@@ -1414,7 +1417,13 @@ export async function updateTaskStatus(
 
   const { error } = await supabase
     .from("task_statuses")
-    .update({ label, labels, color, group_key: groupKey })
+    .update({
+      label,
+      labels,
+      color,
+      icon: input.icon?.trim() || null,
+      group_key: groupKey,
+    })
     .eq("id", statusId);
 
   if (error) {
