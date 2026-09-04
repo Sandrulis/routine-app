@@ -789,13 +789,17 @@ function SortableStatusRow({
             <div
               id={menuId}
               role="menu"
+              data-app-modal-ignore-backdrop=""
               style={{
                 position: "fixed",
                 top: menuPosition.top,
                 left: menuPosition.left,
-                zIndex: 70,
+                zIndex: 80,
               }}
               className="w-44 overflow-hidden rounded-lg border border-zinc-200 bg-white py-1 shadow-lg"
+              onMouseDown={(event) => event.stopPropagation()}
+              onPointerDown={(event) => event.stopPropagation()}
+              onClick={(event) => event.stopPropagation()}
             >
               <button
                 type="button"

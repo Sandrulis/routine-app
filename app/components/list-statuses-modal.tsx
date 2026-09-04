@@ -516,10 +516,15 @@ export function ListStatusesModal({
                                 "lists.statuses.system.badge",
                                 "Sistēma",
                               )}
+                              listBadge={t(
+                                "tasks.statuses.list.badge",
+                                "Saraksts",
+                              )}
                               renamedBadge={t(
                                 "lists.statuses.renamed",
                                 "Pārsaukts",
                               )}
+                              scopeKind={customStatus ? "list" : "system"}
                               menuActions={{
                                 changeColor: Boolean(customStatus),
                                 changeIcon: Boolean(customStatus),

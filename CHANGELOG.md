@@ -4,6 +4,11 @@
 
 - (none)
 
+## v0.3.57
+
+- Statusu `...` izvēlne vairs neaizver modāli; ikonas maiņas modālis strādā virs statusu loga
+- **Sistēma** / **Saraksts** marķieri rāda pareizi (nevis «Sistēma» uz visiem statusiem)
+
 ## v0.3.56
 
 - Statusu pārvaldība: **Pabeigts** grupa, pielāgojamas ikonas, redzamības checkbox, `...` izvēlne un vilkšana starp grupām (nevis apmaiņa)

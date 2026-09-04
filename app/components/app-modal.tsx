@@ -48,6 +48,8 @@ type AppModalProps = {
   description?: string;
   children: ReactNode;
   blocking?: boolean;
+  /** Kad modālis ir virs cita AppModal, neļaut vecākam aizvērties no fona klikšķa. */
+  ignoreParentBackdropDismiss?: boolean;
   dirty?: boolean;
   panelMaxWidthClassName?: string;
   overlayZClassName?: string;
@@ -75,6 +77,7 @@ export function AppModal({
   headerMeta,
   headerSubtitle,
   compact = false,
+  ignoreParentBackdropDismiss = false,
 }: AppModalProps) {
   const titleId = useId();
   const descriptionId = useId();
@@ -208,6 +211,9 @@ export function AppModal({
         aria-modal="true"
         aria-labelledby={titleId}
         aria-describedby={description ? descriptionId : undefined}
+        {...(ignoreParentBackdropDismiss
+          ? { "data-app-modal-ignore-backdrop": "" }
+          : {})}
         onMouseDown={handleBackdropClick}
       >
         <div className={backdropClassName} aria-hidden="true" />

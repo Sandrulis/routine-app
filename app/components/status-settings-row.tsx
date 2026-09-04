@@ -320,17 +320,17 @@ export function SortableStatusRow({
         ) : null}
         {editing ? null : (
           <>
-            {scopeKind === "system" ? (
+            {system ? (
               <span className="hidden text-[11px] font-medium uppercase tracking-wide text-zinc-400 sm:inline">
                 {systemBadge}
               </span>
             ) : null}
-            {scopeKind === "list" && listBadge ? (
+            {!system && scopeKind === "list" && listBadge ? (
               <span className="hidden text-[11px] font-medium uppercase tracking-wide text-sky-600/80 sm:inline">
                 {listBadge}
               </span>
             ) : null}
-            {scopeKind === "task" && taskBadge ? (
+            {!system && scopeKind === "task" && taskBadge ? (
               <span className="hidden text-[11px] font-medium uppercase tracking-wide text-violet-600/80 sm:inline">
                 {taskBadge}
               </span>
@@ -371,14 +371,17 @@ export function SortableStatusRow({
             <div
               id={menuId}
               role="menu"
+              data-app-modal-ignore-backdrop=""
               style={{
                 position: "fixed",
                 top: menuPosition.top,
                 left: menuPosition.left,
-                zIndex: 70,
+                zIndex: 80,
               }}
               className="w-44 overflow-hidden rounded-lg border border-zinc-200 bg-white py-1 shadow-lg"
+              onMouseDown={(event) => event.stopPropagation()}
               onPointerDown={(event) => event.stopPropagation()}
+              onClick={(event) => event.stopPropagation()}
             >
               {actions.rename ? (
                 <button

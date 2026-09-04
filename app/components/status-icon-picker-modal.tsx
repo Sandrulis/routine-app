@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AppModal } from "@/app/components/app-modal";
 import { StatusGlyph } from "@/app/components/status-control";
 import { useTranslations } from "@/app/components/translations-provider";
@@ -43,6 +43,12 @@ export function StatusIconPickerModal({
 
   const dirty = draft !== value;
 
+  useEffect(() => {
+    if (!open) return;
+    setDraft(value);
+    setQuery("");
+  }, [open, value]);
+
   return (
     <AppModal
       open={open}
@@ -56,7 +62,8 @@ export function StatusIconPickerModal({
         "Izvēlies ikonu, kas tiks rādīta statusa aplī.",
       )}
       dirty={dirty}
-      overlayZIndex={70}
+      overlayZIndex={80}
+      ignoreParentBackdropDismiss
     >
       <div className="space-y-4">
         <div className="flex items-center gap-3">
