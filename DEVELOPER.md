@@ -318,7 +318,7 @@ Prioritāte: biedra rinda (`work_list_viewers.access_level`) → lomas rinda (`w
 - Koka / Saraksta loga aplītis: `statusDotClassName` (fons + apmale tās pašas); teksts: `statusTextClassName`
 - Picker portal `z-80`, `data-app-modal-ignore-backdrop`; ESC aizver tikai picker
 - Nākamais statuss: `nextStatusId` pēc kataloga `sort_order` (ne tikai todo → in_progress → done)
-- Sākuma / saraksta kopsavilkuma un Folder kartīšu grupēšana ir **pretēja** picker: `groupTasksByStatus` / `statusesByPriorityDesc` pēc kataloga (piem. IZM → IN PROGRESS → TO DO), ne pēc uzdevumu secības. Picker paliek Nav sākts → Aktīvs → Slēgts
+- Sākuma / saraksta kopsavilkuma un Folder kartīšu grupēšana ir **pretēja** picker: `groupTasksByStatus` / `statusesByPriorityDesc` pēc kataloga (piem. IZM → IN PROGRESS → TO DO), ne pēc uzdevumu secības. Sākuma **Mani uzdevumi** (`SubtaskTable` bez `listId`) vispirms `defaultSortedStatusCatalog`, lai mapju statusi nenonāktu kataloga beigās. Picker paliek Nav sākts → Aktīvs → Slēgts
 - `work_tasks.status` ir brīvs teksts pēc `025_work_tasks_catalog_status.sql` (noņemts check tikai uz todo / in_progress / done)
 - Tabulā `revealActionsOnHover`: bez hover tikai statusa nosaukums; hover (vai atvērts picker / pārvietošana) rāda `>` un trailing pogas, vieta rezervēta, bez animācijas
 - Zem pogas `RelativeTime` (`app/components/relative-time.tsx`, `getLastOnlineDisplay`); tooltipā precīzais `dd.mm.yy hh:mm`

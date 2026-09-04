@@ -4,6 +4,10 @@
 
 - (none)
 
+## v0.3.55
+
+- Sākumā piesaistītie uzdevumi grupējas pēc statusa prioritātes (augstākais augšā), arī ja statusi nāk no dažādiem sarakstiem un mapēm
+
 ## v0.3.54
 
 - Sākumā **Mani uzdevumi**: Atlikt (1 stunda, līdz rītdienai, 1 nedēļa vai datums); atliktie sakļauti ar **Rādīt atkal**

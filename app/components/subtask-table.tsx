@@ -57,6 +57,7 @@ import {
   userIsAssignee,
 } from "@/app/lib/list-access";
 import {
+  defaultSortedStatusCatalog,
   groupTasksByStatus,
   mergeKnownStatusCatalogs,
   mergeStatusCatalog,
@@ -545,16 +546,27 @@ export function SubtaskTable({
   }, [tasks]);
   const { statuses, colorFor, labelFor } = useTaskStatuses(listId, parentTaskId);
   const { statuses: systemStatuses } = useSystemTaskStatuses();
-  const groupingCatalog = useMemo(
-    () =>
-      mergeKnownStatusCatalogs(
-        statuses,
-        systemStatuses,
-        listStatuses,
-        workTaskStatuses,
-      ),
-    [listStatuses, statuses, systemStatuses, workTaskStatuses],
-  );
+  const groupingCatalog = useMemo(() => {
+    const merged = mergeKnownStatusCatalogs(
+      statuses,
+      systemStatuses,
+      listStatuses,
+      workTaskStatuses,
+    );
+    // Without a list/parent layout, rank by picker order so reverse groups
+    // show the highest-priority status first.
+    if (!listId && !parentTaskId) {
+      return defaultSortedStatusCatalog(merged);
+    }
+    return merged;
+  }, [
+    listId,
+    listStatuses,
+    parentTaskId,
+    statuses,
+    systemStatuses,
+    workTaskStatuses,
+  ]);
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
   );
