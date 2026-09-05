@@ -13,14 +13,30 @@ export function oneDriveContentHref(
 export async function fetchOneDriveContentAsObjectUrl(
   kind: "list" | "task",
   fileId: string,
+  options?: { mimeType?: string; download?: boolean },
 ): Promise<string | null> {
   try {
-    const response = await fetch(oneDriveContentHref(kind, fileId), {
-      credentials: "include",
-    });
+    const response = await fetch(
+      oneDriveContentHref(kind, fileId, { download: options?.download }),
+      { credentials: "include" },
+    );
     if (!response.ok) return null;
+    const contentType = response.headers.get("content-type") ?? "";
+    if (contentType.includes("application/json")) return null;
     const blob = await response.blob();
-    return URL.createObjectURL(blob);
+    if (blob.type.includes("json") && blob.size < 8_192) return null;
+    const preferredMime = options?.mimeType?.trim() || "";
+    const headerMime = contentType.split(";")[0]?.trim() || "";
+    const resolvedMime =
+      preferredMime ||
+      (blob.type && blob.type !== "application/octet-stream" ? blob.type : "") ||
+      headerMime ||
+      "application/octet-stream";
+    const typed =
+      blob.type === resolvedMime
+        ? blob
+        : new Blob([blob], { type: resolvedMime });
+    return URL.createObjectURL(typed);
   } catch (error) {
     logError("Failed to load OneDrive file content", error);
     return null;

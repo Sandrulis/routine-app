@@ -15,6 +15,7 @@ import {
 import { textLooksLikeHtml } from "@/app/lib/email-file-preview";
 import { uploadTeamFileToConnectedClouds } from "@/app/lib/cloud-storage/upload-team-file";
 import { GOOGLE_DRIVE_UPLOAD_MAX_BYTES } from "@/app/lib/google-drive/env";
+import { MAX_STORED_FILE_BYTES } from "@/app/lib/list-files";
 import { assertTeamActionPermission } from "@/app/lib/team/assert-team-action";
 import type { User, SupabaseClient } from "@supabase/supabase-js";
 
@@ -31,6 +32,31 @@ export type ExtensionSubtaskHit = {
   teamId: string;
   teamName: string;
 };
+
+function bytesToDataUrl(mimeType: string, bytes: Uint8Array): string {
+  let binary = "";
+  const chunk = 0x8000;
+  for (let i = 0; i < bytes.length; i += chunk) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + chunk));
+  }
+  return `data:${mimeType};base64,${btoa(binary)}`;
+}
+
+function canStoreTextContent(name: string, mimeType: string, size: number) {
+  if (size <= 0 || size > MAX_STORED_FILE_BYTES) return false;
+  const mime = mimeType.trim().toLowerCase();
+  if (mime.startsWith("text/") || mime === "application/json") return true;
+  const lower = name.trim().toLowerCase();
+  return (
+    lower.endsWith(".txt") ||
+    lower.endsWith(".html") ||
+    lower.endsWith(".htm") ||
+    lower.endsWith(".csv") ||
+    lower.endsWith(".json") ||
+    lower.endsWith(".md") ||
+    lower.endsWith(".log")
+  );
+}
 
 function sanitizeFileBase(name: string): string {
   const cleaned = name
@@ -316,7 +342,8 @@ export async function attachFilesToSubtask(input: {
       continue;
     }
 
-    // Cloud is the only file store; skip the attachment if no Drive/OneDrive id.
+    // Cloud is required; also keep a DB copy of small text/email files for preview
+    // when Drive/OneDrive fetch is slow or unavailable.
     let googleDriveFileId: string | null = null;
     let oneDriveFileId: string | null = null;
     let skipReason = "errors.extension_upload_failed";
@@ -343,6 +370,8 @@ export async function attachFilesToSubtask(input: {
       continue;
     }
 
+    const storeContent = canStoreTextContent(name, mimeType, file.bytes.length);
+    const content = storeContent ? bytesToDataUrl(mimeType, file.bytes) : null;
     const id = createTaskFileId();
     const createdAt = new Date().toISOString();
     const record: TaskFile = {
@@ -351,7 +380,7 @@ export async function attachFilesToSubtask(input: {
       name,
       mimeType,
       size: file.bytes.length,
-      hasContent: false,
+      hasContent: Boolean(content),
       googleDriveFileId,
       oneDriveFileId,
       createdAt,
@@ -366,10 +395,10 @@ export async function attachFilesToSubtask(input: {
       name: record.name,
       mime_type: record.mimeType,
       size: record.size,
-      content: null,
+      content,
       google_drive_file_id: record.googleDriveFileId,
       onedrive_file_id: record.oneDriveFileId,
-      has_content: false,
+      has_content: Boolean(content),
       note: record.note,
       created_at: record.createdAt,
     });

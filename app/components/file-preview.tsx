@@ -38,7 +38,7 @@ function usePreviewText(content: string | null, enabled: boolean) {
 
     let cancelled = false;
     setReady(false);
-    void fetch(content)
+    void fetch(content, { credentials: "include" })
       .then((response) => {
         if (!response.ok) throw new Error("text preview fetch failed");
         return response.text();

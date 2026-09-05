@@ -4,6 +4,11 @@
 
 - (none)
 
+## v0.3.59
+
+- E-pasta `.txt` pielikumu preview atkal caur vienotu `/api/work-files/content` (DB → Drive → OneDrive)
+- Maziem teksta failiem atļauts DB saturs (`137`); lejupielādes toast „Fails tiek lejupielādēts.”
+
 ## v0.3.58
 
 - Atsevišķa **Google Plugin** integrācija Gmail spraudnim (`gmail.readonly`); login/Drive paliek Google OAuth

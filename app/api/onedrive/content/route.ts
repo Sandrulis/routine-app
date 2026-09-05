@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/app/lib/auth/get-current-user";
+import { backfillTextFileContent } from "@/app/lib/cloud-storage/backfill-text-content";
 import { FRONTEND_MODULE_KEYS } from "@/app/lib/frontend-modules/keys";
 import { isFrontendModuleEnabled } from "@/app/lib/frontend-modules/repository";
 import { downloadTeamOneDriveFile } from "@/app/lib/onedrive/uploader";
@@ -48,11 +49,12 @@ export async function GET(request: Request) {
   let oneDriveFileId = "";
   let mimeType = "";
   let fileName = "file";
+  let hasContent = false;
 
   if (kind === "list") {
     const { data, error } = await admin
       .from("list_files")
-      .select("team_id, list_id, onedrive_file_id, mime_type, name")
+      .select("team_id, list_id, onedrive_file_id, mime_type, name, has_content")
       .eq("id", id)
       .maybeSingle();
     if (error || !data?.onedrive_file_id || !data.list_id) {
@@ -66,10 +68,11 @@ export async function GET(request: Request) {
     oneDriveFileId = String(data.onedrive_file_id);
     mimeType = String(data.mime_type || "");
     fileName = String(data.name ?? "file");
+    hasContent = Boolean(data.has_content);
   } else {
     const { data, error } = await admin
       .from("task_files")
-      .select("team_id, task_id, onedrive_file_id, mime_type, name")
+      .select("team_id, task_id, onedrive_file_id, mime_type, name, has_content")
       .eq("id", id)
       .maybeSingle();
     if (error || !data?.onedrive_file_id || !data.task_id) {
@@ -94,6 +97,7 @@ export async function GET(request: Request) {
     oneDriveFileId = String(data.onedrive_file_id);
     mimeType = String(data.mime_type || "");
     fileName = String(data.name ?? "file");
+    hasContent = Boolean(data.has_content);
   }
 
   const access = await assertListAccess(listId, "view");
@@ -106,9 +110,24 @@ export async function GET(request: Request) {
       teamId,
       oneDriveFileId,
     });
-    const resolvedMime = mimeType || downloaded.mimeType;
+    const storedMime = mimeType.trim().toLowerCase();
+    const resolvedMime =
+      (storedMime.startsWith("text/") ? mimeType : "") ||
+      mimeType ||
+      downloaded.mimeType ||
+      "application/octet-stream";
     const asDownload = searchParams.get("download") === "1";
-    return new NextResponse(Buffer.from(downloaded.bytes), {
+    const bytes = Buffer.from(downloaded.bytes);
+    if (!hasContent) {
+      void backfillTextFileContent({
+        kind,
+        fileId: id,
+        fileName,
+        mimeType: resolvedMime,
+        bytes,
+      });
+    }
+    return new NextResponse(bytes, {
       status: 200,
       headers: {
         "Content-Type": resolvedMime,

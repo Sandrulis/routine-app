@@ -15,3 +15,14 @@ export function cloudFileDownloadHref(input: {
   }
   return null;
 }
+
+/** Unified list/task file bytes (DB → Drive → OneDrive). Safe for client components. */
+export function workFileContentHref(
+  kind: "list" | "task",
+  fileId: string,
+  options?: { download?: boolean },
+): string {
+  const params = new URLSearchParams({ kind, id: fileId });
+  if (options?.download) params.set("download", "1");
+  return `/api/work-files/content?${params.toString()}`;
+}

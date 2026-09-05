@@ -1,6 +1,7 @@
 import { createClient } from "@/app/lib/supabase/client";
 import type { AppNotification } from "@/app/lib/notifications";
 import type { ListFile } from "@/app/lib/list-files";
+import { MAX_STORED_FILE_BYTES } from "@/app/lib/list-files";
 import type { WorkList, WorkTask } from "@/app/lib/lists";
 import type { WorkTemplate, WorkTemplateItem } from "@/app/lib/templates";
 import { parseTemplateTaskStatuses } from "@/app/lib/templates";
@@ -1294,8 +1295,15 @@ export async function insertActivity(teamId: string, activity: TaskActivity) {
 export async function insertTaskFile(
   teamId: string,
   file: TaskFile,
-  _content: string | null,
+  content: string | null,
 ) {
+  const storeContent =
+    Boolean(content) &&
+    file.size > 0 &&
+    file.size <= MAX_STORED_FILE_BYTES &&
+    (file.mimeType.trim().toLowerCase().startsWith("text/") ||
+      file.mimeType.trim().toLowerCase() === "application/json" ||
+      /\.(txt|html|htm|csv|json|md|log)$/i.test(file.name));
   const { error } = await db().from("task_files").insert({
     id: file.id,
     team_id: teamId,
@@ -1303,10 +1311,10 @@ export async function insertTaskFile(
     name: file.name,
     mime_type: file.mimeType,
     size: Math.max(0, Math.round(Number(file.size) || 0)),
-    content: null,
+    content: storeContent ? content : null,
     google_drive_file_id: file.googleDriveFileId,
     onedrive_file_id: file.oneDriveFileId,
-    has_content: false,
+    has_content: storeContent,
     note: parseFileNote(file.note),
     created_at: file.createdAt,
   });

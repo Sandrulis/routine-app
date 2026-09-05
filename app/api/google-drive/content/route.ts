@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/app/lib/auth/get-current-user";
+import { backfillTextFileContent } from "@/app/lib/cloud-storage/backfill-text-content";
 import { FRONTEND_MODULE_KEYS } from "@/app/lib/frontend-modules/keys";
 import { isFrontendModuleEnabled } from "@/app/lib/frontend-modules/repository";
 import { openTeamGoogleDriveFile } from "@/app/lib/google-drive/uploader";
@@ -48,11 +49,12 @@ export async function GET(request: Request) {
   let driveFileId = "";
   let mimeType = "";
   let fileName = "file";
+  let hasContent = false;
 
   if (kind === "list") {
     const { data, error } = await admin
       .from("list_files")
-      .select("team_id, list_id, google_drive_file_id, mime_type, name")
+      .select("team_id, list_id, google_drive_file_id, mime_type, name, has_content")
       .eq("id", id)
       .maybeSingle();
     if (error || !data?.google_drive_file_id || !data.list_id) {
@@ -66,10 +68,11 @@ export async function GET(request: Request) {
     driveFileId = String(data.google_drive_file_id);
     mimeType = String(data.mime_type || "");
     fileName = String(data.name ?? "file");
+    hasContent = Boolean(data.has_content);
   } else {
     const { data, error } = await admin
       .from("task_files")
-      .select("team_id, task_id, google_drive_file_id, mime_type, name")
+      .select("team_id, task_id, google_drive_file_id, mime_type, name, has_content")
       .eq("id", id)
       .maybeSingle();
     if (error || !data?.google_drive_file_id || !data.task_id) {
@@ -94,6 +97,7 @@ export async function GET(request: Request) {
     driveFileId = String(data.google_drive_file_id);
     mimeType = String(data.mime_type || "");
     fileName = String(data.name ?? "file");
+    hasContent = Boolean(data.has_content);
   }
 
   const access = await assertListAccess(listId, "view");
@@ -107,9 +111,21 @@ export async function GET(request: Request) {
     const opened = await openTeamGoogleDriveFile({
       teamId,
       driveFileId,
-      preferPdf: !asDownload,
+      // Never PDF-export plain text / email .txt — media download only.
+      preferPdf:
+        !asDownload &&
+        !mimeType.trim().toLowerCase().startsWith("text/") &&
+        !/\.txt$/i.test(fileName),
     });
-    const resolvedMime = opened.mimeType || mimeType || "application/octet-stream";
+    // Prefer stored text/html mime so Gmail .txt email exports preview as text,
+    // even when Drive returns application/octet-stream.
+    const storedMime = mimeType.trim().toLowerCase();
+    const driveMime = (opened.mimeType || "").trim();
+    const resolvedMime =
+      (storedMime.startsWith("text/") ? mimeType : "") ||
+      driveMime ||
+      mimeType ||
+      "application/octet-stream";
     const headers = {
       "Content-Type": resolvedMime,
       "Content-Disposition": contentDispositionForFile(
@@ -119,11 +135,17 @@ export async function GET(request: Request) {
       ),
       "Cache-Control": "private, no-store",
     };
-    if (!opened.response.body) {
-      const bytes = await opened.response.arrayBuffer();
-      return new NextResponse(Buffer.from(bytes), { status: 200, headers });
+    const bytes = Buffer.from(await opened.response.arrayBuffer());
+    if (!hasContent) {
+      void backfillTextFileContent({
+        kind,
+        fileId: id,
+        fileName,
+        mimeType: resolvedMime,
+        bytes,
+      });
     }
-    return new NextResponse(opened.response.body, { status: 200, headers });
+    return new NextResponse(bytes, { status: 200, headers });
   } catch (err) {
     logError("Google Drive content fetch failed", err);
     return NextResponse.json(

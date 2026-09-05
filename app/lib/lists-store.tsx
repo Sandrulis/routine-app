@@ -83,6 +83,7 @@ import {
   hydrateTaskFileContents,
   cacheTaskFileContent,
   parseFileNote,
+  storeTaskFileContent,
   type TaskActivity,
   type TaskFile,
 } from "@/app/lib/task-activity";
@@ -92,6 +93,7 @@ import {
   childListFiles,
   hydrateListFiles,
   mimeFromName,
+  MAX_STORED_FILE_BYTES,
   nextItemSortOrder,
   readAllListFiles,
 } from "@/app/lib/list-files";
@@ -1145,11 +1147,12 @@ export function ListsProvider({ children }: { children: ReactNode }) {
     }
 
     onProgress?.(85);
+    const mimeType = file.type || mimeFromName(name);
     const record: TaskFile = {
       id: createTaskFileId(),
       taskId,
       name,
-      mimeType: file.type || mimeFromName(name),
+      mimeType,
       size: Math.max(0, Math.round(file.size)),
       hasContent: false,
       googleDriveFileId: cloudResult.googleDriveFileId,
@@ -1157,6 +1160,18 @@ export function ListsProvider({ children }: { children: ReactNode }) {
       createdAt: new Date().toISOString(),
       note: parseFileNote(options?.note),
     };
+    const canStoreText =
+      file.size > 0 &&
+      file.size <= MAX_STORED_FILE_BYTES &&
+      (mimeType.toLowerCase().startsWith("text/") ||
+        mimeType.toLowerCase() === "application/json" ||
+        /\.(txt|html|htm|csv|json|md|log)$/i.test(name));
+    const content = canStoreText
+      ? await storeTaskFileContent(record.id, file)
+      : null;
+    if (content) {
+      record.hasContent = true;
+    }
     const activity = createActivity({
       actorId: assignmentNotifyRef.current.actorId,
       taskId,
@@ -1167,7 +1182,7 @@ export function ListsProvider({ children }: { children: ReactNode }) {
     if (activeTeamId) {
       try {
         // Await DB insert before UI/download can use cloud content APIs.
-        await insertTaskFile(activeTeamId, record, null);
+        await insertTaskFile(activeTeamId, record, content);
         await insertActivity(activeTeamId, activity);
       } catch (error) {
         console.error("Failed to save task file", formatSupabaseError(error));

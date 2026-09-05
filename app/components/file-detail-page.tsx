@@ -73,7 +73,9 @@ export function FileDetailPage({
         }
       }
       if (file.googleDriveFileId) {
-        const url = await fetchGoogleDriveContentAsObjectUrl("list", file.id);
+        const url = await fetchGoogleDriveContentAsObjectUrl("list", file.id, {
+          mimeType: file.mimeType,
+        });
         if (cancelled) {
           if (url) URL.revokeObjectURL(url);
           return;
@@ -85,7 +87,9 @@ export function FileDetailPage({
         }
       }
       if (file.oneDriveFileId) {
-        const url = await fetchOneDriveContentAsObjectUrl("list", file.id);
+        const url = await fetchOneDriveContentAsObjectUrl("list", file.id, {
+          mimeType: file.mimeType,
+        });
         if (cancelled) {
           if (url) URL.revokeObjectURL(url);
           return;
@@ -169,6 +173,10 @@ export function FileDetailPage({
               href={downloadHref || content || "#"}
               download={file.name}
               onClick={(event) => {
+                showFeedback({
+                  type: "success",
+                  text: t("files.download.started", "Fails tiek lejupielādēts."),
+                });
                 if (downloadHref) return;
                 event.preventDefault();
                 if (content) void triggerBrowserDownload(content, file.name);
@@ -204,6 +212,10 @@ export function FileDetailPage({
         onDownload={
           canDownload
             ? () => {
+                showFeedback({
+                  type: "success",
+                  text: t("files.download.started", "Fails tiek lejupielādēts."),
+                });
                 if (downloadHref) {
                   triggerBrowserDownload(downloadHref, file.name);
                   return;

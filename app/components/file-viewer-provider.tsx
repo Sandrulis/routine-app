@@ -16,21 +16,18 @@ import { FilePreview } from "@/app/components/file-preview";
 import { LoadingSpinner, LoadingState } from "@/app/components/loading-state";
 import { useFeedbackToast } from "@/app/components/feedback-toast-provider";
 import { useTranslations } from "@/app/components/translations-provider";
-import { cloudFileDownloadHref } from "@/app/lib/cloud-storage/content-url";
+import { cloudFileDownloadHref, workFileContentHref } from "@/app/lib/cloud-storage/content-url";
 import { isBrowserPreviewableFile } from "@/app/lib/file-types";
 import {
   downloadUrlAsFile,
-  fetchGoogleDriveContentAsObjectUrl,
   fetchGoogleDriveContentBlob,
   triggerBrowserDownload,
 } from "@/app/lib/google-drive/content-url";
-import {
-  fetchOneDriveContentAsObjectUrl,
-  fetchOneDriveContentBlob,
-} from "@/app/lib/onedrive/content-url";
+import { fetchOneDriveContentBlob } from "@/app/lib/onedrive/content-url";
 import type { ListFile } from "@/app/lib/list-files";
+import { isTextFile } from "@/app/lib/list-files";
 import { ensureListFileContent, ensureTaskFileContent } from "@/app/lib/file-content";
-import { taskFilePreviewUrl, type TaskFile } from "@/app/lib/task-activity";
+import { type TaskFile } from "@/app/lib/task-activity";
 
 export type FileViewerOpenInput = {
   kind: "list" | "task" | "local";
@@ -121,66 +118,111 @@ function FileBusyOverlay({
   );
 }
 
+async function tryLocalListContent(fileId: string): Promise<string | null> {
+  try {
+    return await ensureListFileContent(fileId);
+  } catch {
+    return null;
+  }
+}
+
+async function tryLocalTaskContent(fileId: string): Promise<string | null> {
+  try {
+    return await ensureTaskFileContent(fileId);
+  } catch {
+    return null;
+  }
+}
+
+async function fetchWorkFileAsObjectUrl(
+  kind: "list" | "task",
+  fileId: string,
+  mimeType: string,
+): Promise<string | null> {
+  try {
+    const response = await fetch(workFileContentHref(kind, fileId), {
+      credentials: "include",
+    });
+    if (!response.ok) return null;
+    const contentType = response.headers.get("content-type") ?? "";
+    if (contentType.includes("application/json")) return null;
+    const blob = await response.blob();
+    if (blob.type.includes("json") && blob.size < 8_192) return null;
+    const headerMime = contentType.split(";")[0]?.trim() || "";
+    const resolvedMime =
+      (mimeType.trim().toLowerCase().startsWith("text/") ? mimeType : "") ||
+      headerMime ||
+      mimeType ||
+      blob.type ||
+      "application/octet-stream";
+    return URL.createObjectURL(new Blob([blob], { type: resolvedMime }));
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Load preview bytes. Prefer local cache, then unified work-files API
+ * (DB text content → Drive → OneDrive) — same path as file forward.
+ */
 async function resolveContent(
   input: FileViewerOpenInput,
 ): Promise<{ content: string | null; revokeOnClose: boolean }> {
-  try {
-    if (input.contentUrl) {
-      return {
-        content: input.contentUrl,
-        revokeOnClose: Boolean(input.revokeContentOnClose),
-      };
-    }
+  if (input.contentUrl) {
+    return {
+      content: input.contentUrl,
+      revokeOnClose: Boolean(input.revokeContentOnClose),
+    };
+  }
 
-    if (input.kind === "list") {
-      if (input.hasContent) {
-        const local = await ensureListFileContent(input.id);
-        if (local) return { content: local, revokeOnClose: false };
-      }
-      if (input.googleDriveFileId) {
-        const url = await fetchGoogleDriveContentAsObjectUrl("list", input.id);
-        if (url) return { content: url, revokeOnClose: true };
-      }
-      if (input.oneDriveFileId) {
-        const url = await fetchOneDriveContentAsObjectUrl("list", input.id);
-        return { content: url, revokeOnClose: Boolean(url) };
-      }
-      return { content: null, revokeOnClose: false };
-    }
-
-    if (input.kind === "task") {
-      const local = await ensureTaskFileContent(input.id);
-      if (local) return { content: local, revokeOnClose: false };
-      if (input.hasContent) {
-        const preview = taskFilePreviewUrl({
-          id: input.id,
-          taskId: "",
-          name: input.name,
-          mimeType: input.mimeType,
-          size: input.size,
-          hasContent: true,
-          googleDriveFileId: input.googleDriveFileId ?? null,
-          oneDriveFileId: input.oneDriveFileId ?? null,
-          createdAt: "",
-          note: "",
-        });
-        if (preview) return { content: preview, revokeOnClose: false };
-      }
-      if (input.googleDriveFileId) {
-        const url = await fetchGoogleDriveContentAsObjectUrl("task", input.id);
-        if (url) return { content: url, revokeOnClose: true };
-      }
-      if (input.oneDriveFileId) {
-        const url = await fetchOneDriveContentAsObjectUrl("task", input.id);
-        return { content: url, revokeOnClose: Boolean(url) };
-      }
-      return { content: null, revokeOnClose: false };
-    }
-
-    return { content: null, revokeOnClose: false };
-  } catch {
+  if (input.kind !== "list" && input.kind !== "task") {
     return { content: null, revokeOnClose: false };
   }
+
+  if (input.kind === "list" && input.hasContent) {
+    const local = await tryLocalListContent(input.id);
+    if (local) return { content: local, revokeOnClose: false };
+  }
+  if (input.kind === "task") {
+    const local = await tryLocalTaskContent(input.id);
+    if (local) return { content: local, revokeOnClose: false };
+  }
+
+  // Text/email: use API URL directly so FilePreview fetches UTF-8 text once.
+  if (isTextFile({ name: input.name, mimeType: input.mimeType })) {
+    const href = workFileContentHref(input.kind, input.id);
+    try {
+      const probe = await fetch(href, {
+        credentials: "include",
+        method: "GET",
+        headers: { Accept: "text/plain, text/html, */*" },
+      });
+      if (probe.ok) {
+        const contentType = probe.headers.get("content-type") ?? "";
+        if (!contentType.includes("application/json")) {
+          // Consume body into blob URL so preview does not depend on a second network trip
+          // and works even if the browser treats Content-Disposition oddly.
+          const blob = await probe.blob();
+          const mime =
+            (input.mimeType.trim().toLowerCase().startsWith("text/")
+              ? input.mimeType
+              : "") ||
+            contentType.split(";")[0]?.trim() ||
+            "text/plain";
+          return {
+            content: URL.createObjectURL(new Blob([blob], { type: mime })),
+            revokeOnClose: true,
+          };
+        }
+      }
+    } catch {
+      // fall through
+    }
+  }
+
+  const url = await fetchWorkFileAsObjectUrl(input.kind, input.id, input.mimeType);
+  if (url) return { content: url, revokeOnClose: true };
+  return { content: null, revokeOnClose: false };
 }
 
 async function tryDownloadUrl(url: string | null | undefined, filename: string) {
@@ -201,6 +243,15 @@ async function downloadResolved(
   if (await tryDownloadUrl(input.contentUrl, input.name)) return true;
 
   if (input.kind === "list" || input.kind === "task") {
+    if (
+      await tryDownloadUrl(
+        workFileContentHref(input.kind, input.id, { download: true }),
+        input.name,
+      )
+    ) {
+      return true;
+    }
+
     const href = cloudFileDownloadHref({
       kind: input.kind,
       id: input.id,
@@ -346,6 +397,10 @@ export function FileViewerProvider({ children }: { children: ReactNode }) {
     (input: FileViewerOpenInput, previewContent?: string | null) => {
       if (busy) return;
       setBusy({ mode: "download", fileName: input.name });
+      showFeedback({
+        type: "success",
+        text: t("files.download.started", "Fails tiek lejupielādēts."),
+      });
       void downloadResolved(input, previewContent)
         .then((ok) => {
           if (!ok) {

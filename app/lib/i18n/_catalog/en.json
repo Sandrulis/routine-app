@@ -1396,6 +1396,7 @@
   "files.preview.progress_hint": "Loading preview…",
   "files.download.progress_title": "Downloading file",
   "files.download.progress_hint": "Preparing download…",
+  "files.download.started": "Downloading file…",
   "files.download.failed": "Could not download the file.",
   "files.forward": "Forward file",
   "files.forward.title": "Forward file",

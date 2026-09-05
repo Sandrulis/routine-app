@@ -176,8 +176,8 @@ export function isBrowserPreviewableFile(name: string, mimeType = ""): boolean {
   if (
     mime.startsWith("image/") ||
     mime === "application/pdf" ||
-    mime === "text/plain" ||
-    mime === "text/html"
+    mime.startsWith("application/pdf") ||
+    mime.startsWith("text/")
   ) {
     return true;
   }
@@ -192,7 +192,11 @@ export function isBrowserPreviewableFile(name: string, mimeType = ""): boolean {
     extension === "svg" ||
     extension === "txt" ||
     extension === "html" ||
-    extension === "htm"
+    extension === "htm" ||
+    extension === "csv" ||
+    extension === "md" ||
+    extension === "log" ||
+    extension === "json"
   );
 }
 

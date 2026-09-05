@@ -751,18 +751,29 @@ export function SubtaskDetailModal({
     if (pending) {
       const url = URL.createObjectURL(pending.file);
       triggerBrowserDownload(url, pending.name, true);
+      showFeedback({
+        type: "success",
+        text: t("files.download.started", "Fails tiek lejupielādēts."),
+      });
       return;
     }
 
     const stored = files.find((file) => file.id === fileId);
     if (!stored) return;
 
-    const cloudHref = cloudFileDownloadHref({
-      kind: "task",
-      id: stored.id,
-      googleDriveFileId: stored.googleDriveFileId,
-      oneDriveFileId: stored.oneDriveFileId,
+    showFeedback({
+      type: "success",
+      text: t("files.download.started", "Fails tiek lejupielādēts."),
     });
+
+    const cloudHref =
+      cloudFileDownloadHref({
+        kind: "task",
+        id: stored.id,
+        googleDriveFileId: stored.googleDriveFileId,
+        oneDriveFileId: stored.oneDriveFileId,
+      }) ||
+      `/api/work-files/content?kind=task&id=${encodeURIComponent(stored.id)}&download=1`;
     if (cloudHref) {
       try {
         await downloadUrlAsFile(cloudHref, stored.name);

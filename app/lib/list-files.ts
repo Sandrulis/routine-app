@@ -223,12 +223,13 @@ export function childListFiles(
 }
 
 export function isTextFile(file: { name: string; mimeType: string }): boolean {
-  if (file.mimeType.startsWith("text/")) return true;
-  if (file.mimeType === "application/json" || file.mimeType === "application/xml") {
+  const mime = file.mimeType.trim().toLowerCase();
+  if (mime.startsWith("text/")) return true;
+  if (mime === "application/json" || mime === "application/xml") {
     return true;
   }
-  const extension = file.name.split(".").pop()?.toLowerCase() ?? "";
-  return ["txt", "md", "json", "csv", "log", "xml", "html", "css", "js", "ts"].includes(
+  const extension = file.name.trim().split(".").pop()?.toLowerCase() ?? "";
+  return ["txt", "md", "json", "csv", "log", "xml", "html", "htm", "css", "js", "ts"].includes(
     extension,
   );
 }
