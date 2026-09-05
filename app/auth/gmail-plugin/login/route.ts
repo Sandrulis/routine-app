@@ -12,11 +12,12 @@ import {
   GMAIL_PLUGIN_DONE_PATH,
   GMAIL_PLUGIN_SCOPES,
 } from "@/app/lib/extension/gmail-oauth";
+import { isGooglePluginEnabled } from "@/app/lib/integrations/google-plugin/repository";
 import {
-  buildGoogleOAuthAuthorizeUrl,
-  googleOAuthConfigureCookieOptions,
-  GOOGLE_OAUTH_OAUTH_COOKIE,
-} from "@/app/lib/integrations/google-oauth/oauth";
+  buildGooglePluginAuthorizeUrl,
+  googlePluginOAuthCookieOptions,
+  GOOGLE_PLUGIN_OAUTH_COOKIE,
+} from "@/app/lib/integrations/google-plugin/oauth";
 
 function redirectTo(origin: string, path: string, query: Record<string, string> = {}) {
   const url = new URL(path, origin);
@@ -46,19 +47,25 @@ function withRememberCookie(response: NextResponse) {
 /**
  * Plugin Google login: identity + Gmail readonly in one consent, with offline
  * refresh so `user_gmail_connections` can be filled in the same callback.
- * Website `/login` Google stays on identity scopes only.
+ * Uses the Google Plugin Cloud app — not website Google OAuth.
  */
 export async function GET(request: Request) {
   const { origin } = new URL(request.url);
   const oauthOrigin = resolveOAuthOrigin(origin) || origin;
+
+  if (!(await isGooglePluginEnabled())) {
+    return redirectTo(oauthOrigin, GMAIL_PLUGIN_DONE_PATH, {
+      login: "1",
+      error: "disabled",
+    });
+  }
 
   const state = createOAuthLoginState({
     next: `${GMAIL_PLUGIN_DONE_PATH}?logged_in=1`,
     errorPage: "plugin",
   });
   const serialized = serializeOAuthLoginState(state);
-  const url = await buildGoogleOAuthAuthorizeUrl(oauthOrigin, serialized, {
-    // select_account + consent: pick account and always mint a refresh token
+  const url = await buildGooglePluginAuthorizeUrl(oauthOrigin, serialized, {
     prompt: "select_account consent",
     accessType: "offline",
     scopes: GMAIL_PLUGIN_SCOPES,
@@ -73,9 +80,9 @@ export async function GET(request: Request) {
 
   const response = withRememberCookie(NextResponse.redirect(url));
   response.cookies.set(
-    GOOGLE_OAUTH_OAUTH_COOKIE,
+    GOOGLE_PLUGIN_OAUTH_COOKIE,
     serialized,
-    googleOAuthConfigureCookieOptions(600),
+    googlePluginOAuthCookieOptions(600),
   );
   return response;
 }

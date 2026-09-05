@@ -2,7 +2,7 @@
 
 Chrome paplašinājums: Gmailā rāda sistēmas logo, atver modāli un pievieno e-pastu + pielikumus pie Routine apakšuzdevuma.
 
-Nav jāievada Routine URL vai OAuth Client ID. Spraudnis sauc [https://www.tasqin.com](https://www.tasqin.com) (ne apex `tasqin.com` — Vercel 308 bez CORS bloķētu Chrome). Lokāli `http://localhost:3120`. Sesija ir spraudņa paša (`chrome.storage.local` + `refresh_token`, atjaunošana caur `/api/extension/refresh` un alarm ~20 min; Chrome restartā uzreiz) — TASQIN cilnei nav jābūt atvērtai un ielogošanās turas līdz ~30 dienām, arī ja vietnē iziet. Vietnes **Iziet** nedrīkst izsaukt `/logout` (tas atsauktu kopīgo sesiju). Ja storage jau ir derīga sesija, vietnes cookie to nepārraksta; cookie bootstrap tikai ja storage tukšs. Pēc **Iziet** spraudnī vietnes sesija paliek. Gmail savieno caur sistēmas Google OAuth.
+Nav jāievada Routine URL vai OAuth Client ID. Spraudnis sauc [https://www.tasqin.com](https://www.tasqin.com) (ne apex `tasqin.com` — Vercel 308 bez CORS bloķētu Chrome). Lokāli `http://localhost:3120`. Sesija ir spraudņa paša (`chrome.storage.local` + `refresh_token`, atjaunošana caur `/api/extension/refresh` un alarm ~20 min; Chrome restartā uzreiz) — TASQIN cilnei nav jābūt atvērtai un ielogošanās turas līdz ~30 dienām, arī ja vietnē iziet. Vietnes **Iziet** nedrīkst izsaukt `/logout` (tas atsauktu kopīgo sesiju). Ja storage jau ir derīga sesija, vietnes cookie to nepārraksta; cookie bootstrap tikai ja storage tukšs. Pēc **Iziet** spraudnī vietnes sesija paliek. Gmail savieno caur **Google Plugin** integrāciju (`/auth/google-plugin/callback`), nevis vietnes Google OAuth loginu.
 
 `GET /api/extension/config` ir publisks. Serveris atbildē atspoguļo derīgu `chrome-extension://` Origin (`Access-Control-Allow-Origin`). Privātie API prasa Bearer. `CHROME_EXTENSION_IDS` nav vajadzīgs. `/api/extension/*` neiet caur www/apex 301 (tas bez CORS galvenēm bloķētu Chrome).
 
@@ -10,8 +10,8 @@ Nav jāievada Routine URL vai OAuth Client ID. Spraudnis sauc [https://www.tasqi
 
 1. Production: [https://www.tasqin.com](https://www.tasqin.com) (kanoniskais hosts `NEXT_PUBLIC_SITE_URL`). Local: `npm run dev`
 2. Administrācija → Moduļi: **Gmail spraudnis** ieslēgts
-3. Administrācija → Integrācijas: Google OAuth konfigurēts; Google Cloud: **Gmail API** + **Drive API**
-4. Google Cloud OAuth klientā Redirect URI: `/auth/google-oauth/callback` (login un Gmail spraudnis) un `/auth/google-drive/callback` — arī `http://localhost:3120` varianti. Rādās Integrācijās.
+3. Administrācija → Integrācijas: **Google Plugin** konfigurēts un aktīvs (atsevišķs Cloud projekts ar Gmail API); Google OAuth paliek loginam/Drive
+4. Google Plugin OAuth klientā Redirect URI: `/auth/google-plugin/callback` — arī `http://localhost:3120` varianti. Rādās Integrācijās. Pēc jaunā Client ID lietotājiem **Atjaunot Gmail**.
 5. Komandai pieslēgts ieslēgtais mākonis: **Google Drive** un/vai **OneDrive** (bez tā popup rāda sarkanu brīdinājumu un Gmailā pogas nav). UI nosauc tikai tos mākoņus, kuru modulis ir ieslēgts.
 6. `module_file_upload` ieslēgts
 
@@ -50,7 +50,7 @@ Popup ir balta kartīte: avatars, vārds un uzvārds, e-pasts, **Iziet** tikai k
 - `POST /api/extension/attach-email`
 - `GET /auth/gmail-plugin/bridge?t=…` → sesija pārlūkā → `/auth/gmail-plugin/start` (Gmail OAuth)
 - `GET /auth/gmail-plugin/login` → Google OAuth ar Gmail pieeju (`openid email profile gmail.readonly`, offline) → callback saglabā arī `user_gmail_connections` → `/auth/gmail-plugin/done?logged_in=1` (+ `connected=1` ja Gmail saglabājās)
-- `GET /auth/gmail-plugin/start` → Google OAuth (`/auth/google-oauth/callback`) → `/auth/gmail-plugin/done`
+- `GET /auth/gmail-plugin/start` → Google Plugin OAuth (`/auth/google-plugin/callback`) → `/auth/gmail-plugin/done`
 
 ## Ikona
 

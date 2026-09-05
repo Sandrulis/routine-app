@@ -4,6 +4,11 @@
 
 - (none)
 
+## v0.3.58
+
+- Atsevišķa **Google Plugin** integrācija Gmail spraudnim (`gmail.readonly`); login/Drive paliek Google OAuth
+- Gmail Chrome spraudnis OAuth iet caur `/auth/google-plugin/callback`; pēc jaunā Client ID jāatjauno Gmail savienojums
+
 ## v0.3.57
 
 - Statusu `...` izvēlne vairs neaizver modāli; ikonas maiņas modālis strādā virs statusu loga

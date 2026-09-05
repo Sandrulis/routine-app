@@ -17,6 +17,12 @@ import {
   startGoogleOAuthConfigureAction,
 } from "@/app/lib/integrations/google-oauth/actions";
 import {
+  resetGooglePluginConfigurationAction,
+  saveGooglePluginCredentialsAction,
+  setGooglePluginEnabledAction,
+  startGooglePluginConfigureAction,
+} from "@/app/lib/integrations/google-plugin/actions";
+import {
   resetMicrosoftOAuthConfigurationAction,
   saveMicrosoftOAuthCredentialsAction,
   setMicrosoftOAuthEnabledAction,
@@ -24,12 +30,14 @@ import {
 } from "@/app/lib/integrations/microsoft-oauth/actions";
 import type {
   GoogleOAuthIntegrationStatus,
+  GooglePluginIntegrationStatus,
   MicrosoftOAuthIntegrationStatus,
   SimpleIntegrationStatus,
 } from "@/app/lib/integrations/types";
 
 export function AdminIntegrationsPage({
   initialGoogleOAuth,
+  initialGooglePlugin,
   initialMicrosoftOAuth,
   initialTurnstile,
   initialResend,
@@ -38,6 +46,7 @@ export function AdminIntegrationsPage({
   initialStripe,
 }: {
   initialGoogleOAuth: GoogleOAuthIntegrationStatus;
+  initialGooglePlugin: GooglePluginIntegrationStatus;
   initialMicrosoftOAuth: MicrosoftOAuthIntegrationStatus;
   initialTurnstile: SimpleIntegrationStatus;
   initialResend: SimpleIntegrationStatus;
@@ -56,12 +65,19 @@ export function AdminIntegrationsPage({
   const [googleEnabled, setGoogleEnabled] = useState(initialGoogleOAuth.enabled);
   const [googleResetOpen, setGoogleResetOpen] = useState(false);
 
+  const [pluginStatus, setPluginStatus] = useState(initialGooglePlugin);
+  const [pluginClientId, setPluginClientId] = useState(initialGooglePlugin.clientId);
+  const [pluginClientSecret, setPluginClientSecret] = useState("");
+  const [pluginEnabled, setPluginEnabled] = useState(initialGooglePlugin.enabled);
+  const [pluginResetOpen, setPluginResetOpen] = useState(false);
+
   const [msStatus, setMsStatus] = useState(initialMicrosoftOAuth);
   const [msClientId, setMsClientId] = useState(initialMicrosoftOAuth.clientId);
   const [msClientSecret, setMsClientSecret] = useState("");
   const [msEnabled, setMsEnabled] = useState(initialMicrosoftOAuth.enabled);
   const [msResetOpen, setMsResetOpen] = useState(false);
   const [googleExpanded, setGoogleExpanded] = useState(initialGoogleOAuth.configured);
+  const [pluginExpanded, setPluginExpanded] = useState(initialGooglePlugin.configured);
   const [msExpanded, setMsExpanded] = useState(initialMicrosoftOAuth.configured);
   const [apiDirty, setApiDirty] = useState(false);
 
@@ -74,12 +90,19 @@ export function AdminIntegrationsPage({
     googleClientSecret.trim().length > 0;
   const googleEnabledDirty =
     googleStatus.configured && googleEnabled !== googleStatus.enabled;
+  const pluginCredentialsDirty =
+    pluginClientId.trim() !== pluginStatus.clientId ||
+    pluginClientSecret.trim().length > 0;
+  const pluginEnabledDirty =
+    pluginStatus.configured && pluginEnabled !== pluginStatus.enabled;
   const msCredentialsDirty =
     msClientId.trim() !== msStatus.clientId || msClientSecret.trim().length > 0;
   const msEnabledDirty = msStatus.configured && msEnabled !== msStatus.enabled;
   const isDirty =
     googleCredentialsDirty ||
     googleEnabledDirty ||
+    pluginCredentialsDirty ||
+    pluginEnabledDirty ||
     msCredentialsDirty ||
     msEnabledDirty ||
     apiDirty;
@@ -96,6 +119,13 @@ export function AdminIntegrationsPage({
   }, [initialGoogleOAuth]);
 
   useEffect(() => {
+    setPluginStatus(initialGooglePlugin);
+    setPluginClientId(initialGooglePlugin.clientId);
+    setPluginEnabled(initialGooglePlugin.enabled);
+    setPluginExpanded(initialGooglePlugin.configured);
+  }, [initialGooglePlugin]);
+
+  useEffect(() => {
     setMsStatus(initialMicrosoftOAuth);
     setMsClientId(initialMicrosoftOAuth.clientId);
     setMsEnabled(initialMicrosoftOAuth.enabled);
@@ -109,6 +139,12 @@ export function AdminIntegrationsPage({
   }, [googleCredentialsDirty]);
 
   useEffect(() => {
+    if (pluginCredentialsDirty) {
+      setPluginExpanded(true);
+    }
+  }, [pluginCredentialsDirty]);
+
+  useEffect(() => {
     if (msCredentialsDirty) {
       setMsExpanded(true);
     }
@@ -116,9 +152,10 @@ export function AdminIntegrationsPage({
 
   useEffect(() => {
     const configured = searchParams.get("configured");
+    const pluginConfigured = searchParams.get("plugin_configured");
     const msConfigured = searchParams.get("ms_configured");
     const error = searchParams.get("error");
-    if (!configured && !msConfigured && !error) return;
+    if (!configured && !pluginConfigured && !msConfigured && !error) return;
 
     if (configured === "1") {
       setGoogleExpanded(true);
@@ -127,6 +164,15 @@ export function AdminIntegrationsPage({
         text: t(
           "integrations.google_oauth.feedback.configured",
           "Google OAuth integrācija konfigurēta.",
+        ),
+      });
+    } else if (pluginConfigured === "1") {
+      setPluginExpanded(true);
+      showFeedback({
+        type: "success",
+        text: t(
+          "integrations.google_plugin.feedback.configured",
+          "Google Plugin integrācija konfigurēta.",
         ),
       });
     } else if (msConfigured === "1") {
@@ -142,6 +188,14 @@ export function AdminIntegrationsPage({
       showFeedback({
         type: "error",
         text: t("errors.integrations_forbidden", "Nav tiesību konfigurēt integrācijas."),
+      });
+    } else if (error === "google_plugin") {
+      showFeedback({
+        type: "error",
+        text: t(
+          "errors.integrations_google_plugin_configure_failed",
+          "Neizdevās pabeigt Google Plugin konfigurāciju.",
+        ),
       });
     } else if (error === "microsoft_oauth") {
       showFeedback({
@@ -336,6 +390,179 @@ export function AdminIntegrationsPage({
     });
   }
 
+  function handleSavePlugin(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    clearFeedback();
+
+    if (!pluginClientId.trim()) {
+      showFeedback({
+        type: "error",
+        text: t(
+          "integrations.google_oauth.feedback.client_id_required",
+          "Ievadi Google OAuth Client ID.",
+        ),
+      });
+      return;
+    }
+
+    if (!pluginStatus.hasClientSecret && !pluginClientSecret.trim()) {
+      showFeedback({
+        type: "error",
+        text: t(
+          "integrations.google_oauth.feedback.client_secret_required",
+          "Ievadi Google OAuth Client Secret.",
+        ),
+      });
+      return;
+    }
+
+    startTransition(async () => {
+      setPendingKey("plugin-save");
+      const result = await saveGooglePluginCredentialsAction({
+        clientId: pluginClientId,
+        clientSecret: pluginClientSecret,
+      });
+      setPendingKey(null);
+      if (!result.ok) {
+        showFeedback({ type: "error", text: translateActionError(t, result.error) });
+        return;
+      }
+
+      setPluginStatus((current) => ({
+        ...current,
+        clientId: pluginClientId.trim(),
+        hasClientSecret:
+          current.hasClientSecret || pluginClientSecret.trim().length > 0,
+      }));
+      setPluginClientSecret("");
+      showFeedback({
+        type: "success",
+        text: t(
+          "integrations.google_plugin.feedback.credentials_saved",
+          "Google Plugin dati saglabāti.",
+        ),
+      });
+      router.refresh();
+    });
+  }
+
+  function handleConfigurePlugin() {
+    clearFeedback();
+
+    if (!pluginClientId.trim()) {
+      showFeedback({
+        type: "error",
+        text: t(
+          "integrations.google_oauth.feedback.client_id_required",
+          "Ievadi Google OAuth Client ID.",
+        ),
+      });
+      return;
+    }
+
+    if (!pluginStatus.hasClientSecret && !pluginClientSecret.trim()) {
+      showFeedback({
+        type: "error",
+        text: t(
+          "integrations.google_oauth.feedback.client_secret_required",
+          "Ievadi Google OAuth Client Secret.",
+        ),
+      });
+      return;
+    }
+
+    startTransition(async () => {
+      setPendingKey("plugin-configure");
+      if (pluginCredentialsDirty) {
+        const saveResult = await saveGooglePluginCredentialsAction({
+          clientId: pluginClientId,
+          clientSecret: pluginClientSecret,
+        });
+        if (!saveResult.ok) {
+          setPendingKey(null);
+          showFeedback({
+            type: "error",
+            text: translateActionError(t, saveResult.error),
+          });
+          return;
+        }
+        setPluginStatus((current) => ({
+          ...current,
+          clientId: pluginClientId.trim(),
+          hasClientSecret:
+            current.hasClientSecret || pluginClientSecret.trim().length > 0,
+        }));
+        setPluginClientSecret("");
+      }
+
+      const result = await startGooglePluginConfigureAction(window.location.origin);
+      if (!result.ok) {
+        setPendingKey(null);
+        showFeedback({ type: "error", text: translateActionError(t, result.error) });
+        return;
+      }
+      window.location.href = result.data.url;
+    });
+  }
+
+  function handlePluginEnabledToggle(nextEnabled: boolean) {
+    if (!pluginStatus.configured) return;
+    clearFeedback();
+    setPluginEnabled(nextEnabled);
+
+    startTransition(async () => {
+      setPendingKey("plugin-enabled");
+      const result = await setGooglePluginEnabledAction(nextEnabled);
+      setPendingKey(null);
+      if (!result.ok) {
+        setPluginEnabled(pluginStatus.enabled);
+        showFeedback({ type: "error", text: translateActionError(t, result.error) });
+        return;
+      }
+
+      setPluginStatus((current) => ({ ...current, enabled: nextEnabled }));
+      showFeedback({
+        type: "success",
+        text: t(
+          "integrations.feedback.status_saved",
+          "Integrācijas statuss saglabāts.",
+        ),
+      });
+      router.refresh();
+    });
+  }
+
+  function handleResetPlugin() {
+    clearFeedback();
+    startTransition(async () => {
+      setPendingKey("plugin-reset");
+      const result = await resetGooglePluginConfigurationAction();
+      setPluginResetOpen(false);
+      setPendingKey(null);
+      if (!result.ok) {
+        showFeedback({ type: "error", text: translateActionError(t, result.error) });
+        return;
+      }
+
+      setPluginStatus((current) => ({
+        ...current,
+        configured: false,
+        enabled: false,
+        configuredAccountEmail: "",
+      }));
+      setPluginEnabled(false);
+      setPluginExpanded(false);
+      showFeedback({
+        type: "success",
+        text: t(
+          "integrations.google_plugin.feedback.reset",
+          "Google Plugin konfigurācija notīrīta.",
+        ),
+      });
+      router.refresh();
+    });
+  }
+
   function handleSaveMicrosoft(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     clearFeedback();
@@ -510,6 +737,9 @@ export function AdminIntegrationsPage({
   const canConfigureGoogle =
     googleClientId.trim().length > 0 &&
     (googleStatus.hasClientSecret || googleClientSecret.trim().length > 0);
+  const canConfigurePlugin =
+    pluginClientId.trim().length > 0 &&
+    (pluginStatus.hasClientSecret || pluginClientSecret.trim().length > 0);
   const canConfigureMicrosoft =
     msClientId.trim().length > 0 &&
     (msStatus.hasClientSecret || msClientSecret.trim().length > 0);
@@ -521,7 +751,7 @@ export function AdminIntegrationsPage({
         title={t("integrations.google_oauth.title", "Google OAuth")}
         description={t(
           "integrations.google_oauth.description",
-          "Konfigurē Google pieslēgšanos login un reģistrācijas lapā.",
+          "Konfigurē Google pieslēgšanos login un reģistrācijas lapā, kā arī komandas Google Drive.",
         )}
         configured={googleStatus.configured}
         configuredAccountEmail={googleStatus.configuredAccountEmail}
@@ -598,11 +828,7 @@ export function AdminIntegrationsPage({
             <ul className="mt-2 space-y-1 font-mono text-xs text-zinc-700">
               {(googleStatus.redirectUrls?.length
                 ? googleStatus.redirectUrls
-                : [
-                    googleStatus.callbackUrl,
-                    googleStatus.googleDriveCallbackUrl,
-                    googleStatus.gmailPluginCallbackUrl,
-                  ]
+                : [googleStatus.callbackUrl, googleStatus.googleDriveCallbackUrl]
               )
                 .filter(Boolean)
                 .filter((url, index, urls) => urls.indexOf(url) === index)
@@ -613,7 +839,7 @@ export function AdminIntegrationsPage({
             <p className="mt-2 text-xs text-zinc-500">
               {t(
                 "integrations.google_oauth.redirects.hint",
-                "Pirmais URI katrā originā ir login/signup un Gmail spraudnim, otrais — komandas Google Drive. Pievieno visus URI Google Cloud (arī localhost). Google Cloud projektā ieslēdz Drive API un Gmail API.",
+                "Pirmais URI katrā originā ir login/signup, otrais — komandas Google Drive. Pievieno visus URI Google Cloud (arī localhost). Google Cloud projektā ieslēdz Drive API. Gmail spraudnim izmanto Google Plugin integrāciju.",
               )}
             </p>
           </div>
@@ -651,6 +877,159 @@ export function AdminIntegrationsPage({
                 <i className="fab fa-google text-xs" aria-hidden="true" />
               )}
               {googleStatus.configured
+                ? t("integrations.google_oauth.reconfigure", "Pārkonfigurēt ar Google")
+                : t("integrations.google_oauth.configure", "Konfigurēt ar Google")}
+            </button>
+          </div>
+        </form>
+      </AdminIntegrationCard>
+
+      <AdminIntegrationCard
+        panelId="google-plugin"
+        title={t("integrations.google_plugin.title", "Google Plugin")}
+        description={t(
+          "integrations.google_plugin.description",
+          "Atsevišķa Google Cloud lietotne Gmail Chrome spraudnim (gmail.readonly).",
+        )}
+        configured={pluginStatus.configured}
+        configuredAccountEmail={pluginStatus.configuredAccountEmail}
+        expanded={pluginExpanded}
+        onExpandedChange={setPluginExpanded}
+        enabled={pluginEnabled}
+        onEnabledChange={handlePluginEnabledToggle}
+        enabledAriaLabel={t(
+          "integrations.google_plugin.aria.enabled",
+          "Google Plugin integrācija ieslēgta",
+        )}
+        isBusy={isBusy}
+      >
+        <form onSubmit={handleSavePlugin} className="space-y-4">
+          <div>
+            <label
+              htmlFor="google-plugin-client-id"
+              className="block text-sm font-medium text-zinc-700"
+            >
+              {t("integrations.google_oauth.client_id", "Client ID")}
+            </label>
+            <input
+              id="google-plugin-client-id"
+              value={pluginClientId}
+              onChange={(event) => {
+                setPluginClientId(event.target.value);
+                clearFeedback();
+              }}
+              disabled={isBusy}
+              placeholder="1234567890-abcdef.apps.googleusercontent.com"
+              className="mt-1.5 w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 font-mono text-sm text-zinc-900 outline-none transition placeholder:font-sans placeholder:text-zinc-400 focus:border-zinc-400 disabled:cursor-not-allowed disabled:bg-zinc-50"
+              autoComplete="off"
+              spellCheck={false}
+            />
+          </div>
+
+          <div>
+            <label
+              htmlFor="google-plugin-client-secret"
+              className="block text-sm font-medium text-zinc-700"
+            >
+              {t("integrations.google_oauth.client_secret", "Client Secret")}
+            </label>
+            <input
+              id="google-plugin-client-secret"
+              type="password"
+              value={pluginClientSecret}
+              onChange={(event) => {
+                setPluginClientSecret(event.target.value);
+                clearFeedback();
+              }}
+              disabled={isBusy}
+              placeholder={
+                pluginStatus.hasClientSecret
+                  ? t(
+                      "integrations.google_oauth.client_secret_placeholder_saved",
+                      "Saglabāts — atstāj tukšu, ja nemaina",
+                    )
+                  : t(
+                      "integrations.google_oauth.client_secret_placeholder",
+                      "Google OAuth Client Secret",
+                    )
+              }
+              className="mt-1.5 w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 font-mono text-sm text-zinc-900 outline-none transition placeholder:font-sans placeholder:text-zinc-400 focus:border-zinc-400 disabled:cursor-not-allowed disabled:bg-zinc-50"
+              autoComplete="off"
+              spellCheck={false}
+            />
+          </div>
+
+          <div className="rounded-xl bg-zinc-50 px-4 py-3 text-sm text-zinc-600">
+            <p className="font-medium text-zinc-800">
+              {t("integrations.google_oauth.redirects.title", "Redirect URI")}
+            </p>
+            <ul className="mt-2 space-y-1 font-mono text-xs text-zinc-700">
+              {(pluginStatus.redirectUrls?.length
+                ? pluginStatus.redirectUrls
+                : [pluginStatus.callbackUrl]
+              )
+                .filter(Boolean)
+                .map((url) => (
+                  <li key={url}>{url}</li>
+                ))}
+            </ul>
+            <p className="mt-3 font-medium text-zinc-800">
+              {t("integrations.google_plugin.scopes.title", "OAuth scopes")}
+            </p>
+            <ul className="mt-2 space-y-1 font-mono text-xs text-zinc-700">
+              {(pluginStatus.scopes?.length
+                ? pluginStatus.scopes
+                : [
+                    "openid",
+                    "email",
+                    "profile",
+                    "https://www.googleapis.com/auth/gmail.readonly",
+                  ]
+              ).map((scope) => (
+                <li key={scope}>{scope}</li>
+              ))}
+            </ul>
+            <p className="mt-2 text-xs text-zinc-500">
+              {t(
+                "integrations.google_plugin.redirects.hint",
+                "Jauns Google Cloud projekts tikai spraudnim. Ieslēdz Gmail API. Consent screen pievieno visus scopes. OAuth klienta veids: Web application. Authorized JavaScript origins: tasqin.com, www.tasqin.com un localhost:3120. Pēc Client ID maiņas lietotājiem jāatjauno Gmail savienojums.",
+              )}
+            </p>
+          </div>
+
+          <div className="flex flex-wrap justify-end gap-2 border-t border-zinc-100 pt-4">
+            {pluginStatus.configured ? (
+              <button
+                type="button"
+                disabled={isBusy}
+                onClick={() => setPluginResetOpen(true)}
+                className="rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm font-medium text-red-700 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {t("integrations.google_oauth.reset", "Notīrīt konfigurāciju")}
+              </button>
+            ) : null}
+            <button
+              type="submit"
+              disabled={isBusy || !pluginCredentialsDirty}
+              className="inline-flex items-center gap-2 rounded-lg border border-zinc-200 bg-white px-4 py-2 text-sm font-medium text-zinc-800 transition hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {pendingKey === "plugin-save" ? (
+                <i className="fas fa-circle-notch fa-spin text-xs" aria-hidden="true" />
+              ) : null}
+              {t("actions.save", "Saglabāt")}
+            </button>
+            <button
+              type="button"
+              disabled={isBusy || !canConfigurePlugin}
+              onClick={handleConfigurePlugin}
+              className="inline-flex items-center gap-2 rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {pendingKey === "plugin-configure" ? (
+                <i className="fas fa-circle-notch fa-spin text-xs" aria-hidden="true" />
+              ) : (
+                <i className="fab fa-google text-xs" aria-hidden="true" />
+              )}
+              {pluginStatus.configured
                 ? t("integrations.google_oauth.reconfigure", "Pārkonfigurēt ar Google")
                 : t("integrations.google_oauth.configure", "Konfigurēt ar Google")}
             </button>
@@ -822,6 +1201,23 @@ export function AdminIntegrationsPage({
         confirmVariant="danger"
         blocking={pendingKey === "google-reset"}
         onConfirm={handleResetGoogle}
+      />
+
+      <ConfirmModal
+        open={pluginResetOpen}
+        onOpenChange={setPluginResetOpen}
+        title={t(
+          "integrations.google_plugin.reset.confirm_title",
+          "Notīrīt Google Plugin konfigurāciju?",
+        )}
+        description={t(
+          "integrations.google_plugin.reset.confirm_description",
+          "Integrācija tiks izslēgta un Gmail spraudnis vairs nevarēs lasīt e-pastus.",
+        )}
+        confirmLabel={t("integrations.google_oauth.reset", "Notīrīt konfigurāciju")}
+        confirmVariant="danger"
+        blocking={pendingKey === "plugin-reset"}
+        onConfirm={handleResetPlugin}
       />
 
       <ConfirmModal

@@ -2,6 +2,7 @@ import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { getCurrentUser } from "@/app/lib/auth/get-current-user";
+import { findAuthUserByEmailExact } from "@/app/lib/auth/find-auth-user-by-email";
 import {
   oauthLoginStatesMatch,
   parseOAuthLoginState,
@@ -10,23 +11,25 @@ import {
   completeOAuthSignIn,
   oauthSignInErrorRedirect,
 } from "@/app/lib/auth/oauth-session";
+import { saveUserGmailConnection } from "@/app/lib/extension/gmail-connection";
 import {
   handleGmailPluginOAuthCallback,
   isGmailPluginOAuthCallback,
 } from "@/app/lib/extension/gmail-oauth-callback";
+import { logError } from "@/app/lib/security/log-error";
 import {
-  GOOGLE_OAUTH_ADMIN_PAGE_PATH,
-  GOOGLE_OAUTH_CALLBACK_PATH,
-  isGoogleSignInEnabled,
-  markGoogleOAuthConfigured,
-} from "@/app/lib/integrations/google-oauth/repository";
+  GOOGLE_PLUGIN_ADMIN_PAGE_PATH,
+  GOOGLE_PLUGIN_CALLBACK_PATH,
+  isGooglePluginEnabled,
+  markGooglePluginConfigured,
+} from "@/app/lib/integrations/google-plugin/repository";
 import {
-  exchangeGoogleOAuthCode,
-  fetchGoogleOAuthUserInfo,
-  googleOAuthConfigureCookieOptions,
-  GOOGLE_OAUTH_OAUTH_COOKIE,
-  parseGoogleOAuthConfigureState,
-} from "@/app/lib/integrations/google-oauth/oauth";
+  exchangeGooglePluginCode,
+  fetchGooglePluginUserInfo,
+  googlePluginOAuthCookieOptions,
+  GOOGLE_PLUGIN_OAUTH_COOKIE,
+  parseGooglePluginConfigureState,
+} from "@/app/lib/integrations/google-plugin/oauth";
 import { requestClientIp } from "@/app/lib/security/client-ip";
 import { consumeRateLimit } from "@/app/lib/security/rate-limit";
 import { createClient } from "@/app/lib/supabase/server";
@@ -36,7 +39,7 @@ import {
 } from "@/app/lib/auth/oauth-turnstile";
 
 function redirectToIntegrationsPage(origin: string, query: Record<string, string>) {
-  const url = new URL(GOOGLE_OAUTH_ADMIN_PAGE_PATH, origin);
+  const url = new URL(GOOGLE_PLUGIN_ADMIN_PAGE_PATH, origin);
   for (const [key, value] of Object.entries(query)) {
     url.searchParams.set(key, value);
   }
@@ -44,8 +47,8 @@ function redirectToIntegrationsPage(origin: string, query: Record<string, string
 }
 
 function clearOAuthCookie(response: NextResponse) {
-  response.cookies.set(GOOGLE_OAUTH_OAUTH_COOKIE, "", {
-    ...googleOAuthConfigureCookieOptions(0),
+  response.cookies.set(GOOGLE_PLUGIN_OAUTH_COOKIE, "", {
+    ...googlePluginOAuthCookieOptions(0),
     maxAge: 0,
   });
   response.cookies.set(OAUTH_TURNSTILE_TOKEN_COOKIE, "", {
@@ -55,34 +58,54 @@ function clearOAuthCookie(response: NextResponse) {
   return response;
 }
 
+function withPluginGmailConnectedFlag(response: NextResponse) {
+  const location = response.headers.get("location");
+  if (!location) return response;
+  try {
+    const url = new URL(location);
+    if (!url.pathname.includes("/auth/gmail-plugin/done")) return response;
+    url.searchParams.set("connected", "1");
+    response.headers.set("location", url.toString());
+  } catch {
+    // Keep original redirect.
+  }
+  return response;
+}
+
 async function handleLogin(request: Request, origin: string, code: string) {
   const cookieStore = await cookies();
   const loginState = parseOAuthLoginState(
-    cookieStore.get(GOOGLE_OAUTH_OAUTH_COOKIE)?.value,
+    cookieStore.get(GOOGLE_PLUGIN_OAUTH_COOKIE)?.value,
   );
   const urlState = parseOAuthLoginState(new URL(request.url).searchParams.get("state"));
-  const errorPage = loginState?.errorPage ?? urlState?.errorPage ?? "login";
+  const errorPage = loginState?.errorPage ?? urlState?.errorPage ?? "plugin";
 
   if (!oauthLoginStatesMatch(loginState, urlState) || !loginState) {
     return clearOAuthCookie(
-      oauthSignInErrorRedirect(origin, errorPage, "google", undefined, loginState?.next ?? urlState?.next),
+      oauthSignInErrorRedirect(
+        origin,
+        errorPage,
+        "google",
+        undefined,
+        loginState?.next ?? urlState?.next,
+      ),
     );
   }
 
-  if (!(await isGoogleSignInEnabled())) {
+  if (!(await isGooglePluginEnabled())) {
     return clearOAuthCookie(
       oauthSignInErrorRedirect(origin, errorPage, "google", undefined, loginState.next),
     );
   }
 
-  const tokens = await exchangeGoogleOAuthCode(origin, code);
+  const tokens = await exchangeGooglePluginCode(origin, code);
   if (!tokens?.access_token) {
     return clearOAuthCookie(
       oauthSignInErrorRedirect(origin, errorPage, "google", undefined, loginState.next),
     );
   }
 
-  const profile = await fetchGoogleOAuthUserInfo(tokens.access_token);
+  const profile = await fetchGooglePluginUserInfo(tokens.access_token);
   const response = await completeOAuthSignIn(request, {
     origin,
     next: loginState.next,
@@ -98,12 +121,39 @@ async function handleLogin(request: Request, origin: string, code: string) {
     turnstileToken: cookieStore.get(OAUTH_TURNSTILE_TOKEN_COOKIE)?.value,
   });
 
+  if (profile.email) {
+    try {
+      const authUser = await findAuthUserByEmailExact(profile.email);
+      if (authUser?.id) {
+        const saved = await saveUserGmailConnection({
+          userId: authUser.id,
+          googleEmail: profile.email,
+          refreshToken: tokens.refresh_token || "",
+          accessToken: tokens.access_token,
+          expiresIn: Number(tokens.expires_in) || 3600,
+          givenName: profile.givenName,
+          familyName: profile.familyName,
+          name: profile.name,
+          avatarUrl: profile.avatarUrl,
+        });
+        if (saved.ok) {
+          withPluginGmailConnectedFlag(response);
+        }
+      }
+    } catch (error) {
+      logError(
+        "Plugin login Gmail connection save failed",
+        error instanceof Error ? error.message : String(error),
+      );
+    }
+  }
+
   return clearOAuthCookie(response);
 }
 
 export async function GET(request: Request) {
   const limited = await consumeRateLimit(
-    `oauth-google:${requestClientIp(request)}`,
+    `oauth-google-plugin:${requestClientIp(request)}`,
     40,
     15 * 60 * 1000,
   );
@@ -118,16 +168,16 @@ export async function GET(request: Request) {
   const code = searchParams.get("code");
   const stateParam = searchParams.get("state");
   if (isGmailPluginOAuthCallback(stateParam)) {
-    return handleGmailPluginOAuthCallback(request, GOOGLE_OAUTH_CALLBACK_PATH);
+    return handleGmailPluginOAuthCallback(request, GOOGLE_PLUGIN_CALLBACK_PATH);
   }
   const cookieStore = await cookies();
-  const cookieValue = cookieStore.get(GOOGLE_OAUTH_OAUTH_COOKIE)?.value;
+  const cookieValue = cookieStore.get(GOOGLE_PLUGIN_OAUTH_COOKIE)?.value;
   const loginCookie = parseOAuthLoginState(cookieValue);
   const loginUrl = parseOAuthLoginState(stateParam);
 
   if (loginCookie || loginUrl) {
     if (searchParams.get("error") === "access_denied") {
-      const errorPage = loginCookie?.errorPage ?? loginUrl?.errorPage ?? "login";
+      const errorPage = loginCookie?.errorPage ?? loginUrl?.errorPage ?? "plugin";
       return clearOAuthCookie(
         oauthSignInErrorRedirect(
           origin,
@@ -139,7 +189,7 @@ export async function GET(request: Request) {
       );
     }
     if (!code) {
-      const errorPage = loginCookie?.errorPage ?? loginUrl?.errorPage ?? "login";
+      const errorPage = loginCookie?.errorPage ?? loginUrl?.errorPage ?? "plugin";
       return clearOAuthCookie(
         oauthSignInErrorRedirect(
           origin,
@@ -153,8 +203,8 @@ export async function GET(request: Request) {
     return handleLogin(request, origin, code);
   }
 
-  const cookieState = parseGoogleOAuthConfigureState(cookieValue);
-  const urlState = parseGoogleOAuthConfigureState(stateParam);
+  const cookieState = parseGooglePluginConfigureState(cookieValue);
+  const urlState = parseGooglePluginConfigureState(stateParam);
 
   if (
     !code ||
@@ -164,7 +214,7 @@ export async function GET(request: Request) {
     cookieState.nonce !== urlState.nonce
   ) {
     return clearOAuthCookie(
-      redirectToIntegrationsPage(origin, { error: "oauth" }),
+      redirectToIntegrationsPage(origin, { error: "google_plugin" }),
     );
   }
 
@@ -192,29 +242,28 @@ export async function GET(request: Request) {
     );
   }
 
-  const tokens = await exchangeGoogleOAuthCode(origin, code);
+  const tokens = await exchangeGooglePluginCode(origin, code);
   if (!tokens?.access_token) {
     return clearOAuthCookie(
-      redirectToIntegrationsPage(origin, { error: "oauth" }),
+      redirectToIntegrationsPage(origin, { error: "google_plugin" }),
     );
   }
 
-  const account = await fetchGoogleOAuthUserInfo(tokens.access_token);
-  const saved = await markGoogleOAuthConfigured({
+  const account = await fetchGooglePluginUserInfo(tokens.access_token);
+  const saved = await markGooglePluginConfigured({
     accountEmail: account.email,
     configuredBy: cookieState.adminUserId,
   });
 
   if (saved.ok) {
     revalidatePath("/admin/integrations");
-    revalidatePath("/login");
-    revalidatePath("/signup");
+    revalidatePath("/admin/modules");
   }
 
   return clearOAuthCookie(
     redirectToIntegrationsPage(
       origin,
-      saved.ok ? { configured: "1" } : { error: "oauth" },
+      saved.ok ? { plugin_configured: "1" } : { error: "google_plugin" },
     ),
   );
 }

@@ -1,5 +1,6 @@
 export const SITE_INTEGRATION_KEYS = {
   googleOAuth: "google_oauth",
+  googlePlugin: "google_plugin",
   microsoftOAuth: "microsoft_oauth",
   resend: "resend",
   umami: "umami",

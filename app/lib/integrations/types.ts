@@ -7,11 +7,27 @@ export type GoogleOAuthIntegrationStatus = {
   configuredAccountEmail: string;
   callbackUrl: string;
   googleDriveCallbackUrl: string;
-  gmailPluginCallbackUrl: string;
   redirectUrls: string[];
 };
 
 export type GoogleOAuthCredentialsInput = {
+  clientId: string;
+  clientSecret: string;
+};
+
+export type GooglePluginIntegrationStatus = {
+  integrationKey: "google_plugin";
+  clientId: string;
+  hasClientSecret: boolean;
+  configured: boolean;
+  enabled: boolean;
+  configuredAccountEmail: string;
+  callbackUrl: string;
+  redirectUrls: string[];
+  scopes: string[];
+};
+
+export type GooglePluginCredentialsInput = {
   clientId: string;
   clientSecret: string;
 };

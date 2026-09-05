@@ -1,9 +1,16 @@
 import { randomBytes } from "node:crypto";
 import { oauthCookieOptions } from "@/app/lib/auth/oauth-cookie-options";
 import {
-  GOOGLE_OAUTH_CALLBACK_PATH,
-  getGoogleOAuthCredentials,
-} from "@/app/lib/integrations/google-oauth/repository";
+  GOOGLE_PLUGIN_CALLBACK_PATH,
+  GOOGLE_PLUGIN_SCOPES,
+  getGooglePluginCredentials,
+} from "@/app/lib/integrations/google-plugin/repository";
+import {
+  buildGooglePluginAuthorizeUrl,
+  exchangeGooglePluginCode,
+  fetchGooglePluginUserInfo,
+  refreshGooglePluginAccessToken,
+} from "@/app/lib/integrations/google-plugin/oauth";
 
 export const GMAIL_PLUGIN_START_PATH = "/auth/gmail-plugin/start";
 export const GMAIL_PLUGIN_BRIDGE_PATH = "/auth/gmail-plugin/bridge";
@@ -12,12 +19,7 @@ export const GMAIL_PLUGIN_CALLBACK_PATH = "/auth/gmail-plugin/callback";
 export const GMAIL_PLUGIN_DONE_PATH = "/auth/gmail-plugin/done";
 export const GMAIL_PLUGIN_OAUTH_COOKIE = "routine-app-gmail-plugin-oauth";
 export const GMAIL_PLUGIN_STATE_PREFIX = "gmail.";
-export const GMAIL_PLUGIN_SCOPES = [
-  "openid",
-  "email",
-  "profile",
-  "https://www.googleapis.com/auth/gmail.readonly",
-].join(" ");
+export const GMAIL_PLUGIN_SCOPES = GOOGLE_PLUGIN_SCOPES;
 
 export type GmailPluginOAuthState = {
   userId: string;
@@ -54,7 +56,7 @@ export function parseGmailPluginOAuthState(
 
 export function gmailPluginRedirectUri(
   origin: string,
-  callbackPath: string = GOOGLE_OAUTH_CALLBACK_PATH,
+  callbackPath: string = GOOGLE_PLUGIN_CALLBACK_PATH,
 ) {
   return `${origin.replace(/\/$/, "")}${callbackPath}`;
 }
@@ -62,104 +64,32 @@ export function gmailPluginRedirectUri(
 export function buildGmailPluginCallbackUrl(origin?: string) {
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL?.trim();
   const base = (origin?.trim() || siteUrl || "").replace(/\/$/, "");
-  if (!base) return GOOGLE_OAUTH_CALLBACK_PATH;
-  return `${base}${GOOGLE_OAUTH_CALLBACK_PATH}`;
-}
-
-type TokenResponse = {
-  access_token?: string;
-  refresh_token?: string;
-  expires_in?: number;
-  token_type?: string;
-  error?: string;
-};
-
-async function postToken(body: URLSearchParams): Promise<TokenResponse | null> {
-  const response = await fetch("https://oauth2.googleapis.com/token", {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body,
-  });
-  const data = (await response.json().catch(() => null)) as TokenResponse | null;
-  if (!response.ok || !data?.access_token) {
-    return null;
-  }
-  return data;
+  if (!base) return GOOGLE_PLUGIN_CALLBACK_PATH;
+  return `${base}${GOOGLE_PLUGIN_CALLBACK_PATH}`;
 }
 
 export async function buildGmailPluginAuthorizeUrl(origin: string, state: string) {
-  const credentials = await getGoogleOAuthCredentials();
-  if (!credentials) return null;
-  const params = new URLSearchParams({
-    client_id: credentials.clientId,
-    redirect_uri: gmailPluginRedirectUri(origin),
-    response_type: "code",
-    scope: GMAIL_PLUGIN_SCOPES,
-    access_type: "offline",
+  return buildGooglePluginAuthorizeUrl(origin, state, {
     prompt: "consent",
-    include_granted_scopes: "true",
-    state,
+    accessType: "offline",
+    scopes: GMAIL_PLUGIN_SCOPES,
+    includeGrantedScopes: true,
   });
-  return `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
 }
 
 export async function exchangeGmailPluginCode(
   origin: string,
   code: string,
-  callbackPath: string = GOOGLE_OAUTH_CALLBACK_PATH,
+  callbackPath: string = GOOGLE_PLUGIN_CALLBACK_PATH,
 ) {
-  const credentials = await getGoogleOAuthCredentials();
-  if (!credentials) return null;
-  return postToken(
-    new URLSearchParams({
-      code,
-      client_id: credentials.clientId,
-      client_secret: credentials.clientSecret,
-      redirect_uri: gmailPluginRedirectUri(origin, callbackPath),
-      grant_type: "authorization_code",
-    }),
-  );
+  return exchangeGooglePluginCode(origin, code, callbackPath);
 }
 
 export async function refreshGmailPluginAccessToken(refreshToken: string) {
-  const credentials = await getGoogleOAuthCredentials();
-  if (!credentials) return null;
-  return postToken(
-    new URLSearchParams({
-      refresh_token: refreshToken,
-      client_id: credentials.clientId,
-      client_secret: credentials.clientSecret,
-      grant_type: "refresh_token",
-    }),
-  );
+  if (!(await getGooglePluginCredentials())) return null;
+  return refreshGooglePluginAccessToken(refreshToken);
 }
 
 export async function fetchGmailPluginUserInfo(accessToken: string) {
-  const response = await fetch("https://www.googleapis.com/oauth2/v2/userinfo", {
-    headers: { Authorization: `Bearer ${accessToken}` },
-  });
-  const data = (await response.json().catch(() => null)) as {
-    email?: string;
-    name?: string;
-    given_name?: string;
-    family_name?: string;
-    picture?: string;
-    verified_email?: boolean;
-  } | null;
-  if (!response.ok || !data) {
-    return {
-      email: "",
-      name: "",
-      givenName: "",
-      familyName: "",
-      avatarUrl: "",
-    };
-  }
-  return {
-    email: data.email?.trim() ?? "",
-    name: data.name?.trim() ?? "",
-    givenName: data.given_name?.trim() ?? "",
-    familyName: data.family_name?.trim() ?? "",
-    avatarUrl: data.picture?.trim() ?? "",
-  };
+  return fetchGooglePluginUserInfo(accessToken);
 }

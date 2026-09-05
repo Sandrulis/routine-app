@@ -28,7 +28,7 @@ import {
   GMAIL_PLUGIN_START_PATH,
 } from "@/app/lib/extension/gmail-oauth";
 import { isEmailPasswordAuthEnabled } from "@/app/lib/integrations/resend/client";
-import { isGoogleSignInEnabled } from "@/app/lib/integrations/google-oauth/repository";
+import { isGooglePluginEnabled } from "@/app/lib/integrations/google-plugin/repository";
 import { FRONTEND_MODULE_KEYS } from "@/app/lib/frontend-modules/keys";
 
 export const runtime = "nodejs";
@@ -82,7 +82,7 @@ export async function GET(request: Request) {
   const strings = getExtensionStrings(languageCode, brand.systemName);
   const [emailPasswordEnabled, googleSignInEnabled] = await Promise.all([
     isEmailPasswordAuthEnabled(),
-    isGoogleSignInEnabled(),
+    isGooglePluginEnabled(),
   ]);
 
   const publicFlags = {

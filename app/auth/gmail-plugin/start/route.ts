@@ -3,7 +3,7 @@ import { cookies } from "next/headers";
 import { getCurrentUser } from "@/app/lib/auth/get-current-user";
 import { resolveOAuthOrigin } from "@/app/lib/auth/oauth-origin";
 import { getSafeRedirectPath } from "@/app/lib/security/safe-redirect-path";
-import { isGoogleSignInEnabled } from "@/app/lib/integrations/google-oauth/repository";
+import { isGooglePluginEnabled } from "@/app/lib/integrations/google-plugin/repository";
 import { loadExtensionSessionFlags } from "@/app/lib/extension/session-payload";
 import { createClient } from "@/app/lib/supabase/server";
 import {
@@ -33,7 +33,7 @@ export async function GET(request: Request) {
     return redirectTo(oauthOrigin, "/login", { next });
   }
 
-  if (!(await isGoogleSignInEnabled())) {
+  if (!(await isGooglePluginEnabled())) {
     return redirectTo(oauthOrigin, GMAIL_PLUGIN_DONE_PATH, { error: "disabled" });
   }
 

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { AdminIntegrationsPage } from "@/app/components/admin-integrations-page";
 import { fetchGoogleOAuthIntegrationStatus } from "@/app/lib/integrations/google-oauth/repository";
+import { fetchGooglePluginIntegrationStatus } from "@/app/lib/integrations/google-plugin/repository";
 import { fetchMicrosoftOAuthIntegrationStatus } from "@/app/lib/integrations/microsoft-oauth/repository";
 import { SITE_INTEGRATION_KEYS } from "@/app/lib/integrations/keys";
 import { fetchSimpleIntegrationStatus } from "@/app/lib/integrations/simple/repository";
@@ -17,9 +18,18 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function AdminIntegrationsRoute() {
   await requireAdmin();
   const siteOrigin = process.env.NEXT_PUBLIC_SITE_URL?.trim() ?? "";
-  const [googleOAuth, microsoftOAuth, turnstile, resend, umami, sentry, stripe] =
-    await Promise.all([
+  const [
+    googleOAuth,
+    googlePlugin,
+    microsoftOAuth,
+    turnstile,
+    resend,
+    umami,
+    sentry,
+    stripe,
+  ] = await Promise.all([
     fetchGoogleOAuthIntegrationStatus(siteOrigin),
+    fetchGooglePluginIntegrationStatus(siteOrigin),
     fetchMicrosoftOAuthIntegrationStatus(siteOrigin),
     fetchSimpleIntegrationStatus(SITE_INTEGRATION_KEYS.turnstile),
     fetchSimpleIntegrationStatus(SITE_INTEGRATION_KEYS.resend),
@@ -32,6 +42,7 @@ export default async function AdminIntegrationsRoute() {
     <Suspense>
       <AdminIntegrationsPage
         initialGoogleOAuth={googleOAuth}
+        initialGooglePlugin={googlePlugin}
         initialMicrosoftOAuth={microsoftOAuth}
         initialTurnstile={turnstile}
         initialResend={resend}

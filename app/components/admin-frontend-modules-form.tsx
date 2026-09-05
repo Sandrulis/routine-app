@@ -32,10 +32,12 @@ function sortModules(modules: FrontendModuleSummary[]) {
 export function AdminFrontendModulesForm({
   initialModules,
   googleOAuthEnabled = false,
+  googlePluginEnabled = false,
   microsoftOAuthEnabled = false,
 }: {
   initialModules: FrontendModuleSummary[];
   googleOAuthEnabled?: boolean;
+  googlePluginEnabled?: boolean;
   microsoftOAuthEnabled?: boolean;
 }) {
   const router = useRouter();
@@ -63,13 +65,21 @@ export function AdminFrontendModulesForm({
 
   function toggleLockedReason(module: FrontendModuleSummary): string | null {
     if (
-      (module.moduleKey === FRONTEND_MODULE_KEYS.googleDrive ||
-        module.moduleKey === FRONTEND_MODULE_KEYS.gmailPlugin) &&
+      module.moduleKey === FRONTEND_MODULE_KEYS.googleDrive &&
       !googleOAuthEnabled
     ) {
       return t(
         "frontend_modules.google_drive.toggle_locked",
         "Vispirms konfigurē un ieslēdz Google OAuth integrāciju (Administrācija → Integrācijas).",
+      );
+    }
+    if (
+      module.moduleKey === FRONTEND_MODULE_KEYS.gmailPlugin &&
+      !googlePluginEnabled
+    ) {
+      return t(
+        "frontend_modules.gmail_plugin.toggle_locked",
+        "Vispirms konfigurē un ieslēdz Google Plugin integrāciju (Administrācija → Integrācijas).",
       );
     }
     if (
@@ -137,7 +147,9 @@ export function AdminFrontendModulesForm({
       const errorKey =
         module.moduleKey === FRONTEND_MODULE_KEYS.onedrive
           ? "errors.frontend_module_microsoft_oauth_required"
-          : "errors.frontend_module_google_oauth_required";
+          : module.moduleKey === FRONTEND_MODULE_KEYS.gmailPlugin
+            ? "errors.frontend_module_google_plugin_required"
+            : "errors.frontend_module_google_oauth_required";
       showFeedback({
         type: "error",
         text: translateActionError(t, errorKey),

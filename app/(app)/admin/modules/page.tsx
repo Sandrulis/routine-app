@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { AdminFrontendModulesForm } from "@/app/components/admin-frontend-modules-form";
 import { listFrontendModules } from "@/app/lib/frontend-modules/repository";
 import { isGoogleSignInEnabled } from "@/app/lib/integrations/google-oauth/repository";
+import { isGooglePluginEnabled } from "@/app/lib/integrations/google-plugin/repository";
 import { isMicrosoftOAuthEnabled } from "@/app/lib/integrations/microsoft-oauth/repository";
 import { translatedPageMetadata } from "@/app/lib/page-metadata";
 import { requireAdmin } from "@/app/lib/users/require-admin";
@@ -14,16 +15,19 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function AdminModulesPage() {
   await requireAdmin();
-  const [modules, googleOAuthEnabled, microsoftOAuthEnabled] = await Promise.all([
-    listFrontendModules(),
-    isGoogleSignInEnabled(),
-    isMicrosoftOAuthEnabled(),
-  ]);
+  const [modules, googleOAuthEnabled, googlePluginEnabled, microsoftOAuthEnabled] =
+    await Promise.all([
+      listFrontendModules(),
+      isGoogleSignInEnabled(),
+      isGooglePluginEnabled(),
+      isMicrosoftOAuthEnabled(),
+    ]);
 
   return (
     <AdminFrontendModulesForm
       initialModules={modules}
       googleOAuthEnabled={googleOAuthEnabled}
+      googlePluginEnabled={googlePluginEnabled}
       microsoftOAuthEnabled={microsoftOAuthEnabled}
     />
   );

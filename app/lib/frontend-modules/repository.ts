@@ -8,6 +8,7 @@ import type {
   FrontendModuleSummary,
 } from "@/app/lib/frontend-modules/types";
 import { isGoogleSignInEnabled } from "@/app/lib/integrations/google-oauth/repository";
+import { isGooglePluginEnabled } from "@/app/lib/integrations/google-plugin/repository";
 import { isMicrosoftOAuthEnabled } from "@/app/lib/integrations/microsoft-oauth/repository";
 import type { ActionResult } from "@/app/lib/actions/action-result";
 
@@ -176,11 +177,18 @@ export async function updateFrontendModuleEnabled(
 
   if (
     isEnabled &&
-    (normalizedKey === FRONTEND_MODULE_KEYS.googleDrive ||
-      normalizedKey === FRONTEND_MODULE_KEYS.gmailPlugin) &&
+    normalizedKey === FRONTEND_MODULE_KEYS.googleDrive &&
     !(await isGoogleSignInEnabled())
   ) {
     return { ok: false, error: "errors.frontend_module_google_oauth_required" };
+  }
+
+  if (
+    isEnabled &&
+    normalizedKey === FRONTEND_MODULE_KEYS.gmailPlugin &&
+    !(await isGooglePluginEnabled())
+  ) {
+    return { ok: false, error: "errors.frontend_module_google_plugin_required" };
   }
 
   if (

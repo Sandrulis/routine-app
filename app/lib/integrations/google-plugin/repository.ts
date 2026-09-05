@@ -9,28 +9,32 @@ import { createAdminClient } from "@/app/lib/supabase/admin";
 import { isSupabaseAdminConfigured } from "@/app/lib/supabase/env";
 import { FRONTEND_MODULE_KEYS } from "@/app/lib/frontend-modules/keys";
 import { SITE_INTEGRATION_KEYS } from "@/app/lib/integrations/keys";
-import { getPublicSignInMethods } from "@/app/lib/integrations/public-sign-in";
 import { KNOWN_SITE_ORIGINS } from "@/app/lib/seo/known-site-origins";
 import type {
-  GoogleOAuthCredentialsInput,
-  GoogleOAuthIntegrationStatus,
+  GooglePluginCredentialsInput,
+  GooglePluginIntegrationStatus,
 } from "@/app/lib/integrations/types";
 
-export const GOOGLE_OAUTH_CALLBACK_PATH = "/auth/google-oauth/callback";
-export const GOOGLE_OAUTH_ADMIN_PAGE_PATH = "/admin/integrations";
-export const GOOGLE_OAUTH_OAUTH_COOKIE = "routine-app-google-oauth-configure";
-export const GOOGLE_OAUTH_SCOPES = ["openid", "email", "profile"].join(" ");
+export const GOOGLE_PLUGIN_CALLBACK_PATH = "/auth/google-plugin/callback";
+export const GOOGLE_PLUGIN_ADMIN_PAGE_PATH = "/admin/integrations";
+export const GOOGLE_PLUGIN_OAUTH_COOKIE = "routine-app-google-plugin-oauth";
+export const GOOGLE_PLUGIN_SCOPES = [
+  "openid",
+  "email",
+  "profile",
+  "https://www.googleapis.com/auth/gmail.readonly",
+].join(" ");
 
-async function disableDependentGoogleModules() {
+async function disableDependentGmailPluginModule() {
   if (!isSupabaseAdminConfigured()) return;
   const admin = createAdminClient();
   const { error } = await admin
     .from("site_frontend_modules")
     .update({ is_enabled: false })
-    .eq("module_key", FRONTEND_MODULE_KEYS.googleDrive)
+    .eq("module_key", FRONTEND_MODULE_KEYS.gmailPlugin)
     .eq("is_enabled", true);
   if (error) {
-    logError("disableDependentGoogleModules failed", error.message);
+    logError("disableDependentGmailPluginModule failed", error.message);
   }
 }
 
@@ -44,8 +48,8 @@ type IntegrationRow = {
 };
 
 function readEnvCredentials() {
-  const clientId = readEnv("GOOGLE_OAUTH_CLIENT_ID");
-  const clientSecret = readEnv("GOOGLE_OAUTH_CLIENT_SECRET");
+  const clientId = readEnv("GOOGLE_PLUGIN_CLIENT_ID");
+  const clientSecret = readEnv("GOOGLE_PLUGIN_CLIENT_SECRET");
   if (!clientId || !clientSecret) return null;
   if (/your_|placeholder|changeme|example/i.test(clientId + clientSecret)) {
     return null;
@@ -73,10 +77,10 @@ async function fetchIntegrationRow(): Promise<IntegrationRow | null> {
     .select(
       "integration_key, client_id, client_secret, is_configured, is_enabled, configured_account_email",
     )
-    .eq("integration_key", SITE_INTEGRATION_KEYS.googleOAuth)
+    .eq("integration_key", SITE_INTEGRATION_KEYS.googlePlugin)
     .maybeSingle();
   if (error) {
-    logError("fetchGoogleOAuthIntegrationRow failed", error.message);
+    logError("fetchGooglePluginIntegrationRow failed", error.message);
     return null;
   }
   if (!data) return null;
@@ -87,7 +91,7 @@ async function fetchIntegrationRow(): Promise<IntegrationRow | null> {
       void admin
         .from("site_integrations")
         .update({ client_secret: encrypted })
-        .eq("integration_key", SITE_INTEGRATION_KEYS.googleOAuth);
+        .eq("integration_key", SITE_INTEGRATION_KEYS.googlePlugin);
     }
   }
   return {
@@ -96,11 +100,7 @@ async function fetchIntegrationRow(): Promise<IntegrationRow | null> {
   };
 }
 
-export function getGoogleOAuthCredentialsFromEnv() {
-  return readEnvCredentials();
-}
-
-export async function getGoogleOAuthCredentials() {
+export async function getGooglePluginCredentials() {
   const row = await fetchIntegrationRow();
   const clientId = row?.client_id?.trim() ?? "";
   const clientSecret = row?.client_secret?.trim() ?? "";
@@ -110,24 +110,18 @@ export async function getGoogleOAuthCredentials() {
   return readEnvCredentials();
 }
 
-export async function isGoogleOAuthCredentialsAvailable() {
-  const credentials = await getGoogleOAuthCredentials();
+export async function isGooglePluginCredentialsAvailable() {
+  const credentials = await getGooglePluginCredentials();
   return credentials !== null;
 }
 
-export function buildGoogleOAuthCallbackUrl(origin?: string) {
+export function buildGooglePluginCallbackUrl(origin?: string) {
   const base = (origin?.trim() || resolveSiteOrigin()).replace(/\/$/, "");
-  if (!base) return GOOGLE_OAUTH_CALLBACK_PATH;
-  return `${base}${GOOGLE_OAUTH_CALLBACK_PATH}`;
+  if (!base) return GOOGLE_PLUGIN_CALLBACK_PATH;
+  return `${base}${GOOGLE_PLUGIN_CALLBACK_PATH}`;
 }
 
-export function buildGoogleDriveCallbackUrl(origin?: string) {
-  const base = (origin?.trim() || resolveSiteOrigin()).replace(/\/$/, "");
-  if (!base) return "/auth/google-drive/callback";
-  return `${base}/auth/google-drive/callback`;
-}
-
-export function listGoogleOAuthRedirectUrls(primaryOrigin = ""): string[] {
+export function listGooglePluginRedirectUrls(primaryOrigin = ""): string[] {
   const primary = primaryOrigin.trim().replace(/\/$/, "");
   const origins = [
     primary,
@@ -136,21 +130,17 @@ export function listGoogleOAuthRedirectUrls(primaryOrigin = ""): string[] {
   const urls: string[] = [];
   const seen = new Set<string>();
   for (const origin of origins) {
-    for (const url of [
-      buildGoogleOAuthCallbackUrl(origin),
-      buildGoogleDriveCallbackUrl(origin),
-    ]) {
-      if (seen.has(url)) continue;
-      seen.add(url);
-      urls.push(url);
-    }
+    const url = buildGooglePluginCallbackUrl(origin);
+    if (seen.has(url)) continue;
+    seen.add(url);
+    urls.push(url);
   }
   return urls;
 }
 
-export async function fetchGoogleOAuthIntegrationStatus(
+export async function fetchGooglePluginIntegrationStatus(
   origin = "",
-): Promise<GoogleOAuthIntegrationStatus> {
+): Promise<GooglePluginIntegrationStatus> {
   const row = await fetchIntegrationRow();
   const envCredentials = readEnvCredentials();
   const clientId = row?.client_id?.trim() || envCredentials?.clientId || "";
@@ -161,26 +151,24 @@ export async function fetchGoogleOAuthIntegrationStatus(
   const enabled = configured && row?.is_enabled === true;
 
   return {
-    integrationKey: "google_oauth",
+    integrationKey: "google_plugin",
     clientId,
     hasClientSecret,
     configured,
     enabled,
     configuredAccountEmail: row?.configured_account_email?.trim() ?? "",
-    callbackUrl: buildGoogleOAuthCallbackUrl(origin),
-    googleDriveCallbackUrl: buildGoogleDriveCallbackUrl(origin),
-    redirectUrls: listGoogleOAuthRedirectUrls(origin),
+    callbackUrl: buildGooglePluginCallbackUrl(origin),
+    redirectUrls: listGooglePluginRedirectUrls(origin),
+    scopes: GOOGLE_PLUGIN_SCOPES.split(" "),
   };
 }
 
-export async function isGoogleSignInEnabled() {
-  const published = await getPublicSignInMethods();
-  if (published) return published.google;
-  const status = await fetchGoogleOAuthIntegrationStatus();
+export async function isGooglePluginEnabled() {
+  const status = await fetchGooglePluginIntegrationStatus();
   return status.enabled;
 }
 
-export async function saveGoogleOAuthCredentials(input: GoogleOAuthCredentialsInput) {
+export async function saveGooglePluginCredentials(input: GooglePluginCredentialsInput) {
   if (!isSupabaseAdminConfigured()) {
     return { ok: false as const, error: "errors.integrations_save_failed" };
   }
@@ -204,7 +192,7 @@ export async function saveGoogleOAuthCredentials(input: GoogleOAuthCredentialsIn
   const { error } = await admin
     .from("site_integrations")
     .update(patch)
-    .eq("integration_key", SITE_INTEGRATION_KEYS.googleOAuth);
+    .eq("integration_key", SITE_INTEGRATION_KEYS.googlePlugin);
 
   if (error) {
     return { ok: false as const, error: "errors.integrations_save_failed" };
@@ -213,12 +201,12 @@ export async function saveGoogleOAuthCredentials(input: GoogleOAuthCredentialsIn
   return { ok: true as const };
 }
 
-export async function markGoogleOAuthConfigured(input: {
+export async function markGooglePluginConfigured(input: {
   accountEmail: string;
   configuredBy: string;
 }) {
   if (!isSupabaseAdminConfigured()) {
-    return { ok: false as const, error: "errors.integrations_configure_failed" };
+    return { ok: false as const, error: "errors.integrations_google_plugin_configure_failed" };
   }
 
   const admin = createAdminClient();
@@ -231,16 +219,16 @@ export async function markGoogleOAuthConfigured(input: {
       configured_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     })
-    .eq("integration_key", SITE_INTEGRATION_KEYS.googleOAuth);
+    .eq("integration_key", SITE_INTEGRATION_KEYS.googlePlugin);
 
   if (error) {
-    return { ok: false as const, error: "errors.integrations_configure_failed" };
+    return { ok: false as const, error: "errors.integrations_google_plugin_configure_failed" };
   }
 
   return { ok: true as const };
 }
 
-export async function setGoogleOAuthEnabled(enabled: boolean) {
+export async function setGooglePluginEnabled(enabled: boolean) {
   if (!isSupabaseAdminConfigured()) {
     return { ok: false as const, error: "errors.integrations_save_failed" };
   }
@@ -257,20 +245,20 @@ export async function setGoogleOAuthEnabled(enabled: boolean) {
       is_enabled: enabled,
       updated_at: new Date().toISOString(),
     })
-    .eq("integration_key", SITE_INTEGRATION_KEYS.googleOAuth);
+    .eq("integration_key", SITE_INTEGRATION_KEYS.googlePlugin);
 
   if (error) {
     return { ok: false as const, error: "errors.integrations_save_failed" };
   }
 
   if (!enabled) {
-    await disableDependentGoogleModules();
+    await disableDependentGmailPluginModule();
   }
 
   return { ok: true as const };
 }
 
-export async function resetGoogleOAuthConfiguration() {
+export async function resetGooglePluginConfiguration() {
   if (!isSupabaseAdminConfigured()) {
     return { ok: false as const, error: "errors.integrations_reset_failed" };
   }
@@ -286,13 +274,13 @@ export async function resetGoogleOAuthConfiguration() {
       configured_at: null,
       updated_at: new Date().toISOString(),
     })
-    .eq("integration_key", SITE_INTEGRATION_KEYS.googleOAuth);
+    .eq("integration_key", SITE_INTEGRATION_KEYS.googlePlugin);
 
   if (error) {
     return { ok: false as const, error: "errors.integrations_reset_failed" };
   }
 
-  await disableDependentGoogleModules();
+  await disableDependentGmailPluginModule();
 
   return { ok: true as const };
 }

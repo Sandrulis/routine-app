@@ -13,7 +13,7 @@ import { getPublicSiteUrl } from "@/app/lib/seo/site-url";
 import { getRequestLanguageCode } from "@/app/lib/i18n/server";
 import { DEFAULT_LANGUAGE } from "@/app/lib/i18n/language";
 import { isEmailPasswordAuthEnabled } from "@/app/lib/integrations/resend/client";
-import { isGoogleSignInEnabled } from "@/app/lib/integrations/google-oauth/repository";
+import { isGooglePluginEnabled } from "@/app/lib/integrations/google-plugin/repository";
 import { createAdminClient } from "@/app/lib/supabase/admin";
 import { isSupabaseAdminConfigured } from "@/app/lib/supabase/env";
 import { FRONTEND_MODULE_KEYS } from "@/app/lib/frontend-modules/keys";
@@ -61,7 +61,7 @@ export async function GET(request: Request) {
     gmailPluginEnabled,
   ] = await Promise.all([
     isEmailPasswordAuthEnabled(),
-    isGoogleSignInEnabled(),
+    isGooglePluginEnabled(),
     isGmailPluginEnabled(),
   ]);
 

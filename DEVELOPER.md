@@ -205,7 +205,7 @@ Globāli feature flagi tabulā `public.site_frontend_modules` (`module_key` + `i
 | `module_file_upload` | Augšupielāde kokā, apakšuzdevumos, mapes **Faili** logs, sānjoslas **Failu vieta** | Nav upload; esošie faili kokā un apakšuzdevumā slēpti; Failu logs izņemts no window order; Failu vieta pazūd; faila URL redirect |
 | `module_send_file` | Apakšuzdevuma faila `...` rāda **Pārsūtīt failu**; landing fīča un FAQ; vajag arī `module_file_upload` un ieslēgtu Resend | Izvēlnes opcijas nav; `forwardTaskFileAction` noraida; landing kartīte un FAQ pazūd |
 | `module_google_drive` | Komandas `...` → **Google Drive Integrācija**; `/team/google-drive`; faili uz Drive (noklusējumā bez servera `content`, opcionāli spoguļojums); admin slēdzis ieslēdzams tikai ja Google OAuth integrācija ir konfigurēta un ieslēgta | Izvēlnes opcijas nav; maršruts redirect uz `/dashboard`; Drive sync nenotiek. Prasa arī `module_file_upload` |
-| `module_gmail_plugin` | Gmail Chrome spraudnis (`extensions/gmail` `0.4.50`): sesija, komandu pārslēgšana, e-pasta pievienošana ar piezīmi katram failam, jauns apakšuzdevums no Gmail. Faili uz komandas Drive un/vai OneDrive (pēc ieslēgtajiem moduļiem). **Turpināt ar Google** → `/auth/gmail-plugin/login` ar identity + `gmail.readonly` (offline) vienā piekrišanā; callback saglabā arī `user_gmail_connections`. Ja kontam ir TOTP, done prasa 2FA (AAL2), tad bootstrap ticket → `POST /api/extension/bootstrap-from-ticket` (post-MFA refresh; AAL1 noraida `accessTokenNeedsTotpChallenge`). Done zaļais stāvoklis tikai pēc sesijas capture. **Atjaunot Gmail** (reconnect) → ticket bridge `/auth/gmail-plugin/bridge?t=…` → `/start`; production vajag `INTEGRATION_SECRETS_KEY`. Admin slēdzis tikai ja Google OAuth ir ieslēgts. Redirect `/auth/google-oauth/callback` | Spraudnis rāda, ka modulis izslēgts |
+| `module_gmail_plugin` | Gmail Chrome spraudnis (`extensions/gmail` `0.4.50`): sesija, komandu pārslēgšana, e-pasta pievienošana ar piezīmi katram failam, jauns apakšuzdevums no Gmail. Faili uz komandas Drive un/vai OneDrive (pēc ieslēgtajiem moduļiem). **Turpināt ar Google** → `/auth/gmail-plugin/login` ar identity + `gmail.readonly` (offline) vienā piekrišanā caur **Google Plugin** integrāciju; callback `/auth/google-plugin/callback` saglabā arī `user_gmail_connections`. Ja kontam ir TOTP, done prasa 2FA (AAL2), tad bootstrap ticket → `POST /api/extension/bootstrap-from-ticket` (post-MFA refresh; AAL1 noraida `accessTokenNeedsTotpChallenge`). Done zaļais stāvoklis tikai pēc sesijas capture. **Atjaunot Gmail** (reconnect) → ticket bridge `/auth/gmail-plugin/bridge?t=…` → `/start`; production vajag `INTEGRATION_SECRETS_KEY`. Admin slēdzis tikai ja **Google Plugin** ir ieslēgts. | Spraudnis rāda, ka modulis izslēgts |
 | `module_onedrive` | Komandas `...` → **OneDrive Integrācija**; `/team/onedrive`; faili uz OneDrive kā līdzvērtīgs mākonis (`onedrive_file_id`, bez servera `content`). Admin slēdzis ieslēdzams tikai ja Microsoft OAuth integrācija ir konfigurēta un ieslēgta | Izvēlnes opcijas nav; maršruts redirect uz `/dashboard`; OneDrive sync nenotiek; UI nepiemin OneDrive. Prasa arī `module_file_upload` |
 | `module_checklist` | Check List lietojams; slēgto statusu bloķē nepabeigti punkti | Sadaļa vienmēr sakļauta (`forceCollapsed`); slēgto statusu **nebloķē** |
 | `module_automations` | Saraksta `...` → **Automatizācijas**; `lists-store` izpilda statusa/čeklistes/apakšuzdevumu noteikumus | Izvēlnes opcijas nav; esošie noteikumi **neizpildās** |
@@ -613,14 +613,15 @@ app/
     users/admin-audit.ts          # admin_audit_events
     users/use-is-admin.tsx        # is_admin RPC + profils klientā
     security/                     # CSP (`csp.ts`), rate-limit, turnstile, secret-box, file-bytes, log-error, hash-token
-app/auth/gmail-plugin/            # login (Google OAuth ielogošanās) / bridge / start / done; callback aliases vai `/auth/google-oauth/callback`
+app/auth/gmail-plugin/            # login / bridge / start / done; Google OAuth caur Google Plugin (`/auth/google-plugin/callback`)
 app/api/extension/                # config, session, login, refresh, gmail-access, gmail-bridge-ticket, browse, subtasks, attach-email; CORS `extension/cors.ts`
 app/api/docs/                     # GET `/api/docs/images/[id]` publiski tikai ieslēgtai + redzamai dokumentācijai, citādi `requireDocsAdminJson`; `?preview=1` mazs WebP; POST upload ar admin
 app/api/cron/                     # GET/POST `/api/cron/[jobKey]` — token auth, stundas batch atgādinājumi
 app/api/webhooks/stripe/route.ts  # Stripe Billing: Checkout / invoice / subscription (paraksts `stripe-signature`)
 app/auth/callback/route.ts        # E-pasta magic link / PKCE code → session
 app/auth/google-oauth/sign-in/route.ts # GET Google login/signup sākums (`?next=`, `?errorPage=`, `?turnstile=`)
-app/auth/google-oauth/callback/route.ts # Google login, admin konfigurācija, Gmail spraudnis
+app/auth/google-oauth/callback/route.ts # Google login un admin konfigurācija (bez Gmail)
+app/auth/google-plugin/callback/route.ts # Gmail spraudņa OAuth + Google Plugin admin konfigurācija
 app/auth/microsoft-oauth/sign-in/route.ts # GET Microsoft login/signup sākums (`?turnstile=`)
 app/auth/microsoft-oauth/callback/route.ts # Microsoft login + admin konfigurācija
 app/auth/google-drive/callback/route.ts # Drive OAuth code → team refresh token
@@ -628,7 +629,7 @@ app/auth/onedrive/callback/route.ts # OneDrive OAuth code → team refresh token
 app/api/google-drive/             # upload, content, rename
 app/api/onedrive/                 # upload, content, rename
 scripts/                          # audit-check.mjs, apply-migrations.mjs, test-supabase.mjs, sync-i18n-catalogs.mjs (`npm run i18n:check`), generate-fa-icons.mjs
-supabase/migrations/              # 001–134: shēma, admin, work data, Drive, drošība, ielādes ātrums, e-pasta šabloni, Gmail spraudnis, publiskie login karogi, extra valodas, legal_email, invite preview `account_exists`, `file_forwarded` vēsture, Resend email id indekss, user feedback + feature votes, cron jobs, hashed tokeni, timezone batchi, Turnstile, payment plan max_members, free/paid plānu seed, Stripe vietu norēķini, brīvas vietas paziņojums, Early access vietu pool, `billing_due`, noklusējuma lomu labels visās valodās (`101`), publiskā dokumentācija (`118`–`121`), VIP (`122`), failu `content` strip (`123`), `onedrive_file_id` (`124`), globāli paziņojumi (`125`), personīgs uzdevumu Atlikt (`134`)
+supabase/migrations/              # 001–136: shēma, admin, work data, Drive, drošība, ielādes ātrums, e-pasta šabloni, Gmail spraudnis, publiskie login karogi, extra valodas, legal_email, invite preview `account_exists`, `file_forwarded` vēsture, Resend email id indekss, user feedback + feature votes, cron jobs, hashed tokeni, timezone batchi, Turnstile, payment plan max_members, free/paid plānu seed, Stripe vietu norēķini, brīvas vietas paziņojums, Early access vietu pool, `billing_due`, noklusējuma lomu labels visās valodās (`101`), publiskā dokumentācija (`118`–`121`), VIP (`122`), failu `content` strip (`123`), `onedrive_file_id` (`124`), globāli paziņojumi (`125`), personīgs uzdevumu Atlikt (`134`)
 .github/workflows/                # secret-scan.yml, security-audit.yml, security-smoke.yml
 .gitleaks.toml                    # default rules + i18n translation key allowlist
 .cursor/rules/                    # README bump, commits
@@ -709,21 +710,24 @@ Pēc env saglabāšanas: Deployments → **Redeploy**. Vercel Function logs: `Su
 
 ## Google OAuth
 
-Admin **Integrācijas** (`/admin/integrations`): Client ID/Secret glabājas `site_integrations` (`google_oauth`); OAuth pārbaude, login/signup un Gmail spraudnis iet caur `/auth/google-oauth/callback` (`listGoogleOAuthRedirectUrls` rāda visus `KNOWN_SITE_ORIGINS`); **Aktīva** slēdzis vienmēr redzams (pirms konfigurācijas izslēgts un bloķēts; pēc — ieslēdz/izslēdz login bez credentials dzēšanas). Fallback env: `GOOGLE_OAUTH_CLIENT_ID`, `GOOGLE_OAUTH_CLIENT_SECRET`.
+Admin **Integrācijas** (`/admin/integrations`): Client ID/Secret glabājas `site_integrations` (`google_oauth`); OAuth pārbaude, login/signup un Drive iet caur `/auth/google-oauth/callback` un `/auth/google-drive/callback` (`listGoogleOAuthRedirectUrls` rāda visus `KNOWN_SITE_ORIGINS`). Gmail spraudnis **nav** šajā klientā. **Aktīva** slēdzis vienmēr redzams (pirms konfigurācijas izslēgts un bloķēts; pēc — ieslēdz/izslēdz login bez credentials dzēšanas). Fallback env: `GOOGLE_OAUTH_CLIENT_ID`, `GOOGLE_OAUTH_CLIENT_SECRET`.
 
 Login/signup **neizmanto** Supabase Authentication → Providers → Google. Pēc Google profila (`openid email profile`) aplikācija ar service role izveido vai atrod Supabase Auth lietotāju un iestata sesiju (`generateLink` + `verifyOtp`).
 
 1. Google Cloud → APIs & Services → Credentials → **OAuth 2.0 Client ID** (Web application)
 2. Authorized JavaScript origins: `http://localhost:3120`, `https://tasqin.com` un `https://www.tasqin.com`
 3. Authorized redirect URI (gan local, gan production):
-   - `/auth/google-oauth/callback` (login/signup **un** Gmail spraudnis)
+   - `/auth/google-oauth/callback` (login/signup)
    - `/auth/google-drive/callback`
-   - `/auth/gmail-plugin/callback` (nav obligāts; vecā Gmail plūsma)
 4. Admin → Integrācijas → ielīmē Client ID/Secret → **Konfigurēt ar Google** → ieslēdz **Aktīva**
 
 Sesijas sīkdatnes ir **obligātās** (ePrivacy izņēmums autentifikācijai). **Atcerēties mani** ir tikai loginā un pēc noklusējuma **izslēgts** (sesija līdz pārlūka aizvēršanai); ar ķeksīti sesija ilgst **30 dienas**. Production HTTPS uzliek `Secure`. Sīkdatnes paliek lasāmas klientam (`httpOnly: false`), jo pārlūka Supabase klients lasa `document.cookie` — pilns HttpOnly prasa pārcelt visus DB vaicājumus uz serveri. Ielogotam lietotājam `/`, `/login` un `/signup` ved uz `/dashboard`. Signup un paroles atjaunošanas saites apstiprina `/auth/confirm`. `/auth/callback` paliek PKCE / magic link plūsmām, nevis Google login.
 
 **Dublējumi un atslēgu rotācija:** Supabase Dashboard ieslēdz PITR (Point-in-Time Recovery) uz maksas plāniem. `service_role` un `INTEGRATION_SECRETS_KEY` rotē tikai pēc plāna: vispirms jauna atslēga env, tad reconnect Drive/OneDrive un atkārtota integrāciju saglabāšana, lai rindiņas tiek pāršifrētas. Vecu `pg_dump` ar plaintext tokeniem pēc H3 vairs nepietiek, ja atslēga paliek slepena.
+
+## Google Plugin
+
+Atsevišķs Google Cloud projekts Gmail Chrome spraudnim (`site_integrations.google_plugin`, migrācija `136`). Scopes: `openid email profile` + `gmail.readonly`. Redirect: `/auth/google-plugin/callback` visiem `KNOWN_SITE_ORIGINS`. Admin **Integrācijas** → **Google Plugin**: Client ID/Secret → **Konfigurēt ar Google** → **Aktīva**. `module_gmail_plugin` ieslēdzams tikai pēc tam. Fallback env: `GOOGLE_PLUGIN_CLIENT_ID`, `GOOGLE_PLUGIN_CLIENT_SECRET`. Pēc Client ID maiņas lietotājiem **Atjaunot Gmail**. Chrome unpacked spraudnim koda atjauninājums nav vajadzīgs.
 
 ## Microsoft OAuth
 
@@ -802,7 +806,7 @@ RLS (`005_work_data.sql`): `authenticated` drīkst SELECT/INSERT/UPDATE/DELETE t
 | `site_feature_votes` | Funkciju pieprasījumu UP balsis (`request_id` + `user_id`); RPC `toggle_feature_vote` (`088`) |
 | `site_payment_plans` | Maksas plānu katalogs (nosaukumi visās valodās, `is_free` `094`, cenas, Early access cenas, `max_members` `093`; seed `free` / `paid`) |
 | `site_payment_plan_modules` | Frontend moduļi katrā plānā |
-| `site_integrations` | Sistēmas integrācijas (`google_oauth`, `microsoft_oauth`, `resend`, `umami`, `sentry`, `turnstile`, `stripe`): credentials, konfigurēts/ieslēgts (`067`–`069`, `092`, `097`); RLS deny authenticated; publiskie login karogi `public_sign_in_methods()` (`080`) |
+| `site_integrations` | Sistēmas integrācijas (`google_oauth`, `google_plugin` `136`, `microsoft_oauth`, `resend`, `umami`, `sentry`, `turnstile`, `stripe`): credentials, konfigurēts/ieslēgts (`067`–`069`, `092`, `097`); RLS deny authenticated; publiskie login karogi `public_sign_in_methods()` (`080`) |
 | `list_statuses` | Komandas statusi vienam sarakstam (`lsts-…`) |
 | `team_status_labels` | Komandas overlay sistēmas statusu nosaukumiem |
 | `work_lists` | Saraksti (`kind`, `is_private`, `default_access_level`, `created_by`) |
