@@ -1562,6 +1562,8 @@ export const es: Record<string, string> = {
   "settings.language.title": "Idioma",
   "settings.page.placeholder": "El idioma, las notificaciones y los ajustes del equipo aparecerán aquí más adelante.",
   "settings.page.subtitle": "Ajustes del equipo y del usuario. Esta sección se puede personalizar más adelante.",
+  "site_settings.form.notification_favicon": "Favicon de notificaciones",
+  "site_settings.form.notification_favicon_hint": "ICO, PNG o SVG de hasta 1.5 MB. Se muestra en la pestaña del navegador cuando hay notificaciones sin leer. Si no se sube, el icono de la pestaña no cambia.",
   "site.back_home": "Volver al inicio",
   "site.footer.docs": "Documentación",
   "site.footer.rights": "© {year} {SYSTEM_NAME}",

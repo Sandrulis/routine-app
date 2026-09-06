@@ -1562,6 +1562,8 @@
   "settings.language.title": "Kieli",
   "settings.page.placeholder": "Kieli, ilmoitukset ja tiimin asetukset näkyvät täällä myöhemmin.",
   "settings.page.subtitle": "Tiimin ja käyttäjän asetukset. Tätä osiota voi mukauttaa myöhemmin.",
+  "site_settings.form.notification_favicon": "Ilmoitusten favicon",
+  "site_settings.form.notification_favicon_hint": "ICO, PNG tai SVG, enintään 1,5 Mt. Näkyy selaimen välilehdessä, kun on lukemattomia ilmoituksia. Jos sitä ei ole ladattu, välilehden kuvake ei muutu.",
   "site.back_home": "Takaisin etusivulle",
   "site.footer.docs": "Dokumentaatio",
   "site.footer.rights": "© {year} {SYSTEM_NAME}",

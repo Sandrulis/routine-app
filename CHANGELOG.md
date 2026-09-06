@@ -4,6 +4,10 @@
 
 - (none)
 
+## v0.3.60
+
+- Sistēmas uzstādījumos atsevišķs paziņojumu favicon; cilnes ikona mainās tikai tad, ja tas ir augšupielādēts un ir nelasīti paziņojumi
+
 ## v0.3.59
 
 - E-pasta `.txt` pielikumu preview atkal caur vienotu `/api/work-files/content` (DB → Drive → OneDrive)

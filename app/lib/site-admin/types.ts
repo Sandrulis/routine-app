@@ -119,6 +119,7 @@ export type SiteSettingsSummary = {
   displayPreferences: SiteDisplayPreferences;
   logoUrl: string | null;
   faviconUrl: string | null;
+  notificationFaviconUrl: string | null;
   logoColor: string;
   updatedAt: string | null;
 };
@@ -134,6 +135,7 @@ export type SiteSettingsInput = {
   displayPreferences: SiteDisplayPreferences;
   logoUrl: string | null;
   faviconUrl: string | null;
+  notificationFaviconUrl: string | null;
   logoColor: string;
 };
 

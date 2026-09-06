@@ -1562,6 +1562,8 @@
   "settings.language.title": "Språk",
   "settings.page.placeholder": "Språk, varsler og teaminnstillinger vises her senere.",
   "settings.page.subtitle": "Team- og brukerinnstillinger. Denne seksjonen kan tilpasses senere.",
+  "site_settings.form.notification_favicon": "Varselfavicon",
+  "site_settings.form.notification_favicon_hint": "ICO, PNG eller SVG opptil 1,5 MB. Vises i nettleserfanen når det er uleste varsler. Hvis den ikke er lastet opp, endres ikke faneikonet.",
   "site.back_home": "Tilbake til startsiden",
   "site.footer.docs": "Dokumentasjon",
   "site.footer.rights": "© {year} {SYSTEM_NAME}",

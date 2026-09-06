@@ -9,6 +9,7 @@ import {
   markNotificationsRead,
   purgeOldNotificationsOnce,
 } from "@/app/lib/db/work-data";
+import { publishUnreadNotificationCount } from "@/app/lib/notification-unread-store";
 import {
   NOTIFICATIONS_CHANGE_EVENT,
   unreadNotificationCount,
@@ -63,6 +64,10 @@ export function useNotifications() {
   }, [authReady, refresh]);
 
   const unreadCount = useMemo(() => unreadNotificationCount(items), [items]);
+
+  useEffect(() => {
+    publishUnreadNotificationCount(unreadCount);
+  }, [unreadCount]);
 
   function markRead(id: string) {
     const readAt = new Date().toISOString();

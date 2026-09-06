@@ -1562,6 +1562,8 @@ export const nl: Record<string, string> = {
   "settings.language.title": "Taal",
   "settings.page.placeholder": "Taal, meldingen en teaminstellingen verschijnen hier later.",
   "settings.page.subtitle": "Team- en gebruikersinstellingen. Deze sectie kan later worden aangepast.",
+  "site_settings.form.notification_favicon": "Meldingen-favicon",
+  "site_settings.form.notification_favicon_hint": "ICO, PNG of SVG tot 1,5 MB. Verschijnt in het browsertabblad bij ongelezen meldingen. Zonder upload verandert het tabbladicoon niet.",
   "site.back_home": "Terug naar home",
   "site.footer.docs": "Documentatie",
   "site.footer.rights": "© {year} {SYSTEM_NAME}",

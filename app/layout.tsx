@@ -15,6 +15,7 @@ import { getSentryPublicConfig } from "@/app/lib/integrations/sentry/config";
 import { getUmamiPublicConfig } from "@/app/lib/integrations/umami/config";
 import { getActiveUiLanguages, getServerTranslations } from "@/app/lib/i18n/server";
 import { documentTitleTemplate, resolveSystemName } from "@/app/lib/document-title";
+import { NotificationFavicon } from "@/app/components/notification-favicon";
 import { brandImageMime, siteHeadIconUrl } from "@/app/lib/site-admin/branding";
 import { getSiteSettings } from "@/app/lib/site-admin/repository";
 import { isDocsEnabled } from "@/app/lib/docs/repository";
@@ -151,6 +152,10 @@ export default async function RootLayout({
           <SentryInit dsn={sentry.dsn} environment={sentry.environment} />
         ) : null}
         <AuthSessionProvider initialUser={user}>
+          <NotificationFavicon
+            defaultIcon={headIcon}
+            notificationIcon={settings.notificationFaviconUrl}
+          />
           <TimezoneSync userTimezone={userDisplayPreferences.timezone} />
           <NowProvider>
             <TranslationsProvider

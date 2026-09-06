@@ -1562,6 +1562,8 @@ export const lt: Record<string, string> = {
   "settings.language.title": "Kalba",
   "settings.page.placeholder": "Kalba, pranešimai ir komandos nustatymai čia atsiras vėliau.",
   "settings.page.subtitle": "Komandos ir naudotojo nustatymai. Šią skiltį galima pritaikyti vėliau.",
+  "site_settings.form.notification_favicon": "Pranešimų favicon",
+  "site_settings.form.notification_favicon_hint": "ICO, PNG arba SVG iki 1,5 MB. Rodomas naršyklės kortelėje, kai yra neperskaitytų pranešimų. Jei neįkeltas, kortelės piktograma nesikeičia.",
   "site.back_home": "Grįžti į pradžią",
   "site.footer.docs": "Dokumentacija",
   "site.footer.rights": "© {year} {SYSTEM_NAME}",

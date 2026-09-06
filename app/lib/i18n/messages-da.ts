@@ -1562,6 +1562,8 @@ export const da: Record<string, string> = {
   "settings.language.title": "Sprog",
   "settings.page.placeholder": "Sprog, notifikationer og teamindstillinger vises her senere.",
   "settings.page.subtitle": "Team- og brugerindstillinger. Denne sektion kan tilpasses senere.",
+  "site_settings.form.notification_favicon": "Notifikations-favicon",
+  "site_settings.form.notification_favicon_hint": "ICO, PNG eller SVG op til 1,5 MB. Vises i browserfanen, når der er ulæste notifikationer. Hvis den ikke er uploadet, ændres faneikonet ikke.",
   "site.back_home": "Tilbage til forsiden",
   "site.footer.docs": "Dokumentation",
   "site.footer.rights": "© {year} {SYSTEM_NAME}",

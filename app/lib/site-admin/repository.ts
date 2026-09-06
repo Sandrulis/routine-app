@@ -161,6 +161,7 @@ type SettingsRow = {
   time_format: string | null;
   logo_url: string | null;
   favicon_url: string | null;
+  notification_favicon_url: string | null;
   logo_color: string | null;
   updated_at: string | null;
 };
@@ -1121,6 +1122,7 @@ export const getSiteSettings = cache(async function getSiteSettings(): Promise<S
     timezone: resolveTimeZone(DEFAULT_TIMEZONE),
     logoUrl: null,
     faviconUrl: null,
+    notificationFaviconUrl: null,
     logoColor: DEFAULT_SITE_LOGO_COLOR,
     updatedAt: null,
   };
@@ -1133,7 +1135,7 @@ export const getSiteSettings = cache(async function getSiteSettings(): Promise<S
   const { data, error } = await supabase
     .from("site_settings")
     .select(
-      "system_name, legal_email, legal_entity_name, legal_entity_reg_no, legal_entity_address, timezone, slogan, slogan_values, week_start_day, date_format, date_separator, time_format, logo_url, favicon_url, logo_color, updated_at",
+      "system_name, legal_email, legal_entity_name, legal_entity_reg_no, legal_entity_address, timezone, slogan, slogan_values, week_start_day, date_format, date_separator, time_format, logo_url, favicon_url, notification_favicon_url, logo_color, updated_at",
     )
     .eq("id", 1)
     .maybeSingle();
@@ -1160,6 +1162,7 @@ export const getSiteSettings = cache(async function getSiteSettings(): Promise<S
     timezone: resolveTimeZone(row.timezone),
     logoUrl: normalizeBrandImageUrl(row.logo_url),
     faviconUrl: normalizeBrandImageUrl(row.favicon_url),
+    notificationFaviconUrl: normalizeBrandImageUrl(row.notification_favicon_url),
     logoColor: normalizeSiteLogoColor(row.logo_color),
     updatedAt: row.updated_at,
   };
@@ -1207,6 +1210,7 @@ export async function saveSiteSettings(input: SiteSettingsInput): Promise<Action
     time_format: displayPreferences.timeFormat,
     logo_url: normalizeBrandImageUrl(input.logoUrl),
     favicon_url: normalizeBrandImageUrl(input.faviconUrl),
+    notification_favicon_url: normalizeBrandImageUrl(input.notificationFaviconUrl),
     logo_color: normalizeSiteLogoColor(input.logoColor),
   });
 

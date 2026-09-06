@@ -1562,6 +1562,8 @@ export const et: Record<string, string> = {
   "settings.language.title": "Keel",
   "settings.page.placeholder": "Keel, teavitused ja meeskonna seaded ilmuvad siia hiljem.",
   "settings.page.subtitle": "Meeskonna ja kasutaja seaded. Seda jaotist saab hiljem kohandada.",
+  "site_settings.form.notification_favicon": "Teavituste favicon",
+  "site_settings.form.notification_favicon_hint": "ICO, PNG või SVG kuni 1,5 MB. Kuvatakse brauseri sakis, kui on lugemata teavitusi. Kui seda ei laadita üles, saki ikoon ei muutu.",
   "site.back_home": "Tagasi avalehele",
   "site.footer.docs": "Dokumentatsioon",
   "site.footer.rights": "© {year} {SYSTEM_NAME}",

@@ -1562,6 +1562,8 @@ export const pl: Record<string, string> = {
   "settings.language.title": "Język",
   "settings.page.placeholder": "Język, powiadomienia i ustawienia zespołu pojawią się tu później.",
   "settings.page.subtitle": "Ustawienia zespołu i użytkownika. Tę sekcję można później dostosować.",
+  "site_settings.form.notification_favicon": "Favicon powiadomień",
+  "site_settings.form.notification_favicon_hint": "ICO, PNG albo SVG do 1,5 MB. Pokazuje się w karcie przeglądarki, gdy są nieprzeczytane powiadomienia. Jeśli nie wgrano, ikona karty się nie zmienia.",
   "site.back_home": "Powrót na stronę główną",
   "site.footer.docs": "Dokumentacja",
   "site.footer.rights": "© {year} {SYSTEM_NAME}",

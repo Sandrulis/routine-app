@@ -844,6 +844,8 @@
   "site_settings.form.logo_hint": "PNG, SVG, JPG, or WEBP up to 1.5 MB. Shown in the header.",
   "site_settings.form.favicon": "Favicon",
   "site_settings.form.favicon_hint": "ICO, PNG, or SVG up to 1.5 MB. If no favicon is set, the logo or initials avatar is used in the browser tab.",
+  "site_settings.form.notification_favicon": "Notification favicon",
+  "site_settings.form.notification_favicon_hint": "ICO, PNG, or SVG up to 1.5 MB. Shown in the browser tab when there are unread notifications. If not uploaded, the tab icon does not change.",
   "site_settings.form.image.drop": "Drop an image here or",
   "site_settings.form.image.remove": "Remove image",
   "site_settings.form.display.title": "Dates and time",

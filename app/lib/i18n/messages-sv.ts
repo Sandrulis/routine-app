@@ -1562,6 +1562,8 @@ export const sv: Record<string, string> = {
   "settings.language.title": "Språk",
   "settings.page.placeholder": "Language, notifications and team settings will appear here later.",
   "settings.page.subtitle": "Team and user settings. This section can be customized later.",
+  "site_settings.form.notification_favicon": "Aviseringsfavicon",
+  "site_settings.form.notification_favicon_hint": "ICO, PNG eller SVG upp till 1,5 MB. Visas i webbläsarfliken när det finns olästa aviseringar. Om den inte laddas upp ändras inte flikikonen.",
   "site.back_home": "Till startsidan",
   "site.footer.docs": "Dokumentation",
   "site.footer.rights": "© {year} {SYSTEM_NAME}",

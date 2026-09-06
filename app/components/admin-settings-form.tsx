@@ -71,6 +71,7 @@ function toInput(
     displayPreferences: settings.displayPreferences,
     logoUrl: settings.logoUrl,
     faviconUrl: settings.faviconUrl,
+    notificationFaviconUrl: settings.notificationFaviconUrl,
     logoColor: settings.logoColor,
   };
 }
@@ -113,6 +114,7 @@ export function AdminSettingsForm({
     !siteDisplayPreferencesEqual(settings.displayPreferences, savedInput.displayPreferences) ||
     settings.logoUrl !== savedInput.logoUrl ||
     settings.faviconUrl !== savedInput.faviconUrl ||
+    settings.notificationFaviconUrl !== savedInput.notificationFaviconUrl ||
     settings.logoColor !== savedInput.logoColor ||
     resendFromEmail.trim() !== savedResend.clientId.trim() ||
     resendReplyToEmail.trim() !== savedResend.replyToEmail.trim();
@@ -157,6 +159,7 @@ export function AdminSettingsForm({
         displayPreferences: settings.displayPreferences,
         logoUrl: settings.logoUrl,
         faviconUrl: settings.faviconUrl,
+        notificationFaviconUrl: settings.notificationFaviconUrl,
         logoColor: settings.logoColor,
         updatedAt: new Date().toISOString(),
       });
@@ -454,7 +457,7 @@ export function AdminSettingsForm({
                 />
               </div>
 
-              <div className="grid items-start gap-5 sm:grid-cols-2">
+              <div>
                 <BrandingImageField
                   id="systemLogo"
                   label={t("site_settings.form.logo", "Logotips")}
@@ -467,6 +470,8 @@ export function AdminSettingsForm({
                     setSettings((current) => ({ ...current, logoUrl }))
                   }
                 />
+              </div>
+              <div className="grid items-start gap-5 sm:grid-cols-2">
                 <BrandingImageField
                   id="systemFavicon"
                   label={t("site_settings.form.favicon", "Favicon")}
@@ -477,6 +482,18 @@ export function AdminSettingsForm({
                   value={settings.faviconUrl}
                   onChange={(faviconUrl) =>
                     setSettings((current) => ({ ...current, faviconUrl }))
+                  }
+                />
+                <BrandingImageField
+                  id="systemNotificationFavicon"
+                  label={t("site_settings.form.notification_favicon", "Paziņojumu favicon")}
+                  hint={t(
+                    "site_settings.form.notification_favicon_hint",
+                    "ICO, PNG vai SVG līdz 1.5 MB. Pārlūka cilnē rādās, kad ir nelasīti paziņojumi. Ja nav augšupielādēts, cilnes ikona nemainās.",
+                  )}
+                  value={settings.notificationFaviconUrl}
+                  onChange={(notificationFaviconUrl) =>
+                    setSettings((current) => ({ ...current, notificationFaviconUrl }))
                   }
                 />
               </div>

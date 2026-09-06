@@ -1562,6 +1562,8 @@
   "settings.language.title": "Sprache",
   "settings.page.placeholder": "Sprache, Benachrichtigungen und Teameinstellungen erscheinen hier später.",
   "settings.page.subtitle": "Team- und Nutzereinstellungen. Dieser Bereich kann später angepasst werden.",
+  "site_settings.form.notification_favicon": "Favicon für Benachrichtigungen",
+  "site_settings.form.notification_favicon_hint": "ICO, PNG oder SVG bis 1,5 MB. Erscheint im Browser-Tab bei ungelesenen Benachrichtigungen. Ohne Upload bleibt die Tab-Ikone unverändert.",
   "site.back_home": "Zurück zur Startseite",
   "site.footer.docs": "Dokumentation",
   "site.footer.rights": "© {year} {SYSTEM_NAME}",

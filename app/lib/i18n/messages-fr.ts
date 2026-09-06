@@ -1562,6 +1562,8 @@ export const fr: Record<string, string> = {
   "settings.language.title": "Langue",
   "settings.page.placeholder": "La langue, les notifications et les paramètres d'équipe apparaîtront ici plus tard.",
   "settings.page.subtitle": "Paramètres de l'équipe et de l'utilisateur. Cette section pourra être personnalisée plus tard.",
+  "site_settings.form.notification_favicon": "Favicon des notifications",
+  "site_settings.form.notification_favicon_hint": "ICO, PNG ou SVG jusqu'à 1,5 Mo. Affiché dans l'onglet du navigateur s'il y a des notifications non lues. S'il n'est pas téléversé, l'icône de l'onglet ne change pas.",
   "site.back_home": "Retour à l'accueil",
   "site.footer.docs": "Documentation",
   "site.footer.rights": "© {year} {SYSTEM_NAME}",

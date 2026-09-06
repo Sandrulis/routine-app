@@ -1562,6 +1562,8 @@ export const it: Record<string, string> = {
   "settings.language.title": "Lingua",
   "settings.page.placeholder": "Language, notifications and team settings will appear here later.",
   "settings.page.subtitle": "Team and user settings. This section can be customized later.",
+  "site_settings.form.notification_favicon": "Favicon delle notifiche",
+  "site_settings.form.notification_favicon_hint": "ICO, PNG o SVG fino a 1,5 MB. Compare nella scheda del browser quando ci sono notifiche non lette. Se non viene caricato, l'icona della scheda non cambia.",
   "site.back_home": "Torna alla home",
   "site.footer.docs": "Documentazione",
   "site.footer.rights": "© {year} {SYSTEM_NAME}",

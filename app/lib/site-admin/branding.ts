@@ -41,6 +41,42 @@ export function siteHeadIconUrl(
   return faviconUrl || logoUrl || siteInitialsFaviconDataUrl(systemName, logoColor);
 }
 
+export function resolveActiveHeadIcon(
+  defaultIcon: string,
+  notificationFaviconUrl: string | null,
+  hasUnreadNotifications: boolean,
+): string {
+  if (hasUnreadNotifications && notificationFaviconUrl) {
+    return notificationFaviconUrl;
+  }
+  return defaultIcon;
+}
+
+export function setDocumentFavicon(href: string): void {
+  if (typeof document === "undefined") return;
+  const type = brandImageMime(href);
+  const links = [...document.querySelectorAll<HTMLLinkElement>("link[rel]")].filter((link) => {
+    const rel = link.rel.toLowerCase();
+    return rel === "icon" || rel === "shortcut icon";
+  });
+
+  if (links.length > 0) {
+    for (const link of links) {
+      const next = link.cloneNode(true) as HTMLLinkElement;
+      next.type = type;
+      next.href = href;
+      link.replaceWith(next);
+    }
+    return;
+  }
+
+  const icon = document.createElement("link");
+  icon.rel = "icon";
+  icon.type = type;
+  icon.href = href;
+  document.head.appendChild(icon);
+}
+
 export function brandImageMime(url: string): string {
   const match = /^data:(image\/[^;]+)/.exec(url);
   return match?.[1] ?? "image/png";

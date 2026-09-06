@@ -1562,6 +1562,8 @@ export const ru: Record<string, string> = {
   "settings.language.title": "Язык",
   "settings.page.placeholder": "Здесь позже появятся язык, уведомления и настройки команды.",
   "settings.page.subtitle": "Настройки команды и пользователя. Этот раздел можно будет настроить позже.",
+  "site_settings.form.notification_favicon": "Favicon для уведомлений",
+  "site_settings.form.notification_favicon_hint": "ICO, PNG или SVG до 1.5 МБ. Показывается во вкладке браузера, когда есть непрочитанные уведомления. Если не загружен, иконка вкладки не меняется.",
   "site.back_home": "На главную",
   "site.footer.docs": "Документация",
   "site.footer.rights": "© {year} {SYSTEM_NAME}",
