@@ -4,6 +4,10 @@
 
 - (none)
 
+## v0.3.62
+
+- Gmail spraudņa ielāde uzreiz rāda lietotāja valodu, ja tās nav - sistēmas noklusējumu (ne tukšu ekrānu un ne Chrome valodu)
+
 ## v0.3.61
 
 - Gmail spraudnis rāda lietotāja izvēlēto valodu, ne Chrome vai sistēmas noklusējumu

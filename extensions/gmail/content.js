@@ -181,6 +181,20 @@ function applySessionI18n(data) {
   }
 }
 
+async function restoreCachedI18n() {
+  try {
+    const stored = await chrome.storage.local.get([
+      "extensionI18n",
+      "extensionI18nDefault",
+    ]);
+    applySessionI18n(stored.extensionI18n || stored.extensionI18nDefault);
+  } catch {
+    // first run or storage unavailable
+  }
+}
+
+const i18nReady = restoreCachedI18n();
+
 function tError(key) {
   if (!key) return t("errors.extension_unknown");
   if (key === "errors.auth_required") return t("errors.extension_auth_required");
@@ -1954,6 +1968,7 @@ function ensureUi() {
       el.remove();
     }
     const email = scrapeEmailFallback();
+    await i18nReady;
     setBusy(true, t("extension.gmail.checking_session"));
     const sessionResult = await refreshSession({ force: true });
     meta.textContent = email.subject
@@ -2430,7 +2445,9 @@ function ensureUi() {
   globalThis.__routineGmailOnSession = onSessionUpdated;
   chrome.runtime.onMessage.addListener(onSessionUpdated);
 
-  applyStaticLabels();
+  void i18nReady.then(() => {
+    applyStaticLabels();
+  });
   root._routineInjectInline = syncPluginButtons;
 
   function onTeamStorageChange(changes, area) {

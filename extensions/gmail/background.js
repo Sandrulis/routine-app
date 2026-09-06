@@ -6,6 +6,8 @@ const APP_ORIGIN_CANDIDATES = [
   "http://127.0.0.1:3120",
 ];
 const STORED_SESSION_KEY = "extensionAuth";
+const I18N_STORAGE_KEY = "extensionI18n";
+const I18N_DEFAULT_STORAGE_KEY = "extensionI18nDefault";
 const PLUGIN_SIGNED_OUT_KEY = "pluginSignedOut";
 const PENDING_BOOTSTRAP_KEY = "pendingBootstrapTicket";
 const PENDING_BOOTSTRAP_TTL_MS = 2 * 60 * 1000;
@@ -44,6 +46,29 @@ function invalidateSessionCache() {
 function invalidateRuntimeCaches() {
   invalidateAppBaseCache();
   invalidateSessionCache();
+}
+
+function persistI18n(storageKey, data) {
+  if (!data?.strings || typeof data.strings !== "object") return;
+  void chrome.storage.local.set({
+    [storageKey]: {
+      languageCode: String(data.languageCode || ""),
+      systemName: String(data.systemName || "").trim(),
+      strings: data.strings,
+    },
+  });
+}
+
+function persistSessionI18n(data) {
+  if (data?.authenticated) {
+    persistI18n(I18N_STORAGE_KEY, data);
+    return;
+  }
+  persistI18n(I18N_DEFAULT_STORAGE_KEY, data);
+}
+
+function persistDefaultI18n(data) {
+  persistI18n(I18N_DEFAULT_STORAGE_KEY, data);
 }
 
 function broadcastSessionUpdate(result) {
@@ -374,6 +399,7 @@ async function adoptAppOrigin(origin, config) {
     canonicalOrigin: canonical,
   });
   cachedAppBase = { origin, config, resolvedAt: Date.now() };
+  persistDefaultI18n(config);
   return origin;
 }
 
@@ -1624,6 +1650,7 @@ async function sessionResponse(options = {}) {
     cachedSessionResponse &&
     now - cachedSessionResponse.at < SESSION_CACHE_TTL_MS
   ) {
+    persistSessionI18n(cachedSessionResponse.result?.data);
     return cachedSessionResponse.result;
   }
   if (sessionResponseInFlight && !force) {
@@ -1633,6 +1660,7 @@ async function sessionResponse(options = {}) {
     try {
       const result = await sessionResponseInner();
       cachedSessionResponse = { result, at: Date.now() };
+      persistSessionI18n(result?.data);
       return result;
     } finally {
       sessionResponseInFlight = null;
@@ -2167,6 +2195,32 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         sendResponse(
           await sessionResponse({ force: message.force === true }),
         );
+        return;
+      }
+      if (message?.type === "routine.getPublicI18n") {
+        const stored = await chrome.storage.local.get([
+          I18N_STORAGE_KEY,
+          I18N_DEFAULT_STORAGE_KEY,
+        ]);
+        const cached =
+          stored[I18N_STORAGE_KEY] || stored[I18N_DEFAULT_STORAGE_KEY];
+        if (cached?.strings) {
+          sendResponse({ ok: true, data: cached });
+          return;
+        }
+        if (cachedAppBase?.config?.strings) {
+          persistDefaultI18n(cachedAppBase.config);
+          sendResponse({ ok: true, data: cachedAppBase.config });
+          return;
+        }
+        const origin = await getAppBase();
+        const config = cachedAppBase?.config || (await probeConfig(origin));
+        if (config?.strings) {
+          persistDefaultI18n(config);
+          sendResponse({ ok: true, data: config });
+          return;
+        }
+        sendResponse({ ok: false, data: null });
         return;
       }
       if (message?.type === "routine.setTeam") {

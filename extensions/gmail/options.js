@@ -46,6 +46,7 @@ const FALLBACK = {
 
 let strings = { ...FALLBACK };
 let systemName = "TASQIN";
+let i18nHydrated = false;
 
 function interpolate(value, params) {
   if (!params) return value;
@@ -77,13 +78,47 @@ function extensionCloudMissingKey(session) {
   return "errors.extension_team_drive_missing";
 }
 
-function applySessionI18n(data) {
+function applySessionI18n(data, options = {}) {
   if (data?.languageCode) document.documentElement.lang = data.languageCode;
   const name = String(data?.systemName || "").trim();
   if (name) systemName = name;
-  if (data?.strings && typeof data.strings === "object") {
-    strings = { ...FALLBACK, ...data.strings };
+  if (!data?.strings || typeof data.strings !== "object") return;
+  strings = { ...FALLBACK, ...data.strings };
+  i18nHydrated = true;
+  if (options.persist === false) return;
+  const persistKey = data.authenticated
+    ? "extensionI18n"
+    : "extensionI18nDefault";
+  void chrome.storage.local.set({
+    [persistKey]: {
+      languageCode: data.languageCode || "",
+      systemName: name,
+      strings: data.strings,
+    },
+  });
+}
+
+async function restoreCachedI18n() {
+  try {
+    const stored = await chrome.storage.local.get([
+      "extensionI18n",
+      "extensionI18nDefault",
+    ]);
+    applySessionI18n(stored.extensionI18n || stored.extensionI18nDefault, {
+      persist: false,
+    });
+  } catch {
+    // first run or storage unavailable
   }
+}
+
+async function hydrateI18n() {
+  await restoreCachedI18n();
+  applyLabels();
+  if (i18nHydrated) return;
+  const result = await send("routine.getPublicI18n");
+  applySessionI18n(result?.data, { persist: false });
+  applyLabels();
 }
 
 function $(id) {
@@ -217,6 +252,7 @@ function renderAccount(session) {
 }
 
 async function refreshUi() {
+  await hydrateI18n();
   applyLabels();
   $("boot").classList.remove("hidden");
   $("login").classList.add("hidden");
@@ -372,5 +408,7 @@ $("signOut").addEventListener("click", async () => {
   await refreshUi();
 });
 
-applyLabels();
-void refreshUi();
+void (async () => {
+  await hydrateI18n();
+  await refreshUi();
+})();
