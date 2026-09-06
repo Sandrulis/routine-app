@@ -3,15 +3,16 @@ import {
   extensionOptionsResponse,
 } from "@/app/lib/extension/cors";
 import { supabaseAuthCookieName } from "@/app/lib/extension/cookie-name";
-import { getExtensionStrings } from "@/app/lib/extension/i18n";
+import {
+  getExtensionFallbackLanguageCode,
+  getExtensionStrings,
+} from "@/app/lib/extension/i18n";
 import {
   GMAIL_PLUGIN_BRIDGE_PATH,
   GMAIL_PLUGIN_LOGIN_PATH,
   GMAIL_PLUGIN_START_PATH,
 } from "@/app/lib/extension/gmail-oauth";
 import { getPublicSiteUrl } from "@/app/lib/seo/site-url";
-import { getRequestLanguageCode } from "@/app/lib/i18n/server";
-import { DEFAULT_LANGUAGE } from "@/app/lib/i18n/language";
 import { isEmailPasswordAuthEnabled } from "@/app/lib/integrations/resend/client";
 import { isGooglePluginEnabled } from "@/app/lib/integrations/google-plugin/repository";
 import { createAdminClient } from "@/app/lib/supabase/admin";
@@ -49,12 +50,7 @@ export async function GET(request: Request) {
     settings.systemName,
     settings.logoColor || DEFAULT_SITE_LOGO_COLOR,
   );
-  let languageCode = DEFAULT_LANGUAGE;
-  try {
-    languageCode = await getRequestLanguageCode();
-  } catch {
-    // public config
-  }
+  const languageCode = await getExtensionFallbackLanguageCode();
   const [
     emailPasswordEnabled,
     googleSignInEnabled,

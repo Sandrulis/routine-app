@@ -1,4 +1,3 @@
-import type { SupabaseClient } from "@supabase/supabase-js";
 import { accessTokenNeedsTotpChallenge } from "@/app/lib/auth/mfa";
 import { getExtensionAuth } from "@/app/lib/extension/auth";
 import {
@@ -10,11 +9,9 @@ import {
   siteHeadIconUrl,
 } from "@/app/lib/site-admin/branding";
 import { getSiteSettings } from "@/app/lib/site-admin/repository";
-import { getRequestLanguageCode } from "@/app/lib/i18n/server";
-import { DEFAULT_LANGUAGE } from "@/app/lib/i18n/language";
 import {
   getExtensionStrings,
-  resolveExtensionLanguageCode,
+  resolveExtensionUiLanguage,
 } from "@/app/lib/extension/i18n";
 import {
   loadExtensionSessionFlags,
@@ -58,24 +55,10 @@ async function branding() {
   };
 }
 
-async function sessionLanguage(
-  supabase: SupabaseClient | null,
-  userId: string | null,
-) {
-  const fromProfile = await resolveExtensionLanguageCode(supabase, userId);
-  let fromRequest = DEFAULT_LANGUAGE;
-  try {
-    fromRequest = await getRequestLanguageCode();
-  } catch {
-    // Route may lack a cookie session; profile / default still apply.
-  }
-  return fromProfile ?? fromRequest;
-}
-
 export async function GET(request: Request) {
   const brand = await branding();
   const auth = await getExtensionAuth(request);
-  const languageCode = await sessionLanguage(
+  const languageCode = await resolveExtensionUiLanguage(
     auth?.supabase ?? null,
     auth?.user.id ?? null,
   );

@@ -223,7 +223,7 @@ async function refreshUi() {
   $("account").classList.add("hidden");
 
   const deadline = Date.now() + 15000;
-  let result = await send("routine.getSession");
+  let result = await send("routine.getSession", { force: true });
   let session = result?.data || null;
   applySessionI18n(session);
   applyLabels();
@@ -241,7 +241,7 @@ async function refreshUi() {
       applySessionI18n(session);
       break;
     }
-    result = await send("routine.getSession");
+    result = await send("routine.getSession", { force: true });
     session = result?.data || null;
     applySessionI18n(session);
     if (session?.authenticated) break;

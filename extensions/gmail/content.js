@@ -1955,9 +1955,7 @@ function ensureUi() {
     }
     const email = scrapeEmailFallback();
     setBusy(true, t("extension.gmail.checking_session"));
-    const sessionResult = await refreshSession(
-      session && Date.now() - sessionLoadedAt < 30_000 ? {} : { force: true },
-    );
+    const sessionResult = await refreshSession({ force: true });
     meta.textContent = email.subject
       ? t("extension.gmail.email_label", { subject: email.subject })
       : t("extension.gmail.open_email");

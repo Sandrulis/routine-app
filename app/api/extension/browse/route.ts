@@ -13,8 +13,7 @@ import {
   canCreateExtensionSubtask,
   listExtensionAssignees,
 } from "@/app/lib/extension/create-subtask";
-import { resolveExtensionLanguageCode } from "@/app/lib/extension/i18n";
-import { DEFAULT_LANGUAGE } from "@/app/lib/i18n/language";
+import { resolveExtensionUiLanguage } from "@/app/lib/extension/i18n";
 import { logError } from "@/app/lib/security/log-error";
 
 export const runtime = "nodejs";
@@ -101,9 +100,10 @@ export async function GET(request: Request) {
           { status: 400 },
         );
       }
-      const languageCode =
-        (await resolveExtensionLanguageCode(auth.supabase, auth.user.id)) ||
-        DEFAULT_LANGUAGE;
+      const languageCode = await resolveExtensionUiLanguage(
+        auth.supabase,
+        auth.user.id,
+      );
       const [subtasks, statusCatalog] = await Promise.all([
         listExtensionSubtasksForTask(auth.supabase, parentId),
         listExtensionStatusesForTask(auth.supabase, parentId, languageCode),

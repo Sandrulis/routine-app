@@ -5,8 +5,12 @@ import { allMessages as messages } from "@/app/lib/i18n/all-messages";
 import {
   DEFAULT_LANGUAGE,
   isLanguageCode,
+  resolveLanguageCode,
   type LanguageCode,
 } from "@/app/lib/i18n/language";
+import { listSiteLanguages } from "@/app/lib/site-admin/repository";
+import { createAdminClient } from "@/app/lib/supabase/admin";
+import { isSupabaseAdminConfigured } from "@/app/lib/supabase/env";
 
 /** UI + error keys the Gmail extension needs from the app catalog. */
 export const EXTENSION_I18N_KEYS = [
@@ -55,6 +59,8 @@ export const EXTENSION_I18N_KEYS = [
   "errors.auth_rate_limited",
   "common.email",
   "auth.fields.password",
+  "auth.fields.password_show",
+  "auth.fields.password_hide",
   "auth.login.title",
   "auth.google.continue",
   "user_menu.sign_out",
@@ -155,17 +161,51 @@ export const EXTENSION_I18N_KEYS = [
   "extension.gmail.checking_app",
 ] as const;
 
-export async function resolveExtensionLanguageCode(
-  supabase: SupabaseClient | null,
-  userId: string | null,
+async function readUserLanguageCode(
+  client: SupabaseClient,
+  userId: string,
 ): Promise<LanguageCode | null> {
-  if (!supabase || !userId) return null;
-  const { data } = await supabase
+  const { data } = await client
     .from("users")
     .select("language_code")
     .eq("id", userId)
     .maybeSingle();
   return isLanguageCode(data?.language_code) ? data.language_code : null;
+}
+
+export async function resolveExtensionLanguageCode(
+  supabase: SupabaseClient | null,
+  userId: string | null,
+): Promise<LanguageCode | null> {
+  if (!userId) return null;
+  if (isSupabaseAdminConfigured()) {
+    const fromAdmin = await readUserLanguageCode(createAdminClient(), userId);
+    if (fromAdmin) return fromAdmin;
+  }
+  if (supabase) {
+    return readUserLanguageCode(supabase, userId);
+  }
+  return null;
+}
+
+export async function getExtensionFallbackLanguageCode(): Promise<LanguageCode> {
+  const languages = await listSiteLanguages();
+  return resolveLanguageCode(
+    languages.find((language) => language.isDefault && language.isActive)?.code ??
+      languages.find((language) => language.isActive)?.code ??
+      DEFAULT_LANGUAGE,
+  );
+}
+
+/** Logged-in plugin UI follows `users.language_code`, not Chrome Accept-Language. */
+export async function resolveExtensionUiLanguage(
+  supabase: SupabaseClient | null,
+  userId: string | null,
+): Promise<LanguageCode> {
+  return (
+    (await resolveExtensionLanguageCode(supabase, userId)) ??
+    (await getExtensionFallbackLanguageCode())
+  );
 }
 
 export function getExtensionStrings(

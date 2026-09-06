@@ -4,6 +4,10 @@
 
 - (none)
 
+## v0.3.61
+
+- Gmail spraudnis rāda lietotāja izvēlēto valodu, ne Chrome vai sistēmas noklusējumu
+
 ## v0.3.60
 
 - Sistēmas uzstādījumos atsevišķs paziņojumu favicon; cilnes ikona mainās tikai tad, ja tas ir augšupielādēts un ir nelasīti paziņojumi
