@@ -45,7 +45,7 @@ export function GlobalAnnouncementsBanner({
             aria-label={title || t("admin.nav.announcements", "Paziņojumi")}
             className="border-b border-sky-200 bg-sky-50/80"
           >
-            <div className="flex items-start justify-between gap-3 py-3 pr-4 pl-2 md:pr-6 lg:pl-[var(--app-content-inset-left)]">
+            <div className="flex items-start justify-between gap-3 py-3 pr-4 pl-2 md:pr-6 xl:pl-[var(--app-content-inset-left)]">
               <div className="min-w-0">
                 {title ? (
                   <h2 className="text-sm font-semibold text-sky-950">{title}</h2>

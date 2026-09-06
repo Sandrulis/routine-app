@@ -14,7 +14,7 @@ import { useTranslations } from "@/app/components/translations-provider";
 import { UserAvatar } from "@/app/components/user-avatar";
 import { useAuthSession } from "@/app/lib/auth/use-auth-session";
 import { getLastOnlineDisplay } from "@/app/lib/last-online";
-import type { AppNotification } from "@/app/lib/notifications";
+import type { AppNotification, NotificationKind } from "@/app/lib/notifications";
 import { NOTIFICATIONS_CHANGE_EVENT } from "@/app/lib/notifications";
 import { translateActionError } from "@/app/lib/i18n/action-errors";
 import { useNotifications } from "@/app/lib/use-notifications";
@@ -28,6 +28,8 @@ import {
   type MembersByTeam,
 } from "@/app/lib/team";
 import { useTeam } from "@/app/lib/team-store";
+import { useListsOptional } from "@/app/lib/lists-store";
+import { resolveNotificationTaskPath } from "@/app/lib/lists";
 
 function findMemberAcrossTeams(
   membersByTeam: MembersByTeam,
@@ -41,19 +43,35 @@ function findMemberAcrossTeams(
   return null;
 }
 
+function notificationKindShowsPath(kind: NotificationKind): boolean {
+  return (
+    kind !== "team_invite" &&
+    kind !== "team_invite_rejected" &&
+    kind !== "seat_open" &&
+    kind !== "billing_due"
+  );
+}
+
 function NotificationMeta({
   item,
   now,
   showTeamLabel,
+  taskPath,
   t,
 }: {
   item: AppNotification;
   now: number;
   showTeamLabel: boolean;
+  taskPath?: string;
   t: (key: string, fallback: string, params?: Record<string, string | number>) => string;
 }) {
   return (
     <>
+      {taskPath ? (
+        <span className="mt-0.5 block truncate text-[11px] leading-snug text-zinc-400">
+          {taskPath}
+        </span>
+      ) : null}
       {showTeamLabel && item.teamName ? (
         <span className="mt-0.5 block truncate text-[11px] font-medium text-indigo-600/90">
           {item.teamName}
@@ -201,8 +219,11 @@ export function NotificationsMenu() {
   } = useTeam();
   const { items, isLoading, unreadCount, markRead, markAllRead, dismiss, dismissAll } =
     useNotifications();
+  const listsContext = useListsOptional();
+  const workspaceTasks = listsContext?.tasks ?? [];
+  const workspaceLists = listsContext?.lists ?? [];
   const showTeamLabels = teams.length > 1;
-  const notificationItemHeight = showTeamLabels ? 92 : 80;
+  const notificationItemHeight = showTeamLabels ? 108 : 96;
   const [open, setOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [clearAllOpen, setClearAllOpen] = useState(false);
@@ -432,6 +453,17 @@ export function NotificationsMenu() {
                           item={item}
                           now={now}
                           showTeamLabel={showTeamLabels}
+                          taskPath={
+                            notificationKindShowsPath(item.kind)
+                              ? resolveNotificationTaskPath({
+                                  href: item.href,
+                                  taskTitle: item.taskTitle,
+                                  storedPath: item.taskPath,
+                                  tasks: workspaceTasks,
+                                  lists: workspaceLists,
+                                })
+                              : ""
+                          }
                           t={t}
                         />
                         {unread ? (
@@ -521,6 +553,17 @@ export function NotificationsMenu() {
                           item={item}
                           now={now}
                           showTeamLabel={showTeamLabels}
+                          taskPath={
+                            notificationKindShowsPath(item.kind)
+                              ? resolveNotificationTaskPath({
+                                  href: item.href,
+                                  taskTitle: item.taskTitle,
+                                  storedPath: item.taskPath,
+                                  tasks: workspaceTasks,
+                                  lists: workspaceLists,
+                                })
+                              : ""
+                          }
                           t={t}
                         />
                       </span>
@@ -604,6 +647,17 @@ export function NotificationsMenu() {
                         item={item}
                         now={now}
                         showTeamLabel={showTeamLabels}
+                        taskPath={
+                          notificationKindShowsPath(item.kind)
+                            ? resolveNotificationTaskPath({
+                                href: item.href,
+                                taskTitle: item.taskTitle,
+                                storedPath: item.taskPath,
+                                tasks: workspaceTasks,
+                                lists: workspaceLists,
+                              })
+                            : ""
+                        }
                         t={t}
                       />
                     </span>

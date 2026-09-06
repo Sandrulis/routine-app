@@ -1208,8 +1208,8 @@ export function AppNav({
         id="app-sidebar"
         className={`fixed inset-y-0 left-0 w-[var(--app-sidebar-width)] flex-col border-r border-zinc-200 bg-white ${
           mobileOpen
-            ? "z-50 flex shadow-xl lg:z-40 lg:shadow-none"
-            : "hidden z-40 lg:flex"
+            ? "z-50 flex shadow-xl xl:z-40 xl:shadow-none"
+            : "hidden z-40 xl:flex"
         }`}
         onClickCapture={(event) => {
           const anchor = (event.target as HTMLElement | null)?.closest("a");
@@ -1222,7 +1222,7 @@ export function AppNav({
             <TeamSwitcher />
           </div>
           {onClose ? (
-            <div className="shrink-0 py-2 pr-2 lg:hidden">
+            <div className="shrink-0 py-2 pr-2 xl:hidden">
               <IconActionButton
                 label={t("actions.close", "Aizvērt")}
                 icon="fas fa-xmark"

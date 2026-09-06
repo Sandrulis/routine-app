@@ -94,7 +94,12 @@ export function TeamSwitcher({ compact = false }: { compact?: boolean }) {
         Math.max(8, rect.left),
         window.innerWidth - width - 8,
       );
-      setMenuPos({ top: rect.bottom + 4, left });
+      const top = rect.bottom + 4;
+      setMenuPos((current) =>
+        current && current.top === top && current.left === left
+          ? current
+          : { top, left },
+      );
     }
 
     update();

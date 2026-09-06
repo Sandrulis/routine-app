@@ -39,3 +39,22 @@ export function normalizeDocsSlug(value: string, fallbackTitle = ""): string {
 export function isValidDocsSlug(value: string): boolean {
   return SLUG_RE.test(value) && value.length <= 80;
 }
+
+/** Public URL slug from the article/category title in the active language. */
+export function localizedDocsSlug(title: string, canonicalSlug: string): string {
+  const fromTitle = slugifyDocsTitle(title);
+  return isValidDocsSlug(fromTitle) ? fromTitle : canonicalSlug;
+}
+
+export function uniqueDocsSlug(
+  desired: string,
+  canonicalSlug: string,
+  used: Set<string>,
+): string {
+  const primary = isValidDocsSlug(desired) ? desired : canonicalSlug;
+  if (!used.has(primary)) return primary;
+  if (canonicalSlug !== primary && !used.has(canonicalSlug)) return canonicalSlug;
+  let n = 2;
+  while (used.has(`${primary}-${n}`)) n += 1;
+  return `${primary}-${n}`;
+}

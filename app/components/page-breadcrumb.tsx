@@ -307,13 +307,13 @@ export function PageBreadcrumb({
   }, [allTaskFiles, files, filesReady, lists, listsReady, loadingLabel, members, pathname, t, tasks, teamReady, templates, templatesReady]);
 
   return (
-    <header className="sticky top-0 z-20 border-b border-zinc-200 bg-white/95 py-2.5 pr-4 pl-2 backdrop-blur-sm md:pr-6 lg:pl-[var(--app-content-inset-left)]">
+    <header className="sticky top-0 z-20 border-b border-zinc-200 bg-white/95 py-2.5 pr-4 pl-2 backdrop-blur-sm md:pr-6 xl:pl-[var(--app-content-inset-left)]">
       <div className="flex items-center justify-between gap-3">
         {onOpenMenu ? (
           <Tooltip label={t("actions.open_menu", "Atvērt izvēlni")} align="start">
             <button
               type="button"
-              className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-zinc-600 transition hover:bg-zinc-100 hover:text-zinc-900 lg:hidden"
+              className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-zinc-600 transition hover:bg-zinc-100 hover:text-zinc-900 xl:hidden"
               aria-label={t("actions.open_menu", "Atvērt izvēlni")}
               aria-expanded={menuOpen}
               aria-controls="app-sidebar"
@@ -323,12 +323,12 @@ export function PageBreadcrumb({
             </button>
           </Tooltip>
         ) : null}
-        <div className="min-w-0 flex-1 lg:hidden">
+        <div className="min-w-0 flex-1 md:hidden">
           <TeamSwitcher compact />
         </div>
         <nav
           aria-label={t("breadcrumb.label", "Ceļš")}
-          className="hidden min-w-0 flex-1 lg:block"
+          className="hidden min-w-0 flex-1 md:block"
         >
           <ol className="flex min-w-0 items-center gap-1.5 text-[13px]">
             {crumbs.map((crumb, index) => {

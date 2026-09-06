@@ -10,11 +10,11 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import { ConfirmModal } from "@/app/components/confirm-modal";
+import { DatePickerPopover } from "@/app/components/date-picker-popover";
 import { useFeedbackToast } from "@/app/components/feedback-toast-context";
 import { StatusGlyph } from "@/app/components/status-control";
 import { useTranslations } from "@/app/components/translations-provider";
 import { UserAvatar } from "@/app/components/user-avatar";
-import { todayIsoDate } from "@/app/lib/format-display-date";
 import {
   resolveEffectiveListAccess,
   userIsAssignee,
@@ -37,15 +37,6 @@ import { useIsAdmin } from "@/app/lib/users/use-is-admin";
 
 type BulkMenu = "status" | "assignees" | "dates" | "move";
 
-function isoDateOffset(days: number): string {
-  const [year, month, day] = todayIsoDate().split("-").map(Number);
-  const date = new Date(year, month - 1, day + days);
-  const nextYear = date.getFullYear();
-  const nextMonth = String(date.getMonth() + 1).padStart(2, "0");
-  const nextDay = String(date.getDate()).padStart(2, "0");
-  return `${nextYear}-${nextMonth}-${nextDay}`;
-}
-
 function BulkDropup({
   open,
   trigger,
@@ -62,23 +53,54 @@ function BulkDropup({
   children: ReactNode;
 }) {
   const panelRef = useRef<HTMLDivElement>(null);
-  const [position, setPosition] = useState<{ top: number; left: number } | null>(
-    null,
-  );
+  const [position, setPosition] = useState<{
+    top: number;
+    left: number;
+    maxHeight: number;
+  } | null>(null);
 
   useLayoutEffect(() => {
-    if (!open || !trigger || !panelRef.current) {
+    if (!open || !trigger) {
       setPosition(null);
       return;
     }
-    const box = trigger.getBoundingClientRect();
-    const panel = panelRef.current.getBoundingClientRect();
-    const left = Math.min(
-      Math.max(12, box.left + box.width / 2 - panel.width / 2),
-      window.innerWidth - 12 - panel.width,
-    );
-    const top = Math.max(12, box.top - 8 - panel.height);
-    setPosition({ top, left: Math.max(12, left) });
+
+    function update() {
+      const panel = panelRef.current;
+      if (!panel || !trigger) return;
+      const box = trigger.getBoundingClientRect();
+      const maxHeight = Math.max(200, box.top - 16);
+      const width = panel.offsetWidth;
+      const height = Math.min(panel.scrollHeight, maxHeight);
+      const left = Math.min(
+        Math.max(12, box.left + box.width / 2 - width / 2),
+        window.innerWidth - 12 - width,
+      );
+      const top = Math.max(12, box.top - 8 - height);
+      setPosition((current) => {
+        if (
+          current &&
+          current.top === top &&
+          current.left === Math.max(12, left) &&
+          current.maxHeight === maxHeight
+        ) {
+          return current;
+        }
+        return { top, left: Math.max(12, left), maxHeight };
+      });
+    }
+
+    update();
+    const observer =
+      typeof ResizeObserver !== "undefined"
+        ? new ResizeObserver(update)
+        : null;
+    if (panelRef.current) observer?.observe(panelRef.current);
+    window.addEventListener("resize", update);
+    return () => {
+      observer?.disconnect();
+      window.removeEventListener("resize", update);
+    };
   }, [open, trigger]);
 
   useEffect(() => {
@@ -120,10 +142,11 @@ function BulkDropup({
         position: "fixed",
         top: position?.top ?? 0,
         left: position?.left ?? 0,
+        maxHeight: position?.maxHeight,
         zIndex: 80,
         opacity: position ? 1 : 0,
       }}
-      className={`overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-[0_12px_40px_rgba(15,23,42,0.16)] ${className ?? ""}`}
+      className={`flex flex-col overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-[0_12px_40px_rgba(15,23,42,0.16)] ${className ?? ""}`}
     >
       {children}
     </div>,
@@ -179,7 +202,7 @@ export function SubtaskBulkBar({
   const { t } = useTranslations();
   const { showFeedback } = useFeedbackToast();
   const { lists, tasks: allTasks, updateTask, hideTask, moveSubtask } = useLists();
-  const { currentUser, members, roles } = useTeam();
+  const { currentUser, members, roles, duties } = useTeam();
   const { isAdmin } = useIsAdmin();
   const { isEnabled: isModuleEnabled } = useFrontendModules();
   const checklistsEnabled = isModuleEnabled(FRONTEND_MODULE_KEYS.checklist);
@@ -194,8 +217,16 @@ export function SubtaskBulkBar({
   const sharedListId = tasks.every((task) => task.listId === tasks[0]?.listId)
     ? (tasks[0]?.listId ?? null)
     : null;
-  const { groupedStatuses, labelFor, colorFor, groupKeyFor } =
-    useTaskStatuses(sharedListId);
+  const sameParent =
+    tasks.length > 0 &&
+    tasks.every(
+      (task) => (task.parentId ?? null) === (tasks[0]?.parentId ?? null),
+    );
+  const sharedParentId = sameParent ? (tasks[0]?.parentId ?? null) : null;
+  const { groupedStatuses, labelFor, colorFor, groupKeyFor } = useTaskStatuses(
+    sharedListId,
+    sharedParentId,
+  );
   const taskIdsKey = tasks.map((task) => task.id).join("\0");
 
   useEffect(() => {
@@ -227,6 +258,8 @@ export function SubtaskBulkBar({
     (task) => accessById[task.id]?.canChangeStatus,
   );
   const canMove = Boolean(sharedListId) && editable.length > 0;
+  const canBulkStatus =
+    statusEditable.length > 0 && Boolean(sharedListId) && sameParent;
   const destinations = sharedListId
     ? getTaskTree(allTasks, sharedListId).filter(
         (item) =>
@@ -361,7 +394,7 @@ export function SubtaskBulkBar({
               icon="fas fa-circle-dot"
               label={t("subtasks.table.status", "Statuss")}
               pressed={menu === "status"}
-              disabled={statusEditable.length === 0}
+              disabled={!canBulkStatus}
               buttonRef={(node) => {
                 triggers.current.status = node;
               }}
@@ -431,11 +464,11 @@ export function SubtaskBulkBar({
       >
         <p
           id="subtask-bulk-status"
-          className="px-3 pt-2.5 pb-1 text-[11px] font-medium text-zinc-400"
+          className="shrink-0 px-3 pt-2.5 pb-1 text-[11px] font-medium text-zinc-400"
         >
           {t("subtasks.table.status", "Statuss")}
         </p>
-        <div className="max-h-[min(22rem,calc(100vh-6rem))] overflow-y-auto pb-1.5">
+        <div className="min-h-0 flex-1 overflow-y-auto pb-1.5 [scrollbar-width:thin]">
           {groupedStatuses.map((group, index) => (
             <div
               key={group.id}
@@ -474,11 +507,11 @@ export function SubtaskBulkBar({
       >
         <p
           id="subtask-bulk-assignees"
-          className="px-2 py-1 text-[11px] font-medium text-zinc-400"
+          className="shrink-0 px-2 py-1 text-[11px] font-medium text-zinc-400"
         >
           {t("todo.fields.assignee", "Atbildīgais")}
         </p>
-        <div className="max-h-64 overflow-y-auto">
+        <div className="min-h-0 flex-1 overflow-y-auto [scrollbar-width:thin]">
           {members.map((member) => {
             const selected =
               editable.length > 0 &&
@@ -541,6 +574,41 @@ export function SubtaskBulkBar({
               })}
             </>
           ) : null}
+          {duties.length > 0 ? (
+            <>
+              <p className="px-2 pt-1.5 pb-0.5 text-[11px] font-medium text-zinc-400">
+                {t("team.duties.title", "Pienākumi")}
+              </p>
+              {duties.map((duty) => {
+                const selected =
+                  editable.length > 0 &&
+                  editable.every((task) => task.assigneeIds.includes(duty.id));
+                return (
+                  <button
+                    key={duty.id}
+                    type="button"
+                    onClick={() => toggleAssignee(duty.id)}
+                    className={`flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-[13px] ${
+                      selected
+                        ? "bg-zinc-100 text-zinc-900"
+                        : "text-zinc-600 hover:bg-zinc-50"
+                    }`}
+                  >
+                    <span className="inline-flex size-5 shrink-0 items-center justify-center rounded-full bg-zinc-100 text-zinc-500">
+                      <i className="fas fa-briefcase text-[9px]" aria-hidden="true" />
+                    </span>
+                    <span className="min-w-0 flex-1 truncate">{duty.name}</span>
+                    {selected ? (
+                      <i
+                        className="fas fa-check text-[10px] text-emerald-600"
+                        aria-hidden="true"
+                      />
+                    ) : null}
+                  </button>
+                );
+              })}
+            </>
+          ) : null}
         </div>
       </BulkDropup>
 
@@ -551,7 +619,7 @@ export function SubtaskBulkBar({
         labelledBy="subtask-bulk-dates"
         className="w-[18rem]"
       >
-        <div className="flex border-b border-zinc-100">
+        <div className="flex shrink-0 border-b border-zinc-100">
           <button
             type="button"
             onClick={() => setDateField("startDate")}
@@ -575,53 +643,21 @@ export function SubtaskBulkBar({
             {t("todo.fields.due_date", "Termiņš")}
           </button>
         </div>
-        <div className="space-y-1 p-2">
-          <p id="subtask-bulk-dates" className="sr-only">
-            {t("subtasks.bulk.dates", "Datumi")}
-          </p>
-          {(
-            [
-              { label: t("dates.today", "Šodien"), value: isoDateOffset(0) },
-              { label: t("dates.tomorrow", "Rīt"), value: isoDateOffset(1) },
-              {
-                label: t("dates.next_week", "Nākamā nedēļa"),
-                value: isoDateOffset(7),
-              },
-            ] as const
-          ).map((item) => (
-            <button
-              key={item.value}
-              type="button"
-              onClick={() => applyDate(dateField, item.value)}
-              className="flex w-full items-center justify-between rounded-lg px-2 py-1.5 text-left text-[13px] text-zinc-700 hover:bg-zinc-50"
-            >
-              {item.label}
-              <span className="text-[12px] text-zinc-400">
-                {item.value.slice(8)}.{item.value.slice(5, 7)}
-              </span>
-            </button>
-          ))}
-          <input
-            type="date"
-            value={sharedDate}
-            aria-label={
-              dateField === "startDate"
-                ? t("tasks.fields.start_date", "Sākums")
-                : t("todo.fields.due_date", "Termiņš")
-            }
-            onChange={(event) =>
-              applyDate(dateField, event.target.value || null)
-            }
-            className="min-h-9 w-full rounded-md border border-zinc-200 bg-white px-3 text-[13px] text-zinc-900 outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
-          />
-          <button
-            type="button"
-            onClick={() => applyDate(dateField, null)}
-            className="flex w-full items-center rounded-lg px-2 py-1.5 text-left text-[13px] text-zinc-500 hover:bg-zinc-50"
-          >
-            {t("dates.clear", "Noņemt datumu")}
-          </button>
-        </div>
+        <p id="subtask-bulk-dates" className="sr-only">
+          {t("subtasks.bulk.dates", "Datumi")}
+        </p>
+        <DatePickerPopover
+          inline
+          open
+          value={sharedDate || null}
+          onChange={(next) => {
+            applyDate(dateField, next);
+            closeMenu();
+          }}
+          onOpenChange={(nextOpen) => {
+            if (!nextOpen) closeMenu();
+          }}
+        />
       </BulkDropup>
 
       <BulkDropup
@@ -642,7 +678,7 @@ export function SubtaskBulkBar({
             {t("subtasks.move.empty", "Sarakstā nav citu uzdevumu.")}
           </p>
         ) : (
-          <div className="max-h-64 overflow-y-auto">
+          <div className="min-h-0 flex-1 overflow-y-auto [scrollbar-width:thin]">
             {destinations.map((item) => (
               <MoveSubtaskDestinationButton
                 key={item.id}

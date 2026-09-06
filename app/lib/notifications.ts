@@ -22,6 +22,7 @@ export type AppNotification = {
   targetUserId: string | null;
   invitationId: string | null;
   taskTitle: string;
+  taskPath: string | null;
   href: string | null;
   createdAt: string;
   readAt: string | null;
@@ -59,6 +60,7 @@ export function notificationsForNewAssignees(input: {
   addedIds: string[];
   memberIds: Iterable<string>;
   taskTitle: string;
+  taskPath?: string | null;
   href: string;
 }): AppNotification[] {
   const title = input.taskTitle.trim();
@@ -66,6 +68,7 @@ export function notificationsForNewAssignees(input: {
 
   const members = new Set(input.memberIds);
   const now = new Date().toISOString();
+  const taskPath = input.taskPath?.trim() || null;
 
   return input.addedIds
     .filter((id) => id && id !== input.actorId && members.has(id))
@@ -77,6 +80,7 @@ export function notificationsForNewAssignees(input: {
       targetUserId: null,
       invitationId: null,
       taskTitle: title,
+      taskPath,
       href: input.href,
       createdAt: now,
       readAt: null,
@@ -145,6 +149,10 @@ export function normalizeStoredNotifications(
         "href" in item && typeof item.href === "string" && item.href
           ? item.href
           : null;
+      const taskPath =
+        "taskPath" in item && typeof item.taskPath === "string" && item.taskPath.trim()
+          ? item.taskPath.trim()
+          : null;
       const readAt =
         "readAt" in item && typeof item.readAt === "string" && item.readAt
           ? item.readAt
@@ -158,6 +166,7 @@ export function normalizeStoredNotifications(
         targetUserId,
         invitationId,
         taskTitle,
+        taskPath,
         href,
         createdAt,
         readAt,

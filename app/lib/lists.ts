@@ -913,6 +913,55 @@ export function getParentTaskLocationPath(
   ]);
 }
 
+const TASK_NOTIFICATION_HREF =
+  /^\/lists\/([^/]+)(?:\/tasks\/([^/?#]+))?/;
+
+function listNameFromId(
+  lists: { id: string; name: string }[],
+  listId: string,
+): string | null {
+  return lists.find((item) => item.id === listId)?.name ?? null;
+}
+
+/** Snapshot PATH for a task notification: list + folders/parent, without the item itself. */
+export function notificationTaskPath(
+  tasks: WorkTask[],
+  task: WorkTask,
+  listName: string | null | undefined,
+): string {
+  return getSubtaskLocationPath(tasks, task, listName).trim();
+}
+
+/**
+ * Live PATH for an existing notification. `href` points at the task itself
+ * or, for a subtask, at its parent task page.
+ */
+export function resolveNotificationTaskPath(input: {
+  href: string | null;
+  taskTitle: string;
+  storedPath?: string | null;
+  tasks: WorkTask[];
+  lists: { id: string; name: string }[];
+}): string {
+  const stored = input.storedPath?.trim() ?? "";
+  const match = input.href?.trim().match(TASK_NOTIFICATION_HREF);
+  if (!match) return stored;
+
+  const listId = match[1];
+  const taskId = match[2];
+  const listName = listNameFromId(input.lists, listId);
+  if (!taskId) return stored || listName || "";
+
+  const target = input.tasks.find((item) => item.id === taskId);
+  if (!target) return stored || listName || "";
+
+  const live =
+    target.title.trim() === input.taskTitle.trim()
+      ? getSubtaskLocationPath(input.tasks, target, listName)
+      : getParentTaskLocationPath(input.tasks, target.id, listName);
+  return live.trim() || stored;
+}
+
 export type WorkProgressCatalog = { id: string; groupKey: string }[];
 
 export type WorkProgress = {

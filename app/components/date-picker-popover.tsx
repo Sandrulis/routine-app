@@ -17,9 +17,11 @@ type DatePickerPopoverProps = {
   value: string | null;
   onChange: (next: string | null) => void;
   disabled?: boolean;
-  triggerRef: React.RefObject<HTMLElement | null>;
+  triggerRef?: React.RefObject<HTMLElement | null>;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** Render the calendar in place (e.g. inside a bulk menu) instead of a fixed popover. */
+  inline?: boolean;
 };
 
 const WEEKDAY_KEYS_MON = [
@@ -57,6 +59,7 @@ export function DatePickerPopover({
   triggerRef,
   open,
   onOpenChange,
+  inline = false,
 }: DatePickerPopoverProps) {
   const { preferences } = useDisplayPreferences();
   const { t, languageCode } = useTranslations();
@@ -82,8 +85,8 @@ export function DatePickerPopover({
   }, [open, value, today]);
 
   useLayoutEffect(() => {
-    if (!open || !triggerRef.current || !panelRef.current) {
-      setPosition(null);
+    if (inline || !open || !triggerRef?.current || !panelRef.current) {
+      if (inline) setPosition(null);
       return;
     }
     const rect = triggerRef.current.getBoundingClientRect();
@@ -99,16 +102,20 @@ export function DatePickerPopover({
       left = window.innerWidth - pw - 8;
     }
     if (left < 8) left = 8;
-    setPosition({ top, left });
-  }, [open, triggerRef, viewYear, viewMonth]);
+    setPosition((current) =>
+      current && current.top === top && current.left === left
+        ? current
+        : { top, left },
+    );
+  }, [inline, open, triggerRef, viewYear, viewMonth]);
 
   useEffect(() => {
-    if (!open) return;
+    if (!open || inline) return;
     function handleClick(event: MouseEvent) {
       if (
         panelRef.current &&
         !panelRef.current.contains(event.target as Node) &&
-        triggerRef.current &&
+        triggerRef?.current &&
         !triggerRef.current.contains(event.target as Node)
       ) {
         onOpenChange(false);
@@ -123,7 +130,7 @@ export function DatePickerPopover({
       document.removeEventListener("mousedown", handleClick, true);
       document.removeEventListener("keydown", handleKey, true);
     };
-  }, [open, onOpenChange, triggerRef]);
+  }, [inline, open, onOpenChange, triggerRef]);
 
   const days = useMemo(() => {
     return buildCalendarDays(viewYear, viewMonth, startSunday);
@@ -179,8 +186,18 @@ export function DatePickerPopover({
     <div
       ref={panelRef}
       data-app-modal-ignore-backdrop=""
-      className="fixed z-[999] w-[280px] rounded-xl border border-zinc-200 bg-white p-3 shadow-xl"
-      style={position ? { top: position.top, left: position.left } : { opacity: 0 }}
+      className={
+        inline
+          ? "w-full p-3"
+          : "fixed z-[999] w-[280px] rounded-xl border border-zinc-200 bg-white p-3 shadow-xl"
+      }
+      style={
+        inline
+          ? undefined
+          : position
+            ? { top: position.top, left: position.left }
+            : { opacity: 0 }
+      }
       onMouseDown={(e) => e.stopPropagation()}
     >
       {/* Header */}

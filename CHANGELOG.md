@@ -4,6 +4,12 @@
 
 - (none)
 
+## v0.3.63
+
+- Sānjosla un docs overlay zem 1280px; docs valodas karogs atver izvēlni; labots React cikls, kad maina loga platumu
+- Paziņojumos uzdevuma ceļš; masveida josla ņem saraksta/uzdevuma statusus (arī slēgtos), pienākumus un to pašu kalendāru
+- Docs URL pēc tulkotā virsraksta; IT/SV un juridiskie teksti vairs nav angļu kopijas
+
 ## v0.3.62
 
 - Gmail spraudņa ielāde uzreiz rāda lietotāja valodu, ja tās nav - sistēmas noklusējumu (ne tukšu ekrānu un ne Chrome valodu)

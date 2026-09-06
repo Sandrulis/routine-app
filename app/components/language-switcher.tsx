@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState, useTransition } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, useTransition } from "react";
+import { createPortal } from "react-dom";
 import { usePathname, useRouter } from "next/navigation";
 import { OptionalTooltip } from "@/app/components/tooltip";
 import { useTranslations } from "@/app/components/translations-provider";
@@ -10,7 +11,13 @@ import {
   sortSwitcherLanguages,
   type LanguageCode,
 } from "@/app/lib/i18n/language";
-import { isPublicLocalizedPath, localePath } from "@/app/lib/seo/locale-path";
+import {
+  hreflangValue,
+  isPublicLocalizedPath,
+  localePath,
+} from "@/app/lib/seo/locale-path";
+
+const MENU_WIDTH_PX = 224;
 
 function LanguageFlag({
   code,
@@ -26,6 +33,22 @@ function LanguageFlag({
   );
 }
 
+function pathForLanguage(pathname: string, next: LanguageCode): string {
+  const fallback = localePath(pathname, next);
+  if (typeof document === "undefined") return fallback;
+  const link = document.querySelector(
+    `link[rel="alternate"][hreflang="${hreflangValue(next)}"]`,
+  );
+  if (!(link instanceof HTMLLinkElement) || !link.href) return fallback;
+  try {
+    const url = new URL(link.href);
+    if (url.origin !== window.location.origin) return fallback;
+    return url.pathname || fallback;
+  } catch {
+    return fallback;
+  }
+}
+
 export function LanguageSwitcher({
   variant = "compact",
 }: {
@@ -34,9 +57,17 @@ export function LanguageSwitcher({
   const router = useRouter();
   const pathname = usePathname();
   const menuRef = useRef<HTMLDivElement | null>(null);
+  const triggerRef = useRef<HTMLButtonElement | null>(null);
+  const dropdownRef = useRef<HTMLDivElement | null>(null);
   const { languageCode, languages, t } = useTranslations();
   const [pending, startTransition] = useTransition();
   const [open, setOpen] = useState(false);
+  const [menuPos, setMenuPos] = useState<{
+    left: number;
+    top?: number;
+    bottom?: number;
+    maxHeight: number;
+  } | null>(null);
   const options = sortSwitcherLanguages(languages);
   const current = options.find((language) => language.code === languageCode);
   const label = t("settings.language.title", "Valoda");
@@ -50,20 +81,78 @@ export function LanguageSwitcher({
       await setLanguageAction(next);
       setOpen(false);
       if (isPublicLocalizedPath(pathname)) {
-        router.push(localePath(pathname, next));
+        router.push(pathForLanguage(pathname, next));
       } else {
         router.refresh();
       }
     });
   }
 
+  useLayoutEffect(() => {
+    if (!open) {
+      setMenuPos(null);
+      return;
+    }
+    if (!triggerRef.current) return;
+
+    function update() {
+      const el = triggerRef.current;
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      let left = rect.left;
+      if (left + MENU_WIDTH_PX > window.innerWidth - 8) {
+        left = rect.right - MENU_WIDTH_PX;
+      }
+      left = Math.min(
+        Math.max(8, left),
+        window.innerWidth - MENU_WIDTH_PX - 8,
+      );
+      const spaceBelow = window.innerHeight - rect.bottom;
+      const openUp = spaceBelow < 220;
+      const next: {
+        left: number;
+        top?: number;
+        bottom?: number;
+        maxHeight: number;
+      } = openUp
+        ? {
+            left,
+            bottom: window.innerHeight - rect.top + 4,
+            maxHeight: Math.max(160, rect.top - 16),
+          }
+        : {
+            left,
+            top: rect.bottom + 4,
+            maxHeight: Math.max(160, window.innerHeight - rect.bottom - 16),
+          };
+      setMenuPos((current) =>
+        current &&
+        current.left === next.left &&
+        current.top === next.top &&
+        current.bottom === next.bottom &&
+        current.maxHeight === next.maxHeight
+          ? current
+          : next,
+      );
+    }
+
+    update();
+    window.addEventListener("resize", update);
+    window.addEventListener("scroll", update, true);
+    return () => {
+      window.removeEventListener("resize", update);
+      window.removeEventListener("scroll", update, true);
+    };
+  }, [open]);
+
   useEffect(() => {
     if (!open) return;
 
     function handlePointerDown(event: PointerEvent) {
-      if (!menuRef.current?.contains(event.target as Node)) {
-        setOpen(false);
-      }
+      const target = event.target as Node;
+      if (menuRef.current?.contains(target)) return;
+      if (dropdownRef.current?.contains(target)) return;
+      setOpen(false);
     }
 
     function handleKeyDown(event: KeyboardEvent) {
@@ -74,12 +163,9 @@ export function LanguageSwitcher({
 
     document.addEventListener("pointerdown", handlePointerDown);
     window.addEventListener("keydown", handleKeyDown);
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
     return () => {
       document.removeEventListener("pointerdown", handlePointerDown);
       window.removeEventListener("keydown", handleKeyDown);
-      document.body.style.overflow = previousOverflow;
     };
   }, [open]);
 
@@ -90,6 +176,7 @@ export function LanguageSwitcher({
       <div ref={menuRef} className="relative shrink-0">
         <OptionalTooltip label={open ? null : label}>
           <button
+            ref={triggerRef}
             type="button"
             onClick={() => setOpen((currentOpen) => !currentOpen)}
             aria-haspopup="menu"
@@ -109,40 +196,53 @@ export function LanguageSwitcher({
           </button>
         </OptionalTooltip>
 
-        {open ? (
-          <div
-            role="menu"
-            className="absolute top-full right-0 z-[70] mt-1 max-h-[min(20rem,calc(100dvh-5.5rem))] w-56 overflow-y-auto overscroll-contain rounded-xl bg-white py-1 shadow-[0_12px_40px_rgba(15,23,42,0.16)] ring-1 ring-zinc-200/80"
-            onWheel={(event) => event.stopPropagation()}
-          >
-            {options.map((language) => {
-              const active = language.code === languageCode;
-              return (
-                <button
-                  key={language.code}
-                  type="button"
-                  role="menuitem"
-                  disabled={pending}
-                  onClick={() => switchLanguage(language.code)}
-                  className={`flex w-full items-center gap-3 px-3 py-2.5 text-left text-sm transition hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-60 ${
-                    active ? "font-medium text-zinc-900" : "text-zinc-600"
-                  }`}
-                >
-                  <LanguageFlag
-                    code={language.code}
-                    className="inline-flex h-8 w-8 shrink-0 items-center justify-center text-[2rem] leading-none"
-                  />
-                  <span className="min-w-0 flex-1 truncate">{language.name}</span>
-                  {active ? (
-                    <i className="fas fa-check text-[10px] text-zinc-400" aria-hidden="true" />
-                  ) : (
-                    <span className="inline-block w-2.5" aria-hidden="true" />
-                  )}
-                </button>
-              );
-            })}
-          </div>
-        ) : null}
+        {open && menuPos
+          ? createPortal(
+              <div
+                ref={dropdownRef}
+                role="menu"
+                style={{
+                  left: menuPos.left,
+                  top: menuPos.top,
+                  bottom: menuPos.bottom,
+                  maxHeight: menuPos.maxHeight,
+                }}
+                className="fixed z-[80] w-56 overflow-y-auto overscroll-contain rounded-xl bg-white py-1 shadow-[0_12px_40px_rgba(15,23,42,0.16)] ring-1 ring-zinc-200/80"
+                onWheel={(event) => event.stopPropagation()}
+              >
+                {options.map((language) => {
+                  const active = language.code === languageCode;
+                  return (
+                    <button
+                      key={language.code}
+                      type="button"
+                      role="menuitem"
+                      disabled={pending}
+                      onClick={() => switchLanguage(language.code)}
+                      className={`flex w-full items-center gap-3 px-3 py-2.5 text-left text-sm transition hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-60 ${
+                        active ? "font-medium text-zinc-900" : "text-zinc-600"
+                      }`}
+                    >
+                      <LanguageFlag
+                        code={language.code}
+                        className="inline-flex h-8 w-8 shrink-0 items-center justify-center text-[2rem] leading-none"
+                      />
+                      <span className="min-w-0 flex-1 truncate">{language.name}</span>
+                      {active ? (
+                        <i
+                          className="fas fa-check text-[10px] text-zinc-400"
+                          aria-hidden="true"
+                        />
+                      ) : (
+                        <span className="inline-block w-2.5" aria-hidden="true" />
+                      )}
+                    </button>
+                  );
+                })}
+              </div>,
+              document.body,
+            )
+          : null}
       </div>
     );
   }

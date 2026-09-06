@@ -168,6 +168,7 @@ async function notifyTeamBillingDue(
         targetUserId: userId,
         invitationId: null,
         taskTitle: until,
+        taskPath: null,
         href: "/team/billing",
         createdAt: now,
         readAt: null,

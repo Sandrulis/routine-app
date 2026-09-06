@@ -67,13 +67,17 @@ export async function canonicalMetadata(
     index?: boolean;
     /** Emit hreflang alternates. Default true; set false for noindex auth pages. */
     hreflang?: boolean;
+    /** Absolute hreflang map. When set, replaces the default same-path language prefixes. */
+    languages?: Record<string, string>;
   },
 ): Promise<Metadata> {
   const languageCode = extras?.languageCode ?? (await getRequestLanguageCode());
   const localizedPath = localePath(path, languageCode);
   const url = absoluteUrl(localizedPath);
   const includeHreflang = extras?.hreflang !== false && extras?.index !== false;
-  const languages = includeHreflang ? hreflangMap(path) : undefined;
+  const languages = includeHreflang
+    ? extras?.languages ?? hreflangMap(path)
+    : undefined;
   const title = extras?.titleAbsolute || extras?.title;
   const settings = await getSiteSettings();
   const siteName = resolveSystemName(settings.systemName);

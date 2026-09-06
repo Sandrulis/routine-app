@@ -16,6 +16,7 @@ import { useTranslations } from "@/app/components/translations-provider";
 import { useTeamBillingLiveSync } from "@/app/lib/billing/use-team-billing-live-sync";
 import { AccountDeletionReactivatedToast } from "@/app/components/account-deletion-reactivated-toast";
 import type { SiteAnnouncementSummary } from "@/app/lib/announcements/types";
+import { SIDEBAR_EXPANDED_MEDIA } from "@/app/lib/sidebar-layout";
 
 function TeamBillingLiveSync() {
   useTeamBillingLiveSync();
@@ -40,7 +41,7 @@ export function AppShell({
   }, [pathname]);
 
   useEffect(() => {
-    const media = window.matchMedia("(min-width: 1024px)");
+    const media = window.matchMedia(SIDEBAR_EXPANDED_MEDIA);
     function onChange() {
       if (media.matches) setMenuOpen(false);
     }
@@ -72,7 +73,7 @@ export function AppShell({
       {menuOpen ? (
         <button
           type="button"
-          className="fixed inset-0 z-40 bg-zinc-900/40 lg:hidden"
+          className="fixed inset-0 z-40 bg-zinc-900/40 xl:hidden"
           aria-label={t("actions.close", "Aizvērt")}
           onClick={() => setMenuOpen(false)}
         />

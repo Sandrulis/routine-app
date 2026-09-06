@@ -21,6 +21,7 @@ export type DocsArticleSummary = {
   id: string;
   categoryId: string;
   slug: string;
+  canonicalSlug?: string;
   title: string;
   sortOrder: number;
   isVisible: boolean;
@@ -39,6 +40,8 @@ export type DocsArticleDetail = DocsArticleSummary & {
   categoryTitle: string;
   categoryIcon: string;
   translations: Record<string, DocsArticleTranslation>;
+  /** Unprefixed `/docs/{category}/{article}` per language for canonical/hreflang. */
+  alternatePaths?: Record<string, string>;
 };
 
 export type DocsArticleInput = {
@@ -58,6 +61,7 @@ export type DocsArticleImage = {
 export type DocsNavCategory = {
   id: string;
   slug: string;
+  canonicalSlug?: string;
   icon: string;
   title: string;
   articles: DocsArticleSummary[];

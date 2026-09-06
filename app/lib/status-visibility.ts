@@ -54,7 +54,7 @@ function enforceSingleVisibleInGroup(
   }
 }
 
-/** Enforces exclusive not_started, mandatory system closed, and hides custom closed statuses. */
+/** Enforces exclusive not_started and closed (one visible each). Prefers a system closed status when present. */
 export function normalizeHiddenStatusIds(
   laidOut: TaskStatusSummary[],
   hiddenIds: string[],
@@ -62,14 +62,16 @@ export function normalizeHiddenStatusIds(
 ): string[] {
   const hidden = new Set(hiddenIds);
 
-  for (const status of laidOut) {
-    if (status.groupKey === "closed" && !isSystemStatus(status)) {
-      hidden.add(status.id);
-    }
-  }
-
   enforceSingleVisibleInGroup(laidOut, hidden, "not_started", () => true);
-  enforceSingleVisibleInGroup(laidOut, hidden, "closed", isSystemStatus);
+  const hasSystemClosed = laidOut.some(
+    (status) => status.groupKey === "closed" && isSystemStatus(status),
+  );
+  enforceSingleVisibleInGroup(
+    laidOut,
+    hidden,
+    "closed",
+    hasSystemClosed ? isSystemStatus : () => true,
+  );
 
   return [...hidden];
 }
@@ -91,8 +93,6 @@ export function canToggleStatusVisibility(
   const status = catalog.find((item) => item.id === statusId);
   if (!status) return false;
 
-  if (status.groupKey === "closed" && !isSystemStatus(status)) return false;
-
   const effective = normalizeHiddenStatusIds(laidOut, hiddenIds, isSystemStatus);
   const isHidden = effective.includes(statusId);
   if (isHidden) return true;
@@ -104,13 +104,10 @@ export function toggleStatusVisibility(
   catalog: TaskStatusSummary[],
   hiddenIds: string[],
   statusId: string,
-  isSystemStatus?: (status: TaskStatusSummary) => boolean,
+  _isSystemStatus?: (status: TaskStatusSummary) => boolean,
 ): string[] | null {
   const status = catalog.find((item) => item.id === statusId);
   if (!status) return hiddenIds;
-
-  const isSystem = isSystemStatus?.(status) ?? true;
-  if (status.groupKey === "closed" && !isSystem) return null;
 
   const hidden = new Set(hiddenIds);
 

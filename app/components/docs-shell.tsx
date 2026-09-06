@@ -8,6 +8,7 @@ import { Tooltip } from "@/app/components/tooltip";
 import { useTranslations } from "@/app/components/translations-provider";
 import type { DocsNavCategory } from "@/app/lib/docs/types";
 import { stripLocalePrefix } from "@/app/lib/seo/locale-path";
+import { SIDEBAR_EXPANDED_MEDIA } from "@/app/lib/sidebar-layout";
 
 function docsPathFromHref(href: string): string | null {
   try {
@@ -63,7 +64,7 @@ export function DocsShell({
   }, [pathname, pendingPath, isPending]);
 
   useEffect(() => {
-    const media = window.matchMedia("(min-width: 1024px)");
+    const media = window.matchMedia(SIDEBAR_EXPANDED_MEDIA);
     function onChange() {
       if (media.matches) setMenuOpen(false);
     }
@@ -115,7 +116,7 @@ export function DocsShell({
       {menuOpen ? (
         <button
           type="button"
-          className="fixed inset-0 z-40 bg-zinc-900/40 lg:hidden"
+          className="fixed inset-0 z-40 bg-zinc-900/40 xl:hidden"
           aria-label={t("actions.close", "Aizvērt")}
           onClick={() => setMenuOpen(false)}
         />
@@ -130,7 +131,7 @@ export function DocsShell({
         onClose={() => setMenuOpen(false)}
       />
       <main className="flex min-w-0 flex-1 flex-col overflow-hidden">
-        <div className="flex items-center gap-2 border-b border-zinc-200 bg-white px-3 py-2 lg:hidden">
+        <div className="flex items-center gap-2 border-b border-zinc-200 bg-white px-3 py-2 xl:hidden">
             <Tooltip label={t("actions.open_menu", "Atvērt izvēlni")} align="start">
             <button
               type="button"

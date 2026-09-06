@@ -92,7 +92,7 @@ const TASK_TABLE_COLS = {
   handle: "3.5rem",
   title: "16rem",
   assignee: "7rem",
-  date: "9.5rem",
+  date: "6.5rem",
   status: "16rem",
 } as const;
 
@@ -192,7 +192,7 @@ export function DateCell({
   const emphasizeOverdue = hint?.overdue === true;
 
   return (
-    <div className="relative inline-flex min-h-8 min-w-[7.5rem] flex-col items-start justify-center">
+    <div className="relative inline-flex min-h-8 w-full min-w-0 flex-col items-start justify-center">
       <div
         ref={triggerRef}
         role="button"
@@ -214,7 +214,7 @@ export function DateCell({
         {value ? (
           <>
             <span
-              className={`block text-[13px] leading-none ${
+              className={`block whitespace-nowrap text-[13px] leading-none tabular-nums ${
                 emphasizeOverdue ? "text-red-600" : "text-zinc-700"
               }`}
             >
@@ -222,7 +222,7 @@ export function DateCell({
             </span>
             {relative ? (
               <span
-                className={`mt-0.5 block text-[11px] leading-none tabular-nums ${
+                className={`mt-0.5 block text-[11px] leading-tight tabular-nums ${
                   emphasizeOverdue ? "text-red-500" : "text-zinc-400"
                 }`}
               >
@@ -867,16 +867,20 @@ export function SubtaskTable({
         onDragEnd={handleDragEnd}
       >
         <table
-          className="group/table w-full table-fixed text-left text-sm"
+          className="group/table w-full text-left text-sm"
           style={{ minWidth: TASK_TABLE_MIN_WIDTH }}
         >
           <colgroup>
             <col style={{ width: TASK_TABLE_COLS.handle }} />
             <col />
             <col style={{ width: TASK_TABLE_COLS.assignee }} />
-            <col style={{ width: TASK_TABLE_COLS.date }} />
-            <col style={{ width: TASK_TABLE_COLS.date }} />
-            <col style={{ width: TASK_TABLE_COLS.status }} />
+            <col
+              style={{ width: TASK_TABLE_COLS.date, maxWidth: TASK_TABLE_COLS.date }}
+            />
+            <col
+              style={{ width: TASK_TABLE_COLS.date, maxWidth: TASK_TABLE_COLS.date }}
+            />
+            <col />
           </colgroup>
           <thead>
             <tr className="group/row border-b border-zinc-100 text-[12px] font-medium whitespace-nowrap text-zinc-400">
@@ -892,7 +896,7 @@ export function SubtaskTable({
                   />
                 ) : null}
               </th>
-              <th className="px-2 py-1.5 font-medium">
+              <th className="w-full px-2 py-1.5 font-medium">
                 <span className="inline-flex items-center gap-2">
                   {t("tasks.fields.title", "Nosaukums")}
                   <WorkProgressLabel progress={progress} />
@@ -901,13 +905,19 @@ export function SubtaskTable({
               <th className="px-3 py-1.5 font-medium">
                 {t("todo.fields.assignee", "Atbildīgais")}
               </th>
-              <th className="px-3 py-1.5 font-medium">
+              <th
+                className="px-2 py-1.5 font-medium whitespace-normal"
+                style={{ width: TASK_TABLE_COLS.date, maxWidth: TASK_TABLE_COLS.date }}
+              >
                 {t("tasks.fields.start_date", "Sākums")}
               </th>
-              <th className="px-3 py-1.5 font-medium">
+              <th
+                className="px-2 py-1.5 font-medium whitespace-normal"
+                style={{ width: TASK_TABLE_COLS.date, maxWidth: TASK_TABLE_COLS.date }}
+              >
                 {t("todo.fields.due_date", "Termiņš")}
               </th>
-              <th className="px-3 py-1.5 font-medium">
+              <th className="w-px px-3 py-1.5 font-medium whitespace-nowrap">
                 {t("subtasks.table.status", "Statuss")}
               </th>
             </tr>
@@ -1161,7 +1171,7 @@ function SortableSubtaskRow({
           />
         </div>
       </td>
-      <td className="min-w-0 px-2 py-1.5">
+      <td className="w-full max-w-0 min-w-0 px-2 py-1.5">
         <button
           type="button"
           onClick={() => {
@@ -1196,7 +1206,10 @@ function SortableSubtaskRow({
       <td className="px-3 py-1.5">
         <AssigneeCell task={task} disabled={!canEdit || deleted} />
       </td>
-      <td className="px-3 py-1.5">
+      <td
+        className="px-2 py-1.5"
+        style={{ width: TASK_TABLE_COLS.date, maxWidth: TASK_TABLE_COLS.date }}
+      >
         <DateCell
           value={task.startDate}
           emptyLabel={t("tasks.fields.start_date", "Sākums")}
@@ -1206,7 +1219,10 @@ function SortableSubtaskRow({
           onChange={(startDate) => onUpdate(task.id, { startDate })}
         />
       </td>
-      <td className="px-3 py-1.5">
+      <td
+        className="px-2 py-1.5"
+        style={{ width: TASK_TABLE_COLS.date, maxWidth: TASK_TABLE_COLS.date }}
+      >
         <DateCell
           value={task.dueDate}
           emptyLabel={t("todo.fields.due_date", "Termiņš")}
@@ -1216,7 +1232,7 @@ function SortableSubtaskRow({
           onChange={(dueDate) => onUpdate(task.id, { dueDate })}
         />
       </td>
-      <td className="whitespace-nowrap px-3 py-1.5">
+      <td className="w-px whitespace-nowrap px-3 py-1.5">
         <StatusControl
           listId={listId}
           parentTaskId={parentTaskId}

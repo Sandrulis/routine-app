@@ -184,7 +184,7 @@ export async function createExtensionSubtask(input: {
 
   const { data: parent, error: parentError } = await input.supabase
     .from("work_tasks")
-    .select("id, team_id, list_id, kind, deleted_at, archived_at")
+    .select("id, team_id, list_id, kind, title, deleted_at, archived_at")
     .eq("id", parentId)
     .maybeSingle();
 
@@ -375,6 +375,15 @@ export async function createExtensionSubtask(input: {
     );
     if (recipientIds.length > 0) {
       const href = `/lists/${listId}/tasks/${parentId}`;
+      const { data: listRow } = await input.supabase
+        .from("work_lists")
+        .select("name")
+        .eq("id", listId)
+        .maybeSingle();
+      const taskPath = [listRow?.name, parent.title]
+        .map((value) => String(value || "").trim())
+        .filter(Boolean)
+        .join(" / ") || null;
       const { error: notifyError } = await input.supabase
         .from("app_notifications")
         .insert(
@@ -385,6 +394,7 @@ export async function createExtensionSubtask(input: {
             actor_id: actorId,
             recipient_id: recipientId,
             task_title: title,
+            task_path: taskPath,
             href,
             created_at: createdAt,
           })),

@@ -126,3 +126,23 @@ export function hreflangMap(
   }
   return languages;
 }
+
+/** Docs articles use a different slug per language; `pathsByLanguage` is unprefixed `/docs/...`. */
+export function hreflangMapForLanguagePaths(
+  pathsByLanguage: Partial<Record<LanguageCode, string>>,
+  toAbsoluteUrl: (path: string) => string,
+): Record<string, string> {
+  const languages: Record<string, string> = {};
+  for (const code of LANGUAGE_CODES) {
+    const path = pathsByLanguage[code];
+    if (!path) continue;
+    languages[hreflangValue(code)] = toAbsoluteUrl(localePath(path, code));
+  }
+  const defaultPath = pathsByLanguage[DEFAULT_LANGUAGE];
+  if (defaultPath) {
+    languages["x-default"] = toAbsoluteUrl(
+      localePath(defaultPath, DEFAULT_LANGUAGE),
+    );
+  }
+  return languages;
+}

@@ -24,6 +24,7 @@ import {
   isWorkSubtask,
   isWorkItemArchived,
   compareBySortOrder,
+  notificationTaskPath,
   type WorkTaskKind,
   listColorById,
   randomListColorId,
@@ -821,6 +822,7 @@ export function ListsProvider({ children }: { children: ReactNode }) {
             tasks: tasksRef.current,
             members: notify.members,
             memberIds: notify.memberIds,
+            lists: listsRef.current,
           });
           if (items.length > 0) {
             void appendNotifications(
@@ -841,6 +843,7 @@ export function ListsProvider({ children }: { children: ReactNode }) {
             members: notify.members,
             task,
             tasks: tasksRef.current,
+            lists: listsRef.current,
           });
           if (items.length > 0) {
             void appendNotifications(
@@ -925,6 +928,7 @@ export function ListsProvider({ children }: { children: ReactNode }) {
             tasks: current,
             members: notify.members,
             activities: nextEvents,
+            lists: listsRef.current,
           });
           if (taskNotifications.length > 0) {
             queueMicrotask(() =>
@@ -960,6 +964,12 @@ export function ListsProvider({ children }: { children: ReactNode }) {
             addedIds,
             memberIds: notify.memberIds,
             taskTitle: patch.title ?? existing.title,
+            taskPath: notificationTaskPath(
+              current,
+              existing,
+              listsRef.current.find((item) => item.id === existing.listId)?.name ??
+                null,
+            ),
             href: `/lists/${existing.listId}/tasks/${parentId}`,
           });
           if (extra.length > 0) {
@@ -1096,6 +1106,7 @@ export function ListsProvider({ children }: { children: ReactNode }) {
         task,
         tasks: tasksRef.current,
         members: notify.members,
+        lists: listsRef.current,
       });
       if (items.length > 0) {
         queueMicrotask(() =>
@@ -1201,6 +1212,7 @@ export function ListsProvider({ children }: { children: ReactNode }) {
         task,
         tasks: tasksRef.current,
         members: notify.members,
+        lists: listsRef.current,
       });
       if (items.length > 0) {
         queueMicrotask(() =>
@@ -1343,6 +1355,7 @@ export function ListsProvider({ children }: { children: ReactNode }) {
         tasks: current,
         members: notify.members,
         activities: [activity],
+        lists: listsRef.current,
       });
       if (moveNotifications.length > 0) {
         queueMicrotask(() =>

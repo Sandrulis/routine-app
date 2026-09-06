@@ -132,7 +132,9 @@ function buildCombinedMessage(
         actorMember?.name?.trim() ||
         actorMember?.email?.split("@")[0] ||
         "";
-      return `• ${notificationMessage(item, languageCode, overlay, actorName)}`;
+      const text = notificationMessage(item, languageCode, overlay, actorName);
+      const path = item.taskPath?.trim();
+      return path ? `• ${text}\n${path}` : `• ${text}`;
     })
     .join("\n\n");
 }

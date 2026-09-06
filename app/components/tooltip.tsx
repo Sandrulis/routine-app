@@ -28,14 +28,36 @@ const GAP_PX = 6;
 const VIEWPORT_PADDING_PX = 12;
 const DESKTOP_HOVER_UI = "(min-width: 1024px)";
 
+let desktopHoverSnapshot = false;
+let desktopHoverMedia: MediaQueryList | null = null;
+let desktopHoverFrame = 0;
+const desktopHoverListeners = new Set<() => void>();
+
+function ensureDesktopHoverMedia() {
+  if (desktopHoverMedia || typeof window === "undefined") return;
+  desktopHoverMedia = window.matchMedia(DESKTOP_HOVER_UI);
+  desktopHoverSnapshot = desktopHoverMedia.matches;
+  desktopHoverMedia.addEventListener("change", (event) => {
+    if (event.matches === desktopHoverSnapshot) return;
+    desktopHoverSnapshot = event.matches;
+    cancelAnimationFrame(desktopHoverFrame);
+    desktopHoverFrame = requestAnimationFrame(() => {
+      for (const listener of desktopHoverListeners) listener();
+    });
+  });
+}
+
 function subscribeDesktopHoverUi(onStoreChange: () => void) {
-  const media = window.matchMedia(DESKTOP_HOVER_UI);
-  media.addEventListener("change", onStoreChange);
-  return () => media.removeEventListener("change", onStoreChange);
+  ensureDesktopHoverMedia();
+  desktopHoverListeners.add(onStoreChange);
+  return () => {
+    desktopHoverListeners.delete(onStoreChange);
+  };
 }
 
 function getDesktopHoverUiSnapshot() {
-  return window.matchMedia(DESKTOP_HOVER_UI).matches;
+  ensureDesktopHoverMedia();
+  return desktopHoverSnapshot;
 }
 
 function getDesktopHoverUiServerSnapshot() {
@@ -132,12 +154,15 @@ export function Tooltip({
     const tooltip = tooltipRef.current;
     if (!trigger || !tooltip) return;
 
-    setPosition(
-      computeTooltipPosition(
-        trigger.getBoundingClientRect(),
-        { width: tooltip.offsetWidth, height: tooltip.offsetHeight },
-        align,
-      ),
+    const next = computeTooltipPosition(
+      trigger.getBoundingClientRect(),
+      { width: tooltip.offsetWidth, height: tooltip.offsetHeight },
+      align,
+    );
+    setPosition((current) =>
+      current && current.top === next.top && current.left === next.left
+        ? current
+        : next,
     );
     setIsPositioned(true);
   }, [align]);
@@ -253,21 +278,34 @@ export function OverflowTooltip({
   const measureRef = useRef<HTMLSpanElement>(null);
   const [truncated, setTruncated] = useState(false);
 
-  const updateTruncation = useCallback(() => {
+  useLayoutEffect(() => {
     const root = measureRef.current;
     if (!root) return;
-    const nodes = [root, ...Array.from(root.querySelectorAll<HTMLElement>("*"))];
-    setTruncated(nodes.some(isElementOverflowing));
-  }, []);
 
-  useLayoutEffect(() => {
-    updateTruncation();
-    const root = measureRef.current;
-    if (!root || typeof ResizeObserver === "undefined") return;
-    const observer = new ResizeObserver(updateTruncation);
-    observer.observe(root);
-    return () => observer.disconnect();
-  }, [extraLabel, label, updateTruncation]);
+    function measure() {
+      const node = measureRef.current;
+      if (!node) return;
+      const nodes = [node, ...Array.from(node.querySelectorAll<HTMLElement>("*"))];
+      const next = nodes.some(isElementOverflowing);
+      setTruncated((current) => (current === next ? current : next));
+    }
+
+    measure();
+
+    let frame = 0;
+    function onResize() {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(measure);
+    }
+
+    const observer =
+      typeof ResizeObserver !== "undefined" ? new ResizeObserver(onResize) : null;
+    observer?.observe(root);
+    return () => {
+      cancelAnimationFrame(frame);
+      observer?.disconnect();
+    };
+  }, [extraLabel, label]);
 
   const extra = extraLabel?.trim() || "";
   const tooltipText = truncated

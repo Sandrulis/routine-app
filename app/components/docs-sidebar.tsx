@@ -70,8 +70,8 @@ export function DocsSidebar({
       id="docs-sidebar"
       className={`h-dvh w-[17.5rem] shrink-0 flex-col border-r border-zinc-200 bg-white ${
         mobileOpen
-          ? "fixed inset-y-0 left-0 z-50 flex shadow-xl lg:static lg:z-auto lg:shadow-none"
-          : "hidden lg:flex"
+          ? "fixed inset-y-0 left-0 z-50 flex shadow-xl xl:static xl:z-auto xl:shadow-none"
+          : "hidden xl:flex"
       }`}
     >
       <div className="border-b border-zinc-200 px-4 py-4">
@@ -89,7 +89,7 @@ export function DocsSidebar({
             />
             <span className="min-w-0 truncate">{systemName}</span>
           </Link>
-          <div className="lg:hidden">
+          <div className="xl:hidden">
             <IconActionButton
               label={t("actions.close", "Aizvērt")}
               icon="fas fa-xmark"

@@ -1,6 +1,6 @@
 import type { TaskUpdatePatch } from "@/app/lib/build-task-activity-events";
 import { memberIdsNotifiedForAssignees } from "@/app/lib/assignees";
-import type { WorkTask } from "@/app/lib/lists";
+import { notificationTaskPath, type WorkTask } from "@/app/lib/lists";
 import {
   createNotificationId,
   notificationsForNewAssignees,
@@ -22,6 +22,17 @@ const TASK_UPDATED_ACTIVITY_KINDS = new Set<TaskActivity["kind"]>([
   "reordered",
   "created",
 ]);
+
+type NamedList = { id: string; name: string };
+
+function pathForTask(
+  task: WorkTask,
+  tasks: WorkTask[],
+  lists?: NamedList[],
+): string | null {
+  const listName = lists?.find((item) => item.id === task.listId)?.name ?? null;
+  return notificationTaskPath(tasks, task, listName) || null;
+}
 
 export function expandAssigneeIdsToMemberIds(
   assigneeIds: string[],
@@ -75,6 +86,7 @@ function createStakeholderNotification(input: {
   actorId: string;
   recipientId: string;
   taskTitle: string;
+  taskPath?: string | null;
   href: string;
 }): AppNotification {
   const now = new Date().toISOString();
@@ -86,6 +98,7 @@ function createStakeholderNotification(input: {
     targetUserId: null,
     invitationId: null,
     taskTitle: input.taskTitle.trim(),
+    taskPath: input.taskPath?.trim() || null,
     href: input.href,
     createdAt: now,
     readAt: null,
@@ -99,6 +112,7 @@ function notifyStakeholders(input: {
   actorId: string;
   stakeholderIds: string[];
   taskTitle: string;
+  taskPath?: string | null;
   href: string;
   extraRecipientIds?: string[];
 }): AppNotification[] {
@@ -117,6 +131,7 @@ function notifyStakeholders(input: {
       actorId: input.actorId,
       recipientId,
       taskTitle: title,
+      taskPath: input.taskPath,
       href: input.href,
     }),
   );
@@ -127,6 +142,7 @@ export function notificationsForRemovedAssignees(input: {
   removedIds: string[];
   members: TeamMember[];
   taskTitle: string;
+  taskPath?: string | null;
   href: string;
 }): AppNotification[] {
   const memberIds = memberIdsNotifiedForAssignees(input.removedIds, input.members);
@@ -135,6 +151,7 @@ export function notificationsForRemovedAssignees(input: {
     actorId: input.actorId,
     stakeholderIds: [],
     taskTitle: input.taskTitle,
+    taskPath: input.taskPath,
     href: input.href,
     extraRecipientIds: memberIds,
   });
@@ -146,6 +163,7 @@ export function notificationsFromTaskActivities(input: {
   tasks: WorkTask[];
   members: TeamMember[];
   activities: TaskActivity[];
+  lists?: NamedList[];
 }): AppNotification[] {
   const stakeholders = resolveTaskStakeholderMemberIds(
     input.task,
@@ -154,6 +172,7 @@ export function notificationsFromTaskActivities(input: {
   );
   const href = taskNotificationHref(input.task, input.tasks);
   const title = input.task.title;
+  const taskPath = pathForTask(input.task, input.tasks, input.lists);
   const notifications: AppNotification[] = [];
   const seen = new Set<string>();
 
@@ -166,6 +185,7 @@ export function notificationsFromTaskActivities(input: {
         actorId: input.actorId,
         stakeholderIds: stakeholders,
         taskTitle: title,
+        taskPath,
         href,
       }),
     );
@@ -189,6 +209,7 @@ export function notificationsForTaskComment(input: {
   task: WorkTask;
   tasks: WorkTask[];
   members: TeamMember[];
+  lists?: NamedList[];
 }): AppNotification[] {
   return notifyStakeholders({
     kind: "comment",
@@ -199,6 +220,7 @@ export function notificationsForTaskComment(input: {
       input.members,
     ),
     taskTitle: input.task.title,
+    taskPath: pathForTask(input.task, input.tasks, input.lists),
     href: taskNotificationHref(input.task, input.tasks),
   });
 }
@@ -208,6 +230,7 @@ export function notificationsForTaskFile(input: {
   task: WorkTask;
   tasks: WorkTask[];
   members: TeamMember[];
+  lists?: NamedList[];
 }): AppNotification[] {
   return notifyStakeholders({
     kind: "file",
@@ -218,6 +241,7 @@ export function notificationsForTaskFile(input: {
       input.members,
     ),
     taskTitle: input.task.title,
+    taskPath: pathForTask(input.task, input.tasks, input.lists),
     href: taskNotificationHref(input.task, input.tasks),
   });
 }
@@ -229,6 +253,7 @@ export function notificationsForInitialAssignees(input: {
   members: TeamMember[];
   task: WorkTask;
   tasks: WorkTask[];
+  lists?: NamedList[];
 }): AppNotification[] {
   if (input.assigneeIds.length === 0) return [];
   const addedIds = memberIdsNotifiedForAssignees(
@@ -244,6 +269,7 @@ export function notificationsForInitialAssignees(input: {
     addedIds,
     memberIds: input.memberIds,
     taskTitle: input.task.title,
+    taskPath: pathForTask(input.task, input.tasks, input.lists),
     href: `/lists/${input.task.listId}/tasks/${parentId}`,
   });
 }
@@ -254,10 +280,12 @@ export function notificationsForNewSubtask(input: {
   tasks: WorkTask[];
   members: TeamMember[];
   memberIds: Iterable<string>;
+  lists?: NamedList[];
 }): AppNotification[] {
   if (input.task.kind !== "subtask" || !input.task.parentId) return [];
   const parent = input.tasks.find((item) => item.id === input.task.parentId);
   if (!parent) return [];
+  const taskPath = pathForTask(input.task, input.tasks, input.lists);
   const notifications = notifyStakeholders({
     kind: "task_updated",
     actorId: input.actorId,
@@ -267,6 +295,7 @@ export function notificationsForNewSubtask(input: {
       input.members,
     ),
     taskTitle: input.task.title,
+    taskPath,
     href: taskNotificationHref(input.task, input.tasks),
   });
   notifications.push(
@@ -277,6 +306,7 @@ export function notificationsForNewSubtask(input: {
       members: input.members,
       task: input.task,
       tasks: input.tasks,
+      lists: input.lists,
     }),
   );
   return dedupeNotifications(notifications);
@@ -299,9 +329,11 @@ export function buildTaskUpdateNotifications(input: {
   tasks: WorkTask[];
   members: TeamMember[];
   activities: TaskActivity[];
+  lists?: NamedList[];
 }): AppNotification[] {
   const href = taskNotificationHref(input.existing, input.tasks);
   const title = input.patch.title ?? input.existing.title;
+  const taskPath = pathForTask(input.existing, input.tasks, input.lists);
   const notifications: AppNotification[] = [];
 
   if (
@@ -318,6 +350,7 @@ export function buildTaskUpdateNotifications(input: {
           removedIds: removed,
           members: input.members,
           taskTitle: title,
+          taskPath,
           href,
         }),
       );
@@ -331,6 +364,7 @@ export function buildTaskUpdateNotifications(input: {
       tasks: input.tasks,
       members: input.members,
       activities: input.activities,
+      lists: input.lists,
     }),
   );
 

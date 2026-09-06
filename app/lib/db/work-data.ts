@@ -126,6 +126,20 @@ export function isUnauthenticatedDbError(error: unknown): boolean {
   );
 }
 
+function throwFormattedSupabaseError(error: unknown): never {
+  throw new Error(formatSupabaseError(error));
+}
+
+function isMissingSchemaColumn(error: unknown, column: string): boolean {
+  const message = formatSupabaseError(error).toLowerCase();
+  return (
+    message.includes("pgrst204") ||
+    (message.includes("could not find") &&
+      message.includes(column.toLowerCase()) &&
+      message.includes("schema cache"))
+  );
+}
+
 export function teamToRow(team: WorkTeam, createdBy: string) {
   return {
     id: team.id,
@@ -1436,6 +1450,7 @@ export async function insertNotifications(teamId: string, items: AppNotification
       target_user_id: item.targetUserId,
       invitation_id: item.invitationId,
       task_title: item.taskTitle,
+      task_path: item.taskPath,
       href: item.href,
       created_at: item.createdAt,
       read_at: item.readAt,
@@ -1506,16 +1521,30 @@ export async function replaceTeamTodos(teamId: string, items: TodoItem[]) {
   if (error) throw error;
 }
 
+const NOTIFICATION_SELECT =
+  "id, kind, actor_id, recipient_id, target_user_id, invitation_id, task_title, task_path, href, created_at, read_at, team_id";
+const NOTIFICATION_SELECT_WITHOUT_PATH =
+  "id, kind, actor_id, recipient_id, target_user_id, invitation_id, task_title, href, created_at, read_at, team_id";
+
 export async function fetchAppNotifications(teamId: string): Promise<AppNotification[]> {
-  const { data, error } = await db()
-    .from("app_notifications")
-    .select(
-      "id, kind, actor_id, recipient_id, target_user_id, invitation_id, task_title, href, created_at, read_at",
-    )
-    .eq("team_id", teamId)
-    .order("created_at", { ascending: false });
-  if (error) throw error;
-  return (data ?? []).map(mapNotificationRow);
+  return withJwtClockSkewRetry(async () => {
+    const { data, error } = await db()
+      .from("app_notifications")
+      .select(NOTIFICATION_SELECT)
+      .eq("team_id", teamId)
+      .order("created_at", { ascending: false });
+    if (error) {
+      if (!isMissingSchemaColumn(error, "task_path")) throwFormattedSupabaseError(error);
+      const fallback = await db()
+        .from("app_notifications")
+        .select(NOTIFICATION_SELECT_WITHOUT_PATH)
+        .eq("team_id", teamId)
+        .order("created_at", { ascending: false });
+      if (fallback.error) throwFormattedSupabaseError(fallback.error);
+      return (fallback.data ?? []).map(mapNotificationRow);
+    }
+    return (data ?? []).map(mapNotificationRow);
+  });
 }
 
 function mapNotificationRow(
@@ -1527,6 +1556,7 @@ function mapNotificationRow(
     target_user_id?: string | null;
     invitation_id?: string | null;
     task_title: string;
+    task_path?: string | null;
     href: string | null;
     created_at: string;
     read_at: string | null;
@@ -1543,6 +1573,7 @@ function mapNotificationRow(
     targetUserId: row.target_user_id ?? null,
     invitationId: row.invitation_id ?? null,
     taskTitle: row.task_title,
+    taskPath: row.task_path?.trim() || null,
     href: row.href,
     createdAt: row.created_at,
     readAt: row.read_at,
@@ -1555,71 +1586,88 @@ export async function fetchVisibleNotifications(
   _teamId: string | null,
   userId: string,
 ): Promise<AppNotification[]> {
-  const { data: memberships, error: memberError } = await db()
-    .from("team_members")
-    .select("id, team_id")
-    .eq("user_id", userId);
+  return withJwtClockSkewRetry(async () => {
+    const supabase = db();
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+    if (authError) throwFormattedSupabaseError(authError);
+    if (!user || user.id !== userId) return [];
 
-  if (memberError) throw memberError;
+    const { data: memberships, error: memberError } = await supabase
+      .from("team_members")
+      .select("id, team_id")
+      .eq("user_id", userId);
 
-  const memberRows = (memberships ?? []) as Array<{ id: string; team_id: string | null }>;
-  const memberIds = memberRows.map((row) => row.id);
-  const memberIdSet = new Set(memberIds);
-  const teamIds = [
-    ...new Set(
-      memberRows
-        .map((row) => row.team_id)
-        .filter((value): value is string => typeof value === "string" && value.length > 0),
-    ),
-  ];
+    if (memberError) throwFormattedSupabaseError(memberError);
 
-  const teamNameById = new Map<string, string>();
-  if (teamIds.length > 0) {
-    const { data: teamRows, error: teamError } = await db()
-      .from("teams")
-      .select("id, name")
-      .in("id", teamIds);
-    if (teamError) throw teamError;
-    for (const team of teamRows ?? []) {
-      if (team.id) {
-        teamNameById.set(team.id, String(team.name ?? "").trim());
+    const memberRows = (memberships ?? []) as Array<{ id: string; team_id: string | null }>;
+    const memberIds = memberRows.map((row) => row.id);
+    const memberIdSet = new Set(memberIds);
+    const teamIds = [
+      ...new Set(
+        memberRows
+          .map((row) => row.team_id)
+          .filter((value): value is string => typeof value === "string" && value.length > 0),
+      ),
+    ];
+
+    const teamNameById = new Map<string, string>();
+    if (teamIds.length > 0) {
+      const { data: teamRows, error: teamError } = await supabase
+        .from("teams")
+        .select("id, name")
+        .in("id", teamIds);
+      if (teamError) throwFormattedSupabaseError(teamError);
+      for (const team of teamRows ?? []) {
+        if (team.id) {
+          teamNameById.set(team.id, String(team.name ?? "").trim());
+        }
       }
     }
-  }
 
-  let query = db()
-    .from("app_notifications")
-    .select(
-      "id, kind, actor_id, recipient_id, target_user_id, invitation_id, task_title, href, created_at, read_at, team_id",
-    )
-    .order("created_at", { ascending: false })
-    .limit(100);
+    async function loadRows(select: string) {
+      let query = supabase
+        .from("app_notifications")
+        .select(select)
+        .order("created_at", { ascending: false })
+        .limit(100);
 
-  if (memberIds.length > 0) {
-    query = query.or(
-      `target_user_id.eq.${userId},recipient_id.in.(${memberIds.join(",")})`,
-    );
-  } else {
-    query = query.eq("target_user_id", userId);
-  }
-
-  const { data, error } = await query;
-  if (error) throw error;
-
-  return ((data ?? []) as Parameters<typeof mapNotificationRow>[0][])
-    .map((row) => mapNotificationRow(row, teamNameById))
-    .filter((item: AppNotification) => {
-      if (item.kind === "team_invite") {
-        return item.targetUserId === userId;
+      if (memberIds.length > 0) {
+        query = query.or(
+          `target_user_id.eq.${userId},recipient_id.in.(${memberIds.join(",")})`,
+        );
+      } else {
+        query = query.eq("target_user_id", userId);
       }
-      if (item.kind === "team_invite_rejected") {
+
+      return query;
+    }
+
+    let { data, error } = await loadRows(NOTIFICATION_SELECT);
+    if (error && isMissingSchemaColumn(error, "task_path")) {
+      const fallback = await loadRows(NOTIFICATION_SELECT_WITHOUT_PATH);
+      data = fallback.data;
+      error = fallback.error;
+    }
+    if (error) throwFormattedSupabaseError(error);
+
+    return ((data ?? []) as Parameters<typeof mapNotificationRow>[0][])
+      .map((row) => mapNotificationRow(row, teamNameById))
+      .filter((item: AppNotification) => {
+        if (item.kind === "team_invite") {
+          return item.targetUserId === userId;
+        }
+        if (item.kind === "team_invite_rejected") {
+          return item.recipientId !== null && memberIdSet.has(item.recipientId);
+        }
+        if (item.targetUserId === userId) {
+          return true;
+        }
         return item.recipientId !== null && memberIdSet.has(item.recipientId);
-      }
-      if (item.targetUserId === userId) {
-        return true;
-      }
-      return item.recipientId !== null && memberIdSet.has(item.recipientId);
-    });
+      });
+  });
 }
 
 export async function fetchUserNotificationPreferences(userId: string) {

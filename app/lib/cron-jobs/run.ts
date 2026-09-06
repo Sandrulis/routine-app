@@ -46,6 +46,8 @@ type SubtaskRow = {
 
 type LayoutRow = {
   id: string;
+  name?: string | null;
+  title?: string | null;
   hidden_status_ids?: string[] | null;
   status_order?: string[] | null;
   status_group_overrides?: unknown;
@@ -234,14 +236,14 @@ async function runJob(
     fetchInChunks(listIds, (chunk) =>
       supabase
         .from("work_lists")
-        .select("id, hidden_status_ids, status_order, status_group_overrides")
+        .select("id, name, hidden_status_ids, status_order, status_group_overrides")
         .in("id", chunk),
     ) as Promise<LayoutRow[]>,
     fetchInChunks(parentIds, (chunk) =>
       supabase
         .from("work_tasks")
         .select(
-          "id, hidden_status_ids, status_order, status_group_overrides, deleted_at, archived_at",
+          "id, title, hidden_status_ids, status_order, status_group_overrides, deleted_at, archived_at",
         )
         .in("id", chunk),
     ) as Promise<LayoutRow[]>,
@@ -476,6 +478,11 @@ async function runJob(
     const href = subtaskHref(task);
     const title = task.title.trim();
     if (!title) continue;
+    const listName = String(listsById.get(task.list_id)?.name ?? "").trim();
+    const parentTitle = task.parent_id
+      ? String(parentsById.get(task.parent_id)?.title ?? "").trim()
+      : "";
+    const taskPath = [listName, parentTitle].filter(Boolean).join(" / ") || null;
     for (const member of recipientsByTask.get(task.id) ?? []) {
       if (!member.user_id || preferenceDisabled.has(member.user_id)) continue;
       const timeZone = timeZoneByUser.get(member.user_id) || siteTimeZone;
@@ -502,6 +509,7 @@ async function runJob(
           targetUserId: member.user_id,
           invitationId: null,
           taskTitle: title,
+          taskPath,
           href,
           createdAt,
           readAt: null,
@@ -536,6 +544,7 @@ async function runJob(
         target_user_id: item.targetUserId,
         invitation_id: item.invitationId,
         task_title: item.taskTitle,
+        task_path: item.taskPath,
         href: item.href,
         created_at: item.createdAt,
         read_at: item.readAt,

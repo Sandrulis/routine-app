@@ -1,4 +1,4 @@
-import { redirect } from "next/navigation";
+import { permanentRedirect, redirect } from "next/navigation";
 import type { Metadata } from "next";
 import { DocsArticleContent } from "@/app/components/docs-article-content";
 import { PublicPageJsonLd } from "@/app/components/public-page-json-ld";
@@ -7,7 +7,8 @@ import { applyDocsPlaceholders } from "@/app/lib/docs/placeholders";
 import { resolveSystemName } from "@/app/lib/document-title";
 import { getServerTranslations } from "@/app/lib/i18n/server";
 import { canonicalMetadata } from "@/app/lib/seo/metadata";
-import { localePath } from "@/app/lib/seo/locale-path";
+import { hreflangMapForLanguagePaths, localePath } from "@/app/lib/seo/locale-path";
+import { absoluteUrl } from "@/app/lib/seo/site-url";
 import { getSiteSettings } from "@/app/lib/site-admin/repository";
 
 export const dynamic = "force-dynamic";
@@ -39,10 +40,17 @@ export async function generateMetadata({
     "{title} — {name} documentation article.",
     { title: articleTitle, name: systemName },
   );
-  return canonicalMetadata(`/docs/${category}/${article}`, {
+  const canonicalPath = detail
+    ? `/docs/${detail.categorySlug}/${detail.slug}`
+    : `/docs/${category}/${article}`;
+  return canonicalMetadata(canonicalPath, {
     title: articleTitle,
     description,
     index: tree.enabled && Boolean(detail),
+    languages:
+      detail?.alternatePaths && tree.enabled
+        ? hreflangMapForLanguagePaths(detail.alternatePaths, absoluteUrl)
+        : undefined,
   });
 }
 
@@ -65,15 +73,15 @@ export default async function DocsArticlePage({
     redirect(localePath("/docs", languageCode));
   }
 
-  const [settings, treeWithCategory] = await Promise.all([
-    getSiteSettings(),
-    getPublicDocsTree(languageCode),
-  ]);
+  const localizedPath = `/docs/${detail.categorySlug}/${detail.slug}`;
+  if (category !== detail.categorySlug || article !== detail.slug) {
+    permanentRedirect(localePath(localizedPath, languageCode));
+  }
+
+  const settings = await getSiteSettings();
   const systemName = resolveSystemName(settings.systemName);
   const articleTitle = applyDocsPlaceholders(detail.title, systemName);
-  const categoryTitle =
-    treeWithCategory.categories.find((item) => item.slug === category)?.title ??
-    category;
+  const categoryTitle = detail.categoryTitle || category;
   const description = t(
     "docs.seo.article_description",
     "{title} — {name} documentation article.",
@@ -83,14 +91,14 @@ export default async function DocsArticlePage({
   return (
     <>
       <PublicPageJsonLd
-        path={`/docs/${category}/${article}`}
+        path={localizedPath}
         title={articleTitle}
         description={description}
         languageCode={languageCode}
         breadcrumbs={[
           { name: t("nav.home", "Sākums"), path: "/" },
           { name: t("docs.title", "Dokumentācija"), path: "/docs" },
-          { name: categoryTitle, path: `/docs/${category}/${article}` },
+          { name: categoryTitle, path: localizedPath },
         ]}
       />
       <DocsArticleContent

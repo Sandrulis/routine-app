@@ -6,6 +6,9 @@ import {
   deleteNotification,
   deleteNotifications,
   fetchVisibleNotifications,
+  formatSupabaseError,
+  isJwtClockSkewError,
+  isUnauthenticatedDbError,
   markNotificationsRead,
   purgeOldNotificationsOnce,
 } from "@/app/lib/db/work-data";
@@ -40,8 +43,9 @@ export function useNotifications() {
       })
       .catch((error) => {
         if (generation !== refreshGenerationRef.current) return;
-        console.error("Failed to load notifications", error);
         setItems([]);
+        if (isUnauthenticatedDbError(error) || isJwtClockSkewError(error)) return;
+        console.error("Failed to load notifications", formatSupabaseError(error));
       })
       .finally(() => {
         if (generation === refreshGenerationRef.current) {
