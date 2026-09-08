@@ -4,6 +4,10 @@
 
 - (none)
 
+## v0.3.75
+
+- Gmail spraudņa popup bez inline skripta (`script-src 'self'`), valodu iestata `options.js`
+
 ## v0.3.74
 
 - Gmail spraudņa ikona: augšupielādēts sistēmas logotips, ja tāda nav — iniciāļu avatārs kā vietnē; pakotnes noklusējums ir TASQIN zīme

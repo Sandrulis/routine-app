@@ -3,15 +3,6 @@
   <head>
     <meta charset="utf-8" />
     <title>TASQIN Gmail</title>
-    <script>
-      try {
-        var code = String(chrome.i18n.getUILanguage() || "en")
-          .split(/[-_]/)[0]
-          .toLowerCase();
-        if (code === "nb" || code === "nn") code = "no";
-        document.documentElement.lang = code || "en";
-      } catch (e) {}
-    </script>
     <style>
       html {
         margin: 0;
