@@ -36,6 +36,7 @@ function buildSignupMetadata(firstName: string, lastName: string) {
     family_name: lastName,
     name: fullName,
     full_name: fullName,
+    password_set: true,
   };
 }
 
@@ -199,4 +200,40 @@ export async function requestPasswordResetEmail(
     return { ok: false, error: "errors.auth_password_reset_failed" };
   }
   return { ok: true };
+}
+
+export async function markEmailPasswordProvider(userId: string): Promise<void> {
+  if (!isSupabaseAdminConfigured()) return;
+  const admin = createAdminClient();
+  const { data, error } = await admin.auth.admin.getUserById(userId);
+  if (error || !data.user) {
+    logError("markEmailPasswordProvider getUserById failed", error?.message);
+    return;
+  }
+  const metadata = (data.user.app_metadata ?? {}) as Record<string, unknown>;
+  const providers = new Set<string>();
+  const primary = String(metadata.provider ?? "").trim();
+  if (primary) providers.add(primary);
+  if (Array.isArray(metadata.providers)) {
+    for (const provider of metadata.providers) {
+      const value = String(provider ?? "").trim();
+      if (value) providers.add(value);
+    }
+  }
+  providers.add("email");
+  const userMetadata = (data.user.user_metadata ?? {}) as Record<string, unknown>;
+  const { error: updateError } = await admin.auth.admin.updateUserById(userId, {
+    user_metadata: {
+      ...userMetadata,
+      password_set: true,
+    },
+    app_metadata: {
+      ...metadata,
+      provider: primary || "email",
+      providers: [...providers],
+    },
+  });
+  if (updateError) {
+    logError("markEmailPasswordProvider updateUserById failed", updateError.message);
+  }
 }

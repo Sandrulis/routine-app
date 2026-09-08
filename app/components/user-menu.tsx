@@ -10,7 +10,11 @@ import { useFeedbackToast } from "@/app/components/feedback-toast-provider";
 import { useTranslations } from "@/app/components/translations-provider";
 import { OverflowTooltip } from "@/app/components/tooltip";
 import { UserAvatar } from "@/app/components/user-avatar";
-import { userHasPasswordLogin } from "@/app/lib/auth/map-user-display";
+import { getPasswordLoginStateAction } from "@/app/lib/auth/actions";
+import {
+  userCanManagePassword,
+  userHasPasswordLogin,
+} from "@/app/lib/auth/map-user-display";
 import { useAuthSession } from "@/app/lib/auth/use-auth-session";
 import { signOutWebsiteLocally } from "@/app/lib/auth/sign-out-website";
 import { isSupabaseConfigured } from "@/app/lib/supabase/env";
@@ -27,14 +31,31 @@ export function UserMenu({ user }: { user: TeamMember }) {
   const rank = teams.length === 0 ? null : teamRankLabel(user.role, t, roles);
   const { showFeedback } = useFeedbackToast();
   const { user: authUser } = useAuthSession();
-  const canChangePassword = userHasPasswordLogin(authUser);
+  const canManagePassword = userCanManagePassword(authUser);
+  const [hasPasswordLogin, setHasPasswordLogin] = useState(() =>
+    userHasPasswordLogin(authUser),
+  );
   const [open, setOpen] = useState(false);
   const [passwordOpen, setPasswordOpen] = useState(false);
+  const [passwordHasCurrent, setPasswordHasCurrent] = useState(false);
   const [personalInfoOpen, setPersonalInfoOpen] = useState(false);
   const [notificationSettingsOpen, setNotificationSettingsOpen] = useState(false);
   const [calendarIntegrationOpen, setCalendarIntegrationOpen] = useState(false);
   const { isEnabled } = useFrontendModules();
   const calendarVisible = isCalendarIntegrationVisible(isEnabled);
+
+  useEffect(() => {
+    setHasPasswordLogin(userHasPasswordLogin(authUser));
+    if (!authUser) return;
+    let cancelled = false;
+    void getPasswordLoginStateAction().then((state) => {
+      if (cancelled) return;
+      setHasPasswordLogin(state.hasPasswordLogin);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [authUser]);
 
   useEffect(() => {
     if (!open) return;
@@ -200,12 +221,13 @@ export function UserMenu({ user }: { user: TeamMember }) {
               </span>
             </button>
           ) : null}
-          {canChangePassword ? (
+          {canManagePassword ? (
             <button
               type="button"
               role="menuitem"
               onClick={() =>
                 closeAnd(() => {
+                  setPasswordHasCurrent(hasPasswordLogin);
                   setPasswordOpen(true);
                 })
               }
@@ -217,10 +239,17 @@ export function UserMenu({ user }: { user: TeamMember }) {
               />
               <span className="min-w-0">
                 <span className="block text-[13px] font-medium text-zinc-900">
-                  {t("user_menu.password", "Mainīt paroli")}
+                  {hasPasswordLogin
+                    ? t("user_menu.password", "Mainīt paroli")
+                    : t("user_menu.password.set", "Pievienot paroli")}
                 </span>
                 <span className="mt-0.5 block text-[12px] text-zinc-400">
-                  {t("user_menu.password_hint", "Atjauno piekļuves paroli")}
+                  {hasPasswordLogin
+                    ? t("user_menu.password_hint", "Atjauno piekļuves paroli")
+                    : t(
+                        "user_menu.password.set_hint",
+                        "Iestatīt paroli ienākšanai ar e-pastu",
+                      )}
                 </span>
               </span>
             </button>
@@ -286,14 +315,21 @@ export function UserMenu({ user }: { user: TeamMember }) {
         />
       ) : null}
 
-      {canChangePassword ? (
+      {canManagePassword ? (
         <ChangePasswordModal
           open={passwordOpen}
           onOpenChange={setPasswordOpen}
-          onSave={() => {
+          hasCurrentPassword={passwordHasCurrent}
+          onSave={(mode) => {
             showFeedback({
               type: "success",
-              text: t("user_menu.password.saved", "Parole atjaunota."),
+              text:
+                mode === "change"
+                  ? t("user_menu.password.saved", "Parole atjaunota.")
+                  : t(
+                      "user_menu.password.set_saved",
+                      "Parole pievienota. Tagad vari ienākt ar e-pastu un paroli.",
+                    ),
             });
           }}
         />

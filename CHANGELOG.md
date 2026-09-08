@@ -4,6 +4,10 @@
 
 - (none)
 
+## v0.3.76
+
+- Google/Microsoft lietotājs var pievienot e-pasta paroli bez esošās, tad ienākt ar e-pastu un paroli
+
 ## v0.3.75
 
 - Gmail spraudņa popup bez inline skripta (`script-src 'self'`), valodu iestata `options.js`

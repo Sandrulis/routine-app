@@ -12,14 +12,17 @@ import {
 import { getSafeRedirectPath } from "@/app/lib/security/safe-redirect-path";
 import { requireTurnstileToken } from "@/app/lib/security/turnstile";
 import { logError } from "@/app/lib/security/log-error";
-import { isSupabaseConfigured } from "@/app/lib/supabase/env";
+import { isSupabaseConfigured, isSupabaseAdminConfigured } from "@/app/lib/supabase/env";
+import { createAdminClient } from "@/app/lib/supabase/admin";
 import { getMfaGate } from "@/app/lib/auth/mfa";
 import { ensureCurrentUserProfile } from "@/app/lib/users/ensure-profile";
 import { isEmailPasswordAuthEnabled } from "@/app/lib/integrations/resend/client";
 import {
+  markEmailPasswordProvider,
   registerWithEmailPassword,
   requestPasswordResetEmail,
 } from "@/app/lib/auth/email-password";
+import { userHasPasswordLogin } from "@/app/lib/auth/map-user-display";
 import { isPasswordStrongEnough } from "@/app/lib/auth/password-strength";
 import type { ActionResult } from "@/app/lib/actions/action-result";
 
@@ -217,7 +220,27 @@ export async function updatePasswordAction(input: {
     }
     return { ok: false, error: "errors.auth_password_update_failed" };
   }
+  await markEmailPasswordProvider(user.id);
   return { ok: true, next: "/dashboard" };
+}
+
+export async function getPasswordLoginStateAction(): Promise<{
+  hasPasswordLogin: boolean;
+}> {
+  const user = await getCurrentUser();
+  if (!user) return { hasPasswordLogin: false };
+  if (isSupabaseAdminConfigured()) {
+    try {
+      const admin = createAdminClient();
+      const { data } = await admin.auth.admin.getUserById(user.id);
+      if (data.user) {
+        return { hasPasswordLogin: userHasPasswordLogin(data.user) };
+      }
+    } catch {
+      // Fall back to the session user.
+    }
+  }
+  return { hasPasswordLogin: userHasPasswordLogin(user) };
 }
 
 export async function completeAuthSessionAction(): Promise<ActionResult> {

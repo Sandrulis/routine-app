@@ -9,7 +9,9 @@ import { useFeedbackToast } from "@/app/components/feedback-toast-provider";
 import { PasswordInput } from "@/app/components/password-input";
 import { PasswordStrengthMeter } from "@/app/components/password-strength-meter";
 import { useTranslations } from "@/app/components/translations-provider";
+import { getPasswordLoginStateAction, updatePasswordAction } from "@/app/lib/auth/actions";
 import { isPasswordStrongEnough } from "@/app/lib/auth/password-strength";
+import { translateActionError } from "@/app/lib/i18n/action-errors";
 import { createClient } from "@/app/lib/supabase/client";
 import { isSupabaseConfigured } from "@/app/lib/supabase/env";
 
@@ -20,10 +22,12 @@ export function ChangePasswordModal({
   open,
   onOpenChange,
   onSave,
+  hasCurrentPassword = true,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSave: () => void;
+  onSave: (mode: "set" | "change") => void;
+  hasCurrentPassword?: boolean;
 }) {
   const { t } = useTranslations();
   const { showFeedback } = useFeedbackToast();
@@ -31,6 +35,7 @@ export function ChangePasswordModal({
   const [nextPassword, setNextPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [pending, setPending] = useState(false);
+  const [requireCurrent, setRequireCurrent] = useState(hasCurrentPassword);
 
   useEffect(() => {
     if (!open) return;
@@ -38,17 +43,28 @@ export function ChangePasswordModal({
     setNextPassword("");
     setConfirmPassword("");
     setPending(false);
-  }, [open]);
+    setRequireCurrent(hasCurrentPassword);
+    let cancelled = false;
+    void getPasswordLoginStateAction().then((state) => {
+      if (cancelled) return;
+      setRequireCurrent(state.hasPasswordLogin);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [open, hasCurrentPassword]);
 
-  const dirty = Boolean(currentPassword || nextPassword || confirmPassword);
+  const dirty = Boolean(
+    (requireCurrent && currentPassword) || nextPassword || confirmPassword,
+  );
   const passwordsMatch = nextPassword === confirmPassword;
   const canSave =
     !pending &&
-    currentPassword.length > 0 &&
+    (!requireCurrent || currentPassword.length > 0) &&
     nextPassword.length >= 8 &&
     isPasswordStrongEnough(nextPassword) &&
     passwordsMatch &&
-    nextPassword !== currentPassword;
+    (!requireCurrent || nextPassword !== currentPassword);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -81,7 +97,7 @@ export function ChangePasswordModal({
       return;
     }
 
-    if (nextPassword === currentPassword) {
+    if (requireCurrent && nextPassword === currentPassword) {
       showFeedback({
         type: "error",
         text: t(
@@ -92,7 +108,7 @@ export function ChangePasswordModal({
       return;
     }
 
-    if (!currentPassword || !isSupabaseConfigured()) {
+    if (!isSupabaseConfigured() || (requireCurrent && !currentPassword)) {
       showFeedback({
         type: "error",
         text: t("user_menu.password.failed", "Neizdevās atjaunot paroli."),
@@ -103,44 +119,59 @@ export function ChangePasswordModal({
     setPending(true);
     try {
       const supabase = createClient();
-      const { data, error: userError } = await supabase.auth.getUser();
-      const email = data.user?.email?.trim();
-      if (userError || !email) {
-        showFeedback({
-          type: "error",
-          text: t("user_menu.password.failed", "Neizdevās atjaunot paroli."),
+
+      if (requireCurrent) {
+        const { data, error: userError } = await supabase.auth.getUser();
+        const email = data.user?.email?.trim();
+        if (userError || !email) {
+          showFeedback({
+            type: "error",
+            text: t("user_menu.password.failed", "Neizdevās atjaunot paroli."),
+          });
+          return;
+        }
+
+        const { error: reauthError } = await supabase.auth.signInWithPassword({
+          email,
+          password: currentPassword,
         });
-        return;
+        if (reauthError) {
+          showFeedback({
+            type: "error",
+            text: t(
+              "user_menu.password.current_invalid",
+              "Pašreizējā parole nav pareiza.",
+            ),
+          });
+          return;
+        }
+
+        const { error: updateError } = await supabase.auth.updateUser({
+          password: nextPassword,
+        });
+        if (updateError) {
+          showFeedback({
+            type: "error",
+            text: t("user_menu.password.failed", "Neizdevās atjaunot paroli."),
+          });
+          return;
+        }
+      } else {
+        const result = await updatePasswordAction({ password: nextPassword });
+        if (!result.ok) {
+          showFeedback({
+            type: "error",
+            text: translateActionError(t, result.error),
+          });
+          return;
+        }
       }
 
-      const { error: reauthError } = await supabase.auth.signInWithPassword({
-        email,
-        password: currentPassword,
-      });
-      if (reauthError) {
-        showFeedback({
-          type: "error",
-          text: t(
-            "user_menu.password.current_invalid",
-            "Pašreizējā parole nav pareiza.",
-          ),
-        });
-        return;
-      }
-
-      const { error: updateError } = await supabase.auth.updateUser({
-        password: nextPassword,
-      });
-      if (updateError) {
-        showFeedback({
-          type: "error",
-          text: t("user_menu.password.failed", "Neizdevās atjaunot paroli."),
-        });
-        return;
-      }
-
-      onSave();
+      onSave(requireCurrent ? "change" : "set");
       onOpenChange(false);
+      if (!requireCurrent) {
+        await supabase.auth.refreshSession();
+      }
     } catch {
       showFeedback({
         type: "error",
@@ -155,39 +186,54 @@ export function ChangePasswordModal({
     <AppModal
       open={open}
       onOpenChange={onOpenChange}
-      title={t("user_menu.password", "Mainīt paroli")}
-      description={t(
-        "user_menu.password.description",
-        "Ievadi pašreizējo paroli un jauno paroli.",
-      )}
+      title={
+        requireCurrent
+          ? t("user_menu.password", "Mainīt paroli")
+          : t("user_menu.password.set", "Pievienot paroli")
+      }
+      description={
+        requireCurrent
+          ? t(
+              "user_menu.password.description",
+              "Ievadi pašreizējo paroli un jauno paroli.",
+            )
+          : t(
+              "user_menu.password.set_description",
+              "Izvēlies paroli, lai varētu ienākt arī ar e-pastu un paroli.",
+            )
+      }
       dirty={dirty}
       blocking={pending}
       panelMaxWidthClassName={appModalWidePanelMaxWidthClassName}
     >
       <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label
-            htmlFor="current-password"
-            className="text-sm font-semibold text-zinc-700"
-          >
-            {t("user_menu.password.current", "Pašreizējā parole")}
-          </label>
-          <PasswordInput
-            id="current-password"
-            autoComplete="current-password"
-            value={currentPassword}
-            onChange={(event) => setCurrentPassword(event.target.value)}
-            className="mt-2"
-            inputClassName={passwordFieldClassName}
-            autoFocus
-          />
-        </div>
+        {requireCurrent ? (
+          <div>
+            <label
+              htmlFor="current-password"
+              className="text-sm font-semibold text-zinc-700"
+            >
+              {t("user_menu.password.current", "Pašreizējā parole")}
+            </label>
+            <PasswordInput
+              id="current-password"
+              autoComplete="current-password"
+              value={currentPassword}
+              onChange={(event) => setCurrentPassword(event.target.value)}
+              className="mt-2"
+              inputClassName={passwordFieldClassName}
+              autoFocus
+            />
+          </div>
+        ) : null}
         <div>
           <label
             htmlFor="next-password"
             className="text-sm font-semibold text-zinc-700"
           >
-            {t("user_menu.password.next", "Jaunā parole")}
+            {requireCurrent
+              ? t("user_menu.password.next", "Jaunā parole")
+              : t("auth.fields.password", "Parole")}
           </label>
           <PasswordInput
             id="next-password"
@@ -196,6 +242,7 @@ export function ChangePasswordModal({
             onChange={(event) => setNextPassword(event.target.value)}
             className="mt-2"
             inputClassName={passwordFieldClassName}
+            autoFocus={!requireCurrent}
           />
           <PasswordStrengthMeter password={nextPassword} />
         </div>
@@ -204,7 +251,9 @@ export function ChangePasswordModal({
             htmlFor="confirm-password"
             className="text-sm font-semibold text-zinc-700"
           >
-            {t("user_menu.password.confirm", "Atkārtot jauno paroli")}
+            {requireCurrent
+              ? t("user_menu.password.confirm", "Atkārtot jauno paroli")
+              : t("auth.fields.password_confirm", "Atkārtot paroli")}
           </label>
           <PasswordInput
             id="confirm-password"

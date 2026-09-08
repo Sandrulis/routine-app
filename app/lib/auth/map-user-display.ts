@@ -54,31 +54,52 @@ export function resolveAvatarUrl(user: User): string | null {
   return null;
 }
 
-function readAuthProviders(user: User): string[] {
+const OAUTH_PROVIDERS = new Set(["google", "microsoft"]);
+
+function addAuthProvider(target: Set<string>, value: unknown) {
+  const provider = typeof value === "string" ? value.trim().toLowerCase() : "";
+  if (provider) target.add(provider);
+}
+
+function listUserAuthProviders(user: User): string[] {
   const providers = new Set<string>();
-  const metadataProvider = user.app_metadata?.provider;
-  if (typeof metadataProvider === "string" && metadataProvider.trim()) {
-    providers.add(metadataProvider.trim());
-  }
-  const metadataProviders = user.app_metadata?.providers;
-  if (Array.isArray(metadataProviders)) {
-    for (const provider of metadataProviders) {
-      if (typeof provider === "string" && provider.trim()) {
-        providers.add(provider.trim());
-      }
+  addAuthProvider(providers, user.app_metadata?.provider);
+  if (Array.isArray(user.app_metadata?.providers)) {
+    for (const provider of user.app_metadata.providers) {
+      addAuthProvider(providers, provider);
     }
   }
   for (const identity of user.identities ?? []) {
-    if (identity.provider?.trim()) {
-      providers.add(identity.provider.trim());
-    }
+    addAuthProvider(providers, identity.provider);
   }
+  addAuthProvider(
+    providers,
+    (user.user_metadata as Record<string, unknown> | undefined)?.provider,
+  );
   return [...providers];
+}
+
+function userHasOauthLogin(user: User): boolean {
+  return listUserAuthProviders(user).some((provider) =>
+    OAUTH_PROVIDERS.has(provider),
+  );
 }
 
 export function userHasPasswordLogin(user: User | null | undefined): boolean {
   if (!user) return false;
-  return readAuthProviders(user).includes("email");
+  const metadata = (user.user_metadata ?? {}) as Record<string, unknown>;
+  if (metadata.password_set === true) return true;
+  // Google/Microsoft accounts are created with a random password and an email
+  // identity. That is not a password the user knows.
+  if (userHasOauthLogin(user)) return false;
+  return (
+    listUserAuthProviders(user).includes("email") || Boolean(user.email?.trim())
+  );
+}
+
+export function userCanManagePassword(user: User | null | undefined): boolean {
+  if (!user) return false;
+  return Boolean(user.email?.trim());
 }
 
 export function mapUserDisplay(user: User): UserDisplay {
