@@ -29,6 +29,27 @@ function isAlreadyRegisteredError(error: {
   );
 }
 
+async function ensurePendingSignupProfile(
+  admin: ReturnType<typeof createAdminClient>,
+  userId: string,
+  email: string,
+  name: string,
+) {
+  const { error } = await admin.from("users").upsert(
+    {
+      id: userId,
+      email,
+      name,
+      avatar: "",
+      is_admin: false,
+    },
+    { onConflict: "id", ignoreDuplicates: true },
+  );
+  if (error) {
+    logError("ensurePendingSignupProfile failed", error.message);
+  }
+}
+
 function buildSignupMetadata(firstName: string, lastName: string) {
   const fullName = joinDisplayName(firstName, lastName);
   return {
@@ -100,6 +121,12 @@ async function sendSignupLink(
           );
           return { ok: false, error: "errors.auth_email_send_failed" };
         }
+        await ensurePendingSignupProfile(
+          admin,
+          existing.id,
+          email,
+          metadata.name,
+        );
       } else {
         logError(
           "generateLink signup failed",
@@ -114,6 +141,14 @@ async function sendSignupLink(
       );
       return { ok: false, error: "errors.auth_email_send_failed" };
     }
+  }
+
+  const profileUserId =
+    generated.data?.user?.id ??
+    (await findAuthUserByEmailExact(email))?.id ??
+    "";
+  if (profileUserId) {
+    await ensurePendingSignupProfile(admin, profileUserId, email, metadata.name);
   }
 
   return sendSignupConfirmation({

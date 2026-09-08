@@ -66,6 +66,7 @@ export function AdminUsersManager({
         email: "",
         avatar: "",
         isAdmin: false,
+        emailConfirmed: true,
         registeredAt: null,
         lastSeenAt: null,
         languageCode: null,
@@ -222,6 +223,14 @@ export function AdminUsersManager({
                             <span className="truncate">{user.name}</span>
                           </p>
                           <p className="truncate text-sm text-zinc-500">{user.email}</p>
+                          {user.emailConfirmed ? null : (
+                            <p className="mt-0.5 text-[11px] text-amber-700">
+                              {t(
+                                "admin.users.email_unconfirmed",
+                                "E-pasts nav apstiprināts",
+                              )}
+                            </p>
+                          )}
                           {user.languageCode || user.lastIp ? (
                             <p className="mt-0.5 text-[11px] text-zinc-400">
                               {user.languageCode ? (
@@ -407,7 +416,13 @@ export function AdminUsersManager({
               {t("roles.admin", "Administrators")}
               <ToggleSwitch
                 checked={draft.isAdmin}
-                disabled={isPending}
+                disabled={
+                  isPending ||
+                  Boolean(
+                    editingId &&
+                      users.find((user) => user.id === editingId)?.emailConfirmed === false,
+                  )
+                }
                 label={t("roles.admin", "Administrators")}
                 onChange={(isAdmin) => setDraft((current) => ({ ...current, isAdmin }))}
               />

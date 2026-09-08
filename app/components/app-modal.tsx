@@ -4,6 +4,7 @@ import {
   useCallback,
   useEffect,
   useId,
+  useLayoutEffect,
   useRef,
   useState,
   type MouseEvent,
@@ -95,6 +96,9 @@ export function AppModal({
 
   const closeDirectly = useCallback(() => {
     if (blocking) return;
+    if (document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur();
+    }
     setConfirmExitOpen(false);
     onOpenChange(false);
   }, [blocking, onOpenChange]);
@@ -103,6 +107,20 @@ export function AppModal({
     if (!open) {
       setConfirmExitOpen(false);
     }
+  }, [open]);
+
+  useLayoutEffect(() => {
+    if (!open) return;
+    return () => {
+      const active = document.activeElement;
+      if (
+        active instanceof HTMLElement &&
+        (panelRef.current?.contains(active) ||
+          confirmPanelRef.current?.contains(active))
+      ) {
+        active.blur();
+      }
+    };
   }, [open]);
 
   useEffect(() => {
@@ -203,7 +221,7 @@ export function AppModal({
   }
 
   return createPortal(
-    <>
+    <div>
       <div
         className={`${overlayBaseClassName} ${overlayZIndex == null ? overlayZClassName : ""} ${overlayClassName}`.trim()}
         style={overlayZIndex == null ? undefined : { zIndex: overlayZIndex }}
@@ -303,7 +321,7 @@ export function AppModal({
           </div>
         </div>
       ) : null}
-    </>,
+    </div>,
     document.body,
   );
 }

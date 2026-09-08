@@ -15,6 +15,7 @@ export type AdminUserSummary = {
   email: string;
   avatar: string;
   isAdmin: boolean;
+  emailConfirmed: boolean;
   registeredAt: string | null;
   lastSeenAt: string | null;
   languageCode: string | null;

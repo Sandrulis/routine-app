@@ -9,7 +9,7 @@ import { useFeedbackToast } from "@/app/components/feedback-toast-provider";
 import { PasswordInput } from "@/app/components/password-input";
 import { PasswordStrengthMeter } from "@/app/components/password-strength-meter";
 import { useTranslations } from "@/app/components/translations-provider";
-import { getPasswordLoginStateAction, updatePasswordAction } from "@/app/lib/auth/actions";
+import { updatePasswordAction } from "@/app/lib/auth/actions";
 import { isPasswordStrongEnough } from "@/app/lib/auth/password-strength";
 import { translateActionError } from "@/app/lib/i18n/action-errors";
 import { createClient } from "@/app/lib/supabase/client";
@@ -35,7 +35,7 @@ export function ChangePasswordModal({
   const [nextPassword, setNextPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [pending, setPending] = useState(false);
-  const [requireCurrent, setRequireCurrent] = useState(hasCurrentPassword);
+  const requireCurrent = hasCurrentPassword;
 
   useEffect(() => {
     if (!open) return;
@@ -43,16 +43,7 @@ export function ChangePasswordModal({
     setNextPassword("");
     setConfirmPassword("");
     setPending(false);
-    setRequireCurrent(hasCurrentPassword);
-    let cancelled = false;
-    void getPasswordLoginStateAction().then((state) => {
-      if (cancelled) return;
-      setRequireCurrent(state.hasPasswordLogin);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [open, hasCurrentPassword]);
+  }, [open]);
 
   const dirty = Boolean(
     (requireCurrent && currentPassword) || nextPassword || confirmPassword,
@@ -118,9 +109,8 @@ export function ChangePasswordModal({
 
     setPending(true);
     try {
-      const supabase = createClient();
-
       if (requireCurrent) {
+        const supabase = createClient();
         const { data, error: userError } = await supabase.auth.getUser();
         const email = data.user?.email?.trim();
         if (userError || !email) {
@@ -168,10 +158,10 @@ export function ChangePasswordModal({
       }
 
       onSave(requireCurrent ? "change" : "set");
-      onOpenChange(false);
-      if (!requireCurrent) {
-        await supabase.auth.refreshSession();
+      if (document.activeElement instanceof HTMLElement) {
+        document.activeElement.blur();
       }
+      onOpenChange(false);
     } catch {
       showFeedback({
         type: "error",
@@ -222,7 +212,6 @@ export function ChangePasswordModal({
               onChange={(event) => setCurrentPassword(event.target.value)}
               className="mt-2"
               inputClassName={passwordFieldClassName}
-              autoFocus
             />
           </div>
         ) : null}
@@ -242,7 +231,6 @@ export function ChangePasswordModal({
             onChange={(event) => setNextPassword(event.target.value)}
             className="mt-2"
             inputClassName={passwordFieldClassName}
-            autoFocus={!requireCurrent}
           />
           <PasswordStrengthMeter password={nextPassword} />
         </div>

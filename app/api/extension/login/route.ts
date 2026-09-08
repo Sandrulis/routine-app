@@ -12,6 +12,10 @@ import {
 import { getMfaGate } from "@/app/lib/auth/mfa";
 import { ensureCurrentUserProfile } from "@/app/lib/users/ensure-profile";
 import { isEmailPasswordAuthEnabled } from "@/app/lib/integrations/resend/client";
+import {
+  isAuthEmailConfirmed,
+  isEmailNotConfirmedAuthError,
+} from "@/app/lib/auth/email-confirmed";
 import { consumeRateLimit } from "@/app/lib/security/rate-limit";
 import { requestClientIp } from "@/app/lib/security/client-ip";
 import { logError } from "@/app/lib/security/log-error";
@@ -111,9 +115,23 @@ export async function POST(request: Request) {
   });
   if (error || !data.session) {
     logError("extension login failed", error?.message);
+    const unconfirmed = error ? isEmailNotConfirmedAuthError(error) : false;
     return extensionJson(
       request,
-      { ok: false, error: "errors.auth_invalid" },
+      {
+        ok: false,
+        error: unconfirmed
+          ? "errors.auth_email_not_confirmed"
+          : "errors.auth_invalid",
+      },
+      { status: 401 },
+    );
+  }
+  if (!isAuthEmailConfirmed(data.user)) {
+    await supabase.auth.signOut();
+    return extensionJson(
+      request,
+      { ok: false, error: "errors.auth_email_not_confirmed" },
       { status: 401 },
     );
   }

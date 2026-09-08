@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { Fragment, useCallback, useEffect, useRef, useState, type FormEvent } from "react";
+import { AppModal } from "@/app/components/app-modal";
 import {
   authCardClassName,
   authInputClassName,
@@ -26,6 +27,8 @@ import {
   TurnstileWidget,
   type TurnstileWidgetHandle,
 } from "@/app/components/turnstile-widget";
+
+const CONFIRM_EMAIL_REDIRECT_SECONDS = 10;
 
 export function SignupForm({
   googleSignInEnabled = false,
@@ -72,6 +75,12 @@ export function SignupForm({
   const turnstileRequired = Boolean(turnstileSiteKey);
   const googlePending = searchParams.get("pending") === "google";
   const [turnstileModalOpen, setTurnstileModalOpen] = useState(false);
+  const [confirmEmailOpen, setConfirmEmailOpen] = useState(false);
+  const [confirmEmailAddress, setConfirmEmailAddress] = useState("");
+  const [confirmRedirectSeconds, setConfirmRedirectSeconds] = useState(
+    CONFIRM_EMAIL_REDIRECT_SECONDS,
+  );
+  const leftAfterSignupRef = useRef(false);
   const showTurnstile = turnstileRequired && emailPasswordEnabled;
 
   function getTurnstileToken() {
@@ -195,6 +204,38 @@ export function SignupForm({
     };
   }, [inviteToken, router, showFeedback, t]);
 
+  const leaveAfterSignup = useCallback(() => {
+    if (leftAfterSignupRef.current) return;
+    leftAfterSignupRef.current = true;
+    if (document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur();
+    }
+    window.setTimeout(() => {
+      router.replace("/");
+    }, 0);
+  }, [router]);
+
+  useEffect(() => {
+    if (!confirmEmailOpen) {
+      setConfirmRedirectSeconds(CONFIRM_EMAIL_REDIRECT_SECONDS);
+      return;
+    }
+
+    const timer = window.setInterval(() => {
+      if (leftAfterSignupRef.current) return;
+      setConfirmRedirectSeconds((current) => Math.max(0, current - 1));
+    }, 1000);
+
+    return () => {
+      window.clearInterval(timer);
+    };
+  }, [confirmEmailOpen]);
+
+  useEffect(() => {
+    if (!confirmEmailOpen || confirmRedirectSeconds > 0) return;
+    leaveAfterSignup();
+  }, [confirmEmailOpen, confirmRedirectSeconds, leaveAfterSignup]);
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!emailPasswordEnabled) return;
@@ -284,18 +325,10 @@ export function SignupForm({
       return;
     }
     if (result.needsEmail) {
-      showFeedback({
-        type: "success",
-        text: t(
-          "auth.signup.check_email",
-          "Pārbaudi e-pastu, lai apstiprinātu kontu.",
-        ),
-      });
-      router.push(
-        inviteContext
-          ? `/login?next=${encodeURIComponent(inviteContext.nextPath)}`
-          : "/login",
-      );
+      leftAfterSignupRef.current = false;
+      setConfirmRedirectSeconds(CONFIRM_EMAIL_REDIRECT_SECONDS);
+      setConfirmEmailAddress(email.trim());
+      setConfirmEmailOpen(true);
       return;
     }
     showFeedback({
@@ -578,6 +611,54 @@ export function SignupForm({
         }}
       />
     ) : null}
+
+    <AppModal
+      open={confirmEmailOpen}
+      onOpenChange={(open) => {
+        if (open) {
+          setConfirmEmailOpen(true);
+          return;
+        }
+        leaveAfterSignup();
+      }}
+      title={t("auth.signup.confirm_modal.title", "Reģistrācija izdevās")}
+      description={t(
+        "auth.signup.confirm_modal.description",
+        "Konts ir izveidots. Atlicis apstiprināt e-pastu.",
+      )}
+    >
+      <p className="text-sm leading-relaxed text-zinc-600">
+        {t(
+          "auth.signup.confirm_modal.body",
+          "Uz {email} nosūtīts apstiprinājuma e-pasts. Atver to un apstiprini adresi, lai varētu ienākt un lietot sistēmu.",
+        )
+          .split("{email}")
+          .map((part, index) => (
+            <Fragment key={index}>
+              {index > 0 ? (
+                <span className="font-semibold text-zinc-900">{confirmEmailAddress}</span>
+              ) : null}
+              {part}
+            </Fragment>
+          ))}
+      </p>
+      <p className="mt-4 text-sm text-zinc-500">
+        {t(
+          "auth.signup.confirm_modal.redirect_in",
+          "Pāriešana uz sākumu pēc {seconds} s.",
+          { seconds: confirmRedirectSeconds },
+        )}
+      </p>
+      <div className="mt-6 flex justify-end">
+        <button
+          type="button"
+          onClick={leaveAfterSignup}
+          className="inline-flex min-h-10 items-center justify-center rounded-2xl bg-zinc-900 px-4 text-sm font-semibold text-white transition hover:bg-zinc-700"
+        >
+          {t("auth.login.title", "Ienākt")}
+        </button>
+      </div>
+    </AppModal>
     </>
   );
 }

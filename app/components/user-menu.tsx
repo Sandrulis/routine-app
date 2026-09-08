@@ -44,9 +44,11 @@ export function UserMenu({ user }: { user: TeamMember }) {
   const { isEnabled } = useFrontendModules();
   const calendarVisible = isCalendarIntegrationVisible(isEnabled);
 
+  const authUserId = authUser?.id ?? "";
+
   useEffect(() => {
     setHasPasswordLogin(userHasPasswordLogin(authUser));
-    if (!authUser) return;
+    if (!authUserId) return;
     let cancelled = false;
     void getPasswordLoginStateAction().then((state) => {
       if (cancelled) return;
@@ -55,7 +57,7 @@ export function UserMenu({ user }: { user: TeamMember }) {
     return () => {
       cancelled = true;
     };
-  }, [authUser]);
+  }, [authUser, authUserId]);
 
   useEffect(() => {
     if (!open) return;
@@ -227,8 +229,11 @@ export function UserMenu({ user }: { user: TeamMember }) {
               role="menuitem"
               onClick={() =>
                 closeAnd(() => {
-                  setPasswordHasCurrent(hasPasswordLogin);
-                  setPasswordOpen(true);
+                  void getPasswordLoginStateAction().then((state) => {
+                    setHasPasswordLogin(state.hasPasswordLogin);
+                    setPasswordHasCurrent(state.hasPasswordLogin);
+                    setPasswordOpen(true);
+                  });
                 })
               }
               className="flex w-full items-start gap-3 px-3 py-2 text-left transition hover:bg-zinc-100"
@@ -321,6 +326,8 @@ export function UserMenu({ user }: { user: TeamMember }) {
           onOpenChange={setPasswordOpen}
           hasCurrentPassword={passwordHasCurrent}
           onSave={(mode) => {
+            setHasPasswordLogin(true);
+            setPasswordHasCurrent(true);
             showFeedback({
               type: "success",
               text:

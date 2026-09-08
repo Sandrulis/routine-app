@@ -1,5 +1,6 @@
 import { cache } from "react";
 import { cookies } from "next/headers";
+import { isAuthEmailConfirmed } from "@/app/lib/auth/email-confirmed";
 import { mapUserDisplay } from "@/app/lib/auth/map-user-display";
 import { getCurrentUser } from "@/app/lib/auth/get-current-user";
 import {
@@ -20,20 +21,13 @@ async function ensureProfileWithClient(
   name: string,
   avatarUrl: string | null,
 ) {
-  const { data: existing } = await supabase
-    .from("users")
-    .select("id")
-    .eq("id", userId)
-    .maybeSingle();
-  if (!existing?.id) {
-    const { error } = await supabase.rpc("ensure_user_profile", {
-      p_name: name,
-      p_avatar: avatarUrl ?? "",
-    });
-    if (error) {
-      console.error("ensure_user_profile failed:", error.message);
-      return;
-    }
+  const { error } = await supabase.rpc("ensure_user_profile", {
+    p_name: name,
+    p_avatar: avatarUrl ?? "",
+  });
+  if (error) {
+    console.error("ensure_user_profile failed:", error.message);
+    return;
   }
 
   await persistGuestLanguageChoice(supabase, userId);
@@ -46,7 +40,7 @@ const ensureCurrentUserProfileCached = cache(async function ensureCurrentUserPro
   }
 
   const user = await getCurrentUser();
-  if (!user) {
+  if (!user || !isAuthEmailConfirmed(user)) {
     return;
   }
 
@@ -76,7 +70,7 @@ export async function ensureCurrentUserProfile(
     data: { user },
   } = await client.auth.getUser();
 
-  if (!user) {
+  if (!user || !isAuthEmailConfirmed(user)) {
     return;
   }
 

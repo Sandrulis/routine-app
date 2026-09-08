@@ -246,18 +246,32 @@ export const listAdminUsers = cache(async function listAdminUsers(): Promise<Adm
     return [];
   }
 
-  const [{ data: memberships }, { data: teams }, lastIpsResult] =
+  const [{ data: memberships }, { data: teams }, lastIpsResult, unconfirmedResult] =
     await Promise.all([
       supabase
         .from("team_members")
         .select("user_id, team_id, role, last_online_at"),
       supabase.from("teams").select("id, name, logo_url, is_vip"),
       supabase.from("user_last_ips").select("user_id, ip, country_code"),
+      isSupabaseAdminConfigured()
+        ? createAdminClient().rpc("list_unconfirmed_auth_user_ids")
+        : Promise.resolve({ data: [] as { id: string }[], error: null }),
     ]);
 
   if (lastIpsResult.error) {
     console.error("listAdminUsers last ips failed:", lastIpsResult.error.message);
   }
+  if (unconfirmedResult.error) {
+    console.error(
+      "listAdminUsers unconfirmed lookup failed:",
+      unconfirmedResult.error.message,
+    );
+  }
+  const unconfirmedIds = new Set(
+    ((unconfirmedResult.data ?? []) as { id?: string }[])
+      .map((row) => (typeof row?.id === "string" ? row.id : ""))
+      .filter(Boolean),
+  );
   const lastIps = lastIpsResult.data;
 
   const teamById = new Map(
@@ -292,12 +306,14 @@ export const listAdminUsers = cache(async function listAdminUsers(): Promise<Adm
   }
 
   return ((data ?? []) as UserRow[]).map((row) => {
+    const emailConfirmed = !unconfirmedIds.has(row.id);
     return {
       id: row.id,
       name: row.name,
       email: row.email,
       avatar: row.avatar,
-      isAdmin: row.is_admin === true,
+      isAdmin: row.is_admin === true && emailConfirmed,
+      emailConfirmed,
       registeredAt: row.created_at,
       lastSeenAt: lastOnlineByUser.get(row.id) ?? null,
       languageCode: row.language_code,
@@ -415,7 +431,11 @@ export async function updateAdminUser(
 
   const { error } = await supabase
     .from("users")
-    .update({ name, email, is_admin: input.isAdmin })
+    .update({
+      name,
+      email,
+      is_admin: current.emailConfirmed ? input.isAdmin : false,
+    })
     .eq("id", userId);
 
   if (error) {

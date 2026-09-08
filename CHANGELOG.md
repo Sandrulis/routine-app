@@ -4,6 +4,11 @@
 
 - (none)
 
+## v0.3.77
+
+- Pēc reģistrācijas ar e-pastu atveras apstiprinājuma modālis (10 s, tad sākumlapa); neapstiprināts konts ir adminu sarakstā bez `is_admin`
+- Ienākšana ar paroli pirms e-pasta apstiprinājuma tiek noraidīta
+
 ## v0.3.76
 
 - Google/Microsoft lietotājs var pievienot e-pasta paroli bez esošās, tad ienākt ar e-pastu un paroli

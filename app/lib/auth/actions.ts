@@ -22,6 +22,10 @@ import {
   registerWithEmailPassword,
   requestPasswordResetEmail,
 } from "@/app/lib/auth/email-password";
+import {
+  isAuthEmailConfirmed,
+  isEmailNotConfirmedAuthError,
+} from "@/app/lib/auth/email-confirmed";
 import { userHasPasswordLogin } from "@/app/lib/auth/map-user-display";
 import { isPasswordStrongEnough } from "@/app/lib/auth/password-strength";
 import type { ActionResult } from "@/app/lib/actions/action-result";
@@ -89,11 +93,21 @@ export async function signInWithPasswordAction(input: {
   }
 
   const supabase = await createClient();
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email,
+    password,
+  });
   if (error) {
+    if (isEmailNotConfirmedAuthError(error)) {
+      return { ok: false, error: "errors.auth_email_not_confirmed" };
+    }
     logError("signInWithPassword failed", error.message);
     await recordAuthFailure(email);
     return { ok: false, error: "errors.auth_invalid" };
+  }
+  if (!isAuthEmailConfirmed(data.user)) {
+    await supabase.auth.signOut();
+    return { ok: false, error: "errors.auth_email_not_confirmed" };
   }
   await clearAuthFailures(email);
   await ensureCurrentUserProfile(supabase);

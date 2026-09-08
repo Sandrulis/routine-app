@@ -57,6 +57,7 @@ export const EXTENSION_I18N_KEYS = [
   "errors.extension_login_mfa",
   "errors.auth_invalid",
   "errors.auth_email_disabled",
+  "errors.auth_email_not_confirmed",
   "errors.auth_rate_limited",
   "common.email",
   "auth.fields.password",
