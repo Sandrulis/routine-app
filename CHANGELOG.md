@@ -4,6 +4,12 @@
 
 - (none)
 
+## v0.3.70
+
+- Spraudņa popup (konts, komanda, Gmail statuss) uzzīmējas uzreiz no kešotās sesijas un revalidē fonā, nevis rāda «Ielādē…», kamēr aiziet pilns pieprasījums
+- Gmail spraudnis atveras krietni ātrāk: sesijas un app origin keši glabājas `chrome.storage` un pārdzīvo service worker restartu, hover prefetch vairs netiek izmests, un Gmail ziņa netiek lejupielādēta divreiz
+- `/api/extension/session` un `/api/extension/browse?step=subtasks` izpilda būtiski mazāk DB vaicājumu (moduļu karodziņi vienā vaicājumā, statusu katalogs tikai vienreiz)
+
 ## v0.3.69
 
 - Komandas sānjoslā citu lietotāju zaļais punkts atjaunojas, arī ja viņi ir citā komandā

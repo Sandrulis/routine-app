@@ -1,9 +1,8 @@
 import { getExtensionAuth } from "@/app/lib/extension/auth";
 import {
   listExtensionLists,
-  listExtensionStatusesForTask,
-  listExtensionSubtasksForTask,
   listExtensionTreeItems,
+  loadExtensionSubtasksBundle,
 } from "@/app/lib/extension/browse";
 import {
   extensionJson,
@@ -104,19 +103,14 @@ export async function GET(request: Request) {
         auth.supabase,
         auth.user.id,
       );
-      const [subtasks, statusCatalog] = await Promise.all([
-        listExtensionSubtasksForTask(auth.supabase, parentId),
-        listExtensionStatusesForTask(auth.supabase, parentId, languageCode),
-      ]);
-      const { data: parent } = await auth.supabase
-        .from("work_tasks")
-        .select("team_id, list_id")
-        .eq("id", parentId)
-        .maybeSingle();
-      const parentListId = String(parent?.list_id || subtasks[0]?.listId || "");
-      const teamId = String(
-        parent?.team_id || url.searchParams.get("teamId") || "",
+      const bundle = await loadExtensionSubtasksBundle(
+        auth.supabase,
+        parentId,
+        languageCode,
       );
+      const parentListId = bundle.listId;
+      const teamId =
+        bundle.teamId || (url.searchParams.get("teamId") || "").trim();
       const [canCreate, assignees] = await Promise.all([
         parentListId
           ? canCreateExtensionSubtask(auth.supabase, parentListId)
@@ -129,11 +123,11 @@ export async function GET(request: Request) {
         ok: true,
         step: "subtasks",
         parentId,
-        subtasks,
+        subtasks: bundle.subtasks,
         canCreate,
         assignees,
-        statuses: statusCatalog.statuses,
-        defaultStatus: statusCatalog.defaultStatus,
+        statuses: bundle.statuses,
+        defaultStatus: bundle.defaultStatus,
       });
     }
 

@@ -163,6 +163,26 @@ function send(type, payload = {}) {
   });
 }
 
+const SESSION_CACHE_KEY = "extensionSessionCache";
+
+const SESSION_SNAPSHOT_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
+
+/**
+ * Read the worker's cached session straight from storage. Waking the service
+ * worker with sendMessage costs more than the popup's whole first paint.
+ */
+async function readCachedSessionSnapshot() {
+  try {
+    const data = await chrome.storage.local.get([SESSION_CACHE_KEY]);
+    const entry = data[SESSION_CACHE_KEY];
+    const at = Number(entry?.at) || 0;
+    if (!at || Date.now() - at > SESSION_SNAPSHOT_MAX_AGE_MS) return null;
+    return entry?.result?.data ?? null;
+  } catch {
+    return null;
+  }
+}
+
 /** @type {((result: object | null) => void) | null} */
 let sessionPushWaiter = null;
 
@@ -171,7 +191,15 @@ chrome.runtime.onMessage.addListener((message) => {
   if (sessionPushWaiter) {
     sessionPushWaiter(message.result || null);
     sessionPushWaiter = null;
+    return;
   }
+  // Background revalidation landed: repaint without flipping to the login view
+  // on a transient failure — an expired session shows on the next open.
+  const data = message.result?.data;
+  if (!data?.authenticated) return;
+  applySessionI18n(data);
+  applyLabels();
+  showAccount(data);
 });
 
 function waitForSessionPush(timeoutMs) {
@@ -251,15 +279,32 @@ function renderAccount(session) {
   $("pluginWarn").classList.toggle("hidden", pluginOn);
 }
 
-async function refreshUi() {
-  await hydrateI18n();
-  applyLabels();
-  $("boot").classList.remove("hidden");
+function showAccount(session) {
+  $("boot").classList.add("hidden");
   $("login").classList.add("hidden");
-  $("account").classList.add("hidden");
+  $("account").classList.remove("hidden");
+  renderAccount(session);
+  fitPopup();
+}
+
+/**
+ * `silent` keeps the already painted account on screen while revalidating, so
+ * the popup never flashes a loading state when a cached session exists.
+ */
+async function refreshUi(options = {}) {
+  const silent = options.silent === true;
+  applyLabels();
+  if (!silent) {
+    $("boot").classList.remove("hidden");
+    $("login").classList.add("hidden");
+    $("account").classList.add("hidden");
+  }
 
   const deadline = Date.now() + 15000;
-  let result = await send("routine.getSession", { force: true });
+  let result = await send(
+    "routine.getSession",
+    silent ? {} : { force: true },
+  );
   let session = result?.data || null;
   applySessionI18n(session);
   applyLabels();
@@ -269,6 +314,8 @@ async function refreshUi() {
     session?.handoffPending &&
     Date.now() < deadline
   ) {
+    $("boot").classList.remove("hidden");
+    $("account").classList.add("hidden");
     $("boot").textContent = t("extension.gmail.checking_session");
     const pushed = await waitForSessionPush(1200);
     if (pushed?.data?.authenticated) {
@@ -289,11 +336,17 @@ async function refreshUi() {
   if (!session?.authenticated) {
     const err = session?.error || result?.data?.error;
     if (err === "errors.extension_network") {
+      // Offline revalidation must not wipe the account we already painted.
+      if (silent && !$("account").classList.contains("hidden")) {
+        setStatus(t("errors.extension_network"), false);
+        return session;
+      }
       $("boot").classList.remove("hidden");
       $("boot").textContent = t("errors.extension_network");
       fitPopup();
       return session;
     }
+    $("account").classList.add("hidden");
     $("login").classList.remove("hidden");
     $("googleWrap").classList.toggle(
       "hidden",
@@ -307,9 +360,7 @@ async function refreshUi() {
     return session;
   }
 
-  $("account").classList.remove("hidden");
-  renderAccount(session);
-  fitPopup();
+  showAccount(session);
   return session;
 }
 
@@ -409,6 +460,16 @@ $("signOut").addEventListener("click", async () => {
 });
 
 void (async () => {
-  await hydrateI18n();
+  const [, cached] = await Promise.all([
+    hydrateI18n(),
+    readCachedSessionSnapshot(),
+  ]);
+  if (cached?.authenticated) {
+    applySessionI18n(cached, { persist: false });
+    applyLabels();
+    showAccount(cached);
+    await refreshUi({ silent: true });
+    return;
+  }
   await refreshUi();
 })();

@@ -85,14 +85,20 @@ function mapExtensionStatuses(
   };
 }
 
+type ExtensionStatusCatalog = {
+  listId: string;
+  teamId: string;
+  catalog: TaskStatusSummary[];
+};
+
 async function loadExtensionStatusCatalog(
   supabase: SupabaseClient,
   parentTaskId: string,
-): Promise<{ listId: string; catalog: TaskStatusSummary[] } | null> {
+): Promise<ExtensionStatusCatalog | null> {
   const { data: parent } = await supabase
     .from("work_tasks")
     .select(
-      "list_id, hidden_status_ids, status_order, status_group_overrides",
+      "list_id, team_id, hidden_status_ids, status_order, status_group_overrides",
     )
     .eq("id", parentTaskId)
     .maybeSingle();
@@ -143,7 +149,7 @@ async function loadExtensionStatusCatalog(
     },
   });
 
-  return { listId, catalog };
+  return { listId, teamId: String(parent.team_id || ""), catalog };
 }
 
 export async function listExtensionStatusesForTask(
@@ -326,7 +332,57 @@ export async function listExtensionSubtasksForTask(
 ): Promise<ExtensionBrowseSubtask[]> {
   const loaded = await loadExtensionStatusCatalog(supabase, parentTaskId);
   if (!loaded) return [];
+  return subtasksFromCatalog(supabase, parentTaskId, loaded.catalog);
+}
 
+/**
+ * Subtask list, status catalog and parent ids in one pass — the browse step
+ * used to load the same catalog and parent row three times.
+ */
+export async function loadExtensionSubtasksBundle(
+  supabase: SupabaseClient,
+  parentTaskId: string,
+  languageCode: string,
+): Promise<{
+  subtasks: ExtensionBrowseSubtask[];
+  statuses: ExtensionStatusOption[];
+  defaultStatus: string;
+  listId: string;
+  teamId: string;
+}> {
+  const loaded = await loadExtensionStatusCatalog(supabase, parentTaskId);
+  if (!loaded) {
+    return {
+      subtasks: [],
+      statuses: [],
+      defaultStatus: "todo",
+      listId: "",
+      teamId: "",
+    };
+  }
+  const subtasks = await subtasksFromCatalog(
+    supabase,
+    parentTaskId,
+    loaded.catalog,
+  );
+  const mapped =
+    loaded.catalog.length === 0
+      ? { statuses: [], defaultStatus: "todo" }
+      : mapExtensionStatuses(loaded.catalog, languageCode);
+  return {
+    subtasks,
+    statuses: mapped.statuses,
+    defaultStatus: mapped.defaultStatus,
+    listId: loaded.listId || subtasks[0]?.listId || "",
+    teamId: loaded.teamId,
+  };
+}
+
+async function subtasksFromCatalog(
+  supabase: SupabaseClient,
+  parentTaskId: string,
+  catalog: TaskStatusSummary[],
+): Promise<ExtensionBrowseSubtask[]> {
   const { data } = await supabase
     .from("work_tasks")
     .select("id, title, list_id, parent_id, status, sort_order")
@@ -339,7 +395,6 @@ export async function listExtensionSubtasksForTask(
 
   if (!data?.length) return [];
 
-  const catalog = loaded.catalog;
   const closed = new Set(
     catalog.filter((status) => status.groupKey === "closed").map((s) => s.id),
   );

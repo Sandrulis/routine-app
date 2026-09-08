@@ -24,18 +24,20 @@ export type ExtensionUserSummary = {
   hasPasswordLogin: boolean;
 };
 
-async function isModuleEnabled(
+async function readModuleFlags(
   supabase: SupabaseClient,
-  moduleKey: string,
-  fallback = true,
-) {
+  moduleKeys: string[],
+): Promise<Map<string, boolean>> {
   const { data, error } = await supabase
     .from("site_frontend_modules")
-    .select("is_enabled")
-    .eq("module_key", moduleKey)
-    .maybeSingle();
-  if (error || !data) return fallback;
-  return data.is_enabled === true;
+    .select("module_key, is_enabled")
+    .in("module_key", moduleKeys);
+  const flags = new Map<string, boolean>();
+  if (error) return flags;
+  for (const row of data ?? []) {
+    flags.set(String(row.module_key), row.is_enabled === true);
+  }
+  return flags;
 }
 
 export async function loadExtensionUserSummary(
@@ -80,33 +82,37 @@ export async function listExtensionTeams(
   ];
   if (!teamIds.length) return [];
 
-  const { data: teams } = await supabase
-    .from("teams")
-    .select("id, name")
-    .in("id", teamIds)
-    .order("name", { ascending: true });
+  const admin = isSupabaseAdminConfigured() ? createAdminClient() : null;
+  const [{ data: teams }, driveResult, oneDriveResult] = await Promise.all([
+    supabase
+      .from("teams")
+      .select("id, name")
+      .in("id", teamIds)
+      .order("name", { ascending: true }),
+    admin
+      ? admin
+          .from("team_google_drive_integrations")
+          .select("team_id, is_connected, refresh_token")
+          .in("team_id", teamIds)
+      : Promise.resolve({ data: null }),
+    admin
+      ? admin
+          .from("team_onedrive_integrations")
+          .select("team_id, is_connected, refresh_token")
+          .in("team_id", teamIds)
+      : Promise.resolve({ data: null }),
+  ]);
 
   const connected = new Set<string>();
   const oneDriveConnected = new Set<string>();
-  if (isSupabaseAdminConfigured()) {
-    const admin = createAdminClient();
-    const { data: rows } = await admin
-      .from("team_google_drive_integrations")
-      .select("team_id, is_connected, refresh_token")
-      .in("team_id", teamIds);
-    for (const row of rows ?? []) {
-      if (row.is_connected && decryptSecret(row.refresh_token)) {
-        connected.add(String(row.team_id));
-      }
+  for (const row of driveResult.data ?? []) {
+    if (row.is_connected && decryptSecret(row.refresh_token)) {
+      connected.add(String(row.team_id));
     }
-    const { data: oneDriveRows } = await admin
-      .from("team_onedrive_integrations")
-      .select("team_id, is_connected, refresh_token")
-      .in("team_id", teamIds);
-    for (const row of oneDriveRows ?? []) {
-      if (row.is_connected && decryptSecret(row.refresh_token)) {
-        oneDriveConnected.add(String(row.team_id));
-      }
+  }
+  for (const row of oneDriveResult.data ?? []) {
+    if (row.is_connected && decryptSecret(row.refresh_token)) {
+      oneDriveConnected.add(String(row.team_id));
     }
   }
 
@@ -119,18 +125,23 @@ export async function listExtensionTeams(
 }
 
 export async function loadExtensionSessionFlags(supabase: SupabaseClient) {
-  const [fileUploadEnabled, gmailPluginEnabled, googleDriveEnabled, oneDriveEnabled] =
-    await Promise.all([
-      isModuleEnabled(supabase, FRONTEND_MODULE_KEYS.fileUpload, true),
-      isModuleEnabled(supabase, FRONTEND_MODULE_KEYS.gmailPlugin, true),
-      isModuleEnabled(supabase, FRONTEND_MODULE_KEYS.googleDrive, true),
-      isModuleEnabled(supabase, FRONTEND_MODULE_KEYS.onedrive, false),
-    ]);
+  const defaults: Array<[string, boolean]> = [
+    [FRONTEND_MODULE_KEYS.fileUpload, true],
+    [FRONTEND_MODULE_KEYS.gmailPlugin, true],
+    [FRONTEND_MODULE_KEYS.googleDrive, true],
+    [FRONTEND_MODULE_KEYS.onedrive, false],
+  ];
+  const flags = await readModuleFlags(
+    supabase,
+    defaults.map(([key]) => key),
+  );
+  const read = (key: string, fallback: boolean) =>
+    flags.has(key) ? flags.get(key) === true : fallback;
   return {
-    fileUploadEnabled,
-    gmailPluginEnabled,
-    googleDriveEnabled,
-    oneDriveEnabled,
+    fileUploadEnabled: read(FRONTEND_MODULE_KEYS.fileUpload, true),
+    gmailPluginEnabled: read(FRONTEND_MODULE_KEYS.gmailPlugin, true),
+    googleDriveEnabled: read(FRONTEND_MODULE_KEYS.googleDrive, true),
+    oneDriveEnabled: read(FRONTEND_MODULE_KEYS.onedrive, false),
   };
 }
 

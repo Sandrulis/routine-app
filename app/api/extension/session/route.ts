@@ -56,43 +56,72 @@ async function branding() {
 }
 
 export async function GET(request: Request) {
-  const brand = await branding();
-  const auth = await getExtensionAuth(request);
-  const languageCode = await resolveExtensionUiLanguage(
-    auth?.supabase ?? null,
-    auth?.user.id ?? null,
-  );
-  const strings = getExtensionStrings(languageCode, brand.systemName);
-  const [emailPasswordEnabled, googleSignInEnabled] = await Promise.all([
+  const [brand, auth] = await Promise.all([
+    branding(),
+    getExtensionAuth(request),
+  ]);
+
+  // One parallel wave: public flags plus everything the authed payload needs.
+  const publicWork = Promise.all([
+    resolveExtensionUiLanguage(auth?.supabase ?? null, auth?.user.id ?? null),
     isEmailPasswordAuthEnabled(),
     isGooglePluginEnabled(),
   ]);
 
-  const publicFlags = {
-    ...brand,
-    languageCode,
-    strings,
-    emailPasswordEnabled,
-    googleSignInEnabled,
-    loginPath: GMAIL_PLUGIN_LOGIN_PATH,
-    connectGmailPath: GMAIL_PLUGIN_START_PATH,
-    connectGmailBridgePath: GMAIL_PLUGIN_BRIDGE_PATH,
-  };
+  function publicPayload(
+    languageCode: Awaited<typeof publicWork>[0],
+    emailPasswordEnabled: boolean,
+    googleSignInEnabled: boolean,
+  ) {
+    return {
+      ...brand,
+      languageCode,
+      strings: getExtensionStrings(languageCode, brand.systemName),
+      emailPasswordEnabled,
+      googleSignInEnabled,
+      loginPath: GMAIL_PLUGIN_LOGIN_PATH,
+      connectGmailPath: GMAIL_PLUGIN_START_PATH,
+      connectGmailBridgePath: GMAIL_PLUGIN_BRIDGE_PATH,
+    };
+  }
 
   if (!auth) {
+    const [languageCode, emailPasswordEnabled, googleSignInEnabled] =
+      await publicWork;
     return extensionJson(request, {
       ok: false,
       authenticated: false,
-      ...publicFlags,
+      ...publicPayload(languageCode, emailPasswordEnabled, googleSignInEnabled),
       error: "errors.extension_auth_required",
     });
   }
 
   const accessToken = bearerToken(request);
-  if (
-    accessToken &&
-    (await accessTokenNeedsTotpChallenge(auth.user, accessToken))
-  ) {
+  const [
+    [languageCode, emailPasswordEnabled, googleSignInEnabled],
+    needsMfa,
+    flags,
+    user,
+    teams,
+    gmail,
+  ] = await Promise.all([
+    publicWork,
+    accessToken
+      ? accessTokenNeedsTotpChallenge(auth.user, accessToken)
+      : Promise.resolve(false),
+    loadExtensionSessionFlags(auth.supabase),
+    loadExtensionUserSummary(auth.supabase, auth.user),
+    listExtensionTeams(auth.supabase, auth.user.id),
+    loadGmailConnectionSummary(auth.user.id),
+  ]);
+
+  const publicFlags = publicPayload(
+    languageCode,
+    emailPasswordEnabled,
+    googleSignInEnabled,
+  );
+
+  if (needsMfa) {
     return extensionJson(request, {
       ok: false,
       authenticated: false,
@@ -101,13 +130,6 @@ export async function GET(request: Request) {
       error: "errors.extension_login_mfa",
     });
   }
-
-  const [flags, user, teams, gmail] = await Promise.all([
-    loadExtensionSessionFlags(auth.supabase),
-    loadExtensionUserSummary(auth.supabase, auth.user),
-    listExtensionTeams(auth.supabase, auth.user.id),
-    loadGmailConnectionSummary(auth.user.id),
-  ]);
 
   return extensionJson(request, {
     ok: true,

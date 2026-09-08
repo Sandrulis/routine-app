@@ -1683,12 +1683,20 @@ function ensureUi() {
     injectInlineButtons();
   }
 
+  /** Cached session good enough to open the picker without revalidating. */
+  function sessionReadyToAttach(data) {
+    if (!data?.authenticated) return false;
+    if (data.gmailPluginEnabled === false) return false;
+    if (data.fileUploadEnabled === false) return false;
+    if (data.gmailConnected !== true) return false;
+    // A stale "no cloud" would close the modal without telling the user why.
+    return teamCloudConnected(selectedTeamFromSession(data));
+  }
+
   let sessionLoadedAt = 0;
-  let sessionPrefetchStarted = false;
+  let sessionInFlight = null;
 
   function prefetchSession() {
-    if (sessionPrefetchStarted) return;
-    sessionPrefetchStarted = true;
     refreshSession().catch(() => undefined);
   }
 
@@ -1697,6 +1705,20 @@ function ensureUi() {
     if (!force && session && Date.now() - sessionLoadedAt < 30_000) {
       return { data: session };
     }
+    // Hover prefetch and the click that follows must share one round trip.
+    if (!force && sessionInFlight) return sessionInFlight;
+    const request = sendSessionRequest(force);
+    if (!force) {
+      sessionInFlight = request;
+      const clear = () => {
+        if (sessionInFlight === request) sessionInFlight = null;
+      };
+      request.then(clear, clear);
+    }
+    return request;
+  }
+
+  async function sendSessionRequest(force) {
     const result = await send("routine.getSession", force ? { force: true } : {});
     session = result?.data || null;
     sessionLoadedAt = Date.now();
@@ -1970,7 +1992,12 @@ function ensureUi() {
     const email = scrapeEmailFallback();
     await i18nReady;
     setBusy(true, t("extension.gmail.checking_session"));
-    const sessionResult = await refreshSession({ force: true });
+    // Use the hover-prefetched session; only pay for a round trip when the
+    // cached answer would send the user to an error or reconnect screen.
+    let sessionResult = await refreshSession();
+    if (!sessionReadyToAttach(sessionResult?.data)) {
+      sessionResult = await refreshSession({ force: true });
+    }
     meta.textContent = email.subject
       ? t("extension.gmail.email_label", { subject: email.subject })
       : t("extension.gmail.open_email");
@@ -2095,8 +2122,8 @@ function ensureUi() {
       btn.querySelector(".routine-gmail-inline-fallback"),
       session?.logoUrl,
     );
-    btn.addEventListener("mouseenter", () => prefetchSession(), { once: true });
-    btn.addEventListener("focus", () => prefetchSession(), { once: true });
+    btn.addEventListener("mouseenter", () => prefetchSession());
+    btn.addEventListener("focus", () => prefetchSession());
     const open = (event) => {
       event.preventDefault();
       event.stopPropagation();
@@ -2479,12 +2506,13 @@ function emailUiTargetsPresent() {
 }
 
 let injectScheduled = false;
+/** Gmail mutates constantly, so probe the DOM once per frame, not per mutation. */
 function scheduleInlineInject() {
-  if (!emailUiTargetsPresent()) return;
   if (injectScheduled) return;
   injectScheduled = true;
   requestAnimationFrame(() => {
     injectScheduled = false;
+    if (!emailUiTargetsPresent()) return;
     initUiOnce();
     const root = document.getElementById("routine-gmail-root");
     if (!root) return;

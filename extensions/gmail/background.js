@@ -17,6 +17,13 @@ const AUTH_MAX_AGE_SEC = 30 * 24 * 60 * 60;
 const EXTENSION_UPLOAD_MAX_BYTES = 25 * 1024 * 1024;
 const APP_BASE_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 const SESSION_CACHE_TTL_MS = 45_000;
+/** MV3 kills the worker after ~30s idle, so caches must live in storage. */
+const APP_BASE_VERIFIED_KEY = "extensionAppBaseVerified";
+const SESSION_CACHE_KEY = "extensionSessionCache";
+const SESSION_CACHE_STALE_MS = 10 * 60 * 1000;
+const GMAIL_MESSAGE_CACHE_KEY = "extensionGmailMessage";
+const GMAIL_MESSAGE_CACHE_TTL_MS = 5 * 60 * 1000;
+const GMAIL_MESSAGE_MAX_PERSIST_BYTES = 4 * 1024 * 1024;
 const AUTH_COOKIE_URLS = [
   "https://www.tasqin.com/",
   "https://tasqin.com/",
@@ -35,17 +42,49 @@ let refreshInFlight = null;
 /** @type {null | "invalid" | "unavailable" | "missing"} */
 let lastTokenRefreshReason = null;
 
+/**
+ * `local` survives browser restarts (popup must paint without a round trip);
+ * `session` is for bulky, throwaway payloads like a fetched Gmail message.
+ */
+async function readStorageArea(area, key) {
+  try {
+    const data = await chrome.storage[area].get([key]);
+    return data[key] ?? null;
+  } catch {
+    return null;
+  }
+}
+
+async function writeStorageArea(area, key, value) {
+  try {
+    await chrome.storage[area].set({ [key]: value });
+  } catch {
+    // Quota exceeded or storage area unavailable.
+  }
+}
+
+async function removeStorageArea(area, key) {
+  try {
+    await chrome.storage[area].remove([key]);
+  } catch {
+    // ignore
+  }
+}
+
 function invalidateAppBaseCache() {
   cachedAppBase = null;
+  void chrome.storage.local.remove([APP_BASE_VERIFIED_KEY]).catch(() => {});
 }
 
 function invalidateSessionCache() {
   cachedSessionResponse = null;
+  void removeStorageArea("local", SESSION_CACHE_KEY);
 }
 
 function invalidateRuntimeCaches() {
   invalidateAppBaseCache();
   invalidateSessionCache();
+  invalidateGmailMessageCache();
 }
 
 function persistI18n(storageKey, data) {
@@ -399,8 +438,26 @@ async function adoptAppOrigin(origin, config) {
     canonicalOrigin: canonical,
   });
   cachedAppBase = { origin, config, resolvedAt: Date.now() };
+  void chrome.storage.local
+    .set({ [APP_BASE_VERIFIED_KEY]: { origin, at: Date.now() } })
+    .catch(() => {});
   persistDefaultI18n(config);
   return origin;
+}
+
+/** Origin verified within the TTL — skip probing every candidate again. */
+async function readVerifiedAppBase() {
+  try {
+    const data = await chrome.storage.local.get([APP_BASE_VERIFIED_KEY]);
+    const entry = data[APP_BASE_VERIFIED_KEY];
+    const origin = preferLiveOrigin(parseOrigin(entry?.origin));
+    const at = Number(entry?.at) || 0;
+    if (!origin || !at) return null;
+    if (Date.now() - at > APP_BASE_CACHE_TTL_MS) return null;
+    return { origin, at };
+  } catch {
+    return null;
+  }
 }
 
 async function tryResolveOrigin(origin) {
@@ -423,6 +480,20 @@ async function getAppBase(options = {}) {
 
   const stored = await chrome.storage.sync.get(["appBaseUrl"]);
   const storedOrigin = parseOrigin(stored.appBaseUrl);
+
+  if (!forceRefresh && storedOrigin) {
+    const verified = await readVerifiedAppBase();
+    if (verified && originsEquivalent(verified.origin, storedOrigin)) {
+      const origin = preferLiveOrigin(storedOrigin) || storedOrigin;
+      cachedAppBase = {
+        origin,
+        config: cachedAppBase?.config ?? null,
+        resolvedAt: verified.at,
+      };
+      return origin;
+    }
+  }
+
   const storedSession = await readStoredSession();
   const cookieOrigins = await originsFromAuthCookies();
   const candidates = expandOrigins([
@@ -989,6 +1060,8 @@ async function apiFetch(path, options = {}, retried = false) {
       redirect: "manual",
     });
   } catch {
+    // The cached origin may be gone (dev server stopped) — re-probe next time.
+    invalidateAppBaseCache();
     return {
       ok: false,
       status: 0,
@@ -1386,6 +1459,50 @@ async function resolveGmailMessage(messageId, threadId, token) {
   throw lastError || new Error("errors.extension_gmail_not_found");
 }
 
+/**
+ * Listing attachments and attaching them both need the same `format=full`
+ * message, so keep the last one around instead of downloading it twice.
+ */
+let cachedGmailMessage = null;
+
+function gmailMessageCacheKey(messageId, threadId) {
+  return `${String(messageId || "")}|${String(threadId || "")}`;
+}
+
+async function readCachedGmailMessage(key) {
+  const entry =
+    cachedGmailMessage ?? (await readStorageArea("session", GMAIL_MESSAGE_CACHE_KEY));
+  if (!entry?.message || entry.key !== key) return null;
+  if (Date.now() - (Number(entry.at) || 0) > GMAIL_MESSAGE_CACHE_TTL_MS) {
+    return null;
+  }
+  cachedGmailMessage = entry;
+  return entry.message;
+}
+
+async function resolveGmailMessageCached(messageId, threadId, token) {
+  const key = gmailMessageCacheKey(messageId, threadId);
+  const cached = await readCachedGmailMessage(key);
+  if (cached) return cached;
+
+  const message = await resolveGmailMessage(messageId, threadId, token);
+  const entry = { key, at: Date.now(), message };
+  cachedGmailMessage = entry;
+  try {
+    if (JSON.stringify(message).length <= GMAIL_MESSAGE_MAX_PERSIST_BYTES) {
+      void writeStorageArea("session", GMAIL_MESSAGE_CACHE_KEY, entry);
+    }
+  } catch {
+    // Unserializable payload: in-memory cache is enough.
+  }
+  return message;
+}
+
+function invalidateGmailMessageCache() {
+  cachedGmailMessage = null;
+  void removeStorageArea("session", GMAIL_MESSAGE_CACHE_KEY);
+}
+
 async function listGmailAttachments(messageId, threadId, interactive) {
   async function once(forceRefresh = false) {
     const token = await getGmailAccessToken({
@@ -1393,7 +1510,8 @@ async function listGmailAttachments(messageId, threadId, interactive) {
       forceRefresh,
     });
     if (!token) throw new Error("errors.extension_gmail_auth");
-    const message = await resolveGmailMessage(messageId, threadId, token);
+    if (forceRefresh) invalidateGmailMessageCache();
+    const message = await resolveGmailMessageCached(messageId, threadId, token);
     const parts = [];
     walkParts(message.payload, parts);
     const headers = message.payload?.headers || [];
@@ -1466,7 +1584,8 @@ async function fetchGmailMessageBundle(
       key: "extension.gmail.progress_email",
       percent: 8,
     });
-    const message = await resolveGmailMessage(messageId, threadId, token);
+    if (forceRefresh) invalidateGmailMessageCache();
+    const message = await resolveGmailMessageCached(messageId, threadId, token);
     return { token, message };
   }
 
@@ -1629,9 +1748,12 @@ async function sessionResponseInner() {
   }
 
   const result = await apiFetch("/api/extension/session");
-  const doneTabs = await findOpenPluginDoneTabs();
   if (result?.data) {
-    result.data.handoffPending = doneTabs.length > 0;
+    // Scanning every tab only matters while a login handoff can still land.
+    result.data.handoffPending =
+      result.data.authenticated === true
+        ? false
+        : (await findOpenPluginDoneTabs()).length > 0;
     const teams = Array.isArray(result.data.teams) ? result.data.teams : [];
     const selectedTeamId = await getSelectedTeamId(teams, result.data);
     if (selectedTeamId) {
@@ -1642,31 +1764,60 @@ async function sessionResponseInner() {
   return result;
 }
 
-async function sessionResponse(options = {}) {
-  const force = options.force === true;
-  const now = Date.now();
-  if (
-    !force &&
-    cachedSessionResponse &&
-    now - cachedSessionResponse.at < SESSION_CACHE_TTL_MS
-  ) {
-    persistSessionI18n(cachedSessionResponse.result?.data);
-    return cachedSessionResponse.result;
-  }
-  if (sessionResponseInFlight && !force) {
-    return sessionResponseInFlight;
-  }
-  sessionResponseInFlight = (async () => {
+async function readCachedSessionResponse() {
+  if (cachedSessionResponse) return cachedSessionResponse;
+  const entry = await readStorageArea("local", SESSION_CACHE_KEY);
+  const at = Number(entry?.at) || 0;
+  if (!entry?.result || !at) return null;
+  cachedSessionResponse = { result: entry.result, at };
+  return cachedSessionResponse;
+}
+
+/** `force` never joins an in-flight request — login handoff needs fresh data. */
+function startSessionRefresh(force = false) {
+  if (!force && sessionResponseInFlight) return sessionResponseInFlight;
+  const request = (async () => {
     try {
       const result = await sessionResponseInner();
-      cachedSessionResponse = { result, at: Date.now() };
+      const at = Date.now();
+      cachedSessionResponse = { result, at };
+      void writeStorageArea("local", SESSION_CACHE_KEY, { result, at });
       persistSessionI18n(result?.data);
       return result;
     } finally {
-      sessionResponseInFlight = null;
+      if (sessionResponseInFlight === request) sessionResponseInFlight = null;
     }
   })();
-  return sessionResponseInFlight;
+  sessionResponseInFlight = request;
+  return request;
+}
+
+async function sessionResponse(options = {}) {
+  const force = options.force === true;
+  if (force) return startSessionRefresh(true);
+
+  const cached = await readCachedSessionResponse();
+  if (cached) {
+    const age = Date.now() - cached.at;
+    if (age < SESSION_CACHE_TTL_MS) {
+      persistSessionI18n(cached.result?.data);
+      return cached.result;
+    }
+    // Stale but signed in: answer instantly and revalidate behind the scenes.
+    if (
+      age < SESSION_CACHE_STALE_MS &&
+      cached.result?.data?.authenticated === true
+    ) {
+      persistSessionI18n(cached.result?.data);
+      void startSessionRefresh().then(
+        (result) => broadcastSessionUpdate(result),
+        () => undefined,
+      );
+      return cached.result;
+    }
+  }
+
+  return startSessionRefresh();
 }
 
 async function publishSessionUpdate(force = true) {
@@ -2474,9 +2625,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           "gmailAccessToken",
           "gmailTokenExpiresAt",
         ]);
+        invalidateGmailMessageCache();
         let connected = false;
         for (let attempt = 0; attempt < 8; attempt += 1) {
-          const after = await sessionResponse();
+          const after = await sessionResponse({ force: true });
           if (after?.data?.gmailConnected) {
             connected = true;
             break;
