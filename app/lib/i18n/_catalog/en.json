@@ -721,6 +721,7 @@
   "admin.users.delete.self_disabled": "You cannot delete your own account",
   "admin.users.delete.last_admin_disabled": "The last administrator cannot be deleted",
   "admin.users.registered": "Joined",
+  "admin.users.last_ip": "Last IP address",
   "admin.users.last_seen": "Last signed in",
   "admin.users.last_seen_never": "Has not signed in yet",
   "admin.users.no_team": "Not in a team",

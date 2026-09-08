@@ -19,6 +19,7 @@ import { ToggleSwitch } from "@/app/components/toggle-switch";
 import { useDisplayPreferences } from "@/app/components/display-preferences-provider";
 import { useTranslations } from "@/app/components/translations-provider";
 import { translateActionError } from "@/app/lib/i18n/action-errors";
+import { formatCountryName } from "@/app/lib/format/country";
 import { MemberLastOnline } from "@/app/components/member-last-online";
 import { UserAvatar } from "@/app/components/user-avatar";
 import { useTeam } from "@/app/lib/team-store";
@@ -47,7 +48,7 @@ export function AdminUsersManager({
   currentUserId: string;
 }) {
   const router = useRouter();
-  const { t } = useTranslations();
+  const { t, languageCode } = useTranslations();
   const { formatDate } = useDisplayPreferences();
   const { currentUser } = useTeam();
   const { showFeedback, clearFeedback } = useFeedbackToast();
@@ -68,6 +69,8 @@ export function AdminUsersManager({
         registeredAt: null,
         lastSeenAt: null,
         languageCode: null,
+        lastIp: null,
+        lastIpCountry: null,
         teams: [],
       })
     : emptyDraft();
@@ -175,6 +178,10 @@ export function AdminUsersManager({
                   user.id === currentUserId
                     ? currentUser.lastOnlineAt ?? user.lastSeenAt
                     : user.lastSeenAt;
+                const ipCountryName = formatCountryName(
+                  user.lastIpCountry,
+                  languageCode,
+                );
                 return (
                   <tr key={user.id}>
                     <td className="px-5 py-4">
@@ -215,9 +222,26 @@ export function AdminUsersManager({
                             <span className="truncate">{user.name}</span>
                           </p>
                           <p className="truncate text-sm text-zinc-500">{user.email}</p>
-                          {user.languageCode ? (
-                            <p className="mt-0.5 font-mono text-[11px] uppercase tracking-wide text-zinc-400">
-                              {user.languageCode}
+                          {user.languageCode || user.lastIp ? (
+                            <p className="mt-0.5 text-[11px] text-zinc-400">
+                              {user.languageCode ? (
+                                <span className="font-mono uppercase tracking-wide">
+                                  {user.languageCode}
+                                </span>
+                              ) : null}
+                              {user.languageCode && user.lastIp ? (
+                                <span aria-hidden="true"> · </span>
+                              ) : null}
+                              {user.lastIp ? (
+                                <Tooltip label={t("admin.users.last_ip", "Pēdējā IP adrese")}>
+                                  <span className="font-mono tracking-normal">
+                                    {user.lastIp}
+                                    {ipCountryName ? (
+                                      <span className="font-sans"> · {ipCountryName}</span>
+                                    ) : null}
+                                  </span>
+                                </Tooltip>
+                              ) : null}
                             </p>
                           ) : null}
                         </div>

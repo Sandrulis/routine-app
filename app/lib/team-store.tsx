@@ -23,6 +23,7 @@ import {
   reorderTeamRoleRows,
   isUnauthenticatedDbError,
   touchMemberOnline,
+  fetchTeamMemberLastOnline,
   updateMemberDutiesRow,
   updateMemberRoleRow,
   updateTeamDutyRow,
@@ -30,6 +31,11 @@ import {
   updateTeamRow,
 } from "@/app/lib/db/work-data";
 import { inviteTeamMemberAction } from "@/app/lib/team/actions";
+import { recordCurrentUserLastIpAction } from "@/app/lib/users/record-last-ip-action";
+import {
+  ONLINE_HEARTBEAT_MS,
+  ONLINE_PRESENCE_POLL_MS,
+} from "@/app/lib/last-online";
 import { clearLegacyDemoStorage } from "@/app/lib/clear-legacy-demo-storage";
 import {
   mapUserDisplay,
@@ -130,6 +136,43 @@ function isTransientOnlineTouchError(error: unknown): boolean {
     normalized.includes("networkerror") ||
     isUnauthenticatedDbError(error)
   );
+}
+
+function stampSelfLastOnline(
+  current: MembersByTeam,
+  userId: string,
+  at: string,
+): MembersByTeam {
+  let changed = false;
+  const next: MembersByTeam = {};
+  for (const [teamId, list] of Object.entries(current)) {
+    next[teamId] = list.map((member) => {
+      if (member.userId !== userId && member.id !== userId) return member;
+      if (member.lastOnlineAt === at) return member;
+      changed = true;
+      return { ...member, lastOnlineAt: at };
+    });
+  }
+  return changed ? next : current;
+}
+
+function mergeMemberLastOnline(
+  current: MembersByTeam,
+  teamId: string,
+  lastOnlineByMemberId: Record<string, string | null>,
+): MembersByTeam {
+  const list = current[teamId];
+  if (!list) return current;
+  let changed = false;
+  const next = list.map((member) => {
+    if (!(member.id in lastOnlineByMemberId)) return member;
+    const lastOnlineAt = lastOnlineByMemberId[member.id] ?? null;
+    if (lastOnlineAt === member.lastOnlineAt) return member;
+    changed = true;
+    return { ...member, lastOnlineAt };
+  });
+  if (!changed) return current;
+  return { ...current, [teamId]: next };
 }
 
 function ownerFromAuth(user: User): TeamMember {
@@ -295,7 +338,13 @@ export function TeamProvider({ children }: { children: ReactNode }) {
     const userId = authUser.id;
 
     function touchCurrentUser() {
-      void touchMemberOnline(teamId, userId, new Date().toISOString()).catch((error) => {
+      const seenAt = new Date().toISOString();
+      void recordCurrentUserLastIpAction().catch(() => {});
+      void touchMemberOnline(teamId, userId, seenAt)
+        .then(() => {
+          setMembersByTeam((current) => stampSelfLastOnline(current, userId, seenAt));
+        })
+        .catch((error) => {
         if (
           !navigator.onLine ||
           document.visibilityState !== "visible" ||
@@ -314,9 +363,37 @@ export function TeamProvider({ children }: { children: ReactNode }) {
     }
 
     touchCurrentUser();
-    const timer = window.setInterval(touchCurrentUser, 90_000);
+    const timer = window.setInterval(touchCurrentUser, ONLINE_HEARTBEAT_MS);
     return () => window.clearInterval(timer);
   }, [authUser?.id, currentTeamId, isReady]);
+
+  useEffect(() => {
+    if (!isReady || !currentTeamId) return;
+    const teamId = currentTeamId;
+    let cancelled = false;
+
+    async function pullPresence() {
+      try {
+        const byId = await fetchTeamMemberLastOnline(teamId);
+        if (cancelled) return;
+        setMembersByTeam((current) => mergeMemberLastOnline(current, teamId, byId));
+      } catch {
+        return;
+      }
+    }
+
+    void pullPresence();
+    const timer = window.setInterval(pullPresence, ONLINE_PRESENCE_POLL_MS);
+    function onVisible() {
+      if (document.visibilityState === "visible") void pullPresence();
+    }
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, [currentTeamId, isReady]);
 
   const currentTeam = useMemo(
     () => teams.find((team) => team.id === currentTeamId) ?? teams[0] ?? null,

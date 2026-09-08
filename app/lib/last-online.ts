@@ -1,4 +1,6 @@
-export const ONLINE_THRESHOLD_MS = 60_000;
+export const ONLINE_THRESHOLD_MS = 180_000;
+export const ONLINE_HEARTBEAT_MS = 90_000;
+export const ONLINE_PRESENCE_POLL_MS = 30_000;
 const HOUR_MS = 3_600_000;
 const DAY_MS = 24 * HOUR_MS;
 const MONTH_MS = 30 * DAY_MS;

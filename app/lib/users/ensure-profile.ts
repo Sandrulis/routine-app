@@ -10,6 +10,7 @@ import {
 } from "@/app/lib/i18n/language";
 import { createClient } from "@/app/lib/supabase/server";
 import { isSupabaseConfigured } from "@/app/lib/supabase/env";
+import { recordCurrentUserLastIp } from "@/app/lib/users/record-last-ip";
 
 type ProfileSupabaseClient = Awaited<ReturnType<typeof createClient>>;
 
@@ -36,6 +37,7 @@ async function ensureProfileWithClient(
   }
 
   await persistGuestLanguageChoice(supabase, userId);
+  await recordCurrentUserLastIp();
 }
 
 const ensureCurrentUserProfileCached = cache(async function ensureCurrentUserProfileCached() {

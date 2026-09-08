@@ -4,6 +4,11 @@
 
 - (none)
 
+## v0.3.69
+
+- Komandas sānjoslā citu lietotāju zaļais punkts atjaunojas, arī ja viņi ir citā komandā
+- Admin lietotāju sarakstā zem e-pasta paliek valodas kods un blakus rādās pēdējā IP ar valsti
+
 ## v0.3.68
 
 - Paslēptai vai aizvērtai Darāmo saraksta slejai atvēršanas ikonā rāda sarkano badge ar atvērto ierakstu skaitu

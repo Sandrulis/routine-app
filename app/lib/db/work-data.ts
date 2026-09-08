@@ -579,6 +579,22 @@ export async function touchMemberOnline(
   if (error) throw new Error(formatSupabaseError(error));
 }
 
+export async function fetchTeamMemberLastOnline(
+  teamId: string,
+): Promise<Record<string, string | null>> {
+  const { data, error } = await db()
+    .from("team_members")
+    .select("id, last_online_at")
+    .eq("team_id", teamId);
+  if (error) throw error;
+
+  const byId: Record<string, string | null> = {};
+  for (const row of (data ?? []) as { id: string; last_online_at: string | null }[]) {
+    byId[row.id] = row.last_online_at;
+  }
+  return byId;
+}
+
 export type TeamWorkspace = {
   lists: WorkList[];
   tasks: WorkTask[];

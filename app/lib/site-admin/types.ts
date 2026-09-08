@@ -18,6 +18,8 @@ export type AdminUserSummary = {
   registeredAt: string | null;
   lastSeenAt: string | null;
   languageCode: string | null;
+  lastIp: string | null;
+  lastIpCountry: string | null;
   teams: AdminUserTeamSummary[];
 };
 

@@ -105,6 +105,12 @@ type TeamMemberDetailRow = {
   last_online_at: string | null;
 };
 
+type UserLastIpRow = {
+  user_id: string;
+  ip: string;
+  country_code: string | null;
+};
+
 type TeamListRow = {
   id: string;
   name: string;
@@ -240,18 +246,29 @@ export const listAdminUsers = cache(async function listAdminUsers(): Promise<Adm
     return [];
   }
 
-  const [{ data: memberships }, { data: teams }] = await Promise.all([
-    supabase
-      .from("team_members")
-      .select("user_id, team_id, role, last_online_at"),
-    supabase.from("teams").select("id, name, logo_url, is_vip"),
-  ]);
+  const [{ data: memberships }, { data: teams }, lastIpsResult] =
+    await Promise.all([
+      supabase
+        .from("team_members")
+        .select("user_id, team_id, role, last_online_at"),
+      supabase.from("teams").select("id, name, logo_url, is_vip"),
+      supabase.from("user_last_ips").select("user_id, ip, country_code"),
+    ]);
+
+  if (lastIpsResult.error) {
+    console.error("listAdminUsers last ips failed:", lastIpsResult.error.message);
+  }
+  const lastIps = lastIpsResult.data;
 
   const teamById = new Map(
     ((teams ?? []) as TeamListRow[]).map((team) => [team.id, team]),
   );
   const teamsByUser = new Map<string, AdminUserSummary["teams"]>();
   const lastOnlineByUser = new Map<string, string>();
+  const lastIpByUser = new Map<string, UserLastIpRow>();
+  for (const row of (lastIps ?? []) as UserLastIpRow[]) {
+    lastIpByUser.set(row.user_id, row);
+  }
   for (const row of (memberships ?? []) as TeamMemberListRow[]) {
     if (!row.user_id) continue;
     const team = teamById.get(row.team_id);
@@ -284,6 +301,8 @@ export const listAdminUsers = cache(async function listAdminUsers(): Promise<Adm
       registeredAt: row.created_at,
       lastSeenAt: lastOnlineByUser.get(row.id) ?? null,
       languageCode: row.language_code,
+      lastIp: lastIpByUser.get(row.id)?.ip ?? null,
+      lastIpCountry: lastIpByUser.get(row.id)?.country_code ?? null,
       teams: teamsByUser.get(row.id) ?? [],
     };
   });
