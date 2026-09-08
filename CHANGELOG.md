@@ -4,6 +4,10 @@
 
 - (none)
 
+## v0.3.78
+
+- Next.js 16.3.3 — labo kritisko Windows RCE (GHSA-p293-qw3h-jr36) un AVIF image optimization RCE
+
 ## v0.3.77
 
 - Pēc reģistrācijas ar e-pastu atveras apstiprinājuma modālis (10 s, tad sākumlapa); neapstiprināts konts ir adminu sarakstā bez `is_admin`
