@@ -1,4 +1,4 @@
-const FALLBACK = {
+const FALLBACK_LV = {
   "extension.gmail.checking_app": "Ielādē {SYSTEM_NAME}…",
   "extension.gmail.checking_session": "Pārbauda TASQIN sesiju…",
   "auth.login.title": "Ienākt",
@@ -44,9 +44,78 @@ const FALLBACK = {
     "Neizdevās savienoties ar serveri. Pārbaudi internetu un mēģini vēlreiz.",
 };
 
-let strings = { ...FALLBACK };
+const FALLBACK_EN = {
+  "extension.gmail.checking_app": "Loading {SYSTEM_NAME}…",
+  "extension.gmail.checking_session": "Checking TASQIN session…",
+  "auth.login.title": "Sign in",
+  "auth.google.continue": "Continue with Google",
+  "common.email": "Email",
+  "auth.fields.password": "Password",
+  "auth.fields.password_show": "Show password",
+  "auth.fields.password_hide": "Hide password",
+  "extension.gmail.login_failed": "Could not sign in.",
+  "extension.gmail.site_access_required":
+    "Allow access to TASQIN so the plugin can finish signing in.",
+  "errors.extension_login_mfa":
+    "This account has MFA. Finish signing in on the TASQIN page and try again.",
+  "errors.auth_invalid": "Email or password is incorrect.",
+  "errors.extension_auth_required":
+    "Sign in to the TASQIN extension. The session lasts about 30 days, even if the website is closed.",
+  "nav.team": "Team",
+  "extension.gmail.team.label": "Team",
+  "extension.gmail.team.drive_missing":
+    "This team has no Google Drive connected. The plugin will not work.",
+  "errors.extension_team_drive_missing":
+    "This team has no Google Drive connected. The plugin will not work.",
+  "errors.extension_team_onedrive_missing":
+    "This team has no OneDrive connected. The plugin will not work.",
+  "errors.extension_team_cloud_missing":
+    "This team has no Google Drive or OneDrive connected. The plugin will not work.",
+  "extension.gmail.connect_gmail": "Connect Gmail",
+  "extension.gmail.reconnect_gmail": "Reconnect Gmail",
+  "extension.gmail.connect_gmail_hint":
+    "Custom-login accounts must connect Gmail here. The connection is also saved in TASQIN.",
+  "extension.gmail.reconnect_gmail_hint":
+    "After system or OAuth changes, renew Gmail access here.",
+  "extension.gmail.gmail_connected": "Gmail connected: {email}",
+  "extension.gmail.plugin_disabled":
+    "The Gmail plugin is disabled. Turn it on in Administration → Modules.",
+  "extension.gmail.options.connecting": "Google permission window is opening…",
+  "extension.gmail.options.connected": "Gmail connected.",
+  "extension.gmail.options.connect_failed":
+    "Could not connect Gmail. Check the Google Plugin integration and the Gmail API.",
+  "user_menu.sign_out": "Sign out",
+  "errors.extension_unknown": "Unknown error.",
+  "errors.extension_network":
+    "Could not reach the server. Check your connection and try again.",
+};
+
+function chromeUiLanguage() {
+  try {
+    const raw = String(chrome.i18n.getUILanguage() || "")
+      .trim()
+      .toLowerCase();
+    const primary = raw.split(/[-_]/)[0] || "";
+    if (primary === "nb" || primary === "nn") return "no";
+    return primary || "en";
+  } catch {
+    return "en";
+  }
+}
+
+function fallbackTable(lang) {
+  return lang === "lv" ? FALLBACK_LV : FALLBACK_EN;
+}
+
+const chromeLang = chromeUiLanguage();
+let strings = { ...fallbackTable(chromeLang) };
 let systemName = "TASQIN";
 let i18nHydrated = false;
+try {
+  document.documentElement.lang = chromeLang;
+} catch {
+  // popup document not ready
+}
 
 function interpolate(value, params) {
   if (!params) return value;
@@ -64,10 +133,16 @@ function t(key, params) {
   ) {
     resolved = "errors.extension_network";
   }
-  return interpolate(strings[resolved] || FALLBACK[resolved] || resolved, {
-    SYSTEM_NAME: systemName,
-    ...params,
-  });
+  return interpolate(
+    strings[resolved] ||
+      fallbackTable(chromeLang)[resolved] ||
+      FALLBACK_EN[resolved] ||
+      resolved,
+    {
+      SYSTEM_NAME: systemName,
+      ...params,
+    },
+  );
 }
 
 function extensionCloudMissingKey(session) {
@@ -83,7 +158,7 @@ function applySessionI18n(data, options = {}) {
   const name = String(data?.systemName || "").trim();
   if (name) systemName = name;
   if (!data?.strings || typeof data.strings !== "object") return;
-  strings = { ...FALLBACK, ...data.strings };
+  strings = { ...fallbackTable(data.languageCode || chromeLang), ...data.strings };
   i18nHydrated = true;
   if (options.persist === false) return;
   const persistKey = data.authenticated
@@ -98,25 +173,24 @@ function applySessionI18n(data, options = {}) {
   });
 }
 
-async function restoreCachedI18n() {
+async function hydrateI18n() {
+  applyLabels();
+  let stored = {};
   try {
-    const stored = await chrome.storage.local.get([
+    stored = await chrome.storage.local.get([
       "extensionI18n",
       "extensionI18nDefault",
     ]);
-    applySessionI18n(stored.extensionI18n || stored.extensionI18nDefault, {
-      persist: false,
-    });
   } catch {
-    // first run or storage unavailable
+    stored = {};
   }
-}
-
-async function hydrateI18n() {
-  await restoreCachedI18n();
+  applySessionI18n(stored.extensionI18n || stored.extensionI18nDefault, {
+    persist: false,
+  });
   applyLabels();
-  if (i18nHydrated) return;
-  const result = await send("routine.getPublicI18n");
+  if (stored.extensionI18n?.strings) return;
+  if (i18nHydrated && document.documentElement.lang === chromeLang) return;
+  const result = await send("routine.getPublicI18n", { lang: chromeLang });
   applySessionI18n(result?.data, { persist: false });
   applyLabels();
 }
@@ -439,7 +513,7 @@ $("team").addEventListener("change", async () => {
 
 $("connectGmail").addEventListener("click", async () => {
   setStatus(t("extension.gmail.options.connecting"), true);
-  const granted = await ensurePluginHostAccess();
+  const granted = await ensurePluginHostAccess({ includeGmail: true });
   if (!granted) {
     setStatus(t("extension.gmail.site_access_required"), false);
     return;

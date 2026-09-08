@@ -813,7 +813,7 @@ function ensureUi() {
         void (async () => {
           setBusy(true, t("extension.gmail.options.connecting"));
           setFeedback("");
-          const granted = await ensurePluginHostAccess();
+          const granted = await ensurePluginHostAccess({ includeGmail: true });
           if (!granted) {
             setBusy(false);
             setFeedback(tError("extension.gmail.site_access_required"), "error");
@@ -2028,7 +2028,7 @@ function ensureUi() {
           event.preventDefault();
           void (async () => {
             setBusy(true, t("extension.gmail.options.connecting"));
-            const granted = await ensurePluginHostAccess();
+            const granted = await ensurePluginHostAccess({ includeGmail: true });
             if (!granted) {
               setBusy(false);
               setFeedback(tError("extension.gmail.site_access_required"), "error");
@@ -2071,7 +2071,7 @@ function ensureUi() {
         event.preventDefault();
         void (async () => {
           setBusy(true, t("extension.gmail.options.connecting"));
-          const granted = await ensurePluginHostAccess();
+          const granted = await ensurePluginHostAccess({ includeGmail: true });
           if (!granted) {
             setBusy(false);
             setFeedback(tError("extension.gmail.site_access_required"), "error");

@@ -5,6 +5,7 @@ import { allMessages as messages } from "@/app/lib/i18n/all-messages";
 import {
   DEFAULT_LANGUAGE,
   isLanguageCode,
+  matchAcceptLanguage,
   resolveLanguageCode,
   type LanguageCode,
 } from "@/app/lib/i18n/language";
@@ -195,6 +196,19 @@ export async function getExtensionFallbackLanguageCode(): Promise<LanguageCode> 
       languages.find((language) => language.isActive)?.code ??
       DEFAULT_LANGUAGE,
   );
+}
+
+/** Logged-out plugin UI: `?lang=` from Chrome, then Accept-Language, then site default. */
+export function languageCodeFromExtensionRequest(
+  request: Request,
+): LanguageCode | null {
+  try {
+    const lang = new URL(request.url).searchParams.get("lang");
+    if (isLanguageCode(lang)) return lang;
+  } catch {
+    // ignore malformed URL
+  }
+  return matchAcceptLanguage(request.headers.get("accept-language"));
 }
 
 /** Logged-in plugin UI follows `users.language_code`, not Chrome Accept-Language. */

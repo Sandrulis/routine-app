@@ -130,6 +130,20 @@ function unique(items) {
   return [...new Set(items.filter(Boolean))];
 }
 
+function extensionUiLanguage() {
+  try {
+    const raw = String(chrome.i18n.getUILanguage() || "")
+      .trim()
+      .toLowerCase();
+    const primary = raw.split(/[-_]/)[0] || "";
+    if (primary === "nb" || primary === "nn") return "no";
+    if (/^[a-z]{2}$/.test(primary)) return primary;
+  } catch {
+    // ignore
+  }
+  return "";
+}
+
 async function hasOriginPermission(origin) {
   const origins = [`${origin}/*`];
   try {
@@ -227,7 +241,11 @@ async function originsFromAuthCookies() {
 async function probeConfig(origin) {
   try {
     if (!(await hasOriginPermission(origin))) return null;
-    const response = await fetch(`${origin}/api/extension/config`, {
+    const lang = extensionUiLanguage();
+    const url = lang
+      ? `${origin}/api/extension/config?lang=${encodeURIComponent(lang)}`
+      : `${origin}/api/extension/config`;
+    const response = await fetch(url, {
       credentials: "omit",
       redirect: "manual",
     });
@@ -2349,23 +2367,35 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         return;
       }
       if (message?.type === "routine.getPublicI18n") {
+        const requested = String(message.lang || "")
+          .trim()
+          .toLowerCase()
+          .split(/[-_]/)[0];
+        const lang =
+          /^[a-z]{2}$/.test(requested) ? requested : extensionUiLanguage();
         const stored = await chrome.storage.local.get([
           I18N_STORAGE_KEY,
           I18N_DEFAULT_STORAGE_KEY,
         ]);
         const cached =
           stored[I18N_STORAGE_KEY] || stored[I18N_DEFAULT_STORAGE_KEY];
-        if (cached?.strings) {
+        if (
+          cached?.strings &&
+          (!lang || String(cached.languageCode || "") === lang)
+        ) {
           sendResponse({ ok: true, data: cached });
           return;
         }
-        if (cachedAppBase?.config?.strings) {
+        if (
+          cachedAppBase?.config?.strings &&
+          (!lang || String(cachedAppBase.config.languageCode || "") === lang)
+        ) {
           persistDefaultI18n(cachedAppBase.config);
           sendResponse({ ok: true, data: cachedAppBase.config });
           return;
         }
         const origin = await getAppBase();
-        const config = cachedAppBase?.config || (await probeConfig(origin));
+        const config = await probeConfig(origin);
         if (config?.strings) {
           persistDefaultI18n(config);
           sendResponse({ ok: true, data: config });

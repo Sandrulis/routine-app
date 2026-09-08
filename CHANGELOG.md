@@ -4,6 +4,12 @@
 
 - (none)
 
+## v0.3.73
+
+- Gmail spraudnis Chrome Web Store instalācijā pieprasa TASQIN piekļuvi klikšķī bez localhost (iepriekš `permissions.contains` pazaudēja žestu un rādīja „Allow access to Tasqin…”)
+- Spraudņa popup pirms ielogošanās rāda Chrome UI valodu, nevis vispirms LV un tad sistēmas EN
+- Manifestā nav `optional_host_permissions` dublikātu pret `host_permissions` (Chrome tos atmeta kā redundant)
+
 ## v0.3.72
 
 - **Atsauksmes** vairs nav ar virsrakstu: tikai apraksts un 0–5 zvaigžņu vērtējums (`144`)

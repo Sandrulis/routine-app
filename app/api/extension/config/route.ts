@@ -6,6 +6,7 @@ import { supabaseAuthCookieName } from "@/app/lib/extension/cookie-name";
 import {
   getExtensionFallbackLanguageCode,
   getExtensionStrings,
+  languageCodeFromExtensionRequest,
 } from "@/app/lib/extension/i18n";
 import {
   GMAIL_PLUGIN_BRIDGE_PATH,
@@ -50,7 +51,9 @@ export async function GET(request: Request) {
     settings.systemName,
     settings.logoColor || DEFAULT_SITE_LOGO_COLOR,
   );
-  const languageCode = await getExtensionFallbackLanguageCode();
+  const languageCode =
+    languageCodeFromExtensionRequest(request) ??
+    (await getExtensionFallbackLanguageCode());
   const [
     emailPasswordEnabled,
     googleSignInEnabled,
