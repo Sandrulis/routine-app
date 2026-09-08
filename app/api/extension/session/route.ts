@@ -1,14 +1,10 @@
 import { accessTokenNeedsTotpChallenge } from "@/app/lib/auth/mfa";
 import { getExtensionAuth } from "@/app/lib/extension/auth";
+import { getExtensionBranding } from "@/app/lib/extension/branding";
 import {
   extensionJson,
   extensionOptionsResponse,
 } from "@/app/lib/extension/cors";
-import {
-  DEFAULT_SITE_LOGO_COLOR,
-  siteHeadIconUrl,
-} from "@/app/lib/site-admin/branding";
-import { getSiteSettings } from "@/app/lib/site-admin/repository";
 import {
   getExtensionStrings,
   resolveExtensionUiLanguage,
@@ -41,17 +37,10 @@ export function OPTIONS(request: Request) {
 }
 
 async function branding() {
-  const settings = await getSiteSettings();
-  const logoUrl = siteHeadIconUrl(
-    settings.logoUrl,
-    settings.faviconUrl,
-    settings.systemName,
-    settings.logoColor || DEFAULT_SITE_LOGO_COLOR,
-  );
+  const brand = await getExtensionBranding();
   return {
-    systemName: settings.systemName,
-    logoUrl,
-    loginPath: "/auth/gmail-plugin/login",
+    ...brand,
+    loginPath: GMAIL_PLUGIN_LOGIN_PATH,
   };
 }
 

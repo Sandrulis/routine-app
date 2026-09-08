@@ -3,6 +3,7 @@ import {
   extensionOptionsResponse,
 } from "@/app/lib/extension/cors";
 import { supabaseAuthCookieName } from "@/app/lib/extension/cookie-name";
+import { getExtensionBranding } from "@/app/lib/extension/branding";
 import {
   getExtensionFallbackLanguageCode,
   getExtensionStrings,
@@ -19,11 +20,6 @@ import { isGooglePluginEnabled } from "@/app/lib/integrations/google-plugin/repo
 import { createAdminClient } from "@/app/lib/supabase/admin";
 import { isSupabaseAdminConfigured } from "@/app/lib/supabase/env";
 import { FRONTEND_MODULE_KEYS } from "@/app/lib/frontend-modules/keys";
-import {
-  DEFAULT_SITE_LOGO_COLOR,
-  siteHeadIconUrl,
-} from "@/app/lib/site-admin/branding";
-import { getSiteSettings } from "@/app/lib/site-admin/repository";
 
 export const runtime = "nodejs";
 
@@ -44,13 +40,7 @@ async function isGmailPluginEnabled() {
 }
 
 export async function GET(request: Request) {
-  const settings = await getSiteSettings();
-  const logoUrl = siteHeadIconUrl(
-    settings.logoUrl,
-    settings.faviconUrl,
-    settings.systemName,
-    settings.logoColor || DEFAULT_SITE_LOGO_COLOR,
-  );
+  const brand = await getExtensionBranding();
   const languageCode =
     languageCodeFromExtensionRequest(request) ??
     (await getExtensionFallbackLanguageCode());
@@ -68,13 +58,12 @@ export async function GET(request: Request) {
     ok: true,
     appOrigin: getPublicSiteUrl(),
     authCookieName: supabaseAuthCookieName(),
-    systemName: settings.systemName,
-    logoUrl,
+    ...brand,
     loginPath: GMAIL_PLUGIN_LOGIN_PATH,
     connectGmailPath: GMAIL_PLUGIN_START_PATH,
     connectGmailBridgePath: GMAIL_PLUGIN_BRIDGE_PATH,
     languageCode,
-    strings: getExtensionStrings(languageCode, settings.systemName),
+    strings: getExtensionStrings(languageCode, brand.systemName),
     emailPasswordEnabled,
     googleSignInEnabled,
     gmailPluginEnabled,

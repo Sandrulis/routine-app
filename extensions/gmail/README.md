@@ -54,4 +54,4 @@ Popup ir balta kartīte: avatars, vārds un uzvārds, e-pasts, **Iziet** tikai k
 
 ## Ikona
 
-Chrome spraudņa ikona ir statiski PNG (`icons/`). Noklusējums atbilst vietnes favicon bez augšupielādēta logo (`logo_color` black). Pārģenerēt: `node extensions/gmail/scripts/generate-icons.mjs` (opcija `--color midnight`).
+Chrome spraudņa ikona: `icons/logo.png` (TASQIN zīme) tiek samazināta uz `icons/icon{16,48,128}.png`. Ja `logo.png` nav, ģenerē iniciāļu avatāru kā vietnē. Pārģenerēt: `node extensions/gmail/scripts/generate-icons.mjs`. Toolbar pēc savienojuma ar TASQIN rāda admin augšupielādēto logotipu, vai iniciāļus, ja logotips nav iestatīts.

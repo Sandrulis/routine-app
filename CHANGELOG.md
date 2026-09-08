@@ -4,6 +4,10 @@
 
 - (none)
 
+## v0.3.74
+
+- Gmail spraudņa ikona: augšupielādēts sistēmas logotips, ja tāda nav — iniciāļu avatārs kā vietnē; pakotnes noklusējums ir TASQIN zīme
+
 ## v0.3.73
 
 - Gmail spraudnis Chrome Web Store instalācijā pieprasa TASQIN piekļuvi klikšķī bez localhost (iepriekš `permissions.contains` pazaudēja žestu un rādīja „Allow access to Tasqin…”)

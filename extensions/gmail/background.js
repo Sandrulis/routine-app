@@ -20,6 +20,7 @@ const SESSION_CACHE_TTL_MS = 45_000;
 /** MV3 kills the worker after ~30s idle, so caches must live in storage. */
 const APP_BASE_VERIFIED_KEY = "extensionAppBaseVerified";
 const SESSION_CACHE_KEY = "extensionSessionCache";
+const ACTION_ICON_KEY = "extensionActionIcon";
 const SESSION_CACHE_STALE_MS = 10 * 60 * 1000;
 const GMAIL_MESSAGE_CACHE_KEY = "extensionGmailMessage";
 const GMAIL_MESSAGE_CACHE_TTL_MS = 5 * 60 * 1000;
@@ -108,6 +109,138 @@ function persistSessionI18n(data) {
 
 function persistDefaultI18n(data) {
   persistI18n(I18N_DEFAULT_STORAGE_KEY, data);
+}
+
+const ACTION_ICON_SIZES = [16, 32, 48];
+let lastActionIconKey = "";
+
+function actionIconInitials(name) {
+  const words = String(name || "TASQIN")
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+  if (words.length >= 2) {
+    return `${words[0][0] ?? ""}${words[1][0] ?? ""}`.toUpperCase();
+  }
+  return (words[0]?.[0] ?? "T").toUpperCase();
+}
+
+function isUploadedRasterLogo(url) {
+  const value = String(url || "").trim();
+  if (!value.startsWith("data:image/")) return false;
+  if (value.startsWith("data:image/svg")) return false;
+  return true;
+}
+
+function initialsImageData(size, name, bg, fg) {
+  const canvas = new OffscreenCanvas(size, size);
+  const ctx = canvas.getContext("2d");
+  const initials = actionIconInitials(name);
+  const radius = Math.round(size * (6 / 32));
+  ctx.fillStyle = bg || "#18181b";
+  ctx.beginPath();
+  if (typeof ctx.roundRect === "function") {
+    ctx.roundRect(0, 0, size, size, radius);
+  } else {
+    ctx.rect(0, 0, size, size);
+  }
+  ctx.fill();
+  ctx.fillStyle = fg || "#ffffff";
+  const fontSize = Math.round(size * (initials.length > 1 ? 18 / 32 : 24 / 32));
+  ctx.font = `800 ${fontSize}px ui-sans-serif, system-ui, sans-serif`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText(initials, size / 2, size / 2 + size * 0.02);
+  return ctx.getImageData(0, 0, size, size);
+}
+
+async function rasterLogoImageData(url, size) {
+  const response = await fetch(url);
+  if (!response.ok) throw new Error("logo fetch failed");
+  const blob = await response.blob();
+  if (String(blob.type || "").includes("svg")) {
+    throw new Error("svg logo");
+  }
+  const bitmap = await createImageBitmap(blob);
+  const canvas = new OffscreenCanvas(size, size);
+  const ctx = canvas.getContext("2d");
+  ctx.drawImage(bitmap, 0, 0, size, size);
+  if (typeof bitmap.close === "function") bitmap.close();
+  return ctx.getImageData(0, 0, size, size);
+}
+
+async function applyActionIcon(input) {
+  if (!chrome?.action?.setIcon) return;
+  const uploadedLogoUrl = String(input?.uploadedLogoUrl || "").trim();
+  const systemName = String(input?.systemName || "").trim();
+  const logoColorBg = String(input?.logoColorBg || "").trim() || "#18181b";
+  const logoColorFg = String(input?.logoColorFg || "").trim() || "#ffffff";
+  const key = `${uploadedLogoUrl}|${systemName}|${logoColorBg}|${logoColorFg}`;
+  if (key === lastActionIconKey) return;
+
+  const imageData = {};
+  try {
+    if (isUploadedRasterLogo(uploadedLogoUrl)) {
+      for (const size of ACTION_ICON_SIZES) {
+        imageData[size] = await rasterLogoImageData(uploadedLogoUrl, size);
+      }
+    } else {
+      for (const size of ACTION_ICON_SIZES) {
+        imageData[size] = initialsImageData(
+          size,
+          systemName,
+          logoColorBg,
+          logoColorFg,
+        );
+      }
+    }
+    await chrome.action.setIcon({ imageData });
+    lastActionIconKey = key;
+    await chrome.storage.local.set({
+      [ACTION_ICON_KEY]: {
+        uploadedLogoUrl,
+        systemName,
+        logoColorBg,
+        logoColorFg,
+      },
+    });
+  } catch {
+    try {
+      const fallback = {};
+      for (const size of ACTION_ICON_SIZES) {
+        fallback[size] = initialsImageData(
+          size,
+          systemName,
+          logoColorBg,
+          logoColorFg,
+        );
+      }
+      await chrome.action.setIcon({ imageData: fallback });
+    } catch {
+      // Keep packaged icons/icon*.png.
+    }
+  }
+}
+
+function applyActionIconFromPayload(data) {
+  if (!data) return;
+  void applyActionIcon({
+    uploadedLogoUrl: data.uploadedLogoUrl,
+    systemName: data.systemName,
+    logoColorBg: data.logoColorBg,
+    logoColorFg: data.logoColorFg,
+  });
+}
+
+async function restoreActionIcon() {
+  try {
+    const stored = await chrome.storage.local.get([ACTION_ICON_KEY]);
+    if (stored[ACTION_ICON_KEY]) {
+      await applyActionIcon(stored[ACTION_ICON_KEY]);
+    }
+  } catch {
+    // first run
+  }
 }
 
 function broadcastSessionUpdate(result) {
@@ -460,6 +593,7 @@ async function adoptAppOrigin(origin, config) {
     .set({ [APP_BASE_VERIFIED_KEY]: { origin, at: Date.now() } })
     .catch(() => {});
   persistDefaultI18n(config);
+  applyActionIconFromPayload(config);
   return origin;
 }
 
@@ -1801,6 +1935,7 @@ function startSessionRefresh(force = false) {
       cachedSessionResponse = { result, at };
       void writeStorageArea("local", SESSION_CACHE_KEY, { result, at });
       persistSessionI18n(result?.data);
+      applyActionIconFromPayload(result?.data);
       return result;
     } finally {
       if (sessionResponseInFlight === request) sessionResponseInFlight = null;
@@ -2252,15 +2387,18 @@ function scheduleSessionRefresh() {
 }
 
 scheduleSessionRefresh();
+void restoreActionIcon();
 if (chrome.runtime?.onStartup) {
   chrome.runtime.onStartup.addListener(() => {
     scheduleSessionRefresh();
+    void restoreActionIcon();
     void refreshStoredAccessToken();
   });
 }
 if (chrome.runtime?.onInstalled) {
   chrome.runtime.onInstalled.addListener(() => {
     scheduleSessionRefresh();
+    void restoreActionIcon();
   });
 }
 
@@ -2391,6 +2529,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           (!lang || String(cachedAppBase.config.languageCode || "") === lang)
         ) {
           persistDefaultI18n(cachedAppBase.config);
+          applyActionIconFromPayload(cachedAppBase.config);
           sendResponse({ ok: true, data: cachedAppBase.config });
           return;
         }
@@ -2398,6 +2537,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         const config = await probeConfig(origin);
         if (config?.strings) {
           persistDefaultI18n(config);
+          applyActionIconFromPayload(config);
           sendResponse({ ok: true, data: config });
           return;
         }
