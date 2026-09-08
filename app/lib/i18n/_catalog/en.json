@@ -1590,6 +1590,7 @@
   "todo.defaults.review_description": "Close finished work and reassign what is left.",
   "todo.defaults.docs": "Update internal documentation",
   "todo.defaults.docs_description": "Write down how the team adds and assigns tasks.",
+  "user_todo.title": "To Do List",
   "user_todo.placeholder": "New to-do",
   "user_todo.empty": "No open to-dos.",
   "user_todo.archive": "Archive",

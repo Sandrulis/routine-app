@@ -127,7 +127,7 @@ export function UserTodoRail({
 
   if (!enabled) return null;
 
-  const title = t("todo.columns.todo", "Darāms");
+  const title = t("user_todo.title", "Darāmo saraksts");
   const archiveLabel = t("user_todo.archive", "Arhīvs");
   const visibleItems = archiveOpen ? archivedItems : activeItems;
   const emptyLabel = archiveOpen

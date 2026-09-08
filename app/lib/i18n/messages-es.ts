@@ -2166,4 +2166,5 @@ export const es: Record<string, string> = {
   "user_todo.completed_on": "Completado {date}",
   "user_todo.empty": "No hay tareas abiertas.",
   "user_todo.placeholder": "Nueva tarea",
+  "user_todo.title": "Lista de tareas",
 };

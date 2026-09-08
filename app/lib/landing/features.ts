@@ -233,8 +233,8 @@ export function resolveLandingPageContent(
     features.push({
       id: "todo",
       icon: "fas fa-square-check",
-      titleKey: "todo.columns.todo",
-      titleFallback: "Darāms",
+      titleKey: "user_todo.title",
+      titleFallback: "Darāmo saraksts",
       descriptionKey: "landing.features.todo.description",
       descriptionFallback:
         "Personīga sleja labajā malā. Pieraksti darāmo, atķeksē, un pabeigtais paliek arhīvā ar datumu.",

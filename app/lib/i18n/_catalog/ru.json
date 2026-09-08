@@ -2165,5 +2165,6 @@
   "user_todo.archive_empty": "Нет завершённых задач.",
   "user_todo.completed_on": "Выполнено {date}",
   "user_todo.empty": "Нет открытых задач.",
-  "user_todo.placeholder": "Новая задача"
+  "user_todo.placeholder": "Новая задача",
+  "user_todo.title": "Список дел"
 }

@@ -2166,4 +2166,5 @@ export const fi: Record<string, string> = {
   "user_todo.completed_on": "Valmis {date}",
   "user_todo.empty": "Ei avoimia tehtäviä.",
   "user_todo.placeholder": "Uusi tehtävä",
+  "user_todo.title": "Tehtävälista",
 };

@@ -208,14 +208,14 @@ Globāli feature flagi tabulā `public.site_frontend_modules` (`module_key` + `i
 | `module_gmail_plugin` | Gmail Chrome spraudnis (`extensions/gmail` `0.4.52`): sesija, komandu pārslēgšana, e-pasta pievienošana ar piezīmi katram failam, jauns apakšuzdevums no Gmail. Faili uz komandas Drive un/vai OneDrive (pēc ieslēgtajiem moduļiem). **Turpināt ar Google** → `/auth/gmail-plugin/login` ar identity + `gmail.readonly` (offline) vienā piekrišanā caur **Google Plugin** integrāciju; callback `/auth/google-plugin/callback` saglabā arī `user_gmail_connections`. Ja kontam ir TOTP, done prasa 2FA (AAL2), tad bootstrap ticket → `POST /api/extension/bootstrap-from-ticket` (post-MFA refresh; AAL1 noraida `accessTokenNeedsTotpChallenge`). Done zaļais stāvoklis tikai pēc sesijas capture. **Atjaunot Gmail** (reconnect) → ticket bridge `/auth/gmail-plugin/bridge?t=…` → `/start`; production vajag `INTEGRATION_SECRETS_KEY`. Admin slēdzis tikai ja **Google Plugin** ir ieslēgts. | Spraudnis rāda, ka modulis izslēgts |
 | `module_onedrive` | Komandas `...` → **OneDrive Integrācija**; `/team/onedrive`; faili uz OneDrive kā līdzvērtīgs mākonis (`onedrive_file_id`, bez servera `content`). Admin slēdzis ieslēdzams tikai ja Microsoft OAuth integrācija ir konfigurēta un ieslēgta | Izvēlnes opcijas nav; maršruts redirect uz `/dashboard`; OneDrive sync nenotiek; UI nepiemin OneDrive. Prasa arī `module_file_upload` |
 | `module_checklist` | Check List lietojams; slēgto statusu bloķē nepabeigti punkti | Sadaļa vienmēr sakļauta (`forceCollapsed`); slēgto statusu **nebloķē** |
-| `module_todo` | Labajā malā personīga **Darāms** sleja (`user_todos`); atķeksētais pazūd no saraksta (done + `completed_at`); arhīva poga rāda pabeigtos ar datumu; X paslēpj sleju, ikona ceļa joslā atver atpakaļ | Sleja un landing kartīte nav |
+| `module_todo` | Labajā malā personīga **Darāmo saraksts** sleja (`user_todos`); atķeksētais pazūd no saraksta (done + `completed_at`); arhīva poga rāda pabeigtos ar datumu; X paslēpj sleju, ikona ceļa joslā atver atpakaļ | Sleja un landing kartīte nav |
 | `module_automations` | Saraksta `...` → **Automatizācijas**; `lists-store` izpilda statusa/čeklistes/apakšuzdevumu noteikumus | Izvēlnes opcijas nav; esošie noteikumi **neizpildās** |
 | `module_templates` | Komandas `...` → **Šabloni**; `/templates` pieejams; mapes `+` var pielietot šablonu | Šablonus nevar atvērt/veidot; pat ja automatizācijas ir ieslēgtas, **Mapes izveide → šablons** (`folder_created`) nerādās `ListAutomationsModal` un neizpildās `parent-create-flow` |
 | `module_calendar` | Lietotāja dropup rāda **Kalendāra integrāciju**, ja ieslēgts arī Apple vai Google apakšmodulis | Izvēlnes opcijas nav; `.ics` plūsma paliek tukša |
 | `module_calendar_apple` | Izvēlē Apple Calendar un `webcal://…ics` abonēšana | Apple karte UI nav |
 | `module_calendar_google` | Izvēlē Google Calendar; tas pats HTTPS `.ics` (Google “From URL” / `calendar.google.com?cid=`) | Google karte UI nav |
 
-Lib: `app/lib/frontend-modules/` (`keys.ts`, `repository.ts`, `context.tsx`, `access.ts`). Zināmo atslēgu etiķetes UI atkārtoti izmanto `lists.private.label`, `team.access.actions.files_upload`, `files.forward`, `nav.google_drive`, `nav.gmail_plugin`, `subtasks.checklist.title`, `todo.columns.todo`, `nav.templates`, `lists.automations.title`, `calendar.integration.title`, `calendar.provider.apple`, `calendar.provider.google`.
+Lib: `app/lib/frontend-modules/` (`keys.ts`, `repository.ts`, `context.tsx`, `access.ts`). Zināmo atslēgu etiķetes UI atkārtoti izmanto `lists.private.label`, `team.access.actions.files_upload`, `files.forward`, `nav.google_drive`, `nav.gmail_plugin`, `subtasks.checklist.title`, `user_todo.title`, `nav.templates`, `lists.automations.title`, `calendar.integration.title`, `calendar.provider.apple`, `calendar.provider.google`.
 
 Plūsma: `GET /calendar/{token}.ics` (`app/calendar/[token]/route.ts`). Apple: `webcal://`. Google Calendar **neizmanto** Calendar API OAuth — oficiāli abonē HTTPS iCalendar URL (`From URL` vai `calendar.google.com/calendar/r?cid=`). Google atjauno plūsmu lēni (stundas). Token hash DB (`feed_token_hash`); ICS `Cache-Control: private, no-store`, bez uzdevumu `description`. ICS lasa service role. Pilno ICS URL UI rāda tikai ģenerēšanas/rotācijas brīdī (`calendar.integration.feed_once` / `feed_hidden`).
 
@@ -466,7 +466,7 @@ app/
     resume-subscription-button.tsx # Zaļa Atjaunot abonementu (billing lapa + TeamSubscriptionEndingBanner)
     team-leave-section.tsx        # Pamest komandu (profils, biedra lapa)
     app-shell.tsx                 # Layout ar sānjoslu; zem 1280px sānjosla slēpta, burger overlay; `module_todo` labā sleja
-    user-todo-rail.tsx            # Personīga Darāms sleja + arhīvs (`user_todos`, `141`)
+    user-todo-rail.tsx            # Personīga Darāmo saraksts sleja + arhīvs (`user_todos`, `141`)
     dashboard-home-page.tsx       # Sākums: Mani uzdevumi (ja ir, ar Atlikt) + saraksti
     task-snooze-button.tsx        # Personīgs Atlikt tikai Mani uzdevumi (1h / rītdiena / nedēļa / datums)
     lists-overview-page.tsx       # Saraksta kopsavilkums

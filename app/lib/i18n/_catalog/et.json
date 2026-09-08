@@ -2165,5 +2165,6 @@
   "user_todo.archive_empty": "Lõpetatud ülesandeid pole.",
   "user_todo.completed_on": "Lõpetatud {date}",
   "user_todo.empty": "Avatud ülesandeid pole.",
-  "user_todo.placeholder": "Uus ülesanne"
+  "user_todo.placeholder": "Uus ülesanne",
+  "user_todo.title": "Ülesannete nimekiri"
 }

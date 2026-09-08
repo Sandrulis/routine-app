@@ -2166,4 +2166,5 @@ export const sv: Record<string, string> = {
   "user_todo.completed_on": "Klar {date}",
   "user_todo.empty": "Inga öppna uppgifter.",
   "user_todo.placeholder": "Ny uppgift",
+  "user_todo.title": "Att göra-lista",
 };

@@ -2166,4 +2166,5 @@ export const lt: Record<string, string> = {
   "user_todo.completed_on": "Atlikta {date}",
   "user_todo.empty": "Nėra atvirų užduočių.",
   "user_todo.placeholder": "Nauja užduotis",
+  "user_todo.title": "Darbų sąrašas",
 };

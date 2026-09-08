@@ -2166,4 +2166,5 @@ export const no: Record<string, string> = {
   "user_todo.completed_on": "Fullført {date}",
   "user_todo.empty": "Ingen åpne oppgaver.",
   "user_todo.placeholder": "Ny oppgave",
+  "user_todo.title": "Gjøremålsliste",
 };

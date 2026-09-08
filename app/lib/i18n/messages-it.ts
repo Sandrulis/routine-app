@@ -2166,4 +2166,5 @@ export const it: Record<string, string> = {
   "user_todo.completed_on": "Completato {date}",
   "user_todo.empty": "Nessuna attività aperta.",
   "user_todo.placeholder": "Nuova attività",
+  "user_todo.title": "Lista da fare",
 };

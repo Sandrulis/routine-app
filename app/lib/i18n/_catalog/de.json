@@ -2165,5 +2165,6 @@
   "user_todo.archive_empty": "Keine erledigten Aufgaben.",
   "user_todo.completed_on": "Erledigt {date}",
   "user_todo.empty": "Keine offenen Aufgaben.",
-  "user_todo.placeholder": "Neue Aufgabe"
+  "user_todo.placeholder": "Neue Aufgabe",
+  "user_todo.title": "To-do-Liste"
 }

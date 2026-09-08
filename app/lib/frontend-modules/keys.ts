@@ -69,7 +69,7 @@ export function knownFrontendModuleLabel(
     return { key: "subtasks.checklist.title", fallback: "Check List" };
   }
   if (moduleKey === FRONTEND_MODULE_KEYS.todo) {
-    return { key: "todo.columns.todo", fallback: "Darāms" };
+    return { key: "user_todo.title", fallback: "Darāmo saraksts" };
   }
   if (moduleKey === FRONTEND_MODULE_KEYS.calendar) {
     return { key: "calendar.integration.title", fallback: "Kalendāra integrācija" };

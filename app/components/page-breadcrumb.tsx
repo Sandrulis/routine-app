@@ -377,13 +377,13 @@ export function PageBreadcrumb({
         </nav>
         <div className="flex shrink-0 items-center gap-0.5">
           {todoEnabled && onOpenTodo ? (
-            <Tooltip label={t("todo.columns.todo", "Darāms")} align="end">
+            <Tooltip label={t("user_todo.title", "Darāmo saraksts")} align="end">
               <button
                 type="button"
                 className={`inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-zinc-600 transition hover:bg-zinc-100 hover:text-zinc-900 ${
                   todoCollapsed ? "" : "xl:hidden"
                 } ${todoOpen ? "bg-zinc-100 text-zinc-900" : ""}`}
-                aria-label={t("todo.columns.todo", "Darāms")}
+                aria-label={t("user_todo.title", "Darāmo saraksts")}
                 aria-expanded={todoOpen}
                 aria-controls="user-todo-rail"
                 onClick={onOpenTodo}
