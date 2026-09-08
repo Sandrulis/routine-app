@@ -381,6 +381,7 @@
   "docs.seo.article_description": "{title} — {name} Dokumentationsartikel.",
   "docs.seo.description": "{name} Hilfe-Center: Einstieg, Teameinstellungen, Integrationen und häufige Fragen.",
   "docs.title": "Dokumentation",
+  "email.notification.digest_title": "{count} Mitteilungen",
   "email.notification.reminder_digest_title": "{count} Erinnerungen",
   "errors.account_deletion_already_pending": "Die Kontolöschung ist bereits geplant.",
   "errors.account_deletion_failed": "Kontolöschung konnte nicht angefordert werden.",

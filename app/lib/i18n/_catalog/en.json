@@ -1625,6 +1625,7 @@
   "notifications.item.comment": "{name} commented on “{task}”",
   "notifications.item.due": "Due soon: “{task}”",
   "notifications.item.start": "Time to start: “{task}”",
+  "email.notification.digest_title": "{count} notifications",
   "email.notification.reminder_digest_title": "{count} reminders",
   "notifications.item.file": "{name} added a file to “{task}”",
   "notifications.item.status_changed": "{name} changed status of “{task}”",

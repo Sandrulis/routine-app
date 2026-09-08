@@ -381,6 +381,7 @@ export const et: Record<string, string> = {
   "docs.seo.article_description": "{title} — {name} dokumentatsiooni artikkel.",
   "docs.seo.description": "{name} abikeskus: alustamine, meeskonna seaded, integratsioonid ja korduma kippuvad küsimused.",
   "docs.title": "Dokumentatsioon",
+  "email.notification.digest_title": "{count} teavitust",
   "email.notification.reminder_digest_title": "{count} meeldetuletust",
   "errors.account_deletion_already_pending": "Konto kustutamine on juba plaanitud.",
   "errors.account_deletion_failed": "Konto kustutamist ei õnnestunud taotleda.",

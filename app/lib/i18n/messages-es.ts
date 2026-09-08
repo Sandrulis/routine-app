@@ -381,6 +381,7 @@ export const es: Record<string, string> = {
   "docs.seo.article_description": "{title} — artículo de documentación de {name}.",
   "docs.seo.description": "Centro de ayuda de {name}: primeros pasos, ajustes del equipo, integraciones y preguntas frecuentes.",
   "docs.title": "Documentación",
+  "email.notification.digest_title": "{count} avisos",
   "email.notification.reminder_digest_title": "{count} recordatorios",
   "errors.account_deletion_already_pending": "La eliminación de la cuenta ya está programada.",
   "errors.account_deletion_failed": "No se pudo solicitar la eliminación de la cuenta.",

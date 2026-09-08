@@ -401,6 +401,11 @@ export async function createExtensionSubtask(input: {
         );
       if (notifyError) {
         logError("extension subtask notify failed", notifyError);
+      } else {
+        const { scheduleNotificationEmailFlush } = await import(
+          "@/app/lib/email/notification-email-sender"
+        );
+        scheduleNotificationEmailFlush();
       }
     }
   }

@@ -381,6 +381,7 @@ export const nl: Record<string, string> = {
   "docs.seo.article_description": "{title} — {name} documentatie-artikel.",
   "docs.seo.description": "{name} helpcentrum: aan de slag, teaminstellingen, integraties en veelgestelde vragen.",
   "docs.title": "Documentatie",
+  "email.notification.digest_title": "{count} meldingen",
   "email.notification.reminder_digest_title": "{count} herinneringen",
   "errors.account_deletion_already_pending": "Accountverwijdering is al gepland.",
   "errors.account_deletion_failed": "Accountverwijdering kon niet worden aangevraagd.",

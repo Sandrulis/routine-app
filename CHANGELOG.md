@@ -4,6 +4,10 @@
 
 - (none)
 
+## v0.3.64
+
+- Paziņojumu e-pasti tiek apvienoti vienā digestā: 20 s pauze pēc pēdējās izmaiņas, identiski labojumi kā viena rinda, atgādinājumi tajā pašā vēstulē (`140`)
+
 ## v0.3.63
 
 - Sānjosla un docs overlay zem 1280px; docs valodas karogs atver izvēlni; labots React cikls, kad maina loga platumu

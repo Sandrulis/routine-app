@@ -381,6 +381,7 @@
   "docs.seo.article_description": "{title} — {name} dokumentasjonsartikkel.",
   "docs.seo.description": "{name} hjelpesenter: kom i gang, teaminnstillinger, integrasjoner og vanlige spørsmål.",
   "docs.title": "Dokumentasjon",
+  "email.notification.digest_title": "{count} varsler",
   "email.notification.reminder_digest_title": "{count} påminnelser",
   "errors.account_deletion_already_pending": "Kontosletting er allerede planlagt.",
   "errors.account_deletion_failed": "Kunne ikke be om kontosletting.",

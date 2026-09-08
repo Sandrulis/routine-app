@@ -381,6 +381,7 @@
   "docs.seo.article_description": "{title} — статья документации {name}.",
   "docs.seo.description": "Справочный центр {name}: начало работы, настройки команды, интеграции и частые вопросы.",
   "docs.title": "Документация",
+  "email.notification.digest_title": "{count} уведомлений",
   "email.notification.reminder_digest_title": "{count} напоминаний",
   "errors.account_deletion_already_pending": "Удаление аккаунта уже запланировано.",
   "errors.account_deletion_failed": "Не удалось запросить удаление аккаунта.",

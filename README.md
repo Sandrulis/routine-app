@@ -2,7 +2,7 @@
 
 Komandas darba rīks ar publisku landing lapu un sānjoslas lietotni. Gaišs Next.js frontend.
 
-**Current version:** `0.3.63`
+**Current version:** `0.3.64`
 
 ## Palaist
 
@@ -39,7 +39,7 @@ Atver [http://localhost:3120](http://localhost:3120).
 - Ceļa joslā pirms katra posma tipa ikona (saraksts, mape, uzdevums, fails); aiz paziņojumiem valodas kods, ja ir vairākas aktīvas valodas; bez izvēles rāda sistēmas noklusējumu
 - Apakšuzdevuma tabula: viena tabula ar statusu grupām un zilu drop līniju; arhīvs pie Pievienot (aktīva poga sarkanīga); pabeigtajiem un dzēstajiem viegls rindas fons; fade-out, dzēšana/atjaunošana, pārvietošana; aiz nosaukuma paperclip, ja ir pielikumi (arī mapes Saraksta skatā); zem nosaukuma un pārvietošanas izvēlnē mapes/saraksta **PATH**, ja uzdevums nav saraksta saknē; sarakstā klikšķis atver modāli; statuss saglabājas uzreiz; sākuma/termiņa datumi rāda atlikušās vai kavētās dienas pēc statusa grupas (Nav sākts / Aktīvs / Slēgts); modālī **vēsture** ar izmaiņu žurnālu (bez komentāriem); mobilajā Detaļas / Vēsture cilnes, PATH visā platumā
 - **Check List** apakšuzdevuma modalī pirms pielikumiem; tukšs sākumā sakļauts; slēgto statusu tikai pie 100% (ja Check List modulis ieslēgts); zem statusa pogas zaļa progresa josla
-- Satura joslā **paziņojumi** (zvaniņš labajā malā) — personīgie brīdinājumi par uzdevumiem, kur esi iesaistīts (arī piešķiršana no šablona/automatizācijas), komandas uzaicinājumi ar Apstiprināt / Noraidīt, un vadītājam brīva apmaksāta vieta (`seat_open`); ja Resend ir aktīvs, tos pašus notikumus (izņemot uzaicinājumu, kam ir savs šablons) sūta arī e-pastā
+- Satura joslā **paziņojumi** (zvaniņš labajā malā) — personīgie brīdinājumi par uzdevumiem, kur esi iesaistīts (arī piešķiršana no šablona/automatizācijas), komandas uzaicinājumi ar Apstiprināt / Noraidīt, un vadītājam brīva apmaksāta vieta (`seat_open`); ja Resend ir aktīvs, tos pašus notikumus (izņemot uzaicinājumu, kam ir savs šablons) sūta arī e-pastā kā vienu digestu (pauze pēc pēdējās izmaiņas, atgādinājumi tajā pašā vēstulē)
 - Kamēr dati ielādējas, rādās **Ielādē…** ar spinneri (lapas, sānjosla, paziņojumi), ne tukšs saturs; pēc ielogošanās vispirms nāk sarakstu čaula, failu saturs un uzdevuma vēsture - tikai atverot
 - Darba dati Postgres (`teams`, `work_lists`, `work_tasks`, …); Google sesija un `public.users` caur Supabase
 

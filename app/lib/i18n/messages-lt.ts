@@ -381,6 +381,7 @@ export const lt: Record<string, string> = {
   "docs.seo.article_description": "{title} — {name} dokumentacijos straipsnis.",
   "docs.seo.description": "{name} pagalbos centras: pradžia, komandos nustatymai, integracijos ir dažniausi klausimai.",
   "docs.title": "Dokumentacija",
+  "email.notification.digest_title": "{count} pranešimai",
   "email.notification.reminder_digest_title": "{count} priminimai",
   "errors.account_deletion_already_pending": "Paskyros ištrynimas jau suplanuotas.",
   "errors.account_deletion_failed": "Nepavyko paprašyti paskyros ištrynimo.",

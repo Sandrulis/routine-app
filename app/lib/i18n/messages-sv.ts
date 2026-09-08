@@ -381,6 +381,7 @@ export const sv: Record<string, string> = {
   "docs.seo.article_description": "{title} — {name} dokumentationsartikel.",
   "docs.seo.description": "{name} hjälpcenter: kom igång, teaminställningar, integrationer och vanliga frågor.",
   "docs.title": "Dokumentation",
+  "email.notification.digest_title": "{count} aviseringar",
   "email.notification.reminder_digest_title": "{count} påminnelser",
   "errors.account_deletion_already_pending": "Kontoradering är redan schemalagd.",
   "errors.account_deletion_failed": "Kunde inte begära kontoradering.",

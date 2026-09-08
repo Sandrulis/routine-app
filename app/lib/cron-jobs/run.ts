@@ -557,11 +557,7 @@ async function runJob(
   const { sendCronReminderEmails } = await import(
     "@/app/lib/email/notification-email-sender"
   );
-  const emailRows = batched.map((row) => ({
-    teamId: row.teamId,
-    item: row.item,
-  }));
-  const emailsSent = await sendCronReminderEmails(supabase, emailRows);
+  const emailsSent = await sendCronReminderEmails(supabase);
 
   const remainingNote =
     remainingUsers > 0

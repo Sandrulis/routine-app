@@ -381,6 +381,7 @@
   "docs.seo.article_description": "{title} — article de documentation {name}.",
   "docs.seo.description": "Centre d'aide {name} : démarrage, paramètres d'équipe, intégrations et questions fréquentes.",
   "docs.title": "Documentation",
+  "email.notification.digest_title": "{count} notifications",
   "email.notification.reminder_digest_title": "{count} rappels",
   "errors.account_deletion_already_pending": "La suppression du compte est déjà planifiée.",
   "errors.account_deletion_failed": "Impossible de demander la suppression du compte.",

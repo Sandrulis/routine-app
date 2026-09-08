@@ -381,6 +381,7 @@
   "docs.seo.article_description": "{title} — articolo di documentazione {name}.",
   "docs.seo.description": "Centro assistenza {name}: inizio, impostazioni del team, integrazioni e domande frequenti.",
   "docs.title": "Documentazione",
+  "email.notification.digest_title": "{count} notifiche",
   "email.notification.reminder_digest_title": "{count} promemoria",
   "errors.account_deletion_already_pending": "L'eliminazione dell'account è già programmata.",
   "errors.account_deletion_failed": "Impossibile richiedere l'eliminazione dell'account.",

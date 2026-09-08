@@ -381,6 +381,7 @@ export const da: Record<string, string> = {
   "docs.seo.article_description": "{title} — {name} dokumentationsartikel.",
   "docs.seo.description": "{name} hjælpecenter: kom i gang, teamindstillinger, integrationer og ofte stillede spørgsmål.",
   "docs.title": "Dokumentation",
+  "email.notification.digest_title": "{count} notifikationer",
   "email.notification.reminder_digest_title": "{count} påmindelser",
   "errors.account_deletion_already_pending": "Kontosletning er allerede planlagt.",
   "errors.account_deletion_failed": "Kontosletning kunne ikke anmodes om.",
