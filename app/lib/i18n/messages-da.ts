@@ -2167,4 +2167,5 @@ export const da: Record<string, string> = {
   "user_todo.empty": "Ingen åbne opgaver.",
   "user_todo.placeholder": "Ny opgave",
   "user_todo.title": "Gøremålsliste",
+  "user_todo.open_with_count": "Gøremålsliste ({count})",
 };

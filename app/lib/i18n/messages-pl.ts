@@ -2167,4 +2167,5 @@ export const pl: Record<string, string> = {
   "user_todo.empty": "Brak otwartych zadań.",
   "user_todo.placeholder": "Nowe zadanie",
   "user_todo.title": "Lista zadań",
+  "user_todo.open_with_count": "Lista zadań ({count})",
 };

@@ -16,6 +16,7 @@ import { getTaskAncestors, workItemIcon } from "@/app/lib/lists";
 import { useLists } from "@/app/lib/lists-store";
 import { useListFiles } from "@/app/lib/use-list-files";
 import { useTeam } from "@/app/lib/team-store";
+import { formatInteger } from "@/app/lib/format/numbers";
 import { useTemplates } from "@/app/lib/templates-store";
 
 type Crumb = {
@@ -47,6 +48,7 @@ export function PageBreadcrumb({
   todoOpen = false,
   todoEnabled = false,
   todoCollapsed = false,
+  todoActiveCount = 0,
   onOpenTodo,
 }: {
   menuOpen?: boolean;
@@ -54,6 +56,7 @@ export function PageBreadcrumb({
   todoOpen?: boolean;
   todoEnabled?: boolean;
   todoCollapsed?: boolean;
+  todoActiveCount?: number;
   onOpenTodo?: () => void;
 }) {
   const pathname = usePathname();
@@ -63,6 +66,12 @@ export function PageBreadcrumb({
   const { members, isReady: teamReady } = useTeam();
   const { templates, isReady: templatesReady } = useTemplates();
   const loadingLabel = t("common.loading", "Ielādē…");
+  const showTodoBadge = Boolean(onOpenTodo) && !todoOpen && todoActiveCount > 0;
+  const todoButtonLabel = showTodoBadge
+    ? t("user_todo.open_with_count", "Darāmo saraksts ({count})", {
+        count: formatInteger(todoActiveCount),
+      })
+    : t("user_todo.title", "Darāmo saraksts");
 
   const crumbs = useMemo<Crumb[]>(() => {
     const parts = pathname.split("/").filter(Boolean);
@@ -377,18 +386,23 @@ export function PageBreadcrumb({
         </nav>
         <div className="flex shrink-0 items-center gap-0.5">
           {todoEnabled && onOpenTodo ? (
-            <Tooltip label={t("user_todo.title", "Darāmo saraksts")} align="end">
+            <Tooltip label={todoButtonLabel} align="end">
               <button
                 type="button"
-                className={`inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-zinc-600 transition hover:bg-zinc-100 hover:text-zinc-900 ${
+                className={`relative inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-zinc-600 transition hover:bg-zinc-100 hover:text-zinc-900 ${
                   todoCollapsed ? "" : "xl:hidden"
                 } ${todoOpen ? "bg-zinc-100 text-zinc-900" : ""}`}
-                aria-label={t("user_todo.title", "Darāmo saraksts")}
+                aria-label={todoButtonLabel}
                 aria-expanded={todoOpen}
                 aria-controls="user-todo-rail"
                 onClick={onOpenTodo}
               >
                 <i className="fas fa-square-check text-lg" aria-hidden="true" />
+                {showTodoBadge ? (
+                  <span className="absolute top-0.5 right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 text-[9px] font-semibold text-white">
+                    {todoActiveCount > 99 ? "99+" : formatInteger(todoActiveCount)}
+                  </span>
+                ) : null}
               </button>
             </Tooltip>
           ) : null}

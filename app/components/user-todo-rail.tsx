@@ -7,7 +7,6 @@ import { Tooltip } from "@/app/components/tooltip";
 import { useDisplayPreferences } from "@/app/components/display-preferences-provider";
 import { useFeedbackToast } from "@/app/components/feedback-toast-provider";
 import { useTranslations } from "@/app/components/translations-provider";
-import { useAuthSession } from "@/app/lib/auth/use-auth-session";
 import { FRONTEND_MODULE_KEYS } from "@/app/lib/frontend-modules/keys";
 import { useFrontendModules } from "@/app/lib/frontend-modules/context";
 import { USER_TODO_TITLE_MAX, type UserTodo } from "@/app/lib/user-todos";
@@ -102,16 +101,19 @@ export function UserTodoRail({
   collapsed = false,
   mobileOpen = false,
   onClose,
+  sessionReady,
+  todos,
 }: {
   collapsed?: boolean;
   mobileOpen?: boolean;
   onClose?: () => void;
+  sessionReady: boolean;
+  todos: ReturnType<typeof useUserTodos>;
 }) {
   const { t } = useTranslations();
   const { showFeedback } = useFeedbackToast();
   const { formatDate } = useDisplayPreferences();
   const { isEnabled } = useFrontendModules();
-  const { user, isReady: sessionReady } = useAuthSession();
   const enabled = isEnabled(FRONTEND_MODULE_KEYS.todo);
   const {
     isReady,
@@ -120,7 +122,7 @@ export function UserTodoRail({
     addTodo,
     setTodoDone,
     removeTodo,
-  } = useUserTodos(enabled && sessionReady ? user?.id ?? null : null);
+  } = todos;
   const [draft, setDraft] = useState("");
   const [archiveOpen, setArchiveOpen] = useState(false);
   const [pending, setPending] = useState(false);

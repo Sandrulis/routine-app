@@ -2166,5 +2166,6 @@
   "user_todo.completed_on": "Valmis {date}",
   "user_todo.empty": "Ei avoimia tehtäviä.",
   "user_todo.placeholder": "Uusi tehtävä",
-  "user_todo.title": "Tehtävälista"
+  "user_todo.title": "Tehtävälista",
+  "user_todo.open_with_count": "Tehtävälista ({count})"
 }

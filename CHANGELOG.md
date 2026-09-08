@@ -4,6 +4,10 @@
 
 - (none)
 
+## v0.3.68
+
+- Paslēptai vai aizvērtai Darāmo saraksta slejai atvēršanas ikonā rāda sarkano badge ar atvērto ierakstu skaitu
+
 ## v0.3.67
 
 - Personīgās slejas un moduļa nosaukums visās valodās: **Darāmo saraksts** / To Do List

@@ -2167,4 +2167,5 @@ export const et: Record<string, string> = {
   "user_todo.empty": "Avatud ülesandeid pole.",
   "user_todo.placeholder": "Uus ülesanne",
   "user_todo.title": "Ülesannete nimekiri",
+  "user_todo.open_with_count": "Ülesannete nimekiri ({count})",
 };

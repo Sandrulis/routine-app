@@ -17,9 +17,11 @@ import { useTranslations } from "@/app/components/translations-provider";
 import { useTeamBillingLiveSync } from "@/app/lib/billing/use-team-billing-live-sync";
 import { AccountDeletionReactivatedToast } from "@/app/components/account-deletion-reactivated-toast";
 import type { SiteAnnouncementSummary } from "@/app/lib/announcements/types";
+import { useAuthSession } from "@/app/lib/auth/use-auth-session";
 import { FRONTEND_MODULE_KEYS } from "@/app/lib/frontend-modules/keys";
 import { useFrontendModules } from "@/app/lib/frontend-modules/context";
 import { SIDEBAR_EXPANDED_MEDIA } from "@/app/lib/sidebar-layout";
+import { useUserTodos } from "@/app/lib/use-user-todos";
 import { TODO_RAIL_COLLAPSED_STORAGE_KEY } from "@/app/lib/user-todos";
 
 function TeamBillingLiveSync() {
@@ -50,7 +52,9 @@ export function AppShell({
   const pathname = usePathname();
   const { t } = useTranslations();
   const { isEnabled } = useFrontendModules();
+  const { user, isReady: sessionReady } = useAuthSession();
   const todoEnabled = isEnabled(FRONTEND_MODULE_KEYS.todo);
+  const todos = useUserTodos(todoEnabled && sessionReady ? user?.id ?? null : null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [todoOpen, setTodoOpen] = useState(false);
   const [todoCollapsed, setTodoCollapsed] = useState(false);
@@ -147,6 +151,8 @@ export function AppShell({
         collapsed={todoCollapsed}
         mobileOpen={todoOpen}
         onClose={hideTodoRail}
+        sessionReady={sessionReady}
+        todos={todos}
       />
       <div className="flex min-h-dvh flex-col pl-[var(--app-sidebar-width-expanded)] pr-[var(--app-todo-rail-width-expanded)]">
         <PageBreadcrumb
@@ -158,6 +164,7 @@ export function AppShell({
           todoOpen={todoOpen}
           todoEnabled={todoEnabled}
           todoCollapsed={todoCollapsed}
+          todoActiveCount={todos.activeItems.length}
           onOpenTodo={showTodoRail}
         />
         <GlobalAnnouncementsBanner announcements={announcements} />

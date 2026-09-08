@@ -2166,5 +2166,6 @@
   "user_todo.completed_on": "Atlikta {date}",
   "user_todo.empty": "Nėra atvirų užduočių.",
   "user_todo.placeholder": "Nauja užduotis",
-  "user_todo.title": "Darbų sąrašas"
+  "user_todo.title": "Darbų sąrašas",
+  "user_todo.open_with_count": "Darbų sąrašas ({count})"
 }

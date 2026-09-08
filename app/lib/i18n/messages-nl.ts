@@ -2167,4 +2167,5 @@ export const nl: Record<string, string> = {
   "user_todo.empty": "Geen openstaande taken.",
   "user_todo.placeholder": "Nieuwe taak",
   "user_todo.title": "Takenlijst",
+  "user_todo.open_with_count": "Takenlijst ({count})",
 };

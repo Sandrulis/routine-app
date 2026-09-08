@@ -2167,4 +2167,5 @@ export const de: Record<string, string> = {
   "user_todo.empty": "Keine offenen Aufgaben.",
   "user_todo.placeholder": "Neue Aufgabe",
   "user_todo.title": "To-do-Liste",
+  "user_todo.open_with_count": "To-do-Liste ({count})",
 };

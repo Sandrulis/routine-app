@@ -2167,4 +2167,5 @@ export const fi: Record<string, string> = {
   "user_todo.empty": "Ei avoimia tehtäviä.",
   "user_todo.placeholder": "Uusi tehtävä",
   "user_todo.title": "Tehtävälista",
+  "user_todo.open_with_count": "Tehtävälista ({count})",
 };

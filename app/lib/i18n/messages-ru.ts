@@ -2167,4 +2167,5 @@ export const ru: Record<string, string> = {
   "user_todo.empty": "Нет открытых задач.",
   "user_todo.placeholder": "Новая задача",
   "user_todo.title": "Список дел",
+  "user_todo.open_with_count": "Список дел ({count})",
 };

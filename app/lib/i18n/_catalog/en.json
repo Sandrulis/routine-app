@@ -1591,6 +1591,7 @@
   "todo.defaults.docs": "Update internal documentation",
   "todo.defaults.docs_description": "Write down how the team adds and assigns tasks.",
   "user_todo.title": "To Do List",
+  "user_todo.open_with_count": "To Do List ({count})",
   "user_todo.placeholder": "New to-do",
   "user_todo.empty": "No open to-dos.",
   "user_todo.archive": "Archive",

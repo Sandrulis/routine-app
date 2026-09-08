@@ -2167,4 +2167,5 @@ export const lt: Record<string, string> = {
   "user_todo.empty": "Nėra atvirų užduočių.",
   "user_todo.placeholder": "Nauja užduotis",
   "user_todo.title": "Darbų sąrašas",
+  "user_todo.open_with_count": "Darbų sąrašas ({count})",
 };

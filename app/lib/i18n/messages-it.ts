@@ -2167,4 +2167,5 @@ export const it: Record<string, string> = {
   "user_todo.empty": "Nessuna attività aperta.",
   "user_todo.placeholder": "Nuova attività",
   "user_todo.title": "Lista da fare",
+  "user_todo.open_with_count": "Lista da fare ({count})",
 };
