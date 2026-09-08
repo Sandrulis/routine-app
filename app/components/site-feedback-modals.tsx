@@ -28,11 +28,17 @@ export function SiteFeedbackModals({
   const { t } = useTranslations();
   const { showFeedback } = useFeedbackToast();
 
-  async function submit(nextKind: FeedbackKind, title: string, body: string) {
+  async function submit(
+    nextKind: FeedbackKind,
+    title: string,
+    body: string,
+    rating?: number,
+  ) {
     const result = await submitUserFeedbackAction({
       kind: nextKind,
       title,
       body,
+      rating,
     });
     if (!result.ok) {
       showFeedback({
@@ -89,16 +95,16 @@ export function SiteFeedbackModals({
           "feedback.general.description",
           "Padalies ar savu viedokli. Ziņojums tiks nosūtīts uz juridisko e-pastu.",
         )}
-        titlePlaceholder={t(
-          "feedback.general.title_placeholder",
-          "Tēma",
-        )}
         bodyPlaceholder={t(
           "feedback.general.body_placeholder",
           "Kas tev patīk vai ko varētu uzlabot",
         )}
         fieldIdPrefix="feedback-general"
-        onSubmit={(title, body) => submit("feedback", title, body)}
+        hideTitle
+        showRating
+        onSubmit={(title, body, rating) =>
+          submit("feedback", title, body, rating)
+        }
       />
 
       <FeatureRequestModal
@@ -110,6 +116,54 @@ export function SiteFeedbackModals({
   );
 }
 
+function StarRating({
+  value,
+  onChange,
+  labelledBy,
+}: {
+  value: number;
+  onChange: (next: number) => void;
+  labelledBy: string;
+}) {
+  const { t } = useTranslations();
+  const [hover, setHover] = useState<number | null>(null);
+  const shown = hover ?? value;
+
+  return (
+    <div
+      role="radiogroup"
+      aria-labelledby={labelledBy}
+      className="flex items-center gap-0.5"
+      onMouseLeave={() => setHover(null)}
+    >
+      {([1, 2, 3, 4, 5] as const).map((star) => {
+        const filled = shown >= star;
+        const label = t("feedback.general.rating_star", "{count} no 5", {
+          count: formatInteger(star),
+        });
+        return (
+          <button
+            key={star}
+            type="button"
+            role="radio"
+            aria-checked={value === star}
+            aria-label={label}
+            className="inline-flex size-9 items-center justify-center rounded-lg text-amber-400 transition hover:bg-amber-50"
+            onMouseEnter={() => setHover(star)}
+            onFocus={() => setHover(star)}
+            onClick={() => onChange(value === star ? 0 : star)}
+          >
+            <i
+              className={`${filled ? "fas" : "far"} fa-star text-lg`}
+              aria-hidden="true"
+            />
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 function SimpleFeedbackFormModal({
   open,
   onOpenChange,
@@ -118,39 +172,53 @@ function SimpleFeedbackFormModal({
   titlePlaceholder,
   bodyPlaceholder,
   fieldIdPrefix,
+  hideTitle = false,
+  showRating = false,
   onSubmit,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   title: string;
   description: string;
-  titlePlaceholder: string;
+  titlePlaceholder?: string;
   bodyPlaceholder: string;
   fieldIdPrefix: string;
-  onSubmit: (title: string, body: string) => Promise<void>;
+  hideTitle?: boolean;
+  showRating?: boolean;
+  onSubmit: (title: string, body: string, rating?: number) => Promise<void>;
 }) {
   const { t } = useTranslations();
   const [name, setName] = useState("");
   const [details, setDetails] = useState("");
+  const [rating, setRating] = useState(0);
   const [pending, setPending] = useState(false);
 
   useEffect(() => {
     if (!open) return;
     setName("");
     setDetails("");
+    setRating(0);
     setPending(false);
   }, [open]);
 
   const trimmedName = name.trim();
   const trimmedDetails = details.trim();
-  const dirty = Boolean(trimmedName || trimmedDetails);
+  const dirty = Boolean(
+    trimmedName || trimmedDetails || (showRating && rating > 0),
+  );
+  const canSubmit =
+    trimmedDetails && (hideTitle || trimmedName) && !pending;
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!trimmedName || !trimmedDetails || pending) return;
+    if (!canSubmit) return;
     setPending(true);
     try {
-      await onSubmit(trimmedName, trimmedDetails);
+      await onSubmit(
+        hideTitle ? "" : trimmedName,
+        trimmedDetails,
+        showRating ? rating : undefined,
+      );
       onOpenChange(false);
     } catch {
       // Toast already shown by onSubmit.
@@ -158,6 +226,8 @@ function SimpleFeedbackFormModal({
       setPending(false);
     }
   }
+
+  const ratingLabelId = `${fieldIdPrefix}-rating-label`;
 
   return (
     <AppModal
@@ -168,20 +238,39 @@ function SimpleFeedbackFormModal({
       dirty={dirty}
     >
       <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label htmlFor={`${fieldIdPrefix}-title`} className="text-sm font-semibold text-zinc-700">
-            {t("lists.fields.name", "Nosaukums")}
-          </label>
-          <input
-            id={`${fieldIdPrefix}-title`}
-            value={name}
-            onChange={(event) => setName(event.target.value)}
-            className="mt-2 min-h-11 w-full rounded-2xl border border-zinc-200 bg-zinc-50 px-4 text-sm text-zinc-900 outline-none transition placeholder:text-zinc-400 focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-100"
-            placeholder={titlePlaceholder}
-            autoFocus
-            maxLength={200}
-          />
-        </div>
+        {showRating ? (
+          <div>
+            <p
+              id={ratingLabelId}
+              className="text-sm font-semibold text-zinc-700"
+            >
+              {t("feedback.general.rating", "Vērtējums")}
+            </p>
+            <div className="mt-2">
+              <StarRating
+                value={rating}
+                onChange={setRating}
+                labelledBy={ratingLabelId}
+              />
+            </div>
+          </div>
+        ) : null}
+        {hideTitle ? null : (
+          <div>
+            <label htmlFor={`${fieldIdPrefix}-title`} className="text-sm font-semibold text-zinc-700">
+              {t("lists.fields.name", "Nosaukums")}
+            </label>
+            <input
+              id={`${fieldIdPrefix}-title`}
+              value={name}
+              onChange={(event) => setName(event.target.value)}
+              className="mt-2 min-h-11 w-full rounded-2xl border border-zinc-200 bg-zinc-50 px-4 text-sm text-zinc-900 outline-none transition placeholder:text-zinc-400 focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-100"
+              placeholder={titlePlaceholder}
+              autoFocus
+              maxLength={200}
+            />
+          </div>
+        )}
         <div>
           <label htmlFor={`${fieldIdPrefix}-body`} className="text-sm font-medium text-zinc-500">
             {t("common.description", "Apraksts")}
@@ -192,6 +281,7 @@ function SimpleFeedbackFormModal({
             onChange={(event) => setDetails(event.target.value)}
             rows={4}
             maxLength={4000}
+            autoFocus={hideTitle}
             className="mt-2 w-full resize-y rounded-xl border border-zinc-200 bg-white px-3 py-2.5 text-sm text-zinc-900 outline-none transition placeholder:text-zinc-400 focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
             placeholder={bodyPlaceholder}
           />
@@ -207,7 +297,7 @@ function SimpleFeedbackFormModal({
           </button>
           <button
             type="submit"
-            disabled={pending || !trimmedName || !trimmedDetails}
+            disabled={!canSubmit}
             className="inline-flex min-h-10 items-center justify-center rounded-2xl bg-blue-700 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-800 disabled:bg-zinc-200 disabled:text-zinc-400"
           >
             {t("actions.send", "Nosūtīt")}

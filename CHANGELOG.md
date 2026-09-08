@@ -4,6 +4,11 @@
 
 - (none)
 
+## v0.3.72
+
+- **Atsauksmes** vairs nav ar virsrakstu: tikai apraksts un 0–5 zvaigžņu vērtējums (`144`)
+- Lietotnes ceļa josla paliek fiksēta pie ekrāna augšas, kad ritina lapu
+
 ## v0.3.71
 
 - Sānjoslas, ceļa joslas un darāmo saraksta galvenes ir vienādā augstumā, lai apakšējā līnija iet vienā līmenī

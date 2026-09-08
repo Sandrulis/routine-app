@@ -117,10 +117,17 @@ export async function listFeatureRequestsAction(): Promise<
   };
 }
 
+function parseRating(value: unknown): number | null {
+  if (typeof value !== "number" || !Number.isInteger(value)) return null;
+  if (value < 0 || value > 5) return null;
+  return value;
+}
+
 export async function submitUserFeedbackAction(input: {
   kind: FeedbackKind;
   title: string;
   body: string;
+  rating?: number;
 }): Promise<{ ok: true } | { ok: false; error: string }> {
   const user = await getCurrentUser();
   if (!user) {
@@ -137,7 +144,12 @@ export async function submitUserFeedbackAction(input: {
 
   const title = trimTitle(input.title);
   const body = trimBody(input.body);
-  if (!title) {
+  const rating = kind === "feedback" ? parseRating(input.rating) : null;
+  if (kind === "feedback") {
+    if (rating == null) {
+      return { ok: false, error: "errors.feedback_rating_invalid" };
+    }
+  } else if (!title) {
     return { ok: false, error: "errors.feedback_title_required" };
   }
   if (!body) {
@@ -170,6 +182,7 @@ export async function submitUserFeedbackAction(input: {
     kind,
     title,
     body,
+    rating,
     user_id: user.id,
   });
   if (error) {
@@ -198,24 +211,46 @@ export async function submitUserFeedbackAction(input: {
     `feedback.email.kind.${kind}`,
     kind,
   );
-  const subject = catalogText(
-    lang,
-    `feedback.email.subject.${kind}`,
-    "{title}",
-    { title },
-  );
-  const bodyText = catalogText(
-    lang,
-    "feedback.email.body",
-    "{name} ({email})\n\n{title}\n\n{body}",
-    {
-      name: senderName,
-      email: senderEmail || "—",
-      kind: kindLabel,
-      title,
-      body,
-    },
-  );
+  const subject =
+    kind === "feedback"
+      ? catalogText(
+          lang,
+          "feedback.email.subject.feedback",
+          "Atsauksme: {rating}/5",
+          { rating: String(rating ?? 0) },
+        )
+      : catalogText(
+          lang,
+          `feedback.email.subject.${kind}`,
+          "{title}",
+          { title },
+        );
+  const bodyText =
+    kind === "feedback"
+      ? catalogText(
+          lang,
+          "feedback.email.body.feedback",
+          "{name} ({email}) nosūtīja {kind}.\n\n{rating}/5\n\n{body}",
+          {
+            name: senderName,
+            email: senderEmail || "—",
+            kind: kindLabel,
+            rating: String(rating ?? 0),
+            body,
+          },
+        )
+      : catalogText(
+          lang,
+          "feedback.email.body",
+          "{name} ({email})\n\n{title}\n\n{body}",
+          {
+            name: senderName,
+            email: senderEmail || "—",
+            kind: kindLabel,
+            title,
+            body,
+          },
+        );
 
   const systemName = settings.systemName.trim() || "TASQIN";
   const html = buildSimpleEmailHtml({
