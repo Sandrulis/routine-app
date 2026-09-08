@@ -314,7 +314,7 @@ export function OverflowTooltip({
 
   return (
     <Tooltip label={tooltipText} className={className} align={align}>
-      <span ref={measureRef} className="min-w-0">
+      <span ref={measureRef} className="block min-w-0 w-full overflow-hidden">
         {children}
       </span>
     </Tooltip>

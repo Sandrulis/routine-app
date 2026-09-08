@@ -4,6 +4,10 @@
 
 - (none)
 
+## v0.3.65
+
+- Apakšuzdevuma pielikuma kartītē garš faila nosaukums paliek bloka platumā (truncate + tooltip)
+
 ## v0.3.64
 
 - Paziņojumu e-pasti tiek apvienoti vienā digestā: 20 s pauze pēc pēdējās izmaiņas, identiski labojumi kā viena rinda, atgādinājumi tajā pašā vēstulē (`140`)

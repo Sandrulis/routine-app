@@ -203,19 +203,19 @@ export function TaskAttachments({
                 return (
                 <li
                   key={file.id}
-                  className="w-[10.75rem] rounded-2xl bg-zinc-50 p-2"
+                  className="w-[10.75rem] min-w-0 max-w-full overflow-hidden rounded-2xl bg-zinc-50 p-2"
                 >
-                  <div className="relative">
+                  <div className="relative min-w-0">
                     <OptionalTooltip
                       label={note}
-                      className="w-full"
+                      className="w-full min-w-0 max-w-full"
                       align="start"
                     >
                     <button
                       type="button"
                       disabled={disabled}
                       onClick={() => onView(file.id)}
-                      className="w-full text-left disabled:cursor-not-allowed"
+                      className="w-full min-w-0 text-left disabled:cursor-not-allowed"
                     >
                       <span className="relative block overflow-hidden rounded-xl bg-white ring-1 ring-zinc-200/80">
                         {file.previewUrl ? (
@@ -244,14 +244,17 @@ export function TaskAttachments({
                           </span>
                         ) : null}
                       </span>
-                      <span className="mt-2 block min-w-0 pr-6">
+                      <span className="mt-2 block min-w-0 overflow-hidden pr-6">
                         {note ? (
-                          <span className="block min-w-0 truncate text-[12px] text-zinc-600">
+                          <span className="block truncate text-[12px] text-zinc-600">
                             {file.name}
                           </span>
                         ) : (
-                          <OverflowTooltip label={file.name} className="min-w-0">
-                            <span className="block min-w-0 truncate text-[12px] text-zinc-600">
+                          <OverflowTooltip
+                            label={file.name}
+                            className="w-full min-w-0 max-w-full overflow-hidden"
+                          >
+                            <span className="block truncate text-[12px] text-zinc-600">
                               {file.name}
                             </span>
                           </OverflowTooltip>
