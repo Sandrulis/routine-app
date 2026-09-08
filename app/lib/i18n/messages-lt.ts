@@ -2159,4 +2159,11 @@ export const lt: Record<string, string> = {
   "user_menu.sign_out": "Atsijungti",
   "user_menu.sign_out_done": "Atsijungėte.",
   "user_menu.sign_out_hint": "Atsijungti nuo sistemos",
+  "errors.user_todo_save_failed": "Nepavyko išsaugoti užduoties.",
+  "landing.features.todo.description": "Asmeninis stulpelis dešinėje. Įrašyk darbą, pažymėk ir atlikti lieka archyve su data.",
+  "user_todo.archive": "Archyvas",
+  "user_todo.archive_empty": "Nėra atliktų užduočių.",
+  "user_todo.completed_on": "Atlikta {date}",
+  "user_todo.empty": "Nėra atvirų užduočių.",
+  "user_todo.placeholder": "Nauja užduotis",
 };

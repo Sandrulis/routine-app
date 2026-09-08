@@ -8,6 +8,7 @@ export const FRONTEND_MODULE_KEYS = {
   gmailPlugin: "module_gmail_plugin",
   onedrive: "module_onedrive",
   checklist: "module_checklist",
+  todo: "module_todo",
   automations: "module_automations",
   templates: "module_templates",
   calendar: "module_calendar",
@@ -66,6 +67,9 @@ export function knownFrontendModuleLabel(
   }
   if (moduleKey === FRONTEND_MODULE_KEYS.checklist) {
     return { key: "subtasks.checklist.title", fallback: "Check List" };
+  }
+  if (moduleKey === FRONTEND_MODULE_KEYS.todo) {
+    return { key: "todo.columns.todo", fallback: "Darāms" };
   }
   if (moduleKey === FRONTEND_MODULE_KEYS.calendar) {
     return { key: "calendar.integration.title", fallback: "Kalendāra integrācija" };

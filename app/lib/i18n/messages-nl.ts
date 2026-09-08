@@ -2159,4 +2159,11 @@ export const nl: Record<string, string> = {
   "user_menu.sign_out": "Uitloggen",
   "user_menu.sign_out_done": "Je bent uitgelogd.",
   "user_menu.sign_out_hint": "Uitloggen uit het systeem",
+  "errors.user_todo_save_failed": "De taak kon niet worden opgeslagen.",
+  "landing.features.todo.description": "Een persoonlijke kolom rechts. Schrijf op wat je moet doen, vink af, en afgeronde items blijven in het archief met de datum.",
+  "user_todo.archive": "Archief",
+  "user_todo.archive_empty": "Geen afgeronde taken.",
+  "user_todo.completed_on": "Afgerond {date}",
+  "user_todo.empty": "Geen openstaande taken.",
+  "user_todo.placeholder": "Nieuwe taak",
 };

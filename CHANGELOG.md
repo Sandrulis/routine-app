@@ -4,6 +4,10 @@
 
 - (none)
 
+## v0.3.66
+
+- Personīga **Darāms** sleja labajā malā, kad ieslēgts `module_todo`: atķeksētais paliek arhīvā ar datumu; X paslēpj sleju, ikona ceļa joslā atver atpakaļ (`141`)
+
 ## v0.3.65
 
 - Apakšuzdevuma pielikuma kartītē garš faila nosaukums paliek bloka platumā (truncate + tooltip)

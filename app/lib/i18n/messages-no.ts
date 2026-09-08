@@ -2159,4 +2159,11 @@ export const no: Record<string, string> = {
   "user_menu.sign_out": "Logg ut",
   "user_menu.sign_out_done": "Du er logget ut.",
   "user_menu.sign_out_hint": "Logg ut av systemet",
+  "errors.user_todo_save_failed": "Kunne ikke lagre oppgaven.",
+  "landing.features.todo.description": "En personlig kolonne til høyre. Skriv ned det som skal gjøres, huk av, og ferdige oppgaver blir i arkivet med datoen.",
+  "user_todo.archive": "Arkiv",
+  "user_todo.archive_empty": "Ingen fullførte oppgaver.",
+  "user_todo.completed_on": "Fullført {date}",
+  "user_todo.empty": "Ingen åpne oppgaver.",
+  "user_todo.placeholder": "Ny oppgave",
 };

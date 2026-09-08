@@ -44,9 +44,17 @@ function CrumbMark({ icon, muted }: { icon?: ReactNode; muted: boolean }) {
 export function PageBreadcrumb({
   menuOpen = false,
   onOpenMenu,
+  todoOpen = false,
+  todoEnabled = false,
+  todoCollapsed = false,
+  onOpenTodo,
 }: {
   menuOpen?: boolean;
   onOpenMenu?: () => void;
+  todoOpen?: boolean;
+  todoEnabled?: boolean;
+  todoCollapsed?: boolean;
+  onOpenTodo?: () => void;
 }) {
   const pathname = usePathname();
   const { t } = useTranslations();
@@ -368,6 +376,22 @@ export function PageBreadcrumb({
           </ol>
         </nav>
         <div className="flex shrink-0 items-center gap-0.5">
+          {todoEnabled && onOpenTodo ? (
+            <Tooltip label={t("todo.columns.todo", "Darāms")} align="end">
+              <button
+                type="button"
+                className={`inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-zinc-600 transition hover:bg-zinc-100 hover:text-zinc-900 ${
+                  todoCollapsed ? "" : "xl:hidden"
+                } ${todoOpen ? "bg-zinc-100 text-zinc-900" : ""}`}
+                aria-label={t("todo.columns.todo", "Darāms")}
+                aria-expanded={todoOpen}
+                aria-controls="user-todo-rail"
+                onClick={onOpenTodo}
+              >
+                <i className="fas fa-square-check text-lg" aria-hidden="true" />
+              </button>
+            </Tooltip>
+          ) : null}
           <AdminPanelButton />
           <NotificationsMenu />
           <LanguageSwitcher variant="menu" />

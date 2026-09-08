@@ -2159,4 +2159,11 @@ export const it: Record<string, string> = {
   "user_menu.sign_out": "Esci",
   "user_menu.sign_out_done": "Hai chiuso la sessione.",
   "user_menu.sign_out_hint": "Esci dal sistema",
+  "errors.user_todo_save_failed": "Impossibile salvare l'attività.",
+  "landing.features.todo.description": "Una colonna personale a destra. Annota cosa fare, spuntala, e le attività finite restano nell'archivio con la data.",
+  "user_todo.archive": "Archivio",
+  "user_todo.archive_empty": "Nessuna attività completata.",
+  "user_todo.completed_on": "Completato {date}",
+  "user_todo.empty": "Nessuna attività aperta.",
+  "user_todo.placeholder": "Nuova attività",
 };

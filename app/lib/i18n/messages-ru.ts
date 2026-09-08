@@ -2159,4 +2159,11 @@ export const ru: Record<string, string> = {
   "user_menu.sign_out": "Выйти",
   "user_menu.sign_out_done": "Вы вышли из системы.",
   "user_menu.sign_out_hint": "Выйти из системы",
+  "errors.user_todo_save_failed": "Не удалось сохранить задачу.",
+  "landing.features.todo.description": "Личная колонка справа. Запишите дело, отметьте его, и выполненное останется в архиве с датой.",
+  "user_todo.archive": "Архив",
+  "user_todo.archive_empty": "Нет завершённых задач.",
+  "user_todo.completed_on": "Выполнено {date}",
+  "user_todo.empty": "Нет открытых задач.",
+  "user_todo.placeholder": "Новая задача",
 };

@@ -2159,4 +2159,11 @@ export const de: Record<string, string> = {
   "user_menu.sign_out": "Abmelden",
   "user_menu.sign_out_done": "Du hast dich abgemeldet.",
   "user_menu.sign_out_hint": "Vom System abmelden",
+  "errors.user_todo_save_failed": "Die Aufgabe konnte nicht gespeichert werden.",
+  "landing.features.todo.description": "Eine persönliche Spalte rechts. Schreibe auf, was zu tun ist, hake es ab, und Erledigtes bleibt mit Datum im Archiv.",
+  "user_todo.archive": "Archiv",
+  "user_todo.archive_empty": "Keine erledigten Aufgaben.",
+  "user_todo.completed_on": "Erledigt {date}",
+  "user_todo.empty": "Keine offenen Aufgaben.",
+  "user_todo.placeholder": "Neue Aufgabe",
 };

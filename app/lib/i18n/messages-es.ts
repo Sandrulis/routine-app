@@ -2159,4 +2159,11 @@ export const es: Record<string, string> = {
   "user_menu.sign_out": "Cerrar sesión",
   "user_menu.sign_out_done": "Has cerrado la sesión.",
   "user_menu.sign_out_hint": "Cierra la sesión del sistema",
+  "errors.user_todo_save_failed": "No se ha podido guardar la tarea.",
+  "landing.features.todo.description": "Una columna personal a la derecha. Anota lo que hay que hacer, márcalo y lo completado queda en el archivo con la fecha.",
+  "user_todo.archive": "Archivo",
+  "user_todo.archive_empty": "No hay tareas completadas.",
+  "user_todo.completed_on": "Completado {date}",
+  "user_todo.empty": "No hay tareas abiertas.",
+  "user_todo.placeholder": "Nueva tarea",
 };

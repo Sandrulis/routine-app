@@ -132,6 +132,8 @@ export function planIncludesLandingFeature(
       return has(FRONTEND_MODULE_KEYS.fileUpload) && has(FRONTEND_MODULE_KEYS.sendFile);
     case "checklist":
       return has(FRONTEND_MODULE_KEYS.checklist);
+    case "todo":
+      return has(FRONTEND_MODULE_KEYS.todo);
     case "calendar":
       return isCalendarIntegrationVisible(has);
     case "google_drive":
@@ -224,6 +226,18 @@ export function resolveLandingPageContent(
       descriptionKey: "landing.features.checklist.description",
       descriptionFallback:
         "Sadali uzdevumu punktos, ko var atzīmēt, nezaudējot kontekstu un termiņu.",
+    });
+  }
+
+  if (isEnabled(FRONTEND_MODULE_KEYS.todo)) {
+    features.push({
+      id: "todo",
+      icon: "fas fa-square-check",
+      titleKey: "todo.columns.todo",
+      titleFallback: "Darāms",
+      descriptionKey: "landing.features.todo.description",
+      descriptionFallback:
+        "Personīga sleja labajā malā. Pieraksti darāmo, atķeksē, un pabeigtais paliek arhīvā ar datumu.",
     });
   }
 

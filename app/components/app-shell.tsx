@@ -12,15 +12,30 @@ import { TeamSubscriptionEndingBanner } from "@/app/components/team-subscription
 import { PageBreadcrumb } from "@/app/components/page-breadcrumb";
 import { SiteFooter } from "@/app/components/site-footer";
 import { StripeInvalidKeyBanner } from "@/app/components/stripe-invalid-key-banner";
+import { UserTodoRail } from "@/app/components/user-todo-rail";
 import { useTranslations } from "@/app/components/translations-provider";
 import { useTeamBillingLiveSync } from "@/app/lib/billing/use-team-billing-live-sync";
 import { AccountDeletionReactivatedToast } from "@/app/components/account-deletion-reactivated-toast";
 import type { SiteAnnouncementSummary } from "@/app/lib/announcements/types";
+import { FRONTEND_MODULE_KEYS } from "@/app/lib/frontend-modules/keys";
+import { useFrontendModules } from "@/app/lib/frontend-modules/context";
 import { SIDEBAR_EXPANDED_MEDIA } from "@/app/lib/sidebar-layout";
+import { TODO_RAIL_COLLAPSED_STORAGE_KEY } from "@/app/lib/user-todos";
 
 function TeamBillingLiveSync() {
   useTeamBillingLiveSync();
   return null;
+}
+
+function persistTodoCollapsed(collapsed: boolean) {
+  try {
+    window.localStorage.setItem(
+      TODO_RAIL_COLLAPSED_STORAGE_KEY,
+      collapsed ? "1" : "0",
+    );
+  } catch {
+    /* ignore quota / private mode */
+  }
 }
 
 export function AppShell({
@@ -34,26 +49,47 @@ export function AppShell({
 }) {
   const pathname = usePathname();
   const { t } = useTranslations();
+  const { isEnabled } = useFrontendModules();
+  const todoEnabled = isEnabled(FRONTEND_MODULE_KEYS.todo);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [todoOpen, setTodoOpen] = useState(false);
+  const [todoCollapsed, setTodoCollapsed] = useState(false);
 
   useEffect(() => {
     setMenuOpen(false);
+    setTodoOpen(false);
   }, [pathname]);
+
+  useEffect(() => {
+    try {
+      setTodoCollapsed(
+        window.localStorage.getItem(TODO_RAIL_COLLAPSED_STORAGE_KEY) === "1",
+      );
+    } catch {
+      setTodoCollapsed(false);
+    }
+  }, []);
 
   useEffect(() => {
     const media = window.matchMedia(SIDEBAR_EXPANDED_MEDIA);
     function onChange() {
-      if (media.matches) setMenuOpen(false);
+      if (media.matches) {
+        setMenuOpen(false);
+        setTodoOpen(false);
+      }
     }
     media.addEventListener("change", onChange);
     return () => media.removeEventListener("change", onChange);
   }, []);
 
   useEffect(() => {
-    if (!menuOpen) return;
+    if (!menuOpen && !todoOpen) return;
+    if (window.matchMedia(SIDEBAR_EXPANDED_MEDIA).matches) return;
 
     function onKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") setMenuOpen(false);
+      if (event.key !== "Escape") return;
+      setMenuOpen(false);
+      setTodoOpen(false);
     }
 
     const previousOverflow = document.body.style.overflow;
@@ -63,26 +99,66 @@ export function AppShell({
       document.body.style.overflow = previousOverflow;
       document.removeEventListener("keydown", onKeyDown);
     };
-  }, [menuOpen]);
+  }, [menuOpen, todoOpen]);
+
+  function hideTodoRail() {
+    setTodoOpen(false);
+    if (window.matchMedia(SIDEBAR_EXPANDED_MEDIA).matches) {
+      setTodoCollapsed(true);
+      persistTodoCollapsed(true);
+    }
+  }
+
+  function showTodoRail() {
+    if (window.matchMedia(SIDEBAR_EXPANDED_MEDIA).matches) {
+      setTodoCollapsed(false);
+      persistTodoCollapsed(false);
+      return;
+    }
+    setMenuOpen(false);
+    setTodoOpen((open) => !open);
+  }
 
   return (
-    <div className="min-h-dvh bg-zinc-100">
+    <div
+      className={`min-h-dvh bg-zinc-100 ${
+        todoEnabled && !todoCollapsed ? "has-todo-rail" : ""
+      }`}
+    >
       <TeamBillingLiveSync />
       <AccountDeletionReactivatedToast />
       <PendingTeamInviteModal />
-      {menuOpen ? (
+      {menuOpen || todoOpen ? (
         <button
           type="button"
           className="fixed inset-0 z-40 bg-zinc-900/40 xl:hidden"
           aria-label={t("actions.close", "Aizvērt")}
-          onClick={() => setMenuOpen(false)}
+          onClick={() => {
+            setMenuOpen(false);
+            setTodoOpen(false);
+          }}
         />
       ) : null}
-      <AppNav mobileOpen={menuOpen} onClose={() => setMenuOpen(false)} />
-      <div className="flex min-h-dvh flex-col pl-[var(--app-sidebar-width-expanded)]">
+      <AppNav
+        mobileOpen={menuOpen}
+        onClose={() => setMenuOpen(false)}
+      />
+      <UserTodoRail
+        collapsed={todoCollapsed}
+        mobileOpen={todoOpen}
+        onClose={hideTodoRail}
+      />
+      <div className="flex min-h-dvh flex-col pl-[var(--app-sidebar-width-expanded)] pr-[var(--app-todo-rail-width-expanded)]">
         <PageBreadcrumb
           menuOpen={menuOpen}
-          onOpenMenu={() => setMenuOpen(true)}
+          onOpenMenu={() => {
+            setTodoOpen(false);
+            setMenuOpen(true);
+          }}
+          todoOpen={todoOpen}
+          todoEnabled={todoEnabled}
+          todoCollapsed={todoCollapsed}
+          onOpenTodo={showTodoRail}
         />
         <GlobalAnnouncementsBanner announcements={announcements} />
         <StripeInvalidKeyBanner visible={stripeKeyInvalid} />

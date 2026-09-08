@@ -2159,4 +2159,11 @@ export const et: Record<string, string> = {
   "user_menu.sign_out": "Logi välja",
   "user_menu.sign_out_done": "Logisid välja.",
   "user_menu.sign_out_hint": "Logi süsteemist välja",
+  "errors.user_todo_save_failed": "Ülesannet ei õnnestunud salvestada.",
+  "landing.features.todo.description": "Isiklik veerg paremal. Kirjuta ülesanne, märgi tehtuks ja tehtud jäävad arhiivi kuupäevaga.",
+  "user_todo.archive": "Arhiiv",
+  "user_todo.archive_empty": "Lõpetatud ülesandeid pole.",
+  "user_todo.completed_on": "Lõpetatud {date}",
+  "user_todo.empty": "Avatud ülesandeid pole.",
+  "user_todo.placeholder": "Uus ülesanne",
 };

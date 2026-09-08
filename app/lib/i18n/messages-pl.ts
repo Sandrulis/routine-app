@@ -2159,4 +2159,11 @@ export const pl: Record<string, string> = {
   "user_menu.sign_out": "Wyloguj się",
   "user_menu.sign_out_done": "Wylogowałeś się.",
   "user_menu.sign_out_hint": "Wyloguj się z systemu",
+  "errors.user_todo_save_failed": "Nie udało się zapisać zadania.",
+  "landing.features.todo.description": "Osobista kolumna po prawej. Zapisz, co zrobić, odhacz, a ukończone zostaje w archiwum z datą.",
+  "user_todo.archive": "Archiwum",
+  "user_todo.archive_empty": "Brak ukończonych zadań.",
+  "user_todo.completed_on": "Ukończono {date}",
+  "user_todo.empty": "Brak otwartych zadań.",
+  "user_todo.placeholder": "Nowe zadanie",
 };

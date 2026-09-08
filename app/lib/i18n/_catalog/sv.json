@@ -2158,5 +2158,12 @@
   "user_menu.settings_hint": "Profil och datumvisning",
   "user_menu.sign_out": "Logga ut",
   "user_menu.sign_out_done": "Du loggade ut.",
-  "user_menu.sign_out_hint": "Logga ut från systemet"
+  "user_menu.sign_out_hint": "Logga ut från systemet",
+  "errors.user_todo_save_failed": "Kunde inte spara uppgiften.",
+  "landing.features.todo.description": "En personlig kolumn till höger. Skriv ner vad som ska göras, bocka av, och klara uppgifter stannar i arkivet med datum.",
+  "user_todo.archive": "Arkiv",
+  "user_todo.archive_empty": "Inga avslutade uppgifter.",
+  "user_todo.completed_on": "Klar {date}",
+  "user_todo.empty": "Inga öppna uppgifter.",
+  "user_todo.placeholder": "Ny uppgift"
 }

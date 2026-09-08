@@ -2159,4 +2159,11 @@ export const fr: Record<string, string> = {
   "user_menu.sign_out": "Se déconnecter",
   "user_menu.sign_out_done": "Tu t'es déconnecté.",
   "user_menu.sign_out_hint": "Se déconnecter du système",
+  "errors.user_todo_save_failed": "Impossible d'enregistrer la tâche.",
+  "landing.features.todo.description": "Une colonne personnelle à droite. Note ce qu'il faut faire, coche, et les tâches terminées restent dans l'archive avec la date.",
+  "user_todo.archive": "Archive",
+  "user_todo.archive_empty": "Aucune tâche terminée.",
+  "user_todo.completed_on": "Terminé le {date}",
+  "user_todo.empty": "Aucune tâche ouverte.",
+  "user_todo.placeholder": "Nouvelle tâche",
 };

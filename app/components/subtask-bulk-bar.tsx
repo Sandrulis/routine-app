@@ -371,7 +371,7 @@ export function SubtaskBulkBar({
           className="pointer-events-none fixed bottom-6 z-50 flex justify-center"
           style={{
             left: "var(--app-sidebar-width-expanded)",
-            right: 0,
+            right: "var(--app-todo-rail-width-expanded)",
           }}
         >
           <div
