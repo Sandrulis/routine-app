@@ -4,6 +4,10 @@
 
 - (none)
 
+## v0.3.71
+
+- Sānjoslas, ceļa joslas un darāmo saraksta galvenes ir vienādā augstumā, lai apakšējā līnija iet vienā līmenī
+
 ## v0.3.70
 
 - Spraudņa popup (konts, komanda, Gmail statuss) uzzīmējas uzreiz no kešotās sesijas un revalidē fonā, nevis rāda «Ielādē…», kamēr aiziet pilns pieprasījums

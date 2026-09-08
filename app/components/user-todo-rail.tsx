@@ -174,7 +174,7 @@ export function UserTodoRail({
           : "hidden z-40"
       } ${collapsed ? "xl:hidden" : "xl:flex"}`}
     >
-      <div className="flex shrink-0 items-center gap-1 border-b border-zinc-200 px-3 py-2">
+      <div className="flex h-[var(--app-topbar-height)] shrink-0 items-center gap-1 border-b border-zinc-200 px-3">
         <h2 className="min-w-0 flex-1 truncate text-sm font-semibold text-zinc-900">
           {title}
         </h2>

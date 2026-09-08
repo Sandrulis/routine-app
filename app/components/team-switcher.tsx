@@ -173,7 +173,7 @@ export function TeamSwitcher({ compact = false }: { compact?: boolean }) {
   return (
     <div
       ref={menuRef}
-      className={`relative z-[60] shrink-0 ${compact ? "min-w-0 flex-1 py-0" : "px-2 py-2"}`}
+      className={`relative z-[60] shrink-0 ${compact ? "min-w-0 flex-1 py-0" : "w-full px-2 py-0"}`}
     >
       <button
         ref={triggerRef}
@@ -190,7 +190,7 @@ export function TeamSwitcher({ compact = false }: { compact?: boolean }) {
         aria-expanded={open}
         aria-label={teamLabel}
         className={`flex w-full items-center gap-2.5 rounded-lg px-2 text-left transition ${
-          compact ? "min-h-10 py-1" : "min-h-12 py-1.5"
+          compact ? "min-h-10 py-1" : "h-12 py-0"
         } ${
           open ? "bg-zinc-100 ring-2 ring-zinc-300 ring-offset-2" : "hover:bg-zinc-100"
         }`}
