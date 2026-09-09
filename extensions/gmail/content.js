@@ -5,11 +5,10 @@
     } catch {
       // previous content script leftover
     }
-  } else {
-    document.getElementById("routine-gmail-root")?.remove();
-    for (const btn of document.querySelectorAll("[data-routine-gmail-inline]")) {
-      btn.remove();
-    }
+  }
+  document.getElementById("routine-gmail-root")?.remove();
+  for (const btn of document.querySelectorAll("[data-routine-gmail-inline]")) {
+    btn.remove();
   }
 
   const FALLBACK_STRINGS = {
@@ -218,6 +217,39 @@ const ICONS = {
   plus: `<svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path fill="currentColor" d="M7.25 2.5h1.5v4.75H13.5v1.5H8.75V13.5h-1.5V8.75H2.5v-1.5h4.75V2.5z"/></svg>`,
 };
 
+function runtimeMessaging() {
+  try {
+    const runtime = globalThis.chrome?.runtime;
+    if (!runtime?.id || !runtime.onMessage) return null;
+    return runtime;
+  } catch {
+    return null;
+  }
+}
+
+function bindRuntimeMessage(slot, listener) {
+  unbindRuntimeMessage(slot);
+  globalThis[slot] = listener;
+  const runtime = runtimeMessaging();
+  if (!runtime) return;
+  try {
+    runtime.onMessage.addListener(listener);
+  } catch {
+    // Extension context invalidated after reload.
+  }
+}
+
+function unbindRuntimeMessage(slot) {
+  const listener = globalThis[slot];
+  globalThis[slot] = null;
+  if (!listener) return;
+  try {
+    globalThis.chrome?.runtime?.onMessage?.removeListener(listener);
+  } catch {
+    // Extension context invalidated after reload.
+  }
+}
+
 function send(type, payload = {}) {
   try {
     if (!chrome?.runtime?.id) {
@@ -418,7 +450,7 @@ function emailBodyAttachmentName(from) {
 
 function ensureUi() {
   const existing = document.getElementById("routine-gmail-root");
-  if (existing?.dataset?.routineUi === "27") {
+  if (existing?.dataset?.routineUi === "28") {
     existing.querySelector("#routine-gmail-fab")?.remove();
     return;
   }
@@ -426,7 +458,7 @@ function ensureUi() {
 
   const root = document.createElement("div");
   root.id = "routine-gmail-root";
-  root.dataset.routineUi = "27";
+  root.dataset.routineUi = "28";
   root.innerHTML = `
     <div id="routine-gmail-modal" hidden>
       <div class="routine-gmail-backdrop" data-close="1"></div>
@@ -2461,11 +2493,7 @@ function ensureUi() {
     if (!key.startsWith("extension.gmail.progress_")) return;
     setBusy(true, t(key, message.params), message.percent);
   }
-  if (globalThis.__routineGmailOnMessage) {
-    chrome.runtime.onMessage.removeListener(globalThis.__routineGmailOnMessage);
-  }
-  globalThis.__routineGmailOnMessage = onAttachProgress;
-  chrome.runtime.onMessage.addListener(onAttachProgress);
+  bindRuntimeMessage("__routineGmailOnMessage", onAttachProgress);
 
   function onSessionUpdated(message) {
     if (message?.type !== "routine.sessionUpdated") return;
@@ -2477,11 +2505,7 @@ function ensureUi() {
     applyStaticLabels();
     syncPluginButtons();
   }
-  if (globalThis.__routineGmailOnSession) {
-    chrome.runtime.onMessage.removeListener(globalThis.__routineGmailOnSession);
-  }
-  globalThis.__routineGmailOnSession = onSessionUpdated;
-  chrome.runtime.onMessage.addListener(onSessionUpdated);
+  bindRuntimeMessage("__routineGmailOnSession", onSessionUpdated);
 
   void i18nReady.then(() => {
     applyStaticLabels();
@@ -2492,12 +2516,16 @@ function ensureUi() {
     if (area !== "sync" || !changes.selectedTeamId) return;
     void refreshSession();
   }
-  if (chrome.storage?.onChanged) {
-    if (globalThis.__routineGmailOnStorage) {
-      chrome.storage.onChanged.removeListener(globalThis.__routineGmailOnStorage);
+  try {
+    if (chrome.storage?.onChanged) {
+      if (globalThis.__routineGmailOnStorage) {
+        chrome.storage.onChanged.removeListener(globalThis.__routineGmailOnStorage);
+      }
+      globalThis.__routineGmailOnStorage = onTeamStorageChange;
+      chrome.storage.onChanged.addListener(onTeamStorageChange);
     }
-    globalThis.__routineGmailOnStorage = onTeamStorageChange;
-    chrome.storage.onChanged.addListener(onTeamStorageChange);
+  } catch {
+    // Extension context invalidated after reload.
   }
 }
 
@@ -2505,7 +2533,11 @@ let uiInitialized = false;
 function initUiOnce() {
   if (uiInitialized) return;
   uiInitialized = true;
-  ensureUi();
+  try {
+    ensureUi();
+  } catch {
+    uiInitialized = false;
+  }
 }
 
 function emailUiTargetsPresent() {
@@ -2559,22 +2591,20 @@ globalThis.__routineGmailCleanup = () => {
   observer.disconnect();
   window.removeEventListener("hashchange", onHashChange);
   clearInterval(injectTimer);
-  if (globalThis.__routineGmailOnMessage) {
-    chrome.runtime.onMessage.removeListener(globalThis.__routineGmailOnMessage);
-    globalThis.__routineGmailOnMessage = null;
-  }
-  if (globalThis.__routineGmailOnSession) {
-    chrome.runtime.onMessage.removeListener(globalThis.__routineGmailOnSession);
-    globalThis.__routineGmailOnSession = null;
-  }
-  if (globalThis.__routineGmailOnStorage && chrome.storage?.onChanged) {
-    chrome.storage.onChanged.removeListener(globalThis.__routineGmailOnStorage);
-    globalThis.__routineGmailOnStorage = null;
-  }
   document.getElementById("routine-gmail-root")?.remove();
   for (const btn of document.querySelectorAll("[data-routine-gmail-inline]")) {
     btn.remove();
   }
+  unbindRuntimeMessage("__routineGmailOnMessage");
+  unbindRuntimeMessage("__routineGmailOnSession");
+  try {
+    if (globalThis.__routineGmailOnStorage && chrome.storage?.onChanged) {
+      chrome.storage.onChanged.removeListener(globalThis.__routineGmailOnStorage);
+    }
+  } catch {
+    // Extension context invalidated after reload.
+  }
+  globalThis.__routineGmailOnStorage = null;
   uiInitialized = false;
 };
 })();

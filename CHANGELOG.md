@@ -4,6 +4,10 @@
 
 - (none)
 
+## v0.3.84
+
+- Gmail spraudnis `0.4.60`: pēc spraudņa atjaunināšanas vairs nekrīt ar `chrome.runtime.onMessage`, ja Gmail cilne paliek atvērta
+
 ## v0.3.83
 
 - Gmail spraudnis `0.4.59`: sarakstu, uzdevumu un apakšuzdevumu izvēle katrā solī sākas no saraksta sākuma
