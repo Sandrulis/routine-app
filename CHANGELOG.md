@@ -4,6 +4,10 @@
 
 - (none)
 
+## v0.3.83
+
+- Gmail spraudnis `0.4.59`: sarakstu, uzdevumu un apakšuzdevumu izvēle katrā solī sākas no saraksta sākuma
+
 ## v0.3.82
 
 - Admin komandu sadaļā rāda sarakstu, uzdevumu un apakšuzdevumu skaitļus (aktīvie + izpildītie)

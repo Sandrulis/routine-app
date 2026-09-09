@@ -418,7 +418,7 @@ function emailBodyAttachmentName(from) {
 
 function ensureUi() {
   const existing = document.getElementById("routine-gmail-root");
-  if (existing?.dataset?.routineUi === "26") {
+  if (existing?.dataset?.routineUi === "27") {
     existing.querySelector("#routine-gmail-fab")?.remove();
     return;
   }
@@ -426,7 +426,7 @@ function ensureUi() {
 
   const root = document.createElement("div");
   root.id = "routine-gmail-root";
-  root.dataset.routineUi = "26";
+  root.dataset.routineUi = "27";
   root.innerHTML = `
     <div id="routine-gmail-modal" hidden>
       <div class="routine-gmail-backdrop" data-close="1"></div>
@@ -1612,9 +1612,19 @@ function ensureUi() {
     if (pickId) selectSubtaskRow(pickId);
   }
 
+  function resetResultsScroll() {
+    results.scrollTop = 0;
+    picker.scrollTop = 0;
+    requestAnimationFrame(() => {
+      results.scrollTop = 0;
+      picker.scrollTop = 0;
+    });
+  }
+
   function emptyRow(text) {
     results.hidden = false;
     results.innerHTML = `<li class="routine-gmail-empty">${text}</li>`;
+    resetResultsScroll();
   }
 
   function kindIcon(kind) {
@@ -1781,6 +1791,7 @@ function ensureUi() {
       });
       results.appendChild(li);
     }
+    resetResultsScroll();
   }
 
   async function loadLists() {
