@@ -764,6 +764,7 @@
   "admin.teams.form.description": "Set the team name and appearance.",
   "admin.teams.delete.confirm_prefix": "Delete team",
   "admin.teams.delete.confirm_suffix": "? Lists, tasks and files will also be deleted.",
+  "admin.teams.stats.completed": "{count} completed",
   "admin.statuses.add": "New status",
   "admin.statuses.empty": "No statuses yet.",
   "admin.statuses.order": "Order",

@@ -174,6 +174,7 @@ export const da: Record<string, string> = {
   "admin.teams.plan.title": "Teamets betalingsplan",
   "admin.teams.plan.trial": "Prøveperiode",
   "admin.teams.plan.until_hint": "Lad stå tomt for ingen slutdato. Format: YYYY-MM-DD.",
+  "admin.teams.stats.completed": "{count} fuldført",
   "admin.teams.vip": "VIP",
   "admin.teams.vip.disable": "Fjern VIP",
   "admin.teams.vip.enable": "Gør til VIP",

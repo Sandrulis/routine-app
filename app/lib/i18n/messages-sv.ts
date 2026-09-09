@@ -174,6 +174,7 @@ export const sv: Record<string, string> = {
   "admin.teams.plan.title": "Teamets betalningsplan",
   "admin.teams.plan.trial": "Provperiod",
   "admin.teams.plan.until_hint": "Lämna tomt för inget slutdatum. Format: YYYY-MM-DD.",
+  "admin.teams.stats.completed": "{count} slutförda",
   "admin.teams.vip": "VIP",
   "admin.teams.vip.disable": "Ta bort VIP",
   "admin.teams.vip.enable": "Markera som VIP",

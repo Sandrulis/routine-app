@@ -30,6 +30,14 @@ export type AdminUserInput = {
   isAdmin: boolean;
 };
 
+export type AdminTeamWorkCounts = {
+  listCount: number;
+  taskActiveCount: number;
+  taskCompletedCount: number;
+  subtaskActiveCount: number;
+  subtaskCompletedCount: number;
+};
+
 export type AdminTeamSummary = {
   id: string;
   name: string;
@@ -46,7 +54,7 @@ export type AdminTeamSummary = {
   paymentPlanIsEarlyBird: boolean;
   earlyBirdSeatCount: number;
   isVip: boolean;
-};
+} & AdminTeamWorkCounts;
 
 export type AdminTeamPaymentPlanInput = {
   planId: string | null;

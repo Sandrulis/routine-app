@@ -56,6 +56,7 @@ import type {
   AdminTeamMemberSummary,
   AdminTeamPaymentPlanInput,
   AdminTeamSummary,
+  AdminTeamWorkCounts,
   AdminUserInput,
   AdminUserSummary,
   SiteLanguageInput,
@@ -72,6 +73,7 @@ import type {
   FileTypeExtensionInput,
   FileTypeExtensionSummary,
 } from "@/app/lib/site-admin/types";
+import { fetchAllRows } from "@/app/lib/db/fetch-all-rows";
 import { listPaymentPlans } from "@/app/lib/payment-plans/repository";
 
 const LANGUAGE_CODE_RE = /^[a-z]{2}(-[A-Z]{2})?$/;
@@ -180,6 +182,103 @@ function dateOnly(value: string | null | undefined): string | null {
   if (typeof value !== "string") return null;
   const match = value.trim().match(/^(\d{4}-\d{2}-\d{2})/);
   return match?.[1] ?? null;
+}
+
+function emptyTeamWorkCounts(): AdminTeamWorkCounts {
+  return {
+    listCount: 0,
+    taskActiveCount: 0,
+    taskCompletedCount: 0,
+    subtaskActiveCount: 0,
+    subtaskCompletedCount: 0,
+  };
+}
+
+function isCompletedStatusGroup(groupKey: string): boolean {
+  return groupKey === "done" || groupKey === "closed";
+}
+
+type WorkDataClient =
+  | ReturnType<typeof createAdminClient>
+  | Awaited<ReturnType<typeof getSessionClient>>;
+
+async function loadAdminTeamWorkCounts(
+  supabase: WorkDataClient,
+): Promise<Map<string, AdminTeamWorkCounts>> {
+  const counts = new Map<string, AdminTeamWorkCounts>();
+
+  function forTeam(teamId: string): AdminTeamWorkCounts {
+    const current = counts.get(teamId) ?? emptyTeamWorkCounts();
+    counts.set(teamId, current);
+    return current;
+  }
+
+  try {
+    const [lists, tasks, catalogResult, listStatuses, taskStatuses] = await Promise.all([
+      fetchAllRows<{ team_id: string; kind: string }>((from, to) =>
+        supabase.from("work_lists").select("team_id, kind").range(from, to),
+      ),
+      fetchAllRows<{
+        team_id: string;
+        kind: string;
+        status: string;
+        deleted_at: string | null;
+        archived_at: string | null;
+      }>((from, to) =>
+        supabase
+          .from("work_tasks")
+          .select("team_id, kind, status, deleted_at, archived_at")
+          .range(from, to),
+      ),
+      supabase.from("task_statuses").select("id, group_key"),
+      fetchAllRows<{ id: string; group_key: string }>((from, to) =>
+        supabase.from("list_statuses").select("id, group_key").range(from, to),
+      ),
+      fetchAllRows<{ id: string; group_key: string }>((from, to) =>
+        supabase.from("work_task_statuses").select("id, group_key").range(from, to),
+      ),
+    ]);
+
+    if (catalogResult.error) {
+      console.error("loadAdminTeamWorkCounts statuses failed:", catalogResult.error.message);
+    }
+
+    const completedStatusIds = new Set<string>(["done"]);
+    for (const row of [
+      ...((catalogResult.data ?? []) as { id: string; group_key: string }[]),
+      ...listStatuses,
+      ...taskStatuses,
+    ]) {
+      if (isCompletedStatusGroup(row.group_key)) {
+        completedStatusIds.add(row.id);
+      }
+    }
+
+    for (const list of lists) {
+      if (list.kind && list.kind !== "list") continue;
+      forTeam(list.team_id).listCount += 1;
+    }
+
+    for (const task of tasks) {
+      if (task.kind !== "task" && task.kind !== "subtask") continue;
+      if (task.deleted_at) continue;
+      const completed =
+        Boolean(task.archived_at) || completedStatusIds.has(task.status);
+      const bucket = forTeam(task.team_id);
+      if (task.kind === "subtask") {
+        if (completed) bucket.subtaskCompletedCount += 1;
+        else bucket.subtaskActiveCount += 1;
+      } else if (completed) {
+        bucket.taskCompletedCount += 1;
+      } else {
+        bucket.taskActiveCount += 1;
+      }
+    }
+  } catch (error) {
+    console.error("loadAdminTeamWorkCounts failed:", error);
+  }
+
+  return counts;
 }
 
 async function getSessionClient() {
@@ -499,29 +598,40 @@ export const listAdminTeams = cache(async function listAdminTeams(): Promise<Adm
     counts.set(teamId, (counts.get(teamId) ?? 0) + 1);
   }
 
-  return ((teams ?? []) as TeamRow[]).map((row) => ({
-    id: row.id,
-    name: row.name,
-    initials: row.initials,
-    icon: row.icon,
-    color: row.color,
-    logoUrl: row.logo_url,
-    memberCount: counts.get(row.id) ?? 0,
-    createdAt: row.created_at,
-    paymentPlanId:
-      typeof row.payment_plan_id === "string" && row.payment_plan_id.trim()
-        ? row.payment_plan_id
-        : null,
-    paymentPlanUntil:
-      dateOnly(row.payment_plan_until) ??
-      dateOnly(row.billing_cycle_end) ??
-      dateOnly(row.billing_period_end_at),
-    paymentPlanPaid: row.payment_plan_paid === true,
-    paymentPlanIsTrial: row.payment_plan_is_trial === true,
-    paymentPlanIsEarlyBird: row.payment_plan_is_early_bird === true,
-    earlyBirdSeatCount: Math.max(0, Math.trunc(Number(row.early_bird_seat_count) || 0)),
-    isVip: row.is_vip === true,
-  }));
+  const workClient = isSupabaseAdminConfigured() ? createAdminClient() : supabase;
+  const workCounts = await loadAdminTeamWorkCounts(workClient);
+
+  return ((teams ?? []) as TeamRow[]).map((row) => {
+    const usage = workCounts.get(row.id) ?? emptyTeamWorkCounts();
+    return {
+      id: row.id,
+      name: row.name,
+      initials: row.initials,
+      icon: row.icon,
+      color: row.color,
+      logoUrl: row.logo_url,
+      memberCount: counts.get(row.id) ?? 0,
+      listCount: usage.listCount,
+      taskActiveCount: usage.taskActiveCount,
+      taskCompletedCount: usage.taskCompletedCount,
+      subtaskActiveCount: usage.subtaskActiveCount,
+      subtaskCompletedCount: usage.subtaskCompletedCount,
+      createdAt: row.created_at,
+      paymentPlanId:
+        typeof row.payment_plan_id === "string" && row.payment_plan_id.trim()
+          ? row.payment_plan_id
+          : null,
+      paymentPlanUntil:
+        dateOnly(row.payment_plan_until) ??
+        dateOnly(row.billing_cycle_end) ??
+        dateOnly(row.billing_period_end_at),
+      paymentPlanPaid: row.payment_plan_paid === true,
+      paymentPlanIsTrial: row.payment_plan_is_trial === true,
+      paymentPlanIsEarlyBird: row.payment_plan_is_early_bird === true,
+      earlyBirdSeatCount: Math.max(0, Math.trunc(Number(row.early_bird_seat_count) || 0)),
+      isVip: row.is_vip === true,
+    };
+  });
 });
 
 export const listAdminTeamMembers = cache(async function listAdminTeamMembers(

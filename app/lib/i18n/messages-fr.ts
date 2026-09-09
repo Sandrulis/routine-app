@@ -174,6 +174,7 @@ export const fr: Record<string, string> = {
   "admin.teams.plan.title": "Plan de paiement de l’équipe",
   "admin.teams.plan.trial": "Essai",
   "admin.teams.plan.until_hint": "Laisse vide s’il n’y a pas de date de fin. Format : YYYY-MM-DD.",
+  "admin.teams.stats.completed": "{count} terminés",
   "admin.teams.vip": "VIP",
   "admin.teams.vip.disable": "Retirer le VIP",
   "admin.teams.vip.enable": "Marquer comme VIP",

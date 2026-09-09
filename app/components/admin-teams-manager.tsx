@@ -16,11 +16,63 @@ import { ListBadge } from "@/app/components/list-badge";
 import { NameFormModal } from "@/app/components/name-form-modal";
 import { useTranslations } from "@/app/components/translations-provider";
 import { translateActionError } from "@/app/lib/i18n/action-errors";
+import { formatInteger } from "@/app/lib/format/numbers";
 import {
   resolveLocalizedValue,
   type PaymentPlanSummary,
 } from "@/app/lib/payment-plans/helpers";
 import type { AdminTeamMembersTarget, AdminTeamSummary } from "@/app/lib/site-admin/types";
+
+function UsageCount({
+  active,
+  completed,
+}: {
+  active: number;
+  completed?: number;
+}) {
+  const { t } = useTranslations();
+  return (
+    <div>
+      <p className="tabular-nums font-semibold text-zinc-900">{formatInteger(active)}</p>
+      {completed != null ? (
+        <p className="mt-0.5 text-xs text-zinc-400">
+          {t("admin.teams.stats.completed", "{count} izpildīti", {
+            count: formatInteger(completed),
+          })}
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
+function UsageStat({
+  label,
+  value,
+  completed,
+}: {
+  label: string;
+  value: number;
+  completed?: number;
+}) {
+  const { t } = useTranslations();
+  return (
+    <div className="rounded-2xl border border-zinc-200 bg-white px-5 py-4 shadow-sm">
+      <p className="text-[11px] font-semibold uppercase tracking-wider text-zinc-400">
+        {label}
+      </p>
+      <p className="mt-1 text-2xl font-semibold tabular-nums text-zinc-900">
+        {formatInteger(value)}
+      </p>
+      {completed != null ? (
+        <p className="mt-1 text-xs text-zinc-400">
+          {t("admin.teams.stats.completed", "{count} izpildīti", {
+            count: formatInteger(completed),
+          })}
+        </p>
+      ) : null}
+    </div>
+  );
+}
 
 export function AdminTeamsManager({
   teams,
@@ -38,6 +90,21 @@ export function AdminTeamsManager({
   const [membersTeam, setMembersTeam] = useState<AdminTeamMembersTarget | null>(null);
   const [planTeam, setPlanTeam] = useState<AdminTeamSummary | null>(null);
   const [isPending, startTransition] = useTransition();
+
+  const totals = {
+    listCount: 0,
+    taskActiveCount: 0,
+    taskCompletedCount: 0,
+    subtaskActiveCount: 0,
+    subtaskCompletedCount: 0,
+  };
+  for (const team of teams) {
+    totals.listCount += team.listCount;
+    totals.taskActiveCount += team.taskActiveCount;
+    totals.taskCompletedCount += team.taskCompletedCount;
+    totals.subtaskActiveCount += team.subtaskActiveCount;
+    totals.subtaskCompletedCount += team.subtaskCompletedCount;
+  }
 
   function planLabel(team: AdminTeamSummary): string {
     if (!team.paymentPlanId) {
@@ -120,6 +187,27 @@ export function AdminTeamsManager({
 
   return (
     <div className="space-y-3">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <UsageStat
+          label={t("admin.nav.teams", "Komandas")}
+          value={teams.length}
+        />
+        <UsageStat
+          label={t("tour.lists.title", "Saraksti")}
+          value={totals.listCount}
+        />
+        <UsageStat
+          label={t("lists.windows.tasks", "Uzdevumi")}
+          value={totals.taskActiveCount}
+          completed={totals.taskCompletedCount}
+        />
+        <UsageStat
+          label={t("templates.items.subtasks_label", "Apakšuzdevumi")}
+          value={totals.subtaskActiveCount}
+          completed={totals.subtaskCompletedCount}
+        />
+      </div>
+
       <div className="flex justify-end">
         <button
           type="button"
@@ -138,6 +226,9 @@ export function AdminTeamsManager({
               <tr>
                 <th className="px-5 py-3">{t("lists.fields.name", "Nosaukums")}</th>
                 <th className="px-5 py-3">{t("admin.teams.members", "Lietotāji")}</th>
+                <th className="px-5 py-3">{t("tour.lists.title", "Saraksti")}</th>
+                <th className="px-5 py-3">{t("lists.windows.tasks", "Uzdevumi")}</th>
+                <th className="px-5 py-3">{t("templates.items.subtasks_label", "Apakšuzdevumi")}</th>
                 <th className="px-5 py-3">{t("admin.teams.plan.column", "Plāns")}</th>
                 <th className="px-5 py-3 text-right">{t("common.actions", "Darbības")}</th>
               </tr>
@@ -169,7 +260,22 @@ export function AdminTeamsManager({
                       </div>
                     </div>
                   </td>
-                  <td className="px-5 py-4 text-zinc-600">{team.memberCount}</td>
+                  <td className="px-5 py-4 text-zinc-600">{formatInteger(team.memberCount)}</td>
+                  <td className="px-5 py-4">
+                    <UsageCount active={team.listCount} />
+                  </td>
+                  <td className="px-5 py-4">
+                    <UsageCount
+                      active={team.taskActiveCount}
+                      completed={team.taskCompletedCount}
+                    />
+                  </td>
+                  <td className="px-5 py-4">
+                    <UsageCount
+                      active={team.subtaskActiveCount}
+                      completed={team.subtaskCompletedCount}
+                    />
+                  </td>
                   <td className="px-5 py-4 text-zinc-600">{planLabel(team)}</td>
                   <td className="px-5 py-4" onClick={(event) => event.stopPropagation()}>
                     <div className="flex justify-end gap-1">
@@ -195,7 +301,7 @@ export function AdminTeamsManager({
               ))}
               {teams.length === 0 ? (
                 <tr>
-                  <td colSpan={4} className="px-5 py-8 text-center text-zinc-500">
+                  <td colSpan={7} className="px-5 py-8 text-center text-zinc-500">
                     {t("admin.teams.empty", "Nav nevienas komandas.")}
                   </td>
                 </tr>

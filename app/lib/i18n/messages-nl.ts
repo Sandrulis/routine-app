@@ -174,6 +174,7 @@ export const nl: Record<string, string> = {
   "admin.teams.plan.title": "Betaalplan van het team",
   "admin.teams.plan.trial": "Proef",
   "admin.teams.plan.until_hint": "Laat leeg voor geen einddatum. Formaat: YYYY-MM-DD.",
+  "admin.teams.stats.completed": "{count} voltooid",
   "admin.teams.vip": "VIP",
   "admin.teams.vip.disable": "VIP verwijderen",
   "admin.teams.vip.enable": "Markeren als VIP",

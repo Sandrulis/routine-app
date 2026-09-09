@@ -174,6 +174,7 @@
   "admin.teams.plan.title": "Meeskonna makseplaan",
   "admin.teams.plan.trial": "Prooviperiood",
   "admin.teams.plan.until_hint": "Jäta tühjaks, kui lõppkuupäeva pole. Vorming: YYYY-MM-DD.",
+  "admin.teams.stats.completed": "{count} tehtud",
   "admin.teams.vip": "VIP",
   "admin.teams.vip.disable": "Eemalda VIP",
   "admin.teams.vip.enable": "Märgi VIP-iks",

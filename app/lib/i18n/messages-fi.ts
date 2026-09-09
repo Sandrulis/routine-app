@@ -174,6 +174,7 @@ export const fi: Record<string, string> = {
   "admin.teams.plan.title": "Tiimin maksusuunnitelma",
   "admin.teams.plan.trial": "Kokeilu",
   "admin.teams.plan.until_hint": "Jätä tyhjäksi, jos ei päättymispäivää. Muoto: YYYY-MM-DD.",
+  "admin.teams.stats.completed": "{count} valmis",
   "admin.teams.vip": "VIP",
   "admin.teams.vip.disable": "Poista VIP",
   "admin.teams.vip.enable": "Merkitse VIP:ksi",

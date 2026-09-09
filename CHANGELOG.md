@@ -4,6 +4,10 @@
 
 - (none)
 
+## v0.3.82
+
+- Admin komandu sadaļā rāda sarakstu, uzdevumu un apakšuzdevumu skaitļus (aktīvie + izpildītie)
+
 ## v0.3.81
 
 - Sānjoslas pamācība (spotlight) jauniem lietotājiem; atkārtoti no lietotāja izvēlnes
