@@ -17,6 +17,7 @@ import {
 import { isSupabaseConfigured } from "@/app/lib/supabase/env";
 import { createClient } from "@/app/lib/supabase/server";
 import { ensureCurrentUserProfile } from "@/app/lib/users/ensure-profile";
+import { getCurrentUserProductTourCompleted } from "@/app/lib/users/product-tour";
 import { NO_INDEX_ROBOTS } from "@/app/lib/seo/metadata";
 
 export const metadata: Metadata = {
@@ -49,6 +50,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
     paymentPlans,
     stripeKeyInvalid,
     announcements,
+    productTourCompleted,
   ] =
     await Promise.all([
       listTaskStatuses(),
@@ -58,6 +60,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
       listPaymentPlans(),
       stripeInvalidKeyNoticeForCurrentAdmin(),
       listVisibleSiteAnnouncements(),
+      getCurrentUserProductTourCompleted(),
     ]);
 
   return (
@@ -73,6 +76,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
       }))}
       stripeKeyInvalid={stripeKeyInvalid}
       announcements={announcements}
+      productTourCompleted={productTourCompleted}
     >
       {children}
     </AppProviders>

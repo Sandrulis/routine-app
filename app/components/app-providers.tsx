@@ -7,6 +7,7 @@ import type { SiteAnnouncementSummary } from "@/app/lib/announcements/types";
 import { TeamScopedFrontendModules } from "@/app/lib/frontend-modules/team-scoped-provider";
 import { TeamGoogleDriveProvider } from "@/app/lib/google-drive/context";
 import { TeamOneDriveProvider } from "@/app/lib/onedrive/context";
+import { ProductTourProvider } from "@/app/components/product-tour";
 import { PaymentPlansEnabledProvider } from "@/app/lib/payment-plans/context";
 import { FileTypesProvider } from "@/app/lib/file-types-context";
 import { ListsProvider } from "@/app/lib/lists-store";
@@ -34,6 +35,7 @@ export function AppProviders({
   paymentPlans = [],
   stripeKeyInvalid = false,
   announcements = [],
+  productTourCompleted = true,
 }: {
   children: ReactNode;
   taskStatuses?: TaskStatusSummary[];
@@ -43,6 +45,7 @@ export function AppProviders({
   paymentPlans?: PaymentPlanModuleSnapshot[];
   stripeKeyInvalid?: boolean;
   announcements?: SiteAnnouncementSummary[];
+  productTourCompleted?: boolean;
 }) {
   return (
     <TeamProvider>
@@ -63,12 +66,14 @@ export function AppProviders({
               <TemplatesProvider>
                 <ListsProvider>
                   <FileViewerProvider>
-                    <AppShell
-                      stripeKeyInvalid={stripeKeyInvalid}
-                      announcements={announcements}
-                    >
-                      {children}
-                    </AppShell>
+                    <ProductTourProvider completed={productTourCompleted}>
+                      <AppShell
+                        stripeKeyInvalid={stripeKeyInvalid}
+                        announcements={announcements}
+                      >
+                        {children}
+                      </AppShell>
+                    </ProductTourProvider>
                   </FileViewerProvider>
                 </ListsProvider>
               </TemplatesProvider>

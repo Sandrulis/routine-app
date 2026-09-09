@@ -12,6 +12,11 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import { useTranslations } from "@/app/components/translations-provider";
+import {
+  getOverlayPortalRoot,
+  lockBodyOverflow,
+  unlockBodyOverflow,
+} from "@/app/lib/dom/overlay-root";
 
 const overlayBaseClassName =
   "fixed inset-0 flex items-center justify-center p-4";
@@ -192,12 +197,9 @@ export function AppModal({
 
   useEffect(() => {
     if (!open) return;
-
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-
+    lockBodyOverflow();
     return () => {
-      document.body.style.overflow = previousOverflow;
+      unlockBodyOverflow();
     };
   }, [open]);
 
@@ -322,6 +324,6 @@ export function AppModal({
         </div>
       ) : null}
     </div>,
-    document.body,
+    getOverlayPortalRoot(),
   );
 }

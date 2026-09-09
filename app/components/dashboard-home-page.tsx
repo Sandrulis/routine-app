@@ -2,18 +2,23 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { DashboardTaskSearch } from "@/app/components/dashboard-task-search";
 import { ListBadge } from "@/app/components/list-badge";
+import { ListFormModal } from "@/app/components/list-form-modal";
 import { ListSummary } from "@/app/components/list-summary";
 import { LoadingState } from "@/app/components/loading-state";
+import { NameFormModal } from "@/app/components/name-form-modal";
 import { SectionPage } from "@/app/components/section-page";
 import { SubtaskDetailModal } from "@/app/components/subtask-detail-modal";
 import { SubtaskTable } from "@/app/components/subtask-table";
 import { useFeedbackToast } from "@/app/components/feedback-toast-provider";
 import { useTranslations } from "@/app/components/translations-provider";
 import { UserAvatar } from "@/app/components/user-avatar";
-import { userIsAssignee } from "@/app/lib/list-access";
+import {
+  resolveEffectiveListAccess,
+  userIsAssignee,
+} from "@/app/lib/list-access";
 import { mergeKnownStatusCatalogs } from "@/app/lib/list-statuses";
 import {
   getListTasks,
@@ -24,10 +29,14 @@ import {
 } from "@/app/lib/lists";
 import { useLists } from "@/app/lib/lists-store";
 import { useSystemTaskStatuses, useTaskStatuses } from "@/app/lib/task-statuses";
-import { REQUEST_CREATE_TEAM_EVENT } from "@/app/lib/team";
+import {
+  hasTeamActionPermission,
+  REQUEST_CREATE_TEAM_EVENT,
+} from "@/app/lib/team";
 import { useTeam } from "@/app/lib/team-store";
 import { useNotifications } from "@/app/lib/use-notifications";
 import { useUserTaskSnoozes } from "@/app/lib/use-user-task-snoozes";
+import { useIsAdmin } from "@/app/lib/users/use-is-admin";
 
 function compareAssignedTasks(a: WorkTask, b: WorkTask) {
   if (a.dueDate && b.dueDate && a.dueDate !== b.dueDate) {
@@ -169,8 +178,18 @@ export function DashboardHomePage() {
   const { t } = useTranslations();
   const router = useRouter();
   const { showFeedback } = useFeedbackToast();
-  const { lists, tasks, allTaskFiles, listStatuses, workTaskStatuses, isReady } = useLists();
-  const { currentTeam, currentUser } = useTeam();
+  const {
+    lists,
+    tasks,
+    addList,
+    addTask,
+    allTaskFiles,
+    listStatuses,
+    workTaskStatuses,
+    isReady,
+  } = useLists();
+  const { currentTeam, currentUser, roles } = useTeam();
+  const { isAdmin } = useIsAdmin();
   const { unreadCount } = useNotifications();
   const { statuses } = useTaskStatuses();
   const { statuses: systemStatuses } = useSystemTaskStatuses();
@@ -178,6 +197,13 @@ export function DashboardHomePage() {
     currentUser.userId,
   );
   const [openedSubtaskId, setOpenedSubtaskId] = useState<string | null>(null);
+  const [onboardingStep, setOnboardingStep] = useState<
+    null | "list" | "task" | "subtask"
+  >(null);
+  const [onboardingListId, setOnboardingListId] = useState<string | null>(null);
+  const [onboardingTaskId, setOnboardingTaskId] = useState<string | null>(null);
+  const [onboardingHold, setOnboardingHold] = useState(false);
+  const advancingOnboardingRef = useRef(false);
   const statusCatalog = useMemo(
     () =>
       mergeKnownStatusCatalogs(
@@ -261,6 +287,56 @@ export function DashboardHomePage() {
   const listsWithTasks = lists.filter(
     (list) => getListTasks(tasks, list.id).length > 0,
   );
+  const isEmptyWork = !showMyTasks && listsWithTasks.length === 0;
+  const firstList = lists[0] ?? null;
+  const canCreateLists = hasTeamActionPermission(
+    currentUser,
+    roles,
+    isAdmin,
+    "lists.create",
+  );
+  const canCreateFirstListTasks = firstList
+    ? resolveEffectiveListAccess(firstList, currentUser, roles, isAdmin)
+        .canCreateTasks
+    : false;
+  const emptyNeedsList = lists.length === 0;
+  const emptyAction =
+    emptyNeedsList && canCreateLists
+      ? "list"
+      : !emptyNeedsList && canCreateFirstListTasks
+        ? "task"
+        : null;
+  const showEmptyOnboarding =
+    isEmptyWork || onboardingStep !== null || onboardingHold;
+
+  function openOnboardingStep(step: "list" | "task" | "subtask") {
+    advancingOnboardingRef.current = true;
+    setOnboardingStep(null);
+    window.setTimeout(() => {
+      advancingOnboardingRef.current = false;
+      setOnboardingStep(step);
+    }, 0);
+  }
+
+  function startEmptyOnboarding() {
+    setOnboardingHold(true);
+    if (emptyAction === "list") {
+      setOnboardingStep("list");
+      return;
+    }
+    if (emptyAction === "task" && firstList) {
+      setOnboardingListId(firstList.id);
+      setOnboardingStep("task");
+    }
+  }
+
+  function stopOnboarding() {
+    advancingOnboardingRef.current = false;
+    setOnboardingHold(false);
+    setOnboardingStep(null);
+    setOnboardingListId(null);
+    setOnboardingTaskId(null);
+  }
 
   return (
     <SectionPage
@@ -303,6 +379,40 @@ export function DashboardHomePage() {
             <i className="fas fa-plus text-xs" aria-hidden="true" />
             {t("teams.add.title", "Jauna komanda")}
           </button>
+        </div>
+      ) : showEmptyOnboarding ? (
+        <div className="rounded-xl border border-dashed border-zinc-200 bg-white px-6 py-10 text-center">
+          <div className="mx-auto flex size-12 items-center justify-center rounded-2xl bg-zinc-100 text-zinc-400">
+            <i className="fas fa-list-ul text-lg" aria-hidden="true" />
+          </div>
+          <h2 className="mt-4 text-base font-semibold text-zinc-900">
+            {emptyNeedsList
+              ? t("dashboard.empty.title", "Sāc ar sarakstu")
+              : t("dashboard.empty.task_title", "Sāc ar uzdevumu")}
+          </h2>
+          <p className="mx-auto mt-2 max-w-md text-sm text-zinc-500">
+            {emptyNeedsList
+              ? t(
+                  "dashboard.empty.description",
+                  "Komandā vēl nav sarakstu. Pievieno sarakstu, tad uzdevumu un apakšuzdevumu.",
+                )
+              : t(
+                  "dashboard.empty.task_description",
+                  "Saraksts ir gatavs. Pievieno uzdevumu un pēc tam apakšuzdevumu.",
+                )}
+          </p>
+          {emptyAction ? (
+            <button
+              type="button"
+              onClick={startEmptyOnboarding}
+              className="mt-6 inline-flex min-h-10 items-center justify-center gap-2 rounded-2xl bg-blue-700 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-800"
+            >
+              <i className="fas fa-plus text-xs" aria-hidden="true" />
+              {emptyAction === "list"
+                ? t("lists.add.title", "Jauns saraksts")
+                : t("tasks.add.title", "Jauns uzdevums")}
+            </button>
+          ) : null}
         </div>
       ) : (
         <div className="space-y-6">
@@ -365,12 +475,89 @@ export function DashboardHomePage() {
         </div>
       )}
 
+      <ListFormModal
+        open={onboardingStep === "list"}
+        onOpenChange={(open) => {
+          if (!open && !advancingOnboardingRef.current) stopOnboarding();
+        }}
+        title={t("lists.add.title", "Jauns saraksts")}
+        description={t(
+          "lists.add.description",
+          "Saraksts grupē projektus vai klientus, katram ar saviem uzdevumiem un iestatījumiem.",
+        )}
+        namePlaceholder={t(
+          "lists.fields.name_placeholder",
+          "Piemēram, Projekti, Klienti",
+        )}
+        descriptionPlaceholder={t(
+          "lists.fields.description_placeholder",
+          "Īss saraksta apraksts",
+        )}
+        submitLabel={t("actions.add", "Pievienot")}
+        onCreate={(input) => {
+          const list = addList({ ...input, kind: "list" });
+          showFeedback({
+            type: "success",
+            text: t("lists.created", "Saraksts pievienots."),
+          });
+          setOnboardingListId(list.id);
+          openOnboardingStep("task");
+        }}
+      />
+
+      <NameFormModal
+        open={onboardingStep === "task"}
+        onOpenChange={(open) => {
+          if (!open && !advancingOnboardingRef.current) stopOnboarding();
+        }}
+        title={t("tasks.add.title", "Jauns uzdevums")}
+        description={t("tasks.add.description", "Pievieno uzdevumu šim sarakstam.")}
+        nameLabel={t("tasks.fields.title", "Nosaukums")}
+        namePlaceholder={t(
+          "tasks.fields.title_placeholder",
+          "Uzdevuma nosaukums",
+        )}
+        descriptionLabel={t("common.description", "Apraksts")}
+        descriptionPlaceholder={t(
+          "tasks.fields.description_placeholder",
+          "Īss uzdevuma apraksts",
+        )}
+        submitLabel={t("actions.add", "Pievienot")}
+        onCreate={(input) => {
+          if (!onboardingListId) return;
+          const task = addTask({
+            listId: onboardingListId,
+            parentId: null,
+            kind: "task",
+            title: input.name,
+            description: input.description,
+          });
+          showFeedback({
+            type: "success",
+            text: t("tasks.created", "Uzdevums pievienots."),
+          });
+          setOnboardingTaskId(task.id);
+          openOnboardingStep("subtask");
+        }}
+      />
+
       <SubtaskDetailModal
         taskId={openedSubtaskId}
-        open={openedSubtaskId !== null}
+        createFor={
+          onboardingStep === "subtask" && onboardingListId && onboardingTaskId
+            ? { listId: onboardingListId, parentId: onboardingTaskId }
+            : null
+        }
+        open={
+          openedSubtaskId !== null ||
+          (onboardingStep === "subtask" &&
+            onboardingListId !== null &&
+            onboardingTaskId !== null)
+        }
         onOpenChange={(open) => {
           if (!open) {
             setOpenedSubtaskId(null);
+            stopOnboarding();
           }
         }}
       />

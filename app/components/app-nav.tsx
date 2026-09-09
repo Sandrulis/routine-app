@@ -315,6 +315,7 @@ function NavTreeSection({
   highlighted = false,
   progressPercent,
   progressColor,
+  tourId,
   children,
 }: {
   href?: string;
@@ -354,6 +355,8 @@ function NavTreeSection({
   highlighted?: boolean;
   progressPercent?: number;
   progressColor?: string;
+  /** Anchor for the guided product tour; also tags the add button as `${tourId}:add`. */
+  tourId?: string;
   children?: ReactNode;
 }) {
   const { t } = useTranslations();
@@ -378,6 +381,7 @@ function NavTreeSection({
         <div
           ref={setRowRef}
           style={rowStyle}
+          data-tour={tourId}
           className={`${rowClassName(isParentActive, nestHighlight)} relative`}
         >
           {typeof progressPercent === "number" ? (
@@ -522,6 +526,7 @@ function NavTreeSection({
                 type="button"
                 aria-label={t("nav.more", "Vairāk")}
                 aria-expanded={moreOpen}
+                data-tour={tourId ? `${tourId}:more` : undefined}
                 onClick={(event) => {
                   event.preventDefault();
                   event.stopPropagation();
@@ -545,6 +550,7 @@ function NavTreeSection({
                   event.stopPropagation();
                   onToggle();
                 }}
+                data-tour={tourId ? `${tourId}:toggle` : undefined}
                 className="relative z-10 pointer-events-none inline-flex size-6 shrink-0 items-center justify-center rounded text-zinc-400 opacity-0 transition group-hover/row:pointer-events-auto group-hover/row:opacity-100 group-focus-within/row:pointer-events-auto group-focus-within/row:opacity-100 hover:bg-zinc-200/80 hover:text-zinc-700"
               >
                 <ToggleChevron expanded={expanded} />
@@ -570,6 +576,7 @@ function NavTreeSection({
                 }
                 aria-busy={addBusy}
                 disabled={addBusy}
+                data-tour={tourId ? `${tourId}:add` : undefined}
                 onClick={(event) => {
                   event.preventDefault();
                   event.stopPropagation();
@@ -1097,6 +1104,7 @@ export function AppNav({
               {(handle) => (
                 <NavTreeSection
                   href={isWorkSubtask(task) ? undefined : href}
+                  tourId={isWorkSubtask(task) ? "subtask" : "task"}
                   onActivate={
                     isWorkSubtask(task)
                       ? () => {
@@ -1241,7 +1249,7 @@ export function AppNav({
               : ""
           }`}
         >
-          <Link href="/dashboard" className={rowClassName(isHome)}>
+          <Link href="/dashboard" data-tour="home" className={rowClassName(isHome)}>
             <span className="inline-flex size-5 shrink-0 items-center justify-center text-zinc-500">
               <i className="fas fa-house text-[12px]" aria-hidden="true" />
             </span>
@@ -1250,6 +1258,7 @@ export function AppNav({
 
           <NavTreeSection
             href="/lists"
+            tourId="lists"
             icon="fas fa-list-ul"
             iconToneClassName="bg-zinc-100 text-zinc-600"
             label={t("nav.lists", "Saraksts")}
@@ -1301,6 +1310,7 @@ export function AppNav({
                               {({ setNodeRef, isOver }) => (
                                 <NavTreeSection
                   href={`/lists/${list.id}`}
+                  tourId="list-item"
                   icon={list.kind === "folder" ? "far fa-folder" : undefined}
                   swapOnHover={list.kind === "folder"}
                   listAppearance={
@@ -1374,6 +1384,7 @@ export function AppNav({
           {currentTeam ? (
           <NavTreeSection
             href={canOpenTeam ? "/team" : undefined}
+            tourId="team"
             icon="fas fa-users"
             iconToneClassName="bg-violet-100 text-violet-700"
             label={t("nav.team", "Komanda")}

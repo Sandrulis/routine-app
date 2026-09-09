@@ -4,6 +4,12 @@
 
 - (none)
 
+## v0.3.81
+
+- Sānjoslas pamācība (spotlight) jauniem lietotājiem; atkārtoti no lietotāja izvēlnes
+- Tukšā dashboarda onboarding: saraksts → uzdevums → apakšuzdevums
+- Stabilāks overlay portals modāļiem (`overlay-root`)
+
 ## v0.3.80
 
 - `js-yaml` 4.3.2 — labo empty merge-key CPU DoS (GHSA-2883-xcg3-v3hh)

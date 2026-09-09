@@ -101,6 +101,11 @@ button:disabled,
   cursor: not-allowed;
 }
 
+/* Guided tour spotlight: reveal row actions that are hidden until hover. */
+[data-tour-spotlight="true"] {
+  opacity: 1 !important;
+}
+
 .page {
   width: 100%;
   min-width: 0;

@@ -11,6 +11,11 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import { useTranslations } from "@/app/components/translations-provider";
+import {
+  getOverlayPortalRoot,
+  lockBodyOverflow,
+  unlockBodyOverflow,
+} from "@/app/lib/dom/overlay-root";
 
 type ConfirmModalProps = {
   open: boolean;
@@ -103,12 +108,9 @@ export function ConfirmModal({
 
   useEffect(() => {
     if (!open) return;
-
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-
+    lockBodyOverflow();
     return () => {
-      document.body.style.overflow = previousOverflow;
+      unlockBodyOverflow();
     };
   }, [open]);
 
@@ -170,6 +172,6 @@ export function ConfirmModal({
         </div>
       </div>
     </div>,
-    document.body,
+    getOverlayPortalRoot(),
   );
 }

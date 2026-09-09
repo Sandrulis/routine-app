@@ -48,7 +48,7 @@ Provider-specifiskie OAuth moduļi (`google-drive/`, `onedrive/`, `integrations/
 | Komanda | koks paliek redzams; klikšķis uz **Komanda** un lietotājiem (`/team`, `/team/[id]`) tikai ar `nav.team` (`canOpenTeamPage`); bez pieejas `/team` slēgts, savu lapu var atvērt; `+` tikai ar `team.invite`; `...` tikai ar lomām / veidnēm / Drive. `/team` lietotāji ar pēdējo tiešsaistes zīmi; **vadītājam** (maksas plāni) zem vārda vietas statuss un baneris par brīvajām apmaksātajām vietām; pending ar resend / kopēt linku / noņemt; ar `team.members.remove` noņemt arī apstiprinātus (ne vadītāju, ne sevi; maksas plānā paliek brīva apmaksāta vieta līdz cikla beigām); pats lietotājs var **Pamest komandu**. Kad maksas plāni ieslēgti, vadītājam **Abonementi** (`/team/billing`) ir sānjoslas rinda **aiz** Komanda (ne iekš koka) |
 | Atrast kļūdu? / Pieprasīt funkciju / Atsauksmes | virs Failu vietas; `SiteFeedbackModals`; atsauksmei tikai apraksts + `rating` 0–5 (`144`); e-pasts uz `legal_email` (Resend, Reply-To = lietotājs); funkcijām publisks saraksts + UP balsis (`088`) |
 | Failu vieta | koka + apakšuzdevumu failu `size` summa (`sumFileStorageBuckets` / `formatFileSize`); tooltipā **Serveris** / **Cloud** (tikai ja > 0); rādās tikai ja `module_file_upload` |
-| Lietotājs | avatars, **Personīgā informācija** (modālis: vārds, uzvārds), **Personīgie uzstādījumi** (`/settings/profile`), parole, iziet (ved uz `/`) |
+| Lietotājs | avatars, **Personīgā informācija** (modālis: vārds, uzvārds), **Personīgie uzstādījumi** (`/settings/profile`), **Sistēmas pamācība** (`ProductTourProvider`, `users.product_tour_completed_at`), parole, iziet (ved uz `/`) |
 
 Koks: **Saraksts → mape (`kind: "folder"`) vai uzdevumu saraksts (`kind: "task"`) vai fails → apakšuzdevumi (`kind: "subtask"`)**. Apakšuzdevuma rinda rāda `StatusTreeDot` (fons un apmale = statusa krāsa: `todo` pelēks, `in_progress` oranžs, `done` zaļš). Saraksta, mapes, uzdevuma un apakšuzdevuma rindai `WorkProgressFill` - fona aizpildījums pēc `workProgressById` / `listProgress` (pabeigtie un arhivētie kopā ar aktīvajiem).
 
@@ -467,7 +467,8 @@ app/
     team-leave-section.tsx        # Pamest komandu (profils, biedra lapa)
     app-shell.tsx                 # Layout ar sānjoslu; zem 1280px sānjosla slēpta, burger overlay; `module_todo` labā sleja
     user-todo-rail.tsx            # Personīga Darāmo saraksts sleja + arhīvs (`user_todos`, `141`); atvērtos vilkšana pēc `sort_order`
-    dashboard-home-page.tsx       # Sākums: Mani uzdevumi (ja ir, ar Atlikt) + saraksti
+    dashboard-home-page.tsx       # Sākums: Mani uzdevumi (ja ir, ar Atlikt) + saraksti; tukšā stāvoklī list→task→subtask onboarding
+    product-tour.tsx              # Sānjoslas spotlight pamācība; `users.product_tour_completed_at` + UserMenu restart
     task-snooze-button.tsx        # Personīgs Atlikt tikai Mani uzdevumi (1h / rītdiena / nedēļa / datums)
     lists-overview-page.tsx       # Saraksta kopsavilkums
     list-detail-page.tsx          # Saraksta kopsavilkums + arhīva skats

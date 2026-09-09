@@ -107,6 +107,29 @@ export async function saveUserDisplayPreferencesAction(
   return { ok: true };
 }
 
+export async function setProductTourCompletedAction(
+  completed: boolean,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const user = await getCurrentUser();
+  if (!user) {
+    return { ok: false, error: "errors.auth_required" };
+  }
+  if (!isSupabaseConfigured()) {
+    return { ok: false, error: "errors.db_not_configured" };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("set_current_user_product_tour_completed", {
+    p_completed: completed,
+  });
+
+  if (error) {
+    return { ok: false, error: "errors.user_profile_failed" };
+  }
+
+  return { ok: true };
+}
+
 export async function fetchNotificationPreferencesAction(): Promise<
   { ok: true; data: Record<string, boolean> } | { ok: false; error: string }
 > {
