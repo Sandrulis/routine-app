@@ -5,6 +5,7 @@ import {
   deleteUserTodo,
   fetchUserTodos,
   insertUserTodo,
+  reorderUserTodos,
   updateUserTodoDone,
 } from "@/app/lib/db/user-todos";
 import {
@@ -43,7 +44,16 @@ export function useUserTodos(userId: string | null | undefined) {
   }, [userId]);
 
   const activeItems = useMemo(
-    () => items.filter((item) => !item.isDone),
+    () =>
+      items
+        .filter((item) => !item.isDone)
+        .slice()
+        .sort((left, right) => {
+          if (left.sortOrder !== right.sortOrder) {
+            return left.sortOrder - right.sortOrder;
+          }
+          return left.createdAt.localeCompare(right.createdAt);
+        }),
     [items],
   );
 
@@ -129,6 +139,27 @@ export function useUserTodos(userId: string | null | undefined) {
     [items, userId],
   );
 
+  const reorderTodos = useCallback(
+    async (orderedIds: string[]) => {
+      if (!userId || orderedIds.length === 0) return;
+      const previous = items;
+      const orderById = new Map(orderedIds.map((id, index) => [id, index]));
+      setItems((current) =>
+        current.map((item) => {
+          const nextOrder = orderById.get(item.id);
+          return nextOrder === undefined ? item : { ...item, sortOrder: nextOrder };
+        }),
+      );
+      try {
+        await reorderUserTodos(userId, orderedIds);
+      } catch (error) {
+        setItems(previous);
+        throw error;
+      }
+    },
+    [items, userId],
+  );
+
   return {
     isReady,
     activeItems,
@@ -136,5 +167,6 @@ export function useUserTodos(userId: string | null | undefined) {
     addTodo,
     setTodoDone,
     removeTodo,
+    reorderTodos,
   };
 }

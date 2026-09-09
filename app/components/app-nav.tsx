@@ -1235,7 +1235,7 @@ export function AppNav({
 
         <nav
           aria-hidden={sidebarNavBlocked ? true : undefined}
-          className={`min-h-0 flex-1 space-y-0.5 overflow-x-visible overflow-y-auto px-2 pb-3 [scrollbar-width:thin] [scrollbar-color:rgb(212_212_216)_transparent] ${
+          className={`min-h-0 flex-1 space-y-0.5 overflow-x-visible overflow-y-auto px-2 pt-2 pb-3 [scrollbar-width:thin] [scrollbar-color:rgb(212_212_216)_transparent] ${
             sidebarNavBlocked
               ? "pointer-events-none select-none opacity-40 saturate-50"
               : ""

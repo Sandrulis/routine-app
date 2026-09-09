@@ -80,3 +80,18 @@ export async function deleteUserTodo(userId: string, id: string): Promise<void> 
     .eq("id", id);
   if (error) throw new Error(formatSupabaseError(error));
 }
+
+export async function reorderUserTodos(
+  userId: string,
+  orderedIds: string[],
+): Promise<void> {
+  for (let i = 0; i < orderedIds.length; i++) {
+    const { error } = await db()
+      .from("user_todos")
+      .update({ sort_order: i })
+      .eq("user_id", userId)
+      .eq("id", orderedIds[i])
+      .eq("is_done", false);
+    if (error) throw new Error(formatSupabaseError(error));
+  }
+}

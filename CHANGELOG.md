@@ -4,6 +4,11 @@
 
 - (none)
 
+## v0.3.79
+
+- Darāmo sarakstā atvērtos ierakstus var vilkt, lai mainītu prioritāti
+- Sānjoslas koks sākas nedaudz zemāk, lai pirmais links nepieliptu pie galvenes
+
 ## v0.3.78
 
 - Next.js 16.3.3 — labo kritisko Windows RCE (GHSA-p293-qw3h-jr36) un AVIF image optimization RCE
