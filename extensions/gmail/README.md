@@ -12,14 +12,14 @@ Nav jāievada Routine URL vai OAuth Client ID. Spraudnis sauc [https://www.tasqi
 2. Administrācija → Moduļi: **Gmail spraudnis** ieslēgts
 3. Administrācija → Integrācijas: **Google Plugin** konfigurēts un aktīvs (atsevišķs Cloud projekts ar Gmail API); Google OAuth paliek loginam/Drive
 4. Google Plugin OAuth klientā Redirect URI: `/auth/google-plugin/callback` — arī `http://localhost:3120` varianti. Rādās Integrācijās. Pēc jaunā Client ID lietotājiem **Atjaunot Gmail**.
-5. Komandai pieslēgts ieslēgtais mākonis: **Google Drive** un/vai **OneDrive** (bez tā popup rāda sarkanu brīdinājumu un Gmailā pogas nav). UI nosauc tikai tos mākoņus, kuru modulis ir ieslēgts.
+5. Komandai pieslēgts ieslēgtais mākonis: **Google Drive** un/vai **OneDrive** (bez tā popup rāda sarkanu brīdinājumu un Gmail modālis paskaidro, kāpēc nevar pievienot). UI nosauc tikai tos mākoņus, kuru modulis ir ieslēgts.
 6. `module_file_upload` ieslēgts
 
 ## Ielāde Chrome
 
 1. `chrome://extensions` → Developer mode → **Load unpacked** → `extensions/gmail`
 2. Pēc koda izmaiņām: **Reload** uz paplašinājuma kartītes, tad **F5** Gmail cilnē (citādi vecais content script met `Extension context invalidated`)
-3. Popup: ienāc ar Google vai e-pastu/paroli (custom login). **Turpināt ar Google** vispirms piešķir piekļuvi TASQIN (lietotāja žests, bez `permissions.contains` un bez localhost), tad atver Google konta izvēli (`/auth/gmail-plugin/login`), ne vispārīgo `/login` lapu (tā ielogotam lietotājam aizmet uz dashboard un spraudnis paliek ārā). Ja kontam ir TOTP 2FA, done lapa vispirms prasa Authenticator kodu un tikai pēc tam izsniedz sesijas ticket (AAL1 Google sīkdatnes netiek ņemtas kā spraudņa sesija). Pēc apstiprinājuma done lapa rāda «Pagaidi, kamēr spraudnis saņem sesiju…»; «Vari aizvērt» parādās, kad spraudnis ir saņēmis ticket (var aizvērt cilni). Background apmaina ticket pret sesiju un glabā to `chrome.storage`, arī ja done cilne jau ir ciet. `plugin-auth.js` nodod ticket backgroundam. Login API un OAuth preferē production (`www` / `tasqin.com`), ne `localhost` (arī ja lokālais serveris skrien). Ja Gmail nav savienots, nospied **Savienot Gmail** - tas saglabā savienojumu arī Routine. Ja Chrome Details → Site access ir **On click**, pirmais klikšķis rāda Chrome piekļuves dialogu; pēc atļaujas ienāc vēlreiz. Iestati **On all sites** (vai vismaz tasqin.com), lai nebūtu jāapstiprina katrā sesijā. Pirms ielogošanās popup valoda ir Chrome UI valoda; pēc ielogošanās `users.language_code`.
+3. Popup: ienāc ar Google vai e-pastu/paroli (custom login). **Turpināt ar Google** vispirms piešķir piekļuvi TASQIN un (unpacked) localhost vienā klikšķī (lietotāja žests, bez `permissions.contains`), tad atver Google konta izvēli (`/auth/gmail-plugin/login`), ne vispārīgo `/login` lapu (tā ielogotam lietotājam aizmet uz dashboard un spraudnis paliek ārā). Ja kontam ir TOTP 2FA, done lapa vispirms prasa Authenticator kodu un tikai pēc tam izsniedz sesijas ticket (AAL1 Google sīkdatnes netiek ņemtas kā spraudņa sesija). Pēc apstiprinājuma done lapa rāda «Pagaidi, kamēr spraudnis saņem sesiju…»; «Vari aizvērt» parādās, kad spraudnis ir saņēmis ticket (var aizvērt cilni). Background apmaina ticket pret sesiju un glabā to `chrome.storage`, arī ja done cilne jau ir ciet. `plugin-auth.js` nodod ticket backgroundam. Login API un OAuth preferē production (`www` / `tasqin.com`), ne `localhost` (arī ja lokālais serveris skrien). Ja Gmail nav savienots, nospied **Savienot Gmail** - tas saglabā savienojumu arī Routine. Pirmais klikšķis piešķir Chrome vietņu pieeju; unpacked iekļauj `localhost:3120` un `127.0.0.1:3120`, lai Details → Site access nav jāslēdz ar roku. Pirms ielogošanās popup valoda ir Chrome UI valoda; pēc ielogošanās `users.language_code`.
 
 ## Lietošana
 
@@ -28,13 +28,13 @@ Nav jāievada Routine URL vai OAuth Client ID. Spraudnis sauc [https://www.tasqi
 3. Izvēlies **saraksts** → (mape) → **uzdevums** → **apakšuzdevums** (vai **Jauns apakšuzdevums** atver jaunu modāli: nosaukums, pēc izvēles sākums, termiņš, statuss, atbildīgais ar live-search hintiem, apraksts). Jaunais apakšuzdevums TASQIN parādās tikai pēc **Pievienot** ar izvēlētajiem pielikumiem.
 4. Zem saraksta atzīmē pielikumus (checkbox); katram atzīmētajam failam (un e-pasta `.txt`) pēc izvēles ieraksti **Piezīmi** → **Pievienot**
 
-Ja pielikumi neredzami vai rāda OAuth kļūdu: Chrome → `chrome://extensions` → TASQIN - Gmail → **Reload** (versija `0.4.60`), tad Gmail cilnē **F5**. Spraudņa popup → **Atjaunot Gmail savienojumu** (tas nav tas pats, kas «Turpināt ar Google»). Modālī zem saraksta jābūt sadaļai **Pielikumi**.
+Ja pielikumi neredzami vai rāda OAuth kļūdu: Chrome → `chrome://extensions` → TASQIN - Gmail → **Reload** (versija `0.4.64`), tad Gmail cilnē **F5**. Spraudņa popup → **Atjaunot Gmail savienojumu** (tas nav tas pats, kas «Turpināt ar Google»). Modālī zem saraksta jābūt sadaļai **Pielikumi**.
 
 Apakšuzdevumu saraksts (3. solis) ir tajā pašā statusa secībā kā sānjosla un uzdevuma UI: aktīvie pirms “nav sākts”, slēgtie netiek rādīti. Rāda arī uzdevumus bez esošiem apakšuzdevumiem, lai varētu izveidot jaunu.
 
 Ja pēc spraudņa Reload Gmailā rādās kļūda par pārstartētu spraudni — pārlādē Gmail lapu (F5). Tas nav Google Drive problēma.
 
-Popup ir balta kartīte: avatars, vārds un uzvārds, e-pasts, **Iziet** tikai kā ikona augšējā labajā stūrī, komandu izvēle, Drive brīdinājums zem select, Gmail statuss kā ikona ar tooltip. Teksti ar `{SYSTEM_NAME}` ņem sistēmas nosaukumu no `GET /api/extension/config` / sesijas. Sesija paliek spraudnī (`chrome.storage.local`) arī tad, ja TASQIN cilne nav atvērta. Gmailā TASQIN pogas rādās tikai tad, ja izvēlētajai komandai ir pieslēgts ieslēgtais mākonis (Google Drive un/vai OneDrive).
+Popup ir balta kartīte: avatars, vārds un uzvārds, e-pasts, **Iziet** tikai kā ikona augšējā labajā stūrī, komandu izvēle, Drive brīdinājums zem select, Gmail statuss kā ikona ar tooltip. Teksti ar `{SYSTEM_NAME}` ņem sistēmas nosaukumu no `GET /api/extension/config` / sesijas. Sesija paliek spraudnī (`chrome.storage.local`) arī tad, ja TASQIN cilne nav atvērta. Gmailā TASQIN poga paliek arī tad, ja izvēlētajai komandai nav pieslēgts mākonis — modālis paskaidro iemeslu.
 
 ## API (Routine)
 

@@ -156,7 +156,7 @@ function extensionCloudMissingKey(session) {
 function applySessionI18n(data, options = {}) {
   if (data?.languageCode) document.documentElement.lang = data.languageCode;
   const name = String(data?.systemName || "").trim();
-  if (name) systemName = name;
+  if (name && !/^routine$/i.test(name)) systemName = name;
   if (!data?.strings || typeof data.strings !== "object") return;
   strings = { ...fallbackTable(data.languageCode || chromeLang), ...data.strings };
   i18nHydrated = true;

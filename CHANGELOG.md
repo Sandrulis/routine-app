@@ -4,6 +4,12 @@
 
 - (none)
 
+## v0.3.86
+
+- Gmail spraudnis `0.4.64`: pirmais klikšķis piešķir vietņu pieeju (unpacked arī localhost), lai Chrome Site access nav jāslēdz ar roku
+- Gmail spraudnis: saraksts katrā solī paliek augšā arī pēc pielikumu ielādes; poga rāda sistēmas iniciāli, līdz ielādējas logo
+- Gmail spraudnis: unpacked UI vairs nesakrīt ar Chrome Web Store kopiju (katram savs root), un bez mākoņa poga paliek ar kļūdas tekstu
+
 ## v0.3.85
 
 - Gmail spraudnis `0.4.63`: uzdevumu un apakšuzdevumu saraksts tagad tiešām atveras no sākuma (katram solim jauns saraksta mezgls, jo Chrome inerciālais scroll palika pie vecā)

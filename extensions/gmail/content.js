@@ -1,4 +1,17 @@
 (() => {
+  const EXT_RUNTIME_ID = String(
+    (() => {
+      try {
+        return chrome.runtime?.id || "local";
+      } catch {
+        return "local";
+      }
+    })(),
+  );
+  const ROOT_ID = `routine-gmail-root-${EXT_RUNTIME_ID}`;
+  const INLINE_BTN_ATTR = "data-tasqin-gmail-inline";
+  const OBSERVE_ATTR = `data-tasqin-gmail-obs-${EXT_RUNTIME_ID}`;
+
   if (typeof globalThis.__routineGmailCleanup === "function") {
     try {
       globalThis.__routineGmailCleanup();
@@ -6,8 +19,10 @@
       // previous content script leftover
     }
   } else {
-    document.getElementById("routine-gmail-root")?.remove();
-    for (const btn of document.querySelectorAll("[data-routine-gmail-inline]")) {
+    document.getElementById(ROOT_ID)?.remove();
+    for (const btn of document.querySelectorAll(
+      `[${INLINE_BTN_ATTR}="${EXT_RUNTIME_ID}"]`,
+    )) {
       btn.remove();
     }
   }
@@ -175,7 +190,8 @@ function applySessionI18n(data) {
   const code = data?.languageCode;
   if (typeof code === "string" && /^[a-z]{2}$/.test(code)) languageCode = code;
   const name = String(data?.systemName || "").trim();
-  if (name) systemName = name;
+  // Cached "Routine" from the old brand must not paint the leftover "R".
+  if (name && !/^routine$/i.test(name)) systemName = name;
   if (data?.strings && typeof data.strings === "object") {
     strings = { ...FALLBACK_STRINGS, ...data.strings };
   }
@@ -207,8 +223,6 @@ function tError(key) {
   }
   return t(key);
 }
-
-const INLINE_BTN_ATTR = "data-routine-gmail-inline";
 
 const ICONS = {
   list: `<svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path fill="currentColor" d="M2 3h12v1.5H2V3zm0 4.25h12V8.75H2V7.25zm0 4.25h12V13.5H2v-2z"/></svg>`,
@@ -450,16 +464,17 @@ function emailBodyAttachmentName(from) {
 }
 
 function ensureUi() {
-  const existing = document.getElementById("routine-gmail-root");
-  if (existing?.dataset?.routineUi === "28") {
+  const existing = document.getElementById(ROOT_ID);
+  if (existing?.dataset?.routineUi === "29") {
     existing.querySelector("#routine-gmail-fab")?.remove();
     return;
   }
   existing?.remove();
 
   const root = document.createElement("div");
-  root.id = "routine-gmail-root";
-  root.dataset.routineUi = "28";
+  root.id = ROOT_ID;
+  root.className = "routine-gmail-root";
+  root.dataset.routineUi = "29";
   root.innerHTML = `
     <div id="routine-gmail-modal" hidden>
       <div class="routine-gmail-backdrop" data-close="1"></div>
@@ -669,11 +684,18 @@ function ensureUi() {
     newSubtaskBtn.innerHTML = `${ICONS.plus} <span>${t("subtasks.add.title")}</span>`;
     paintStatusPill();
     panel.setAttribute("lang", languageCode);
-    for (const btn of document.querySelectorAll(`[${INLINE_BTN_ATTR}="1"]`)) {
+    for (const btn of document.querySelectorAll(
+      `[${INLINE_BTN_ATTR}="${EXT_RUNTIME_ID}"]`,
+    )) {
       btn.title = t("extension.gmail.add_to_routine");
       btn.setAttribute("aria-label", t("extension.gmail.add_to_routine"));
-      applyInlineName(btn);
+      paintInlineBranding(btn);
     }
+  }
+
+  function systemInitial() {
+    const name = String(systemName || "").trim();
+    return (name.slice(0, 1) || "T").toUpperCase();
   }
 
   /** Label and logo-less initial both come from the current system name. */
@@ -682,7 +704,20 @@ function ensureUi() {
     const label = btn.querySelector(".routine-gmail-inline-label");
     const fallback = btn.querySelector(".routine-gmail-inline-fallback");
     if (label) label.textContent = name;
-    if (fallback) fallback.textContent = name.slice(0, 1).toUpperCase();
+    if (fallback) fallback.textContent = systemInitial();
+  }
+
+  function inlineLogoUrl() {
+    return String(session?.uploadedLogoUrl || session?.logoUrl || "").trim();
+  }
+
+  function paintInlineBranding(btn) {
+    applyInlineName(btn);
+    applyLogoTo(
+      btn.querySelector(".routine-gmail-inline-img"),
+      btn.querySelector(".routine-gmail-inline-fallback"),
+      inlineLogoUrl(),
+    );
   }
 
   function clearCloseTimer() {
@@ -884,6 +919,7 @@ function ensureUi() {
       attToggleBtn.dataset.mode = "retry";
       attToggleBtn.textContent = t("extension.gmail.attachments_retry");
     }
+    resetResultsScroll();
   }
 
   function emailBodyFromHeader() {
@@ -1055,6 +1091,7 @@ function ensureUi() {
       attachList.appendChild(li);
     });
     updateAttToggleLabel();
+    resetResultsScroll();
   }
 
   async function loadAttachmentsList() {
@@ -1707,15 +1744,29 @@ function ensureUi() {
 
   function applyLogoTo(img, fallback, logoUrl) {
     if (!img) return;
-    if (logoUrl) {
-      img.src = logoUrl;
+    img.onload = null;
+    img.onerror = null;
+    if (fallback) {
+      fallback.classList.remove("is-hidden");
+      fallback.hidden = false;
+      if (!fallback.textContent) fallback.textContent = systemInitial();
+    }
+    if (!logoUrl) {
+      img.removeAttribute("src");
+      img.classList.add("is-hidden");
+      img.hidden = true;
+      return;
+    }
+    const showLogo = () => {
       img.classList.remove("is-hidden");
       img.hidden = false;
       if (fallback) {
         fallback.classList.add("is-hidden");
         fallback.hidden = true;
       }
-    } else {
+    };
+    img.onload = showLogo;
+    img.onerror = () => {
       img.removeAttribute("src");
       img.classList.add("is-hidden");
       img.hidden = true;
@@ -1723,7 +1774,9 @@ function ensureUi() {
         fallback.classList.remove("is-hidden");
         fallback.hidden = false;
       }
-    }
+    };
+    img.src = logoUrl;
+    if (img.complete && img.naturalWidth > 0) showLogo();
   }
 
   function selectedTeamFromSession(data) {
@@ -1741,15 +1794,22 @@ function ensureUi() {
     );
   }
 
+  function cloudMissingKey(data) {
+    const driveOn = data?.googleDriveEnabled !== false;
+    const odOn = data?.oneDriveEnabled === true;
+    if (driveOn && odOn) return "errors.extension_team_cloud_missing";
+    if (odOn) return "errors.extension_team_onedrive_missing";
+    return "errors.extension_team_drive_missing";
+  }
+
   function pluginButtonsAllowed() {
-    if (!session) return true;
-    if (!session.authenticated) return true;
-    const team = selectedTeamFromSession(session);
-    return teamCloudConnected(team);
+    return true;
   }
 
   function removeInlineButtons() {
-    for (const btn of document.querySelectorAll(`[${INLINE_BTN_ATTR}="1"]`)) {
+    for (const btn of document.querySelectorAll(
+      `[${INLINE_BTN_ATTR}="${EXT_RUNTIME_ID}"]`,
+    )) {
       btn.remove();
     }
   }
@@ -1803,14 +1863,6 @@ function ensureUi() {
     sessionLoadedAt = Date.now();
     applySessionI18n(session);
     applyStaticLabels();
-    const logoUrl = session?.logoUrl;
-    for (const btn of document.querySelectorAll(`[${INLINE_BTN_ATTR}="1"]`)) {
-      applyLogoTo(
-        btn.querySelector(".routine-gmail-inline-img"),
-        btn.querySelector(".routine-gmail-inline-fallback"),
-        logoUrl,
-      );
-    }
     syncPluginButtons();
     return result;
   }
@@ -2177,8 +2229,8 @@ function ensureUi() {
     const team =
       teams.find((item) => item.id === data.selectedTeamId) || teams[0] || null;
     if (team && !teamCloudConnected(team)) {
-      syncPluginButtons();
-      closeModal();
+      setResultMode(true);
+      setFeedback(tError(cloudMissingKey(data)), "error");
       return;
     }
     await Promise.all([loadAttachmentsList(), loadLists()]);
@@ -2186,7 +2238,7 @@ function ensureUi() {
 
   function makeInlineButton() {
     const btn = document.createElement("div");
-    btn.setAttribute(INLINE_BTN_ATTR, "1");
+    btn.setAttribute(INLINE_BTN_ATTR, EXT_RUNTIME_ID);
     btn.className = "routine-gmail-inline";
     btn.setAttribute("role", "button");
     btn.tabIndex = 0;
@@ -2197,19 +2249,23 @@ function ensureUi() {
       <span class="routine-gmail-inline-fallback"></span>
       <span class="routine-gmail-inline-label"></span>
     `;
-    applyInlineName(btn);
-    applyLogoTo(
-      btn.querySelector(".routine-gmail-inline-img"),
-      btn.querySelector(".routine-gmail-inline-fallback"),
-      session?.logoUrl,
-    );
+    paintInlineBranding(btn);
     btn.addEventListener("mouseenter", () => prefetchSession());
     btn.addEventListener("focus", () => prefetchSession());
     const open = (event) => {
       event.preventDefault();
       event.stopPropagation();
-      prefetchSession();
-      void openModal();
+      void (async () => {
+        const granted = await ensurePluginHostAccess({ includeGmail: true });
+        if (!granted) {
+          modal.hidden = false;
+          setResultMode(true);
+          setFeedback(tError("extension.gmail.site_access_required"), "error");
+          return;
+        }
+        prefetchSession();
+        await openModal();
+      })();
     };
     btn.addEventListener("click", open);
     btn.addEventListener("keydown", (event) => {
@@ -2235,7 +2291,7 @@ function ensureUi() {
       if (!(toolbar instanceof HTMLElement)) continue;
       if (toolbar.closest('[aria-hidden="true"]')) continue;
       if (toolbar.getClientRects().length === 0) continue;
-      if (toolbar.querySelector(`[${INLINE_BTN_ATTR}="1"]`)) continue;
+      if (toolbar.querySelector(`[${INLINE_BTN_ATTR}="${EXT_RUNTIME_ID}"]`)) continue;
       hosts.push(toolbar);
     }
 
@@ -2243,7 +2299,7 @@ function ensureUi() {
     for (const subject of document.querySelectorAll("h2.hP, h2[data-thread-perm-id]")) {
       const wrap = subject.parentElement;
       if (!(wrap instanceof HTMLElement)) continue;
-      if (wrap.querySelector(`[${INLINE_BTN_ATTR}="1"]`)) continue;
+      if (wrap.querySelector(`[${INLINE_BTN_ATTR}="${EXT_RUNTIME_ID}"]`)) continue;
       if (wrap.getClientRects().length === 0) continue;
       hosts.push(wrap);
     }
@@ -2595,7 +2651,7 @@ function scheduleInlineInject() {
     injectScheduled = false;
     if (!emailUiTargetsPresent()) return;
     initUiOnce();
-    const root = document.getElementById("routine-gmail-root");
+    const root = document.getElementById(ROOT_ID);
     if (!root) return;
     if (typeof root._routineInjectInline === "function") {
       root._routineInjectInline();
@@ -2610,8 +2666,8 @@ const observer = new MutationObserver(() => {
 function attachGmailObserver() {
   const target =
     document.querySelector('div[role="main"]') || document.body;
-  if (!target || target.dataset.routineObserved === "1") return;
-  target.dataset.routineObserved = "1";
+  if (!target || target.getAttribute(OBSERVE_ATTR) === "1") return;
+  target.setAttribute(OBSERVE_ATTR, "1");
   observer.observe(target, { childList: true, subtree: true });
 }
 
@@ -2629,8 +2685,11 @@ globalThis.__routineGmailCleanup = () => {
   observer.disconnect();
   window.removeEventListener("hashchange", onHashChange);
   clearInterval(injectTimer);
-  document.getElementById("routine-gmail-root")?.remove();
-  for (const btn of document.querySelectorAll("[data-routine-gmail-inline]")) {
+  document.querySelector(`[${OBSERVE_ATTR}]`)?.removeAttribute(OBSERVE_ATTR);
+  document.getElementById(ROOT_ID)?.remove();
+  for (const btn of document.querySelectorAll(
+    `[${INLINE_BTN_ATTR}="${EXT_RUNTIME_ID}"]`,
+  )) {
     btn.remove();
   }
   unbindRuntimeMessage("__routineGmailOnMessage");

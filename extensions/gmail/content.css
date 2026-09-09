@@ -1,4 +1,4 @@
-#routine-gmail-root {
+.routine-gmail-root {
   all: initial;
   font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif;
 }
@@ -354,6 +354,8 @@
   min-height: 72px;
   flex: 1 1 auto;
   overflow: auto;
+  overflow-anchor: none;
+  overscroll-behavior: contain;
   background: #f8fafc;
   border: 1px solid #e2e8f0;
   border-radius: 12px;
@@ -705,7 +707,7 @@
   box-shadow: 0 0 0 1px #2563eb;
 }
 
-#routine-gmail-root .routine-gmail-assignee-hints {
+.routine-gmail-root .routine-gmail-assignee-hints {
   position: static;
   z-index: auto;
   display: none;
@@ -724,15 +726,15 @@
   box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12);
 }
 
-#routine-gmail-root .routine-gmail-assignee-hints.is-open {
+.routine-gmail-root .routine-gmail-assignee-hints.is-open {
   display: flex !important;
 }
 
-#routine-gmail-root .routine-gmail-assignee-hints[hidden] {
+.routine-gmail-root .routine-gmail-assignee-hints[hidden] {
   display: none !important;
 }
 
-#routine-gmail-root .routine-gmail-assignee-hints li {
+.routine-gmail-root .routine-gmail-assignee-hints li {
   display: flex !important;
   flex-direction: column;
   gap: 1px;
@@ -744,12 +746,12 @@
   font-weight: 600;
 }
 
-#routine-gmail-root .routine-gmail-assignee-hints li:hover,
-#routine-gmail-root .routine-gmail-assignee-hints li.is-active {
+.routine-gmail-root .routine-gmail-assignee-hints li:hover,
+.routine-gmail-root .routine-gmail-assignee-hints li.is-active {
   background: #f0fdfa;
 }
 
-#routine-gmail-root .routine-gmail-assignee-hints li.routine-gmail-assignee-heading {
+.routine-gmail-root .routine-gmail-assignee-hints li.routine-gmail-assignee-heading {
   cursor: default;
   font-size: 11px;
   font-weight: 500;
@@ -758,11 +760,11 @@
   background: transparent;
 }
 
-#routine-gmail-root .routine-gmail-assignee-hints li.routine-gmail-assignee-heading:hover {
+.routine-gmail-root .routine-gmail-assignee-hints li.routine-gmail-assignee-heading:hover {
   background: transparent;
 }
 
-#routine-gmail-root .routine-gmail-assignee-hints li.routine-gmail-assignee-empty {
+.routine-gmail-root .routine-gmail-assignee-hints li.routine-gmail-assignee-empty {
   cursor: default;
   font-weight: 500;
   color: #64748b;
@@ -776,7 +778,7 @@
   white-space: nowrap;
 }
 
-#routine-gmail-root .routine-gmail-assignee-hints mark {
+.routine-gmail-root .routine-gmail-assignee-hints mark {
   background: #ccfbf1;
   color: inherit;
   font: inherit;
