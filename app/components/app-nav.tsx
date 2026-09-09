@@ -76,9 +76,20 @@ import { useTeamBillingAccess } from "@/app/lib/billing/use-team-billing-access"
 import { usePaymentPlansEnabled } from "@/app/lib/payment-plans/context";
 import { useIsAdmin } from "@/app/lib/users/use-is-admin";
 import {
+  insertStatusInGroupOrder,
+  isListStatusGroup,
   resolveStatusCatalogs,
   sortTasksLikeNavTree,
 } from "@/app/lib/list-statuses";
+import { activeFolderCreatedTemplateAutomations } from "@/app/lib/list-automations";
+import { useTemplates } from "@/app/lib/templates-store";
+import {
+  collectMissingTemplateStatusesInFolder,
+  collectMissingTemplateStatusesInList,
+  folderNeedsTemplateStatusSync,
+  listNeedsTemplateStatusSync,
+  type MissingFolderStatus,
+} from "@/app/lib/sync-folder-template-statuses";
 import { taskHasIncompleteChecklists } from "@/app/lib/task-checklists";
 import { useSystemTaskStatuses, useTaskStatuses } from "@/app/lib/task-statuses";
 import {
@@ -612,8 +623,9 @@ export function AppNav({
   const router = useRouter();
   const { t } = useTranslations();
   const { showFeedback } = useFeedbackToast();
-  const { lists, tasks, listTasks, childTasks, subtasks, listStatuses, workTaskStatuses, allTaskFiles, isReady: listsReady } = useListsNav();
-  const { addList, updateList, deleteList, reorderLists, updateTask, deleteTask, setWorkItemArchived, reorderTasks, moveWorkItem } = useListsActions();
+  const { lists, tasks, listTasks, childTasks, subtasks, listStatuses, workTaskStatuses, listAutomations, allTaskFiles, isReady: listsReady } = useListsNav();
+  const { addList, updateList, deleteList, reorderLists, updateTask, deleteTask, setWorkItemArchived, reorderTasks, moveWorkItem, addWorkTaskStatus } = useListsActions();
+  const { templateItems, ensureLoaded: ensureTemplatesLoaded } = useTemplates();
   const { files: storedFiles } = useListFiles();
   const files = storedFiles.filter((file) =>
     lists.some((list) => list.id === file.listId),
@@ -813,6 +825,65 @@ export function AppNav({
     return accessForList(lists.find((item) => item.id === listId));
   }
 
+  function applyMissingTemplateStatuses(missing: MissingFolderStatus[]) {
+    let added = 0;
+    for (const row of missing) {
+      const target = tasks.find((item) => item.id === row.parentTaskId);
+      if (!target) continue;
+      const listForTask =
+        lists.find((item) => item.id === target.listId) ?? null;
+      let order = [...(target.statusOrder ?? [])];
+      const overrides = { ...target.statusGroupOverrides };
+      let nextStatuses = workTaskStatuses.filter(
+        (status) => status.parentTaskId === target.id,
+      );
+      let rowAdded = 0;
+      for (const def of row.statuses) {
+        const created = addWorkTaskStatus(target.id, target.listId, {
+          label: def.label,
+          color: def.color,
+          groupKey: def.groupKey,
+        });
+        if (!created) continue;
+        added += 1;
+        rowAdded += 1;
+        nextStatuses = [...nextStatuses, created];
+        const { laidOut } = resolveStatusCatalogs(systemStatuses, listStatuses, {
+          listId: target.listId,
+          parentTaskId: target.id,
+          workTaskStatuses: nextStatuses,
+          list: listForTask,
+          parentTask: {
+            ...target,
+            statusOrder: order,
+            statusGroupOverrides: overrides,
+          },
+        });
+        order = insertStatusInGroupOrder(
+          laidOut,
+          order,
+          created.id,
+          isListStatusGroup(created.groupKey)
+            ? created.groupKey
+            : def.groupKey,
+        );
+        overrides[created.id] = created.groupKey;
+      }
+      if (rowAdded > 0) {
+        updateTask(target.id, {
+          statusOrder: order,
+          statusGroupOverrides: overrides,
+        });
+      }
+    }
+    if (added > 0) {
+      showFeedback({
+        type: "success",
+        text: t("folders.sync_statuses.success", "Statusi atjaunoti."),
+      });
+    }
+  }
+
   function toggleTree(id: string, fallback: boolean) {
     setTrees((current) => {
       const currentlyOpen =
@@ -901,9 +972,55 @@ export function AppNav({
     itemMenu?.kind === "task"
       ? (tasks.find((item) => item.id === itemMenu.id) ?? null)
       : null;
+  const menuSyncListId =
+    itemMenu?.kind === "list"
+      ? itemMenu.id
+      : itemMenuTask?.kind === "folder"
+        ? itemMenuTask.listId
+        : null;
+  const menuTemplateGroups = menuSyncListId
+    ? activeFolderCreatedTemplateAutomations(listAutomations, menuSyncListId)
+        .map((rule) => templateItems(rule.templateId ?? ""))
+        .filter((items) => items.length > 0)
+    : [];
+  const canSyncTemplateStatuses =
+    itemMenuAccess.canEditTasks &&
+    isModuleEnabled(FRONTEND_MODULE_KEYS.automations) &&
+    isModuleEnabled(FRONTEND_MODULE_KEYS.templates);
+  const folderStatusSyncNeeded = Boolean(
+    itemMenuTask?.kind === "folder" &&
+      canSyncTemplateStatuses &&
+      folderNeedsTemplateStatusSync({
+        folderId: itemMenuTask.id,
+        templateItemGroups: menuTemplateGroups,
+        tasks,
+        workTaskStatuses,
+      }),
+  );
+  const listStatusSyncNeeded = Boolean(
+    itemMenu?.kind === "list" &&
+      canSyncTemplateStatuses &&
+      listNeedsTemplateStatusSync({
+        listId: itemMenu.id,
+        templateItemGroups: menuTemplateGroups,
+        tasks,
+        workTaskStatuses,
+      }),
+  );
   const statusPickerTask = statusPicker
     ? (tasks.find((item) => item.id === statusPicker.taskId) ?? null)
     : null;
+
+  useEffect(() => {
+    if (itemMenu?.kind !== "list" && itemMenuTask?.kind !== "folder") return;
+    ensureTemplatesLoaded();
+  }, [
+    ensureTemplatesLoaded,
+    itemMenu?.id,
+    itemMenu?.kind,
+    itemMenuTask?.id,
+    itemMenuTask?.kind,
+  ]);
 
   function placeNavItem(
     listId: string,
@@ -1754,6 +1871,19 @@ export function AppNav({
                           : []),
                       ]
                     : []),
+                  ...(listStatusSyncNeeded
+                    ? [
+                        {
+                          id: "sync-statuses",
+                          icon: "fas fa-sync",
+                          title: t("folders.sync_statuses", "Atjaunot statusus"),
+                          description: t(
+                            "lists.sync_statuses.description",
+                            "Pievieno šablonā trūkstošos statusus visām saraksta mapēm, kurām tie trūkst.",
+                          ),
+                        },
+                      ]
+                    : []),
                   ...(itemMenuAccess.canDeleteList
                     ? [
                         {
@@ -1773,6 +1903,19 @@ export function AppNav({
                           id: "edit",
                           icon: "fas fa-pen",
                           title: t("actions.edit", "Labot"),
+                        },
+                      ]
+                    : []),
+                  ...(folderStatusSyncNeeded
+                    ? [
+                        {
+                          id: "sync-statuses",
+                          icon: "fas fa-sync",
+                          title: t("folders.sync_statuses", "Atjaunot statusus"),
+                          description: t(
+                            "folders.sync_statuses.description",
+                            "Pievieno šablonā trūkstošos statusus šīs mapes uzdevumiem.",
+                          ),
                         },
                       ]
                     : []),
@@ -1877,6 +2020,34 @@ export function AppNav({
               setEditTarget({ kind: "task", task });
             }
             if (file) setEditTarget({ kind: "file", file });
+            return;
+          }
+          if (id === "sync-statuses") {
+            const listId =
+              list?.id ?? (task?.kind === "folder" ? task.listId : null);
+            if (!listId || !accessForListId(listId).canEditTasks) return;
+            const groups = activeFolderCreatedTemplateAutomations(
+              listAutomations,
+              listId,
+            )
+              .map((rule) => templateItems(rule.templateId ?? ""))
+              .filter((items) => items.length > 0);
+            const missing = list
+              ? collectMissingTemplateStatusesInList({
+                  listId,
+                  templateItemGroups: groups,
+                  tasks,
+                  workTaskStatuses,
+                })
+              : task && task.kind === "folder"
+                ? collectMissingTemplateStatusesInFolder({
+                    folderId: task.id,
+                    templateItemGroups: groups,
+                    tasks,
+                    workTaskStatuses,
+                  })
+                : [];
+            applyMissingTemplateStatuses(missing);
             return;
           }
           if (id === "statuses") {

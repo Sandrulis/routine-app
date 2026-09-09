@@ -315,6 +315,7 @@ type ListsNavValue = Pick<
   | "tasks"
   | "listStatuses"
   | "workTaskStatuses"
+  | "listAutomations"
   | "listTasks"
   | "childTasks"
   | "subtasks"
@@ -2286,6 +2287,7 @@ export function ListsProvider({ children }: { children: ReactNode }) {
       tasks: dataValue.tasks,
       listStatuses: dataValue.listStatuses,
       workTaskStatuses: dataValue.workTaskStatuses,
+      listAutomations: dataValue.listAutomations,
       listTasks: dataValue.listTasks,
       childTasks: dataValue.childTasks,
       subtasks: dataValue.subtasks,

@@ -4,6 +4,10 @@
 
 - (none)
 
+## v0.3.88
+
+- Mapes un saraksta `...` izvēlnē **Atjaunot statusus**, ja šablonā ir statusi, kuru nav jau izveidotajās mapēs
+
 ## v0.3.87
 
 - Google Drive vairs netaisa `test (1)`, ja mape `test` jau pastāv: pēc atkārtotas pieslēgšanas faili atkal iet esošajā mapē
