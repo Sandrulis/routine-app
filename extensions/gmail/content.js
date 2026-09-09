@@ -5,10 +5,11 @@
     } catch {
       // previous content script leftover
     }
-  }
-  document.getElementById("routine-gmail-root")?.remove();
-  for (const btn of document.querySelectorAll("[data-routine-gmail-inline]")) {
-    btn.remove();
+  } else {
+    document.getElementById("routine-gmail-root")?.remove();
+    for (const btn of document.querySelectorAll("[data-routine-gmail-inline]")) {
+      btn.remove();
+    }
   }
 
   const FALLBACK_STRINGS = {
@@ -557,7 +558,8 @@ function ensureUi() {
   const modal = root.querySelector("#routine-gmail-modal");
   const panel = root.querySelector(".routine-gmail-panel");
   const picker = root.querySelector("#routine-gmail-picker");
-  const results = root.querySelector("#routine-gmail-results");
+  // Reassigned by freshResults() on every step, so it cannot be const.
+  let results = root.querySelector("#routine-gmail-results");
   const attachBtn = root.querySelector("#routine-gmail-attach");
   const attachLabel = root.querySelector(".routine-gmail-btn-label");
   const backBtn = root.querySelector("#routine-gmail-back");
@@ -670,7 +672,17 @@ function ensureUi() {
     for (const btn of document.querySelectorAll(`[${INLINE_BTN_ATTR}="1"]`)) {
       btn.title = t("extension.gmail.add_to_routine");
       btn.setAttribute("aria-label", t("extension.gmail.add_to_routine"));
+      applyInlineName(btn);
     }
+  }
+
+  /** Label and logo-less initial both come from the current system name. */
+  function applyInlineName(btn) {
+    const name = String(systemName || "").trim();
+    const label = btn.querySelector(".routine-gmail-inline-label");
+    const fallback = btn.querySelector(".routine-gmail-inline-fallback");
+    if (label) label.textContent = name;
+    if (fallback) fallback.textContent = name.slice(0, 1).toUpperCase();
   }
 
   function clearCloseTimer() {
@@ -800,7 +812,7 @@ function ensureUi() {
     newSubtaskBtn.hidden = true;
     attachBtn.disabled = true;
     attachBtn.hidden = false;
-    results.innerHTML = "";
+    freshResults();
     results.hidden = false;
     createModal.hidden = true;
     crumbsEl.hidden = true;
@@ -1644,16 +1656,41 @@ function ensureUi() {
     if (pickId) selectSubtaskRow(pickId);
   }
 
+  /**
+   * Swaps in a brand new <ul> instead of clearing the old one. Chrome keeps the
+   * inertial scroll animation on the node itself, so a reused list would land
+   * mid-way even after scrollTop = 0.
+   */
+  function freshResults() {
+    const next = document.createElement("ul");
+    next.id = results.id;
+    next.className = results.className;
+    if (results.parentNode) {
+      results.replaceWith(next);
+    } else {
+      picker.insertBefore(next, attachmentsSection);
+    }
+    results = next;
+    return next;
+  }
+
   function resetResultsScroll() {
-    results.scrollTop = 0;
-    picker.scrollTop = 0;
+    const toTop = () => {
+      for (const el of [results, picker, panel]) {
+        if (el) el.scrollTop = 0;
+      }
+    };
+    toTop();
+    // Attachments and the "new subtask" button render after the list and change
+    // its height, so hold the top for the next two frames as well.
     requestAnimationFrame(() => {
-      results.scrollTop = 0;
-      picker.scrollTop = 0;
+      toTop();
+      requestAnimationFrame(toTop);
     });
   }
 
   function emptyRow(text) {
+    freshResults();
     results.hidden = false;
     results.innerHTML = `<li class="routine-gmail-empty">${text}</li>`;
     resetResultsScroll();
@@ -1779,8 +1816,8 @@ function ensureUi() {
   }
 
   function renderSelectable(rows, onPick) {
+    freshResults();
     results.hidden = false;
-    results.innerHTML = "";
     selectedId = null;
     attachBtn.disabled = true;
     if (!rows.length) {
@@ -2157,9 +2194,10 @@ function ensureUi() {
     btn.setAttribute("aria-label", t("extension.gmail.add_to_routine"));
     btn.innerHTML = `
       <img class="routine-gmail-inline-img is-hidden" alt="" />
-      <span class="routine-gmail-inline-fallback">R</span>
-      <span class="routine-gmail-inline-label">TASQIN</span>
+      <span class="routine-gmail-inline-fallback"></span>
+      <span class="routine-gmail-inline-label"></span>
     `;
+    applyInlineName(btn);
     applyLogoTo(
       btn.querySelector(".routine-gmail-inline-img"),
       btn.querySelector(".routine-gmail-inline-fallback"),

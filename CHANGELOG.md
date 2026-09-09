@@ -4,6 +4,11 @@
 
 - (none)
 
+## v0.3.85
+
+- Gmail spraudnis `0.4.63`: uzdevumu un apakšuzdevumu saraksts tagad tiešām atveras no sākuma (katram solim jauns saraksta mezgls, jo Chrome inerciālais scroll palika pie vecā)
+- Gmail spraudnis: inline poga un popup avatars rāda sistēmas nosaukuma burtu (`T`), ne veco `R`
+
 ## v0.3.84
 
 - Gmail spraudnis `0.4.60`: pēc spraudņa atjaunināšanas vairs nekrīt ar `chrome.runtime.onMessage`, ja Gmail cilne paliek atvērta

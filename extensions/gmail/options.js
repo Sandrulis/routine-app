@@ -210,7 +210,7 @@ function initials(first, last, email) {
   const b = String(last || "").trim().charAt(0);
   const fromName = `${a}${b}`.toUpperCase();
   if (fromName.trim()) return fromName;
-  return String(email || "R").charAt(0).toUpperCase();
+  return String(email || systemName || "").charAt(0).toUpperCase();
 }
 
 function applyLabels() {
