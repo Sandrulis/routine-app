@@ -97,6 +97,80 @@ async function getAccessToken(row: GoogleDriveSecretRow) {
   return refreshed.access_token;
 }
 
+function escapeDriveQueryValue(value: string) {
+  return value.replace(/\\/g, "\\\\").replace(/'/g, "\\'");
+}
+
+async function driveList(
+  accessToken: string,
+  url: string,
+): Promise<{ id?: string; createdTime?: string }[]> {
+  const response = await fetch(url, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+  const data = (await response.json().catch(() => null)) as {
+    files?: { id?: string; createdTime?: string }[];
+    error?: { message?: string };
+  } | null;
+  if (!response.ok) {
+    throw new Error(data?.error?.message || `Drive request failed (${response.status})`);
+  }
+  return Array.isArray(data?.files) ? data.files : [];
+}
+
+async function folderIdUsable(accessToken: string, folderId: string) {
+  try {
+    const response = await fetch(
+      withDriveQuery(`${DRIVE_API}/files/${encodeURIComponent(folderId)}`, {
+        fields: "id,trashed,mimeType",
+      }),
+      { headers: { Authorization: `Bearer ${accessToken}` } },
+    );
+    const data = (await response.json().catch(() => null)) as {
+      id?: string;
+      trashed?: boolean;
+      mimeType?: string;
+    } | null;
+    return Boolean(
+      response.ok &&
+        data?.id &&
+        data.trashed !== true &&
+        data.mimeType === FOLDER_MIME,
+    );
+  } catch {
+    return false;
+  }
+}
+
+/** Reuse an existing sibling folder (Drive allows duplicate names and then creates "test (1)"). */
+async function findFolderInParent(
+  accessToken: string,
+  name: string,
+  parentId: string,
+) {
+  const q = [
+    `'${escapeDriveQueryValue(parentId)}' in parents`,
+    `name = '${escapeDriveQueryValue(name)}'`,
+    `mimeType = '${FOLDER_MIME}'`,
+    "trashed = false",
+  ].join(" and ");
+  const files = await driveList(
+    accessToken,
+    withDriveQuery(`${DRIVE_API}/files`, {
+      q,
+      fields: "files(id,createdTime)",
+      pageSize: "20",
+      includeItemsFromAllDrives: "true",
+    }),
+  );
+  const ranked = files
+    .filter((row) => row.id)
+    .sort((a, b) =>
+      String(a.createdTime || "").localeCompare(String(b.createdTime || "")),
+    );
+  return ranked[0]?.id || "";
+}
+
 async function createFolder(
   accessToken: string,
   name: string,
@@ -116,6 +190,16 @@ async function createFolder(
   return data.id as string;
 }
 
+async function ensureFolder(
+  accessToken: string,
+  name: string,
+  parentId: string,
+) {
+  const existing = await findFolderInParent(accessToken, name, parentId);
+  if (existing) return existing;
+  return createFolder(accessToken, name, parentId);
+}
+
 async function ensureFolderChain(
   accessToken: string,
   parts: string[],
@@ -126,11 +210,12 @@ async function ensureFolderChain(
   for (const part of parts) {
     path = path ? `${path}/${part}` : part;
     const cached = cache[path];
-    if (cached) {
+    if (cached && (await folderIdUsable(accessToken, cached))) {
       parentId = cached;
       continue;
     }
-    const id = await createFolder(accessToken, part, parentId);
+    if (cached) delete cache[path];
+    const id = await ensureFolder(accessToken, part, parentId);
     cache[path] = id;
     parentId = id;
   }

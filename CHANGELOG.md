@@ -4,6 +4,10 @@
 
 - (none)
 
+## v0.3.87
+
+- Google Drive vairs netaisa `test (1)`, ja mape `test` jau pastāv: pēc atkārtotas pieslēgšanas faili atkal iet esošajā mapē
+
 ## v0.3.86
 
 - Gmail spraudnis `0.4.64`: pirmais klikšķis piešķir vietņu pieeju (unpacked arī localhost), lai Chrome Site access nav jāslēdz ar roku
