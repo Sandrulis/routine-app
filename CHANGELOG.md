@@ -4,6 +4,10 @@
 
 - (none)
 
+## v0.3.89
+
+- Darāmo sarakstā klikšķis uz ieraksta atver tiešo labošanu (kursors teksta beigās, Enter saglabā)
+
 ## v0.3.88
 
 - Mapes un saraksta `...` izvēlnē **Atjaunot statusus**, ja šablonā ir statusi, kuru nav jau izveidotajās mapēs

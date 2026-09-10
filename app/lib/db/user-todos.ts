@@ -55,6 +55,19 @@ export async function insertUserTodo(item: UserTodo): Promise<void> {
   if (error) throw new Error(formatSupabaseError(error));
 }
 
+export async function updateUserTodoTitle(
+  userId: string,
+  id: string,
+  title: string,
+): Promise<void> {
+  const { error } = await db()
+    .from("user_todos")
+    .update({ title })
+    .eq("user_id", userId)
+    .eq("id", id);
+  if (error) throw new Error(formatSupabaseError(error));
+}
+
 export async function updateUserTodoDone(
   userId: string,
   id: string,

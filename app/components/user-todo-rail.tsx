@@ -1,6 +1,13 @@
 "use client";
 
-import { useId, useState, type FormEvent, type KeyboardEvent } from "react";
+import {
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  type FormEvent,
+  type KeyboardEvent,
+} from "react";
 import {
   DndContext,
   PointerSensor,
@@ -27,7 +34,11 @@ import { useFeedbackToast } from "@/app/components/feedback-toast-provider";
 import { useTranslations } from "@/app/components/translations-provider";
 import { FRONTEND_MODULE_KEYS } from "@/app/lib/frontend-modules/keys";
 import { useFrontendModules } from "@/app/lib/frontend-modules/context";
-import { USER_TODO_TITLE_MAX, type UserTodo } from "@/app/lib/user-todos";
+import {
+  USER_TODO_TITLE_MAX,
+  normalizeTodoTitle,
+  type UserTodo,
+} from "@/app/lib/user-todos";
 import { useUserTodos } from "@/app/lib/use-user-todos";
 
 function TodoCheck({
@@ -67,6 +78,7 @@ function TodoRowBody({
   disabled,
   drag,
   onToggleDone,
+  onRename,
   onDelete,
 }: {
   item: UserTodo;
@@ -75,10 +87,67 @@ function TodoRowBody({
   disabled?: boolean;
   drag?: SortableTaskHandle;
   onToggleDone: () => void;
+  onRename: (title: string) => void;
   onDelete: () => void;
 }) {
   const { t } = useTranslations();
+  const inputRef = useRef<HTMLInputElement>(null);
+  const editingRef = useRef(false);
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(item.title);
   const deleteLabel = t("actions.delete", "Dzēst");
+  const editLabel = t("actions.edit", "Labot");
+  const titleClassName = `text-sm leading-5 ${
+    archive ? "text-zinc-500 line-through" : "text-zinc-800"
+  }`;
+
+  useEffect(() => {
+    if (!editing) {
+      setDraft(item.title);
+      return;
+    }
+    const input = inputRef.current;
+    if (!input) return;
+    input.focus();
+    const length = input.value.length;
+    input.setSelectionRange(length, length);
+  }, [editing, item.title]);
+
+  function startEdit() {
+    if (disabled) return;
+    editingRef.current = true;
+    setDraft(item.title);
+    setEditing(true);
+  }
+
+  function cancelEdit() {
+    editingRef.current = false;
+    setDraft(item.title);
+    setEditing(false);
+  }
+
+  function commitEdit() {
+    if (!editingRef.current) return;
+    editingRef.current = false;
+    const next = normalizeTodoTitle(draft);
+    setEditing(false);
+    if (!next || next === item.title) {
+      setDraft(item.title);
+      return;
+    }
+    onRename(next);
+  }
+
+  function onTitleKeyDown(event: KeyboardEvent<HTMLInputElement>) {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      commitEdit();
+    }
+    if (event.key === "Escape") {
+      event.preventDefault();
+      cancelEdit();
+    }
+  }
 
   return (
     <div
@@ -99,14 +168,38 @@ function TodoRowBody({
         disabled={disabled}
         onToggle={onToggleDone}
       />
-      <div className="min-w-0 flex-1">
-        <p
-          className={`text-sm leading-5 ${
-            archive ? "text-zinc-500 line-through" : "text-zinc-800"
-          }`}
-        >
-          {item.title}
-        </p>
+      <div
+        className={`min-w-0 flex-1 ${
+          editing || disabled ? "" : "cursor-text"
+        }`}
+        onClick={editing || disabled ? undefined : startEdit}
+      >
+        {editing ? (
+          <input
+            ref={inputRef}
+            value={draft}
+            maxLength={USER_TODO_TITLE_MAX}
+            aria-label={editLabel}
+            disabled={disabled}
+            onChange={(event) => setDraft(event.target.value)}
+            onKeyDown={onTitleKeyDown}
+            onBlur={commitEdit}
+            onPointerDown={(event) => event.stopPropagation()}
+            className={`h-5 w-full bg-transparent outline-none ${titleClassName}`}
+          />
+        ) : (
+          <button
+            type="button"
+            disabled={disabled}
+            onClick={startEdit}
+            onPointerDown={(event) => event.stopPropagation()}
+            className={`block w-full min-w-0 text-left ${titleClassName} ${
+              disabled ? "cursor-not-allowed" : "cursor-text"
+            }`}
+          >
+            {item.title}
+          </button>
+        )}
         {archive && completedLabel ? (
           <p className="mt-0.5 text-[11px] leading-4 text-zinc-400">
             {completedLabel}
@@ -151,6 +244,7 @@ export function UserTodoRail({
     activeItems,
     archivedItems,
     addTodo,
+    renameTodo,
     setTodoDone,
     removeTodo,
     reorderTodos,
@@ -235,6 +329,7 @@ export function UserTodoRail({
             disabled={pending}
             drag={drag}
             onToggleDone={() => void run(() => setTodoDone(item.id, !item.isDone))}
+            onRename={(title) => void run(() => renameTodo(item.id, title))}
             onDelete={() => void run(() => removeTodo(item.id))}
           />
         );

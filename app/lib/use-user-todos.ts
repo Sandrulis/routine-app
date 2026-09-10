@@ -7,6 +7,7 @@ import {
   insertUserTodo,
   reorderUserTodos,
   updateUserTodoDone,
+  updateUserTodoTitle,
 } from "@/app/lib/db/user-todos";
 import {
   createUserTodoId,
@@ -101,6 +102,30 @@ export function useUserTodos(userId: string | null | undefined) {
     [items, userId],
   );
 
+  const renameTodo = useCallback(
+    async (id: string, rawTitle: string) => {
+      if (!userId) return;
+      const title = normalizeTodoTitle(rawTitle);
+      if (!title) return;
+      const previous = items;
+      const current = items.find((item) => item.id === id);
+      if (!current || current.title === title) return;
+      const now = new Date().toISOString();
+      setItems((rows) =>
+        rows.map((item) =>
+          item.id === id ? { ...item, title, updatedAt: now } : item,
+        ),
+      );
+      try {
+        await updateUserTodoTitle(userId, id, title);
+      } catch (error) {
+        setItems(previous);
+        throw error;
+      }
+    },
+    [items, userId],
+  );
+
   const setTodoDone = useCallback(
     async (id: string, isDone: boolean) => {
       if (!userId) return;
@@ -165,6 +190,7 @@ export function useUserTodos(userId: string | null | undefined) {
     activeItems,
     archivedItems,
     addTodo,
+    renameTodo,
     setTodoDone,
     removeTodo,
     reorderTodos,
