@@ -43,16 +43,21 @@ function membersLabel(
 
 function CheckCell({ included }: { included: boolean }) {
   const { t } = useTranslations();
-  return included ? (
-    <i
-      className="fas fa-circle-check text-emerald-500"
-      aria-label={t("landing.pricing.included", "Iekļauts")}
-    />
-  ) : (
-    <i
-      className="fas fa-minus text-zinc-300"
-      aria-label={t("landing.pricing.not_included", "Nav iekļauts")}
-    />
+  const label = included
+    ? t("landing.pricing.included", "Iekļauts")
+    : t("landing.pricing.not_included", "Nav iekļauts");
+  return (
+    <span className="inline-flex">
+      <i
+        className={
+          included
+            ? "fas fa-circle-check text-emerald-500"
+            : "fas fa-minus text-zinc-300"
+        }
+        aria-hidden="true"
+      />
+      <span className="sr-only">{label}</span>
+    </span>
   );
 }
 

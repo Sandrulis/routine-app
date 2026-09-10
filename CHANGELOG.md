@@ -4,6 +4,10 @@
 
 - (none)
 
+## v0.3.94
+
+- Landing cenu salīdzinājumā iekļaušanas ikonas ir dekoratīvas (`aria-hidden`) ar `sr-only` tekstu, lai PageSpeed ARIA audits nekristu uz `<i>`
+
 ## v0.3.93
 
 - **Atjaunot statusus** saglabā secību datubāzē pirms zaļā paziņojuma; pēc atkārtotas ienākšanas kārtojums paliek
