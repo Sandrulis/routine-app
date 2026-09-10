@@ -76,7 +76,6 @@ import { useTeamBillingAccess } from "@/app/lib/billing/use-team-billing-access"
 import { usePaymentPlansEnabled } from "@/app/lib/payment-plans/context";
 import { useIsAdmin } from "@/app/lib/users/use-is-admin";
 import {
-  insertStatusInGroupOrder,
   isListStatusGroup,
   resolveStatusCatalogs,
   sortTasksLikeNavTree,
@@ -84,10 +83,12 @@ import {
 import { activeFolderCreatedTemplateAutomations } from "@/app/lib/list-automations";
 import { useTemplates } from "@/app/lib/templates-store";
 import {
+  buildTemplateStatusIdMap,
   collectMissingTemplateStatusesInFolder,
   collectMissingTemplateStatusesInList,
   folderNeedsTemplateStatusSync,
   listNeedsTemplateStatusSync,
+  mappedTemplateStatusLayout,
   type MissingFolderStatus,
 } from "@/app/lib/sync-folder-template-statuses";
 import { taskHasIncompleteChecklists } from "@/app/lib/task-checklists";
@@ -624,7 +625,7 @@ export function AppNav({
   const { t } = useTranslations();
   const { showFeedback } = useFeedbackToast();
   const { lists, tasks, listTasks, childTasks, subtasks, listStatuses, workTaskStatuses, listAutomations, allTaskFiles, isReady: listsReady } = useListsNav();
-  const { addList, updateList, deleteList, reorderLists, updateTask, deleteTask, setWorkItemArchived, reorderTasks, moveWorkItem, addWorkTaskStatus } = useListsActions();
+  const { addList, updateList, deleteList, reorderLists, updateTask, deleteTask, setWorkItemArchived, reorderTasks, moveWorkItem, addWorkTaskStatus, updateWorkTaskStatus } = useListsActions();
   const { templateItems, ensureLoaded: ensureTemplatesLoaded } = useTemplates();
   const { files: storedFiles } = useListFiles();
   const files = storedFiles.filter((file) =>
@@ -826,18 +827,14 @@ export function AppNav({
   }
 
   function applyMissingTemplateStatuses(missing: MissingFolderStatus[]) {
-    let added = 0;
+    let changed = 0;
     for (const row of missing) {
       const target = tasks.find((item) => item.id === row.parentTaskId);
       if (!target) continue;
-      const listForTask =
-        lists.find((item) => item.id === target.listId) ?? null;
-      let order = [...(target.statusOrder ?? [])];
-      const overrides = { ...target.statusGroupOverrides };
       let nextStatuses = workTaskStatuses.filter(
         (status) => status.parentTaskId === target.id,
       );
-      let rowAdded = 0;
+      const createdByTemplateId = new Map<string, string>();
       for (const def of row.statuses) {
         const created = addWorkTaskStatus(target.id, target.listId, {
           label: def.label,
@@ -845,38 +842,54 @@ export function AppNav({
           groupKey: def.groupKey,
         });
         if (!created) continue;
-        added += 1;
-        rowAdded += 1;
+        createdByTemplateId.set(def.id, created.id);
         nextStatuses = [...nextStatuses, created];
-        const { laidOut } = resolveStatusCatalogs(systemStatuses, listStatuses, {
-          listId: target.listId,
-          parentTaskId: target.id,
-          workTaskStatuses: nextStatuses,
-          list: listForTask,
-          parentTask: {
-            ...target,
-            statusOrder: order,
-            statusGroupOverrides: overrides,
-          },
-        });
-        order = insertStatusInGroupOrder(
-          laidOut,
-          order,
-          created.id,
-          isListStatusGroup(created.groupKey)
-            ? created.groupKey
-            : def.groupKey,
-        );
-        overrides[created.id] = created.groupKey;
+        changed += 1;
       }
-      if (rowAdded > 0) {
+      const idMap = buildTemplateStatusIdMap(
+        row.templateItem.taskStatuses ?? [],
+        nextStatuses,
+        createdByTemplateId,
+      );
+      for (const def of row.templateItem.taskStatuses ?? []) {
+        const workId = idMap.get(def.id);
+        if (!workId) continue;
+        const existing = nextStatuses.find((status) => status.id === workId);
+        if (
+          existing &&
+          existing.groupKey !== def.groupKey &&
+          isListStatusGroup(def.groupKey)
+        ) {
+          updateWorkTaskStatus(workId, { groupKey: def.groupKey });
+          changed += 1;
+        }
+      }
+      const mappedIds = new Set(idMap.values());
+      const extraStatusIds = nextStatuses
+        .map((status) => status.id)
+        .filter((id) => !mappedIds.has(id));
+      const layout = mappedTemplateStatusLayout(row.templateItem, idMap, {
+        extraStatusIds,
+        statusOrder: target.statusOrder ?? [],
+        hiddenStatusIds: target.hiddenStatusIds ?? [],
+        statusGroupOverrides: target.statusGroupOverrides ?? {},
+      });
+      const layoutChanged =
+        layout.statusOrder.join("\0") !== (target.statusOrder ?? []).join("\0") ||
+        [...layout.hiddenStatusIds].sort().join("\0") !==
+          [...(target.hiddenStatusIds ?? [])].sort().join("\0") ||
+        JSON.stringify(layout.statusGroupOverrides) !==
+          JSON.stringify(target.statusGroupOverrides ?? {});
+      if (createdByTemplateId.size > 0 || layoutChanged) {
         updateTask(target.id, {
-          statusOrder: order,
-          statusGroupOverrides: overrides,
+          statusOrder: layout.statusOrder,
+          hiddenStatusIds: layout.hiddenStatusIds,
+          statusGroupOverrides: layout.statusGroupOverrides,
         });
+        if (layoutChanged) changed += 1;
       }
     }
-    if (added > 0) {
+    if (changed > 0) {
       showFeedback({
         type: "success",
         text: t("folders.sync_statuses.success", "Statusi atjaunoti."),
@@ -1879,7 +1892,7 @@ export function AppNav({
                           title: t("folders.sync_statuses", "Atjaunot statusus"),
                           description: t(
                             "lists.sync_statuses.description",
-                            "Pievieno šablonā trūkstošos statusus visām saraksta mapēm, kurām tie trūkst.",
+                            "Pievieno šablonā trūkstošos statusus un sakārto tos kā šablonā, ieskaitot paslēptos.",
                           ),
                         },
                       ]
@@ -1914,7 +1927,7 @@ export function AppNav({
                           title: t("folders.sync_statuses", "Atjaunot statusus"),
                           description: t(
                             "folders.sync_statuses.description",
-                            "Pievieno šablonā trūkstošos statusus šīs mapes uzdevumiem.",
+                            "Pievieno šablonā trūkstošos statusus un sakārto tos kā šablonā, ieskaitot paslēptos.",
                           ),
                         },
                       ]

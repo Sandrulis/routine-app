@@ -1,6 +1,6 @@
 {
   "name": "routine-app",
-  "version": "0.3.89",
+  "version": "0.3.90",
   "private": true,
   "engines": {
     "node": "22.x"

@@ -4,6 +4,10 @@
 
 - (none)
 
+## v0.3.90
+
+- **Atjaunot statusus** pārņem arī šablona secību un paslēptos statusus, ne tikai trūkstošos nosaukumus
+
 ## v0.3.89
 
 - Darāmo sarakstā klikšķis uz ieraksta atver tiešo labošanu (kursors teksta beigās, Enter saglabā)
