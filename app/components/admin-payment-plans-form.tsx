@@ -394,7 +394,7 @@ export function AdminPaymentPlansForm({
         type: "success",
         text: t(
           "site_payment_plans.early_bird.saved",
-          "Early access limīts saglabāts.",
+          "Early bird limīts saglabāts.",
         ),
       });
     });
@@ -672,12 +672,12 @@ export function AdminPaymentPlansForm({
         className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm md:p-6"
       >
         <h2 className="text-sm font-semibold text-zinc-900">
-          {t("site_payment_plans.early_bird.section", "Early access")}
+          {t("site_payment_plans.early_bird.section", "Early bird")}
         </h2>
         <p className="mt-1 text-xs text-zinc-500">
           {t(
             "site_payment_plans.early_bird.hint",
-            "Kopīgs limīts Early access vietām (ne komandām). Vieta kļūst Early access pirkuma brīdī, ja poolā vēl ir vietas. Ja lietotāju noņem un līdz cikla beigām vietu neaizpilda, Early access vieta pazūd un neatgriežas poolā. 0 - Early access izslēgts.",
+            "Kopīgs limīts Early bird vietām (ne komandām). Vieta kļūst Early bird pirkuma brīdī, ja poolā vēl ir vietas. Ja lietotāju noņem un līdz cikla beigām vietu neaizpilda, Early bird vieta pazūd un neatgriežas poolā. 0 - Early bird izslēgts.",
           )}
         </p>
 
@@ -845,7 +845,7 @@ export function AdminPaymentPlansForm({
                             <p className="mt-2 text-[11px] font-semibold uppercase tracking-wider text-zinc-400">
                               {t(
                                 "site_payment_plans.list.early_bird_prices",
-                                "Early access",
+                                "Early bird",
                               )}
                             </p>
                             {plan.earlyBirdPriceMonth > 0 ? (
@@ -1149,13 +1149,13 @@ export function AdminPaymentPlansForm({
             <p className="text-sm font-medium text-zinc-800">
               {t(
                 "site_payment_plans.form.early_bird_prices",
-                "Early access cenas par vienu lietotāju (EUR)",
+                "Early bird cenas par vienu lietotāju (EUR)",
               )}
             </p>
             <p className="mt-1 text-xs text-zinc-500">
               {t(
                 "site_payment_plans.form.early_bird_prices_hint",
-                "Šīs cenas attiecas uz Early access vietām un arī ir par vienu lietotāju. Tukšus periodus vari atstāt tukšus.",
+                "Šīs cenas attiecas uz Early bird vietām un arī ir par vienu lietotāju. Tukšus periodus vari atstāt tukšus.",
               )}
             </p>
             <div className="mt-2 grid gap-3 sm:grid-cols-2">

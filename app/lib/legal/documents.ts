@@ -526,7 +526,7 @@ export function getTermsContent(
           {
             key: "legal.terms.billing.p10",
             fallback:
-              "Ja sistēmas administratoram ir ieslēgts izmēģinājuma (trial) periods, jaunas komandas var saņemt noteiktu plānu uz ierobežotu dienu skaitu; trial laikā jaunu lietotāju uzaicināšanai parasti nav nepieciešama atsevišķa apmaksāta vieta. Early access ir ierobežots kopējais vietu skaits ar īpašu cenu visā sistēmā; vieta kļūst Early access pirkuma brīdī, ja poolā vēl ir brīvas vietas. Ja lietotājs tiek noņemts un vieta netiek aizpildīta līdz cikla beigām, Early access statuss netiek atjaunots poolā.",
+              "Ja sistēmas administratoram ir ieslēgts izmēģinājuma (trial) periods, jaunas komandas var saņemt noteiktu plānu uz ierobežotu dienu skaitu; trial laikā jaunu lietotāju uzaicināšanai parasti nav nepieciešama atsevišķa apmaksāta vieta. Early bird ir ierobežots kopējais vietu skaits ar īpašu cenu visā sistēmā; vieta kļūst Early bird pirkuma brīdī, ja poolā vēl ir brīvas vietas. Ja lietotājs tiek noņemts un vieta netiek aizpildīta līdz cikla beigām, Early bird statuss netiek atjaunots poolā.",
           },
           {
             key: "legal.terms.billing.p11",

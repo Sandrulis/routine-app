@@ -4,6 +4,10 @@
 
 - (none)
 
+## v0.3.96
+
+- Early access pārsaukts atpakaļ uz Early bird visā UI, noteikumos, Stripe un docs (migrācija `150`)
+
 ## v0.3.95
 
 - Publisks `/llms.txt` (Markdown ar H1 un saitēm); `proxy.ts` to izlaiž, lai PageSpeed vairs nenotimeoutē uz `/dashboard`
