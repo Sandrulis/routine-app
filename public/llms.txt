@@ -1,0 +1,20 @@
+# TASQIN
+
+> TASQIN is a team work tool: public marketing pages plus a signed-in app for lists, tasks, files, and billing. This file describes the public website at https://www.tasqin.com.
+
+Latvian is the default locale (no URL prefix). Other languages use `/{code}` (for example `/en`, `/de`). Signed-in app routes such as `/dashboard`, `/lists`, `/team`, and `/admin` are private and must not be crawled.
+
+## Pages
+
+- [Home](https://www.tasqin.com/): Product landing, features, and pricing (`#pricing`)
+- [Documentation](https://www.tasqin.com/docs): Public product documentation
+- [Privacy](https://www.tasqin.com/privacy): Privacy policy
+- [Terms](https://www.tasqin.com/terms): Terms of service
+- [Cookies](https://www.tasqin.com/cookies): Cookie policy
+- [Sitemap](https://www.tasqin.com/sitemap.xml): Indexable public URLs
+- [Robots](https://www.tasqin.com/robots.txt): Crawler allow and disallow rules
+
+## Optional
+
+- [English home](https://www.tasqin.com/en/): Same landing in English
+- [Sign in](https://www.tasqin.com/login): Account login (noindex)

@@ -4,6 +4,10 @@
 
 - (none)
 
+## v0.3.95
+
+- Publisks `/llms.txt` (Markdown ar H1 un saitēm); `proxy.ts` to izlaiž, lai PageSpeed vairs nenotimeoutē uz `/dashboard`
+
 ## v0.3.94
 
 - Landing cenu salīdzinājumā iekļaušanas ikonas ir dekoratīvas (`aria-hidden`) ar `sr-only` tekstu, lai PageSpeed ARIA audits nekristu uz `<i>`
