@@ -9,10 +9,10 @@ import { createMenuAnchorFromEvent } from "@/app/components/create-item-menu";
 import { GroupedSubtaskTables } from "@/app/components/grouped-subtask-tables";
 import { HistoryPaneToggle } from "@/app/components/history-pane-toggle";
 import { IconActionButton } from "@/app/components/icon-action-button";
-import { LoadingState } from "@/app/components/loading-state";
+import { BlockLoadingState, LoadingState } from "@/app/components/loading-state";
 import { ParentCreateFlow, type ParentCreateContext } from "@/app/components/parent-create-flow";
 import { SectionPage } from "@/app/components/section-page";
-import { SubtaskDetailModal } from "@/app/components/subtask-detail-modal";
+import { SubtaskDetailModalLazy } from "@/app/components/lazy-modals";
 import { useTranslations } from "@/app/components/translations-provider";
 import { isWorkFolder, isWorkItemArchived, isWorkSubtask, workProgressById } from "@/app/lib/lists";
 import { sortTasksLikeNavTree } from "@/app/lib/list-statuses";
@@ -32,7 +32,7 @@ const ListWindowsBoard = dynamic(
     import("@/app/components/list-windows-board").then((mod) => ({
       default: mod.ListWindowsBoard,
     })),
-  { ssr: false, loading: () => <LoadingState compact /> },
+  { ssr: false, loading: () => <BlockLoadingState /> },
 );
 
 export function TaskDetailPage({
@@ -191,7 +191,8 @@ export function TaskDetailPage({
         </div>
       )}
 
-      <SubtaskDetailModal
+      {isSubtask || createSubtaskOpen || boardSubtaskId !== null ? (
+      <SubtaskDetailModalLazy
         taskId={
           isSubtask
             ? opened.id
@@ -215,6 +216,7 @@ export function TaskDetailPage({
           }
         }}
       />
+      ) : null}
 
       <ParentCreateFlow
         context={parentCreate}

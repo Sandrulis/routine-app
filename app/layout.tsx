@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist } from "next/font/google";
 import { AuthSessionProvider } from "@/app/lib/auth/auth-session-provider";
 import { getCurrentUser } from "@/app/lib/auth/get-current-user";
@@ -33,7 +33,6 @@ import {
 } from "@/app/lib/seo/share-image";
 import { INDEX_ROBOTS } from "@/app/lib/seo/metadata";
 import "./fontawesome.css";
-import "./fontawesome-brands.css";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -104,6 +103,13 @@ export async function generateMetadata(): Promise<Metadata> {
     },
   };
 }
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+};
 
 export default async function RootLayout({
   children,

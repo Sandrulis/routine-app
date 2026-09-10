@@ -53,3 +53,28 @@ export function LoadingState({
     </div>
   );
 }
+
+export function OverlayLoadingState() {
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      role="status"
+      aria-live="polite"
+    >
+      <div className="absolute inset-0 bg-zinc-900/40" aria-hidden="true" />
+      <div className="relative w-full max-w-sm rounded-2xl border border-zinc-200 bg-white shadow-xl">
+        <LoadingState />
+      </div>
+    </div>
+  );
+}
+
+export function BlockLoadingState({ className = "" }: { className?: string }) {
+  return (
+    <div
+      className={`flex min-h-[16rem] items-center justify-center rounded-2xl border border-zinc-200 bg-white ${className}`}
+    >
+      <LoadingState />
+    </div>
+  );
+}

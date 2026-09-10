@@ -5,7 +5,10 @@ import { FRONTEND_MODULE_KEYS } from "@/app/lib/frontend-modules/keys";
 import { isFrontendModuleEnabled } from "@/app/lib/frontend-modules/repository";
 import { downloadTeamOneDriveFile } from "@/app/lib/onedrive/uploader";
 import { assertListAccess } from "@/app/lib/lists/assert-list-access";
-import { contentDispositionForFile } from "@/app/lib/security/file-bytes";
+import {
+  contentDispositionForFile,
+  NOSNIFF_HEADER,
+} from "@/app/lib/security/file-bytes";
 import { logError } from "@/app/lib/security/log-error";
 import { createAdminClient } from "@/app/lib/supabase/admin";
 import { isSupabaseAdminConfigured } from "@/app/lib/supabase/env";
@@ -137,6 +140,7 @@ export async function GET(request: Request) {
           asDownload,
         ),
         "Cache-Control": "private, no-store",
+        ...NOSNIFF_HEADER,
       },
     });
   } catch (err) {

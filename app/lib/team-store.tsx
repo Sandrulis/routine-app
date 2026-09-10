@@ -122,6 +122,7 @@ type TeamContextValue = {
 };
 
 const TeamContext = createContext<TeamContextValue | null>(null);
+const PresenceContext = createContext<Record<string, string | null>>({});
 
 function isTransientOnlineTouchError(error: unknown): boolean {
   const message =
@@ -139,40 +140,34 @@ function isTransientOnlineTouchError(error: unknown): boolean {
 }
 
 function stampSelfLastOnline(
-  current: MembersByTeam,
-  userId: string,
+  current: Record<string, string | null>,
+  memberIds: string[],
   at: string,
-): MembersByTeam {
+): Record<string, string | null> {
   let changed = false;
-  const next: MembersByTeam = {};
-  for (const [teamId, list] of Object.entries(current)) {
-    next[teamId] = list.map((member) => {
-      if (member.userId !== userId && member.id !== userId) return member;
-      if (member.lastOnlineAt === at) return member;
-      changed = true;
-      return { ...member, lastOnlineAt: at };
-    });
+  const next = { ...current };
+  for (const id of memberIds) {
+    if (!id) continue;
+    if (next[id] === at) continue;
+    next[id] = at;
+    changed = true;
   }
   return changed ? next : current;
 }
 
-function mergeMemberLastOnline(
-  current: MembersByTeam,
-  teamId: string,
+function mergeLastOnlineMap(
+  current: Record<string, string | null>,
   lastOnlineByMemberId: Record<string, string | null>,
-): MembersByTeam {
-  const list = current[teamId];
-  if (!list) return current;
+): Record<string, string | null> {
   let changed = false;
-  const next = list.map((member) => {
-    if (!(member.id in lastOnlineByMemberId)) return member;
-    const lastOnlineAt = lastOnlineByMemberId[member.id] ?? null;
-    if (lastOnlineAt === member.lastOnlineAt) return member;
+  const next = { ...current };
+  for (const [id, at] of Object.entries(lastOnlineByMemberId)) {
+    const value = at ?? null;
+    if (next[id] === value) continue;
+    next[id] = value;
     changed = true;
-    return { ...member, lastOnlineAt };
-  });
-  if (!changed) return current;
-  return { ...current, [teamId]: next };
+  }
+  return changed ? next : current;
 }
 
 function ownerFromAuth(user: User): TeamMember {
@@ -188,6 +183,9 @@ function ownerFromAuth(user: User): TeamMember {
 export function TeamProvider({ children }: { children: ReactNode }) {
   const { user: authUser, isReady: authReady } = useAuthSession();
   const [membersByTeam, setMembersByTeam] = useState<MembersByTeam>({});
+  const [lastOnlineByMemberId, setLastOnlineByMemberId] = useState<
+    Record<string, string | null>
+  >({});
   const [rolesByTeam, setRolesByTeam] = useState<RolesByTeam>({});
   const [dutiesByTeam, setDutiesByTeam] = useState<DutiesByTeam>({});
   const [teams, setTeams] = useState<WorkTeam[]>([]);
@@ -342,7 +340,9 @@ export function TeamProvider({ children }: { children: ReactNode }) {
       void recordCurrentUserLastIpAction().catch(() => {});
       void touchMemberOnline(teamId, userId, seenAt)
         .then(() => {
-          setMembersByTeam((current) => stampSelfLastOnline(current, userId, seenAt));
+          setLastOnlineByMemberId((current) =>
+            stampSelfLastOnline(current, [userId], seenAt),
+          );
         })
         .catch((error) => {
         if (
@@ -376,7 +376,9 @@ export function TeamProvider({ children }: { children: ReactNode }) {
       try {
         const byId = await fetchTeamMemberLastOnline(teamId);
         if (cancelled) return;
-        setMembersByTeam((current) => mergeMemberLastOnline(current, teamId, byId));
+        setLastOnlineByMemberId((current) =>
+          mergeLastOnlineMap(current, byId),
+        );
       } catch {
         return;
       }
@@ -394,6 +396,25 @@ export function TeamProvider({ children }: { children: ReactNode }) {
       document.removeEventListener("visibilitychange", onVisible);
     };
   }, [currentTeamId, isReady]);
+
+  useEffect(() => {
+    setLastOnlineByMemberId((current) => {
+      let changed = false;
+      const next = { ...current };
+      for (const list of Object.values(membersByTeam)) {
+        for (const member of list) {
+          const at = member.lastOnlineAt ?? null;
+          if (!at) continue;
+          for (const id of [member.id, member.userId]) {
+            if (!id || id in next) continue;
+            next[id] = at;
+            changed = true;
+          }
+        }
+      }
+      return changed ? next : current;
+    });
+  }, [membersByTeam]);
 
   const currentTeam = useMemo(
     () => teams.find((team) => team.id === currentTeamId) ?? teams[0] ?? null,
@@ -956,7 +977,13 @@ export function TeamProvider({ children }: { children: ReactNode }) {
     ],
   );
 
-  return <TeamContext.Provider value={value}>{children}</TeamContext.Provider>;
+  return (
+    <TeamContext.Provider value={value}>
+      <PresenceContext.Provider value={lastOnlineByMemberId}>
+        {children}
+      </PresenceContext.Provider>
+    </TeamContext.Provider>
+  );
 }
 
 export function useTeam() {
@@ -965,4 +992,10 @@ export function useTeam() {
     throw new Error("useTeam must be used within TeamProvider");
   }
   return context;
+}
+
+export function useMemberLastOnlineAt(memberId: string | null | undefined) {
+  const map = useContext(PresenceContext);
+  if (!memberId) return null;
+  return map[memberId] ?? null;
 }

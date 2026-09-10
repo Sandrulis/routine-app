@@ -17,6 +17,7 @@ import {
 import { getSiteSettings } from "@/app/lib/site-admin/repository";
 import { htmlLang, localePath } from "@/app/lib/seo/locale-path";
 import { OG_IMAGE_PATH, OG_IMAGE_SIZE } from "@/app/lib/seo/share-image";
+import { jsonLdScriptHtml } from "@/app/lib/seo/json-ld";
 import { absoluteUrl } from "@/app/lib/seo/site-url";
 import { socialProfileUrls } from "@/app/lib/seo/social-links";
 
@@ -185,7 +186,7 @@ export async function LandingJsonLd() {
   return (
     <script
       type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      dangerouslySetInnerHTML={{ __html: jsonLdScriptHtml(jsonLd) }}
     />
   );
 }

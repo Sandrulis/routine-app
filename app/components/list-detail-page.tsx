@@ -9,7 +9,7 @@ import { createMenuAnchorFromEvent } from "@/app/components/create-item-menu";
 import { IconActionButton } from "@/app/components/icon-action-button";
 import { ParentCreateFlow, type ParentCreateContext } from "@/app/components/parent-create-flow";
 import { SectionPage } from "@/app/components/section-page";
-import { SubtaskDetailModal } from "@/app/components/subtask-detail-modal";
+import { SubtaskDetailModalLazy } from "@/app/components/lazy-modals";
 import { useTranslations } from "@/app/components/translations-provider";
 import { isWorkSubtask, listProgress } from "@/app/lib/lists";
 import { useLists } from "@/app/lib/lists-store";
@@ -145,15 +145,17 @@ export function ListDetailPage({ listId }: { listId: string }) {
         }}
       />
 
-      <SubtaskDetailModal
+      {openedSubtaskId !== null ? (
+      <SubtaskDetailModalLazy
         taskId={openedSubtaskId}
-        open={openedSubtaskId !== null}
+        open
         onOpenChange={(open) => {
           if (!open) {
             setOpenedSubtaskId(null);
           }
         }}
       />
+      ) : null}
 
       <ParentCreateFlow
         context={parentCreate}

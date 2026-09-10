@@ -1,7 +1,10 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/app/lib/auth/get-current-user";
 import { loadWorkFileBytes } from "@/app/lib/cloud-storage/load-work-file-bytes";
-import { contentDispositionForFile } from "@/app/lib/security/file-bytes";
+import {
+  contentDispositionForFile,
+  NOSNIFF_HEADER,
+} from "@/app/lib/security/file-bytes";
 
 export const runtime = "nodejs";
 
@@ -38,6 +41,7 @@ export async function GET(request: Request) {
         asDownload,
       ),
       "Cache-Control": "private, no-store",
+      ...NOSNIFF_HEADER,
     },
   });
 }

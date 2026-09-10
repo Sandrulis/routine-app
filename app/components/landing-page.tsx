@@ -3,14 +3,30 @@
 import { useEffect, useMemo } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { LandingBelowFold } from "@/app/components/landing-below-fold";
-import { LANDING_REVEAL_EVENT } from "@/app/components/lazy-on-visible";
+import { LANDING_REVEAL_EVENT, LazyOnVisible } from "@/app/components/lazy-on-visible";
+import { LoadingState } from "@/app/components/loading-state";
 import { useTranslations } from "@/app/components/translations-provider";
 import { useFrontendModules } from "@/app/lib/frontend-modules/context";
 import { resolveLandingPageContent } from "@/app/lib/landing/features";
 import type { LandingPricingData } from "@/app/lib/landing/pricing";
 import { localePath } from "@/app/lib/seo/locale-path";
 import { scrollToHashIdWhenReady } from "@/app/lib/smooth-scroll";
+
+function LandingBelowFoldFallback() {
+  return (
+    <div className="landing-lazy-section">
+      <LoadingState />
+    </div>
+  );
+}
+
+const LandingBelowFold = dynamic(
+  () =>
+    import("@/app/components/landing-below-fold").then((mod) => ({
+      default: mod.LandingBelowFold,
+    })),
+  { loading: () => <LandingBelowFoldFallback /> },
+);
 
 const LandingAppPreview = dynamic(
   () =>
@@ -147,7 +163,9 @@ export function LandingPage({
         </div>
       </section>
 
-      <LandingBelowFold productName={productName} pricing={pricing} />
+      <LazyOnVisible fallback={<LandingBelowFoldFallback />}>
+        <LandingBelowFold productName={productName} pricing={pricing} />
+      </LazyOnVisible>
     </div>
   );
 }

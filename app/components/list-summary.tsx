@@ -6,7 +6,7 @@ import { IconActionButton } from "@/app/components/icon-action-button";
 import { UserAvatar } from "@/app/components/user-avatar";
 import { OptionalTooltip } from "@/app/components/tooltip";
 import { useDisplayPreferences } from "@/app/components/display-preferences-provider";
-import { SubtaskDetailModal } from "@/app/components/subtask-detail-modal";
+import { SubtaskDetailModalLazy } from "@/app/components/lazy-modals";
 import { useTranslations } from "@/app/components/translations-provider";
 import { sortTasksLikeNavTree } from "@/app/lib/list-statuses";
 import {
@@ -311,14 +311,16 @@ export function ListSummary({
         />
       ))}
 
-      <SubtaskDetailModal
+      {createFor !== null ? (
+      <SubtaskDetailModalLazy
         taskId={null}
         createFor={createFor}
-        open={createFor !== null}
+        open
         onOpenChange={(open) => {
           if (!open) setCreateFor(null);
         }}
       />
+      ) : null}
     </div>
   );
 }

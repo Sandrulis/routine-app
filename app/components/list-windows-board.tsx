@@ -49,7 +49,7 @@ import {
   useTaskStatuses,
 } from "@/app/lib/task-statuses";
 import { WorkProgressBar, WorkProgressLabel } from "@/app/components/work-progress";
-import { OptionalTooltip, Tooltip } from "@/app/components/tooltip";
+import { OptionalTooltip, OverflowTooltip, Tooltip } from "@/app/components/tooltip";
 import { LoadingState } from "@/app/components/loading-state";
 import { RelativeTime } from "@/app/components/relative-time";
 import { UserAvatar } from "@/app/components/user-avatar";
@@ -306,7 +306,11 @@ function TasksWindowItem({
           aria-hidden="true"
         />
         <span className="min-w-0 flex-1">
-          <OptionalTooltip label={task.description} className="max-w-full">
+          <OverflowTooltip
+            label={task.title}
+            extraLabel={task.description}
+            className="max-w-full"
+          >
             <span
               className={`block truncate text-sm font-medium ${
                 closed ? "text-zinc-400 line-through" : "text-zinc-900"
@@ -314,7 +318,7 @@ function TasksWindowItem({
             >
               {task.title}
             </span>
-          </OptionalTooltip>
+          </OverflowTooltip>
           <span className="mt-0.5 flex items-center gap-2 text-[12px] text-zinc-400">
             {folder
               ? t("lists.task_count", "{count} uzdevumi", { count: childCount })
@@ -688,7 +692,9 @@ function OverviewSubtaskRow({
           } ${done ? "line-through" : "hover:opacity-80"}`}
           style={resolvedColor ? { color: resolvedColor } : undefined}
         >
-          <span className="truncate">{task.title}</span>
+          <OverflowTooltip label={task.title} className="min-w-0 flex-1">
+            <span className="block truncate">{task.title}</span>
+          </OverflowTooltip>
           {hasAttachments ? (
             <i
               className="fas fa-paperclip shrink-0 text-[11px] text-zinc-400"
@@ -990,7 +996,11 @@ function OverviewItem({
           href={`/lists/${listId}/tasks/${task.id}`}
           className="min-w-0 flex-1"
         >
-          <OptionalTooltip label={task.description} className="min-w-0">
+          <OverflowTooltip
+            label={task.title}
+            extraLabel={task.description}
+            className="min-w-0"
+          >
             <span className="inline-flex min-w-0 items-center gap-1.5">
               {folder ? (
                 <i
@@ -1011,7 +1021,7 @@ function OverviewItem({
                 {task.title}
               </span>
             </span>
-          </OptionalTooltip>
+          </OverflowTooltip>
         </Link>
         <WorkProgressLabel progress={progress} />
         {nested || !canViewArchive ? null : (

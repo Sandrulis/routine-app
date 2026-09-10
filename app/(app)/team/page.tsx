@@ -458,7 +458,10 @@ export default function TeamPage() {
                     <div className="flex shrink-0 items-center gap-1">
                       {appointButton}
                       {removeButton}
-                      <MemberLastOnline lastOnlineAt={member.lastOnlineAt} />
+                      <MemberLastOnline
+                        memberId={member.id}
+                        lastOnlineAt={member.lastOnlineAt}
+                      />
                     </div>
                   )}
                 </div>

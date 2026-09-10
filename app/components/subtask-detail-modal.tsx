@@ -301,7 +301,7 @@ export function SubtaskDetailModal({
   const createParentRef = useRef<{ listId: string; parentId: string } | null>(
     null,
   );
-  const titleInputRef = useRef<HTMLInputElement>(null);
+  const titleInputRef = useRef<HTMLTextAreaElement>(null);
   const snapshotRef = useRef<SubtaskDraft>(emptyDraft);
   const persistChecklistsTimerRef = useRef<number | null>(null);
   const persistChecklistsTargetRef = useRef<{
@@ -942,6 +942,13 @@ export function SubtaskDetailModal({
     titleInputRef.current?.focus();
   }, [draft.title, forceCreate, open]);
 
+  useLayoutEffect(() => {
+    const el = titleInputRef.current;
+    if (!el) return;
+    el.style.height = "0px";
+    el.style.height = `${el.scrollHeight}px`;
+  }, [draft.title, open]);
+
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
     if (!canSave) return;
@@ -1126,16 +1133,25 @@ export function SubtaskDetailModal({
               <label htmlFor="subtask-title" className="sr-only">
                 {t("tasks.fields.title", "Nosaukums")}
               </label>
-              <input
+              <textarea
                 ref={titleInputRef}
                 id="subtask-title"
                 value={draft.title}
+                rows={1}
+                wrap="soft"
                 readOnly={!access.canEditTasks && !isCreate}
                 onChange={(event) => {
-                  const title = event.target.value;
+                  const title = event.target.value.replace(/\n/g, " ");
                   setDraft((current) => ({ ...current, title }));
                 }}
-                className="w-full bg-transparent text-xl font-bold text-zinc-900 outline-none placeholder:font-semibold placeholder:text-zinc-400"
+                onKeyDown={(event) => {
+                  if (event.key !== "Enter" || event.nativeEvent.isComposing) {
+                    return;
+                  }
+                  event.preventDefault();
+                  event.currentTarget.form?.requestSubmit();
+                }}
+                className="w-full resize-none overflow-hidden bg-transparent text-xl font-bold break-words text-zinc-900 outline-none placeholder:font-semibold placeholder:text-zinc-400 [overflow-wrap:anywhere]"
                 placeholder={t(
                   "subtasks.fields.title_placeholder",
                   "Apakšuzdevuma nosaukums",
@@ -1230,39 +1246,41 @@ export function SubtaskDetailModal({
                 </div>
               </div>
 
-              <div>
-                <p className="text-[12px] font-medium text-zinc-400">
-                  {t("tasks.fields.start_date", "Sākums")}
-                </p>
-                <div className="mt-1.5">
-                  <DateCell
-                    value={draft.startDate}
-                    emptyLabel={t("tasks.fields.start_date", "Sākums")}
-                    disabled={!access.canEditTasks}
-                    fieldKind="start"
-                    statusGroup={statusGroup}
-                    onChange={(startDate) => {
-                      setDraft((current) => ({ ...current, startDate }));
-                    }}
-                  />
+              <div className="grid grid-cols-2 gap-3 sm:contents">
+                <div className="min-w-0">
+                  <p className="text-[12px] font-medium text-zinc-400">
+                    {t("tasks.fields.start_date", "Sākums")}
+                  </p>
+                  <div className="mt-1.5">
+                    <DateCell
+                      value={draft.startDate}
+                      emptyLabel={t("tasks.fields.start_date", "Sākums")}
+                      disabled={!access.canEditTasks}
+                      fieldKind="start"
+                      statusGroup={statusGroup}
+                      onChange={(startDate) => {
+                        setDraft((current) => ({ ...current, startDate }));
+                      }}
+                    />
+                  </div>
                 </div>
-              </div>
 
-              <div>
-                <p className="text-[12px] font-medium text-zinc-400">
-                  {t("todo.fields.due_date", "Termiņš")}
-                </p>
-                <div className="mt-1.5">
-                  <DateCell
-                    value={draft.dueDate}
-                    emptyLabel={t("todo.fields.due_date", "Termiņš")}
-                    disabled={!access.canEditTasks}
-                    fieldKind="due"
-                    statusGroup={statusGroup}
-                    onChange={(dueDate) => {
-                      setDraft((current) => ({ ...current, dueDate }));
-                    }}
-                  />
+                <div className="min-w-0">
+                  <p className="text-[12px] font-medium text-zinc-400">
+                    {t("todo.fields.due_date", "Termiņš")}
+                  </p>
+                  <div className="mt-1.5">
+                    <DateCell
+                      value={draft.dueDate}
+                      emptyLabel={t("todo.fields.due_date", "Termiņš")}
+                      disabled={!access.canEditTasks}
+                      fieldKind="due"
+                      statusGroup={statusGroup}
+                      onChange={(dueDate) => {
+                        setDraft((current) => ({ ...current, dueDate }));
+                      }}
+                    />
+                  </div>
                 </div>
               </div>
 

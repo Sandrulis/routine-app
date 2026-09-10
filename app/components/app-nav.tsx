@@ -5,7 +5,7 @@ import dynamic from "next/dynamic";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState, type CSSProperties, type MouseEvent, type ReactNode } from "react";
 import { DragHandle } from "@/app/components/drag-handle";
-import { LoadingSpinner, LoadingState } from "@/app/components/loading-state";
+import { LoadingSpinner, LoadingState, OverlayLoadingState } from "@/app/components/loading-state";
 import { NameFormModal } from "@/app/components/name-form-modal";
 import type { ParentCreateContext } from "@/app/components/parent-create-flow";
 import { ConfirmModal } from "@/app/components/confirm-modal";
@@ -117,45 +117,61 @@ import {
   REQUEST_TEAM_INVITE_EVENT,
 } from "@/app/lib/team";
 
-const ListFormModal = dynamic(() =>
-  import("@/app/components/list-form-modal").then((mod) => ({
-    default: mod.ListFormModal,
-  })),
+const ListFormModal = dynamic(
+  () =>
+    import("@/app/components/list-form-modal").then((mod) => ({
+      default: mod.ListFormModal,
+    })),
+  { loading: OverlayLoadingState },
 );
-const ListStatusesModal = dynamic(() =>
-  import("@/app/components/list-statuses-modal").then((mod) => ({
-    default: mod.ListStatusesModal,
-  })),
+const ListStatusesModal = dynamic(
+  () =>
+    import("@/app/components/list-statuses-modal").then((mod) => ({
+      default: mod.ListStatusesModal,
+    })),
+  { loading: OverlayLoadingState },
 );
-const TaskStatusesModal = dynamic(() =>
-  import("@/app/components/task-statuses-modal").then((mod) => ({
-    default: mod.TaskStatusesModal,
-  })),
+const TaskStatusesModal = dynamic(
+  () =>
+    import("@/app/components/task-statuses-modal").then((mod) => ({
+      default: mod.TaskStatusesModal,
+    })),
+  { loading: OverlayLoadingState },
 );
-const ListAutomationsModal = dynamic(() =>
-  import("@/app/components/list-automations-modal").then((mod) => ({
-    default: mod.ListAutomationsModal,
-  })),
+const ListAutomationsModal = dynamic(
+  () =>
+    import("@/app/components/list-automations-modal").then((mod) => ({
+      default: mod.ListAutomationsModal,
+    })),
+  { loading: OverlayLoadingState },
 );
-const ParentCreateFlow = dynamic(() =>
-  import("@/app/components/parent-create-flow").then((mod) => ({
-    default: mod.ParentCreateFlow,
-  })),
+const ParentCreateFlow = dynamic(
+  () =>
+    import("@/app/components/parent-create-flow").then((mod) => ({
+      default: mod.ParentCreateFlow,
+    })),
+  { loading: OverlayLoadingState },
 );
-const SubtaskDetailModal = dynamic(() =>
-  import("@/app/components/subtask-detail-modal").then((mod) => ({
-    default: mod.SubtaskDetailModal,
-  })),
+const SubtaskDetailModal = dynamic(
+  () =>
+    import("@/app/components/subtask-detail-modal").then((mod) => ({
+      default: mod.SubtaskDetailModal,
+    })),
+  { loading: OverlayLoadingState },
 );
-const TeamInviteModal = dynamic(() =>
-  import("@/app/components/team-invite-modal").then((mod) => ({
-    default: mod.TeamInviteModal,
-  })),
+const TeamInviteModal = dynamic(
+  () =>
+    import("@/app/components/team-invite-modal").then((mod) => ({
+      default: mod.TeamInviteModal,
+    })),
+  { loading: OverlayLoadingState },
 );
-const TeamRolesModal = dynamic(() =>
-  import("@/app/components/team-roles-modal").then((mod) => ({
-    default: mod.TeamRolesModal,
-  })),
+const TeamRolesModal = dynamic(
+  () =>
+    import("@/app/components/team-roles-modal").then((mod) => ({
+      default: mod.TeamRolesModal,
+    })),
+  { loading: OverlayLoadingState },
 );
 
 const NAV_TREE_STORAGE_KEY = "routine-app-nav-trees";
@@ -1334,7 +1350,9 @@ export function AppNav({
                         }
                   }
                 >
-                  {isWorkSubtask(task) ? null : renderTaskTree(listId, task.id)}
+                  {isWorkSubtask(task) || !isExpanded(task.id, false)
+                    ? null
+                    : renderTaskTree(listId, task.id)}
                 </NavTreeSection>
               )}
             </NavTreeSortableItem>
@@ -1498,7 +1516,9 @@ export function AppNav({
                       : undefined
                   }
                                 >
-                                  {renderTaskTree(list.id, null)}
+                                  {isExpanded(list.id, true)
+                                    ? renderTaskTree(list.id, null)
+                                    : null}
                                 </NavTreeSection>
                               )}
                             </NavTreeRootDrop>
@@ -1558,10 +1578,11 @@ export function AppNav({
                       <span className="block min-w-0 truncate">{memberDisplayName(member)}</span>
                     </OverflowTooltip>
                     <MemberLastOnline
-                      lastOnlineAt={
-                        member.id === currentUser.id || member.userId === currentUser.id
-                          ? new Date().toISOString()
-                          : member.lastOnlineAt
+                      memberId={member.id}
+                      lastOnlineAt={member.lastOnlineAt}
+                      self={
+                        member.id === currentUser.id ||
+                        member.userId === currentUser.id
                       }
                     />
                   </>
@@ -1680,6 +1701,7 @@ export function AppNav({
         }}
       />
 
+      {parentCreate ? (
       <ParentCreateFlow
         context={parentCreate}
         onClose={() => setParentCreate(null)}
@@ -1692,14 +1714,13 @@ export function AppNav({
           expandTree(file.listId);
         }}
       />
+      ) : null}
 
+      {!sidebarNavBlocked && (subtaskCreate !== null || openedSubtaskId !== null) ? (
       <SubtaskDetailModal
         taskId={openedSubtaskId}
         createFor={subtaskCreate}
-        open={
-          !sidebarNavBlocked &&
-          (subtaskCreate !== null || openedSubtaskId !== null)
-        }
+        open
         onOpenChange={(open) => {
           if (!open) {
             setSubtaskCreate(null);
@@ -1707,7 +1728,9 @@ export function AppNav({
           }
         }}
       />
+      ) : null}
 
+      {createListOpen ? (
       <ListFormModal
         open={createListOpen}
         onOpenChange={setCreateListOpen}
@@ -1734,6 +1757,7 @@ export function AppNav({
           router.push(`/lists/${list.id}`);
         }}
       />
+      ) : null}
 
       <CreateItemMenu
         open={teamMenuAnchor !== null}
@@ -1803,30 +1827,38 @@ export function AppNav({
         }}
       />
 
-      <TeamRolesModal open={rolesModalOpen} onOpenChange={setRolesModalOpen} />
+      {rolesModalOpen ? (
+        <TeamRolesModal open onOpenChange={setRolesModalOpen} />
+      ) : null}
 
+      {statusesList ? (
       <ListStatusesModal
         list={statusesList}
-        open={statusesList !== null}
+        open
         onOpenChange={(open) => {
           if (!open) setStatusesList(null);
         }}
       />
+      ) : null}
+      {statusesTask ? (
       <TaskStatusesModal
         task={statusesTask}
-        open={statusesTask !== null}
+        open
         onOpenChange={(open) => {
           if (!open) setStatusesTask(null);
         }}
       />
+      ) : null}
 
+      {automationsList ? (
       <ListAutomationsModal
         list={automationsList}
-        open={automationsList !== null}
+        open
         onOpenChange={(open) => {
           if (!open) setAutomationsList(null);
         }}
       />
+      ) : null}
 
       <CreateItemMenu
         open={itemMenu !== null}
@@ -2362,8 +2394,9 @@ export function AppNav({
         onConfirm={confirmSeatPurchased}
       />
 
+      {inviteOpen ? (
       <TeamInviteModal
-        open={inviteOpen}
+        open
         onOpenChange={setInviteOpen}
         onInvite={async (input) => {
           try {
@@ -2384,6 +2417,7 @@ export function AppNav({
           }
         }}
       />
+      ) : null}
     </>
   );
 }

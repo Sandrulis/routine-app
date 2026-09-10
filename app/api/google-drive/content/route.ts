@@ -5,7 +5,10 @@ import { FRONTEND_MODULE_KEYS } from "@/app/lib/frontend-modules/keys";
 import { isFrontendModuleEnabled } from "@/app/lib/frontend-modules/repository";
 import { openTeamGoogleDriveFile } from "@/app/lib/google-drive/uploader";
 import { assertListAccess } from "@/app/lib/lists/assert-list-access";
-import { contentDispositionForFile } from "@/app/lib/security/file-bytes";
+import {
+  contentDispositionForFile,
+  NOSNIFF_HEADER,
+} from "@/app/lib/security/file-bytes";
 import { logError } from "@/app/lib/security/log-error";
 import { createAdminClient } from "@/app/lib/supabase/admin";
 import { isSupabaseAdminConfigured } from "@/app/lib/supabase/env";
@@ -134,6 +137,7 @@ export async function GET(request: Request) {
         asDownload,
       ),
       "Cache-Control": "private, no-store",
+      ...NOSNIFF_HEADER,
     };
     const bytes = Buffer.from(await opened.response.arrayBuffer());
     if (!hasContent) {

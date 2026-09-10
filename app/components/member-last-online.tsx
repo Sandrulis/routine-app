@@ -5,15 +5,23 @@ import { Tooltip } from "@/app/components/tooltip";
 import { useNow } from "@/app/components/now-provider";
 import { useTranslations } from "@/app/components/translations-provider";
 import { getLastOnlineDisplay } from "@/app/lib/last-online";
+import { useMemberLastOnlineAt } from "@/app/lib/team-store";
 
 export const MemberLastOnline = memo(function MemberLastOnline({
-  lastOnlineAt,
+  memberId,
+  lastOnlineAt = null,
+  self = false,
 }: {
-  lastOnlineAt: string | null;
+  memberId?: string | null;
+  lastOnlineAt?: string | null;
+  self?: boolean;
 }) {
   const { t } = useTranslations();
   const now = useNow();
-  const display = getLastOnlineDisplay(lastOnlineAt, now);
+  const liveAt = useMemberLastOnlineAt(memberId);
+  const display = self
+    ? { kind: "online" as const }
+    : getLastOnlineDisplay(liveAt ?? lastOnlineAt, now);
 
   if (display.kind === "unknown") return null;
 

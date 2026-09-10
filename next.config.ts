@@ -16,6 +16,11 @@ const nextConfig: NextConfig = {
   experimental: {
     // Gmail extension sends attachments as base64 (~4/3 of 25 MB + email HTML).
     proxyClientMaxBodySize: "40mb",
+    optimizePackageImports: [
+      "@dnd-kit/core",
+      "@dnd-kit/sortable",
+      "@dnd-kit/utilities",
+    ],
   },
   async headers() {
     return [

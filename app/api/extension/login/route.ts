@@ -16,7 +16,12 @@ import {
   isAuthEmailConfirmed,
   isEmailNotConfirmedAuthError,
 } from "@/app/lib/auth/email-confirmed";
-import { consumeRateLimit } from "@/app/lib/security/rate-limit";
+import {
+  clearAuthFailures,
+  consumeRateLimit,
+  readAuthLockout,
+  recordAuthFailure,
+} from "@/app/lib/security/rate-limit";
 import { requestClientIp } from "@/app/lib/security/client-ip";
 import { logError } from "@/app/lib/security/log-error";
 import { getSupabasePublicEnv, isSupabaseConfigured } from "@/app/lib/supabase/env";
@@ -82,6 +87,15 @@ export async function POST(request: Request) {
     );
   }
 
+  const lockout = await readAuthLockout(email);
+  if (!lockout.ok) {
+    return extensionJson(
+      request,
+      { ok: false, error: "errors.auth_locked" },
+      { status: 429 },
+    );
+  }
+
   const env = getSupabasePublicEnv();
   if (!env) {
     return extensionJson(
@@ -116,6 +130,9 @@ export async function POST(request: Request) {
   if (error || !data.session) {
     logError("extension login failed", error?.message);
     const unconfirmed = error ? isEmailNotConfirmedAuthError(error) : false;
+    if (!unconfirmed) {
+      await recordAuthFailure(email);
+    }
     return extensionJson(
       request,
       {
@@ -136,6 +153,7 @@ export async function POST(request: Request) {
     );
   }
 
+  await clearAuthFailures(email);
   await ensureCurrentUserProfile(supabase);
   const gate = await getMfaGate(supabase);
   if (gate === "verify") {

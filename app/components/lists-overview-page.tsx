@@ -3,10 +3,9 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { ListSummary } from "@/app/components/list-summary";
-import { ListFormModal } from "@/app/components/list-form-modal";
+import { ListFormModalLazy, SubtaskDetailModalLazy } from "@/app/components/lazy-modals";
 import { LoadingState } from "@/app/components/loading-state";
 import { SectionPage } from "@/app/components/section-page";
-import { SubtaskDetailModal } from "@/app/components/subtask-detail-modal";
 import { useFeedbackToast } from "@/app/components/feedback-toast-provider";
 import { useTranslations } from "@/app/components/translations-provider";
 import { getListTasks, isWorkSubtask } from "@/app/lib/lists";
@@ -92,7 +91,8 @@ export function ListsOverviewPage() {
         </div>
       )}
 
-      <ListFormModal
+      {createListOpen ? (
+      <ListFormModalLazy
         open={createListOpen}
         onOpenChange={setCreateListOpen}
         title={t("lists.add.title", "Jauns saraksts")}
@@ -118,16 +118,19 @@ export function ListsOverviewPage() {
           router.push(`/lists/${list.id}`);
         }}
       />
+      ) : null}
 
-      <SubtaskDetailModal
+      {openedSubtaskId !== null ? (
+      <SubtaskDetailModalLazy
         taskId={openedSubtaskId}
-        open={openedSubtaskId !== null}
+        open
         onOpenChange={(open) => {
           if (!open) {
             setOpenedSubtaskId(null);
           }
         }}
       />
+      ) : null}
     </SectionPage>
   );
 }

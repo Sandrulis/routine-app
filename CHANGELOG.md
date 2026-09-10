@@ -4,6 +4,12 @@
 
 - (none)
 
+## v0.3.99
+
+- Mobilajā statusa meklēšana vairs nezoomē; lazy skati rāda spinneri; sakļauts koks un presence nepārzīmē visus
+- Extension login lockout, JSON-LD escape, failu `nosniff`/stingrāka MIME, production šifrēšana tikai ar `INTEGRATION_SECRETS_KEY`
+- Font Awesome brands tikai app čaulā; drošības atzīme 8.9, ātruma 8.0
+
 ## v0.3.98
 
 - 2FA pie ielogošanās rāda zaļu/sarkanu ikonu un tekstu pie loading, ne nirstošo paziņojumu

@@ -7,6 +7,11 @@ export type BreadcrumbItem = {
   path: string;
 };
 
+/** JSON-LD for `<script>`: escape `<` so a payload cannot close the tag. */
+export function jsonLdScriptHtml(value: unknown) {
+  return JSON.stringify(value).replace(/</g, "\\u003c");
+}
+
 export function buildBreadcrumbListJsonLd(
   items: BreadcrumbItem[],
   languageCode: LanguageCode,

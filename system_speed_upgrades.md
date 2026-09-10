@@ -1,13 +1,18 @@
 # Routine - sistēmas ātrdarbības uzlabojumi
 
-Audits: **2026-08-20**.  
-Statuss: **ieviests 2026-08-20** (`package.json` 0.2.0) - žurnāls apakšā.
+**Pašreizējā atzīme:** **8.0 / 10**  
+Audits: **2026-08-20**. Pārbaude: **2026-09-10**.  
+Statuss: HIGH/MIDDLE lielākoties ieviests; saraksta `[x]` bija pārvērtēts pret reālo sajūtu.
 
 Kā lasīt:
 
 - `[ ]` vēl jādara
-- `[x]` izdarīts
+- `[x]` izdarīts (skatīt piezīmes, ja paliek izņēmums)
 - ietekme ir **sajūta lietotājam** (ielāde, klikšķis, ritināšana), ne mikrooptimizācija
+
+**Atlikušais līdz ~8.5:** workspace bez `description`/`checklists` visiem taskiem; `ListsNav` bez pilna `tasks` + `allTaskFiles`; grupētu tabulu virtualizācija; FA subset marketingam.
+
+**Līdz 9.0:** SVG ikonas / subset visām lapām; workspace provider tikai darba maršrutiem.
 
 ---
 
@@ -81,16 +86,9 @@ Lielākā ietekme uz pirmo ielādi un ikdienas klikšķiem.
 
 **Kur:** `lists-store.tsx` viens `value` ar lists + tasks + activities + files + visām darbībām
 
-**Kas ir:** `useLists()` atgriež visu. `AppNav`, `PageBreadcrumb`, dashboard, list summary, task page - visi re-render, ja mainās jebkurš uzdevums. `taskActivities` / `taskFiles` / `listTasks` ir jaunas funkcijas katrā value atjaunošanā.
+**Kas ir:** `useLists()` atgriež visu. `AppNav`, `PageBreadcrumb`, dashboard, list summary, task page - visi re-render, ja mainās jebkurš uzdevums.
 
-**Ko darīt:**
-
-1. Atsevišķi context vai selektori: `lists`, `tasks`, `files`, `actions`.
-2. `AppNav` abonē lists + koka uzdevumu kopsavilkumu, nevis `allTaskFiles` + visas aktivitātes.
-3. `listTasks(listId)` / `subtasks(parentId)` kā `useMemo` Map pēc `listId` / `parentId`, nevis `.filter` katrā renderī.
-4. `React.memo` koka rindām.
-
-**Gaidāmais:** statusa maiņa paliek lokāla, sānjosla neraustās.
+**Izdarīts (ar izņēmumu):** `ListsNavContext` + `ListsActionsContext`. Sakļauts koks neizsauc `renderTaskTree`. **Paliek:** `navValue` joprojām ņem `tasks` un `allTaskFiles` no `dataValue`, tāpēc statusa maiņa joprojām atjauno sānjoslas context (ne visus `useLists()` patērētājus).
 
 ### H5. Saīsināt ielādes ķēdi (auth → teams → workspace) `[x]`
 
@@ -141,15 +139,7 @@ Lielākā ietekme uz pirmo ielādi un ikdienas klikšķiem.
 
 **Kur:** `TeamProvider` `setInterval(..., 20_000)` + `setMembersByTeam` katru reizi; `MemberLastOnline` / `RelativeTime` / paziņojumi `setNow` ik 15 s
 
-**Kas ir:** Ik 20 s mainās `members` → `TeamContext` → visi `useTeam()`. Sānjoslas biedri, assignee sejas, dashboard. Online zīme nav jādzēš caur visiem biedriem.
-
-**Ko darīt:**
-
-1. `touchMemberOnline` bez lokāla `setMembersByTeam` (pietiek ar DB).
-2. Citu “pēdējoreiz redzēts” atjaunot tikai komandas lapā, retāk (60–120 s) vai Presence.
-3. Relatīvo laiku: viens kopīgs `now` context, ne katrs komponents ar savu interval.
-
-**Gaidāmais:** UI neraustās ik 15–20 s.
+**Izdarīts:** `PresenceContext` + `lastOnlineByMemberId`; `useMemberLastOnlineAt` / `MemberLastOnline` abonē tikai presence, ne visus `useTeam()`. Relatīvais laiks caur `NowProvider`.
 
 ---
 
@@ -159,13 +149,9 @@ Redzams, kad HIGH ir izdarīts vai komanda jau ir vidēja.
 
 ### M1. Font Awesome pilnais `all.min.css` `[x]`
 
-**Kur:** `app/layout.tsx` `import "@fortawesome/fontawesome-free/css/all.min.css"`
+**Kur:** `app/layout.tsx` `fontawesome.css` (core + solid + regular); brands `app/(app)/layout.tsx`
 
-**Kas ir:** Visa ikonu komplekta CSS + fonti visās lapās, arī marketingā. Lietotne lieto `fas` / `far` klases, bet ne visu katalogu.
-
-**Ko darīt:** subset (tikai izmantotās ikonas) vai SVG komponents. Nevilkt `all.min.css` uz `/login` un landing, ja tur vajag 5 ikonas.
-
-**Gaidāmais:** mazāks pirmais CSS/font payload.
+**Izdarīts:** nav `all.min.css`. **2026-09-10:** `fontawesome-brands.css` tikai `(app)` čaulā (Drive/OneDrive ikonas). **Paliek:** solid+regular visās publiskajās lapās, jo landing/login/cookie consent lieto `fas`/`far`. Subset vai SVG - nākamais solis.
 
 ### M2. i18n - klientā visām trim valodām `[x]`
 
@@ -221,17 +207,13 @@ create index if not exists app_notifications_recipient_created_idx
 
 **Kur:** `AppNav` koks, `SubtaskTable`, `ListSummary` / `GroupedSubtaskTables`, `ListWindowsBoard`, dashboard “Mani uzdevumi”
 
-**Kas ir:** Visi DOM mezgli. 200 apakšuzdevumu tabula + koks = smags layout.
-
-**Ko darīt:** virtualizēt logus ar scroll (saraksta logs, sānjoslas koks, ja ir daudz bērnu). Sākt ar `SubtaskTable` un nav koku.
+**Izdarīts (ar izņēmumu):** `VirtualWindow` negrupētām tabulām `>40` rindu. **Paliek:** `groupByStatus` (dashboard) joprojām renderē visus DOM mezglus, jo grupu galvenes + DnD.
 
 ### M7. Nav `dynamic()` smagajiem skatiem `[x]`
 
-**Kur:** projekts - 0 `next/dynamic` / `React.lazy`
+**Kur:** `next/dynamic` + `LazyOnVisible`
 
-**Kas ir:** `list-windows-board.tsx` (~1200 rindas) + `@dnd-kit` iet iekšā `task-detail-page`. `AppNav` importē gandrīz visus modāļus (statusi, automatizācijas, lomas, invite, create-flow).
-
-**Ko darīt:** `dynamic(() => import(...), { ssr: false })` dēļiem, failu skatītājam, Drive/OneDrive lapām, admin formām. Modāļus importēt tikai kad atver.
+**Izdarīts:** dēļi, failu skatītājs, landing below-fold, AppNav modāļi (`OverlayLoadingState`, mount tikai kad atvērts), `SubtaskDetailModalLazy` / `ListFormModalLazy`.
 
 ### M8. Dubultie vaicājumi `[x]`
 
@@ -298,7 +280,7 @@ Avatāri un logotipi ir `<img>` / data URL. Kad faili ir URL (Storage/Drive), `n
 
 `work_tasks.description`, `work_lists.description` nāk visiem uzdevumiem. Kokam pietiek `title, status, parent_id, sort_order, kind`. Aprakstu - uzdevuma lapā.
 
-**Izdarīts (ar izņēmumu):** apraksts paliek sākuma select, jo saglabāšana bez lauka varētu notīrīt DB. Galvenais payload bija failu `content`.
+**Izdarīts (ar izņēmumu):** `fetchTaskDetails` pastāv, bet `fetchTeamWorkspace` joprojām select `description` + `checklists` visiem taskiem, jo saraksta skats rāda checklistes un kopsavilkuma aprakstu. Saglabāšana bez lauka varētu notīrīt DB, ja hydrācija nav pirms edit.
 
 ### L9. Prefetch / hover uz saraksta saitēm `[x]`
 
@@ -344,6 +326,7 @@ Neoptimizēt visus LOW, kamēr H1–H5 nav izmērīti (Network + React Profiler)
 |---|---|---|
 | 2026-08-20 | Sākotnējais audits, šis fails | Darba saraksts |
 | 2026-08-20 | HIGH + MIDDLE + LOW ieviešana. v0.2.0 | Migrācija `073_workspace_speed.sql`. Workspace bez `content`/aktivitātēm/todos. Dokumentēts CHANGELOG / README / DEVELOPER. |
-| 2026-08-23 | Čaula bez description/checklists; `ListsNav`; tabulas virtualizācija; vēstures “vecāki”; i18n dynamic; FA brands tikai app. v0.2.15 | `090_auth_tokens_rate_limit.sql`. Paliek HttpOnly ārpus ātruma saraksta. |
+| 2026-08-23 | Čaula bez description/checklists; `ListsNav`; tabulas virtualizācija; vēstures “vecāki”; i18n dynamic; FA brands tikai app. v0.2.15 | `090_auth_tokens_rate_limit.sql`. Brands CSS tolaik palika root layout (labots 2026-09-10). |
+| 2026-09-10 | Presence izolēts no `TeamContext`; lazy modāļi; sakļauts koks; FA brands tikai `(app)` | Atzīme **8.0 / 10**. Paliek: workspace description/checklists, `ListsNav` tasks+faili, grupētas tabulas, FA solid+regular marketingā. |
 
 Kad punkts ir izdarīts: atzīmē `[x]`, ieraksti žurnālā versiju (`package.json`) un īsu rezultātu (piem. “workspace JSON 2.4 MB → 180 KB”).

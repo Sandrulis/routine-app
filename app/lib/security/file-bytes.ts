@@ -13,6 +13,7 @@ const MAGIC: MagicMatch[] = [
   { mime: "application/zip", bytes: [[0x50, 0x4b, 0x03, 0x04], [0x50, 0x4b, 0x05, 0x06]] },
   // RAR 1.5+ / RAR 5 signature "Rar!"
   { mime: "application/vnd.rar", bytes: [[0x52, 0x61, 0x72, 0x21, 0x1a, 0x07]] },
+  { mime: "application/x-msdownload", bytes: [[0x4d, 0x5a]] },
 ];
 
 function startsWith(bytes: Uint8Array, signature: number[]) {
@@ -86,10 +87,23 @@ export function contentDispositionForFile(name: string, mimeType: string, asDown
   return `${kind}; filename="${fallback}"; filename*=UTF-8''${rfc5987Encode(utf8Name)}`;
 }
 
+export const NOSNIFF_HEADER = {
+  "X-Content-Type-Options": "nosniff",
+} as const;
+
+const HTML_LIKE_EXTENSIONS = new Set(["html", "htm", "svg", "xml", "xhtml", "txt"]);
+
 /** Reject executable disguises: claimed image/pdf must match magic bytes. */
 export function mimeMatchesBytes(name: string, claimedMime: string, bytes: Uint8Array) {
   const sniffed = sniffMimeType(bytes);
   const claimed = claimedMime.toLowerCase();
+  const extension = fileExtensionOf(name);
+
+  if (sniffed === "application/x-msdownload") return false;
+  if (looksLikeHtml(bytes) && !HTML_LIKE_EXTENSIONS.has(extension)) {
+    return false;
+  }
+
   if (claimed.startsWith("image/") && claimed !== "image/svg+xml") {
     return sniffed !== null && sniffed.startsWith("image/");
   }
@@ -99,22 +113,28 @@ export function mimeMatchesBytes(name: string, claimedMime: string, bytes: Uint8
   if (
     claimed === "application/zip" ||
     claimed === "application/x-zip-compressed" ||
-    fileExtensionOf(name) === "zip"
+    extension === "zip"
   ) {
     return sniffed === "application/zip" || bytes.length === 0;
   }
   if (
     claimed === "application/vnd.rar" ||
     claimed === "application/x-rar-compressed" ||
-    fileExtensionOf(name) === "rar"
+    extension === "rar"
   ) {
     return sniffed === "application/vnd.rar" || bytes.length === 0;
   }
-  if (fileExtensionOf(name) === "pdf") {
+  if (extension === "pdf") {
     return sniffed === "application/pdf" || bytes.length === 0;
   }
-  if (["html", "htm", "txt"].includes(fileExtensionOf(name))) {
+  if (["html", "htm", "txt"].includes(extension)) {
     return !sniffed || sniffed === "application/zip";
+  }
+  if (sniffed?.startsWith("image/") && !claimed.startsWith("image/")) {
+    return false;
+  }
+  if (sniffed === "application/pdf" && claimed !== "application/pdf") {
+    return false;
   }
   return true;
 }

@@ -5,12 +5,11 @@ import { useRouter } from "next/navigation";
 import { useMemo, useRef, useState } from "react";
 import { DashboardTaskSearch } from "@/app/components/dashboard-task-search";
 import { ListBadge } from "@/app/components/list-badge";
-import { ListFormModal } from "@/app/components/list-form-modal";
+import { ListFormModalLazy, SubtaskDetailModalLazy } from "@/app/components/lazy-modals";
 import { ListSummary } from "@/app/components/list-summary";
 import { LoadingState } from "@/app/components/loading-state";
 import { NameFormModal } from "@/app/components/name-form-modal";
 import { SectionPage } from "@/app/components/section-page";
-import { SubtaskDetailModal } from "@/app/components/subtask-detail-modal";
 import { SubtaskTable } from "@/app/components/subtask-table";
 import { useFeedbackToast } from "@/app/components/feedback-toast-provider";
 import { useTranslations } from "@/app/components/translations-provider";
@@ -475,7 +474,8 @@ export function DashboardHomePage() {
         </div>
       )}
 
-      <ListFormModal
+      {onboardingStep === "list" ? (
+      <ListFormModalLazy
         open={onboardingStep === "list"}
         onOpenChange={(open) => {
           if (!open && !advancingOnboardingRef.current) stopOnboarding();
@@ -504,6 +504,7 @@ export function DashboardHomePage() {
           openOnboardingStep("task");
         }}
       />
+      ) : null}
 
       <NameFormModal
         open={onboardingStep === "task"}
@@ -541,7 +542,11 @@ export function DashboardHomePage() {
         }}
       />
 
-      <SubtaskDetailModal
+      {openedSubtaskId !== null ||
+      (onboardingStep === "subtask" &&
+        onboardingListId !== null &&
+        onboardingTaskId !== null) ? (
+      <SubtaskDetailModalLazy
         taskId={openedSubtaskId}
         createFor={
           onboardingStep === "subtask" && onboardingListId && onboardingTaskId
@@ -561,6 +566,7 @@ export function DashboardHomePage() {
           }
         }}
       />
+      ) : null}
     </SectionPage>
   );
 }

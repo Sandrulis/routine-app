@@ -25,7 +25,7 @@ import { MoveSubtaskModal } from "@/app/components/move-subtask-modal";
 import { SubtaskBulkBar, SubtaskSelectCheckbox } from "@/app/components/subtask-bulk-bar";
 import { TaskLocationPath } from "@/app/components/task-location-path";
 import { StatusControl, statusClassName } from "@/app/components/status-control";
-import { Tooltip } from "@/app/components/tooltip";
+import { OverflowTooltip, Tooltip } from "@/app/components/tooltip";
 import { TaskSnoozeButton } from "@/app/components/task-snooze-button";
 import {
   dropHintFromEvent,
@@ -1327,7 +1327,9 @@ function SortableSubtaskRow({
                 deleted ? "text-zinc-400 line-through" : "text-zinc-900"
               }`}
             >
-              <span className="truncate">{task.title}</span>
+              <OverflowTooltip label={task.title} className="min-w-0 flex-1">
+                <span className="block truncate">{task.title}</span>
+              </OverflowTooltip>
               {hasAttachments ? (
                 <i
                   className="fas fa-paperclip shrink-0 text-[11px] text-zinc-400"

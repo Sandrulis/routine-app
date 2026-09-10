@@ -1,4 +1,8 @@
-import { buildWebPageJsonLd, type BreadcrumbItem } from "@/app/lib/seo/json-ld";
+import {
+  buildWebPageJsonLd,
+  jsonLdScriptHtml,
+  type BreadcrumbItem,
+} from "@/app/lib/seo/json-ld";
 import type { LanguageCode } from "@/app/lib/i18n/language";
 import { localePath } from "@/app/lib/seo/locale-path";
 import { absoluteUrl } from "@/app/lib/seo/site-url";
@@ -30,7 +34,7 @@ export function PublicPageJsonLd({
   return (
     <script
       type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      dangerouslySetInnerHTML={{ __html: jsonLdScriptHtml(jsonLd) }}
     />
   );
 }

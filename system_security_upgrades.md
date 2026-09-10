@@ -1,9 +1,9 @@
 # Sistēmas drošības uzlabojumi — routine-app
 
-**Pašreizējā atzīme:** **8.8 / 10**  
-**Iepriekšējā pilnā pārbaude:** 7.0 / 10 (2026-08-20, pirms šī viļņa)  
-**Šī izpilde:** 2026-08-23 (OAuth nesasaistīšana, token hash, CSP nonce, lockout; paliek HttpOnly)  
-**Atlikušais:** H2 pilns HttpOnly (klienta Supabase lasa `document.cookie`). CSP nonce ir `proxy.ts` + `x-nonce`.
+**Pašreizējā atzīme:** **8.9 / 10**  
+**Iepriekšējā pilnā pārbaude:** 8.8 / 10 (2026-08-23)  
+**Šī izpilde:** 2026-09-10 (extension lockout, JSON-LD escape, failu `nosniff`, MIME PE/HTML disguise, production bez service-role šifrēšanas fallback)  
+**Atlikušais līdz 9.0:** H2 pilns HttpOnly (klienta Supabase lasa `document.cookie`).
 
 Šis fails ir uzskaites saraksts. Statuss: `pending` / `done` / `accepted`.
 
@@ -11,13 +11,14 @@
 
 ## Kopsavilkums
 
-2026-08-20 ieviesti visi HIGH/MIDDLE/LOW ieteikumi, izņemot pilnu HttpOnly sesiju (apzināts kompromiss). E-pasta auth ir īsts, noslēpumi šifrēti `enc:v1:`, Drive/OneDrive pārbauda `work_list_has_access`, kalendāra ICS ir `private, no-store` bez aprakstiem un ar token hash, MFA ir obligāta admin panelim, audit log raksta mutācijas.
+2026-08-20 ieviesti visi HIGH/MIDDLE/LOW ieteikumi, izņemot pilnu HttpOnly sesiju (apzināts kompromiss). 2026-09-10: extension login lockout, JSON-LD escape, failu `nosniff` + stingrāka MIME, production šifrēšana tikai ar `INTEGRATION_SECRETS_KEY`. E-pasta auth ir īsts, noslēpumi šifrēti `enc:v1:`, Drive/OneDrive pārbauda `work_list_has_access`, kalendāra ICS ir `private, no-store` bez aprakstiem un ar token hash, MFA ir obligāta admin panelim, audit log raksta mutācijas.
 
 | Lai sasniegtu | Jāaizver vismaz |
 |---|---|
 | **8.0** | H1, H3, H5, H6 |
 | **8.5** | visi HIGH (H2 īstermiņa) |
 | **8.8** | CSP nonce + OAuth/token hash (bez pilna HttpOnly) |
+| **8.9** | Extension lockout, JSON-LD escape, failu nosniff/MIME, dedicated secrets key |
 | **9.0** | H2 HttpOnly |
 
 ---
@@ -39,7 +40,7 @@
 | `site_integrations` un Drive/OneDrive tokeni: RLS deny authenticated/anon | `064`, `066`, `067` | done |
 | Lietotājs nevar pats uzlikt `is_admin` (nav `users_update_own`) | `003`, `008` | done |
 | Pirmais reģistrētais = admin ar advisory lock | `002_users_is_admin.sql` | done |
-| Nav `eval()` / `dangerouslySetInnerHTML` `app/` | smoke CI | done |
+| Nav `eval()`; JSON-LD `dangerouslySetInnerHTML` ar `<` escape | `jsonLdScriptHtml`, smoke CI | done |
 | Secret scan (gitleaks), `npm audit` HIGH+, security smoke | `.github/workflows/` | done |
 | Uzaicinājuma pieņemšana pārbauda e-pastu / `invited_user_id` | `044`, `049` | done |
 | Kalendāra token 256 biti; uzaicinājuma token 192 biti | `calendar/token.ts`, `team/actions.ts` | done |
@@ -63,18 +64,19 @@ Ietekmē kontu pārņemšanu, privātu failu noplūdi vai noslēpumu izgūšanu 
 
 ### H2. Sesijas sīkdatnes nav HttpOnly
 
-- **Statuss:** done (īstermiņa)
+- **Statuss:** done (īstermiņa) / pending (pilns HttpOnly)
 - **Piezīme:** `httpOnly` paliek `false`, jo `createBrowserClient` lasa `document.cookie`. Ieviests: remember noklusējums izslēgts, production `Secure`, CSP `script-src` ar nonce (`proxy.ts`, bez `'unsafe-inline'`). Pilns HttpOnly = visi DB vaicājumi uz serveri.
 - **Kur:** `app/lib/auth/remember-session.ts` — `httpOnly: false` apzināti, lai pārlūka Supabase klients lasītu `document.cookie`.
-- **Risks:** jebkurš XSS nozog 30 dienu sesiju. CSP atļauj `'unsafe-inline'` skriptiem, tāpēc XSS logs ir platāks.
+- **Risks:** jebkurš XSS nozog sesiju. CSP vairs neļauj `'unsafe-inline'` skriptiem (nonce), bet bez HttpOnly XSS joprojām nozog cookie.
 - **Ko darīt:**
   1. Pāriet uz servera-only sesiju (HttpOnly cookie) + RLS caur server actions / Route Handlers, **vai**
-  2. Īstermiņā: saīsināt sesiju bez “Atcerēties mani”, CSP `script-src` ar nonce (bez `'unsafe-inline'`), stingrāka XSS hygiene.
+  2. Īstermiņā (izdarīts): saīsināt sesiju bez “Atcerēties mani”, CSP `script-src` ar nonce (bez `'unsafe-inline'`), stingrāka XSS hygiene.
   3. `SameSite=Lax` atstāt; production `Secure` jau nāk no Supabase cookie options, pārbaudīt ka tas vienmēr ir ieslēgts HTTPS.
 
 ### H3. Noslēpumi un OAuth refresh tokeni plaintext Postgres
 
 - **Statuss:** done
+- **Piezīme (2026-09-10):** production `encryptSecret` vairs nekrīt atpakaļ uz `SUPABASE_SERVICE_ROLE_KEY` - vajag `INTEGRATION_SECRETS_KEY`. Decrypt joprojām mēģina veco service-role atslēgu, lai nenozaudētu esošos tokenus.
 - **Kur:**
   - `site_integrations.client_secret` (Google/Microsoft client secret, Resend API key, Sentry DSN)
   - `team_google_drive_integrations.refresh_token` / `access_token`
@@ -87,12 +89,12 @@ Ietekmē kontu pārņemšanu, privātu failu noplūdi vai noslēpumu izgūšanu 
 
 ### H4. Microsoft OAuth neseko e-pasta verifikāciju
 
-- **Statuss:** done
-- **Kur:** `app/lib/integrations/microsoft-oauth/oauth.ts` — `mail` vai `userPrincipalName` bez verified flag. `completeOAuthSignIn` saista kontu pēc e-pasta un ar service role izveido/ielogojas.
-- **Risks:** konta pārņemšana, ja Microsoft identitāte ļauj neapstiprinātu e-pastu; sasaista ar esošu Google lietotāju ar to pašu e-pastu.
+- **Statuss:** done (verified email) / accepted (klusā sasaistīšana pēc e-pasta)
+- **Kur:** `app/lib/integrations/microsoft-oauth/oauth.ts` — `pickVerifiedMicrosoftEmail` prasa `email_verified`. `completeOAuthSignIn` (`oauth-session.ts`) pēc verificēta e-pasta ielaiž esošā kontā un saplūdina providera metadatus.
+- **Risks:** verificēts OAuth e-pasts = tas pats cilvēks; klusā sasaistīšana ir UX (viens konts, vairāki login veidi), ne konta pārņemšana bez verifikācijas.
 - **Ko darīt:**
-  1. Graph: prasīt verificētu e-pastu (`mail` + tenant policy; noraidīt, ja nav).
-  2. Nesaistīt OAuth providera kontus tikai pēc e-pasta, ja lietotājs jau pastāv ar citu provideri — prasīt esošo sesiju vai e-pasta apstiprinājumu.
+  1. Graph/ID token: prasīt verificētu e-pastu — **izdarīts**.
+  2. Nesasaistīt OAuth providera kontus tikai pēc e-pasta, ja lietotājs jau pastāv ar citu provideri — **accepted**: Google/Microsoft jau ir verificējuši e-pastu; prasīt esošo sesiju salauztu “ielogoties ar Google, ja jau ir parole”.
   3. Google jau pārbauda `verified_email` — atstāt.
 
 ### H5. Drive / OneDrive API apiet privāto sarakstu RLS
@@ -128,10 +130,10 @@ Ietekmē kontu pārņemšanu, privātu failu noplūdi vai noslēpumu izgūšanu 
 
 ### M2. `SECURITY DEFINER` ar `search_path = public`
 
-- **Statuss:** done
-- **Kur:** `044`, `046`, `048`, `049` uzaicinājumu funkcijas. Pārējās definer funkcijas jau lieto `search_path = ''`.
-- **Risks:** ja kādreiz `public` kļūst rakstāms uzbrucējam, definer funkcijas var izsaukt viltojušus objektus.
-- **Ko darīt:** visām definer funkcijām `set search_path = ''` un kvalificēt `public.*`.
+- **Statuss:** done (īstermiņa)
+- **Kur:** uzaicinājumu funkcijas pēc `073_security_hardening.sql` ir `search_path = pg_catalog, public` (ne vairs tikai `public`). Jaunākās funkcijas lieto `search_path = ''`.
+- **Risks:** ja `public` kļūst rakstāms uzbrucējam, definer funkcijas ar `public` path var izsaukt viltojušus objektus. `pg_catalog` vispirms samazina šo logu.
+- **Ko darīt:** ideāli visām definer funkcijām `set search_path = ''` un kvalificēt `public.*`. Atlikušais higiēnas solis, ne 9.0 bloķētājs.
 
 ### M3. Failu saturs plaintext `task_files.content` / `list_files.content`
 
@@ -143,7 +145,7 @@ Ietekmē kontu pārņemšanu, privātu failu noplūdi vai noslēpumu izgūšanu 
 ### M4. Nav rate limit
 
 - **Statuss:** done
-- **Kur:** login (kad būs), OAuth callback, `preview_team_invitation` (anon), kalendāra GET, extension attach, invite e-pasts (daļēji ir Supabase limit).
+- **Kur:** login, OAuth callback, `preview_team_invitation` (anon), kalendāra GET, extension attach, invite e-pasts. **2026-09-10:** `/api/extension/login` lieto to pašu `readAuthLockout` / `recordAuthFailure` kā web login (ne tikai IP/e-pasta rate limit).
 - **Ko darīt:** Upstash / middleware limiter; kalendāram un invite preview — per-IP; invite e-pastam jau ir brīdinājums, pievienot lokālu throttle.
 
 ### M5. Nav MFA un nav admin audit log
@@ -166,7 +168,7 @@ Ietekmē kontu pārņemšanu, privātu failu noplūdi vai noslēpumu izgūšanu 
 ### M8. Failu MIME uzticas klientam
 
 - **Statuss:** done
-- **Kur:** upload routes lieto `file.type`; extension `isAllowedFileName` pēc paplašinājuma. `html` ir atļauts (`072`).
+- **Kur:** upload routes + `mimeMatchesBytes`. **2026-09-10:** noraida PE (`MZ`) un HTML disguise; nezināmam tipam vairs nav `return true`, ja sniffed ir image/pdf. Content routes (`work-files`, Drive, OneDrive) sūta `X-Content-Type-Options: nosniff`.
 - **Ko darīt:** servera puses paplašinājuma + magic-bytes pārbaude; HTML/SVG kā lejupielāde (`attachment`), ne `inline`; PDF iframe `sandbox`.
 
 ### M9. 30 dienu “Atcerēties mani” pēc noklusējuma
@@ -228,6 +230,12 @@ Ietekmē kontu pārņemšanu, privātu failu noplūdi vai noslēpumu izgūšanu 
 - **Kur:** `work_list_has_access` atgriež `full_edit` ja `current_user_is_admin()`.
 - **Ko darīt:** nav jānoņem; audit log (M5) kad admin atver cita tenant datus.
 
+### L9. JSON-LD `dangerouslySetInnerHTML`
+
+- **Statuss:** done
+- **Kur:** `landing-json-ld.tsx`, `public-page-json-ld.tsx` caur `jsonLdScriptHtml` (`JSON.stringify` + `<` → `\u003c`).
+- **Ko darīt:** nesūtīt neapstrādātu JSON `<script>` tagā.
+
 ---
 
 ## Atzīmes skala (iekšējai kalibrācijai)
@@ -236,7 +244,8 @@ Ietekmē kontu pārņemšanu, privātu failu noplūdi vai noslēpumu izgūšanu 
 |---|---|
 | 5–6 | Prototips, dati pārlūkā vai bez RLS |
 | **7.0** | RLS + proxy + OAuth + CI; integrāciju noslēpumi un faili vēl vāji |
-| **8.5 (tagad)** | Šifrēti tokeni, Drive list access, kalendārs privāts, īsts auth, MFA+audit, rate limit |
+| **8.5** | Šifrēti tokeni, Drive list access, kalendārs privāts, īsts auth, MFA+audit, rate limit |
+| **8.9 (tagad)** | Extension lockout, JSON-LD escape, failu nosniff/MIME, dedicated encrypt key; paliek HttpOnly |
 | 9.0 | MFA, audit, Vault, rate limit, HttpOnly vai līdzvērtīgs XSS modelis |
 | 10 | Ārējs pentests + formāla programma (ne tikai kods) |
 

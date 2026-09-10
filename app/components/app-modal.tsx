@@ -244,10 +244,10 @@ export function AppModal({
           className={`${panelBaseClassName} ${panelMaxWidthClassName}`}
         >
           <div className={compact ? "p-4 sm:p-6" : "p-6"}>
-            <div className="flex min-w-0 items-center justify-between gap-3">
+            <div className="flex min-w-0 items-start justify-between gap-3">
               <h2
                 id={titleId}
-                className="min-w-0 flex-1 truncate text-lg font-semibold text-zinc-900"
+                className="min-w-0 flex-1 text-lg font-semibold break-words text-zinc-900 [overflow-wrap:anywhere]"
               >
                 {title}
               </h2>

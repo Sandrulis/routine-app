@@ -24,6 +24,11 @@ export const WORK_TASK_STATUSES: WorkTaskStatus[] = [
 
 const DELETED_STATUS_COLOR = "#ef4444";
 
+function canAutoFocusSearch() {
+  if (typeof window === "undefined") return false;
+  return !window.matchMedia("(hover: none) and (pointer: coarse)").matches;
+}
+
 export function statusClassName(status: WorkTaskStatus, muted = false) {
   if (status === "done") {
     return muted
@@ -294,7 +299,7 @@ export function StatusControl({
       return;
     }
 
-    searchRef.current?.focus();
+    if (canAutoFocusSearch()) searchRef.current?.focus();
 
     function handlePointer(event: MouseEvent) {
       const target = event.target as Node;
@@ -678,7 +683,7 @@ export function StatusPickerDropdown({
       return;
     }
 
-    searchRef.current?.focus();
+    if (canAutoFocusSearch()) searchRef.current?.focus();
 
     function handlePointer(event: MouseEvent) {
       if (panelRef.current?.contains(event.target as Node)) return;
