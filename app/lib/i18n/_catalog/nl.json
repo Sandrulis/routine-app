@@ -845,7 +845,7 @@
   "folders.fields.subfolder_placeholder": "Submapnaam",
   "folders.sync_statuses": "Statussen vernieuwen",
   "folders.sync_statuses.description": "Voeg ontbrekende sjabloonstatussen toe en neem volgorde en verborgen statussen van de sjabloon over.",
-  "folders.sync_statuses.success": "Statussen vernieuwd.",
+  "folders.sync_statuses.success": "Statussen opgeslagen.",
   "folders.unarchived": "Map uit het archief gehaald.",
   "folders.updated": "Map opgeslagen.",
   "frontend_modules.aria.enabled": "{key} ingeschakeld",

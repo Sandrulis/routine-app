@@ -845,7 +845,7 @@
   "folders.fields.subfolder_placeholder": "Alamkausta nimi",
   "folders.sync_statuses": "Värskenda olekuid",
   "folders.sync_statuses.description": "Lisa mallist puuduvad olekud ning ühtlusta järjestus ja peidetud olekud.",
-  "folders.sync_statuses.success": "Olekud värskendatud.",
+  "folders.sync_statuses.success": "Olekud salvestatud.",
   "folders.unarchived": "Kaust arhiivist eemaldatud.",
   "folders.updated": "Kaust salvestatud.",
   "frontend_modules.aria.enabled": "{key} sisse lülitatud",

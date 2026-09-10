@@ -1367,7 +1367,7 @@
   "folders.edit.description": "Change the folder name or description.",
   "folders.sync_statuses": "Refresh statuses",
   "folders.sync_statuses.description": "Add missing template statuses and match the template order, including hidden statuses.",
-  "folders.sync_statuses.success": "Statuses refreshed.",
+  "folders.sync_statuses.success": "Statuses saved.",
   "folders.deleted": "Folder deleted.",
   "folders.archived": "Folder archived.",
   "folders.unarchived": "Folder removed from archive.",

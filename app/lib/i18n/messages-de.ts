@@ -845,7 +845,7 @@ export const de: Record<string, string> = {
   "folders.fields.subfolder_placeholder": "Unterordnername",
   "folders.sync_statuses": "Statusse aktualisieren",
   "folders.sync_statuses.description": "Fehlende Vorlagenstatus hinzufügen und Reihenfolge sowie ausgeblendete Status wie in der Vorlage übernehmen.",
-  "folders.sync_statuses.success": "Statusse aktualisiert.",
+  "folders.sync_statuses.success": "Statusse gespeichert.",
   "folders.unarchived": "Ordner aus dem Archiv entfernt.",
   "folders.updated": "Ordner gespeichert.",
   "frontend_modules.aria.enabled": "{key} aktiviert",

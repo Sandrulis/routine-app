@@ -845,7 +845,7 @@ export const it: Record<string, string> = {
   "folders.fields.subfolder_placeholder": "Nome della sottocartella",
   "folders.sync_statuses": "Aggiorna stati",
   "folders.sync_statuses.description": "Aggiungi gli stati del modello mancanti e allinea ordine e stati nascosti.",
-  "folders.sync_statuses.success": "Stati aggiornati.",
+  "folders.sync_statuses.success": "Stati salvati.",
   "folders.unarchived": "Cartella rimossa dall'archivio.",
   "folders.updated": "Cartella salvata.",
   "frontend_modules.aria.enabled": "{key} attivato",

@@ -35,10 +35,30 @@ export type WorkList = {
 };
 
 export function parseIdList(value: unknown): string[] {
-  if (!Array.isArray(value)) return [];
-  return value.filter(
-    (id): id is string => typeof id === "string" && id.trim().length > 0,
-  );
+  if (Array.isArray(value)) {
+    return value.filter(
+      (id): id is string => typeof id === "string" && id.trim().length > 0,
+    );
+  }
+  if (typeof value !== "string") return [];
+  const trimmed = value.trim();
+  if (!trimmed) return [];
+  if (trimmed.startsWith("[")) {
+    try {
+      return parseIdList(JSON.parse(trimmed) as unknown);
+    } catch {
+      return [];
+    }
+  }
+  if (trimmed.startsWith("{") && trimmed.endsWith("}")) {
+    const inner = trimmed.slice(1, -1).trim();
+    if (!inner) return [];
+    return inner
+      .split(",")
+      .map((part) => part.trim().replace(/^"|"$/g, ""))
+      .filter((id) => id.length > 0);
+  }
+  return [];
 }
 
 export function parseStatusGroupMap(value: unknown): Record<string, string> {

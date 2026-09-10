@@ -4,6 +4,10 @@
 
 - (none)
 
+## v0.3.93
+
+- **Atjaunot statusus** saglabā secību datubāzē pirms zaļā paziņojuma; pēc atkārtotas ienākšanas kārtojums paliek
+
 ## v0.3.92
 
 - Statusu secība pēc **Atjaunot statusus** paliek datubāzē, lai pēc iziešanas un atgriešanās kārtojums nesakrīt atpakaļ

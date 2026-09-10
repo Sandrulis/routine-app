@@ -845,7 +845,7 @@
   "folders.fields.subfolder_placeholder": "Poaplankio pavadinimas",
   "folders.sync_statuses": "Atnaujinti būsenas",
   "folders.sync_statuses.description": "Pridėkite šablone trūkstamas būsenas ir sulyginkite tvarką bei paslėptas būsenas.",
-  "folders.sync_statuses.success": "Būsenos atnaujintos.",
+  "folders.sync_statuses.success": "Būsenos įrašytos.",
   "folders.unarchived": "Aplankas pašalintas iš archyvo.",
   "folders.updated": "Aplankas išsaugotas.",
   "frontend_modules.aria.enabled": "{key} įjungtas",

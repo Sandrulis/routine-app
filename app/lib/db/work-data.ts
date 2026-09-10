@@ -1225,14 +1225,25 @@ export async function updateTaskRow(
     row.status_group_overrides = patch.statusGroupOverrides;
   }
   if (Object.keys(row).length > 0) {
+    const returning =
+      patch.statusOrder !== undefined ? "id, status_order" : "id";
     const { data, error } = await supabase
       .from("work_tasks")
       .update(row)
       .eq("id", taskId)
-      .select("id");
+      .select(returning)
+      .maybeSingle();
     if (error) throw new Error(formatSupabaseError(error));
-    if (!data?.length) {
+    if (!data) {
       throw new Error("Task update did not persist");
+    }
+    if (patch.statusOrder !== undefined) {
+      const saved = parseIdList(
+        (data as { status_order?: unknown }).status_order,
+      );
+      if (saved.join("\0") !== patch.statusOrder.join("\0")) {
+        throw new Error("Task status order did not persist");
+      }
     }
   }
   if (patch.assigneeIds) {

@@ -845,7 +845,7 @@ export const fr: Record<string, string> = {
   "folders.fields.subfolder_placeholder": "Nom du sous-dossier",
   "folders.sync_statuses": "Actualiser les statuts",
   "folders.sync_statuses.description": "Ajouter les statuts du modèle manquants et reprendre l'ordre et les statuts masqués du modèle.",
-  "folders.sync_statuses.success": "Statuts actualisés.",
+  "folders.sync_statuses.success": "Statuts enregistrés.",
   "folders.unarchived": "Dossier retiré des archives.",
   "folders.updated": "Dossier enregistré.",
   "frontend_modules.aria.enabled": "{key} activé",

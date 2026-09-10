@@ -935,202 +935,9 @@ export function ListsProvider({ children }: { children: ReactNode }) {
       >,
     ) => {
       const incomingPatch = patch;
-      const effects: {
-        retry: boolean;
-        events: TaskActivity[];
-        notifications: AppNotification[];
-        assigneeNotifications: AppNotification[];
-        dbTaskId: string | null;
-        dbPatch: typeof patch | null;
-        automations: Array<() => void>;
-      } = {
-        retry: false,
-        events: [],
-        notifications: [],
-        assigneeNotifications: [],
-        dbTaskId: null,
-        dbPatch: null,
-        automations: [],
-      };
-
-      setTasks((current) => {
-        const existing = current.find((task) => task.id === taskId);
-        if (!existing) {
-          effects.retry = true;
-          return current;
-        }
-
-        let nextPatch = { ...incomingPatch };
-        const nextChecklists =
-          nextPatch.checklists !== undefined
-            ? normalizeTaskChecklists(nextPatch.checklists)
-            : (existing.checklists ?? []);
-        const catalog = listStatusesRef.current.filter(
-          (status) => status.listId === existing.listId,
-        );
-        const requestedStatus = nextPatch.status;
-        const closingBlocked =
-          checklistsEnabledRef.current &&
-          Boolean(requestedStatus) &&
-          requestedStatus !== existing.status &&
-          isClosedTaskStatus(requestedStatus as WorkTaskStatus, catalog) &&
-          taskHasIncompleteChecklists(nextChecklists);
-        if (closingBlocked) {
-          const { status: ignoredStatus, ...rest } = nextPatch;
-          void ignoredStatus;
-          nextPatch = rest;
-        }
-        if (nextPatch.checklists !== undefined) {
-          nextPatch = { ...nextPatch, checklists: nextChecklists };
-        }
-
-        let statusChangedAt = existing.statusChangedAt;
-        if (nextPatch.status && nextPatch.status !== existing.status) {
-          statusChangedAt = new Date().toISOString();
-        }
-
-        const nextEvents = buildTaskUpdateActivityEvents(
-          taskId,
-          assignmentNotifyRef.current.actorId,
-          existing,
-          nextPatch,
-        );
-        if (nextEvents.length > 0) {
-          effects.events = nextEvents;
-          const notify = assignmentNotifyRef.current;
-          effects.notifications = buildTaskUpdateNotifications({
-            actorId: notify.actorId,
-            existing,
-            patch: nextPatch,
-            tasks: current,
-            members: notify.members,
-            activities: nextEvents,
-            lists: listsRef.current,
-          });
-        }
-
-        if (
-          nextPatch.assigneeIds &&
-          nextPatch.assigneeIds.some(
-            (id) => !existing.assigneeIds.includes(id),
-          )
-        ) {
-          const notify = assignmentNotifyRef.current;
-          const addedIds = memberIdsNotifiedForAssignees(
-            nextPatch.assigneeIds.filter(
-              (id) => !existing.assigneeIds.includes(id),
-            ),
-            notify.members,
-          );
-          const parentId =
-            existing.kind === "subtask" && existing.parentId
-              ? existing.parentId
-              : existing.id;
-          effects.assigneeNotifications = notificationsForNewAssignees({
-            actorId: notify.actorId,
-            addedIds,
-            memberIds: notify.memberIds,
-            taskTitle: nextPatch.title ?? existing.title,
-            taskPath: notificationTaskPath(
-              current,
-              existing,
-              listsRef.current.find((item) => item.id === existing.listId)?.name ??
-                null,
-            ),
-            href: `/lists/${existing.listId}/tasks/${parentId}`,
-          });
-        }
-
-        const dbPatch = {
-          ...nextPatch,
-          ...(nextPatch.status && nextPatch.status !== existing.status
-            ? { statusChangedAt }
-            : {}),
-        };
-        effects.dbTaskId = taskId;
-        effects.dbPatch = dbPatch;
-
-        if (automationsEnabledRef.current) {
-          const automations = listAutomationsRef.current;
-
-          if (nextPatch.status && nextPatch.status !== existing.status) {
-            const assignRules = activeStatusChangedAssignRules(
-              automations, existing.listId, nextPatch.status,
-            );
-            for (const rule of assignRules) {
-              const uid = rule.config.assigneeId;
-              if (uid && !existing.assigneeIds.includes(uid)) {
-                const merged = [...new Set([...(nextPatch.assigneeIds ?? existing.assigneeIds), uid])];
-                effects.automations.push(() => {
-                  updateTaskRef.current(taskId, { assigneeIds: merged });
-                });
-              }
-            }
-          }
-
-          if (nextPatch.checklists !== undefined && checklistsEnabledRef.current) {
-            const allComplete = !taskHasIncompleteChecklists(nextChecklists) && nextChecklists.length > 0;
-            if (allComplete) {
-              const checkRules = activeChecklistCompletedRules(automations, existing.listId);
-              for (const rule of checkRules) {
-                const targetId = rule.config.targetStatusId;
-                if (targetId && targetId !== (nextPatch.status ?? existing.status)) {
-                  effects.automations.push(() => {
-                    updateTaskRef.current(taskId, { status: targetId as WorkTaskStatus });
-                  });
-                  break;
-                }
-              }
-            }
-          }
-
-          if (nextPatch.status && nextPatch.status !== existing.status && existing.kind === "subtask" && existing.parentId) {
-            const parentId = existing.parentId;
-            const closedStatus = nextPatch.status;
-            const parentTask = current.find((t) => t.id === parentId);
-            if (parentTask) {
-              const parentCatalog = listStatusesRef.current.filter(
-                (s) => s.listId === parentTask.listId,
-              );
-              const isNewStatusClosed = isClosedTaskStatus(closedStatus, parentCatalog);
-              if (isNewStatusClosed) {
-                const siblings = current.filter(
-                  (t) => t.parentId === parentId && t.id !== taskId && !t.deletedAt,
-                );
-                const allSiblingsClosed = siblings.every((t) =>
-                  isClosedTaskStatus(t.status, parentCatalog),
-                );
-                if (allSiblingsClosed) {
-                  const subRules = activeAllSubtasksCompletedRules(automations, parentTask.listId);
-                  for (const rule of subRules) {
-                    const targetId = rule.config.targetStatusId;
-                    if (targetId && targetId !== parentTask.status) {
-                      effects.automations.push(() => {
-                        updateTaskRef.current(parentId, { status: targetId as WorkTaskStatus });
-                      });
-                      break;
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-
-        return current.map((task) =>
-          task.id === taskId
-            ? {
-                ...task,
-                ...nextPatch,
-                ...(nextPatch.status && nextPatch.status !== existing.status
-                  ? { statusChangedAt }
-                  : {}),
-              }
-            : task,
-        );
-      });
-
-      if (effects.retry) {
+      const current = tasksRef.current;
+      const existing = current.find((task) => task.id === taskId);
+      if (!existing) {
         return new Promise<void>((resolve, reject) => {
           queueMicrotask(() => {
             const pending = tasksRef.current.find((task) => task.id === taskId);
@@ -1143,38 +950,213 @@ export function ListsProvider({ children }: { children: ReactNode }) {
         });
       }
 
-      for (const event of effects.events) {
+      let nextPatch = { ...incomingPatch };
+      const nextChecklists =
+        nextPatch.checklists !== undefined
+          ? normalizeTaskChecklists(nextPatch.checklists)
+          : (existing.checklists ?? []);
+      const catalog = listStatusesRef.current.filter(
+        (status) => status.listId === existing.listId,
+      );
+      const requestedStatus = nextPatch.status;
+      const closingBlocked =
+        checklistsEnabledRef.current &&
+        Boolean(requestedStatus) &&
+        requestedStatus !== existing.status &&
+        isClosedTaskStatus(requestedStatus as WorkTaskStatus, catalog) &&
+        taskHasIncompleteChecklists(nextChecklists);
+      if (closingBlocked) {
+        const { status: ignoredStatus, ...rest } = nextPatch;
+        void ignoredStatus;
+        nextPatch = rest;
+      }
+      if (nextPatch.checklists !== undefined) {
+        nextPatch = { ...nextPatch, checklists: nextChecklists };
+      }
+
+      let statusChangedAt = existing.statusChangedAt;
+      if (nextPatch.status && nextPatch.status !== existing.status) {
+        statusChangedAt = new Date().toISOString();
+      }
+
+      const events: TaskActivity[] = [];
+      const notifications: AppNotification[] = [];
+      const assigneeNotifications: AppNotification[] = [];
+      const automations: Array<() => void> = [];
+
+      const nextEvents = buildTaskUpdateActivityEvents(
+        taskId,
+        assignmentNotifyRef.current.actorId,
+        existing,
+        nextPatch,
+      );
+      if (nextEvents.length > 0) {
+        events.push(...nextEvents);
+        const notify = assignmentNotifyRef.current;
+        notifications.push(
+          ...buildTaskUpdateNotifications({
+            actorId: notify.actorId,
+            existing,
+            patch: nextPatch,
+            tasks: current,
+            members: notify.members,
+            activities: nextEvents,
+            lists: listsRef.current,
+          }),
+        );
+      }
+
+      if (
+        nextPatch.assigneeIds &&
+        nextPatch.assigneeIds.some(
+          (id) => !existing.assigneeIds.includes(id),
+        )
+      ) {
+        const notify = assignmentNotifyRef.current;
+        const addedIds = memberIdsNotifiedForAssignees(
+          nextPatch.assigneeIds.filter(
+            (id) => !existing.assigneeIds.includes(id),
+          ),
+          notify.members,
+        );
+        const parentId =
+          existing.kind === "subtask" && existing.parentId
+            ? existing.parentId
+            : existing.id;
+        assigneeNotifications.push(
+          ...notificationsForNewAssignees({
+            actorId: notify.actorId,
+            addedIds,
+            memberIds: notify.memberIds,
+            taskTitle: nextPatch.title ?? existing.title,
+            taskPath: notificationTaskPath(
+              current,
+              existing,
+              listsRef.current.find((item) => item.id === existing.listId)?.name ??
+                null,
+            ),
+            href: `/lists/${existing.listId}/tasks/${parentId}`,
+          }),
+        );
+      }
+
+      const dbPatch = {
+        ...nextPatch,
+        ...(nextPatch.status && nextPatch.status !== existing.status
+          ? { statusChangedAt }
+          : {}),
+      };
+
+      if (automationsEnabledRef.current) {
+        const rules = listAutomationsRef.current;
+
+        if (nextPatch.status && nextPatch.status !== existing.status) {
+          const assignRules = activeStatusChangedAssignRules(
+            rules, existing.listId, nextPatch.status,
+          );
+          for (const rule of assignRules) {
+            const uid = rule.config.assigneeId;
+            if (uid && !existing.assigneeIds.includes(uid)) {
+              const merged = [...new Set([...(nextPatch.assigneeIds ?? existing.assigneeIds), uid])];
+              automations.push(() => {
+                updateTaskRef.current(taskId, { assigneeIds: merged });
+              });
+            }
+          }
+        }
+
+        if (nextPatch.checklists !== undefined && checklistsEnabledRef.current) {
+          const allComplete = !taskHasIncompleteChecklists(nextChecklists) && nextChecklists.length > 0;
+          if (allComplete) {
+            const checkRules = activeChecklistCompletedRules(rules, existing.listId);
+            for (const rule of checkRules) {
+              const targetId = rule.config.targetStatusId;
+              if (targetId && targetId !== (nextPatch.status ?? existing.status)) {
+                automations.push(() => {
+                  updateTaskRef.current(taskId, { status: targetId as WorkTaskStatus });
+                });
+                break;
+              }
+            }
+          }
+        }
+
+        if (nextPatch.status && nextPatch.status !== existing.status && existing.kind === "subtask" && existing.parentId) {
+          const parentId = existing.parentId;
+          const closedStatus = nextPatch.status;
+          const parentTask = current.find((t) => t.id === parentId);
+          if (parentTask) {
+            const parentCatalog = listStatusesRef.current.filter(
+              (s) => s.listId === parentTask.listId,
+            );
+            const isNewStatusClosed = isClosedTaskStatus(closedStatus, parentCatalog);
+            if (isNewStatusClosed) {
+              const siblings = current.filter(
+                (t) => t.parentId === parentId && t.id !== taskId && !t.deletedAt,
+              );
+              const allSiblingsClosed = siblings.every((t) =>
+                isClosedTaskStatus(t.status, parentCatalog),
+              );
+              if (allSiblingsClosed) {
+                const subRules = activeAllSubtasksCompletedRules(rules, parentTask.listId);
+                for (const rule of subRules) {
+                  const targetId = rule.config.targetStatusId;
+                  if (targetId && targetId !== parentTask.status) {
+                    automations.push(() => {
+                      updateTaskRef.current(parentId, { status: targetId as WorkTaskStatus });
+                    });
+                    break;
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+
+      const nextTask = {
+        ...existing,
+        ...nextPatch,
+        ...(nextPatch.status && nextPatch.status !== existing.status
+          ? { statusChangedAt }
+          : {}),
+      };
+      tasksRef.current = current.map((task) =>
+        task.id === taskId ? nextTask : task,
+      );
+      setTasks((tasks) =>
+        tasks.map((task) => (task.id === taskId ? { ...task, ...nextPatch, ...(nextPatch.status && nextPatch.status !== existing.status ? { statusChangedAt } : {}) } : task)),
+      );
+
+      for (const event of events) {
         persistActivity(event);
       }
       const notify = assignmentNotifyRef.current;
-      if (effects.notifications.length > 0) {
+      if (notifications.length > 0) {
         queueMicrotask(() =>
           appendNotifications(
-            effects.notifications,
+            notifications,
             notify.userId,
             notify.teamId,
             notify.members,
           ),
         );
       }
-      if (effects.assigneeNotifications.length > 0) {
+      if (assigneeNotifications.length > 0) {
         queueMicrotask(() =>
           appendNotifications(
-            effects.assigneeNotifications,
+            assigneeNotifications,
             notify.userId,
             notify.teamId,
             notify.members,
           ),
         );
       }
-      let persist = Promise.resolve();
-      if (effects.dbTaskId && effects.dbPatch) {
-        persist = enqueueTaskRowUpdate(effects.dbTaskId, effects.dbPatch);
-        persist.catch((error) => {
-          console.error("Failed to update task", formatSupabaseError(error));
-        });
-      }
-      for (const run of effects.automations) {
+      const persist = enqueueTaskRowUpdate(taskId, dbPatch);
+      persist.catch((error) => {
+        console.error("Failed to update task", formatSupabaseError(error));
+      });
+      for (const run of automations) {
         queueMicrotask(run);
       }
       return persist;

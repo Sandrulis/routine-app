@@ -845,7 +845,7 @@ export const sv: Record<string, string> = {
   "folders.fields.subfolder_placeholder": "Undermappnamn",
   "folders.sync_statuses": "Uppdatera statusar",
   "folders.sync_statuses.description": "Lägg till mallens saknade statusar och matcha ordning och dolda statusar.",
-  "folders.sync_statuses.success": "Statusar uppdaterade.",
+  "folders.sync_statuses.success": "Statusar sparade.",
   "folders.unarchived": "Mapp borttagen från arkivet.",
   "folders.updated": "Mapp sparad.",
   "frontend_modules.aria.enabled": "{key} aktiverad",

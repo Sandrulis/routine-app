@@ -845,7 +845,7 @@ export const ru: Record<string, string> = {
   "folders.fields.subfolder_placeholder": "Название подпапки",
   "folders.sync_statuses": "Обновить статусы",
   "folders.sync_statuses.description": "Добавить недостающие статусы шаблона и совместить порядок и скрытые статусы.",
-  "folders.sync_statuses.success": "Статусы обновлены.",
+  "folders.sync_statuses.success": "Статусы сохранены.",
   "folders.unarchived": "Папка убрана из архива.",
   "folders.updated": "Папка сохранена.",
   "frontend_modules.aria.enabled": "{key} включён",

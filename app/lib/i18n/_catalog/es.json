@@ -845,7 +845,7 @@
   "folders.fields.subfolder_placeholder": "Nombre de la subcarpeta",
   "folders.sync_statuses": "Actualizar estados",
   "folders.sync_statuses.description": "Añade los estados que faltan de la plantilla y alinea el orden y los estados ocultos.",
-  "folders.sync_statuses.success": "Estados actualizados.",
+  "folders.sync_statuses.success": "Estados guardados.",
   "folders.unarchived": "Carpeta sacada del archivo.",
   "folders.updated": "Carpeta guardada.",
   "frontend_modules.aria.enabled": "{key} activado",

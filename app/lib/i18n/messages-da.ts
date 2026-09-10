@@ -845,7 +845,7 @@ export const da: Record<string, string> = {
   "folders.fields.subfolder_placeholder": "Undermappenavn",
   "folders.sync_statuses": "Opdater statusser",
   "folders.sync_statuses.description": "Tilføj manglende skabelonstatusser, og match rækkefølge og skjulte statusser fra skabelonen.",
-  "folders.sync_statuses.success": "Statusser opdateret.",
+  "folders.sync_statuses.success": "Statusser gemt.",
   "folders.unarchived": "Mappe fjernet fra arkiv.",
   "folders.updated": "Mappe gemt.",
   "frontend_modules.aria.enabled": "{key} slået til",

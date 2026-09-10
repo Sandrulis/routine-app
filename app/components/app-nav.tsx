@@ -897,7 +897,7 @@ export function AppNav({
       await Promise.all(persists);
       showFeedback({
         type: "success",
-        text: t("folders.sync_statuses.success", "Statusi atjaunoti."),
+        text: t("folders.sync_statuses.success", "Statusi saglabāti."),
       });
     } catch {
       showFeedback({

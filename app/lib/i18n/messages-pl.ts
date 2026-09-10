@@ -845,7 +845,7 @@ export const pl: Record<string, string> = {
   "folders.fields.subfolder_placeholder": "Nazwa podfolderu",
   "folders.sync_statuses": "Odśwież statusy",
   "folders.sync_statuses.description": "Dodaj brakujące statusy szablonu i dopasuj kolejność oraz ukryte statusy.",
-  "folders.sync_statuses.success": "Statusy odświeżone.",
+  "folders.sync_statuses.success": "Statusy zapisane.",
   "folders.unarchived": "Folder wyjęty z archiwum.",
   "folders.updated": "Folder zapisany.",
   "frontend_modules.aria.enabled": "{key} włączony",

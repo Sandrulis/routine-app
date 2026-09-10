@@ -845,7 +845,7 @@ export const fi: Record<string, string> = {
   "folders.fields.subfolder_placeholder": "Alikansion nimi",
   "folders.sync_statuses": "Päivitä tilat",
   "folders.sync_statuses.description": "Lisää mallista puuttuvat tilat ja sovita järjestys sekä piilotetut tilat malliin.",
-  "folders.sync_statuses.success": "Tilat päivitetty.",
+  "folders.sync_statuses.success": "Tilat tallennettu.",
   "folders.unarchived": "Kansio poistettu arkistosta.",
   "folders.updated": "Kansio tallennettu.",
   "frontend_modules.aria.enabled": "{key} käytössä",
