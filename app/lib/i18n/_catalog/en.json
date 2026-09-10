@@ -733,6 +733,7 @@
   "admin.users.last_seen_never": "Has not signed in yet",
   "admin.users.email_unconfirmed": "Email is not confirmed",
   "admin.users.no_team": "Not in a team",
+  "admin.users.todos.total": "{count} total",
   "admin.teams.empty": "No teams yet.",
   "admin.teams.members": "Users",
   "admin.teams.plan.column": "Plan",

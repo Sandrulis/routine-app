@@ -195,6 +195,7 @@ export const lt: Record<string, string> = {
   "admin.users.last_seen_never": "Dar neprisijungė",
   "admin.users.no_team": "Nėra komandoje",
   "admin.users.registered": "Prisijungė",
+  "admin.users.todos.total": "{count} iš viso",
   "app.name": "{SYSTEM_NAME}",
   "app.subtitle": "Komandos darbų sąrašas",
   "auth.confirm.failed": "Ši nuoroda nebegalioja arba neteisinga. Paprašykite naujo laiško ir atidarykite jį toje pačioje naršyklėje.",

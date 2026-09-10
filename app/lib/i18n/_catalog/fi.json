@@ -195,6 +195,7 @@
   "admin.users.last_seen_never": "Ei ole vielä kirjautunut",
   "admin.users.no_team": "Ei tiimissä",
   "admin.users.registered": "Liittynyt",
+  "admin.users.todos.total": "{count} yhteensä",
   "app.name": "{SYSTEM_NAME}",
   "app.subtitle": "Tiimin tehtävälista",
   "auth.confirm.failed": "Tämä linkki on vanhentunut tai ei ole voimassa. Pyydä uusi sähköposti ja avaa se samassa selaimessa.",

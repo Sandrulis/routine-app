@@ -195,6 +195,7 @@ export const ru: Record<string, string> = {
   "admin.users.last_seen_never": "Ещё не входил",
   "admin.users.no_team": "Нет в команде",
   "admin.users.registered": "Зарегистрирован",
+  "admin.users.todos.total": "{count} всего",
   "app.name": "{SYSTEM_NAME}",
   "app.subtitle": "Командный список задач",
   "auth.confirm.failed": "Срок ссылки истёк или она недействительна. Запросите новое письмо и откройте его в том же браузере.",

@@ -195,6 +195,7 @@
   "admin.users.last_seen_never": "Noch nicht angemeldet",
   "admin.users.no_team": "In keinem Team",
   "admin.users.registered": "Beigetreten",
+  "admin.users.todos.total": "{count} insgesamt",
   "app.name": "{SYSTEM_NAME}",
   "app.subtitle": "Team-To-do-Liste",
   "auth.confirm.failed": "Dieser Link ist abgelaufen oder ungültig. Fordere eine neue E-Mail an und öffne sie im selben Browser.",

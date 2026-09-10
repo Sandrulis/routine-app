@@ -195,6 +195,7 @@
   "admin.users.last_seen_never": "Non ha ancora effettuato l'accesso",
   "admin.users.no_team": "Non in un team",
   "admin.users.registered": "Iscritto",
+  "admin.users.todos.total": "{count} in totale",
   "app.name": "{SYSTEM_NAME}",
   "app.subtitle": "Elenco cose da fare del team",
   "auth.confirm.failed": "Questo link è scaduto o non è valido. Richiedi una nuova e-mail e aprila nello stesso browser.",

@@ -195,6 +195,7 @@
   "admin.users.last_seen_never": "Har ikke logget ind endnu",
   "admin.users.no_team": "Ikke i et team",
   "admin.users.registered": "Tilmeldt",
+  "admin.users.todos.total": "{count} i alt",
   "app.name": "{SYSTEM_NAME}",
   "app.subtitle": "Team-opgaveliste",
   "auth.confirm.failed": "Dette link er udløbet eller ugyldigt. Anmod om en ny e-mail, og åbn den i den samme browser.",

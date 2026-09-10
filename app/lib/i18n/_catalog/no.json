@@ -195,6 +195,7 @@
   "admin.users.last_seen_never": "Har ikke logget inn ennå",
   "admin.users.no_team": "Ikke i et team",
   "admin.users.registered": "Registrert",
+  "admin.users.todos.total": "{count} totalt",
   "app.name": "{SYSTEM_NAME}",
   "app.subtitle": "Team-gjøremålsliste",
   "auth.confirm.failed": "Denne lenken er utløpt eller ugyldig. Be om en ny e-post og åpne den i samme nettleser.",

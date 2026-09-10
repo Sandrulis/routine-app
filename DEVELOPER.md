@@ -157,7 +157,7 @@ Ielāde: `LoadingState` (`app/components/loading-state.tsx`, `fas fa-circle-notc
 
 | Ceļš | Saturs |
 |---|---|
-| `/admin/users` | Visi `public.users`: pievienot, labot, dzēst; `is_admin` slēdzis (neapstiprinātam e-pastam izslēgts); pēdējā tiešsaiste; UI valodas kods; pēdējā IP un valsts (`142`, tikai admin) |
+| `/admin/users` | Visi `public.users`: pievienot, labot, dzēst; `is_admin` slēdzis (neapstiprinātam e-pastam izslēgts); pēdējā tiešsaiste; UI valodas kods; pēdējā IP un valsts (`142`, tikai admin); aktīvie/kopējie darāmie (`listAdminUsers`, `149` admin select) |
 | `/admin/teams` | Visas `teams`: pievienot, labot, dzēst (kaskāde uz darba datiem); skaitļi sarakstiem, aktīvajiem/izpildītajiem uzdevumiem un apakšuzdevumiem (`listAdminTeams`, `148` admin select); VIP zvaigzne lietotāju modālī (`setAdminTeamVipAction`, `is_vip`) |
 | `/admin/roles` | Sistēmas noklusējuma lomas un pieejas (`system_default_roles`); jaunām komandām |
 | `/admin/statuses` | Uzdevumu statusu katalogs (`task_statuses`): nosaukums katrā valodā, krāsa, grupa, kārtojums |

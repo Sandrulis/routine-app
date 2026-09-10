@@ -4,6 +4,10 @@
 
 - (none)
 
+## v0.3.91
+
+- Admin lietotāju sarakstā katram lietotājam rāda aktīvo un kopējo darāmo skaitu
+
 ## v0.3.90
 
 - **Atjaunot statusus** pārņem arī šablona secību un paslēptos statusus, ne tikai trūkstošos nosaukumus

@@ -195,6 +195,7 @@
   "admin.users.last_seen_never": "Ne s'est pas encore connecté",
   "admin.users.no_team": "Pas dans une équipe",
   "admin.users.registered": "Inscrit",
+  "admin.users.todos.total": "{count} au total",
   "app.name": "{SYSTEM_NAME}",
   "app.subtitle": "Liste de tâches d'équipe",
   "auth.confirm.failed": "Ce lien a expiré ou n'est pas valide. Demande un nouvel e-mail et ouvre-le dans le même navigateur.",

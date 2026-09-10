@@ -202,6 +202,33 @@ type WorkDataClient =
   | ReturnType<typeof createAdminClient>
   | Awaited<ReturnType<typeof getSessionClient>>;
 
+type AdminUserTodoCounts = {
+  active: number;
+  total: number;
+};
+
+async function loadAdminUserTodoCounts(
+  supabase: WorkDataClient,
+): Promise<Map<string, AdminUserTodoCounts>> {
+  const counts = new Map<string, AdminUserTodoCounts>();
+
+  try {
+    const rows = await fetchAllRows<{ user_id: string; is_done: boolean }>((from, to) =>
+      supabase.from("user_todos").select("user_id, is_done").range(from, to),
+    );
+    for (const row of rows) {
+      const current = counts.get(row.user_id) ?? { active: 0, total: 0 };
+      current.total += 1;
+      if (!row.is_done) current.active += 1;
+      counts.set(row.user_id, current);
+    }
+  } catch (error) {
+    console.error("loadAdminUserTodoCounts failed:", error);
+  }
+
+  return counts;
+}
+
 async function loadAdminTeamWorkCounts(
   supabase: WorkDataClient,
 ): Promise<Map<string, AdminTeamWorkCounts>> {
@@ -345,7 +372,7 @@ export const listAdminUsers = cache(async function listAdminUsers(): Promise<Adm
     return [];
   }
 
-  const [{ data: memberships }, { data: teams }, lastIpsResult, unconfirmedResult] =
+  const [{ data: memberships }, { data: teams }, lastIpsResult, unconfirmedResult, todoCounts] =
     await Promise.all([
       supabase
         .from("team_members")
@@ -355,6 +382,7 @@ export const listAdminUsers = cache(async function listAdminUsers(): Promise<Adm
       isSupabaseAdminConfigured()
         ? createAdminClient().rpc("list_unconfirmed_auth_user_ids")
         : Promise.resolve({ data: [] as { id: string }[], error: null }),
+      loadAdminUserTodoCounts(supabase),
     ]);
 
   if (lastIpsResult.error) {
@@ -406,6 +434,7 @@ export const listAdminUsers = cache(async function listAdminUsers(): Promise<Adm
 
   return ((data ?? []) as UserRow[]).map((row) => {
     const emailConfirmed = !unconfirmedIds.has(row.id);
+    const todos = todoCounts.get(row.id);
     return {
       id: row.id,
       name: row.name,
@@ -419,6 +448,8 @@ export const listAdminUsers = cache(async function listAdminUsers(): Promise<Adm
       lastIp: lastIpByUser.get(row.id)?.ip ?? null,
       lastIpCountry: lastIpByUser.get(row.id)?.country_code ?? null,
       teams: teamsByUser.get(row.id) ?? [],
+      todoActiveCount: todos?.active ?? 0,
+      todoTotalCount: todos?.total ?? 0,
     };
   });
 });

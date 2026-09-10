@@ -195,6 +195,7 @@
   "admin.users.last_seen_never": "Nog niet ingelogd",
   "admin.users.no_team": "Niet in een team",
   "admin.users.registered": "Aangesloten",
+  "admin.users.todos.total": "{count} in totaal",
   "app.name": "{SYSTEM_NAME}",
   "app.subtitle": "Team-takenlijst",
   "auth.confirm.failed": "Deze link is verlopen of ongeldig. Vraag een nieuwe e-mail aan en open die in dezelfde browser.",

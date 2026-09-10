@@ -195,6 +195,7 @@ export const pl: Record<string, string> = {
   "admin.users.last_seen_never": "Jeszcze się nie logował",
   "admin.users.no_team": "Poza zespołem",
   "admin.users.registered": "Dołączył",
+  "admin.users.todos.total": "{count} łącznie",
   "app.name": "{SYSTEM_NAME}",
   "app.subtitle": "Zespołowa lista zadań",
   "auth.confirm.failed": "Ten link wygasł albo jest nieprawidłowy. Poproś o nowy e-mail i otwórz go w tej samej przeglądarce.",

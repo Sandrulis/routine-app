@@ -20,6 +20,7 @@ import { useDisplayPreferences } from "@/app/components/display-preferences-prov
 import { useTranslations } from "@/app/components/translations-provider";
 import { translateActionError } from "@/app/lib/i18n/action-errors";
 import { formatCountryName } from "@/app/lib/format/country";
+import { formatInteger } from "@/app/lib/format/numbers";
 import { MemberLastOnline } from "@/app/components/member-last-online";
 import { UserAvatar } from "@/app/components/user-avatar";
 import { useTeam } from "@/app/lib/team-store";
@@ -73,6 +74,8 @@ export function AdminUsersManager({
         lastIp: null,
         lastIpCountry: null,
         teams: [],
+        todoActiveCount: 0,
+        todoTotalCount: 0,
       })
     : emptyDraft();
   const isDirty = JSON.stringify(draft) !== JSON.stringify(initialDraft);
@@ -164,6 +167,7 @@ export function AdminUsersManager({
                 <th className="px-5 py-3">{t("common.name", "Vārds")}</th>
                 <th className="px-5 py-3">{t("admin.users.registered", "Reģistrējies")}</th>
                 <th className="px-5 py-3">{t("nav.team", "Komanda")}</th>
+                <th className="px-5 py-3">{t("user_todo.title", "Darāmo saraksts")}</th>
                 <th className="px-5 py-3 text-right">{t("common.actions", "Darbības")}</th>
               </tr>
             </thead>
@@ -313,6 +317,16 @@ export function AdminUsersManager({
                       )}
                     </td>
                     <td className="px-5 py-4">
+                      <p className="tabular-nums font-semibold text-zinc-900">
+                        {formatInteger(user.todoActiveCount)}
+                      </p>
+                      <p className="mt-0.5 text-xs text-zinc-400">
+                        {t("admin.users.todos.total", "{count} kopā", {
+                          count: formatInteger(user.todoTotalCount),
+                        })}
+                      </p>
+                    </td>
+                    <td className="px-5 py-4">
                       <div className="flex justify-end gap-1">
                         <IconActionButton
                           label={t("actions.edit", "Labot")}
@@ -344,7 +358,7 @@ export function AdminUsersManager({
               })}
               {users.length === 0 ? (
                 <tr>
-                  <td colSpan={4} className="px-5 py-8 text-center text-zinc-500">
+                  <td colSpan={5} className="px-5 py-8 text-center text-zinc-500">
                     {t("admin.users.empty", "Nav neviena lietotāja.")}
                   </td>
                 </tr>

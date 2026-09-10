@@ -195,6 +195,7 @@
   "admin.users.last_seen_never": "Pole veel sisse loginud",
   "admin.users.no_team": "Pole meeskonnas",
   "admin.users.registered": "Liitunud",
+  "admin.users.todos.total": "{count} kokku",
   "app.name": "{SYSTEM_NAME}",
   "app.subtitle": "Meeskonna tööde nimekiri",
   "auth.confirm.failed": "See link on aegunud või kehtetu. Palu uus e-kiri ja ava see samas brauseris.",

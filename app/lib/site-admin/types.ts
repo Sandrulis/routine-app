@@ -22,6 +22,8 @@ export type AdminUserSummary = {
   lastIp: string | null;
   lastIpCountry: string | null;
   teams: AdminUserTeamSummary[];
+  todoActiveCount: number;
+  todoTotalCount: number;
 };
 
 export type AdminUserInput = {

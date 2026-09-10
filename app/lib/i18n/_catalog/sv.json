@@ -195,6 +195,7 @@
   "admin.users.last_seen_never": "Har inte loggat in ännu",
   "admin.users.no_team": "Inte i ett team",
   "admin.users.registered": "Gick med",
+  "admin.users.todos.total": "{count} totalt",
   "app.name": "{SYSTEM_NAME}",
   "app.subtitle": "Teamets att-göra-lista",
   "auth.confirm.failed": "Den här länken har gått ut eller är ogiltig. Be om ett nytt e-postmeddelande och öppna det i samma webbläsare.",

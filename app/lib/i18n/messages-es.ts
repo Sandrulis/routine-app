@@ -195,6 +195,7 @@ export const es: Record<string, string> = {
   "admin.users.last_seen_never": "Aún no ha iniciado sesión",
   "admin.users.no_team": "Sin equipo",
   "admin.users.registered": "Se unió",
+  "admin.users.todos.total": "{count} en total",
   "app.name": "{SYSTEM_NAME}",
   "app.subtitle": "Lista de tareas del equipo",
   "auth.confirm.failed": "Este enlace ha caducado o no es válido. Pide un correo nuevo y ábrelo en el mismo navegador.",
