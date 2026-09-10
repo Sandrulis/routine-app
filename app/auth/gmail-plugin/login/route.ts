@@ -45,8 +45,8 @@ function withRememberCookie(response: NextResponse) {
 }
 
 /**
- * Plugin Google login: identity + Gmail readonly in one consent, with offline
- * refresh so `user_gmail_connections` can be filled in the same callback.
+ * Plugin Google login: identity + current open message in one consent, with
+ * offline refresh so `user_gmail_connections` can be filled in the same callback.
  * Uses the Google Plugin Cloud app — not website Google OAuth.
  */
 export async function GET(request: Request) {
@@ -69,7 +69,7 @@ export async function GET(request: Request) {
     prompt: "select_account consent",
     accessType: "offline",
     scopes: GMAIL_PLUGIN_SCOPES,
-    includeGrantedScopes: true,
+    includeGrantedScopes: false,
   });
   if (!url) {
     return redirectTo(oauthOrigin, GMAIL_PLUGIN_DONE_PATH, {

@@ -1456,6 +1456,8 @@ export const de: Record<string, string> = {
   "lists.windows.files_name_placeholder": "Zum Beispiel Plan.pdf",
   "lists.windows.files_note_placeholder": "Kurze Notiz",
   "lists.windows.history": "Verlauf",
+  "lists.windows.history.hide": "Verlauf ausblenden",
+  "lists.windows.history.show": "Verlauf einblenden",
   "lists.windows.overview": "Liste",
   "lists.windows.progress": "{done}/{total}",
   "lists.windows.tasks": "Aufgaben",
@@ -2245,6 +2247,4 @@ export const de: Record<string, string> = {
   "user_todo.open_with_count": "To-do-Liste ({count})",
   "user_todo.placeholder": "Neue Aufgabe",
   "user_todo.title": "To-do-Liste",
-  "lists.windows.history.hide": "Verlauf ausblenden",
-  "lists.windows.history.show": "Verlauf einblenden",
 };

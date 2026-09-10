@@ -1456,6 +1456,8 @@ export const et: Record<string, string> = {
   "lists.windows.files_name_placeholder": "Näiteks Plaan.pdf",
   "lists.windows.files_note_placeholder": "Lühike märkus",
   "lists.windows.history": "Ajalugu",
+  "lists.windows.history.hide": "Peida ajalugu",
+  "lists.windows.history.show": "Näita ajalugu",
   "lists.windows.overview": "Nimekiri",
   "lists.windows.progress": "{done}/{total}",
   "lists.windows.tasks": "Ülesanded",
@@ -2245,6 +2247,4 @@ export const et: Record<string, string> = {
   "user_todo.open_with_count": "Ülesannete nimekiri ({count})",
   "user_todo.placeholder": "Uus ülesanne",
   "user_todo.title": "Ülesannete nimekiri",
-  "lists.windows.history.hide": "Peida ajalugu",
-  "lists.windows.history.show": "Näita ajalugu",
 };

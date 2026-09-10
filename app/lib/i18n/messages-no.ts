@@ -1456,6 +1456,8 @@ export const no: Record<string, string> = {
   "lists.windows.files_name_placeholder": "For eksempel Plan.pdf",
   "lists.windows.files_note_placeholder": "Kort merknad",
   "lists.windows.history": "Historikk",
+  "lists.windows.history.hide": "Skjul historikk",
+  "lists.windows.history.show": "Vis historikk",
   "lists.windows.overview": "Liste",
   "lists.windows.progress": "{done}/{total}",
   "lists.windows.tasks": "Oppgaver",
@@ -2245,6 +2247,4 @@ export const no: Record<string, string> = {
   "user_todo.open_with_count": "Gjøremålsliste ({count})",
   "user_todo.placeholder": "Ny oppgave",
   "user_todo.title": "Gjøremålsliste",
-  "lists.windows.history.hide": "Skjul historikk",
-  "lists.windows.history.show": "Vis historikk",
 };

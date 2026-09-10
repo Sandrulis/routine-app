@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { AppModal } from "@/app/components/app-modal";
 import { IconActionButton } from "@/app/components/icon-action-button";
 import { OtpCodeInput } from "@/app/components/otp-code-input";
-import { useFeedbackToast } from "@/app/components/feedback-toast-provider";
 import { useTranslations } from "@/app/components/translations-provider";
 import { getSafeRedirectPath } from "@/app/lib/security/safe-redirect-path";
 import { signOutWebsiteLocally } from "@/app/lib/auth/sign-out-website";
@@ -15,6 +14,10 @@ import { isSupabaseConfigured } from "@/app/lib/supabase/env";
 function onlyDigits(raw: string) {
   return raw.replace(/\D/g, "").slice(0, 6);
 }
+
+type VerifyStatus = "idle" | "pending" | "success" | "error";
+
+const RESULT_HOLD_MS = 900;
 
 export function MfaVerifyModal({
   open,
@@ -29,23 +32,36 @@ export function MfaVerifyModal({
 }) {
   const { t } = useTranslations();
   const router = useRouter();
-  const { showFeedback } = useFeedbackToast();
   const codeLabelId = useId();
   const [factorId, setFactorId] = useState<string | null>(null);
   const [code, setCode] = useState("");
-  const [pending, setPending] = useState(false);
+  const [verifyStatus, setVerifyStatus] = useState<VerifyStatus>("idle");
   const [otpNonce, setOtpNonce] = useState(0);
   const factorIdRef = useRef<string | null>(null);
   const verifyingRef = useRef(false);
   const queuedCodeRef = useRef<string | null>(null);
+  const resultTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const isLogin = mode === "login";
+  const pending = verifyStatus !== "idle";
   factorIdRef.current = factorId;
+
+  function clearResultTimer() {
+    if (resultTimerRef.current) {
+      clearTimeout(resultTimerRef.current);
+      resultTimerRef.current = null;
+    }
+  }
+
+  useEffect(() => {
+    return () => clearResultTimer();
+  }, []);
 
   useEffect(() => {
     if (!open) return;
+    clearResultTimer();
     setCode("");
-    setPending(false);
+    setVerifyStatus("idle");
     verifyingRef.current = false;
     queuedCodeRef.current = null;
     setOtpNonce((value) => value + 1);
@@ -85,19 +101,11 @@ export function MfaVerifyModal({
     if (!currentFactorId || verifyingRef.current) return;
 
     verifyingRef.current = true;
-    setPending(true);
+    setVerifyStatus("pending");
     const supabase = createClient();
     const challenge = await supabase.auth.mfa.challenge({ factorId: currentFactorId });
     if (challenge.error || !challenge.data) {
-      verifyingRef.current = false;
-      queuedCodeRef.current = null;
-      setPending(false);
-      setCode("");
-      setOtpNonce((value) => value + 1);
-      showFeedback({
-        type: "error",
-        text: t("errors.mfa_code_invalid", "Nepareizs kods. Mēģini vēlreiz."),
-      });
+      showVerifyError();
       return;
     }
 
@@ -107,32 +115,34 @@ export function MfaVerifyModal({
       code: digits,
     });
     if (verified.error) {
-      verifyingRef.current = false;
-      queuedCodeRef.current = null;
-      setPending(false);
-      setCode("");
-      setOtpNonce((value) => value + 1);
-      showFeedback({
-        type: "error",
-        text: t("errors.mfa_code_invalid", "Nepareizs kods. Mēģini vēlreiz."),
-      });
+      showVerifyError();
       return;
     }
 
-    if (isLogin) {
-      showFeedback({
-        type: "success",
-        text: t("auth.login.success", "Veiksmīgi ienāci."),
-      });
-      if (nextPath) {
+    setVerifyStatus("success");
+    clearResultTimer();
+    resultTimerRef.current = setTimeout(() => {
+      if (isLogin && nextPath) {
         router.push(getSafeRedirectPath(nextPath));
       }
-    }
-    if (onVerified) {
-      onVerified();
-      return;
-    }
-    router.refresh();
+      if (onVerified) {
+        onVerified();
+        return;
+      }
+      router.refresh();
+    }, RESULT_HOLD_MS);
+  }
+
+  function showVerifyError() {
+    setVerifyStatus("error");
+    clearResultTimer();
+    resultTimerRef.current = setTimeout(() => {
+      verifyingRef.current = false;
+      queuedCodeRef.current = null;
+      setVerifyStatus("idle");
+      setCode("");
+      setOtpNonce((value) => value + 1);
+    }, RESULT_HOLD_MS);
   }
 
   return (
@@ -178,7 +188,7 @@ export function MfaVerifyModal({
             )}
           </p>
         )}
-        <div className="block" aria-busy={pending}>
+        <div className="block" aria-busy={verifyStatus === "pending"}>
           <span
             id={codeLabelId}
             className="block text-center text-sm font-semibold text-zinc-700"
@@ -195,12 +205,53 @@ export function MfaVerifyModal({
             autoFocus
             labelledBy={codeLabelId}
           />
-          {pending ? (
-            <p className="mt-3 flex items-center justify-center gap-2 text-sm text-zinc-500">
-              <i className="fas fa-spinner fa-spin text-xs" aria-hidden="true" />
-              {t("common.loading", "Ielādē…")}
+          {verifyStatus === "idle" ? null : (
+            <p
+              className={`mt-3 flex min-h-7 items-center justify-center gap-2 text-sm ${
+                verifyStatus === "success"
+                  ? "text-emerald-600"
+                  : verifyStatus === "error"
+                    ? "text-red-600"
+                    : "text-zinc-500"
+              }`}
+              role="status"
+              aria-live="polite"
+            >
+              <span className="relative inline-flex size-6 items-center justify-center">
+                <i
+                  className={`fas fa-spinner fa-spin absolute text-sm text-zinc-400 transition duration-200 ${
+                    verifyStatus === "pending"
+                      ? "scale-100 opacity-100"
+                      : "scale-50 opacity-0"
+                  }`}
+                  aria-hidden="true"
+                />
+                <i
+                  className={`fas fa-check-circle absolute text-lg text-emerald-600 ${
+                    verifyStatus === "success"
+                      ? "mfa-verify-result-in"
+                      : "scale-50 opacity-0"
+                  }`}
+                  aria-hidden="true"
+                />
+                <i
+                  className={`fas fa-times-circle absolute text-lg text-red-600 ${
+                    verifyStatus === "error"
+                      ? "mfa-verify-result-in"
+                      : "scale-50 opacity-0"
+                  }`}
+                  aria-hidden="true"
+                />
+              </span>
+              <span>
+                {verifyStatus === "success"
+                  ? t("auth.login.success", "Veiksmīgi ienāci.")
+                  : verifyStatus === "error"
+                    ? t("errors.mfa_code_invalid", "Nepareizs kods. Mēģini vēlreiz.")
+                    : t("common.loading", "Ielādē…")}
+              </span>
             </p>
-          ) : null}
+          )}
         </div>
       </div>
     </AppModal>

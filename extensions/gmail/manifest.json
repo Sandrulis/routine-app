@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "TASQIN - Gmail",
   "description": "Attach Gmail emails to TASQIN subtasks.",
-  "version": "0.4.64",
+  "version": "0.4.65",
   "permissions": ["storage", "cookies", "tabs", "alarms", "scripting", "webNavigation"],
   "host_permissions": [
     "https://tasqin.com/*",
@@ -10,6 +10,7 @@
     "http://localhost:3120/*",
     "http://127.0.0.1:3120/*",
     "https://mail.google.com/*",
+    "https://*.googleusercontent.com/*",
     "https://gmail.googleapis.com/*"
   ],
   "background": {

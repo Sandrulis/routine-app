@@ -325,7 +325,7 @@ Prioritāte: biedra rinda (`work_list_viewers.access_level`) → lomas rinda (`w
 - `work_tasks.status` ir brīvs teksts pēc `025_work_tasks_catalog_status.sql` (noņemts check tikai uz todo / in_progress / done)
 - Tabulā `revealActionsOnHover`: bez hover tikai statusa nosaukums; hover (vai atvērts picker / pārvietošana) rāda `>` un trailing pogas, vieta rezervēta, bez animācijas
 - Zem pogas `RelativeTime` (`app/components/relative-time.tsx`, `getLastOnlineDisplay`); tooltipā precīzais `dd.mm.yy hh:mm`
-- Ja apakšuzdevumam ir čeklista punkti (`work_tasks.checklists`) **un** `module_checklist` ir ieslēgts, zem statusa pogas zaļa progresa josla (`checklistProgress`) un labajā `{done}/{total}`; čeklistes ielādē ar workspace (`fetchTeamWorkspace`), lai josla paliktu pēc refresh. Slēgtās grupas statusus un Pabeigt bloķē, kamēr `taskHasIncompleteChecklists`; **aktīvās** (un nav sākts) grupas statusus var mainīt arī ar nepabeigtiem punktiem. `updateTask` noraida slēgto statusu, ja punkti nav izpildīti. Check List moduli izslēdzot bloķēšana **nav**.
+- Ja apakšuzdevumam ir čeklista punkti (`work_tasks.checklists`) **un** `module_checklist` ir ieslēgts, zem statusa pogas zaļa progresa josla (`checklistProgress`) un labajā `{done}/{total}`; tabulā un saraksta logā `fa-caret-right` atver punktus zem rindas ar ātro ķeksi (`toggleChecklistItemDone`). Čeklistes ielādē ar workspace (`fetchTeamWorkspace`), lai josla paliktu pēc refresh. Slēgtās grupas statusus un Pabeigt bloķē, kamēr `taskHasIncompleteChecklists`; **aktīvās** (un nav sākts) grupas statusus var mainīt arī ar nepabeigtiem punktiem. `updateTask` noraida slēgto statusu, ja punkti nav izpildīti. Check List moduli izslēdzot bloķēšana **nav**.
 
 Saraksta statusi: `ListStatusesModal` (`app/components/list-statuses-modal.tsx`) no saraksta `...`. Sistēmas statusi ir lasāmi; komanda var pārsaukt sistēmas statusu šai komandai (`team_status_labels`). Komanda pievieno / labo / dzēš / kārto tikai šī saraksta ierakstus (`list_statuses`, ID `lsts-…`). Dzēšot savu statusu, uzdevumi ar to atgriežas uz `todo`. Nav sākts un slēgts paliek singleton grupas. Rakstīšana: `work_list_has_access(list_id, 'edit')`. CRUD: `lists-store` `addListStatus` / `updateListStatus` / `deleteListStatus` / `reorderListStatuses` / `renameSystemStatus`.
 
@@ -440,7 +440,7 @@ app/
     work-progress.tsx             # done/total, josla, sānjoslas fona aizpildījums
     update-password-form.tsx      # Jauna parole pēc e-pasta saites; PasswordInput + stipruma josla
     mfa-settings-card.tsx         # TOTP enroll/auto-verify/unenroll profilā (visiem)
-    mfa-verify-modal.tsx          # TOTP pie ielogošanās un admin sesijas; 3+3 bloki, auto-verify
+    mfa-verify-modal.tsx          # TOTP pie ielogošanās un admin sesijas; 3+3 bloki, auto-verify; atbilde pie loading (ikona + teksts)
     otp-code-input.tsx            # 6 ciparu TOTP lauki, grupēti 3+3
     legal-document-view.tsx       # Legal lapas + fiksēta satura TOC
     cookie-consent-provider.tsx   # Piekrišanas stāvoklis
@@ -557,7 +557,7 @@ app/
     cron-jobs/                    # tipi, repository, timezone (8:00/9:00, 1000 user batch), executeCronJob
     legal/documents.ts            # Privacy / terms / cookies teksti
     lists.ts                      # Sarakstu/uzdevumu tipi, krāsas, location PATH, parseIdList, parseStatusGroupMap, `workProgressById` / `listProgress`
-    task-checklists.ts            # Čeklistu tipi, progress, incomplete helper
+    task-checklists.ts            # Čeklistu tipi, progress, incomplete helper, redzamība un punkta atzīmēšana
     sidebar-layout.ts             # `xl` (1280px) slieksnis app/docs sānjoslai
     list-statuses.ts              # Saraksta statusu tipi, kataloga merge, `groupTasksByStatus` pēc kataloga
     task-snooze.ts                # Personīgā Atlikt laika helperi

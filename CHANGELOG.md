@@ -4,6 +4,12 @@
 
 - (none)
 
+## v0.3.98
+
+- 2FA pie ielogošanās rāda zaļu/sarkanu ikonu un tekstu pie loading, ne nirstošo paziņojumu
+- Apakšuzdevumam ar checklist caret atver punktus zem rindas ar ātro atzīmēšanu
+- Gmail spraudnis `0.4.65` lasa atvērto vēstuli ar `gmail.addons.current.message.readonly`
+
 ## v0.3.97
 
 - Mapes un apakšuzdevuma vēsturi var paslēpt un atkal parādīt (slīd pa labi un atpakaļ); izvēle paliek preferenču sīkdatnē

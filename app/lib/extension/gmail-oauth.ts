@@ -73,7 +73,7 @@ export async function buildGmailPluginAuthorizeUrl(origin: string, state: string
     prompt: "consent",
     accessType: "offline",
     scopes: GMAIL_PLUGIN_SCOPES,
-    includeGrantedScopes: true,
+    includeGrantedScopes: false,
   });
 }
 

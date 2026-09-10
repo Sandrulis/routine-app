@@ -37,7 +37,7 @@ const FALLBACK_LV = {
   "extension.gmail.options.connecting": "Atveras Google atļauju logs…",
   "extension.gmail.options.connected": "Gmail savienots.",
   "extension.gmail.options.connect_failed":
-    "Neizdevās savienot Gmail. Pārbaudi Google OAuth un Gmail API.",
+    "Neizdevās savienot Gmail. Pārbaudi Google Plugin integrāciju un OAuth scopes.",
   "user_menu.sign_out": "Iziet",
   "errors.extension_unknown": "Nezināma kļūda.",
   "errors.extension_network":
@@ -83,7 +83,7 @@ const FALLBACK_EN = {
   "extension.gmail.options.connecting": "Google permission window is opening…",
   "extension.gmail.options.connected": "Gmail connected.",
   "extension.gmail.options.connect_failed":
-    "Could not connect Gmail. Check the Google Plugin integration and the Gmail API.",
+    "Could not connect Gmail. Check the Google Plugin integration and OAuth scopes.",
   "user_menu.sign_out": "Sign out",
   "errors.extension_unknown": "Unknown error.",
   "errors.extension_network":

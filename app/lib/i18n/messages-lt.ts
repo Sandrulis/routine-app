@@ -1456,6 +1456,8 @@ export const lt: Record<string, string> = {
   "lists.windows.files_name_placeholder": "Pavyzdžiui, Planas.pdf",
   "lists.windows.files_note_placeholder": "Trumpa pastaba",
   "lists.windows.history": "Istorija",
+  "lists.windows.history.hide": "Slėpti istoriją",
+  "lists.windows.history.show": "Rodyti istoriją",
   "lists.windows.overview": "Sąrašas",
   "lists.windows.progress": "{done}/{total}",
   "lists.windows.tasks": "Užduotys",
@@ -2245,6 +2247,4 @@ export const lt: Record<string, string> = {
   "user_todo.open_with_count": "Darbų sąrašas ({count})",
   "user_todo.placeholder": "Nauja užduotis",
   "user_todo.title": "Darbų sąrašas",
-  "lists.windows.history.hide": "Slėpti istoriją",
-  "lists.windows.history.show": "Rodyti istoriją",
 };

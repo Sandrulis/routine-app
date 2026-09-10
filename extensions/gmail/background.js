@@ -2880,10 +2880,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             );
           }
         }
-        const wantsFileAttachments =
-          selectedAttachments === null ||
-          (Array.isArray(selectedAttachments) &&
-            selectedAttachments.length > 0);
         let email = {
           subject: String(message.email?.subject || ""),
           from: String(message.email?.from || ""),
@@ -2894,67 +2890,77 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           permalink: String(message.email?.permalink || ""),
         };
         let attachmentFiles = [];
-        let skippedDownloads = [];
+        let skippedDownloads = Array.isArray(message.skippedDownloads)
+          ? message.skippedDownloads
+              .map((item) => ({
+                name: String(item?.name || "attachment"),
+                reason: String(
+                  item?.reason || "errors.extension_gmail_fetch_failed",
+                ),
+              }))
+              .filter((item) => item.name)
+          : [];
 
         const tabId = sender.tab?.id;
         const scrapedEnough =
           Boolean(email.subject || email.body || email.bodyHtml);
 
-        if (wantsFileAttachments && (gmailMessageId || gmailThreadId)) {
-          try {
-            const bundle = await fetchGmailMessageBundle(
-              gmailMessageId,
-              gmailThreadId,
-              true,
-              selectedAttachments,
-              (progress) => postAttachProgress(tabId, progress),
-            );
-            email = {
-              subject: bundle.email.subject || email.subject,
-              from: bundle.email.from || email.from,
-              to: bundle.email.to || email.to,
-              date: bundle.email.date || email.date,
-              body: bundle.email.body || email.body,
-              bodyHtml: bundle.email.bodyHtml || email.bodyHtml,
-              permalink: bundle.email.permalink || email.permalink,
-            };
-            attachmentFiles = bundle.attachments;
-            skippedDownloads = Array.isArray(bundle.skipped)
-              ? bundle.skipped
-              : [];
-          } catch (error) {
-            sendResponse({
-              ok: false,
-              error: normalizeExtensionError(
-                error,
-                "errors.extension_gmail_fetch_failed",
-              ),
+        if (Array.isArray(selectedAttachments) && selectedAttachments.length > 0) {
+          for (const item of selectedAttachments) {
+            const name = String(item?.name || "attachment");
+            const data = String(item?.data || "").trim();
+            if (!data) {
+              skippedDownloads.push({
+                name,
+                reason: "errors.extension_gmail_fetch_failed",
+              });
+              continue;
+            }
+            let bytes;
+            try {
+              bytes = base64UrlToBytes(data);
+            } catch {
+              skippedDownloads.push({
+                name,
+                reason: "errors.extension_gmail_fetch_failed",
+              });
+              continue;
+            }
+            if (bytes.length <= 0 || bytes.length > EXTENSION_UPLOAD_MAX_BYTES) {
+              skippedDownloads.push({
+                name,
+                reason: "errors.extension_file_too_large",
+              });
+              continue;
+            }
+            attachmentFiles.push({
+              attachmentId: String(item.attachmentId || ""),
+              name,
+              mimeType: String(item.mimeType || ""),
+              note: String(item.note || "")
+                .trim()
+                .slice(0, 500),
+              bytes,
             });
-            return;
           }
-        } else if (includeEmailBody && scrapedEnough) {
-          // Email text only from Gmail DOM — no Gmail OAuth needed.
-        } else if (!gmailMessageId && !gmailThreadId) {
-          sendResponse({
-            ok: false,
-            error: "errors.extension_gmail_message_id",
-          });
-          return;
-        } else if (!includeEmailBody && !wantsFileAttachments) {
+        }
+
+        if (!includeEmailBody && attachmentFiles.length === 0) {
           sendResponse({
             ok: false,
             error: "errors.extension_nothing_attached",
           });
           return;
-        } else {
-          // Need Gmail API for body enrichment but OAuth may fail — try scrape-only.
-          if (!includeEmailBody || !scrapedEnough) {
-            sendResponse({
-              ok: false,
-              error: "errors.extension_gmail_auth",
-            });
-            return;
-          }
+        }
+        if (includeEmailBody && !scrapedEnough && attachmentFiles.length === 0) {
+          sendResponse({
+            ok: false,
+            error:
+              gmailMessageId || gmailThreadId
+                ? "errors.extension_gmail_fetch_failed"
+                : "errors.extension_gmail_message_id",
+          });
+          return;
         }
 
         postAttachProgress(tabId, {

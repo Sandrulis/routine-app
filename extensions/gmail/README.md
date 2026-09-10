@@ -10,7 +10,7 @@ Nav jāievada Routine URL vai OAuth Client ID. Spraudnis sauc [https://www.tasqi
 
 1. Production: [https://www.tasqin.com](https://www.tasqin.com) (kanoniskais hosts `NEXT_PUBLIC_SITE_URL`). Local: `npm run dev`
 2. Administrācija → Moduļi: **Gmail spraudnis** ieslēgts
-3. Administrācija → Integrācijas: **Google Plugin** konfigurēts un aktīvs (atsevišķs Cloud projekts ar Gmail API); Google OAuth paliek loginam/Drive
+3. Administrācija → Integrācijas: **Google Plugin** konfigurēts un aktīvs (atsevišķs Cloud projekts; consent screen ar `gmail.addons.current.message.readonly`, bez `gmail.readonly`); Google OAuth paliek loginam/Drive
 4. Google Plugin OAuth klientā Redirect URI: `/auth/google-plugin/callback` — arī `http://localhost:3120` varianti. Rādās Integrācijās. Pēc jaunā Client ID lietotājiem **Atjaunot Gmail**.
 5. Komandai pieslēgts ieslēgtais mākonis: **Google Drive** un/vai **OneDrive** (bez tā popup rāda sarkanu brīdinājumu un Gmail modālis paskaidro, kāpēc nevar pievienot). UI nosauc tikai tos mākoņus, kuru modulis ir ieslēgts.
 6. `module_file_upload` ieslēgts
@@ -28,7 +28,7 @@ Nav jāievada Routine URL vai OAuth Client ID. Spraudnis sauc [https://www.tasqi
 3. Izvēlies **saraksts** → (mape) → **uzdevums** → **apakšuzdevums** (vai **Jauns apakšuzdevums** atver jaunu modāli: nosaukums, pēc izvēles sākums, termiņš, statuss, atbildīgais ar live-search hintiem, apraksts). Jaunais apakšuzdevums TASQIN parādās tikai pēc **Pievienot** ar izvēlētajiem pielikumiem.
 4. Zem saraksta atzīmē pielikumus (checkbox); katram atzīmētajam failam (un e-pasta `.txt`) pēc izvēles ieraksti **Piezīmi** → **Pievienot**
 
-Ja pielikumi neredzami vai rāda OAuth kļūdu: Chrome → `chrome://extensions` → TASQIN - Gmail → **Reload** (versija `0.4.64`), tad Gmail cilnē **F5**. Spraudņa popup → **Atjaunot Gmail savienojumu** (tas nav tas pats, kas «Turpināt ar Google»). Modālī zem saraksta jābūt sadaļai **Pielikumi**.
+Ja pielikumi neredzami vai rāda OAuth kļūdu: Chrome → `chrome://extensions` → TASQIN - Gmail → **Reload** (versija `0.4.65`), tad Gmail cilnē **F5**. Spraudņa popup → **Atjaunot Gmail savienojumu** (tas nav tas pats, kas «Turpināt ar Google»). Modālī zem saraksta jābūt sadaļai **Pielikumi**.
 
 Apakšuzdevumu saraksts (3. solis) ir tajā pašā statusa secībā kā sānjosla un uzdevuma UI: aktīvie pirms “nav sākts”, slēgtie netiek rādīti. Rāda arī uzdevumus bez esošiem apakšuzdevumiem, lai varētu izveidot jaunu.
 
@@ -49,7 +49,7 @@ Popup ir balta kartīte: avatars, vārds un uzvārds, e-pasts, **Iziet** tikai k
 - `POST /api/extension/gmail-bridge-ticket`
 - `POST /api/extension/attach-email`
 - `GET /auth/gmail-plugin/bridge?t=…` → sesija pārlūkā → `/auth/gmail-plugin/start` (Gmail OAuth)
-- `GET /auth/gmail-plugin/login` → Google OAuth ar Gmail pieeju (`openid email profile gmail.readonly`, offline) → callback saglabā arī `user_gmail_connections` → `/auth/gmail-plugin/done?logged_in=1` (+ `connected=1` ja Gmail saglabājās)
+- `GET /auth/gmail-plugin/login` → Google OAuth ar Gmail pieeju (`openid email profile` + `gmail.addons.current.message.readonly`, offline; bez `gmail.readonly`) → callback saglabā arī `user_gmail_connections` → `/auth/gmail-plugin/done?logged_in=1` (+ `connected=1` ja Gmail saglabājās)
 - `GET /auth/gmail-plugin/start` → Google Plugin OAuth (`/auth/google-plugin/callback`) → `/auth/gmail-plugin/done`
 
 ## Ikona

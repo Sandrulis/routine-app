@@ -22,7 +22,7 @@ export const GOOGLE_PLUGIN_SCOPES = [
   "openid",
   "email",
   "profile",
-  "https://www.googleapis.com/auth/gmail.readonly",
+  "https://www.googleapis.com/auth/gmail.addons.current.message.readonly",
 ].join(" ");
 
 async function disableDependentGmailPluginModule() {

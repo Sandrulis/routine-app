@@ -1456,6 +1456,8 @@ export const nl: Record<string, string> = {
   "lists.windows.files_name_placeholder": "Bijvoorbeeld Plan.pdf",
   "lists.windows.files_note_placeholder": "Korte notitie",
   "lists.windows.history": "Geschiedenis",
+  "lists.windows.history.hide": "Geschiedenis verbergen",
+  "lists.windows.history.show": "Geschiedenis tonen",
   "lists.windows.overview": "Lijst",
   "lists.windows.progress": "{done}/{total}",
   "lists.windows.tasks": "Taken",
@@ -2245,6 +2247,4 @@ export const nl: Record<string, string> = {
   "user_todo.open_with_count": "Takenlijst ({count})",
   "user_todo.placeholder": "Nieuwe taak",
   "user_todo.title": "Takenlijst",
-  "lists.windows.history.hide": "Geschiedenis verbergen",
-  "lists.windows.history.show": "Geschiedenis tonen",
 };

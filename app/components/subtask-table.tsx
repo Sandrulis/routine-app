@@ -25,6 +25,7 @@ import { MoveSubtaskModal } from "@/app/components/move-subtask-modal";
 import { SubtaskBulkBar, SubtaskSelectCheckbox } from "@/app/components/subtask-bulk-bar";
 import { TaskLocationPath } from "@/app/components/task-location-path";
 import { StatusControl, statusClassName } from "@/app/components/status-control";
+import { Tooltip } from "@/app/components/tooltip";
 import { TaskSnoozeButton } from "@/app/components/task-snooze-button";
 import {
   dropHintFromEvent,
@@ -81,7 +82,13 @@ import {
   useSystemTaskStatuses,
   useTaskStatuses,
 } from "@/app/lib/task-statuses";
-import { checklistProgress, taskHasIncompleteChecklists } from "@/app/lib/task-checklists";
+import {
+  checklistProgress,
+  taskHasIncompleteChecklists,
+  taskHasVisibleChecklists,
+  toggleChecklistItemDone,
+  type TaskChecklist,
+} from "@/app/lib/task-checklists";
 import { WorkProgressLabel } from "@/app/components/work-progress";
 
 export { statusClassName };
@@ -533,6 +540,7 @@ export function SubtaskTable({
   const [moveAnchor, setMoveAnchor] = useState<CreateMenuAnchor | null>(null);
   const [dropHint, setDropHint] = useState<DropHint | null>(null);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [expandedChecklistIds, setExpandedChecklistIds] = useState<string[]>([]);
   const lastSelectedIdRef = useRef<string | null>(null);
   const tableScrollRef = useRef<HTMLDivElement | null>(null);
   const { currentUser, roles } = useTeam();
@@ -630,6 +638,14 @@ export function SubtaskTable({
       return next.length === current.length ? current : next;
     });
   }, [selectableIds]);
+
+  useEffect(() => {
+    const visible = new Set(displayed.map((task) => task.id));
+    setExpandedChecklistIds((current) => {
+      const next = current.filter((id) => visible.has(id));
+      return next.length === current.length ? current : next;
+    });
+  }, [displayed]);
 
   useEffect(() => {
     if (selectedIds.length === 0) return;
@@ -828,6 +844,19 @@ export function SubtaskTable({
         onToggleSelect={(shiftKey) => toggleSelected(task.id, shiftKey)}
         canEdit={access.canEditTasks && !deleted}
         canChangeStatus={access.canChangeStatus && !deleted}
+        checklistExpanded={expandedChecklistIds.includes(task.id)}
+        onToggleChecklist={() => {
+          setExpandedChecklistIds((current) =>
+            current.includes(task.id)
+              ? current.filter((id) => id !== task.id)
+              : [...current, task.id],
+          );
+        }}
+        onToggleChecklistItem={(listId, itemId) => {
+          updateTask(task.id, {
+            checklists: toggleChecklistItemDone(task.checklists ?? [], listId, itemId),
+          });
+        }}
         onSnooze={
           onSnooze && !deleted
             ? (untilIso) => onSnooze(task, untilIso)
@@ -840,7 +869,11 @@ export function SubtaskTable({
     );
   }
 
-  const virtualizeUngrouped = !groupByStatus && displayed.length > 40;
+  const hasExpandedChecklists = expandedChecklistIds.some((id) =>
+    displayed.some((task) => task.id === id),
+  );
+  const virtualizeUngrouped =
+    !groupByStatus && displayed.length > 40 && !hasExpandedChecklists;
 
   return (
     <>
@@ -1032,6 +1065,77 @@ function StatusGroupHeaderRow({
   );
 }
 
+function SubtaskInlineChecklistRows({
+  checklists,
+  disabled,
+  onToggleItem,
+}: {
+  checklists: TaskChecklist[];
+  disabled: boolean;
+  onToggleItem: (listId: string, itemId: string) => void;
+}) {
+  const lists = checklists.filter(
+    (list) => list.items.length > 0 || list.title.trim().length > 0,
+  );
+  const showListTitles = lists.length > 1 || lists.some((list) => list.title.trim());
+
+  return (
+    <>
+      {lists.map((list) => (
+        <Fragment key={list.id}>
+          {showListTitles && list.title.trim() ? (
+            <tr className="border-b border-zinc-100 last:border-b-0">
+              <td />
+              <td
+                className="px-2 py-1"
+                colSpan={TASK_TABLE_COL_COUNT - 1}
+              >
+                <p className="pl-7 text-[11px] font-medium text-zinc-400">
+                  {list.title.trim()}
+                </p>
+              </td>
+            </tr>
+          ) : null}
+          {list.items.map((item) => (
+            <tr key={item.id} className="border-b border-zinc-100 last:border-b-0">
+              <td />
+              <td className="px-2 py-1" colSpan={TASK_TABLE_COL_COUNT - 1}>
+                <button
+                  type="button"
+                  role="checkbox"
+                  aria-checked={item.done}
+                  disabled={disabled}
+                  onClick={() => onToggleItem(list.id, item.id)}
+                  onPointerDown={(event) => event.stopPropagation()}
+                  onMouseDown={(event) => event.stopPropagation()}
+                  className="flex min-w-0 items-center gap-2 pl-7 text-left disabled:cursor-not-allowed"
+                >
+                  <span
+                    className={`inline-flex size-4 shrink-0 items-center justify-center rounded border transition ${
+                      item.done
+                        ? "border-emerald-500 bg-emerald-500 text-white"
+                        : "border-zinc-300 bg-white text-transparent hover:border-zinc-400"
+                    }`}
+                  >
+                    <i className="fas fa-check text-[8px]" aria-hidden="true" />
+                  </span>
+                  <span
+                    className={`min-w-0 truncate text-[13px] ${
+                      item.done ? "text-zinc-400 line-through" : "text-zinc-700"
+                    }`}
+                  >
+                    {item.title}
+                  </span>
+                </button>
+              </td>
+            </tr>
+          ))}
+        </Fragment>
+      ))}
+    </>
+  );
+}
+
 function SortableSubtaskRow({
   listId,
   parentTaskId = null,
@@ -1057,6 +1161,9 @@ function SortableSubtaskRow({
   locationSegments = [],
   onSnooze,
   onUnsnooze,
+  checklistExpanded = false,
+  onToggleChecklist,
+  onToggleChecklistItem,
 }: {
   listId: string;
   parentTaskId?: string | null;
@@ -1064,7 +1171,7 @@ function SortableSubtaskRow({
   onOpenTask: (task: WorkTask) => void;
   onUpdate: (
     taskId: string,
-    patch: Partial<Pick<WorkTask, "status" | "startDate" | "dueDate">>,
+    patch: Partial<Pick<WorkTask, "status" | "startDate" | "dueDate" | "checklists">>,
   ) => void;
   onHide?: () => void;
   onMove?: (event: MouseEvent<HTMLButtonElement>) => void;
@@ -1085,6 +1192,9 @@ function SortableSubtaskRow({
   locationSegments?: TaskLocationSegment[];
   onSnooze?: (untilIso: string) => void;
   onUnsnooze?: () => void;
+  checklistExpanded?: boolean;
+  onToggleChecklist?: () => void;
+  onToggleChecklistItem?: (listId: string, itemId: string) => void;
 }) {
   const { t } = useTranslations();
   const [snoozeOpen, setSnoozeOpen] = useState(false);
@@ -1115,6 +1225,11 @@ function SortableSubtaskRow({
   const checklistsProgress = checklistsEnabled
     ? checklistProgress(task.checklists ?? [])
     : { done: 0, total: 0, percent: 0 };
+  const hasVisibleChecklists =
+    checklistsEnabled && taskHasVisibleChecklists(task.checklists);
+  const checklistToggleLabel = checklistExpanded
+    ? t("nav.collapse", "Sakļaut")
+    : t("nav.expand", "Izvērst");
   const {
     attributes,
     listeners,
@@ -1129,6 +1244,7 @@ function SortableSubtaskRow({
   });
 
   return (
+    <>
     <tr
       ref={setNodeRef}
       style={{
@@ -1172,36 +1288,63 @@ function SortableSubtaskRow({
         </div>
       </td>
       <td className="w-full max-w-0 min-w-0 px-2 py-1.5">
-        <button
-          type="button"
-          onClick={() => {
-            if (deleted && onRestore) {
-              onRestore();
-              return;
-            }
-            onOpenTask(task);
-          }}
-          aria-label={deleted ? restoreLabel : undefined}
-          className={`flex w-full min-w-0 items-center gap-1.5 text-left font-medium hover:text-blue-700 ${
-            deleted ? "text-zinc-400 line-through" : "text-zinc-900"
-          }`}
-        >
-          <span className="truncate">{task.title}</span>
-          {hasAttachments ? (
-            <i
-              className="fas fa-paperclip shrink-0 text-[11px] text-zinc-400"
-              aria-hidden="true"
-              title={t("subtasks.attachments.title", "Pielikumi")}
-            />
+        <div className="flex min-w-0 items-start gap-0.5">
+          {hasVisibleChecklists ? (
+            <Tooltip label={checklistToggleLabel}>
+              <button
+                type="button"
+                aria-expanded={checklistExpanded}
+                aria-label={checklistToggleLabel}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onToggleChecklist?.();
+                }}
+                onPointerDown={(event) => event.stopPropagation()}
+                onMouseDown={(event) => event.stopPropagation()}
+                className="mt-0.5 inline-flex size-6 shrink-0 items-center justify-center rounded-md text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-700"
+              >
+                <i
+                  className={`fas fa-caret-right text-[12px] transition-transform ${
+                    checklistExpanded ? "rotate-90" : ""
+                  }`}
+                  aria-hidden="true"
+                />
+              </button>
+            </Tooltip>
           ) : null}
-        </button>
-        {locationSegments.length > 0 ? (
-          <TaskLocationPath
-            segments={locationSegments}
-            align="left"
-            className="mt-0.5"
-          />
-        ) : null}
+          <div className="min-w-0 flex-1">
+            <button
+              type="button"
+              onClick={() => {
+                if (deleted && onRestore) {
+                  onRestore();
+                  return;
+                }
+                onOpenTask(task);
+              }}
+              aria-label={deleted ? restoreLabel : undefined}
+              className={`flex w-full min-w-0 items-center gap-1.5 text-left font-medium hover:text-blue-700 ${
+                deleted ? "text-zinc-400 line-through" : "text-zinc-900"
+              }`}
+            >
+              <span className="truncate">{task.title}</span>
+              {hasAttachments ? (
+                <i
+                  className="fas fa-paperclip shrink-0 text-[11px] text-zinc-400"
+                  aria-hidden="true"
+                  title={t("subtasks.attachments.title", "Pielikumi")}
+                />
+              ) : null}
+            </button>
+            {locationSegments.length > 0 ? (
+              <TaskLocationPath
+                segments={locationSegments}
+                align="left"
+                className="mt-0.5"
+              />
+            ) : null}
+          </div>
+        </div>
       </td>
       <td className="px-3 py-1.5">
         <AssigneeCell task={task} disabled={!canEdit || deleted} />
@@ -1299,5 +1442,13 @@ function SortableSubtaskRow({
         />
       </td>
     </tr>
+    {checklistExpanded && !isDragging && hasVisibleChecklists ? (
+      <SubtaskInlineChecklistRows
+        checklists={task.checklists ?? []}
+        disabled={!canEdit || deleted}
+        onToggleItem={(listId, itemId) => onToggleChecklistItem?.(listId, itemId)}
+      />
+    ) : null}
+    </>
   );
 }

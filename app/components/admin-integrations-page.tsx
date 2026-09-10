@@ -889,7 +889,7 @@ export function AdminIntegrationsPage({
         title={t("integrations.google_plugin.title", "Google Plugin")}
         description={t(
           "integrations.google_plugin.description",
-          "Atsevišķa Google Cloud lietotne Gmail Chrome spraudnim (gmail.readonly).",
+          "Atsevišķa Google Cloud lietotne Gmail Chrome spraudnim (gmail.addons.current.message.readonly).",
         )}
         configured={pluginStatus.configured}
         configuredAccountEmail={pluginStatus.configuredAccountEmail}
@@ -983,7 +983,7 @@ export function AdminIntegrationsPage({
                     "openid",
                     "email",
                     "profile",
-                    "https://www.googleapis.com/auth/gmail.readonly",
+                    "https://www.googleapis.com/auth/gmail.addons.current.message.readonly",
                   ]
               ).map((scope) => (
                 <li key={scope}>{scope}</li>

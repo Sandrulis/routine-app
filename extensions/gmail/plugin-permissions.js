@@ -8,6 +8,7 @@
   ];
   const GMAIL_HOST_ORIGINS = [
     "https://mail.google.com/*",
+    "https://*.googleusercontent.com/*",
     "https://gmail.googleapis.com/*",
   ];
   const LOCAL_HOST_ORIGINS = [

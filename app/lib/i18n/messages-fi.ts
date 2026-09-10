@@ -1456,6 +1456,8 @@ export const fi: Record<string, string> = {
   "lists.windows.files_name_placeholder": "Esimerkiksi Suunnitelma.pdf",
   "lists.windows.files_note_placeholder": "Lyhyt huomautus",
   "lists.windows.history": "Historia",
+  "lists.windows.history.hide": "Piilota historia",
+  "lists.windows.history.show": "Näytä historia",
   "lists.windows.overview": "Lista",
   "lists.windows.progress": "{done}/{total}",
   "lists.windows.tasks": "Tehtävät",
@@ -2245,6 +2247,4 @@ export const fi: Record<string, string> = {
   "user_todo.open_with_count": "Tehtävälista ({count})",
   "user_todo.placeholder": "Uusi tehtävä",
   "user_todo.title": "Tehtävälista",
-  "lists.windows.history.hide": "Piilota historia",
-  "lists.windows.history.show": "Näytä historia",
 };

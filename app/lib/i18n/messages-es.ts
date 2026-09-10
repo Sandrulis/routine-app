@@ -1456,6 +1456,8 @@ export const es: Record<string, string> = {
   "lists.windows.files_name_placeholder": "Por ejemplo, Plan.pdf",
   "lists.windows.files_note_placeholder": "Nota breve",
   "lists.windows.history": "Historial",
+  "lists.windows.history.hide": "Ocultar historial",
+  "lists.windows.history.show": "Mostrar historial",
   "lists.windows.overview": "Lista",
   "lists.windows.progress": "{done}/{total}",
   "lists.windows.tasks": "Tareas",
@@ -2245,6 +2247,4 @@ export const es: Record<string, string> = {
   "user_todo.open_with_count": "Lista de tareas ({count})",
   "user_todo.placeholder": "Nueva tarea",
   "user_todo.title": "Lista de tareas",
-  "lists.windows.history.hide": "Ocultar historial",
-  "lists.windows.history.show": "Mostrar historial",
 };

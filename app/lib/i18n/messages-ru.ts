@@ -1456,6 +1456,8 @@ export const ru: Record<string, string> = {
   "lists.windows.files_name_placeholder": "Например, Plan.pdf",
   "lists.windows.files_note_placeholder": "Краткая заметка",
   "lists.windows.history": "История",
+  "lists.windows.history.hide": "Скрыть историю",
+  "lists.windows.history.show": "Показать историю",
   "lists.windows.overview": "Список",
   "lists.windows.progress": "{done}/{total}",
   "lists.windows.tasks": "Задачи",
@@ -2245,6 +2247,4 @@ export const ru: Record<string, string> = {
   "user_todo.open_with_count": "Список дел ({count})",
   "user_todo.placeholder": "Новая задача",
   "user_todo.title": "Список дел",
-  "lists.windows.history.hide": "Скрыть историю",
-  "lists.windows.history.show": "Показать историю",
 };

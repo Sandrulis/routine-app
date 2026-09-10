@@ -135,6 +135,31 @@ export function namedChecklistItems(checklists: TaskChecklist[]): TaskChecklistI
   return normalizeTaskChecklists(checklists).flatMap((list) => list.items);
 }
 
+export function taskHasVisibleChecklists(
+  checklists: TaskChecklist[] | undefined,
+): boolean {
+  return (checklists ?? []).some(
+    (list) => list.items.length > 0 || list.title.trim().length > 0,
+  );
+}
+
+export function toggleChecklistItemDone(
+  checklists: TaskChecklist[],
+  listId: string,
+  itemId: string,
+): TaskChecklist[] {
+  return checklists.map((list) =>
+    list.id !== listId
+      ? list
+      : {
+          ...list,
+          items: list.items.map((item) =>
+            item.id === itemId ? { ...item, done: !item.done } : item,
+          ),
+        },
+  );
+}
+
 export function taskHasIncompleteChecklists(
   checklists: TaskChecklist[] | undefined,
 ): boolean {

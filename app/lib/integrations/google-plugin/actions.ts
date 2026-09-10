@@ -83,7 +83,7 @@ export async function startGooglePluginConfigureAction(
     prompt: "select_account consent",
     accessType: "offline",
     scopes: GOOGLE_PLUGIN_SCOPES,
-    includeGrantedScopes: true,
+    includeGrantedScopes: false,
   });
   if (!url) {
     return { ok: false, error: "errors.integrations_credentials_missing" };

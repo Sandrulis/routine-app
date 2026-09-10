@@ -123,7 +123,7 @@ import {
   resolveEffectiveListAccess,
   userIsAssignee,
 } from "@/app/lib/list-access";
-import { taskHasIncompleteChecklists } from "@/app/lib/task-checklists";
+import { taskHasIncompleteChecklists, taskHasVisibleChecklists, toggleChecklistItemDone } from "@/app/lib/task-checklists";
 
 const FOLDER_HISTORY_PAGE_SIZE = 80;
 
@@ -580,10 +580,17 @@ function OverviewSubtaskRow({
 }) {
   const { t } = useTranslations();
   const { statuses } = useTaskStatuses(listId, task.parentId);
-  const { taskFiles } = useLists();
+  const { taskFiles, updateTask } = useLists();
   const { currentUser, roles } = useTeam();
   const { isAdmin } = useIsAdmin();
   const { isEnabled: isModuleEnabled } = useFrontendModules();
+  const [checklistExpanded, setChecklistExpanded] = useState(false);
+  const checklistsEnabled = isModuleEnabled(FRONTEND_MODULE_KEYS.checklist);
+  const hasVisibleChecklists =
+    checklistsEnabled && taskHasVisibleChecklists(task.checklists);
+  const checklistToggleLabel = checklistExpanded
+    ? t("nav.collapse", "Sakļaut")
+    : t("nav.expand", "Izvērst");
   const fileUploadsEnabled = isModuleEnabled(FRONTEND_MODULE_KEYS.fileUpload);
   const canViewFiles = canViewAttachments(currentUser, roles, isAdmin);
   const hasAttachments =
@@ -624,51 +631,119 @@ function OverviewSubtaskRow({
         transform: CSS.Transform.toString(transform),
         transition,
       }}
-      className={`group/row flex min-w-0 items-center gap-2 ${
-        isDragging ? "relative z-10 opacity-40" : ""
-      }`}
+      className={isDragging ? "relative z-10 opacity-40" : undefined}
     >
-      <StatusReorderHandle
-        status={task.status}
-        listId={listId}
-        parentTaskId={task.parentId}
-        color={resolvedColor}
-        groupKey={statusGroupKey}
-        label={handleLabel}
-        attributes={attributes}
-        listeners={listeners}
-        canDrag={canDrag}
-        isDragging={isDragging}
-        pressed={done}
-        disabled={checklistBlocked && !canDrag}
-        onClick={
-          canToggle
-            ? (event) => {
+      <div className="group/row flex min-w-0 items-center gap-1">
+        {hasVisibleChecklists ? (
+          <Tooltip label={checklistToggleLabel}>
+            <button
+              type="button"
+              aria-expanded={checklistExpanded}
+              aria-label={checklistToggleLabel}
+              onClick={(event) => {
                 event.stopPropagation();
-                if (checklistBlocked) return;
-                onComplete();
-              }
-            : undefined
-        }
-      />
-      <button
-        type="button"
-        onClick={onOpen}
-        className={`flex min-w-0 flex-1 items-center gap-1.5 text-left text-[13px] ${
-          resolvedColor ? "" : statusTextClassName(task.status)
-        } ${done ? "line-through" : "hover:opacity-80"}`}
-        style={resolvedColor ? { color: resolvedColor } : undefined}
-      >
-        <span className="truncate">{task.title}</span>
-        {hasAttachments ? (
-          <i
-            className="fas fa-paperclip shrink-0 text-[11px] text-zinc-400"
-            aria-hidden="true"
-            title={t("subtasks.attachments.title", "Pielikumi")}
-          />
+                setChecklistExpanded((current) => !current);
+              }}
+              onPointerDown={(event) => event.stopPropagation()}
+              onMouseDown={(event) => event.stopPropagation()}
+              className="inline-flex size-5 shrink-0 items-center justify-center rounded text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-700"
+            >
+              <i
+                className={`fas fa-caret-right text-[11px] transition-transform ${
+                  checklistExpanded ? "rotate-90" : ""
+                }`}
+                aria-hidden="true"
+              />
+            </button>
+          </Tooltip>
         ) : null}
-      </button>
-      <AssigneeFaces assigneeIds={task.assigneeIds} />
+        <StatusReorderHandle
+          status={task.status}
+          listId={listId}
+          parentTaskId={task.parentId}
+          color={resolvedColor}
+          groupKey={statusGroupKey}
+          label={handleLabel}
+          attributes={attributes}
+          listeners={listeners}
+          canDrag={canDrag}
+          isDragging={isDragging}
+          pressed={done}
+          disabled={checklistBlocked && !canDrag}
+          onClick={
+            canToggle
+              ? (event) => {
+                  event.stopPropagation();
+                  if (checklistBlocked) return;
+                  onComplete();
+                }
+              : undefined
+          }
+        />
+        <button
+          type="button"
+          onClick={onOpen}
+          className={`flex min-w-0 flex-1 items-center gap-1.5 text-left text-[13px] ${
+            resolvedColor ? "" : statusTextClassName(task.status)
+          } ${done ? "line-through" : "hover:opacity-80"}`}
+          style={resolvedColor ? { color: resolvedColor } : undefined}
+        >
+          <span className="truncate">{task.title}</span>
+          {hasAttachments ? (
+            <i
+              className="fas fa-paperclip shrink-0 text-[11px] text-zinc-400"
+              aria-hidden="true"
+              title={t("subtasks.attachments.title", "Pielikumi")}
+            />
+          ) : null}
+        </button>
+        <AssigneeFaces assigneeIds={task.assigneeIds} />
+      </div>
+      {checklistExpanded && hasVisibleChecklists && !isDragging ? (
+        <ul className="mt-1 space-y-0.5 pl-10">
+          {(task.checklists ?? []).flatMap((list) =>
+            list.items.map((item) => (
+              <li key={item.id}>
+                <button
+                  type="button"
+                  role="checkbox"
+                  aria-checked={item.done}
+                  disabled={!canToggle}
+                  onClick={() =>
+                    updateTask(task.id, {
+                      checklists: toggleChecklistItemDone(
+                        task.checklists ?? [],
+                        list.id,
+                        item.id,
+                      ),
+                    })
+                  }
+                  onPointerDown={(event) => event.stopPropagation()}
+                  onMouseDown={(event) => event.stopPropagation()}
+                  className="flex min-w-0 items-center gap-2 text-left disabled:cursor-not-allowed"
+                >
+                  <span
+                    className={`inline-flex size-4 shrink-0 items-center justify-center rounded border ${
+                      item.done
+                        ? "border-emerald-500 bg-emerald-500 text-white"
+                        : "border-zinc-300 bg-white text-transparent hover:border-zinc-400"
+                    }`}
+                  >
+                    <i className="fas fa-check text-[8px]" aria-hidden="true" />
+                  </span>
+                  <span
+                    className={`min-w-0 truncate text-[12px] ${
+                      item.done ? "text-zinc-400 line-through" : "text-zinc-600"
+                    }`}
+                  >
+                    {item.title}
+                  </span>
+                </button>
+              </li>
+            )),
+          )}
+        </ul>
+      ) : null}
     </li>
   );
 }

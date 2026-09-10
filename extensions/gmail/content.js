@@ -72,9 +72,9 @@
     "Iestati Gmail OAuth Client ID paplašinājuma opcijās.",
   "errors.extension_gmail_auth":
     "Gmail atļauja novecojusi. Spraudnī → Savienot Gmail (atjauno OAuth).",
-  "errors.extension_gmail_fetch_failed": "Neizdevās ielādēt e-pastu no Gmail API.",
+  "errors.extension_gmail_fetch_failed": "Neizdevās ielādēt e-pastu no atvērtās Gmail vēstules.",
   "errors.extension_gmail_forbidden":
-    "Gmail API liegts: ieslēdz Gmail API Google Cloud projektā un atkārtoti Savienot Gmail (scope gmail.readonly).",
+    "Gmail pieeja liegta. Consent screen pievieno gmail.addons.current.message.readonly un atkārtoti Savienot Gmail.",
   "errors.extension_gmail_not_found":
     "Gmail neatradā ziņu — atver e-pastu pilnā skatā un mēģini vēlreiz.",
   "errors.extension_gmail_message_id":
@@ -158,8 +158,8 @@
   "extension.gmail.connect_gmail": "Savienot Gmail",
   "extension.gmail.reconnect_gmail": "Atjaunot Gmail savienojumu",
   "extension.gmail.add_to_routine": "Pievienot TASQIN",
-  "extension.gmail.loading_gmail": "Ielādē e-pastu un pielikumus no Gmail…",
-  "extension.gmail.progress_email": "Ielādē e-pastu no Gmail…",
+  "extension.gmail.loading_gmail": "Ielādē e-pastu un pielikumus no atvērtās Gmail vēstules…",
+  "extension.gmail.progress_email": "Ielādē e-pastu no atvērtās Gmail vēstules…",
   "extension.gmail.progress_download": "Lejupielādē {name} ({current}/{total})",
   "extension.gmail.progress_upload": "Saglabā TASQIN ({count})…",
   "extension.gmail.attach_failed": "Neizdevās pievienot.",
@@ -445,8 +445,146 @@ function scrapeEmailFallback() {
     to: toEl?.getAttribute("email") || textOf(toEl),
     date: dateEl?.getAttribute("title") || textOf(dateEl),
     body: (bodyEl?.innerText || "").trim(),
+    bodyHtml: String(bodyEl?.innerHTML || "").trim(),
     permalink: location.href,
   };
+}
+
+const OPEN_MESSAGE_UPLOAD_MAX_BYTES = 25 * 1024 * 1024;
+
+function isAllowedGmailFileUrl(url) {
+  try {
+    const host = new URL(url).hostname;
+    return (
+      host === "mail.google.com" ||
+      host === "gmail.google.com" ||
+      host.endsWith(".googleusercontent.com")
+    );
+  } catch {
+    return false;
+  }
+}
+
+function parseGmailDownloadUrl(raw) {
+  const value = String(raw || "")
+    .replace(/&amp;/g, "&")
+    .trim();
+  if (!value) return null;
+  const first = value.indexOf(":");
+  const second = value.indexOf(":", first + 1);
+  if (first < 0 || second < 0) return null;
+  const mimeType = value.slice(0, first).trim();
+  const name = value.slice(first + 1, second).trim();
+  let url = value.slice(second + 1).trim();
+  if (!url) return null;
+  try {
+    url = new URL(url, location.origin).href;
+  } catch {
+    return null;
+  }
+  if (!isAllowedGmailFileUrl(url)) return null;
+  return { mimeType, name, url };
+}
+
+function parseDisplayedByteSize(text) {
+  const match = String(text || "").match(/([\d.,]+)\s*(KB|MB|GB|B)\b/i);
+  if (!match) return 0;
+  const amount = Number(String(match[1]).replace(",", "."));
+  if (!Number.isFinite(amount) || amount < 0) return 0;
+  const unit = match[2].toUpperCase();
+  if (unit === "GB") return Math.round(amount * 1024 * 1024 * 1024);
+  if (unit === "MB") return Math.round(amount * 1024 * 1024);
+  if (unit === "KB") return Math.round(amount * 1024);
+  return Math.round(amount);
+}
+
+function scrapeOpenMessageAttachments() {
+  const root = findOpenMessageRoot() || document;
+  const trays = [...root.querySelectorAll(".aQH, .hq")];
+  const searchRoots = trays.length > 0 ? trays : [root];
+  const items = [];
+  const seen = new Set();
+
+  function addItem({ name, mimeType, url, size }) {
+    if (!url || seen.has(url)) return;
+    seen.add(url);
+    const safeName =
+      String(name || "")
+        .replace(/[<>:"/\\|?*]/g, "_")
+        .slice(0, 180) || "attachment.bin";
+    const bytes = Number(size) || 0;
+    items.push({
+      attachmentId: url,
+      downloadUrl: url,
+      name: safeName,
+      mimeType: mimeType || "application/octet-stream",
+      size: bytes,
+      tooLarge: bytes > OPEN_MESSAGE_UPLOAD_MAX_BYTES,
+    });
+  }
+
+  for (const tray of searchRoots) {
+    for (const el of tray.querySelectorAll("[download_url]")) {
+      const parsed = parseGmailDownloadUrl(el.getAttribute("download_url"));
+      if (!parsed) continue;
+      const sizeText = textOf(
+        el.querySelector(".aYz, .SA, .aVW") || el.nextElementSibling,
+      );
+      addItem({
+        name: parsed.name,
+        mimeType: parsed.mimeType,
+        url: parsed.url,
+        size: parseDisplayedByteSize(sizeText),
+      });
+    }
+    for (const link of tray.querySelectorAll(
+      'a[href*="view=att"], a[download][href]',
+    )) {
+      let href = String(link.getAttribute("href") || "").trim();
+      if (!href) continue;
+      try {
+        href = new URL(href, location.origin).href;
+      } catch {
+        continue;
+      }
+      if (!isAllowedGmailFileUrl(href)) continue;
+      addItem({
+        name:
+          link.getAttribute("download") ||
+          textOf(link) ||
+          "attachment.bin",
+        mimeType: "",
+        url: href,
+        size: 0,
+      });
+    }
+  }
+  return items;
+}
+
+function bytesToBase64(bytes) {
+  const chunk = 0x8000;
+  let binary = "";
+  for (let index = 0; index < bytes.length; index += chunk) {
+    binary += String.fromCharCode(...bytes.subarray(index, index + chunk));
+  }
+  return btoa(binary);
+}
+
+async function downloadOpenMessageFile(url) {
+  const response = await fetch(url, {
+    credentials: "include",
+    redirect: "follow",
+  });
+  if (!response.ok) return null;
+  const type = String(response.headers.get("content-type") || "");
+  if (type.includes("text/html")) return null;
+  const buffer = await response.arrayBuffer();
+  const bytes = new Uint8Array(buffer);
+  if (bytes.length <= 0 || bytes.length > OPEN_MESSAGE_UPLOAD_MAX_BYTES) {
+    return null;
+  }
+  return bytes;
 }
 
 function senderEmailFromHeader(from) {
@@ -1097,38 +1235,17 @@ function ensureUi() {
   async function loadAttachmentsList() {
     resetAttachmentsUi();
     const { messageId, threadId } = getGmailIds();
-    if (!messageId && !threadId) {
+    const email = scrapeEmailFallback();
+    if (!messageId && !threadId && !email.subject && !email.body) {
       showAttachmentsPlaceholder(tError("errors.extension_gmail_message_id"), {
         retry: true,
       });
       return;
     }
-    showAttachmentsPlaceholder(t("extension.gmail.attachments_loading"));
-    try {
-      const result = await send("routine.listAttachments", {
-        gmailMessageId: messageId,
-        gmailThreadId: threadId,
-      });
-      if (!result?.ok) {
-        const err = result?.error || "extension.gmail.attachments_failed";
-        const needsReconnect =
-          err === "errors.extension_gmail_auth" ||
-          err === "errors.extension_gmail_not_connected" ||
-          err === "errors.extension_gmail_forbidden";
-        showAttachmentsPlaceholder(tError(err), {
-          retry: !needsReconnect,
-          reconnect: needsReconnect,
-        });
-        return;
-      }
-      listedGmailMessageId = String(result.data?.gmailMessageId || "");
-      listedGmailFrom = String(result.data?.from || "");
-      renderAttachments(result.data?.attachments || []);
-    } catch {
-      showAttachmentsPlaceholder(t("extension.gmail.attachments_failed"), {
-        retry: true,
-      });
-    }
+    const attachments = scrapeOpenMessageAttachments();
+    listedGmailMessageId = messageId;
+    listedGmailFrom = email.from || "";
+    renderAttachments(attachments);
   }
 
   function closeModal() {
@@ -2457,18 +2574,18 @@ function ensureUi() {
   attachBtn.addEventListener("click", async () => {
     if (!selectedId || isBusy) return;
     const { messageId, threadId } = getGmailIds();
-    if (!messageId && !threadId) {
+    const email = scrapeEmailFallback();
+    if (!messageId && !threadId && !email.subject && !email.body) {
       setFeedback(tError("errors.extension_gmail_message_id"), "error");
       return;
     }
 
     clearCloseTimer();
     setFeedback("");
-    const email = scrapeEmailFallback();
-    const selected =
+    const selectedMeta =
       attachmentOptions.length > 0 ? selectedAttachments() : [];
     const includeEmailBody = includeEmailBodySelected();
-    if (!includeEmailBody && (!selected || selected.length === 0)) {
+    if (!includeEmailBody && selectedMeta.length === 0) {
       setFeedback(tError("errors.extension_nothing_attached"), "error");
       return;
     }
@@ -2513,6 +2630,42 @@ function ensureUi() {
 
     setBusy(true, t("extension.gmail.loading_gmail"), 4);
 
+    const selected = [];
+    const skippedDownloads = [];
+    for (let index = 0; index < selectedMeta.length; index += 1) {
+      const item = selectedMeta[index];
+      setBusy(
+        true,
+        t("extension.gmail.progress_download", {
+          name: item.name,
+          current: index + 1,
+          total: selectedMeta.length,
+        }),
+        16 + Math.round(((index + 1) / Math.max(selectedMeta.length, 1)) * 54),
+      );
+      const bytes = await downloadOpenMessageFile(item.attachmentId);
+      if (!bytes) {
+        skippedDownloads.push({
+          name: item.name,
+          reason: "errors.extension_gmail_fetch_failed",
+        });
+        continue;
+      }
+      selected.push({
+        attachmentId: item.attachmentId,
+        name: item.name,
+        mimeType: item.mimeType,
+        note: item.note,
+        data: bytesToBase64(bytes),
+      });
+    }
+
+    if (!includeEmailBody && selected.length === 0) {
+      setBusy(false);
+      setFeedback(tError("errors.extension_nothing_attached"), "error");
+      return;
+    }
+
     let result;
     try {
       result = await send("routine.attachEmail", {
@@ -2521,6 +2674,7 @@ function ensureUi() {
         gmailThreadId: threadId,
         email,
         selectedAttachments: selected,
+        skippedDownloads,
         includeEmailBody,
         emailBodyNote: emailBodyNoteSelected(),
       });
