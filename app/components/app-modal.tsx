@@ -64,6 +64,7 @@ type AppModalProps = {
   overlayClassName?: string;
   headerMeta?: ReactNode;
   headerSubtitle?: ReactNode;
+  headerActions?: ReactNode;
   /** Mazāks padding un atstarpe; apraksts paliek tikai ekrāna lasītājiem. */
   compact?: boolean;
 };
@@ -82,6 +83,7 @@ export function AppModal({
   overlayClassName = "",
   headerMeta,
   headerSubtitle,
+  headerActions,
   compact = false,
   ignoreParentBackdropDismiss = false,
 }: AppModalProps) {
@@ -250,6 +252,7 @@ export function AppModal({
                 {title}
               </h2>
               <div className="flex shrink-0 items-center gap-1">
+                {headerActions}
                 {headerMeta}
                 {blocking ? null : (
                   <button
@@ -269,7 +272,11 @@ export function AppModal({
             {description ? (
               <p
                 id={descriptionId}
-                className="mt-1 w-full text-sm text-zinc-500"
+                className={
+                  compact
+                    ? "sr-only"
+                    : "mt-1 w-full text-sm text-zinc-500"
+                }
               >
                 {description}
               </p>

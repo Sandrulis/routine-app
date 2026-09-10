@@ -320,7 +320,7 @@
   "cookie_consent.category.marketing.title": "Turundusküpsised",
   "cookie_consent.category.necessary.description": "Hoiavad saidi turvalisena, hoiavad sind sisse logituna ja mäletavad sinu nõusolekut. Ilma nendeta süsteem ei tööta.",
   "cookie_consent.category.necessary.title": "Vajalikud küpsised",
-  "cookie_consent.category.preferences.description": "Mäletavad sinu liidese valikuid, näiteks nimekirja akende järjekorda.",
+  "cookie_consent.category.preferences.description": "Mäletavad sinu liidese valikuid, näiteks nimekirja akende järjekorda ja ajaloo ploki nähtavust.",
   "cookie_consent.category.preferences.title": "Eelistuste küpsised",
   "cookie_consent.settings.always_on": "Alati sees",
   "cookie_consent.settings.description": "Vali, millised küpsiste kategooriad lubada. Valikut saad igal ajal muuta.",
@@ -1184,7 +1184,7 @@
   "legal.cookies.optional.p1": "Turundusküpsised mõõdaksid reklaamikampaaniaid. {SYSTEM_NAME} ei lülita täna turundusjälgimist sisse.",
   "legal.cookies.optional.p2": "Analüütikaküpsised (Umami) töötavad ainult sinu nõusolekul - vaata analüütika jaotist.",
   "legal.cookies.optional.title": "4. Analüütika- ja turundusküpsised",
-  "legal.cookies.preferences.p1": "Eelistuste küpsised jätavad meelde liidese valikud, näiteks nimekirja akende järjekorra (Ülesanded, Failid, Nimekiri) (routine-app-list-window-order).",
+  "legal.cookies.preferences.p1": "Eelistuste küpsised jätavad meelde liidese valikud, näiteks nimekirja akende järjekorra (Ülesanded, Failid, Nimekiri) (routine-app-list-window-order) ja ajaloo ploki nähtavuse (routine-app-history-pane).",
   "legal.cookies.preferences.p2": "Kirjutame need küpsised ainult siis, kui nõustud. Kui keeldud, kestavad valikud ainult lehe uuesti laadimiseni.",
   "legal.cookies.preferences.title": "4. Eelistuste küpsised",
   "legal.cookies.third_party.p1": "Cloudflare Turnstile (sisselogimine ja registreerumine) võib seada küpsiseid või töödelda sinu IP-d botikontrolliks. Sentry (kui lubatud) võib koguda vea- ja seadmeandmeid stabiilsuse parandamiseks; PII varjatakse enne saatmist.",
@@ -2244,5 +2244,7 @@
   "user_todo.empty": "Avatud ülesandeid pole.",
   "user_todo.open_with_count": "Ülesannete nimekiri ({count})",
   "user_todo.placeholder": "Uus ülesanne",
-  "user_todo.title": "Ülesannete nimekiri"
+  "user_todo.title": "Ülesannete nimekiri",
+  "lists.windows.history.hide": "Peida ajalugu",
+  "lists.windows.history.show": "Näita ajalugu"
 }

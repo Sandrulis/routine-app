@@ -320,7 +320,7 @@
   "cookie_consent.category.marketing.title": "Cookie di marketing",
   "cookie_consent.category.necessary.description": "Mantengono il sito sicuro, ti tengono connesso e ricordano il tuo consenso. Il sistema non può funzionare senza di essi.",
   "cookie_consent.category.necessary.title": "Cookie necessari",
-  "cookie_consent.category.preferences.description": "Ricordano le tue scelte di interfaccia, come l'ordine delle finestre dell'elenco.",
+  "cookie_consent.category.preferences.description": "Ricordano le tue scelte di interfaccia, come l'ordine delle finestre dell'elenco e la visibilità della cronologia.",
   "cookie_consent.category.preferences.title": "Cookie di preferenza",
   "cookie_consent.settings.always_on": "Sempre attivi",
   "cookie_consent.settings.description": "Scegli quali categorie di cookie consentire. Puoi cambiarle in qualsiasi momento.",
@@ -1184,7 +1184,7 @@
   "legal.cookies.optional.p1": "I cookie di marketing misurerebbero le campagne pubblicitarie. {SYSTEM_NAME} oggi non attiva il tracciamento di marketing.",
   "legal.cookies.optional.p2": "I cookie di analisi (Umami) partono solo con il tuo consenso - vedi la sezione sull'analisi.",
   "legal.cookies.optional.title": "4. Cookie di analisi e marketing",
-  "legal.cookies.preferences.p1": "I cookie di preferenza ricordano le scelte dell'interfaccia, come l'ordine delle finestre dell'elenco (Attività, File, Panoramica) (routine-app-list-window-order).",
+  "legal.cookies.preferences.p1": "I cookie di preferenza ricordano le scelte dell'interfaccia, come l'ordine delle finestre dell'elenco (Attività, File, Panoramica) (routine-app-list-window-order) e la visibilità della cronologia (routine-app-history-pane).",
   "legal.cookies.preferences.p2": "Scriviamo questi cookie solo se acconsenti. Se rifiuti, le scelte restano solo fino al ricaricamento della pagina.",
   "legal.cookies.preferences.title": "4. Cookie di preferenza",
   "legal.cookies.third_party.p1": "Cloudflare Turnstile (accesso e registrazione) può impostare cookie o trattare il tuo IP per i controlli bot. Sentry (se attivato) può raccogliere dati su errori e dispositivo per migliorare la stabilità; i dati personali (PII) vengono oscurati prima dell'invio.",
@@ -2244,5 +2244,7 @@
   "user_todo.empty": "Nessuna attività aperta.",
   "user_todo.open_with_count": "Lista da fare ({count})",
   "user_todo.placeholder": "Nuova attività",
-  "user_todo.title": "Lista da fare"
+  "user_todo.title": "Lista da fare",
+  "lists.windows.history.hide": "Nascondi cronologia",
+  "lists.windows.history.show": "Mostra cronologia"
 }

@@ -320,7 +320,7 @@
   "cookie_consent.category.marketing.title": "Marknadsföringscookies",
   "cookie_consent.category.necessary.description": "Håller webbplatsen säker, håller dig inloggad och kommer ihåg ditt samtycke. Systemet kan inte fungera utan dem.",
   "cookie_consent.category.necessary.title": "Nödvändiga cookies",
-  "cookie_consent.category.preferences.description": "Kommer ihåg dina gränssnittsval, till exempel ordningen på listfönster.",
+  "cookie_consent.category.preferences.description": "Kommer ihåg dina gränssnittsval, till exempel ordningen på listfönster och historikpanelens synlighet.",
   "cookie_consent.category.preferences.title": "Preferenscookies",
   "cookie_consent.settings.always_on": "Alltid på",
   "cookie_consent.settings.description": "Välj vilka cookiekategorier som ska tillåtas. Du kan ändra detta när som helst.",
@@ -1184,7 +1184,7 @@
   "legal.cookies.optional.p1": "Marknadsföringscookies skulle mäta reklamkampanjer. {SYSTEM_NAME} aktiverar inte marknadsföringsspårning i dag.",
   "legal.cookies.optional.p2": "Analyscookies (Umami) körs bara med ditt samtycke - se avsnittet om analys.",
   "legal.cookies.optional.title": "4. Analys- och marknadsföringscookies",
-  "legal.cookies.preferences.p1": "Preferenscookies kommer ihåg gränssnittsval, till exempel ordningen på listfönster (Uppgifter, Filer, Översikt) (routine-app-list-window-order).",
+  "legal.cookies.preferences.p1": "Preferenscookies kommer ihåg gränssnittsval, till exempel ordningen på listfönster (Uppgifter, Filer, Översikt) (routine-app-list-window-order) och historikpanelens synlighet (routine-app-history-pane).",
   "legal.cookies.preferences.p2": "Vi skriver dessa cookies bara om du samtycker. Om du avvisar gäller valen bara tills du laddar om sidan.",
   "legal.cookies.preferences.title": "4. Preferenscookies",
   "legal.cookies.third_party.p1": "Cloudflare Turnstile (inloggning och registrering) kan sätta cookies eller behandla din IP för botkontroll. Sentry (om det är aktiverat) kan samla fel- och enhetsdata för att förbättra stabiliteten; personuppgifter maskeras innan de skickas.",
@@ -2244,5 +2244,7 @@
   "user_todo.empty": "Inga öppna uppgifter.",
   "user_todo.open_with_count": "Att göra-lista ({count})",
   "user_todo.placeholder": "Ny uppgift",
-  "user_todo.title": "Att göra-lista"
+  "user_todo.title": "Att göra-lista",
+  "lists.windows.history.hide": "Dölj historik",
+  "lists.windows.history.show": "Visa historik"
 }

@@ -4,6 +4,10 @@
 
 - (none)
 
+## v0.3.97
+
+- Mapes un apakšuzdevuma vēsturi var paslēpt un atkal parādīt (slīd pa labi un atpakaļ); izvēle paliek preferenču sīkdatnē
+
 ## v0.3.96
 
 - Early access pārsaukts atpakaļ uz Early bird visā UI, noteikumos, Stripe un docs (migrācija `150`)

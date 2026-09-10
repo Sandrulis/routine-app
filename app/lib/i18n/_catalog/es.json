@@ -320,7 +320,7 @@
   "cookie_consent.category.marketing.title": "Cookies de marketing",
   "cookie_consent.category.necessary.description": "Mantienen el sitio seguro, te mantienen con la sesión iniciada y recuerdan tu consentimiento. El sistema no puede funcionar sin ellas.",
   "cookie_consent.category.necessary.title": "Cookies necesarias",
-  "cookie_consent.category.preferences.description": "Recuerdan tus elecciones de interfaz, como el orden de las ventanas de lista.",
+  "cookie_consent.category.preferences.description": "Recuerdan tus elecciones de interfaz, como el orden de las ventanas de lista y la visibilidad del historial.",
   "cookie_consent.category.preferences.title": "Cookies de preferencias",
   "cookie_consent.settings.always_on": "Siempre activas",
   "cookie_consent.settings.description": "Elige qué categorías de cookies permitir. Puedes cambiarlo en cualquier momento.",
@@ -1184,7 +1184,7 @@
   "legal.cookies.optional.p1": "Las cookies de marketing medirían las campañas publicitarias. {SYSTEM_NAME} hoy no activa el seguimiento de marketing.",
   "legal.cookies.optional.p2": "Las cookies de análisis (Umami) se ejecutan solo con tu consentimiento - consulta la sección de análisis.",
   "legal.cookies.optional.title": "4. Cookies de análisis y marketing",
-  "legal.cookies.preferences.p1": "Las cookies de preferencia recuerdan las elecciones de la interfaz, como el orden de las ventanas de la lista (Tareas, Archivos, Vista general) (routine-app-list-window-order).",
+  "legal.cookies.preferences.p1": "Las cookies de preferencia recuerdan las elecciones de la interfaz, como el orden de las ventanas de la lista (Tareas, Archivos, Vista general) (routine-app-list-window-order) y la visibilidad del historial (routine-app-history-pane).",
   "legal.cookies.preferences.p2": "Escribimos estas cookies solo si das tu consentimiento. Si las rechazas, las elecciones duran solo hasta que recargues la página.",
   "legal.cookies.preferences.title": "4. Cookies de preferencia",
   "legal.cookies.third_party.p1": "Cloudflare Turnstile (inicio de sesión y registro) puede establecer cookies o tratar tu IP para controles antibot. Sentry (si está activado) puede recoger datos de errores y del dispositivo para mejorar la estabilidad; los datos personales (PII) se ocultan antes del envío.",
@@ -2244,5 +2244,7 @@
   "user_todo.empty": "No hay tareas abiertas.",
   "user_todo.open_with_count": "Lista de tareas ({count})",
   "user_todo.placeholder": "Nueva tarea",
-  "user_todo.title": "Lista de tareas"
+  "user_todo.title": "Lista de tareas",
+  "lists.windows.history.hide": "Ocultar historial",
+  "lists.windows.history.show": "Mostrar historial"
 }

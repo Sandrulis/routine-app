@@ -19,6 +19,7 @@ import { ForwardTaskFileModal } from "@/app/components/forward-task-file-modal";
 import { TaskAttachments } from "@/app/components/task-attachments";
 import { TaskChecklists } from "@/app/components/task-checklists";
 import { RelativeTime } from "@/app/components/relative-time";
+import { HistoryPaneToggle } from "@/app/components/history-pane-toggle";
 import { OverflowTooltip, Tooltip } from "@/app/components/tooltip";
 import { UserAvatar } from "@/app/components/user-avatar";
 import { useFeedbackToast } from "@/app/components/feedback-toast-provider";
@@ -42,6 +43,7 @@ import { batchUploadPercent } from "@/app/lib/google-drive/queue-upload";
 import { useTeamCloudStorage } from "@/app/lib/cloud-storage/context";
 import { FRONTEND_MODULE_KEYS } from "@/app/lib/frontend-modules/keys";
 import { useFrontendModules } from "@/app/lib/frontend-modules/context";
+import { useHistoryPaneOpen } from "@/app/lib/history-pane";
 import { useLists } from "@/app/lib/lists-store";
 import { fetchTaskDetails } from "@/app/lib/db/work-data";
 import { ensureTaskFileContent } from "@/app/lib/file-content";
@@ -341,6 +343,7 @@ export function SubtaskDetailModal({
   const [uploadProgress, setUploadProgress] =
     useState<FileUploadProgressState | null>(null);
   const [mobilePane, setMobilePane] = useState<"details" | "history">("details");
+  const [historyOpen, setHistoryOpen] = useHistoryPaneOpen("subtask");
 
   const isCreate = forceCreate || (Boolean(createFor) && !taskId && !createdTaskId);
   const activeTaskId = forceCreate ? null : (taskId ?? createdTaskId);
@@ -1035,6 +1038,15 @@ export function SubtaskDetailModal({
         fileToForward !== null
       }
       panelMaxWidthClassName={appModalSplitPanelMaxWidthClassName}
+      headerActions={
+        <HistoryPaneToggle
+          open={historyOpen}
+          onToggle={() => {
+            if (historyOpen) setMobilePane("details");
+            setHistoryOpen((current) => !current);
+          }}
+        />
+      }
       headerMeta={
         createdOn ? (
           <time
@@ -1066,6 +1078,7 @@ export function SubtaskDetailModal({
         onDrop={(event) => event.preventDefault()}
         className="space-y-4"
       >
+        {historyOpen ? (
         <div
           className="flex border-b border-zinc-200 md:hidden"
           role="tablist"
@@ -1098,10 +1111,15 @@ export function SubtaskDetailModal({
             {t("subtasks.modal.history", "Vēsture")}
           </button>
         </div>
-        <div className="relative grid gap-6 md:grid-cols-[minmax(0,1fr)_18rem]">
+        ) : null}
+        <div
+          className={`flex min-w-0 flex-col md:flex-row md:items-stretch ${
+            historyOpen ? "gap-4" : "gap-4 md:gap-0"
+          }`}
+        >
           <div
-            className={`space-y-4 ${
-              mobilePane === "details" ? "" : "hidden"
+            className={`min-w-0 flex-1 space-y-4 ${
+              mobilePane === "details" || !historyOpen ? "" : "hidden"
             } md:block`}
           >
             <div>
@@ -1331,10 +1349,22 @@ export function SubtaskDetailModal({
             ) : null}
           </div>
 
+          <div
+            className={`min-w-0 overflow-hidden transition-[width,max-height,margin] duration-300 ease-in-out ${
+              historyOpen
+                ? `w-full md:w-[18rem] md:shrink-0 md:self-stretch ${
+                    mobilePane === "history"
+                      ? "mt-6 max-h-[min(28rem,65dvh)] min-h-[min(28rem,65dvh)]"
+                      : "max-md:hidden"
+                  }`
+                : "pointer-events-none max-h-0 max-md:hidden md:max-h-none md:w-0 md:shrink-0 md:self-stretch"
+            }`}
+            aria-hidden={!historyOpen}
+          >
           <aside
-            className={`${
-              mobilePane === "history" ? "flex min-h-[min(28rem,65dvh)]" : "hidden"
-            } min-h-0 flex-col overflow-hidden rounded-2xl border border-zinc-100 bg-zinc-50 p-3 md:absolute md:inset-y-0 md:right-0 md:flex md:min-h-0 md:w-[18rem]`}
+            className={`flex h-full min-h-0 w-full flex-col overflow-hidden rounded-2xl border border-zinc-100 bg-zinc-50 p-3 transition-transform duration-300 ease-in-out md:w-[18rem] ${
+              historyOpen ? "md:translate-x-0" : "md:translate-x-full"
+            }`}
           >
             <h3 className="hidden shrink-0 px-1 text-[12px] font-semibold tracking-wide text-zinc-400 uppercase md:block">
               {t("subtasks.modal.history", "Vēsture")}
@@ -1446,6 +1476,7 @@ export function SubtaskDetailModal({
               </ScrollableHistoryList>
             )}
           </aside>
+          </div>
         </div>
 
         <div

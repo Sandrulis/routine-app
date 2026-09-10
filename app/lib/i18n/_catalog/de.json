@@ -320,7 +320,7 @@
   "cookie_consent.category.marketing.title": "Marketing-Cookies",
   "cookie_consent.category.necessary.description": "Halten die Website sicher, halten dich angemeldet und merken sich deine Einwilligung. Ohne sie kann das System nicht funktionieren.",
   "cookie_consent.category.necessary.title": "Notwendige Cookies",
-  "cookie_consent.category.preferences.description": "Merken sich deine Interface-Wahl, etwa die Reihenfolge der Listenfenster.",
+  "cookie_consent.category.preferences.description": "Merken sich deine Interface-Wahl, etwa die Reihenfolge der Listenfenster und die Sichtbarkeit des Verlaufs.",
   "cookie_consent.category.preferences.title": "Präferenz-Cookies",
   "cookie_consent.settings.always_on": "Immer an",
   "cookie_consent.settings.description": "Wähle, welche Cookie-Kategorien du erlaubst. Du kannst das jederzeit ändern.",
@@ -1184,7 +1184,7 @@
   "legal.cookies.optional.p1": "Marketing-Cookies würden Werbekampagnen messen. {SYSTEM_NAME} aktiviert heute kein Marketing-Tracking.",
   "legal.cookies.optional.p2": "Analyse-Cookies (Umami) laufen nur mit deiner Einwilligung - siehe den Abschnitt zur Analyse.",
   "legal.cookies.optional.title": "4. Analyse- und Marketing-Cookies",
-  "legal.cookies.preferences.p1": "Präferenz-Cookies merken sich Oberflächenwahl, etwa die Reihenfolge der Listenfenster (Aufgaben, Dateien, Liste) (routine-app-list-window-order).",
+  "legal.cookies.preferences.p1": "Präferenz-Cookies merken sich Oberflächenwahl, etwa die Reihenfolge der Listenfenster (Aufgaben, Dateien, Liste) (routine-app-list-window-order) und die Sichtbarkeit des Verlaufs (routine-app-history-pane).",
   "legal.cookies.preferences.p2": "Wir schreiben diese Cookies nur, wenn du einwilligst. Wenn du ablehnst, gelten die Wahl nur bis zum Neuladen der Seite.",
   "legal.cookies.preferences.title": "4. Präferenz-Cookies",
   "legal.cookies.third_party.p1": "Cloudflare Turnstile (Anmeldung und Registrierung) kann Cookies setzen oder deine IP für Bot-Prüfungen verarbeiten. Sentry (falls aktiviert) kann Fehler- und Gerätedaten sammeln, um die Stabilität zu verbessern; personenbezogene Daten werden vor dem Senden geschwärzt.",
@@ -2244,5 +2244,7 @@
   "user_todo.empty": "Keine offenen Aufgaben.",
   "user_todo.open_with_count": "To-do-Liste ({count})",
   "user_todo.placeholder": "Neue Aufgabe",
-  "user_todo.title": "To-do-Liste"
+  "user_todo.title": "To-do-Liste",
+  "lists.windows.history.hide": "Verlauf ausblenden",
+  "lists.windows.history.show": "Verlauf einblenden"
 }

@@ -320,7 +320,7 @@
   "cookie_consent.category.marketing.title": "Marketingcookies",
   "cookie_consent.category.necessary.description": "Houden de site veilig, houden je ingelogd en onthouden je toestemming. Het systeem kan zonder hen niet werken.",
   "cookie_consent.category.necessary.title": "Noodzakelijke cookies",
-  "cookie_consent.category.preferences.description": "Onthouden je interfacekeuzes, zoals de volgorde van lijstvensters.",
+  "cookie_consent.category.preferences.description": "Onthouden je interfacekeuzes, zoals de volgorde van lijstvensters en de zichtbaarheid van de geschiedenis.",
   "cookie_consent.category.preferences.title": "Voorkeurscookies",
   "cookie_consent.settings.always_on": "Altijd aan",
   "cookie_consent.settings.description": "Kies welke cookiecategorieën je toestaat. Je kunt dit op elk moment wijzigen.",
@@ -1184,7 +1184,7 @@
   "legal.cookies.optional.p1": "Marketingcookies zouden reclamecampagnes meten. {SYSTEM_NAME} schakelt vandaag geen marketingtracking in.",
   "legal.cookies.optional.p2": "Analysecookies (Umami) werken alleen met jouw toestemming - zie het deel over analyse.",
   "legal.cookies.optional.title": "4. Analyse- en marketingcookies",
-  "legal.cookies.preferences.p1": "Voorkeurscookies onthouden interfacekeuzes, zoals de volgorde van lijstvensters (Taken, Bestanden, Lijst) (routine-app-list-window-order).",
+  "legal.cookies.preferences.p1": "Voorkeurscookies onthouden interfacekeuzes, zoals de volgorde van lijstvensters (Taken, Bestanden, Lijst) (routine-app-list-window-order) en de zichtbaarheid van de geschiedenis (routine-app-history-pane).",
   "legal.cookies.preferences.p2": "We schrijven deze cookies alleen als je toestemt. Als je weigert, blijven de keuzes alleen tot je de pagina herlaadt.",
   "legal.cookies.preferences.title": "4. Voorkeurscookies",
   "legal.cookies.third_party.p1": "Cloudflare Turnstile (aanmelden en registreren) kan cookies zetten of je IP verwerken voor botcontroles. Sentry (indien ingeschakeld) kan fout- en apparaatgegevens verzamelen om de stabiliteit te verbeteren; persoonsgegevens worden vóór verzending gemaskeerd.",
@@ -2244,5 +2244,7 @@
   "user_todo.empty": "Geen openstaande taken.",
   "user_todo.open_with_count": "Takenlijst ({count})",
   "user_todo.placeholder": "Nieuwe taak",
-  "user_todo.title": "Takenlijst"
+  "user_todo.title": "Takenlijst",
+  "lists.windows.history.hide": "Geschiedenis verbergen",
+  "lists.windows.history.show": "Geschiedenis tonen"
 }

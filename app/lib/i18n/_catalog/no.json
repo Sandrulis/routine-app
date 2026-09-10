@@ -320,7 +320,7 @@
   "cookie_consent.category.marketing.title": "Markedsføringskapsler",
   "cookie_consent.category.necessary.description": "Holder nettstedet sikkert, holder deg innlogget og husker samtykket ditt. Systemet kan ikke virke uten dem.",
   "cookie_consent.category.necessary.title": "Nødvendige informasjonskapsler",
-  "cookie_consent.category.preferences.description": "Husker grensesnittvalgene dine, for eksempel rekkefølgen på listevinduer.",
+  "cookie_consent.category.preferences.description": "Husker grensesnittvalgene dine, for eksempel rekkefølgen på listevinduer og synligheten til historikken.",
   "cookie_consent.category.preferences.title": "Preferanseinformasjonskapsler",
   "cookie_consent.settings.always_on": "Alltid på",
   "cookie_consent.settings.description": "Velg hvilke kategorier av informasjonskapsler du vil tillate. Du kan endre dette når som helst.",
@@ -1184,7 +1184,7 @@
   "legal.cookies.optional.p1": "Markedsføringsinformasjonskapsler ville måle reklamekampanjer. {SYSTEM_NAME} slår ikke på markedsføringssporing i dag.",
   "legal.cookies.optional.p2": "Analyseinformasjonskapsler (Umami) kjører bare med ditt samtykke - se avsnittet om analyse.",
   "legal.cookies.optional.title": "4. Analyse- og markedsføringsinformasjonskapsler",
-  "legal.cookies.preferences.p1": "Preferanseinformasjonskapsler husker grensesnittvalg, for eksempel rekkefølgen på listevinduene (Oppgaver, Filer, Liste) (routine-app-list-window-order).",
+  "legal.cookies.preferences.p1": "Preferanseinformasjonskapsler husker grensesnittvalg, for eksempel rekkefølgen på listevinduene (Oppgaver, Filer, Liste) (routine-app-list-window-order) og synligheten til historikken (routine-app-history-pane).",
   "legal.cookies.preferences.p2": "Vi skriver disse informasjonskapslene bare hvis du samtykker. Hvis du avslår, varer valgene bare til du laster siden på nytt.",
   "legal.cookies.preferences.title": "4. Preferanseinformasjonskapsler",
   "legal.cookies.third_party.p1": "Cloudflare Turnstile (innlogging og registrering) kan sette informasjonskapsler eller behandle IP-adressen din for botkontroll. Sentry (hvis aktivert) kan samle feil- og enhetsdata for å forbedre stabiliteten; personopplysninger sladdes før sending.",
@@ -2244,5 +2244,7 @@
   "user_todo.empty": "Ingen åpne oppgaver.",
   "user_todo.open_with_count": "Gjøremålsliste ({count})",
   "user_todo.placeholder": "Ny oppgave",
-  "user_todo.title": "Gjøremålsliste"
+  "user_todo.title": "Gjøremålsliste",
+  "lists.windows.history.hide": "Skjul historikk",
+  "lists.windows.history.show": "Vis historikk"
 }

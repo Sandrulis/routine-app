@@ -320,7 +320,7 @@
   "cookie_consent.category.marketing.title": "Markkinointievästeet",
   "cookie_consent.category.necessary.description": "Pitävät sivuston turvassa, pitävät sinut kirjautuneena ja muistavat suostumuksesi. Järjestelmä ei toimi ilman niitä.",
   "cookie_consent.category.necessary.title": "Välttämättömät evästeet",
-  "cookie_consent.category.preferences.description": "Muistavat käyttöliittymän valinnat, kuten listan ikkunoiden järjestyksen.",
+  "cookie_consent.category.preferences.description": "Muistavat käyttöliittymän valinnat, kuten listan ikkunoiden järjestyksen ja historian näkyvyyden.",
   "cookie_consent.category.preferences.title": "Mieltymysevästeet",
   "cookie_consent.settings.always_on": "Aina päällä",
   "cookie_consent.settings.description": "Valitse, mitkä evästeluokat sallitaan. Voit muuttaa tätä milloin tahansa.",
@@ -1184,7 +1184,7 @@
   "legal.cookies.optional.p1": "Markkinointievästeet mittaisivat mainoskampanjoita. {SYSTEM_NAME} ei ota tänään käyttöön markkinointiseurantaa.",
   "legal.cookies.optional.p2": "Analytiikkaevästeet (Umami) toimivat vain suostumuksellasi - katso analytiikkaosio.",
   "legal.cookies.optional.title": "4. Analytiikka- ja markkinointievästeet",
-  "legal.cookies.preferences.p1": "Mieltymysevästeet muistavat käyttöliittymän valinnat, kuten listaikkunoiden järjestyksen (Tehtävät, Tiedostot, Lista) (routine-app-list-window-order).",
+  "legal.cookies.preferences.p1": "Mieltymysevästeet muistavat käyttöliittymän valinnat, kuten listaikkunoiden järjestyksen (Tehtävät, Tiedostot, Lista) (routine-app-list-window-order) ja historian näkyvyyden (routine-app-history-pane).",
   "legal.cookies.preferences.p2": "Kirjoitamme nämä evästeet vain, jos annat suostumuksen. Jos kieltäydyt, valinnat kestävät vain sivun uudelleenlataamiseen asti.",
   "legal.cookies.preferences.title": "4. Mieltymysevästeet",
   "legal.cookies.third_party.p1": "Cloudflare Turnstile (kirjautuminen ja rekisteröityminen) voi asettaa evästeitä tai käsitellä IP-osoitettasi bottitarkistuksiin. Sentry (jos käytössä) voi kerätä virhe- ja laitetietoja vakauden parantamiseksi; PII peitetään ennen lähettämistä.",
@@ -2244,5 +2244,7 @@
   "user_todo.empty": "Ei avoimia tehtäviä.",
   "user_todo.open_with_count": "Tehtävälista ({count})",
   "user_todo.placeholder": "Uusi tehtävä",
-  "user_todo.title": "Tehtävälista"
+  "user_todo.title": "Tehtävälista",
+  "lists.windows.history.hide": "Piilota historia",
+  "lists.windows.history.show": "Näytä historia"
 }

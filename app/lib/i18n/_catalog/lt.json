@@ -320,7 +320,7 @@
   "cookie_consent.category.marketing.title": "Rinkodaros slapukai",
   "cookie_consent.category.necessary.description": "Užtikrina svetainės saugumą, palaiko prisijungimą ir prisimena sutikimą. Be jų sistema negali veikti.",
   "cookie_consent.category.necessary.title": "Būtinieji slapukai",
-  "cookie_consent.category.preferences.description": "Prisimena sąsajos pasirinkimus, pavyzdžiui, sąrašo langų tvarką.",
+  "cookie_consent.category.preferences.description": "Prisimena sąsajos pasirinkimus, pavyzdžiui, sąrašo langų tvarką ir istorijos bloko matomumą.",
   "cookie_consent.category.preferences.title": "Nuostatų slapukai",
   "cookie_consent.settings.always_on": "Visada įjungta",
   "cookie_consent.settings.description": "Pasirinkite, kurias slapukų kategorijas leisti. Tai galite bet kada pakeisti.",
@@ -1184,7 +1184,7 @@
   "legal.cookies.optional.p1": "Rinkodaros slapukai matuotų reklamos kampanijas. {SYSTEM_NAME} šiandien neįjungia rinkodaros sekimo.",
   "legal.cookies.optional.p2": "Analitikos slapukai (Umami) veikia tik su tavo sutikimu - žr. analitikos skiltį.",
   "legal.cookies.optional.title": "4. Analitikos ir rinkodaros slapukai",
-  "legal.cookies.preferences.p1": "Nuostatų slapukai prisimena sąsajos pasirinkimus, pavyzdžiui sąrašo langų tvarką (Užduotys, Failai, Sąrašas) (routine-app-list-window-order).",
+  "legal.cookies.preferences.p1": "Nuostatų slapukai prisimena sąsajos pasirinkimus, pavyzdžiui sąrašo langų tvarką (Užduotys, Failai, Sąrašas) (routine-app-list-window-order) ir istorijos bloko matomumą (routine-app-history-pane).",
   "legal.cookies.preferences.p2": "Šiuos slapukus rašome tik jei sutinkate. Jei atsisakote, pasirinkimai galioja tik iki puslapio perkrovimo.",
   "legal.cookies.preferences.title": "4. Nuostatų slapukai",
   "legal.cookies.third_party.p1": "Cloudflare Turnstile (prisijungimas ir registracija) gali nustatyti slapukus arba tvarkyti tavo IP botų patikrai. Sentry (jei įjungtas) gali rinkti klaidų ir įrenginio duomenis stabilumui gerinti; PII slepiamas prieš siunčiant.",
@@ -2244,5 +2244,7 @@
   "user_todo.empty": "Nėra atvirų užduočių.",
   "user_todo.open_with_count": "Darbų sąrašas ({count})",
   "user_todo.placeholder": "Nauja užduotis",
-  "user_todo.title": "Darbų sąrašas"
+  "user_todo.title": "Darbų sąrašas",
+  "lists.windows.history.hide": "Slėpti istoriją",
+  "lists.windows.history.show": "Rodyti istoriją"
 }

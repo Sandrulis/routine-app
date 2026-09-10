@@ -126,7 +126,7 @@ URL ceļos vārdus atdala ar defisi (`/forgot-password`, `/admin/file-types`), n
 - Kategorijas: `necessary`, `preferences`, `analytics`, `marketing`
 - `analytics` piekrišana: Umami `umami.track()` (`UmamiAnalytics`); skripts ielādējas pēc hidratācijas arī bez piekrišanas (`data-auto-track="false"`)
 - Sentry nav sīkdatņu kategorija: ielādējas, kad integrācija ir aktīva
-- `routine-app-list-window-order` raksta tikai ar `preferences` piekrišanu
+- `routine-app-list-window-order` un `routine-app-history-pane` raksta tikai ar `preferences` piekrišanu
 - Pieslēgšanās sesija un `routine-app-remember-session` ir **obligātās** sīkdatnes (`app/lib/auth/remember-session.ts`); 30 dienas, ja Atcerēties mani
 - Globāla paziņojuma aizvēršana: `routine-app-announcement-seen_<id>` līdz paziņojuma termiņam (`app/lib/announcements/seen-cookie.ts`)
 
@@ -477,7 +477,8 @@ app/
     list-detail-page.tsx          # Saraksta kopsavilkums + arhīva skats
     list-form-modal.tsx           # Jauns/labot sarakstu + pieejas; privāts slēdzis pēc `module_private_list`
     list-summary.tsx              # Uzdevumu kartītes ar progresu, statusu grupām + arhīva ikona
-    list-windows-board.tsx        # Uzdevumi | Faili + Saraksts (arhīvs kartītē) + Vēsture; `onOpenSubtask` → lapas modalim
+    list-windows-board.tsx        # Uzdevumi | Faili + Saraksts (arhīvs kartītē) + Vēsture (slīd, cookie); `onOpenSubtask` → lapas modalim
+    history-pane-toggle.tsx       # Paslēpt/rādīt vēsturi mapē un apakšuzdevuma modālī
     templates-page.tsx            # Komandas šablonu saraksts
     template-detail-page.tsx      # Šablona nosaukums + apraksts + koks; auto-save
     template-tree-editor.tsx      # Šablona koks: mapes/uzdevumi/apakšuzdevumi, assignee, checklist, statusi, DnD
@@ -492,7 +493,7 @@ app/
     task-drop-line.tsx            # Zila drop līnija, frozen sort, grupu collision
     move-subtask-modal.tsx        # Apakšuzdevuma pārvietošana pie cita uzdevuma
     move-subtask-destination-button.tsx # Pārvietošanas mērķis ar PATH zem nosaukuma
-    subtask-detail-modal.tsx      # Apakšuzdevuma modālis; mobilajā Detaļas/Vēsture; PATH fill; vēsture; failu pārsūtīšana
+    subtask-detail-modal.tsx      # Apakšuzdevuma modālis; Vēsture slīd/paslēpjas (cookie); mobilajā Detaļas/Vēsture; PATH fill; failu pārsūtīšana
     forward-task-file-modal.tsx   # Resend: pārsūtīt pielikumu; From/Reply-To = Vārds Uzvārds <…>; HTML galvene ar (e-pasts); vēsture `file_forwarded`
     task-checklists.tsx           # Check List pirms pielikumiem; tukšs sakļauts; forceCollapsed
     status-control.tsx            # Statusa poga, picker, čeklista josla
@@ -543,6 +544,7 @@ app/
     format/numbers.ts             # addThousandSeparators, formatInteger, formatEuro
     http/parse-cookie-header.ts   # Server Cookie header → {name, value}[]
     consent/cookie-consent.ts     # Piekrišanas modelis
+    history-pane.ts               # Mapes/apakšuzdevuma vēstures paneļa cookie
     document-title.ts             # Pārlūka cilnes formāts `lapa | sistēma`
     document-title-server.ts      # DB nosaukumi dinamiskajam generateMetadata
     page-metadata.ts              # translatedPageMetadata / resolvedPageMetadata helperi
@@ -852,7 +854,7 @@ localStorage paliek tikai UI preferencei:
 | `routine.timezone` | Pēdējā sinhronizētā IANA josla (`TimezoneSync`); lai RPC netiktu saukts katrā ielādē |
 | `routine-app-nav-trees` | Sānjoslas sakļaušanas stāvoklis |
 
-Cookie `routine-app-cookie-consent` saglabā sīkdatņu piekrišanu (180 dienas). Cookie `routine-app-remember-session` (`1`/`0`) ir obligātā: vai Atcerēties mani ir ieslēgts. Supabase auth sīkdatnes paliek 30 dienas, ja `1`; bez tā - sesijas sīkdatnes. Cookie `routine-app-list-window-order` saglabā 3 logu kārtību katrā sarakstā, ja atļautas preferenču sīkdatnes. Cookie `routine-app-language` + `routine-app-language-chosen` saglabā viesu apzināto UI valodu; bez `chosen` rāda sistēmas noklusējumu, pēc ielogošanās izvēle nonāk `users.language_code`.
+Cookie `routine-app-cookie-consent` saglabā sīkdatņu piekrišanu (180 dienas). Cookie `routine-app-remember-session` (`1`/`0`) ir obligātā: vai Atcerēties mani ir ieslēgts. Supabase auth sīkdatnes paliek 30 dienas, ja `1`; bez tā - sesijas sīkdatnes. Cookie `routine-app-list-window-order` saglabā 3 logu kārtību katrā sarakstā, ja atļautas preferenču sīkdatnes. Cookie `routine-app-history-pane` saglabā mapes un apakšuzdevuma vēstures bloka redzamību. Cookie `routine-app-language` + `routine-app-language-chosen` saglabā viesu apzināto UI valodu; bez `chosen` rāda sistēmas noklusējumu, pēc ielogošanās izvēle nonāk `users.language_code`.
 
 ## Versioning & commits
 

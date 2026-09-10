@@ -1225,11 +1225,13 @@ export function ListWindowsBoard({
   listId,
   tasks,
   parentId = null,
+  historyOpen = true,
   onOpenSubtask,
 }: {
   listId: string;
   tasks: WorkTask[];
   parentId?: string | null;
+  historyOpen?: boolean;
   onOpenSubtask: (task: WorkTask) => void;
 }) {
   const { t } = useTranslations();
@@ -1516,6 +1518,21 @@ export function ListWindowsBoard({
   const swappableOrder = visibleOrder.filter(
     (id) => id === "tasks" || id === "files",
   );
+  const wideHistory = fileUploadsEnabled;
+  const boardLayoutClass = wideHistory
+    ? `flex min-w-0 flex-col overflow-x-clip xl:flex-row xl:items-stretch ${
+        historyOpen ? "gap-4" : "gap-4 xl:gap-0"
+      }`
+    : `flex min-w-0 flex-col overflow-x-clip md:flex-row md:items-stretch ${
+        historyOpen ? "gap-4" : "gap-4 md:gap-0"
+      }`;
+  const historyPaneClass = wideHistory
+    ? historyOpen
+      ? "max-h-[24rem] min-h-[16rem] w-full translate-x-0 xl:max-h-none xl:min-h-0 xl:w-[28.33%] xl:shrink-0 xl:self-stretch"
+      : "pointer-events-none max-h-0 min-h-0 w-full translate-x-full max-xl:-mb-4 xl:max-h-none xl:min-h-0 xl:mr-[-28.33%] xl:w-[28.33%] xl:shrink-0 xl:self-stretch"
+    : historyOpen
+      ? "max-h-[24rem] min-h-[16rem] w-full translate-x-0 md:max-h-none md:min-h-0 md:w-[42.5%] md:shrink-0 md:self-stretch"
+      : "pointer-events-none max-h-0 min-h-0 w-full translate-x-full max-md:-mb-4 md:max-h-none md:min-h-0 md:mr-[-42.5%] md:w-[42.5%] md:shrink-0 md:self-stretch";
 
   return (
     <>
@@ -1526,14 +1543,8 @@ export function ListWindowsBoard({
       onDragEnd={handleDragEnd}
     >
       <SortableContext items={swappableOrder} strategy={rectSortingStrategy}>
-        <div
-          className={
-            fileUploadsEnabled
-              ? "flex min-w-0 flex-col gap-4 xl:grid xl:grid-cols-[minmax(0,1fr)_minmax(0,28.33%)] xl:items-stretch"
-              : "flex min-w-0 flex-col gap-4 md:grid md:grid-cols-[minmax(0,1fr)_minmax(0,42.5%)] md:items-stretch"
-          }
-        >
-          <div className="flex min-w-0 flex-col gap-4">
+        <div className={boardLayoutClass}>
+          <div className="flex min-w-0 flex-1 flex-col gap-4">
             <div
               className={
                 fileUploadsEnabled ? "grid min-w-0 gap-4 md:grid-cols-2" : undefined
@@ -1543,8 +1554,17 @@ export function ListWindowsBoard({
             </div>
             {windows.overview}
           </div>
-          <div className="relative min-h-[16rem] min-w-0 max-h-[24rem] xl:max-h-none xl:min-h-0 xl:self-stretch">
-            <div className="h-full xl:absolute xl:inset-0">{historyWindow}</div>
+          <div
+            className={`relative min-w-0 transition-[max-height,transform,margin] duration-300 ease-in-out ${historyPaneClass}`}
+            aria-hidden={!historyOpen}
+          >
+            <div
+              className={`h-full ${
+                wideHistory ? "xl:absolute xl:inset-0" : "md:absolute md:inset-0"
+              }`}
+            >
+              {historyWindow}
+            </div>
           </div>
         </div>
       </SortableContext>

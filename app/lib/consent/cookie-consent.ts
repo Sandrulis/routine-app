@@ -118,6 +118,7 @@ export function isCookieCategoryAllowed(
 
 export const PREFERENCE_COOKIE_NAMES = [
   "routine-app-list-window-order",
+  "routine-app-history-pane",
 ] as const;
 
 export function isPreferenceCookieName(name: string): boolean {

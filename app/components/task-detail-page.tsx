@@ -4,8 +4,10 @@ import Link from "next/link";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { useHistoryPaneOpen } from "@/app/lib/history-pane";
 import { createMenuAnchorFromEvent } from "@/app/components/create-item-menu";
 import { GroupedSubtaskTables } from "@/app/components/grouped-subtask-tables";
+import { HistoryPaneToggle } from "@/app/components/history-pane-toggle";
 import { IconActionButton } from "@/app/components/icon-action-button";
 import { LoadingState } from "@/app/components/loading-state";
 import { ParentCreateFlow, type ParentCreateContext } from "@/app/components/parent-create-flow";
@@ -51,6 +53,7 @@ export function TaskDetailPage({
   const [createSubtaskOpen, setCreateSubtaskOpen] = useState(false);
   const [boardSubtaskId, setBoardSubtaskId] = useState<string | null>(null);
   const [archiveOpen, setArchiveOpen] = useState(false);
+  const [historyOpen, setHistoryOpen] = useHistoryPaneOpen("folder");
   const canViewArchive = canViewSubtaskArchive(currentUser, roles, isAdmin);
   const list = lists.find((item) => item.id === listId) ?? null;
   const listAccess = list
@@ -133,23 +136,29 @@ export function TaskDetailPage({
       }
       actions={
         isFolder ? (
-          listAccess.canCreateTasks && !archived ? (
-            <button
-              type="button"
-              onClick={(event) => {
-                setParentCreate({
-                  listId: list.id,
-                  parentId: parent.id,
-                  variant: "folder",
-                  anchor: createMenuAnchorFromEvent(event),
-                });
-              }}
-              className="inline-flex min-h-9 items-center justify-center gap-2 rounded-2xl bg-blue-700 px-3 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-800 sm:min-h-10 sm:px-4"
-            >
-              <i className="fas fa-plus text-xs" aria-hidden="true" />
-              {t("create.menu.title", "Izveidot")}
-            </button>
-          ) : undefined
+          <div className="flex items-center gap-2">
+            <HistoryPaneToggle
+              open={historyOpen}
+              onToggle={() => setHistoryOpen((current) => !current)}
+            />
+            {listAccess.canCreateTasks && !archived ? (
+              <button
+                type="button"
+                onClick={(event) => {
+                  setParentCreate({
+                    listId: list.id,
+                    parentId: parent.id,
+                    variant: "folder",
+                    anchor: createMenuAnchorFromEvent(event),
+                  });
+                }}
+                className="inline-flex min-h-9 items-center justify-center gap-2 rounded-2xl bg-blue-700 px-3 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-800 sm:min-h-10 sm:px-4"
+              >
+                <i className="fas fa-plus text-xs" aria-hidden="true" />
+                {t("create.menu.title", "Izveidot")}
+              </button>
+            ) : null}
+          </div>
         ) : canViewArchive ? (
           <IconActionButton
             label={t("subtasks.archive", "Arhīvs")}
@@ -166,6 +175,7 @@ export function TaskDetailPage({
           listId={list.id}
           parentId={parent.id}
           tasks={nested}
+          historyOpen={historyOpen}
           onOpenSubtask={(task) => setBoardSubtaskId(task.id)}
         />
       ) : (
