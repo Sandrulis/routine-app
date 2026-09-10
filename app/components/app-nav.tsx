@@ -826,8 +826,9 @@ export function AppNav({
     return accessForList(lists.find((item) => item.id === listId));
   }
 
-  function applyMissingTemplateStatuses(missing: MissingFolderStatus[]) {
+  async function applyMissingTemplateStatuses(missing: MissingFolderStatus[]) {
     let changed = 0;
+    const persists: Promise<void>[] = [];
     for (const row of missing) {
       const target = tasks.find((item) => item.id === row.parentTaskId);
       if (!target) continue;
@@ -881,18 +882,27 @@ export function AppNav({
         JSON.stringify(layout.statusGroupOverrides) !==
           JSON.stringify(target.statusGroupOverrides ?? {});
       if (createdByTemplateId.size > 0 || layoutChanged) {
-        updateTask(target.id, {
-          statusOrder: layout.statusOrder,
-          hiddenStatusIds: layout.hiddenStatusIds,
-          statusGroupOverrides: layout.statusGroupOverrides,
-        });
+        persists.push(
+          updateTask(target.id, {
+            statusOrder: layout.statusOrder,
+            hiddenStatusIds: layout.hiddenStatusIds,
+            statusGroupOverrides: layout.statusGroupOverrides,
+          }),
+        );
         if (layoutChanged) changed += 1;
       }
     }
-    if (changed > 0) {
+    if (changed === 0) return;
+    try {
+      await Promise.all(persists);
       showFeedback({
         type: "success",
         text: t("folders.sync_statuses.success", "Statusi atjaunoti."),
+      });
+    } catch {
+      showFeedback({
+        type: "error",
+        text: t("errors.status_reorder_failed", "Neizdevās mainīt statusu secību."),
       });
     }
   }
@@ -2060,7 +2070,7 @@ export function AppNav({
                     workTaskStatuses,
                   })
                 : [];
-            applyMissingTemplateStatuses(missing);
+            void applyMissingTemplateStatuses(missing);
             return;
           }
           if (id === "statuses") {

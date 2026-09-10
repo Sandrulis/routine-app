@@ -4,6 +4,10 @@
 
 - (none)
 
+## v0.3.92
+
+- Statusu secība pēc **Atjaunot statusus** paliek datubāzē, lai pēc iziešanas un atgriešanās kārtojums nesakrīt atpakaļ
+
 ## v0.3.91
 
 - Admin lietotāju sarakstā katram lietotājam rāda aktīvo un kopējo darāmo skaitu

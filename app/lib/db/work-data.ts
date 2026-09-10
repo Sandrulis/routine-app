@@ -2,7 +2,7 @@ import { createClient } from "@/app/lib/supabase/client";
 import type { AppNotification } from "@/app/lib/notifications";
 import type { ListFile } from "@/app/lib/list-files";
 import { MAX_STORED_FILE_BYTES } from "@/app/lib/list-files";
-import type { WorkList, WorkTask } from "@/app/lib/lists";
+import { parseIdList, type WorkList, type WorkTask } from "@/app/lib/lists";
 import type { WorkTemplate, WorkTemplateItem } from "@/app/lib/templates";
 import { parseTemplateTaskStatuses } from "@/app/lib/templates";
 import { parseTaskChecklists } from "@/app/lib/task-checklists";
@@ -935,18 +935,8 @@ export async function fetchTeamWorkspace(teamId: string): Promise<TeamWorkspace>
         viewerUserAccess,
         viewerRoleAccess,
         viewerDutyAccess,
-        hiddenStatusIds: Array.isArray(row.hidden_status_ids)
-          ? row.hidden_status_ids.filter(
-              (id: unknown): id is string =>
-                typeof id === "string" && id.trim().length > 0,
-            )
-          : [],
-        statusOrder: Array.isArray(row.status_order)
-          ? row.status_order.filter(
-              (id: unknown): id is string =>
-                typeof id === "string" && id.trim().length > 0,
-            )
-          : [],
+        hiddenStatusIds: parseIdList(row.hidden_status_ids),
+        statusOrder: parseIdList(row.status_order),
         statusGroupOverrides: parseStatusGroupOverrides(row.status_group_overrides),
       };
     }),
@@ -967,16 +957,8 @@ export async function fetchTeamWorkspace(teamId: string): Promise<TeamWorkspace>
       dueDate: row.due_date,
       sortOrder: row.sort_order,
       checklists: parseTaskChecklists(row.checklists),
-      hiddenStatusIds: Array.isArray(row.hidden_status_ids)
-        ? row.hidden_status_ids.filter(
-            (id: unknown): id is string => typeof id === "string" && id.trim().length > 0,
-          )
-        : [],
-      statusOrder: Array.isArray(row.status_order)
-        ? row.status_order.filter(
-            (id: unknown): id is string => typeof id === "string" && id.trim().length > 0,
-          )
-        : [],
+      hiddenStatusIds: parseIdList(row.hidden_status_ids),
+      statusOrder: parseIdList(row.status_order),
       statusGroupOverrides: parseStatusGroupOverrides(row.status_group_overrides),
     })),
     taskFiles,
@@ -1243,8 +1225,15 @@ export async function updateTaskRow(
     row.status_group_overrides = patch.statusGroupOverrides;
   }
   if (Object.keys(row).length > 0) {
-    const { error } = await supabase.from("work_tasks").update(row).eq("id", taskId);
+    const { data, error } = await supabase
+      .from("work_tasks")
+      .update(row)
+      .eq("id", taskId)
+      .select("id");
     if (error) throw new Error(formatSupabaseError(error));
+    if (!data?.length) {
+      throw new Error("Task update did not persist");
+    }
   }
   if (patch.assigneeIds) {
     await replaceTaskAssignees(taskId, patch.assigneeIds);

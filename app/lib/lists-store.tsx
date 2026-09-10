@@ -118,6 +118,7 @@ import {
   insertWorkTaskStatus,
   updateWorkTaskStatusRow,
   deleteWorkTaskStatusRow,
+  updateWorkTaskStatusSortOrders,
   updateTaskFileName,
   updateTaskFileNote,
   formatSupabaseError,
@@ -225,7 +226,7 @@ type ListsContextValue = {
         | "hiddenStatusIds" | "statusOrder" | "statusGroupOverrides"
       >
     >,
-  ) => void;
+  ) => Promise<void>;
   hideTask: (taskId: string) => void;
   restoreTask: (taskId: string) => void;
   moveSubtask: (taskId: string, parentId: string) => void;
@@ -278,7 +279,7 @@ type ListsContextValue = {
   ) => WorkTaskStatusDef | null;
   updateWorkTaskStatus: (
     statusId: string,
-    patch: Partial<Pick<WorkTaskStatusDef, "label" | "color" | "icon" | "groupKey">>,
+    patch: Partial<Pick<WorkTaskStatusDef, "label" | "color" | "icon" | "groupKey" | "sortOrder">>,
   ) => void;
   deleteWorkTaskStatus: (statusId: string) => void;
   reassignSubtasksOffStatus: (
@@ -413,6 +414,10 @@ export function ListsProvider({ children }: { children: ReactNode }) {
     teamId,
   });
   const pendingTaskInsertsRef = useRef<Map<string, Promise<void>>>(new Map());
+  const pendingTaskUpdatesRef = useRef<Map<string, Promise<void>>>(new Map());
+  const pendingWorkTaskStatusInsertsRef = useRef<Map<string, Promise<void>>>(
+    new Map(),
+  );
   assignmentNotifyRef.current = {
     actorId: currentUser.id,
     memberIds: members.map((member) => member.id),
@@ -424,6 +429,60 @@ export function ListsProvider({ children }: { children: ReactNode }) {
   const waitForTaskRow = useCallback((taskId: string) => {
     return pendingTaskInsertsRef.current.get(taskId) ?? Promise.resolve();
   }, []);
+
+  const waitForWorkTaskStatusRows = useCallback((parentTaskId: string) => {
+    const pending = [...pendingWorkTaskStatusInsertsRef.current.entries()]
+      .filter(([id]) =>
+        workTaskStatusesRef.current.some(
+          (status) => status.id === id && status.parentTaskId === parentTaskId,
+        ),
+      )
+      .map(([, persist]) => persist);
+    return Promise.all(pending.map((persist) => persist.catch(() => undefined)));
+  }, []);
+
+  const persistWorkTaskStatusSortOrders = useCallback(
+    async (parentTaskId: string, statusOrder: string[]) => {
+      const customIds = statusOrder.filter((id) =>
+        workTaskStatusesRef.current.some(
+          (status) => status.id === id && status.parentTaskId === parentTaskId,
+        ),
+      );
+      if (customIds.length === 0) return;
+      const orderById = new Map(customIds.map((id, index) => [id, index]));
+      workTaskStatusesRef.current = workTaskStatusesRef.current.map((status) => {
+        const sortOrder = orderById.get(status.id);
+        if (sortOrder === undefined) return status;
+        return { ...status, sortOrder };
+      });
+      setWorkTaskStatuses((current) =>
+        current.map((status) => {
+          const sortOrder = orderById.get(status.id);
+          if (sortOrder === undefined) return status;
+          return { ...status, sortOrder };
+        }),
+      );
+      await updateWorkTaskStatusSortOrders(customIds);
+    },
+    [],
+  );
+
+  const enqueueTaskRowUpdate = useCallback(
+    (taskId: string, patch: Parameters<typeof updateTaskRow>[1]) => {
+      const previous = pendingTaskUpdatesRef.current.get(taskId) ?? Promise.resolve();
+      const next = previous.catch(() => undefined).then(async () => {
+        await waitForTaskRow(taskId);
+        await waitForWorkTaskStatusRows(taskId);
+        await updateTaskRow(taskId, patch);
+        if (patch.statusOrder) {
+          await persistWorkTaskStatusSortOrders(taskId, patch.statusOrder);
+        }
+      });
+      pendingTaskUpdatesRef.current.set(taskId, next);
+      return next;
+    },
+    [persistWorkTaskStatusSortOrders, waitForTaskRow, waitForWorkTaskStatusRows],
+  );
 
   const persistActivity = useCallback(
     (activity: TaskActivity, label = "Failed to save activity") => {
@@ -487,6 +546,8 @@ export function ListsProvider({ children }: { children: ReactNode }) {
     let cancelled = false;
     setIsReady(false);
     pendingTaskInsertsRef.current.clear();
+    pendingTaskUpdatesRef.current.clear();
+    pendingWorkTaskStatusInsertsRef.current.clear();
     void fetchTeamWorkspace(activeTeamId)
       .then((workspace) => {
         if (cancelled) return;
@@ -1070,12 +1131,16 @@ export function ListsProvider({ children }: { children: ReactNode }) {
       });
 
       if (effects.retry) {
-        queueMicrotask(() => {
-          const pending = tasksRef.current.find((task) => task.id === taskId);
-          if (!pending) return;
-          updateTaskRef.current(taskId, incomingPatch);
+        return new Promise<void>((resolve, reject) => {
+          queueMicrotask(() => {
+            const pending = tasksRef.current.find((task) => task.id === taskId);
+            if (!pending) {
+              resolve();
+              return;
+            }
+            void updateTaskRef.current(taskId, incomingPatch).then(resolve, reject);
+          });
         });
-        return;
       }
 
       for (const event of effects.events) {
@@ -1102,20 +1167,19 @@ export function ListsProvider({ children }: { children: ReactNode }) {
           ),
         );
       }
+      let persist = Promise.resolve();
       if (effects.dbTaskId && effects.dbPatch) {
-        const persistId = effects.dbTaskId;
-        const persistPatch = effects.dbPatch;
-        void waitForTaskRow(persistId)
-          .then(() => updateTaskRow(persistId, persistPatch))
-          .catch((error) => {
-            console.error("Failed to update task", formatSupabaseError(error));
-          });
+        persist = enqueueTaskRowUpdate(effects.dbTaskId, effects.dbPatch);
+        persist.catch((error) => {
+          console.error("Failed to update task", formatSupabaseError(error));
+        });
       }
       for (const run of effects.automations) {
         queueMicrotask(run);
       }
+      return persist;
     },
-    [persistActivity, waitForTaskRow],
+    [enqueueTaskRowUpdate, persistActivity],
   );
   updateTaskRef.current = updateTask;
 
@@ -1620,11 +1684,12 @@ export function ListsProvider({ children }: { children: ReactNode }) {
         sortOrder,
         groupKey: isListStatusGroup(input.groupKey) ? input.groupKey : "active",
       };
+      workTaskStatusesRef.current = [...workTaskStatusesRef.current, status];
       setWorkTaskStatuses((current) => [...current, status]);
       if (teamId) {
         const parentWait =
           pendingTaskInsertsRef.current.get(parentTaskId) ?? Promise.resolve();
-        void parentWait
+        const persist = parentWait
           .then(() => insertWorkTaskStatus(teamId, status))
           .catch((error) => {
             console.error(
@@ -1632,6 +1697,12 @@ export function ListsProvider({ children }: { children: ReactNode }) {
               formatSupabaseError(error),
             );
           });
+        pendingWorkTaskStatusInsertsRef.current.set(status.id, persist);
+        void persist.finally(() => {
+          if (pendingWorkTaskStatusInsertsRef.current.get(status.id) === persist) {
+            pendingWorkTaskStatusInsertsRef.current.delete(status.id);
+          }
+        });
       }
       return status;
     },
@@ -1641,30 +1712,34 @@ export function ListsProvider({ children }: { children: ReactNode }) {
   const updateWorkTaskStatus = useCallback(
     (
       statusId: string,
-      patch: Partial<Pick<WorkTaskStatusDef, "label" | "color" | "icon" | "groupKey">>,
+      patch: Partial<
+        Pick<WorkTaskStatusDef, "label" | "color" | "icon" | "groupKey" | "sortOrder">
+      >,
     ) => {
-      setWorkTaskStatuses((current) =>
-        current.map((status) => {
-          if (status.id !== statusId) return status;
-          const label = patch.label?.trim() || status.label;
-          return {
-            ...status,
-            labels: patch.label !== undefined ? {} : status.labels,
-            label,
-            color:
-              patch.color !== undefined
-                ? normalizeStatusColor(patch.color)
-                : status.color,
-            icon: patch.icon !== undefined ? patch.icon?.trim() || null : status.icon,
-            groupKey:
-              patch.groupKey !== undefined
-                ? isListStatusGroup(patch.groupKey)
-                  ? patch.groupKey
-                  : status.groupKey
-                : status.groupKey,
-          };
-        }),
-      );
+      const applyPatch = (status: WorkTaskStatusDef) => {
+        if (status.id !== statusId) return status;
+        const label = patch.label?.trim() || status.label;
+        return {
+          ...status,
+          labels: patch.label !== undefined ? {} : status.labels,
+          label,
+          color:
+            patch.color !== undefined
+              ? normalizeStatusColor(patch.color)
+              : status.color,
+          icon: patch.icon !== undefined ? patch.icon?.trim() || null : status.icon,
+          groupKey:
+            patch.groupKey !== undefined
+              ? isListStatusGroup(patch.groupKey)
+                ? patch.groupKey
+                : status.groupKey
+              : status.groupKey,
+          sortOrder:
+            patch.sortOrder !== undefined ? patch.sortOrder : status.sortOrder,
+        };
+      };
+      workTaskStatusesRef.current = workTaskStatusesRef.current.map(applyPatch);
+      setWorkTaskStatuses((current) => current.map(applyPatch));
       void updateWorkTaskStatusRow(statusId, patch).catch((error) => {
         console.error("Failed to update task status", error);
       });
@@ -1673,6 +1748,9 @@ export function ListsProvider({ children }: { children: ReactNode }) {
   );
 
   const deleteWorkTaskStatus = useCallback((statusId: string) => {
+    workTaskStatusesRef.current = workTaskStatusesRef.current.filter(
+      (status) => status.id !== statusId,
+    );
     setWorkTaskStatuses((current) =>
       current.filter((status) => status.id !== statusId),
     );
@@ -1720,11 +1798,7 @@ export function ListsProvider({ children }: { children: ReactNode }) {
           patch.statusGroupOverrides = statusGroupOverrides;
         }
         if (Object.keys(patch).length === 0) return;
-        const taskPersist =
-          pendingTaskInsertsRef.current.get(workItem.id) ?? Promise.resolve();
-        void taskPersist.then(() => {
-          updateTaskRef.current(workItem.id, patch);
-        });
+        void updateTaskRef.current(workItem.id, patch);
       }
 
       function templateDefaultsForItem(templateItem: WorkTemplateItem) {
