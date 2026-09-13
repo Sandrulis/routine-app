@@ -39,8 +39,28 @@ import {
 } from "@/app/components/task-drop-line";
 import { UserAvatar } from "@/app/components/user-avatar";
 import { DatePickerPopover } from "@/app/components/date-picker-popover";
+import { StatusGroupSortBadge } from "@/app/components/status-group-sort-badge";
+import {
+  CustomTableFieldCell,
+  EditableColumnLabel,
+  nextCustomColumn,
+  SortableTableColumnHeader,
+  TableColumnSortContext,
+  TableColumnsBadge,
+  TableColumnsPanel,
+  tableColumnDndId,
+} from "@/app/components/table-columns-panel";
 import { useDisplayPreferences } from "@/app/components/display-preferences-provider";
 import { useTranslations } from "@/app/components/translations-provider";
+import { useStatusGroupSortDirection } from "@/app/lib/status-group-sort";
+import { useHiddenTableColumnIds } from "@/app/lib/table-column-visibility";
+import type { CustomTableColumn, ResolvedTableColumn } from "@/app/lib/custom-columns";
+import {
+  moveColumnOrder,
+  resolveTableColumnOrder,
+  resolveTableColumns,
+  syncCustomColumnSortOrder,
+} from "@/app/lib/custom-columns";
 import { assignedDutiesOf, assignedMembersOf, assignedRolesOf } from "@/app/lib/assignees";
 import {
   taskDateRelativeHint,
@@ -76,6 +96,7 @@ import {
   workProgressById,
   workProgressFromItems,
   type TaskLocationSegment,
+  type WorkList,
   type WorkTask,
 } from "@/app/lib/lists";
 import {
@@ -101,10 +122,72 @@ const TASK_TABLE_COLS = {
   assignee: "7rem",
   date: "6.5rem",
   status: "16rem",
+  custom: "8.5rem",
 } as const;
 
-const TASK_TABLE_MIN_WIDTH = `calc(${TASK_TABLE_COLS.handle} + ${TASK_TABLE_COLS.title} + ${TASK_TABLE_COLS.assignee} + ${TASK_TABLE_COLS.date} + ${TASK_TABLE_COLS.date} + ${TASK_TABLE_COLS.status})`;
-const TASK_TABLE_COL_COUNT = 6;
+function columnWidth(column: ResolvedTableColumn): string | undefined {
+  if (column.kind === "title") return undefined;
+  if (column.kind === "assignee") return TASK_TABLE_COLS.assignee;
+  if (column.kind === "startDate" || column.kind === "dueDate") {
+    return TASK_TABLE_COLS.date;
+  }
+  if (column.kind === "status") return TASK_TABLE_COLS.status;
+  return TASK_TABLE_COLS.custom;
+}
+
+function tableColCount(visibleColumns: ResolvedTableColumn[]) {
+  return 2 + visibleColumns.length;
+}
+
+function tableMinWidth(visibleColumns: ResolvedTableColumn[]) {
+  const parts: string[] = [TASK_TABLE_COLS.handle];
+  for (const column of visibleColumns) {
+    parts.push(columnWidth(column) ?? TASK_TABLE_COLS.title);
+  }
+  parts.push("2.75rem");
+  return `calc(${parts.join(" + ")})`;
+}
+
+function collectTableColumns(
+  lists: WorkList[],
+  listId: string | undefined,
+  tasks: WorkTask[],
+): {
+  columns: CustomTableColumn[];
+  columnOrder: string[];
+  editableListId: string | null;
+} {
+  if (listId) {
+    const list = lists.find((item) => item.id === listId);
+    return {
+      columns: list?.customColumns ?? [],
+      columnOrder: list?.columnOrder ?? [],
+      editableListId: listId,
+    };
+  }
+  const ids = [...new Set(tasks.map((task) => task.listId))];
+  if (ids.length === 1) {
+    const only = ids[0] ?? null;
+    const list = only ? lists.find((item) => item.id === only) : null;
+    return {
+      columns: list?.customColumns ?? [],
+      columnOrder: list?.columnOrder ?? [],
+      editableListId: only,
+    };
+  }
+  const byId = new Map<string, CustomTableColumn>();
+  for (const id of ids) {
+    const list = lists.find((item) => item.id === id);
+    for (const column of list?.customColumns ?? []) {
+      if (!byId.has(column.id)) byId.set(column.id, column);
+    }
+  }
+  const columns = [...byId.values()].sort(
+    (left, right) =>
+      left.sortOrder - right.sortOrder || left.name.localeCompare(right.name),
+  );
+  return { columns, columnOrder: [], editableListId: null };
+}
 
 function tasksShareSiblingGroup(tasks: WorkTask[]) {
   const first = tasks[0];
@@ -533,14 +616,28 @@ export function SubtaskTable({
   onUnsnooze?: (task: WorkTask) => void;
 }) {
   const { t } = useTranslations();
+  const [statusSortDirection] = useStatusGroupSortDirection();
   const dndContextId = useId();
-  const { lists, listStatuses, workTaskStatuses, tasks: allTasks, updateTask, hideTask, restoreTask, reorderTasks } =
-    useLists();
+  const {
+    lists,
+    listStatuses,
+    workTaskStatuses,
+    tasks: allTasks,
+    updateTask,
+    updateList,
+    hideTask,
+    restoreTask,
+    reorderTasks,
+  } = useLists();
+  const { isHidden, setColumnVisible } = useHiddenTableColumnIds();
+  const [columnsPanelOpen, setColumnsPanelOpen] = useState(false);
+  const [focusColumnAdd, setFocusColumnAdd] = useState(false);
   const [movingTask, setMovingTask] = useState<WorkTask | null>(null);
   const [moveAnchor, setMoveAnchor] = useState<CreateMenuAnchor | null>(null);
   const [dropHint, setDropHint] = useState<DropHint | null>(null);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [expandedChecklistIds, setExpandedChecklistIds] = useState<string[]>([]);
+  const [collapsedStatusKeys, setCollapsedStatusKeys] = useState<string[]>([]);
   const lastSelectedIdRef = useRef<string | null>(null);
   const tableScrollRef = useRef<HTMLDivElement | null>(null);
   const { currentUser, roles } = useTeam();
@@ -588,8 +685,16 @@ export function SubtaskTable({
     return groupTasksByStatus(ordered, groupingCatalog, {
       includeClosed: view === "with-archive",
       mergeByLabel: mergeStatusByLabel,
+      direction: statusSortDirection,
     }).flatMap((group) => group.items);
-  }, [groupByStatus, groupingCatalog, mergeStatusByLabel, tasks, view]);
+  }, [
+    groupByStatus,
+    groupingCatalog,
+    mergeStatusByLabel,
+    statusSortDirection,
+    tasks,
+    view,
+  ]);
   const displayedRows = useDisplayedTasks(matching, view);
   const displayed = displayedRows.map((row) => row.task);
   const exitingIds = new Set(
@@ -604,8 +709,32 @@ export function SubtaskTable({
     return groupTasksByStatus(displayed, groupingCatalog, {
       includeClosed: view === "with-archive",
       mergeByLabel: mergeStatusByLabel,
+      direction: statusSortDirection,
     });
-  }, [displayed, groupByStatus, groupingCatalog, mergeStatusByLabel, view]);
+  }, [
+    displayed,
+    groupByStatus,
+    groupingCatalog,
+    mergeStatusByLabel,
+    statusSortDirection,
+    view,
+  ]);
+  const groupedSortableIds = useMemo(() => {
+    const collapsed = new Set(collapsedStatusKeys);
+    return groups.flatMap((group) => {
+      const key = statusMergeKey(group.status, mergeStatusByLabel);
+      if (collapsed.has(key)) return [];
+      return group.items.map((task) => task.id);
+    });
+  }, [collapsedStatusKeys, groups, mergeStatusByLabel]);
+
+  function toggleStatusGroup(key: string) {
+    setCollapsedStatusKeys((current) =>
+      current.includes(key)
+        ? current.filter((item) => item !== key)
+        : [...current, key],
+    );
+  }
   const selectableTasks = displayed.filter(
     (task) => !exitingIds.has(task.id) && !isTaskDeleted(task),
   );
@@ -630,6 +759,40 @@ export function SubtaskTable({
     }
     return workProgressFromItems(tasks, statuses);
   }, [allTasks, parentTaskId, statuses, tasks]);
+  const { columns: customColumns, columnOrder, editableListId } = useMemo(
+    () => collectTableColumns(lists, listId, tasks),
+    [listId, lists, tasks],
+  );
+  const resolvedColumns = useMemo(
+    () => resolveTableColumns(columnOrder, customColumns),
+    [columnOrder, customColumns],
+  );
+  const visibleColumns = resolvedColumns.filter(
+    (column) => column.kind === "title" || !isHidden(column.id),
+  );
+  const colCount = tableColCount(visibleColumns);
+  const minWidth = tableMinWidth(visibleColumns);
+  const showStatusColumn = visibleColumns.some((column) => column.kind === "status");
+  const editableList =
+    editableListId != null
+      ? (lists.find((item) => item.id === editableListId) ?? null)
+      : null;
+  const canAddColumns = Boolean(
+    editableList &&
+      resolveEffectiveListAccess(editableList, currentUser, roles, isAdmin)
+        .canEditTasks,
+  );
+
+  function persistColumnLayout(
+    nextOrder: string[],
+    nextCustom: CustomTableColumn[] = customColumns,
+  ) {
+    if (!editableListId || !canAddColumns) return;
+    updateList(editableListId, {
+      columnOrder: nextOrder,
+      customColumns: syncCustomColumnSortOrder(nextCustom, nextOrder),
+    });
+  }
 
   useEffect(() => {
     const visible = new Set(selectableIds);
@@ -646,6 +809,16 @@ export function SubtaskTable({
       return next.length === current.length ? current : next;
     });
   }, [displayed]);
+
+  useEffect(() => {
+    const visible = new Set(
+      groups.map((group) => statusMergeKey(group.status, mergeStatusByLabel)),
+    );
+    setCollapsedStatusKeys((current) => {
+      const next = current.filter((key) => visible.has(key));
+      return next.length === current.length ? current : next;
+    });
+  }, [groups, mergeStatusByLabel]);
 
   useEffect(() => {
     if (selectedIds.length === 0) return;
@@ -865,6 +1038,9 @@ export function SubtaskTable({
         onUnsnooze={
           onUnsnooze && !deleted ? () => onUnsnooze(task) : undefined
         }
+        visibleColumns={visibleColumns}
+        colCount={colCount}
+        showStatusColumn={showStatusColumn}
       />
     );
   }
@@ -878,14 +1054,31 @@ export function SubtaskTable({
   return (
     <>
     <div
-      ref={tableScrollRef}
       className={
         embedded
-          ? `w-full overflow-x-auto ${virtualizeUngrouped ? "max-h-[min(70vh,42rem)] overflow-y-auto" : "overflow-y-visible"} ${someSelectableSelected ? "pb-16" : ""}`
-          : `w-full overflow-x-auto ${virtualizeUngrouped ? "max-h-[min(70vh,42rem)] overflow-y-auto" : "overflow-y-visible"} rounded-2xl border border-zinc-200 bg-white ${
+          ? `relative w-full ${someSelectableSelected ? "pb-16" : ""}`
+          : `relative w-full overflow-hidden rounded-2xl border border-zinc-200 bg-white ${
               someSelectableSelected ? "pb-16" : ""
             }`
       }
+    >
+      <div className="relative z-40 flex items-center gap-2 px-3 pt-2 pb-1">
+        {groupByStatus ? <StatusGroupSortBadge /> : null}
+        <TableColumnsBadge
+          open={columnsPanelOpen}
+          onToggle={() => {
+            setFocusColumnAdd(false);
+            setColumnsPanelOpen((current) => !current);
+          }}
+        />
+      </div>
+    <div
+      ref={tableScrollRef}
+      className={`w-full overflow-x-auto ${
+        virtualizeUngrouped
+          ? "max-h-[min(70vh,42rem)] overflow-y-auto"
+          : "overflow-y-visible"
+      }`}
     >
       <DndContext
         id={dndContextId}
@@ -899,21 +1092,35 @@ export function SubtaskTable({
         onDragCancel={() => setDropHint(null)}
         onDragEnd={handleDragEnd}
       >
+        <TableColumnSortContext
+          columnIds={visibleColumns.map((column) => column.id)}
+          onReorder={(activeId, overId) => {
+            const current = resolveTableColumnOrder(columnOrder, customColumns);
+            persistColumnLayout(
+              moveColumnOrder(current, activeId, overId),
+            );
+          }}
+        >
         <table
           className="group/table w-full text-left text-sm"
-          style={{ minWidth: TASK_TABLE_MIN_WIDTH }}
+          style={{ minWidth: minWidth }}
         >
           <colgroup>
             <col style={{ width: TASK_TABLE_COLS.handle }} />
-            <col />
-            <col style={{ width: TASK_TABLE_COLS.assignee }} />
-            <col
-              style={{ width: TASK_TABLE_COLS.date, maxWidth: TASK_TABLE_COLS.date }}
-            />
-            <col
-              style={{ width: TASK_TABLE_COLS.date, maxWidth: TASK_TABLE_COLS.date }}
-            />
-            <col />
+            {visibleColumns.map((column) => {
+              const width = columnWidth(column);
+              return (
+                <col
+                  key={column.id}
+                  style={
+                    width
+                      ? { width, maxWidth: width }
+                      : undefined
+                  }
+                />
+              );
+            })}
+            <col style={{ width: "2.75rem" }} />
           </colgroup>
           <thead>
             <tr className="group/row border-b border-zinc-100 text-[12px] font-medium whitespace-nowrap text-zinc-400">
@@ -929,42 +1136,111 @@ export function SubtaskTable({
                   />
                 ) : null}
               </th>
-              <th className="w-full px-2 py-1.5 font-medium">
-                <span className="inline-flex items-center gap-2">
-                  {t("tasks.fields.title", "Nosaukums")}
-                  <WorkProgressLabel progress={progress} />
-                </span>
-              </th>
-              <th className="px-3 py-1.5 font-medium">
-                {t("todo.fields.assignee", "Atbildīgais")}
-              </th>
-              <th
-                className="px-2 py-1.5 font-medium whitespace-normal"
-                style={{ width: TASK_TABLE_COLS.date, maxWidth: TASK_TABLE_COLS.date }}
-              >
-                {t("tasks.fields.start_date", "Sākums")}
-              </th>
-              <th
-                className="px-2 py-1.5 font-medium whitespace-normal"
-                style={{ width: TASK_TABLE_COLS.date, maxWidth: TASK_TABLE_COLS.date }}
-              >
-                {t("todo.fields.due_date", "Termiņš")}
-              </th>
-              <th className="w-px px-3 py-1.5 font-medium whitespace-nowrap">
-                {t("subtasks.table.status", "Statuss")}
+              {visibleColumns.map((column) => {
+                const width = columnWidth(column);
+                const label =
+                  column.kind === "custom"
+                    ? column.column.name
+                    : column.kind === "title"
+                      ? t("tasks.fields.title", "Nosaukums")
+                      : column.kind === "assignee"
+                        ? t("todo.fields.assignee", "Atbildīgais")
+                        : column.kind === "startDate"
+                          ? t("tasks.fields.start_date", "Sākums")
+                          : column.kind === "dueDate"
+                            ? t("todo.fields.due_date", "Termiņš")
+                            : t("subtasks.table.status", "Statuss");
+                return (
+                  <SortableTableColumnHeader
+                    key={column.id}
+                    id={tableColumnDndId(column.id)}
+                    disabled={!canAddColumns}
+                    reorderLabel={t(
+                      "subtasks.columns.reorder",
+                      "Mainīt kolonnu secību",
+                    )}
+                    className={
+                      column.kind === "title"
+                        ? "w-full px-2 py-1.5 font-medium"
+                        : column.kind === "assignee"
+                          ? "px-3 py-1.5 font-medium"
+                          : column.kind === "status"
+                            ? "w-px px-3 py-1.5 font-medium whitespace-nowrap"
+                            : "px-2 py-1.5 font-medium"
+                    }
+                    style={
+                      width
+                        ? { width, maxWidth: width }
+                        : undefined
+                    }
+                  >
+                    {column.kind === "custom" ? (
+                      <EditableColumnLabel
+                        label={label}
+                        disabled={!canAddColumns}
+                        onRename={
+                          canAddColumns
+                            ? (nextName) => {
+                                persistColumnLayout(
+                                  resolveTableColumnOrder(
+                                    columnOrder,
+                                    customColumns,
+                                  ),
+                                  customColumns.map((item) =>
+                                    item.id === column.id
+                                      ? { ...item, name: nextName }
+                                      : item,
+                                  ),
+                                );
+                              }
+                            : undefined
+                        }
+                        className="text-[13px] font-medium text-zinc-600"
+                      />
+                    ) : column.kind === "title" ? (
+                      <span className="inline-flex items-center gap-2">
+                        {label}
+                        <WorkProgressLabel progress={progress} />
+                      </span>
+                    ) : (
+                      label
+                    )}
+                  </SortableTableColumnHeader>
+                );
+              })}
+              <th className="px-1 py-1.5 text-center">
+                <Tooltip label={t("subtasks.columns.add", "Pievienot kolonnu")}>
+                  <button
+                    type="button"
+                    aria-label={t("subtasks.columns.add", "Pievienot kolonnu")}
+                    disabled={!canAddColumns}
+                    onClick={() => {
+                      setFocusColumnAdd(true);
+                      setColumnsPanelOpen(true);
+                    }}
+                    className="inline-flex size-7 items-center justify-center rounded-md text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-700 disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    <i className="fas fa-plus-circle text-[14px]" aria-hidden="true" />
+                  </button>
+                </Tooltip>
               </th>
             </tr>
           </thead>
             <tbody>
               {groupByStatus ? (
                 <SortableContext
-                  items={displayed.map((task) => task.id)}
+                  items={groupedSortableIds}
                   strategy={frozenSortingStrategy}
                 >
                   {groups.map((group, groupIndex) => {
+                    const groupKey = statusMergeKey(
+                      group.status,
+                      mergeStatusByLabel,
+                    );
+                    const expanded = !collapsedStatusKeys.includes(groupKey);
                     const groupColor = colorFor(group.status.id);
                     return (
-                      <Fragment key={statusMergeKey(group.status, mergeStatusByLabel)}>
+                      <Fragment key={groupKey}>
                         <StatusGroupHeaderRow
                           statusId={group.status.id}
                           label={
@@ -974,8 +1250,13 @@ export function SubtaskTable({
                           count={group.items.filter((task) => !exitingIds.has(task.id)).length}
                           color={group.status.color || groupColor}
                           first={groupIndex === 0}
+                          expanded={expanded}
+                          colSpan={colCount}
+                          onToggle={() => toggleStatusGroup(groupKey)}
                         />
-                        {group.items.map((task) => renderRow(task))}
+                        {expanded
+                          ? group.items.map((task) => renderRow(task))
+                          : null}
                       </Fragment>
                     );
                   })}
@@ -989,7 +1270,7 @@ export function SubtaskTable({
                         count={displayed.length}
                         itemHeight={48}
                         mode="table"
-                        colSpan={6}
+                        colSpan={colCount}
                         scrollerRef={tableScrollRef}
                       >
                         {(index) => renderRow(displayed[index])}
@@ -998,8 +1279,48 @@ export function SubtaskTable({
                   )}
             </tbody>
         </table>
+        </TableColumnSortContext>
         {dropHint ? <TaskDropLine hint={dropHint} /> : null}
       </DndContext>
+    </div>
+      <TableColumnsPanel
+        open={columnsPanelOpen}
+        onClose={() => {
+          setColumnsPanelOpen(false);
+          setFocusColumnAdd(false);
+        }}
+        customColumns={customColumns}
+        columnOrder={columnOrder}
+        isHidden={isHidden}
+        setColumnVisible={setColumnVisible}
+        canEdit={canAddColumns}
+        focusAdd={focusColumnAdd}
+        onAdd={(name) => {
+          const next = nextCustomColumn(customColumns, name);
+          const order = resolveTableColumnOrder(columnOrder, customColumns);
+          persistColumnLayout([...order, next.id], [...customColumns, next]);
+          setColumnVisible(next.id, true);
+        }}
+        onRename={(id, nextName) => {
+          persistColumnLayout(
+            resolveTableColumnOrder(columnOrder, customColumns),
+            customColumns.map((column) =>
+              column.id === id ? { ...column, name: nextName } : column,
+            ),
+          );
+        }}
+        onDelete={(id) => {
+          const nextCustom = customColumns.filter((column) => column.id !== id);
+          persistColumnLayout(
+            resolveTableColumnOrder(columnOrder, customColumns).filter(
+              (columnId) => columnId !== id,
+            ),
+            nextCustom,
+          );
+          setColumnVisible(id, true);
+        }}
+        onReorder={(nextOrder) => persistColumnLayout(nextOrder)}
+      />
     </div>
     <MoveSubtaskModal
       open={Boolean(movingTask)}
@@ -1029,13 +1350,20 @@ function StatusGroupHeaderRow({
   count,
   color,
   first,
+  expanded,
+  colSpan,
+  onToggle,
 }: {
   statusId: string;
   label: string;
   count: number;
   color: string | null;
   first: boolean;
+  expanded: boolean;
+  colSpan: number;
+  onToggle: () => void;
 }) {
+  const { t } = useTranslations();
   const { setNodeRef, isOver } = useDroppable({
     id: statusGroupDropId(statusId),
   });
@@ -1046,10 +1374,26 @@ function StatusGroupHeaderRow({
       className={isOver ? "bg-emerald-50" : undefined}
     >
       <td
-        colSpan={TASK_TABLE_COL_COUNT}
+        colSpan={colSpan}
         className={`px-1 ${first ? "pt-1 pb-2" : "pt-4 pb-2"}`}
       >
-        <div className="flex items-center gap-2">
+        <button
+          type="button"
+          aria-expanded={expanded}
+          aria-label={
+            expanded
+              ? t("nav.collapse", "Sakļaut")
+              : t("nav.expand", "Izvērst")
+          }
+          onClick={onToggle}
+          className="flex items-center gap-2 rounded-md py-0.5 pr-1.5 pl-0.5 text-left transition hover:bg-zinc-100"
+        >
+          <i
+            className={`fas fa-chevron-down w-3 text-center text-[10px] text-zinc-400 transition-transform ${
+              expanded ? "" : "-rotate-90"
+            }`}
+            aria-hidden="true"
+          />
           <span
             className={`inline-flex min-h-6 items-center rounded-md px-2 text-[11px] font-semibold tracking-wide uppercase ${
               color ? "text-white" : statusClassName("todo")
@@ -1059,7 +1403,7 @@ function StatusGroupHeaderRow({
             {label}
           </span>
           <span className="text-[12px] text-zinc-400">{count}</span>
-        </div>
+        </button>
       </td>
     </tr>
   );
@@ -1068,10 +1412,12 @@ function StatusGroupHeaderRow({
 function SubtaskInlineChecklistRows({
   checklists,
   disabled,
+  colSpan,
   onToggleItem,
 }: {
   checklists: TaskChecklist[];
   disabled: boolean;
+  colSpan: number;
   onToggleItem: (listId: string, itemId: string) => void;
 }) {
   const lists = checklists.filter(
@@ -1088,7 +1434,7 @@ function SubtaskInlineChecklistRows({
               <td />
               <td
                 className="px-2 py-1"
-                colSpan={TASK_TABLE_COL_COUNT - 1}
+                colSpan={colSpan - 1}
               >
                 <p className="pl-7 text-[11px] font-medium text-zinc-400">
                   {list.title.trim()}
@@ -1099,7 +1445,7 @@ function SubtaskInlineChecklistRows({
           {list.items.map((item) => (
             <tr key={item.id} className="border-b border-zinc-100 last:border-b-0">
               <td />
-              <td className="px-2 py-1" colSpan={TASK_TABLE_COL_COUNT - 1}>
+              <td className="px-2 py-1" colSpan={colSpan - 1}>
                 <button
                   type="button"
                   role="checkbox"
@@ -1164,6 +1510,9 @@ function SortableSubtaskRow({
   checklistExpanded = false,
   onToggleChecklist,
   onToggleChecklistItem,
+  visibleColumns,
+  colCount,
+  showStatusColumn,
 }: {
   listId: string;
   parentTaskId?: string | null;
@@ -1171,7 +1520,7 @@ function SortableSubtaskRow({
   onOpenTask: (task: WorkTask) => void;
   onUpdate: (
     taskId: string,
-    patch: Partial<Pick<WorkTask, "status" | "startDate" | "dueDate" | "checklists">>,
+    patch: Partial<Pick<WorkTask, "status" | "startDate" | "dueDate" | "checklists" | "customFields">>,
   ) => void;
   onHide?: () => void;
   onMove?: (event: MouseEvent<HTMLButtonElement>) => void;
@@ -1195,6 +1544,9 @@ function SortableSubtaskRow({
   checklistExpanded?: boolean;
   onToggleChecklist?: () => void;
   onToggleChecklistItem?: (listId: string, itemId: string) => void;
+  visibleColumns: ResolvedTableColumn[];
+  colCount: number;
+  showStatusColumn: boolean;
 }) {
   const { t } = useTranslations();
   const [snoozeOpen, setSnoozeOpen] = useState(false);
@@ -1230,6 +1582,42 @@ function SortableSubtaskRow({
   const checklistToggleLabel = checklistExpanded
     ? t("nav.collapse", "Sakļaut")
     : t("nav.expand", "Izvērst");
+  const rowTrailing =
+    onMove || onHide || onSnooze || onUnsnooze ? (
+      <>
+        {onSnooze ? (
+          <TaskSnoozeButton
+            onSnooze={onSnooze}
+            onOpenChange={setSnoozeOpen}
+          />
+        ) : null}
+        {onUnsnooze ? (
+          <IconActionButton
+            label={t("dashboard.snooze.show_again", "Rādīt atkal")}
+            icon="fas fa-eye"
+            variant="muted"
+            onClick={onUnsnooze}
+          />
+        ) : null}
+        {onMove ? (
+          <IconActionButton
+            label={moveLabel}
+            icon="fas fa-exchange-alt"
+            variant="muted"
+            pressed={moveOpen}
+            onClick={onMove}
+          />
+        ) : null}
+        {onHide ? (
+          <IconActionButton
+            label={hideLabel}
+            icon="fas fa-trash"
+            variant="delete"
+            onClick={onHide}
+          />
+        ) : null}
+      </>
+    ) : null;
   const {
     attributes,
     listeners,
@@ -1287,167 +1675,184 @@ function SortableSubtaskRow({
           />
         </div>
       </td>
-      <td className="w-full max-w-0 min-w-0 px-2 py-1.5">
-        <div className="flex min-w-0 items-start gap-0.5">
-          {hasVisibleChecklists ? (
-            <Tooltip label={checklistToggleLabel}>
-              <button
-                type="button"
-                aria-expanded={checklistExpanded}
-                aria-label={checklistToggleLabel}
-                onClick={(event) => {
-                  event.stopPropagation();
-                  onToggleChecklist?.();
-                }}
-                onPointerDown={(event) => event.stopPropagation()}
-                onMouseDown={(event) => event.stopPropagation()}
-                className="mt-0.5 inline-flex size-6 shrink-0 items-center justify-center rounded-md text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-700"
-              >
-                <i
-                  className={`fas fa-caret-right text-[12px] transition-transform ${
-                    checklistExpanded ? "rotate-90" : ""
-                  }`}
-                  aria-hidden="true"
-                />
-              </button>
-            </Tooltip>
-          ) : null}
-          <div className="min-w-0 flex-1">
-            <button
-              type="button"
-              onClick={() => {
-                if (deleted && onRestore) {
-                  onRestore();
-                  return;
-                }
-                onOpenTask(task);
-              }}
-              aria-label={deleted ? restoreLabel : undefined}
-              className={`flex w-full min-w-0 items-center gap-1.5 text-left font-medium hover:text-blue-700 ${
-                deleted ? "text-zinc-400 line-through" : "text-zinc-900"
-              }`}
+      {visibleColumns.map((column) => {
+        if (column.kind === "title") {
+          return (
+            <td key={column.id} className="w-full max-w-0 min-w-0 px-2 py-1.5">
+              <div className="flex min-w-0 items-start gap-0.5">
+                {hasVisibleChecklists ? (
+                  <Tooltip label={checklistToggleLabel}>
+                    <button
+                      type="button"
+                      aria-expanded={checklistExpanded}
+                      aria-label={checklistToggleLabel}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        onToggleChecklist?.();
+                      }}
+                      onPointerDown={(event) => event.stopPropagation()}
+                      onMouseDown={(event) => event.stopPropagation()}
+                      className="mt-0.5 inline-flex size-6 shrink-0 items-center justify-center rounded-md text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-700"
+                    >
+                      <i
+                        className={`fas fa-caret-right text-[12px] transition-transform ${
+                          checklistExpanded ? "rotate-90" : ""
+                        }`}
+                        aria-hidden="true"
+                      />
+                    </button>
+                  </Tooltip>
+                ) : null}
+                <div className="min-w-0 flex-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (deleted && onRestore) {
+                        onRestore();
+                        return;
+                      }
+                      onOpenTask(task);
+                    }}
+                    aria-label={deleted ? restoreLabel : undefined}
+                    className={`flex w-full min-w-0 items-center gap-1.5 text-left font-medium hover:text-blue-700 ${
+                      deleted ? "text-zinc-400 line-through" : "text-zinc-900"
+                    }`}
+                  >
+                    <OverflowTooltip label={task.title} className="min-w-0 flex-1">
+                      <span className="block truncate">{task.title}</span>
+                    </OverflowTooltip>
+                    {hasAttachments ? (
+                      <i
+                        className="fas fa-paperclip shrink-0 text-[11px] text-zinc-400"
+                        aria-hidden="true"
+                        title={t("subtasks.attachments.title", "Pielikumi")}
+                      />
+                    ) : null}
+                  </button>
+                  {locationSegments.length > 0 ? (
+                    <TaskLocationPath
+                      segments={locationSegments}
+                      align="left"
+                      className="mt-0.5"
+                    />
+                  ) : null}
+                </div>
+                {!showStatusColumn && rowTrailing ? (
+                  <div className="ml-1 flex shrink-0 items-center gap-0.5 opacity-0 transition group-hover/row:opacity-100">
+                    {rowTrailing}
+                  </div>
+                ) : null}
+              </div>
+            </td>
+          );
+        }
+        if (column.kind === "assignee") {
+          return (
+            <td key={column.id} className="px-3 py-1.5">
+              <AssigneeCell task={task} disabled={!canEdit || deleted} />
+            </td>
+          );
+        }
+        if (column.kind === "startDate") {
+          return (
+            <td
+              key={column.id}
+              className="px-2 py-1.5"
+              style={{ width: TASK_TABLE_COLS.date, maxWidth: TASK_TABLE_COLS.date }}
             >
-              <OverflowTooltip label={task.title} className="min-w-0 flex-1">
-                <span className="block truncate">{task.title}</span>
-              </OverflowTooltip>
-              {hasAttachments ? (
-                <i
-                  className="fas fa-paperclip shrink-0 text-[11px] text-zinc-400"
-                  aria-hidden="true"
-                  title={t("subtasks.attachments.title", "Pielikumi")}
-                />
-              ) : null}
-            </button>
-            {locationSegments.length > 0 ? (
-              <TaskLocationPath
-                segments={locationSegments}
-                align="left"
-                className="mt-0.5"
+              <DateCell
+                value={task.startDate}
+                emptyLabel={t("tasks.fields.start_date", "Sākums")}
+                disabled={!canEdit || deleted}
+                fieldKind="start"
+                statusGroup={statusGroup}
+                onChange={(startDate) => onUpdate(task.id, { startDate })}
               />
-            ) : null}
-          </div>
-        </div>
-      </td>
-      <td className="px-3 py-1.5">
-        <AssigneeCell task={task} disabled={!canEdit || deleted} />
-      </td>
-      <td
-        className="px-2 py-1.5"
-        style={{ width: TASK_TABLE_COLS.date, maxWidth: TASK_TABLE_COLS.date }}
-      >
-        <DateCell
-          value={task.startDate}
-          emptyLabel={t("tasks.fields.start_date", "Sākums")}
-          disabled={!canEdit || deleted}
-          fieldKind="start"
-          statusGroup={statusGroup}
-          onChange={(startDate) => onUpdate(task.id, { startDate })}
-        />
-      </td>
-      <td
-        className="px-2 py-1.5"
-        style={{ width: TASK_TABLE_COLS.date, maxWidth: TASK_TABLE_COLS.date }}
-      >
-        <DateCell
-          value={task.dueDate}
-          emptyLabel={t("todo.fields.due_date", "Termiņš")}
-          disabled={!canEdit || deleted}
-          fieldKind="due"
-          statusGroup={statusGroup}
-          onChange={(dueDate) => onUpdate(task.id, { dueDate })}
-        />
-      </td>
-      <td className="w-px whitespace-nowrap px-3 py-1.5">
-        <StatusControl
-          listId={listId}
-          parentTaskId={parentTaskId}
-          status={task.status}
-          statusChangedAt={
-            deleted
-              ? task.deletedAt
-              : task.statusChangedAt ?? task.createdAt ??
-                null
-          }
-          deleted={deleted}
-          disabled={!canChangeStatus}
-          completeBlocked={
-            checklistsEnabled && taskHasIncompleteChecklists(task.checklists)
-          }
-          completeBlockedLabel={t(
-            "subtasks.checklist.incomplete",
-            "Vispirms izpildi visus kontrolsaraksta punktus.",
-          )}
-          checklistProgress={
-            checklistsProgress.total > 0 ? checklistsProgress : null
-          }
-          onRestore={onRestore}
-          onChange={(status) => onUpdate(task.id, { status })}
-          revealActionsOnHover
-          actionsForced={moveOpen || snoozeOpen}
-          trailing={
-            onMove || onHide || onSnooze || onUnsnooze ? (
-              <>
-                {onSnooze ? (
-                  <TaskSnoozeButton
-                    onSnooze={onSnooze}
-                    onOpenChange={setSnoozeOpen}
-                  />
-                ) : null}
-                {onUnsnooze ? (
-                  <IconActionButton
-                    label={t("dashboard.snooze.show_again", "Rādīt atkal")}
-                    icon="fas fa-eye"
-                    variant="muted"
-                    onClick={onUnsnooze}
-                  />
-                ) : null}
-                {onMove ? (
-                  <IconActionButton
-                    label={moveLabel}
-                    icon="fas fa-exchange-alt"
-                    variant="muted"
-                    pressed={moveOpen}
-                    onClick={onMove}
-                  />
-                ) : null}
-                {onHide ? (
-                  <IconActionButton
-                    label={hideLabel}
-                    icon="fas fa-trash"
-                    variant="delete"
-                    onClick={onHide}
-                  />
-                ) : null}
-              </>
-            ) : null
-          }
-        />
-      </td>
+            </td>
+          );
+        }
+        if (column.kind === "dueDate") {
+          return (
+            <td
+              key={column.id}
+              className="px-2 py-1.5"
+              style={{ width: TASK_TABLE_COLS.date, maxWidth: TASK_TABLE_COLS.date }}
+            >
+              <DateCell
+                value={task.dueDate}
+                emptyLabel={t("todo.fields.due_date", "Termiņš")}
+                disabled={!canEdit || deleted}
+                fieldKind="due"
+                statusGroup={statusGroup}
+                onChange={(dueDate) => onUpdate(task.id, { dueDate })}
+              />
+            </td>
+          );
+        }
+        if (column.kind === "status") {
+          return (
+            <td key={column.id} className="w-px whitespace-nowrap px-3 py-1.5">
+              <StatusControl
+                listId={listId}
+                parentTaskId={parentTaskId}
+                status={task.status}
+                statusChangedAt={
+                  deleted
+                    ? task.deletedAt
+                    : task.statusChangedAt ?? task.createdAt ??
+                      null
+                }
+                deleted={deleted}
+                disabled={!canChangeStatus}
+                completeBlocked={
+                  checklistsEnabled && taskHasIncompleteChecklists(task.checklists)
+                }
+                completeBlockedLabel={t(
+                  "subtasks.checklist.incomplete",
+                  "Vispirms izpildi visus kontrolsaraksta punktus.",
+                )}
+                checklistProgress={
+                  checklistsProgress.total > 0 ? checklistsProgress : null
+                }
+                onRestore={onRestore}
+                onChange={(status) => onUpdate(task.id, { status })}
+                revealActionsOnHover
+                actionsForced={moveOpen || snoozeOpen}
+                trailing={rowTrailing}
+              />
+            </td>
+          );
+        }
+        if (column.kind !== "custom") return null;
+        return (
+          <td
+            key={column.id}
+            className="px-2 py-1.5"
+            style={{ width: TASK_TABLE_COLS.custom, maxWidth: TASK_TABLE_COLS.custom }}
+          >
+            <CustomTableFieldCell
+              value={task.customFields?.[column.column.id] ?? ""}
+              placeholder={column.column.name}
+              disabled={!canEdit || deleted}
+              onCommit={(next) =>
+                onUpdate(task.id, {
+                  customFields: {
+                    ...(task.customFields ?? {}),
+                    [column.column.id]: next,
+                  },
+                })
+              }
+            />
+          </td>
+        );
+      })}
+      <td className="px-1 py-1.5" />
     </tr>
     {checklistExpanded && !isDragging && hasVisibleChecklists ? (
       <SubtaskInlineChecklistRows
         checklists={task.checklists ?? []}
         disabled={!canEdit || deleted}
+        colSpan={colCount}
         onToggleItem={(listId, itemId) => onToggleChecklistItem?.(listId, itemId)}
       />
     ) : null}

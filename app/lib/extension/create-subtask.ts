@@ -275,6 +275,7 @@ export async function createExtensionSubtask(input: {
     hidden_status_ids: [],
     status_order: [],
     status_group_overrides: {},
+    custom_fields: {},
     created_at: createdAt,
   });
   if (insertError) {

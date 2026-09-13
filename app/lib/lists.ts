@@ -9,6 +9,12 @@ import {
   parseTaskChecklists,
   type TaskChecklist,
 } from "@/app/lib/task-checklists";
+import {
+  parseCustomColumns,
+  parseCustomFields,
+  type CustomFieldValues,
+  type CustomTableColumn,
+} from "@/app/lib/custom-columns";
 
 export type WorkListKind = "list" | "folder";
 
@@ -32,6 +38,8 @@ export type WorkList = {
   hiddenStatusIds: string[];
   statusOrder: string[];
   statusGroupOverrides: Record<string, string>;
+  customColumns: CustomTableColumn[];
+  columnOrder: string[];
 };
 
 export function parseIdList(value: unknown): string[] {
@@ -94,6 +102,7 @@ export type WorkTask = {
   hiddenStatusIds: string[];
   statusOrder: string[];
   statusGroupOverrides: Record<string, string>;
+  customFields: CustomFieldValues;
 };
 
 export type ListColor = {
@@ -483,6 +492,10 @@ export function normalizeStoredLists(value: unknown): WorkList[] | null {
         statusGroupOverrides: parseStatusGroupMap(
           "statusGroupOverrides" in item ? item.statusGroupOverrides : {},
         ),
+        customColumns: parseCustomColumns(
+          "customColumns" in item ? item.customColumns : [],
+        ),
+        columnOrder: parseIdList("columnOrder" in item ? item.columnOrder : []),
       };
     })
     .filter((item): item is WorkList => item !== null);
@@ -609,6 +622,9 @@ export function normalizeStoredTasks(value: unknown): WorkTask[] | null {
         statusOrder: parseIdList("statusOrder" in item ? item.statusOrder : []),
         statusGroupOverrides: parseStatusGroupMap(
           "statusGroupOverrides" in item ? item.statusGroupOverrides : {},
+        ),
+        customFields: parseCustomFields(
+          "customFields" in item ? item.customFields : {},
         ),
       };
     })

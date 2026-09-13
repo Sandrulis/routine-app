@@ -6,6 +6,7 @@ import { parseIdList, type WorkList, type WorkTask } from "@/app/lib/lists";
 import type { WorkTemplate, WorkTemplateItem } from "@/app/lib/templates";
 import { parseTemplateTaskStatuses } from "@/app/lib/templates";
 import { parseTaskChecklists } from "@/app/lib/task-checklists";
+import { parseCustomColumns, parseCustomFields } from "@/app/lib/custom-columns";
 import { sortTemplateItemsForInsert } from "@/app/lib/templates";
 import {
   DEFAULT_LIST_ACCESS_LEVEL,
@@ -741,7 +742,7 @@ export async function fetchTeamWorkspace(teamId: string): Promise<TeamWorkspace>
     fetchAllRows((from, to) =>
       supabase
         .from("work_lists")
-        .select("id, name, description, icon, color, kind, sort_order, is_private, created_by, default_access_level, hidden_status_ids, status_order, status_group_overrides")
+        .select("id, name, description, icon, color, kind, sort_order, is_private, created_by, default_access_level, hidden_status_ids, status_order, status_group_overrides, custom_columns, column_order")
         .eq("team_id", teamId)
         .order("sort_order", { ascending: true })
         .range(from, to),
@@ -750,7 +751,7 @@ export async function fetchTeamWorkspace(teamId: string): Promise<TeamWorkspace>
       supabase
         .from("work_tasks")
         .select(
-          "id, list_id, parent_id, kind, title, description, status, status_changed_at, deleted_at, archived_at, start_date, due_date, sort_order, hidden_status_ids, status_order, status_group_overrides, created_at, checklists",
+          "id, list_id, parent_id, kind, title, description, status, status_changed_at, deleted_at, archived_at, start_date, due_date, sort_order, hidden_status_ids, status_order, status_group_overrides, created_at, checklists, custom_fields",
         )
         .eq("team_id", teamId)
         .order("sort_order", { ascending: true })
@@ -938,6 +939,8 @@ export async function fetchTeamWorkspace(teamId: string): Promise<TeamWorkspace>
         hiddenStatusIds: parseIdList(row.hidden_status_ids),
         statusOrder: parseIdList(row.status_order),
         statusGroupOverrides: parseStatusGroupOverrides(row.status_group_overrides),
+        customColumns: parseCustomColumns(row.custom_columns),
+        columnOrder: parseIdList(row.column_order),
       };
     }),
     tasks: tasks.map((row) => ({
@@ -960,6 +963,7 @@ export async function fetchTeamWorkspace(teamId: string): Promise<TeamWorkspace>
       hiddenStatusIds: parseIdList(row.hidden_status_ids),
       statusOrder: parseIdList(row.status_order),
       statusGroupOverrides: parseStatusGroupOverrides(row.status_group_overrides),
+      customFields: parseCustomFields(row.custom_fields),
     })),
     taskFiles,
     listFiles,
@@ -1000,6 +1004,8 @@ export async function insertList(
     hidden_status_ids: list.hiddenStatusIds ?? [],
     status_order: list.statusOrder ?? [],
     status_group_overrides: list.statusGroupOverrides ?? {},
+    custom_columns: list.customColumns ?? [],
+    column_order: list.columnOrder ?? [],
   });
   if (error) throw error;
 
@@ -1092,6 +1098,8 @@ export async function updateListRow(
       | "hiddenStatusIds"
       | "statusOrder"
       | "statusGroupOverrides"
+      | "customColumns"
+      | "columnOrder"
     >
   > & { createdBy?: string | null },
 ) {
@@ -1114,6 +1122,12 @@ export async function updateListRow(
   }
   if (patch.statusGroupOverrides !== undefined) {
     rowPatch.status_group_overrides = patch.statusGroupOverrides;
+  }
+  if (patch.customColumns !== undefined) {
+    rowPatch.custom_columns = patch.customColumns;
+  }
+  if (patch.columnOrder !== undefined) {
+    rowPatch.column_order = patch.columnOrder;
   }
 
   if (Object.keys(rowPatch).length > 0) {
@@ -1169,6 +1183,7 @@ export async function insertTask(teamId: string, task: WorkTask) {
     hidden_status_ids: task.hiddenStatusIds ?? [],
     status_order: task.statusOrder ?? [],
     status_group_overrides: task.statusGroupOverrides ?? {},
+    custom_fields: task.customFields ?? {},
     created_at: task.createdAt ?? undefined,
   });
   if (error) throw new Error(formatSupabaseError(error));
@@ -1195,6 +1210,7 @@ export async function updateTaskRow(
       | "hiddenStatusIds"
       | "statusOrder"
       | "statusGroupOverrides"
+      | "customFields"
     >
   >,
 ) {
@@ -1224,6 +1240,7 @@ export async function updateTaskRow(
   if (patch.statusGroupOverrides !== undefined) {
     row.status_group_overrides = patch.statusGroupOverrides;
   }
+  if (patch.customFields !== undefined) row.custom_fields = patch.customFields;
   if (Object.keys(row).length > 0) {
     const returning =
       patch.statusOrder !== undefined ? "id, status_order" : "id";

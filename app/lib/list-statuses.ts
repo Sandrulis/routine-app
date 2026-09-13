@@ -233,9 +233,14 @@ export function statusMergeKey(
 export function groupTasksByStatus<T extends { status: string }>(
   tasks: T[],
   catalog: TaskStatusSummary[],
-  options?: { includeClosed?: boolean; mergeByLabel?: boolean },
+  options?: {
+    includeClosed?: boolean;
+    mergeByLabel?: boolean;
+    direction?: "asc" | "desc";
+  },
 ): { status: TaskStatusSummary; items: T[] }[] {
   const mergeByLabel = Boolean(options?.mergeByLabel);
+  const reverse = options?.direction !== "desc";
   const byId = new Map(catalog.map((status) => [status.id, status]));
   const itemsByKey = new Map<string, T[]>();
   const statusByKey = new Map<string, TaskStatusSummary>();
@@ -272,12 +277,13 @@ export function groupTasksByStatus<T extends { status: string }>(
     .sort((left, right) => {
       const groupDiff =
         groupIndex(right.status.groupKey) - groupIndex(left.status.groupKey);
-      if (groupDiff !== 0) return groupDiff;
+      if (groupDiff !== 0) return reverse ? groupDiff : -groupDiff;
       const leftIndex =
         catalogIndexByKey.get(statusMergeKey(left.status, mergeByLabel)) ?? -1;
       const rightIndex =
         catalogIndexByKey.get(statusMergeKey(right.status, mergeByLabel)) ?? -1;
-      return rightIndex - leftIndex;
+      const catalogDiff = rightIndex - leftIndex;
+      return reverse ? catalogDiff : -catalogDiff;
     })
     .filter((group) => group.items.length > 0);
 }

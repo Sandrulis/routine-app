@@ -4,6 +4,12 @@
 
 - (none)
 
+## v0.3.100
+
+- Tabulā **Kolonnas** sleja: slēpt/rādīt, pievienot savas kolonnas, mainīt secību, labot nosaukumu ar dubultklikšķi un dzēst
+- Statusu grupas var sakļaut; kārtošanas badge atceras augoši/dilstoši (preferenču sīkdatne)
+- Migrācijas `151` (`custom_columns` / `custom_fields`) un `152` (`column_order`)
+
 ## v0.3.99
 
 - Mobilajā statusa meklēšana vairs nezoomē; lazy skati rāda spinneri; sakļauts koks un presence nepārzīmē visus

@@ -717,7 +717,7 @@ export function getCookiePolicyContent(t: Translate): LegalDocumentContent {
           {
             key: "legal.cookies.preferences.p1",
             fallback:
-              "Preferenču sīkdatnes atceras saskarnes izvēles, piemēram, saraksta logu (Uzdevumi, Faili, Saraksts) kārtību (routine-app-list-window-order) un vēstures bloka redzamību (routine-app-history-pane).",
+              "Preferenču sīkdatnes atceras saskarnes izvēles, piemēram, saraksta logu (Uzdevumi, Faili, Saraksts) kārtību (routine-app-list-window-order), vēstures bloka redzamību (routine-app-history-pane), statusu kārtošanu (routine-app-status-group-sort) un tabulas kolonnu redzamību (routine-app-table-columns).",
           },
           {
             key: "legal.cookies.preferences.p2",

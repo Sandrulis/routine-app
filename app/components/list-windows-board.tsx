@@ -61,6 +61,7 @@ import {
 import { FileIcon } from "@/app/components/file-icon";
 import { VirtualWindow } from "@/app/components/virtual-window";
 import { useFeedbackToast } from "@/app/components/feedback-toast-provider";
+import { StatusGroupSortBadge } from "@/app/components/status-group-sort-badge";
 import { useTranslations } from "@/app/components/translations-provider";
 import { translateActionError } from "@/app/lib/i18n/action-errors";
 import { assigneeDisplayNames } from "@/app/lib/assignees";
@@ -87,7 +88,9 @@ import {
   mergeStatusCatalog,
   resolveStatusIdForTask,
   sortTasksLikeNavTree,
+  statusMergeKey,
 } from "@/app/lib/list-statuses";
+import { useStatusGroupSortDirection } from "@/app/lib/status-group-sort";
 import {
   collectTaskSubtreeIds,
   getDescendantSubtasks,
@@ -534,29 +537,52 @@ function OverviewStatusHeader({
   label,
   count,
   color,
+  expanded,
+  onToggle,
 }: {
   statusId: string;
   label: string;
   count: number;
   color: string | null;
+  expanded: boolean;
+  onToggle: () => void;
 }) {
+  const { t } = useTranslations();
   const { setNodeRef, isOver } = useDroppable({
     id: statusGroupDropId(statusId),
   });
   return (
     <div
       ref={setNodeRef}
-      className={`mb-1 flex items-center gap-2 px-1 ${isOver ? "rounded-md bg-emerald-50" : ""}`}
+      className={`mb-1 ${isOver ? "rounded-md bg-emerald-50" : ""}`}
     >
-      <span
-        className={`inline-flex min-h-5 items-center rounded-md px-1.5 text-[10px] font-semibold tracking-wide uppercase ${
-          color ? "text-white" : statusClassName("todo")
-        }`}
-        style={color ? { backgroundColor: color } : undefined}
+      <button
+        type="button"
+        aria-expanded={expanded}
+        aria-label={
+          expanded
+            ? t("nav.collapse", "Sakļaut")
+            : t("nav.expand", "Izvērst")
+        }
+        onClick={onToggle}
+        className="flex items-center gap-2 rounded-md px-1 py-0.5 text-left transition hover:bg-zinc-100"
       >
-        {label}
-      </span>
-      <span className="text-[11px] text-zinc-400">{count}</span>
+        <i
+          className={`fas fa-chevron-down w-3 text-center text-[9px] text-zinc-400 transition-transform ${
+            expanded ? "" : "-rotate-90"
+          }`}
+          aria-hidden="true"
+        />
+        <span
+          className={`inline-flex min-h-5 items-center rounded-md px-1.5 text-[10px] font-semibold tracking-wide uppercase ${
+            color ? "text-white" : statusClassName("todo")
+          }`}
+          style={color ? { backgroundColor: color } : undefined}
+        >
+          {label}
+        </span>
+        <span className="text-[11px] text-zinc-400">{count}</span>
+      </button>
     </div>
   );
 }
@@ -786,6 +812,8 @@ function OverviewSubtaskList({
   const { isEnabled: isModuleEnabled } = useFrontendModules();
   const checklistsEnabled = isModuleEnabled(FRONTEND_MODULE_KEYS.checklist);
   const [dropHint, setDropHint] = useState<DropHint | null>(null);
+  const [collapsedStatusKeys, setCollapsedStatusKeys] = useState<string[]>([]);
+  const [statusSortDirection] = useStatusGroupSortDirection();
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
   );
@@ -794,13 +822,21 @@ function OverviewSubtaskList({
   const groups = groupTasksByStatus(
     sortTasksLikeNavTree(tasks, groupingCatalog),
     groupingCatalog,
-    { includeClosed, mergeByLabel: true },
+    { includeClosed, mergeByLabel: true, direction: statusSortDirection },
   );
   const closedStatusId =
     [...statuses].reverse().find((status) => status.groupKey === "closed")
       ?.id ?? "done";
   const openStatusId =
     statuses.find((status) => status.groupKey === "not_started")?.id ?? "todo";
+
+  function toggleStatusGroup(key: string) {
+    setCollapsedStatusKeys((current) =>
+      current.includes(key)
+        ? current.filter((item) => item !== key)
+        : [...current, key],
+    );
+  }
 
   function handleDragEnd(event: DragEndEvent) {
     const hint = dropHintFromEvent(event);
@@ -888,60 +924,73 @@ function OverviewSubtaskList({
         onDragCancel={() => setDropHint(null)}
         onDragEnd={handleDragEnd}
       >
-        <div className="space-y-3">
+        <div>
+          {groups.length > 0 ? (
+            <div className="mb-2">
+              <StatusGroupSortBadge />
+            </div>
+          ) : null}
+          <div className="space-y-3">
           {groups.map((group) => {
+            const groupKey = statusMergeKey(group.status, true);
+            const expanded = !collapsedStatusKeys.includes(groupKey);
             const groupColor = colorFor(group.status.id);
             const groupIds = group.items.map((task) => task.id);
             return (
-              <div key={group.status.id}>
+              <div key={groupKey}>
                 <OverviewStatusHeader
                   statusId={group.status.id}
                   label={group.status.label || labelFor(group.status.id)}
                   count={group.items.length}
                   color={group.status.color || groupColor}
+                  expanded={expanded}
+                  onToggle={() => toggleStatusGroup(groupKey)}
                 />
-                <SortableContext
-                  items={groupIds}
-                  strategy={frozenSortingStrategy}
-                >
-                  <ul className="space-y-1">
-                    {group.items.map((task) => {
-                      const done = isClosedTaskStatus(task.status, statuses);
-                      const checklistBlocked =
-                        checklistsEnabled &&
-                        !done &&
-                        taskHasIncompleteChecklists(task.checklists);
-                      const canToggle =
-                        access.canEditTasks ||
-                        (access.canComment &&
-                          userIsAssignee(task.assigneeIds, currentUser));
-                      return (
-                        <OverviewSubtaskRow
-                          key={task.id}
-                          listId={listId}
-                          task={task}
-                          canDrag={access.canEditTasks}
-                          canToggle={canToggle}
-                          checklistBlocked={checklistBlocked}
-                          statusColor={group.status.color || groupColor}
-                          statusGroupKey={group.status.groupKey}
-                          onOpen={() => onOpenSubtask(task)}
-                          onComplete={() =>
-                            updateTaskStatus(
-                              task.id,
-                              (done
-                                ? openStatusId
-                                : closedStatusId) as WorkTaskStatus,
-                            )
-                          }
-                        />
-                      );
-                    })}
-                  </ul>
-                </SortableContext>
+                {expanded ? (
+                  <SortableContext
+                    items={groupIds}
+                    strategy={frozenSortingStrategy}
+                  >
+                    <ul className="space-y-1">
+                      {group.items.map((task) => {
+                        const done = isClosedTaskStatus(task.status, statuses);
+                        const checklistBlocked =
+                          checklistsEnabled &&
+                          !done &&
+                          taskHasIncompleteChecklists(task.checklists);
+                        const canToggle =
+                          access.canEditTasks ||
+                          (access.canComment &&
+                            userIsAssignee(task.assigneeIds, currentUser));
+                        return (
+                          <OverviewSubtaskRow
+                            key={task.id}
+                            listId={listId}
+                            task={task}
+                            canDrag={access.canEditTasks}
+                            canToggle={canToggle}
+                            checklistBlocked={checklistBlocked}
+                            statusColor={group.status.color || groupColor}
+                            statusGroupKey={group.status.groupKey}
+                            onOpen={() => onOpenSubtask(task)}
+                            onComplete={() =>
+                              updateTaskStatus(
+                                task.id,
+                                (done
+                                  ? openStatusId
+                                  : closedStatusId) as WorkTaskStatus,
+                              )
+                            }
+                          />
+                        );
+                      })}
+                    </ul>
+                  </SortableContext>
+                ) : null}
               </div>
             );
           })}
+          </div>
         </div>
         {dropHint ? <TaskDropLine hint={dropHint} /> : null}
       </DndContext>

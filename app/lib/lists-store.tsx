@@ -197,6 +197,8 @@ type ListsContextValue = {
         | "hiddenStatusIds"
         | "statusOrder"
         | "statusGroupOverrides"
+        | "customColumns"
+        | "columnOrder"
       >
     >,
   ) => void;
@@ -223,7 +225,7 @@ type ListsContextValue = {
       Pick<
         WorkTask,
         "title" | "description" | "status" | "assigneeIds" | "startDate" | "dueDate" | "deletedAt" | "checklists"
-        | "hiddenStatusIds" | "statusOrder" | "statusGroupOverrides"
+        | "hiddenStatusIds" | "statusOrder" | "statusGroupOverrides" | "customFields"
       >
     >,
   ) => Promise<void>;
@@ -631,6 +633,8 @@ export function ListsProvider({ children }: { children: ReactNode }) {
         hiddenStatusIds: [],
         statusOrder: [],
         statusGroupOverrides: {},
+        customColumns: [],
+        columnOrder: [],
       };
 
       setLists((current) => [...current, list]);
@@ -674,6 +678,8 @@ export function ListsProvider({ children }: { children: ReactNode }) {
           | "hiddenStatusIds"
           | "statusOrder"
           | "statusGroupOverrides"
+          | "customColumns"
+          | "columnOrder"
         >
       >,
     ) => {
@@ -825,6 +831,7 @@ export function ListsProvider({ children }: { children: ReactNode }) {
         hiddenStatusIds: [],
         statusOrder: [],
         statusGroupOverrides: {},
+        customFields: {},
       };
       setTasks((current) => {
         if (task.parentId) {
@@ -930,7 +937,7 @@ export function ListsProvider({ children }: { children: ReactNode }) {
         Pick<
           WorkTask,
           "title" | "description" | "status" | "assigneeIds" | "startDate" | "dueDate" | "deletedAt" | "checklists"
-          | "hiddenStatusIds" | "statusOrder" | "statusGroupOverrides"
+          | "hiddenStatusIds" | "statusOrder" | "statusGroupOverrides" | "customFields"
         >
       >,
     ) => {
