@@ -80,6 +80,10 @@ const LANGUAGE_CODE_RE = /^[a-z]{2}(-[A-Z]{2})?$/;
 const TRANSLATION_KEY_RE = /^[a-zA-Z0-9_.:-]+$/;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+function compareByName(left: string, right: string): number {
+  return left.localeCompare(right, DEFAULT_LANGUAGE, { sensitivity: "base" });
+}
+
 type UserRow = {
   id: string;
   name: string;
@@ -432,26 +436,36 @@ export const listAdminUsers = cache(async function listAdminUsers(): Promise<Adm
     }
   }
 
-  return ((data ?? []) as UserRow[]).map((row) => {
-    const emailConfirmed = !unconfirmedIds.has(row.id);
-    const todos = todoCounts.get(row.id);
-    return {
-      id: row.id,
-      name: row.name,
-      email: row.email,
-      avatar: row.avatar,
-      isAdmin: row.is_admin === true && emailConfirmed,
-      emailConfirmed,
-      registeredAt: row.created_at,
-      lastSeenAt: lastOnlineByUser.get(row.id) ?? null,
-      languageCode: row.language_code,
-      lastIp: lastIpByUser.get(row.id)?.ip ?? null,
-      lastIpCountry: lastIpByUser.get(row.id)?.country_code ?? null,
-      teams: teamsByUser.get(row.id) ?? [],
-      todoActiveCount: todos?.active ?? 0,
-      todoTotalCount: todos?.total ?? 0,
-    };
-  });
+  for (const list of teamsByUser.values()) {
+    list.sort((left, right) => compareByName(left.name, right.name));
+  }
+
+  return ((data ?? []) as UserRow[])
+    .map((row) => {
+      const emailConfirmed = !unconfirmedIds.has(row.id);
+      const todos = todoCounts.get(row.id);
+      return {
+        id: row.id,
+        name: row.name,
+        email: row.email,
+        avatar: row.avatar,
+        isAdmin: row.is_admin === true && emailConfirmed,
+        emailConfirmed,
+        registeredAt: row.created_at,
+        lastSeenAt: lastOnlineByUser.get(row.id) ?? null,
+        languageCode: row.language_code,
+        lastIp: lastIpByUser.get(row.id)?.ip ?? null,
+        lastIpCountry: lastIpByUser.get(row.id)?.country_code ?? null,
+        teams: teamsByUser.get(row.id) ?? [],
+        todoActiveCount: todos?.active ?? 0,
+        todoTotalCount: todos?.total ?? 0,
+      };
+    })
+    .sort(
+      (left, right) =>
+        compareByName(left.name, right.name) ||
+        compareByName(left.email, right.email),
+    );
 });
 
 export async function createAdminUser(input: AdminUserInput): Promise<ActionResult> {
@@ -615,7 +629,7 @@ export const listAdminTeams = cache(async function listAdminTeams(): Promise<Adm
     .select(
       "id, name, initials, icon, color, logo_url, created_at, payment_plan_id, payment_plan_until, payment_plan_paid, payment_plan_is_trial, payment_plan_is_early_bird, early_bird_seat_count, billing_cycle_end, billing_period_end_at, is_vip",
     )
-    .order("created_at", { ascending: true });
+    .order("name", { ascending: true });
 
   if (error) {
     console.error("listAdminTeams failed:", error.message);
@@ -632,37 +646,39 @@ export const listAdminTeams = cache(async function listAdminTeams(): Promise<Adm
   const workClient = isSupabaseAdminConfigured() ? createAdminClient() : supabase;
   const workCounts = await loadAdminTeamWorkCounts(workClient);
 
-  return ((teams ?? []) as TeamRow[]).map((row) => {
-    const usage = workCounts.get(row.id) ?? emptyTeamWorkCounts();
-    return {
-      id: row.id,
-      name: row.name,
-      initials: row.initials,
-      icon: row.icon,
-      color: row.color,
-      logoUrl: row.logo_url,
-      memberCount: counts.get(row.id) ?? 0,
-      listCount: usage.listCount,
-      taskActiveCount: usage.taskActiveCount,
-      taskCompletedCount: usage.taskCompletedCount,
-      subtaskActiveCount: usage.subtaskActiveCount,
-      subtaskCompletedCount: usage.subtaskCompletedCount,
-      createdAt: row.created_at,
-      paymentPlanId:
-        typeof row.payment_plan_id === "string" && row.payment_plan_id.trim()
-          ? row.payment_plan_id
-          : null,
-      paymentPlanUntil:
-        dateOnly(row.payment_plan_until) ??
-        dateOnly(row.billing_cycle_end) ??
-        dateOnly(row.billing_period_end_at),
-      paymentPlanPaid: row.payment_plan_paid === true,
-      paymentPlanIsTrial: row.payment_plan_is_trial === true,
-      paymentPlanIsEarlyBird: row.payment_plan_is_early_bird === true,
-      earlyBirdSeatCount: Math.max(0, Math.trunc(Number(row.early_bird_seat_count) || 0)),
-      isVip: row.is_vip === true,
-    };
-  });
+  return ((teams ?? []) as TeamRow[])
+    .map((row) => {
+      const usage = workCounts.get(row.id) ?? emptyTeamWorkCounts();
+      return {
+        id: row.id,
+        name: row.name,
+        initials: row.initials,
+        icon: row.icon,
+        color: row.color,
+        logoUrl: row.logo_url,
+        memberCount: counts.get(row.id) ?? 0,
+        listCount: usage.listCount,
+        taskActiveCount: usage.taskActiveCount,
+        taskCompletedCount: usage.taskCompletedCount,
+        subtaskActiveCount: usage.subtaskActiveCount,
+        subtaskCompletedCount: usage.subtaskCompletedCount,
+        createdAt: row.created_at,
+        paymentPlanId:
+          typeof row.payment_plan_id === "string" && row.payment_plan_id.trim()
+            ? row.payment_plan_id
+            : null,
+        paymentPlanUntil:
+          dateOnly(row.payment_plan_until) ??
+          dateOnly(row.billing_cycle_end) ??
+          dateOnly(row.billing_period_end_at),
+        paymentPlanPaid: row.payment_plan_paid === true,
+        paymentPlanIsTrial: row.payment_plan_is_trial === true,
+        paymentPlanIsEarlyBird: row.payment_plan_is_early_bird === true,
+        earlyBirdSeatCount: Math.max(0, Math.trunc(Number(row.early_bird_seat_count) || 0)),
+        isVip: row.is_vip === true,
+      };
+    })
+    .sort((left, right) => compareByName(left.name, right.name));
 });
 
 export const listAdminTeamMembers = cache(async function listAdminTeamMembers(
@@ -684,15 +700,21 @@ export const listAdminTeamMembers = cache(async function listAdminTeamMembers(
     return [];
   }
 
-  return ((data ?? []) as TeamMemberDetailRow[]).map((row) => ({
-    id: row.id,
-    userId: row.user_id,
-    name: row.name,
-    email: row.email,
-    role: row.role,
-    avatarUrl: row.avatar_url,
-    lastOnlineAt: row.last_online_at,
-  }));
+  return ((data ?? []) as TeamMemberDetailRow[])
+    .map((row) => ({
+      id: row.id,
+      userId: row.user_id,
+      name: row.name,
+      email: row.email,
+      role: row.role,
+      avatarUrl: row.avatar_url,
+      lastOnlineAt: row.last_online_at,
+    }))
+    .sort(
+      (left, right) =>
+        compareByName(left.name, right.name) ||
+        compareByName(left.email, right.email),
+    );
 });
 
 export async function createAdminTeam(

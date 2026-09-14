@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   createAdminTeamAction,
@@ -8,12 +8,20 @@ import {
   updateAdminTeamAction,
 } from "@/app/(app)/admin/actions";
 import { AdminTeamMembersModal } from "@/app/components/admin-team-members-modal";
+import {
+  AlphabetFilter,
+  alphabetCounts,
+  alphabetKeyFromName,
+  type AlphabetFilterValue,
+} from "@/app/components/alphabet-filter";
 import { AdminTeamPlanModal } from "@/app/components/admin-team-plan-modal";
 import { ConfirmModal } from "@/app/components/confirm-modal";
+import { useDisplayPreferences } from "@/app/components/display-preferences-provider";
 import { useFeedbackToast } from "@/app/components/feedback-toast-provider";
 import { IconActionButton } from "@/app/components/icon-action-button";
 import { ListBadge } from "@/app/components/list-badge";
 import { NameFormModal } from "@/app/components/name-form-modal";
+import { RelativeTime } from "@/app/components/relative-time";
 import { useTranslations } from "@/app/components/translations-provider";
 import { translateActionError } from "@/app/lib/i18n/action-errors";
 import { formatInteger } from "@/app/lib/format/numbers";
@@ -83,12 +91,14 @@ export function AdminTeamsManager({
 }) {
   const router = useRouter();
   const { t, languageCode } = useTranslations();
+  const { formatDate } = useDisplayPreferences();
   const { showFeedback, clearFeedback } = useFeedbackToast();
   const [modalOpen, setModalOpen] = useState(false);
   const [editingTeam, setEditingTeam] = useState<AdminTeamSummary | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<AdminTeamSummary | null>(null);
   const [membersTeam, setMembersTeam] = useState<AdminTeamMembersTarget | null>(null);
   const [planTeam, setPlanTeam] = useState<AdminTeamSummary | null>(null);
+  const [letter, setLetter] = useState<AlphabetFilterValue>("all");
   const [isPending, startTransition] = useTransition();
 
   const totals = {
@@ -105,6 +115,14 @@ export function AdminTeamsManager({
     totals.subtaskActiveCount += team.subtaskActiveCount;
     totals.subtaskCompletedCount += team.subtaskCompletedCount;
   }
+  const letterCounts = useMemo(
+    () => alphabetCounts(teams.map((team) => team.name)),
+    [teams],
+  );
+  const visibleTeams = useMemo(() => {
+    if (letter === "all") return teams;
+    return teams.filter((team) => alphabetKeyFromName(team.name) === letter);
+  }, [letter, teams]);
 
   function planLabel(team: AdminTeamSummary): string {
     if (!team.paymentPlanId) {
@@ -208,11 +226,16 @@ export function AdminTeamsManager({
         />
       </div>
 
-      <div className="flex justify-end">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <AlphabetFilter
+          value={letter}
+          counts={letterCounts}
+          onChange={setLetter}
+        />
         <button
           type="button"
           onClick={openCreate}
-          className="inline-flex items-center justify-center gap-2 rounded-lg bg-zinc-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-zinc-700"
+          className="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg bg-zinc-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-zinc-700"
         >
           <i className="fas fa-plus text-xs" aria-hidden="true" />
           {t("teams.add.title", "Jauna komanda")}
@@ -234,7 +257,7 @@ export function AdminTeamsManager({
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-100">
-              {teams.map((team) => (
+              {visibleTeams.map((team) => (
                 <tr
                   key={team.id}
                   className="cursor-pointer transition hover:bg-zinc-50"
@@ -248,14 +271,30 @@ export function AdminTeamsManager({
                         color={team.color}
                         logoUrl={team.logoUrl}
                       />
-                      <div className="flex min-w-0 items-center gap-2">
-                        <p className="truncate font-semibold text-zinc-900">{team.name}</p>
-                        {team.isVip ? (
-                          <i
-                            className="fas fa-star shrink-0 text-amber-400"
-                            aria-label={t("admin.teams.vip", "VIP")}
-                            title={t("admin.teams.vip", "VIP")}
-                          />
+                      <div className="min-w-0">
+                        <div className="flex min-w-0 items-center gap-2">
+                          <p className="truncate font-semibold text-zinc-900">{team.name}</p>
+                          {team.isVip ? (
+                            <i
+                              className="fas fa-star shrink-0 text-amber-400"
+                              aria-label={t("admin.teams.vip", "VIP")}
+                              title={t("admin.teams.vip", "VIP")}
+                            />
+                          ) : null}
+                        </div>
+                        {team.createdAt ? (
+                          <p className="mt-0.5 truncate text-sm text-zinc-500">
+                            {formatDate(team.createdAt)}{" "}
+                            <span className="text-zinc-400">
+                              (
+                              <RelativeTime
+                                at={team.createdAt}
+                                asAge
+                                className="text-sm tabular-nums text-zinc-400"
+                              />
+                              )
+                            </span>
+                          </p>
                         ) : null}
                       </div>
                     </div>
@@ -299,10 +338,15 @@ export function AdminTeamsManager({
                   </td>
                 </tr>
               ))}
-              {teams.length === 0 ? (
+              {visibleTeams.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="px-5 py-8 text-center text-zinc-500">
-                    {t("admin.teams.empty", "Nav nevienas komandas.")}
+                    {teams.length === 0
+                      ? t("admin.teams.empty", "Nav nevienas komandas.")
+                      : t(
+                          "admin.teams.empty_filter",
+                          "Nav komandu ar šo sākumu.",
+                        )}
                   </td>
                 </tr>
               ) : null}

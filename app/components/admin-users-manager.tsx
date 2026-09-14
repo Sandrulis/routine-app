@@ -2,7 +2,7 @@
 
 /* eslint-disable @next/next/no-img-element */
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   createAdminUserAction,
@@ -11,6 +11,12 @@ import {
 } from "@/app/(app)/admin/actions";
 import { AppModal } from "@/app/components/app-modal";
 import { AdminTeamMembersModal } from "@/app/components/admin-team-members-modal";
+import {
+  AlphabetFilter,
+  alphabetCounts,
+  alphabetKeyFromName,
+  type AlphabetFilterValue,
+} from "@/app/components/alphabet-filter";
 import { ConfirmModal } from "@/app/components/confirm-modal";
 import { useFeedbackToast } from "@/app/components/feedback-toast-provider";
 import { IconActionButton } from "@/app/components/icon-action-button";
@@ -58,6 +64,7 @@ export function AdminUsersManager({
   const [draft, setDraft] = useState(emptyDraft);
   const [deleteTarget, setDeleteTarget] = useState<AdminUserSummary | null>(null);
   const [membersTeam, setMembersTeam] = useState<AdminTeamMembersTarget | null>(null);
+  const [letter, setLetter] = useState<AlphabetFilterValue>("all");
   const [isPending, startTransition] = useTransition();
 
   const initialDraft = editingId
@@ -80,6 +87,14 @@ export function AdminUsersManager({
     : emptyDraft();
   const isDirty = JSON.stringify(draft) !== JSON.stringify(initialDraft);
   const adminCount = users.filter((user) => user.isAdmin).length;
+  const letterCounts = useMemo(
+    () => alphabetCounts(users.map((user) => user.name)),
+    [users],
+  );
+  const visibleUsers = useMemo(() => {
+    if (letter === "all") return users;
+    return users.filter((user) => alphabetKeyFromName(user.name) === letter);
+  }, [letter, users]);
 
   useEffect(() => {
     if (!modalOpen) {
@@ -148,11 +163,16 @@ export function AdminUsersManager({
 
   return (
     <div className="space-y-3">
-      <div className="flex justify-end">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <AlphabetFilter
+          value={letter}
+          counts={letterCounts}
+          onChange={setLetter}
+        />
         <button
           type="button"
           onClick={openCreate}
-          className="inline-flex items-center justify-center gap-2 rounded-lg bg-zinc-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-zinc-700"
+          className="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg bg-zinc-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-zinc-700"
         >
           <i className="fas fa-plus text-xs" aria-hidden="true" />
           {t("admin.users.create", "Jauns lietotājs")}
@@ -172,7 +192,7 @@ export function AdminUsersManager({
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-100">
-              {users.map((user) => {
+              {visibleUsers.map((user) => {
                 const isSelf = user.id === currentUserId;
                 const lastAdmin = user.isAdmin && adminCount <= 1;
                 const deleteDisabled = isSelf || lastAdmin;
@@ -356,10 +376,15 @@ export function AdminUsersManager({
                   </tr>
                 );
               })}
-              {users.length === 0 ? (
+              {visibleUsers.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="px-5 py-8 text-center text-zinc-500">
-                    {t("admin.users.empty", "Nav neviena lietotāja.")}
+                    {users.length === 0
+                      ? t("admin.users.empty", "Nav neviena lietotāja.")
+                      : t(
+                          "admin.users.empty_filter",
+                          "Nav lietotāju ar šo sākumu.",
+                        )}
                   </td>
                 </tr>
               ) : null}

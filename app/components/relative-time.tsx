@@ -4,19 +4,23 @@ import { Tooltip } from "@/app/components/tooltip";
 import { useDisplayPreferences } from "@/app/components/display-preferences-provider";
 import { useNow } from "@/app/components/now-provider";
 import { useTranslations } from "@/app/components/translations-provider";
-import { getLastOnlineDisplay } from "@/app/lib/last-online";
+import { getLastOnlineDisplay, getRelativeAgeDisplay } from "@/app/lib/last-online";
 
 export function RelativeTime({
   at,
   className = "shrink-0 text-[11px] tabular-nums text-zinc-400",
+  asAge = false,
 }: {
   at: string | null | undefined;
   className?: string;
+  asAge?: boolean;
 }) {
   const { t } = useTranslations();
   const { formatDateTime } = useDisplayPreferences();
   const now = useNow();
-  const display = getLastOnlineDisplay(at, now);
+  const display = asAge
+    ? getRelativeAgeDisplay(at, now)
+    : getLastOnlineDisplay(at, now);
   const exact = at ? formatDateTime(at) : "";
 
   if (display.kind === "unknown") return null;

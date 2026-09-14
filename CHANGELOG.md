@@ -4,6 +4,11 @@
 
 - (none)
 
+## v0.3.101
+
+- Admin lietotāji un komandas ir alfabētiski; virs saraksta A–Z un **#** filtrs kā landing perioda slēdzis
+- Zem komandas nosaukuma ir izveides datums un cik sen tā izveidota
+
 ## v0.3.100
 
 - Tabulā **Kolonnas** sleja: slēpt/rādīt, pievienot savas kolonnas, mainīt secību, labot nosaukumu ar dubultklikšķi un dzēst

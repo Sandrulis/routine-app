@@ -28,18 +28,29 @@ export function getLastOnlineDisplay(
 
   const elapsed = Math.max(0, now - timestamp);
   if (elapsed <= ONLINE_THRESHOLD_MS) return { kind: "online" };
+  return elapsedDisplay(elapsed);
+}
 
+export function getRelativeAgeDisplay(
+  at: string | null | undefined,
+  now = Date.now(),
+): Exclude<LastOnlineDisplay, { kind: "online" }> {
+  const timestamp = parseLastOnlineAt(at);
+  if (timestamp == null) return { kind: "unknown" };
+  return elapsedDisplay(Math.max(0, now - timestamp));
+}
+
+function elapsedDisplay(
+  elapsed: number,
+): Exclude<LastOnlineDisplay, { kind: "online" }> {
   if (elapsed < HOUR_MS) {
-    return { kind: "minutes", count: Math.floor(elapsed / 60_000) };
+    return { kind: "minutes", count: Math.max(1, Math.floor(elapsed / 60_000)) };
   }
-
   if (elapsed < DAY_MS) {
     return { kind: "hours", count: Math.floor(elapsed / HOUR_MS) };
   }
-
   if (elapsed < MONTH_MS) {
     return { kind: "days", count: Math.floor(elapsed / DAY_MS) };
   }
-
   return { kind: "months", count: Math.floor(elapsed / MONTH_MS) };
 }
