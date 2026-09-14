@@ -18,7 +18,7 @@ export function useTeamBillingAccess(): TeamBillingAccessState & {
   const paymentPlansEnabled = usePaymentPlansEnabled();
   const freePlanIds = useFreePlanIds();
   const { isAdmin } = useIsAdmin();
-  const { currentTeam, currentUser, roles, isReady } = useTeam();
+  const { currentTeam, currentUser, roles, isReady, members } = useTeam();
 
   const access = useMemo(
     () =>
@@ -29,8 +29,9 @@ export function useTeamBillingAccess(): TeamBillingAccessState & {
         currentUser,
         roles,
         isAdmin,
+        members,
       }),
-    [currentTeam, currentUser, freePlanIds, isAdmin, paymentPlansEnabled, roles],
+    [currentTeam, currentUser, freePlanIds, isAdmin, members, paymentPlansEnabled, roles],
   );
 
   return { ...access, isReady };

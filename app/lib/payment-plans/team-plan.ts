@@ -43,6 +43,9 @@ export function resolveEffectiveFrontendModuleKeys(input: {
   const isFree = Boolean(
     input.teamPlan?.planId && input.freePlanIds?.has(input.teamPlan.planId),
   );
+  if (input.teamPlan?.paid === true && !input.teamPlan.planId) {
+    return globalKeys;
+  }
   if (!isTeamPaymentPlanActive(input.teamPlan, input.todayIso, { isFree })) {
     return [];
   }

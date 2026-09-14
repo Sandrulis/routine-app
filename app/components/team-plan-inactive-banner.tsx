@@ -15,7 +15,7 @@ export function TeamPlanInactiveBanner() {
   const paymentPlansEnabled = usePaymentPlansEnabled();
   const freePlanIds = useFreePlanIds();
   const { isAdmin } = useIsAdmin();
-  const { currentTeam, currentUser, roles, isReady } = useTeam();
+  const { currentTeam, currentUser, roles, isReady, members } = useTeam();
 
   if (!isReady || !currentTeam) return null;
 
@@ -26,6 +26,7 @@ export function TeamPlanInactiveBanner() {
     currentUser,
     roles,
     isAdmin,
+    members,
   });
 
   if (!access.showManagerBlockedBanner) return null;

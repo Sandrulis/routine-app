@@ -2,7 +2,7 @@
 
 import { useEffect, useLayoutEffect, useRef, useState, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { LoadingState } from "@/app/components/loading-state";
+import { LoadingSpinner, LoadingState } from "@/app/components/loading-state";
 import { SectionPage } from "@/app/components/section-page";
 import { useDisplayPreferences } from "@/app/components/display-preferences-provider";
 import { useFeedbackToast } from "@/app/components/feedback-toast-provider";
@@ -179,6 +179,7 @@ export function TeamBillingPage() {
   const [isPending, startTransition] = useTransition();
   const mountedRef = useRef(false);
   const checkoutHandledRef = useRef<string | null>(null);
+  const cancelInFlightRef = useRef(false);
 
   useLayoutEffect(() => {
     mountedRef.current = true;
@@ -307,24 +308,29 @@ export function TeamBillingPage() {
   }, [canManage, currentTeam?.id, refreshTeams, router, searchParams, showFeedback, t]);
 
   function cancelSubscription() {
-    if (!currentTeam || isPending) return;
+    if (!currentTeam || pendingKind !== null || cancelInFlightRef.current) return;
+    cancelInFlightRef.current = true;
+    setPendingKind("cancel");
     startTransition(async () => {
-      setPendingKind("cancel");
-      const result = await cancelTeamSubscriptionAction(currentTeam.id);
-      setPendingKind(null);
-      setCancelConfirmOpen(false);
-      if (!result.ok) {
-        showFeedback({ type: "error", text: translateActionError(t, result.error) });
-        return;
+      try {
+        const result = await cancelTeamSubscriptionAction(currentTeam.id);
+        setPendingKind(null);
+        setCancelConfirmOpen(false);
+        if (!result.ok) {
+          showFeedback({ type: "error", text: translateActionError(t, result.error) });
+          return;
+        }
+        showFeedback({
+          type: "success",
+          text: t(
+            "team.billing.cancel_subscription_success",
+            "Abonements tiks beigts perioda beigās. Līdz tam piekļuve paliek aktīva.",
+          ),
+        });
+        await reloadSummaryAndTeams();
+      } finally {
+        cancelInFlightRef.current = false;
       }
-      showFeedback({
-        type: "success",
-        text: t(
-          "team.billing.cancel_subscription_success",
-          "Abonements tiks beigts perioda beigās. Līdz tam piekļuve paliek aktīva.",
-        ),
-      });
-      await reloadSummaryAndTeams();
     });
   }
 
@@ -618,6 +624,7 @@ export function TeamBillingPage() {
                           onClick={() => setCancelConfirmOpen(true)}
                           className="inline-flex min-h-10 items-center justify-center gap-2 rounded-2xl border border-red-200 bg-red-50 px-4 text-sm font-semibold text-red-900 shadow-sm transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
                         >
+                          {pendingKind === "cancel" ? <LoadingSpinner size="sm" /> : null}
                           {t("team.billing.cancel_subscription", "Atteikties no abonementa")}
                         </button>
                       </div>
@@ -806,9 +813,7 @@ export function TeamBillingPage() {
                 onClick={buyExtra}
                 className="inline-flex min-h-10 items-center justify-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 text-sm font-semibold text-zinc-800 shadow-sm transition hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {pendingKind === "extra" ? (
-                  <i className="fas fa-circle-notch fa-spin text-xs" aria-hidden="true" />
-                ) : null}
+                {pendingKind === "extra" ? <LoadingSpinner size="sm" /> : null}
                 {t("team.billing.buy_extra", "Iegādāties 1 vietu")}
               </button>
             </div>
@@ -823,9 +828,7 @@ export function TeamBillingPage() {
               onClick={pay}
               className="inline-flex min-h-10 items-center justify-center gap-2 rounded-2xl bg-blue-700 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {pendingKind === "pay" ? (
-                <i className="fas fa-circle-notch fa-spin text-xs" aria-hidden="true" />
-              ) : null}
+              {pendingKind === "pay" ? <LoadingSpinner size="sm" /> : null}
               {summary.hasSubscription
                 ? t("team.billing.pay_pending", "Samaksāt {count} vietas", {
                     count: formatInteger(summary.pendingPaymentCount),

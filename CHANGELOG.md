@@ -4,6 +4,11 @@
 
 - (none)
 
+## v0.3.102
+
+- Bez maksas plāna papildu komandas lietotājiem uzreiz blur + bloķējošs modālis; tikai vadītājs paliek iekšā
+- Atteikšanās un apmaksas pogās `ui-spinner` un bloķēti dubultklikšķi
+
 ## v0.3.101
 
 - Admin lietotāji un komandas ir alfabētiski; virs saraksta A–Z un **#** filtrs kā landing perioda slēdzis

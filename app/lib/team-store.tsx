@@ -439,7 +439,7 @@ export function TeamProvider({ children }: { children: ReactNode }) {
         email: display.email || member.email,
         initials: initialsFromName(name),
         avatarUrl: display.avatarUrl ?? member.avatarUrl,
-        role: member.role || OWNER_TEAM_ROLE,
+        role: member.role,
         roleId: member.roleId,
         userId: overlayId,
       };
@@ -472,7 +472,7 @@ export function TeamProvider({ children }: { children: ReactNode }) {
         name,
         email: display.email || fromTeam?.email || "",
         initials: initialsFromName(name),
-        role: currentTeam ? fromTeam?.role || OWNER_TEAM_ROLE : "",
+        role: fromTeam?.role ?? "",
         roleId: fromTeam?.roleId ?? null,
         dutyIds: fromTeam?.dutyIds ?? [],
         toneClassName: fromTeam?.toneClassName ?? toneForIndex(0),

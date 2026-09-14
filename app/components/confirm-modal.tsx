@@ -11,6 +11,7 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import { useTranslations } from "@/app/components/translations-provider";
+import { LoadingSpinner } from "@/app/components/loading-state";
 import {
   getOverlayPortalRoot,
   lockBodyOverflow,
@@ -46,9 +47,12 @@ export function ConfirmModal({
   const confirmButtonRef = useRef<HTMLButtonElement>(null);
   const onConfirmRef = useRef(onConfirm);
   const blockingRef = useRef(blocking);
+  const confirmingRef = useRef(false);
+  const [confirming, setConfirming] = useState(false);
   const [mounted, setMounted] = useState(false);
   const { t } = useTranslations();
   const resolvedCancelLabel = cancelLabel ?? t("actions.cancel", "Atcelt");
+  const busy = blocking || confirming;
 
   useEffect(() => {
     setMounted(true);
@@ -60,6 +64,19 @@ export function ConfirmModal({
   useEffect(() => {
     blockingRef.current = blocking;
   });
+  useEffect(() => {
+    if (!open) {
+      confirmingRef.current = false;
+      setConfirming(false);
+    }
+  }, [open]);
+
+  const runConfirm = useCallback(() => {
+    if (blockingRef.current || confirmingRef.current) return;
+    confirmingRef.current = true;
+    setConfirming(true);
+    onConfirmRef.current();
+  }, []);
 
   const close = useCallback(() => {
     if (blockingRef.current) return;
@@ -70,14 +87,14 @@ export function ConfirmModal({
     if (!open) return;
 
     function handleKeyDown(event: KeyboardEvent) {
-      if (blockingRef.current) return;
-
       if (event.key === "Escape") {
+        if (blockingRef.current) return;
         event.preventDefault();
         close();
         return;
       }
 
+      if (blockingRef.current) return;
       if (event.key !== "Enter" || event.shiftKey) return;
 
       const target = event.target;
@@ -89,12 +106,12 @@ export function ConfirmModal({
       }
 
       event.preventDefault();
-      onConfirmRef.current();
+      runConfirm();
     }
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [open, close]);
+  }, [open, close, runConfirm]);
 
   useEffect(() => {
     if (!open) return;
@@ -126,8 +143,8 @@ export function ConfirmModal({
 
   const confirmClassName =
     confirmVariant === "danger"
-      ? "rounded-lg bg-red-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
-      : "rounded-lg bg-zinc-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-60";
+      ? "inline-flex items-center justify-center gap-2 rounded-lg bg-red-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
+      : "inline-flex items-center justify-center gap-2 rounded-lg bg-zinc-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-60";
 
   return createPortal(
     <div
@@ -162,10 +179,12 @@ export function ConfirmModal({
             <button
               ref={confirmButtonRef}
               type="button"
-              onClick={onConfirm}
-              disabled={blocking}
+              onClick={runConfirm}
+              disabled={busy}
+              aria-busy={busy}
               className={confirmClassName}
             >
+              {busy ? <LoadingSpinner size="sm" /> : null}
               {confirmLabel}
             </button>
           </div>

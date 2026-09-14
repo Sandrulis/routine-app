@@ -31,7 +31,7 @@ export function TeamScopedFrontendModules({
   plans: PaymentPlanModuleSnapshot[];
   children: ReactNode;
 }) {
-  const { currentTeam, currentUser, roles } = useTeam();
+  const { currentTeam, currentUser, roles, members } = useTeam();
   const { isAdmin } = useIsAdmin();
   const planModuleKeysByPlanId = useMemo(
     () => buildPlanModuleKeysMap(plans),
@@ -49,6 +49,7 @@ export function TeamScopedFrontendModules({
       currentUser,
       roles,
       isAdmin,
+      members,
     });
     if (access.canUseAppDespiteUnpaid && access.subscriptionRequired) {
       return { ...currentTeam.paymentPlan, paid: true };
@@ -59,6 +60,7 @@ export function TeamScopedFrontendModules({
     currentUser,
     freePlanIdList,
     isAdmin,
+    members,
     paymentPlansEnabled,
     roles,
   ]);

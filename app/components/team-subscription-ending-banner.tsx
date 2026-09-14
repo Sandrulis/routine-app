@@ -37,7 +37,7 @@ export function TeamSubscriptionEndingBanner() {
   const paymentPlansEnabled = usePaymentPlansEnabled();
   const freePlanIds = useFreePlanIds();
   const { isAdmin } = useIsAdmin();
-  const { currentTeam, currentUser, roles, isReady } = useTeam();
+  const { currentTeam, currentUser, roles, isReady, members } = useTeam();
   const [nowMs, setNowMs] = useState(() => Date.now());
 
   useEffect(() => {
@@ -55,6 +55,7 @@ export function TeamSubscriptionEndingBanner() {
     currentUser,
     roles,
     isAdmin,
+    members,
   });
 
   if (!access.canManageBilling) return null;

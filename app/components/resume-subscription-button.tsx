@@ -2,6 +2,7 @@
 
 import { useTransition } from "react";
 import { useFeedbackToast } from "@/app/components/feedback-toast-provider";
+import { LoadingSpinner } from "@/app/components/loading-state";
 import { useTranslations } from "@/app/components/translations-provider";
 import { resumeTeamSubscriptionAction } from "@/app/lib/billing/actions";
 import { translateActionError } from "@/app/lib/i18n/action-errors";
@@ -50,9 +51,7 @@ export function ResumeSubscriptionButton({
       onClick={resume}
       className="inline-flex min-h-10 items-center justify-center gap-2 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 text-sm font-semibold text-emerald-900 shadow-sm transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-60"
     >
-      {isPending ? (
-        <i className="fas fa-circle-notch fa-spin text-xs" aria-hidden="true" />
-      ) : null}
+      {isPending ? <LoadingSpinner size="sm" /> : null}
       {t("team.billing.resume_subscription", "Atjaunot abonementu")}
     </button>
   );
