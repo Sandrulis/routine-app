@@ -3,6 +3,7 @@ import {
   isAllowedFileName,
   mimeFromFileName,
 } from "@/app/lib/file-types";
+import { asciiSafeFileName } from "@/app/lib/format/ascii-file-name";
 import { logError } from "@/app/lib/security/log-error";
 import { looksLikeHtml, mimeMatchesBytes } from "@/app/lib/security/file-bytes";
 import type { FileTypeExtensionSummary } from "@/app/lib/site-admin/types";
@@ -312,7 +313,7 @@ export async function attachFilesToSubtask(input: {
   const skipped: { name: string; reason: string }[] = [];
 
   for (const file of input.files) {
-    const name = file.name.trim() || "file";
+    const name = asciiSafeFileName(file.name.trim() || "file");
     if (!isAllowedFileName(name, input.catalog)) {
       skipped.push({ name, reason: "errors.extension_file_type" });
       continue;

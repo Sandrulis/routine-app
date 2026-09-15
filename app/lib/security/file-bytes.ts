@@ -1,4 +1,5 @@
 import { fileExtensionFromName } from "@/app/lib/file-types";
+import { asciiSafeFileName } from "@/app/lib/format/ascii-file-name";
 
 const UNSAFE_INLINE_EXTENSIONS = new Set(["html", "htm", "svg", "xml", "xhtml"]);
 
@@ -71,11 +72,7 @@ function rfc5987Encode(value: string) {
 }
 
 function asciiFileNameFallback(name: string) {
-  const cleaned = name.replace(/["\\\r\n]/g, " ").trim() || "file";
-  const ascii = Array.from(cleaned, (char) =>
-    char.charCodeAt(0) <= 0x7e && char.charCodeAt(0) >= 0x20 ? char : "_",
-  ).join("");
-  return ascii.replace(/_+/g, "_").replace(/^_+|_+$/g, "") || "file";
+  return asciiSafeFileName(name, "file");
 }
 
 export function contentDispositionForFile(name: string, mimeType: string, asDownload: boolean) {

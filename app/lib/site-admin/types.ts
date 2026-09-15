@@ -200,6 +200,24 @@ export type SystemDefaultRoleInput = {
   permissions: TeamPermissionSet;
 };
 
+export type AdminNavCountKey =
+  | "users"
+  | "teams"
+  | "roles"
+  | "statuses"
+  | "fileTypes"
+  | "languages"
+  | "translations"
+  | "docs"
+  | "announcements"
+  | "modules"
+  | "paymentPlans"
+  | "integrations"
+  | "emailTemplates"
+  | "cronJobs";
+
+export type AdminNavCounts = Partial<Record<AdminNavCountKey, number>>;
+
 export type { ActionResult } from "@/app/lib/actions/action-result";
 
 export type TranslationDictionary = Record<string, string>;

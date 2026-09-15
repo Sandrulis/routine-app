@@ -1690,10 +1690,59 @@ async function listGmailAttachments(messageId, threadId, interactive) {
   }
 }
 
+/** Letters that NFKD does not fold to ASCII (ß, ø, ł, …) plus common scripts. */
+const ASCII_LETTER_MAP = {
+  ß: "ss",
+  ẞ: "Ss",
+  æ: "ae",
+  Æ: "Ae",
+  œ: "oe",
+  Œ: "Oe",
+  ø: "o",
+  Ø: "O",
+  ł: "l",
+  Ł: "L",
+  đ: "d",
+  Đ: "D",
+  ð: "d",
+  Ð: "D",
+  þ: "th",
+  Þ: "Th",
+  ı: "i",
+  ħ: "h",
+  Ħ: "H",
+  "\u00a0": " ",
+  "\u2013": "-",
+  "\u2014": "-",
+};
+
+function transliterateToAscii(value) {
+  const folded = String(value || "").normalize("NFKD").replace(/[\u0300-\u036f]/g, "");
+  return Array.from(folded, (char) => ASCII_LETTER_MAP[char] ?? char).join("");
+}
+
+function asciiSafeFileName(name, fallback = "file") {
+  const trimmed = String(name || "").replace(/[\r\n]+/g, " ").trim();
+  if (!trimmed) return fallback;
+  const lastDot = trimmed.lastIndexOf(".");
+  const hasExt = lastDot > 0 && lastDot < trimmed.length - 1;
+  const base = hasExt ? trimmed.slice(0, lastDot) : trimmed;
+  const ext = hasExt ? trimmed.slice(lastDot + 1) : "";
+  const clean = (part) =>
+    transliterateToAscii(part)
+      .replace(/[<>:"/\\|?*\x00-\x1f]/g, " ")
+      .replace(/[^\x20-\x7E]/g, "")
+      .replace(/["\\]/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+  const asciiBase = clean(base) || fallback;
+  const asciiExt = clean(ext).replace(/\s+/g, "");
+  const joined = asciiExt ? `${asciiBase}.${asciiExt}` : asciiBase;
+  return joined.slice(0, 180) || fallback;
+}
+
 function sanitizeAttachmentName(name, mimeType) {
-  let next = String(name || "")
-    .replace(/[<>:"/\\|?*]/g, "_")
-    .slice(0, 180) || "attachment.bin";
+  let next = asciiSafeFileName(name, "attachment.bin");
   const mime = guessMimeFromName(next, mimeType);
   if (mime === "application/pdf" && !next.toLowerCase().endsWith(".pdf")) {
     next = `${next}.pdf`;

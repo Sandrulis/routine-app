@@ -4,6 +4,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "@/app/components/translations-provider";
+import { formatInteger } from "@/app/lib/format/numbers";
+import type { AdminNavCounts } from "@/app/lib/site-admin/types";
 
 const GROUPS = [
   {
@@ -17,18 +19,21 @@ const GROUPS = [
         icon: "fas fa-user-group",
         labelKey: "admin.nav.users",
         fallback: "Lietotāji",
+        countKey: "users",
       },
       {
         href: "/admin/teams",
         icon: "fas fa-users",
         labelKey: "admin.nav.teams",
         fallback: "Komandas",
+        countKey: "teams",
       },
       {
         href: "/admin/roles",
         icon: "fas fa-user-tag",
         labelKey: "admin.nav.roles",
         fallback: "Lomas",
+        countKey: "roles",
       },
     ],
   },
@@ -43,36 +48,42 @@ const GROUPS = [
         icon: "fas fa-circle-half-stroke",
         labelKey: "admin.nav.statuses",
         fallback: "Statusi",
+        countKey: "statuses",
       },
       {
         href: "/admin/file-types",
         icon: "fas fa-file-lines",
         labelKey: "admin.nav.file_types",
         fallback: "Failu tipi",
+        countKey: "fileTypes",
       },
       {
         href: "/admin/languages",
         icon: "fas fa-language",
         labelKey: "admin.nav.languages",
         fallback: "Valodas",
+        countKey: "languages",
       },
       {
         href: "/admin/translations",
         icon: "fas fa-globe",
         labelKey: "admin.nav.translations",
         fallback: "Tulkojumi",
+        countKey: "translations",
       },
       {
         href: "/admin/docs",
         icon: "fas fa-book",
         labelKey: "admin.nav.docs",
         fallback: "Docs",
+        countKey: "docs",
       },
       {
         href: "/admin/announcements",
         icon: "fas fa-bullhorn",
         labelKey: "admin.nav.announcements",
         fallback: "Paziņojumi",
+        countKey: "announcements",
       },
     ],
   },
@@ -87,30 +98,35 @@ const GROUPS = [
         icon: "fas fa-puzzle-piece",
         labelKey: "nav.modules",
         fallback: "Moduļi",
+        countKey: "modules",
       },
       {
         href: "/admin/payment-plans",
         icon: "fas fa-credit-card",
         labelKey: "admin.nav.payment_plans",
         fallback: "Maksas plāni",
+        countKey: "paymentPlans",
       },
       {
         href: "/admin/integrations",
         icon: "fas fa-plug",
         labelKey: "admin.nav.integrations",
         fallback: "Integrācijas",
+        countKey: "integrations",
       },
       {
         href: "/admin/email-templates",
         icon: "fas fa-envelope-open-text",
         labelKey: "admin.nav.email_templates",
         fallback: "E-pasta šabloni",
+        countKey: "emailTemplates",
       },
       {
         href: "/admin/cron-jobs",
         icon: "fas fa-clock",
         labelKey: "admin.nav.cron_jobs",
         fallback: "Cron jobs",
+        countKey: "cronJobs",
       },
       {
         href: "/admin/settings",
@@ -126,7 +142,7 @@ function itemIsActive(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
-export function AdminSubmenu() {
+export function AdminSubmenu({ counts = {} }: { counts?: AdminNavCounts }) {
   const pathname = usePathname();
   const { t } = useTranslations();
   const navRef = useRef<HTMLElement>(null);
@@ -244,10 +260,12 @@ export function AdminSubmenu() {
               >
                 <div
                   role="menu"
-                  className="min-w-[13.5rem] overflow-hidden rounded-xl bg-white py-1 shadow-[0_12px_40px_rgba(15,23,42,0.16)] ring-1 ring-zinc-200/80"
+                  className="min-w-[15.5rem] overflow-hidden rounded-xl bg-white py-1 shadow-[0_12px_40px_rgba(15,23,42,0.16)] ring-1 ring-zinc-200/80"
                 >
                   {group.items.map((item) => {
                     const active = itemIsActive(pathname, item.href);
+                    const count =
+                      "countKey" in item ? counts[item.countKey] : undefined;
                     return (
                       <Link
                         key={item.href}
@@ -271,7 +289,15 @@ export function AdminSubmenu() {
                         <span className="min-w-0 flex-1">
                           {t(item.labelKey, item.fallback)}
                         </span>
-                        {active ? (
+                        {count != null ? (
+                          <span
+                            className={`shrink-0 tabular-nums text-[12px] ${
+                              active ? "text-sky-700" : "text-zinc-400"
+                            }`}
+                          >
+                            {formatInteger(count)}
+                          </span>
+                        ) : active ? (
                           <i
                             className="fas fa-check text-[10px] text-sky-600"
                             aria-hidden="true"

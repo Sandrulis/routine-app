@@ -27,6 +27,7 @@ Atkārtotas utilītas ir centralizētas — jaunām funkcijām vispirms pārbaud
 | `cloud-storage/parse-path-parts.ts` | `parsePathParts` | Upload route FormData JSON ceļi |
 | `dnd/pointer-y-from-event.ts` | `pointerYFromEvent` | `@dnd-kit` drop līnija (koks, uzdevumu tabula) |
 | `format/numbers.ts` | `addThousandSeparators`, `formatInteger`, `formatEuro` | Tūkstošu atdalītājs (atstarpe) |
+| `format/ascii-file-name.ts` | `asciiSafeFileName`, `transliterateToAscii` | Faila nosaukumu diakritika → ASCII (`ā`→`a`, `ß`→`ss`) |
 | `http/parse-cookie-header.ts` | `parseCookieHeader` | Server `Cookie` header parsēšana |
 | `i18n/localized-values.ts` | `parseLocalizedValues`, `normalizeLocalizedValues`, `resolveLocalizedValue`, `emptyLocalizedValuesForCodes` | Valodu vērtību `Record<string, string>` (plāni, e-pasti, admin formas) |
 | `lists.ts` | `parseIdList`, `parseStatusGroupMap` | ID masīvi un statusu grupu overrides no JSON |
@@ -154,7 +155,7 @@ Ielāde: `LoadingState` (`app/components/loading-state.tsx`, `fas fa-circle-notc
 
 ## Administrācijas panelis
 
-`/admin` — satura joslā ar **kategoriju izvēlni** (`admin-submenu.tsx`): Cilvēki, Katalogs (arī **Docs** un **Paziņojumi**), Sistēma; hover (vai pieskāriens) atver dropdown ar sadaļām (Sistēmā arī **E-pasta šabloni** pēc Integrācijām). Aktīvā kategorija ir izcelta, aktuālā lapa dropdownā ar ķeksīti. Ikona pie paziņojumiem rādās tikai ielogotam lietotājam ar `public.users.is_admin = true`. `/admin` novirza uz `/admin/users`. Pirms paneļa: TOTP MFA (ja nav ieslēgta — `/settings/profile?mfa=required`; ja sesija nav AAL2 — `MfaVerifyModal` uz vietas). Ielogošanās MFA (visiem, kam TOTP ir ieslēgts) jau ir `aal2`, tāpēc admin parasti vairs neprasa otru kodu. Mutācijas raksta `admin_audit_events`.
+`/admin` — satura joslā ar **kategoriju izvēlni** (`admin-submenu.tsx`): Cilvēki, Katalogs (arī **Docs** un **Paziņojumi**), Sistēma; hover (vai pieskāriens) atver dropdown ar sadaļām (Sistēmā arī **E-pasta šabloni** pēc Integrācijām). Pie sadaļām labajā malā skaits (`listAdminNavCounts`). Aktīvā kategorija ir izcelta. Ikona pie paziņojumiem rādās tikai ielogotam lietotājam ar `public.users.is_admin = true`. `/admin` novirza uz `/admin/users`. Pirms paneļa: TOTP MFA (ja nav ieslēgta — `/settings/profile?mfa=required`; ja sesija nav AAL2 — `MfaVerifyModal` uz vietas). Ielogošanās MFA (visiem, kam TOTP ir ieslēgts) jau ir `aal2`, tāpēc admin parasti vairs neprasa otru kodu. Mutācijas raksta `admin_audit_events`.
 
 | Ceļš | Saturs |
 |---|---|
@@ -296,7 +297,7 @@ Hierarhija: **Saraksts → mape / uzdevumu saraksts / fails → apakšuzdevumi t
 - Kopsavilkums (`ListSummary` Sākumā un `/lists`) un uzdevuma apakšuzdevumu tabula: tā pati secība kā sānjoslas kokā (`sortTasksLikeNavTree` / `compareTasksByStatusPriority` — vispirms grupa slēgts → aktīvs → nav sākts, tad kataloga indekss, tad `sortOrder`). `SubtaskTable` vienmēr kārto pati. Pretēji picker. Slēgtie paliek ārpus aktīvā saraksta
 - Gmail browse (`listExtensionSubtasksForTask`): tā pati statusa prioritāte kā UI, ne tikai `sort_order`
 - Projekta **Saraksts** logs: uzdevumu kartītes `repeat(auto-fit, minmax(min(100%, 16rem), 1fr))` tādā pašā statusa secībā. Mape rāda nested uzdevumus un to apakšuzdevumus (`OverviewSubtaskList`); grupēšana pēc statusa ar `mergeByLabel` (vienādi atvērto nosaukumi, piem. DARĀMS, saplūst) un `groupTasksByStatus` kārto pēc **kataloga** indeksa pretēji picker (ne pēc uzdevumu parādīšanās); aplītis hover rāda check + tooltip `status.complete_ask` (pabeidz / atver atpakaļ); arhīva poga kartītē parāda pabeigtos, progresa josla paliek. Apakšuzdevumam ar pielikumiem `fa-paperclip` aiz nosaukuma. Klikšķis uz apakšuzdevuma iet caur `ListWindowsBoard` `onOpenSubtask` → vienu `SubtaskDetailModal` lapā (`TaskDetailPage`). Apakšuzdevuma aplītis un nosaukums ir statusa krāsā. Logs **Faili**: tiešie `list_files` + `task_files` no `getDescendantSubtasks` (klikšķis: bildes/PDF/txt modālī, pārējie lejupielādējas caur FileViewerProvider; pielikumam ar piezīmi hover rāda tooltip). Logs **Uzdevumi** paliek vilktā `sortOrder` secībā; tā arhīva poga (`handleTasksArchiveChange`) sinhronizē arhīvu visām Saraksts loga kartītēm (`overviewArchiveById`), bet katru kartīti var pārslēgt atsevišķi. Logs **Vēsture**: pēdējās darbības no apakškoka (`fetchTaskActivitiesForTaskIds`)
-- Failu saturs no Drive/OneDrive: `contentDispositionForFile` lieto ASCII `filename` + RFC 5987 `filename*` (latviešu burti `Content-Disposition` galvenē citādi krīt Fetch/undici). Lejupielāde caur `downloadUrlAsFile` (sesijas `fetch` → blob); priekšskatījuma modālī pogā spinneris, kamēr iet lejupielāde
+- Failu saturs no Drive/OneDrive: `contentDispositionForFile` lieto ASCII `filename` + RFC 5987 `filename*` (latviešu burti `Content-Disposition` galvenē citādi krīt Fetch/undici). ASCII fallback transliterē diakritiku (`ā`→`a`, `č`→`c`, `ß`→`ss`), nevis aizstāj ar `_`. Gmail spraudņa pielikumu nosaukumi tiek transliterēti pirms augšupielādes (`asciiSafeFileName`). Lejupielāde caur `downloadUrlAsFile` (sesijas `fetch` → blob); priekšskatījuma modālī pogā spinneris, kamēr iet lejupielāde
 
 ## Sarakstu pieejas
 

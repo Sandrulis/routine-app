@@ -4,6 +4,11 @@
 
 - (none)
 
+## v0.3.103
+
+- Gmail pielikumu nosaukumos diakritika (`ā č ž`, umlauti) tiek transliterēta uz ASCII burtiem, ne `_`
+- Admin izvēlnē pie sadaļām (lietotāji, komandas, lomas u.c.) labajā malā rādās ierakstu skaits
+
 ## v0.3.102
 
 - Bez maksas plāna papildu komandas lietotājiem uzreiz blur + bloķējošs modālis; tikai vadītājs paliek iekšā
