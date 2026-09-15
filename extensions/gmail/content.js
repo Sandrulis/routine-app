@@ -487,15 +487,35 @@ function parseGmailDownloadUrl(raw) {
 }
 
 function parseDisplayedByteSize(text) {
-  const match = String(text || "").match(/([\d.,]+)\s*(KB|MB|GB|B)\b/i);
+  const match = String(text || "").match(
+    /([\d.,]+)\s*(GiB|MiB|KiB|GB|MB|KB|B)\b/i,
+  );
   if (!match) return 0;
   const amount = Number(String(match[1]).replace(",", "."));
   if (!Number.isFinite(amount) || amount < 0) return 0;
   const unit = match[2].toUpperCase();
-  if (unit === "GB") return Math.round(amount * 1024 * 1024 * 1024);
-  if (unit === "MB") return Math.round(amount * 1024 * 1024);
-  if (unit === "KB") return Math.round(amount * 1024);
+  if (unit === "GIB" || unit === "GB") {
+    return Math.round(amount * 1024 * 1024 * 1024);
+  }
+  if (unit === "MIB" || unit === "MB") return Math.round(amount * 1024 * 1024);
+  if (unit === "KIB" || unit === "KB") return Math.round(amount * 1024);
   return Math.round(amount);
+}
+
+function sizeNearElement(el) {
+  const texts = [
+    el?.getAttribute?.("aria-label"),
+    el?.getAttribute?.("title"),
+    textOf(el?.querySelector?.(".aYz, .SA, .aVW, .aQ3")),
+    textOf(el),
+    textOf(el?.parentElement),
+    textOf(el?.nextElementSibling),
+  ];
+  for (const text of texts) {
+    const bytes = parseDisplayedByteSize(text);
+    if (bytes > 0) return bytes;
+  }
+  return 0;
 }
 
 function scrapeOpenMessageAttachments() {
@@ -508,10 +528,7 @@ function scrapeOpenMessageAttachments() {
   function addItem({ name, mimeType, url, size }) {
     if (!url || seen.has(url)) return;
     seen.add(url);
-    const safeName =
-      String(name || "")
-        .replace(/[<>:"/\\|?*]/g, "_")
-        .slice(0, 180) || "attachment.bin";
+    const safeName = asciiSafeFileName(name, "attachment.bin");
     const bytes = Number(size) || 0;
     items.push({
       attachmentId: url,
@@ -527,14 +544,11 @@ function scrapeOpenMessageAttachments() {
     for (const el of tray.querySelectorAll("[download_url]")) {
       const parsed = parseGmailDownloadUrl(el.getAttribute("download_url"));
       if (!parsed) continue;
-      const sizeText = textOf(
-        el.querySelector(".aYz, .SA, .aVW") || el.nextElementSibling,
-      );
       addItem({
         name: parsed.name,
         mimeType: parsed.mimeType,
         url: parsed.url,
-        size: parseDisplayedByteSize(sizeText),
+        size: sizeNearElement(el),
       });
     }
     for (const link of tray.querySelectorAll(
@@ -555,7 +569,7 @@ function scrapeOpenMessageAttachments() {
           "attachment.bin",
         mimeType: "",
         url: href,
-        size: 0,
+        size: sizeNearElement(link),
       });
     }
   }
@@ -569,6 +583,62 @@ function bytesToBase64(bytes) {
     binary += String.fromCharCode(...bytes.subarray(index, index + chunk));
   }
   return btoa(binary);
+}
+
+async function probeAttachmentByteSize(url) {
+  try {
+    const response = await fetch(url, {
+      method: "HEAD",
+      credentials: "include",
+      redirect: "follow",
+      signal: AbortSignal.timeout(2500),
+    });
+    const len = Number(response.headers.get("content-length"));
+    if (Number.isFinite(len) && len > 0) return len;
+  } catch {
+    // Gmail often ignores HEAD; size can still come from the API merge.
+  }
+  return 0;
+}
+
+function attachmentNameKey(name) {
+  return asciiSafeFileName(name, "attachment.bin").toLowerCase();
+}
+
+function mergeScrapedWithApi(scraped, apiItems) {
+  if (!Array.isArray(apiItems) || apiItems.length === 0) return scraped;
+  const unused = apiItems.map((item) => ({ ...item }));
+  const merged = scraped.map((item) => {
+    const key = attachmentNameKey(item.name);
+    const index = unused.findIndex(
+      (api) => attachmentNameKey(api.name) === key,
+    );
+    if (index < 0) return item;
+    const api = unused.splice(index, 1)[0];
+    const size =
+      Number(api.size) > 0 ? Number(api.size) : Number(item.size) || 0;
+    return {
+      ...item,
+      name: asciiSafeFileName(api.name || item.name, "attachment.bin"),
+      mimeType: item.mimeType || api.mimeType || "application/octet-stream",
+      size,
+      tooLarge: size > OPEN_MESSAGE_UPLOAD_MAX_BYTES,
+    };
+  });
+  if (unused.length !== apiItems.length) return merged;
+  if (scraped.length !== apiItems.length) return merged;
+  return scraped.map((item, index) => {
+    const api = apiItems[index];
+    const size =
+      Number(api?.size) > 0 ? Number(api.size) : Number(item.size) || 0;
+    return {
+      ...item,
+      name: asciiSafeFileName(item.name || api?.name, "attachment.bin"),
+      mimeType: item.mimeType || api?.mimeType || "application/octet-stream",
+      size,
+      tooLarge: size > OPEN_MESSAGE_UPLOAD_MAX_BYTES,
+    };
+  });
 }
 
 async function downloadOpenMessageFile(url) {
@@ -603,7 +673,7 @@ function emailBodyAttachmentName(from) {
 
 function ensureUi() {
   const existing = document.getElementById(ROOT_ID);
-  if (existing?.dataset?.routineUi === "29") {
+  if (existing?.dataset?.routineUi === "30") {
     existing.querySelector("#routine-gmail-fab")?.remove();
     return;
   }
@@ -612,7 +682,7 @@ function ensureUi() {
   const root = document.createElement("div");
   root.id = ROOT_ID;
   root.className = "routine-gmail-root";
-  root.dataset.routineUi = "29";
+  root.dataset.routineUi = "30";
   root.innerHTML = `
     <div id="routine-gmail-modal" hidden>
       <div class="routine-gmail-backdrop" data-close="1"></div>
@@ -1232,6 +1302,41 @@ function ensureUi() {
     resetResultsScroll();
   }
 
+  function patchAttachmentRows(items) {
+    attachmentOptions = items || [];
+    const inputs = [
+      ...attachList.querySelectorAll(
+        'input[type="checkbox"]:not([data-email-body])',
+      ),
+    ];
+    for (const input of inputs) {
+      const id = input.dataset.attachmentId || input.value;
+      const item = attachmentOptions.find(
+        (row) => String(row.attachmentId) === String(id),
+      );
+      if (!item) continue;
+      const li = input.closest("li");
+      const nameEl = li?.querySelector(".routine-gmail-att-name");
+      const sizeEl = li?.querySelector(".routine-gmail-att-size");
+      if (nameEl) nameEl.textContent = item.name;
+      const tooLarge = Boolean(item.tooLarge);
+      input.disabled = tooLarge;
+      if (tooLarge) {
+        input.checked = false;
+        input.dataset.tooLarge = "1";
+        if (sizeEl) {
+          sizeEl.textContent = t("extension.gmail.too_large", {
+            size: formatBytes(item.size),
+          });
+        }
+      } else {
+        delete input.dataset.tooLarge;
+        if (sizeEl) sizeEl.textContent = formatBytes(item.size);
+      }
+    }
+    updateAttToggleLabel();
+  }
+
   async function loadAttachmentsList() {
     resetAttachmentsUi();
     const { messageId, threadId } = getGmailIds();
@@ -1242,10 +1347,48 @@ function ensureUi() {
       });
       return;
     }
-    const attachments = scrapeOpenMessageAttachments();
+    let attachments = scrapeOpenMessageAttachments();
     listedGmailMessageId = messageId;
     listedGmailFrom = email.from || "";
     renderAttachments(attachments);
+
+    if (messageId || threadId) {
+      try {
+        const result = await send("routine.listAttachments", {
+          gmailMessageId: messageId,
+          gmailThreadId: threadId,
+        });
+        const apiItems = result?.data?.attachments;
+        if (Array.isArray(apiItems) && apiItems.length) {
+          attachments = mergeScrapedWithApi(attachments, apiItems);
+          if (result?.data?.gmailMessageId) {
+            listedGmailMessageId = result.data.gmailMessageId;
+          }
+          if (result?.data?.from) listedGmailFrom = result.data.from;
+          patchAttachmentRows(attachments);
+        }
+      } catch {
+        // Keep DOM scrape if Gmail API listing is unavailable.
+      }
+    }
+
+    const missing = attachments.filter((item) => Number(item.size) <= 0);
+    if (!missing.length) return;
+    const probed = await Promise.all(
+      attachments.map(async (item) => {
+        if (Number(item.size) > 0) return item;
+        const size = await probeAttachmentByteSize(
+          item.downloadUrl || item.attachmentId,
+        );
+        if (size <= 0) return item;
+        return {
+          ...item,
+          size,
+          tooLarge: size > OPEN_MESSAGE_UPLOAD_MAX_BYTES,
+        };
+      }),
+    );
+    patchAttachmentRows(probed);
   }
 
   function closeModal() {

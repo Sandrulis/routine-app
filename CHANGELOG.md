@@ -4,6 +4,10 @@
 
 - (none)
 
+## v0.3.104
+
+- Gmail spraudnis `0.4.66` atkodē `%20` pielikumu nosaukumus uz ASCII ar `_` un rāda reālo faila izmēru
+
 ## v0.3.103
 
 - Gmail pielikumu nosaukumos diakritika (`ā č ž`, umlauti) tiek transliterēta uz ASCII burtiem, ne `_`

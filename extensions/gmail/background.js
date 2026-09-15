@@ -1,3 +1,5 @@
+importScripts("ascii-file-name.js");
+
 const DEFAULT_APP_BASE = "https://www.tasqin.com";
 const APP_ORIGIN_CANDIDATES = [
   "https://www.tasqin.com",
@@ -1670,15 +1672,16 @@ async function listGmailAttachments(messageId, threadId, interactive) {
     return {
       gmailMessageId: message.id || messageId,
       from: headerValue(headers, "From"),
-      attachments: parts.map((part) => ({
-        attachmentId: String(part.attachmentId),
-        name:
-          part.filename.replace(/[<>:"/\\|?*]/g, "_").slice(0, 180) ||
-          "attachment.bin",
-        mimeType: part.mimeType || "application/octet-stream",
-        size: part.size,
-        tooLarge: part.size > EXTENSION_UPLOAD_MAX_BYTES,
-      })),
+      attachments: parts.map((part) => {
+        const sanitized = sanitizeAttachmentName(part.filename, part.mimeType);
+        return {
+          attachmentId: String(part.attachmentId),
+          name: sanitized.name,
+          mimeType: sanitized.mimeType,
+          size: part.size,
+          tooLarge: part.size > EXTENSION_UPLOAD_MAX_BYTES,
+        };
+      }),
     };
   }
 
@@ -1688,57 +1691,6 @@ async function listGmailAttachments(messageId, threadId, interactive) {
     if (error?.message !== "errors.extension_gmail_auth") throw error;
     return once(true);
   }
-}
-
-/** Letters that NFKD does not fold to ASCII (ß, ø, ł, …) plus common scripts. */
-const ASCII_LETTER_MAP = {
-  ß: "ss",
-  ẞ: "Ss",
-  æ: "ae",
-  Æ: "Ae",
-  œ: "oe",
-  Œ: "Oe",
-  ø: "o",
-  Ø: "O",
-  ł: "l",
-  Ł: "L",
-  đ: "d",
-  Đ: "D",
-  ð: "d",
-  Ð: "D",
-  þ: "th",
-  Þ: "Th",
-  ı: "i",
-  ħ: "h",
-  Ħ: "H",
-  "\u00a0": " ",
-  "\u2013": "-",
-  "\u2014": "-",
-};
-
-function transliterateToAscii(value) {
-  const folded = String(value || "").normalize("NFKD").replace(/[\u0300-\u036f]/g, "");
-  return Array.from(folded, (char) => ASCII_LETTER_MAP[char] ?? char).join("");
-}
-
-function asciiSafeFileName(name, fallback = "file") {
-  const trimmed = String(name || "").replace(/[\r\n]+/g, " ").trim();
-  if (!trimmed) return fallback;
-  const lastDot = trimmed.lastIndexOf(".");
-  const hasExt = lastDot > 0 && lastDot < trimmed.length - 1;
-  const base = hasExt ? trimmed.slice(0, lastDot) : trimmed;
-  const ext = hasExt ? trimmed.slice(lastDot + 1) : "";
-  const clean = (part) =>
-    transliterateToAscii(part)
-      .replace(/[<>:"/\\|?*\x00-\x1f]/g, " ")
-      .replace(/[^\x20-\x7E]/g, "")
-      .replace(/["\\]/g, " ")
-      .replace(/\s+/g, " ")
-      .trim();
-  const asciiBase = clean(base) || fallback;
-  const asciiExt = clean(ext).replace(/\s+/g, "");
-  const joined = asciiExt ? `${asciiBase}.${asciiExt}` : asciiBase;
-  return joined.slice(0, 180) || fallback;
 }
 
 function sanitizeAttachmentName(name, mimeType) {

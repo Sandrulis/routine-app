@@ -2,7 +2,29 @@
  * Transliterate letters with diacritics (ā→a, č→c, ü→u, ß→ss, …) to ASCII.
  * Used for Gmail plugin uploads and Content-Disposition filename fallbacks
  * so names stay readable instead of turning into `_` / other symbols.
+ * Percent-encoded Gmail `download_url` names are decoded first.
+ * Gmail plugin/attach uses `{ spaces: "underscore" }`; other uploads keep spaces.
  */
+
+/** Decode `%20` / `%C4%81` (and a few nested encodings) into real characters. */
+export function decodePercentEncodedName(value: string): string {
+  let current = String(value || "").trim();
+  if (!current) return "";
+  for (let i = 0; i < 3; i += 1) {
+    if (!/%[0-9A-Fa-f]{2}/.test(current)) break;
+    try {
+      const next = decodeURIComponent(current);
+      if (next === current) break;
+      current = next;
+    } catch {
+      current = current.replace(/%([0-9A-Fa-f]{2})/g, (_, hex: string) =>
+        String.fromCharCode(Number.parseInt(hex, 16)),
+      );
+      break;
+    }
+  }
+  return current;
+}
 
 /** Letters that do not become ASCII from Unicode NFKD + combining-mark strip. */
 const LETTER_MAP: Record<string, string> = {
@@ -186,18 +208,31 @@ export function transliterateToAscii(value: string): string {
   return Array.from(folded, (char) => LETTER_MAP[char] ?? char).join("");
 }
 
-function cleanAsciiSegment(value: string): string {
-  return transliterateToAscii(value)
+function cleanAsciiSegment(
+  value: string,
+  spaces: "underscore" | "space",
+): string {
+  const collapsed = transliterateToAscii(value)
     .replace(UNSAFE_FILE_CHARS, " ")
     .replace(/[^\x20-\x7E]/g, "")
-    .replace(/["\\]/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
+    .replace(/["\\]/g, " ");
+  if (spaces === "underscore") {
+    return collapsed
+      .replace(/\s+/g, "_")
+      .replace(/_+/g, "_")
+      .replace(/^_+|_+$/g, "");
+  }
+  return collapsed.replace(/\s+/g, " ").trim();
 }
 
 /** Readable ASCII file name: `rēķins.pdf` → `rekins.pdf`, `Straße.pdf` → `Strasse.pdf`. */
-export function asciiSafeFileName(name: string, fallback = "file"): string {
-  const trimmed = String(name || "")
+export function asciiSafeFileName(
+  name: string,
+  fallback = "file",
+  options?: { spaces?: "underscore" | "space" },
+): string {
+  const spaces = options?.spaces ?? "space";
+  const trimmed = decodePercentEncodedName(name)
     .replace(/[\r\n]+/g, " ")
     .trim();
   if (!trimmed) return fallback;
@@ -207,8 +242,8 @@ export function asciiSafeFileName(name: string, fallback = "file"): string {
   const base = hasExt ? trimmed.slice(0, lastDot) : trimmed;
   const ext = hasExt ? trimmed.slice(lastDot + 1) : "";
 
-  const asciiBase = cleanAsciiSegment(base) || fallback;
-  const asciiExt = cleanAsciiSegment(ext).replace(/\s+/g, "");
+  const asciiBase = cleanAsciiSegment(base, spaces) || fallback;
+  const asciiExt = cleanAsciiSegment(ext, spaces).replace(/[_\s]/g, "");
   const joined = asciiExt ? `${asciiBase}.${asciiExt}` : asciiBase;
   return joined.slice(0, 180) || fallback;
 }

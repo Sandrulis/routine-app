@@ -313,7 +313,9 @@ export async function attachFilesToSubtask(input: {
   const skipped: { name: string; reason: string }[] = [];
 
   for (const file of input.files) {
-    const name = asciiSafeFileName(file.name.trim() || "file");
+    const name = asciiSafeFileName(file.name.trim() || "file", "file", {
+      spaces: "underscore",
+    });
     if (!isAllowedFileName(name, input.catalog)) {
       skipped.push({ name, reason: "errors.extension_file_type" });
       continue;
