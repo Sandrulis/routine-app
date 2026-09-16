@@ -28,7 +28,7 @@ export function UserMenu({ user }: { user: TeamMember }) {
   const router = useRouter();
   const menuRef = useRef<HTMLDivElement | null>(null);
   const { t } = useTranslations();
-  const { teams, roles } = useTeam();
+  const { teams, roles, currentTeam } = useTeam();
   const rank = teams.length === 0 ? null : teamRankLabel(user.role, t, roles);
   const { showFeedback } = useFeedbackToast();
   const { startTour } = useProductTour();
@@ -262,25 +262,27 @@ export function UserMenu({ user }: { user: TeamMember }) {
               </span>
             </button>
           ) : null}
-          <button
-            type="button"
-            role="menuitem"
-            onClick={() => closeAnd(startTour)}
-            className="flex w-full items-start gap-3 px-3 py-2 text-left transition hover:bg-zinc-100"
-          >
-            <i
-              className="fas fa-graduation-cap mt-0.5 w-4 text-center text-[13px] text-zinc-500"
-              aria-hidden="true"
-            />
-            <span className="min-w-0">
-              <span className="block text-[13px] font-medium text-zinc-900">
-                {t("user_menu.tour", "Sistēmas pamācība")}
+          {currentTeam ? (
+            <button
+              type="button"
+              role="menuitem"
+              onClick={() => closeAnd(startTour)}
+              className="flex w-full items-start gap-3 px-3 py-2 text-left transition hover:bg-zinc-100"
+            >
+              <i
+                className="fas fa-graduation-cap mt-0.5 w-4 text-center text-[13px] text-zinc-500"
+                aria-hidden="true"
+              />
+              <span className="min-w-0">
+                <span className="block text-[13px] font-medium text-zinc-900">
+                  {t("user_menu.tour", "Sistēmas pamācība")}
+                </span>
+                <span className="mt-0.5 block text-[12px] text-zinc-400">
+                  {t("user_menu.tour_hint", "Iziet ievadu vēlreiz")}
+                </span>
               </span>
-              <span className="mt-0.5 block text-[12px] text-zinc-400">
-                {t("user_menu.tour_hint", "Iziet ievadu vēlreiz")}
-              </span>
-            </span>
-          </button>
+            </button>
+          ) : null}
           <div className="my-1.5 border-t border-zinc-100" />
           <button
             type="button"

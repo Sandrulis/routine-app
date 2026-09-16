@@ -350,7 +350,7 @@ export function UserTodoRail({
   const panel = (
     <aside
       id="user-todo-rail"
-      className={`fixed inset-y-0 right-0 w-[var(--app-todo-rail-width)] flex-col border-l border-zinc-200 bg-white ${
+      className={`fixed inset-y-0 right-0 w-[var(--app-todo-rail-width)] flex-col border-l border-zinc-200 bg-white max-[599px]:border-l-0 ${
         mobileOpen
           ? "z-50 flex shadow-xl xl:z-40 xl:shadow-none"
           : "hidden z-40"

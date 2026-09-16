@@ -38,7 +38,7 @@ Provider-specifiskie OAuth moduļi (`google-drive/`, `onedrive/`, `integrations/
 
 ## Sānjosla
 
-`app/components/app-nav.tsx` — fiksēta kreisā josla; zem 1280px slēpta, `AppShell` burger overlay (`sidebar-layout.ts` `xl`). Galvenē `TeamSwitcher`: kreisajā avatārs (iniciāļi / logotips), pa labi nosaukums un amats (`teamRankLabel`); izvēlne portālā (`fixed`, virs overlay). Apgrieztiem nosaukumiem `OverflowTooltip` (zem 1024px tooltipi nerādās). `Tooltip` `matchMedia` ir kešots un paziņo nākamajā kadrā, lai loga platuma maiņa neizraisītu React ciklu. Klikšķis atver komandu sarakstu un **Pievienot jaunu komandu**. Hover uz rindas rāda `...` (Labot / Dzēst) pirms ķeksīša; mobilajā `...` vienmēr redzams; pēdējo komandu dzēst nevar. Bez komandas klikšķis uz pārslēdzēja atver komandas izveides modāli (nav bloķējoša); dashboard rāda tukšo stāvokli ar pogu un paziņojumu hintu.
+`app/components/app-nav.tsx` — fiksēta kreisā josla; zem 1280px slēpta, `AppShell` burger overlay (`sidebar-layout.ts` `xl`); zem 600px overlay ir 100% plats (`--app-sidebar-width` / `--app-todo-rail-width`). Rindu `+` / `...` / izvēršana overlay (zem `xl`) ir vienmēr redzama, datorā tikai hover. Galvenē `TeamSwitcher`: kreisajā avatārs (iniciāļi / logotips), pa labi nosaukums un amats (`teamRankLabel`); izvēlne portālā (`fixed`, virs overlay). Apgrieztiem nosaukumiem `OverflowTooltip` (zem 1024px tooltipi nerādās). `Tooltip` `matchMedia` ir kešots un paziņo nākamajā kadrā, lai loga platuma maiņa neizraisītu React ciklu. Klikšķis atver komandu sarakstu un **Pievienot jaunu komandu**. Hover uz rindas rāda `...` (Labot / Dzēst) pirms ķeksīša; mobilajā `...` vienmēr redzams; pēdējo komandu dzēst nevar. Bez komandas klikšķis uz pārslēdzēja atver komandas izveides modāli (nav bloķējoša); dashboard rāda tukšo stāvokli ar pogu un paziņojumu hintu.
 
 | Rinda | Saturs |
 |---|---|
@@ -451,7 +451,7 @@ app/
     sentry-init.tsx               # @sentry/browser, kad DSN aktīvs
     app-nav.tsx                   # Sānjosla; apakšā bug / feature / feedback saites virs Failu vietas
     site-feedback-modals.tsx      # Kļūda, funkcijas pieprasījums (saraksts + UP), atsauksme (apraksts + 0–5 zvaigznes); e-pasts uz legal_email
-    user-menu.tsx                 # Lietotāja drop-up: personīgā info, uzstādījumi, paziņojumu prefs, kalendārs, parole, iziet
+    user-menu.tsx                 # Lietotāja drop-up: personīgā info, uzstādījumi, paziņojumu prefs, kalendārs, pamācība (ja ir komanda), parole, iziet
     calendar-integration-modal.tsx # Apple/Google .ics abonēšana
     personal-info-modal.tsx       # Vārda un uzvārda rediģēšana
     notification-settings-modal.tsx # In-app (un e-pasta) paziņojumu veidu slēdži (grupēts, auto-save)
@@ -470,10 +470,10 @@ app/
     team-billing-page.tsx         # /team/billing: vietas, checkout kopsavilkums (+ PVN), period toggle, extra vieta, Checkout / Samaksāt
     resume-subscription-button.tsx # Zaļa Atjaunot abonementu (billing lapa + TeamSubscriptionEndingBanner)
     team-leave-section.tsx        # Pamest komandu (profils, biedra lapa)
-    app-shell.tsx                 # Layout ar sānjoslu; zem 1280px sānjosla slēpta, burger overlay; `module_todo` labā sleja
+    app-shell.tsx                 # Layout ar sānjoslu; zem 1280px overlay, zem 600px 100% plats; `module_todo` labā sleja
     user-todo-rail.tsx            # Personīga Darāmo saraksts sleja + arhīvs (`user_todos`, `141`); inline labošana; atvērtos vilkšana pēc `sort_order`
     dashboard-home-page.tsx       # Sākums: Mani uzdevumi (ja ir, ar Atlikt) + saraksti; tukšā stāvoklī list→task→subtask onboarding
-    product-tour.tsx              # Sānjoslas spotlight pamācība; `users.product_tour_completed_at` + UserMenu restart
+    product-tour.tsx              # Sānjoslas spotlight pamācība; tikai ar komandu; `users.product_tour_completed_at` + UserMenu restart
     task-snooze-button.tsx        # Personīgs Atlikt tikai Mani uzdevumi (1h / rītdiena / nedēļa / datums)
     lists-overview-page.tsx       # Saraksta kopsavilkums
     list-detail-page.tsx          # Saraksta kopsavilkums + arhīva skats

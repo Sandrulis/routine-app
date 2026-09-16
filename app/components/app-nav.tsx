@@ -278,7 +278,7 @@ function rowHoverActionClassName(forceVisible: boolean) {
   return `inline-flex size-6 shrink-0 items-center justify-center rounded text-zinc-400 transition hover:bg-zinc-200/80 hover:text-zinc-700 ${
     forceVisible
       ? "pointer-events-auto opacity-100"
-      : "pointer-events-none opacity-0 group-hover/row:pointer-events-auto group-hover/row:opacity-100 group-focus-within/row:pointer-events-auto group-focus-within/row:opacity-100"
+      : "pointer-events-auto opacity-100 xl:pointer-events-none xl:opacity-0 xl:group-hover/row:pointer-events-auto xl:group-hover/row:opacity-100 xl:group-focus-within/row:pointer-events-auto xl:group-focus-within/row:opacity-100"
   }`;
 }
 
@@ -579,7 +579,7 @@ function NavTreeSection({
                   onToggle();
                 }}
                 data-tour={tourId ? `${tourId}:toggle` : undefined}
-                className="relative z-10 pointer-events-none inline-flex size-6 shrink-0 items-center justify-center rounded text-zinc-400 opacity-0 transition group-hover/row:pointer-events-auto group-hover/row:opacity-100 group-focus-within/row:pointer-events-auto group-focus-within/row:opacity-100 hover:bg-zinc-200/80 hover:text-zinc-700"
+                className={`relative z-10 ${rowHoverActionClassName(false)}`}
               >
                 <ToggleChevron expanded={expanded} />
               </button>
@@ -1372,7 +1372,7 @@ export function AppNav({
     <>
       <aside
         id="app-sidebar"
-        className={`fixed inset-y-0 left-0 w-[var(--app-sidebar-width)] flex-col border-r border-zinc-200 bg-white ${
+        className={`fixed inset-y-0 left-0 w-[var(--app-sidebar-width)] flex-col border-r border-zinc-200 bg-white max-[599px]:border-r-0 ${
           mobileOpen
             ? "z-50 flex shadow-xl xl:z-40 xl:shadow-none"
             : "hidden z-40 xl:flex"

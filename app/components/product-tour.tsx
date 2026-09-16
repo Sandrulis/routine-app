@@ -18,6 +18,7 @@ import {
   unlockBodyOverflow,
 } from "@/app/lib/dom/overlay-root";
 import { setProductTourCompletedAction } from "@/app/lib/users/actions";
+import { useTeam } from "@/app/lib/team-store";
 
 /** Value of the `data-tour` attribute a step points at. */
 type TourTarget =
@@ -158,6 +159,8 @@ export function ProductTourProvider({
   completed?: boolean;
 }) {
   const { t } = useTranslations();
+  const { currentTeam, isReady: teamReady } = useTeam();
+  const hasTeam = Boolean(currentTeam);
   const [active, setActive] = useState(false);
   const [dismissed, setDismissed] = useState(completed);
 
@@ -534,9 +537,10 @@ export function ProductTourProvider({
   const [steps, setSteps] = useState<TourStep[]>([]);
 
   const startTour = useCallback(() => {
+    if (!hasTeam) return;
     setSteps(allStepsRef.current);
     setActive(true);
-  }, []);
+  }, [hasTeam]);
 
   const persistCompleted = useCallback(() => {
     setDismissed(true);
@@ -549,7 +553,15 @@ export function ProductTourProvider({
   }, [persistCompleted]);
 
   useEffect(() => {
+    if (!active) return;
+    if (teamReady && !hasTeam) {
+      setActive(false);
+    }
+  }, [active, hasTeam, teamReady]);
+
+  useEffect(() => {
     if (dismissed || active) return;
+    if (!teamReady || !hasTeam) return;
     if (window.innerWidth < DESKTOP_MIN_WIDTH) return;
 
     let attempts = 0;
@@ -566,7 +578,7 @@ export function ProductTourProvider({
     }, AUTOSTART_POLL_MS);
 
     return () => window.clearInterval(timer);
-  }, [active, dismissed, startTour]);
+  }, [active, dismissed, hasTeam, startTour, teamReady]);
 
   const value = useMemo(() => ({ startTour }), [startTour]);
 

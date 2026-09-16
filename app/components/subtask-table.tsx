@@ -1062,7 +1062,7 @@ export function SubtaskTable({
             }`
       }
     >
-      <div className="relative z-40 flex items-center gap-2 px-3 pt-2 pb-1">
+      <div className="relative z-10 flex items-center gap-2 px-3 pt-2 pb-1">
         {groupByStatus ? <StatusGroupSortBadge /> : null}
         <TableColumnsBadge
           open={columnsPanelOpen}

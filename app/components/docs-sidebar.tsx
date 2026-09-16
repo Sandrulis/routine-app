@@ -68,7 +68,7 @@ export function DocsSidebar({
   return (
     <aside
       id="docs-sidebar"
-      className={`h-dvh w-[17.5rem] shrink-0 flex-col border-r border-zinc-200 bg-white ${
+      className={`h-dvh w-[17.5rem] max-[599px]:w-full shrink-0 flex-col border-r border-zinc-200 bg-white max-[599px]:border-r-0 ${
         mobileOpen
           ? "fixed inset-y-0 left-0 z-50 flex shadow-xl xl:static xl:z-auto xl:shadow-none"
           : "hidden xl:flex"

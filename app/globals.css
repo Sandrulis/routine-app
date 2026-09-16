@@ -27,6 +27,13 @@
   }
 }
 
+@media (max-width: 599px) {
+  :root {
+    --app-sidebar-width: 100%;
+    --app-todo-rail-width: 100%;
+  }
+}
+
 @media (min-width: 1280px) {
   .has-todo-rail {
     --app-todo-rail-width-expanded: var(--app-todo-rail-width);

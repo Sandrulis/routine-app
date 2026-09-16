@@ -4,6 +4,11 @@
 
 - (none)
 
+## v0.3.105
+
+- Zem 600px sānjosla un darāmo saraksts ir pa visu platumu; overlay rindās `+` / `...` / izvēršana paliek redzama
+- Sistēmas pamācība nesākas un lietotāja izvēlnē nerādās, ja nav komandas
+
 ## v0.3.104
 
 - Gmail spraudnis `0.4.66` atkodē `%20` pielikumu nosaukumus uz ASCII ar `_` un rāda reālo faila izmēru
