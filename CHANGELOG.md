@@ -4,6 +4,10 @@
 
 - (none)
 
+## v0.3.106
+
+- Tabulā, slēpjot kolonnas, nosaukums paplašinās; darbību sleja un pārējās paliek savā platumā
+
 ## v0.3.105
 
 - Zem 600px sānjosla un darāmo saraksts ir pa visu platumu; overlay rindās `+` / `...` / izvēršana paliek redzama

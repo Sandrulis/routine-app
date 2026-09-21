@@ -123,6 +123,7 @@ const TASK_TABLE_COLS = {
   date: "6.5rem",
   status: "16rem",
   custom: "8.5rem",
+  actions: "2.75rem",
 } as const;
 
 function columnWidth(column: ResolvedTableColumn): string | undefined {
@@ -135,6 +136,12 @@ function columnWidth(column: ResolvedTableColumn): string | undefined {
   return TASK_TABLE_COLS.custom;
 }
 
+function columnBoxStyle(column: ResolvedTableColumn) {
+  const width = columnWidth(column);
+  if (!width) return undefined;
+  return { width, maxWidth: width };
+}
+
 function tableColCount(visibleColumns: ResolvedTableColumn[]) {
   return 2 + visibleColumns.length;
 }
@@ -144,7 +151,7 @@ function tableMinWidth(visibleColumns: ResolvedTableColumn[]) {
   for (const column of visibleColumns) {
     parts.push(columnWidth(column) ?? TASK_TABLE_COLS.title);
   }
-  parts.push("2.75rem");
+  parts.push(TASK_TABLE_COLS.actions);
   return `calc(${parts.join(" + ")})`;
 }
 
@@ -1102,7 +1109,7 @@ export function SubtaskTable({
           }}
         >
         <table
-          className="group/table w-full text-left text-sm"
+          className="group/table w-full table-fixed text-left text-sm"
           style={{ minWidth: minWidth }}
         >
           <colgroup>
@@ -1112,15 +1119,11 @@ export function SubtaskTable({
               return (
                 <col
                   key={column.id}
-                  style={
-                    width
-                      ? { width, maxWidth: width }
-                      : undefined
-                  }
+                  style={width ? { width } : undefined}
                 />
               );
             })}
-            <col style={{ width: "2.75rem" }} />
+            <col style={{ width: TASK_TABLE_COLS.actions }} />
           </colgroup>
           <thead>
             <tr className="group/row border-b border-zinc-100 text-[12px] font-medium whitespace-nowrap text-zinc-400">
@@ -1137,7 +1140,7 @@ export function SubtaskTable({
                 ) : null}
               </th>
               {visibleColumns.map((column) => {
-                const width = columnWidth(column);
+                const widthStyle = columnBoxStyle(column);
                 const label =
                   column.kind === "custom"
                     ? column.column.name
@@ -1161,18 +1164,14 @@ export function SubtaskTable({
                     )}
                     className={
                       column.kind === "title"
-                        ? "w-full px-2 py-1.5 font-medium"
+                        ? "min-w-0 px-2 py-1.5 font-medium"
                         : column.kind === "assignee"
                           ? "px-3 py-1.5 font-medium"
                           : column.kind === "status"
-                            ? "w-px px-3 py-1.5 font-medium whitespace-nowrap"
+                            ? "px-3 py-1.5 font-medium whitespace-nowrap"
                             : "px-2 py-1.5 font-medium"
                     }
-                    style={
-                      width
-                        ? { width, maxWidth: width }
-                        : undefined
-                    }
+                    style={widthStyle}
                   >
                     {column.kind === "custom" ? (
                       <EditableColumnLabel
@@ -1208,7 +1207,13 @@ export function SubtaskTable({
                   </SortableTableColumnHeader>
                 );
               })}
-              <th className="px-1 py-1.5 text-center">
+              <th
+                className="px-1 py-1.5 text-center"
+                style={{
+                  width: TASK_TABLE_COLS.actions,
+                  maxWidth: TASK_TABLE_COLS.actions,
+                }}
+              >
                 <Tooltip label={t("subtasks.columns.add", "Pievienot kolonnu")}>
                   <button
                     type="button"
@@ -1678,7 +1683,7 @@ function SortableSubtaskRow({
       {visibleColumns.map((column) => {
         if (column.kind === "title") {
           return (
-            <td key={column.id} className="w-full max-w-0 min-w-0 px-2 py-1.5">
+            <td key={column.id} className="min-w-0 overflow-hidden px-2 py-1.5">
               <div className="flex min-w-0 items-start gap-0.5">
                 {hasVisibleChecklists ? (
                   <Tooltip label={checklistToggleLabel}>
@@ -1748,7 +1753,14 @@ function SortableSubtaskRow({
         }
         if (column.kind === "assignee") {
           return (
-            <td key={column.id} className="px-3 py-1.5">
+            <td
+              key={column.id}
+              className="px-3 py-1.5"
+              style={{
+                width: TASK_TABLE_COLS.assignee,
+                maxWidth: TASK_TABLE_COLS.assignee,
+              }}
+            >
               <AssigneeCell task={task} disabled={!canEdit || deleted} />
             </td>
           );
@@ -1791,7 +1803,14 @@ function SortableSubtaskRow({
         }
         if (column.kind === "status") {
           return (
-            <td key={column.id} className="w-px whitespace-nowrap px-3 py-1.5">
+            <td
+              key={column.id}
+              className="whitespace-nowrap px-3 py-1.5"
+              style={{
+                width: TASK_TABLE_COLS.status,
+                maxWidth: TASK_TABLE_COLS.status,
+              }}
+            >
               <StatusControl
                 listId={listId}
                 parentTaskId={parentTaskId}
@@ -1846,7 +1865,13 @@ function SortableSubtaskRow({
           </td>
         );
       })}
-      <td className="px-1 py-1.5" />
+      <td
+        className="px-1 py-1.5"
+        style={{
+          width: TASK_TABLE_COLS.actions,
+          maxWidth: TASK_TABLE_COLS.actions,
+        }}
+      />
     </tr>
     {checklistExpanded && !isDragging && hasVisibleChecklists ? (
       <SubtaskInlineChecklistRows
