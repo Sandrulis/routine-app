@@ -28,7 +28,7 @@ const OPTIONAL_CATEGORY_META: Record<
     titleFallback: "Preferenču sīkdatnes",
     descriptionKey: "cookie_consent.category.preferences.description",
     descriptionFallback:
-      "Atceras tavas izvēles saskarnē, piemēram, saraksta logu kārtību.",
+      "Atceras tavas izvēles saskarnē, piemēram, saraksta logu kārtību un statusu grupu sakļaušanu.",
   },
   analytics: {
     titleKey: "cookie_consent.category.analytics.title",

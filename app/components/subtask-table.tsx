@@ -54,6 +54,7 @@ import { useDisplayPreferences } from "@/app/components/display-preferences-prov
 import { useTranslations } from "@/app/components/translations-provider";
 import { useStatusGroupSortDirection } from "@/app/lib/status-group-sort";
 import { useHiddenTableColumnIds } from "@/app/lib/table-column-visibility";
+import { useCollapsedStatusGroupKeys } from "@/app/lib/status-group-collapsed";
 import type { CustomTableColumn, ResolvedTableColumn } from "@/app/lib/custom-columns";
 import {
   moveColumnOrder,
@@ -637,6 +638,8 @@ export function SubtaskTable({
     reorderTasks,
   } = useLists();
   const { isHidden, setColumnVisible } = useHiddenTableColumnIds();
+  const { collapsed: collapsedStatusKeys, toggle: toggleStatusGroup } =
+    useCollapsedStatusGroupKeys();
   const [columnsPanelOpen, setColumnsPanelOpen] = useState(false);
   const [focusColumnAdd, setFocusColumnAdd] = useState(false);
   const [movingTask, setMovingTask] = useState<WorkTask | null>(null);
@@ -644,7 +647,6 @@ export function SubtaskTable({
   const [dropHint, setDropHint] = useState<DropHint | null>(null);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [expandedChecklistIds, setExpandedChecklistIds] = useState<string[]>([]);
-  const [collapsedStatusKeys, setCollapsedStatusKeys] = useState<string[]>([]);
   const lastSelectedIdRef = useRef<string | null>(null);
   const tableScrollRef = useRef<HTMLDivElement | null>(null);
   const { currentUser, roles } = useTeam();
@@ -735,13 +737,6 @@ export function SubtaskTable({
     });
   }, [collapsedStatusKeys, groups, mergeStatusByLabel]);
 
-  function toggleStatusGroup(key: string) {
-    setCollapsedStatusKeys((current) =>
-      current.includes(key)
-        ? current.filter((item) => item !== key)
-        : [...current, key],
-    );
-  }
   const selectableTasks = displayed.filter(
     (task) => !exitingIds.has(task.id) && !isTaskDeleted(task),
   );
@@ -816,16 +811,6 @@ export function SubtaskTable({
       return next.length === current.length ? current : next;
     });
   }, [displayed]);
-
-  useEffect(() => {
-    const visible = new Set(
-      groups.map((group) => statusMergeKey(group.status, mergeStatusByLabel)),
-    );
-    setCollapsedStatusKeys((current) => {
-      const next = current.filter((key) => visible.has(key));
-      return next.length === current.length ? current : next;
-    });
-  }, [groups, mergeStatusByLabel]);
 
   useEffect(() => {
     if (selectedIds.length === 0) return;

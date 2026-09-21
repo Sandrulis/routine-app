@@ -3,6 +3,7 @@ import {
   COOKIE_CONSENT_COOKIE,
   COOKIE_CONSENT_MAX_AGE_DAYS,
   PREFERENCE_COOKIE_NAMES,
+  LEGACY_PREFERENCE_COOKIE_NAMES,
   parseCookieConsent,
   serializeCookieConsent,
   type CookieConsentState,
@@ -22,6 +23,9 @@ export function writeCookieConsentState(state: CookieConsentState) {
 
 export function purgePreferenceCookies() {
   for (const name of PREFERENCE_COOKIE_NAMES) {
+    deleteCookie(name);
+  }
+  for (const name of LEGACY_PREFERENCE_COOKIE_NAMES) {
     deleteCookie(name);
   }
 }

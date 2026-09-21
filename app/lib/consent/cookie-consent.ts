@@ -119,6 +119,10 @@ export function isCookieCategoryAllowed(
 export const PREFERENCE_COOKIE_NAMES = [
   "routine-app-list-window-order",
   "routine-app-history-pane",
+  "routine-app-status-group-collapsed",
+] as const;
+
+export const LEGACY_PREFERENCE_COOKIE_NAMES = [
   "routine-app-status-group-sort",
   "routine-app-table-columns",
 ] as const;

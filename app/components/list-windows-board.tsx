@@ -91,6 +91,7 @@ import {
   statusMergeKey,
 } from "@/app/lib/list-statuses";
 import { useStatusGroupSortDirection } from "@/app/lib/status-group-sort";
+import { useCollapsedStatusGroupKeys } from "@/app/lib/status-group-collapsed";
 import {
   collectTaskSubtreeIds,
   getDescendantSubtasks,
@@ -812,7 +813,8 @@ function OverviewSubtaskList({
   const { isEnabled: isModuleEnabled } = useFrontendModules();
   const checklistsEnabled = isModuleEnabled(FRONTEND_MODULE_KEYS.checklist);
   const [dropHint, setDropHint] = useState<DropHint | null>(null);
-  const [collapsedStatusKeys, setCollapsedStatusKeys] = useState<string[]>([]);
+  const { collapsed: collapsedStatusKeys, toggle: toggleStatusGroup } =
+    useCollapsedStatusGroupKeys();
   const [statusSortDirection] = useStatusGroupSortDirection();
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
@@ -829,14 +831,6 @@ function OverviewSubtaskList({
       ?.id ?? "done";
   const openStatusId =
     statuses.find((status) => status.groupKey === "not_started")?.id ?? "todo";
-
-  function toggleStatusGroup(key: string) {
-    setCollapsedStatusKeys((current) =>
-      current.includes(key)
-        ? current.filter((item) => item !== key)
-        : [...current, key],
-    );
-  }
 
   function handleDragEnd(event: DragEndEvent) {
     const hint = dropHintFromEvent(event);

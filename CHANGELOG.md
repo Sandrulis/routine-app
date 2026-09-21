@@ -4,6 +4,11 @@
 
 - (none)
 
+## v0.3.107
+
+- Statusu grupu kārtošana un slēptās tabulas kolonnas saglabājas kontā (starp ierīcēm), ne profila formā
+- Statusu grupu sakļaušana paliek sīkdatnē pēc lapas pārlādes
+
 ## v0.3.106
 
 - Tabulā, slēpjot kolonnas, nosaukums paplašinās; darbību sleja un pārējās paliek savā platumā

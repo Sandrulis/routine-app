@@ -8,6 +8,7 @@ import { TeamScopedFrontendModules } from "@/app/lib/frontend-modules/team-scope
 import { TeamGoogleDriveProvider } from "@/app/lib/google-drive/context";
 import { TeamOneDriveProvider } from "@/app/lib/onedrive/context";
 import { ProductTourProvider } from "@/app/components/product-tour";
+import { UiPreferencesProvider } from "@/app/components/ui-preferences-provider";
 import { PaymentPlansEnabledProvider } from "@/app/lib/payment-plans/context";
 import { FileTypesProvider } from "@/app/lib/file-types-context";
 import { ListsProvider } from "@/app/lib/lists-store";
@@ -19,6 +20,7 @@ import type {
   FileTypeExtensionSummary,
   TaskStatusSummary,
 } from "@/app/lib/site-admin/types";
+import type { UserUiPreferences } from "@/app/lib/users/ui-preferences";
 
 type PaymentPlanModuleSnapshot = {
   id: string;
@@ -36,6 +38,7 @@ export function AppProviders({
   stripeKeyInvalid = false,
   announcements = [],
   productTourCompleted = true,
+  uiPreferences,
 }: {
   children: ReactNode;
   taskStatuses?: TaskStatusSummary[];
@@ -46,10 +49,12 @@ export function AppProviders({
   stripeKeyInvalid?: boolean;
   announcements?: SiteAnnouncementSummary[];
   productTourCompleted?: boolean;
+  uiPreferences?: UserUiPreferences;
 }) {
   return (
     <TeamProvider>
       <AdminProvider>
+        <UiPreferencesProvider initial={uiPreferences}>
         <PaymentPlansEnabledProvider
           enabled={paymentPlansEnabled}
           freePlanIds={paymentPlans.filter((plan) => plan.isFree).map((plan) => plan.id)}
@@ -83,6 +88,7 @@ export function AppProviders({
           </TeamGoogleDriveProvider>
         </TeamScopedFrontendModules>
         </PaymentPlansEnabledProvider>
+        </UiPreferencesProvider>
       </AdminProvider>
     </TeamProvider>
   );

@@ -139,7 +139,7 @@ export function getPrivacyPolicyContent(
           {
             key: "legal.privacy.data.p1",
             fallback:
-              "Konta dati: vārds, uzvārds, e-pasta adrese, parole (glabājam tikai jaucējkodu), valodas izvēle, laika josla, datuma/laika attēlošanas preferences, MFA iestatījumi un paziņojumu preferences.",
+              "Konta dati: vārds, uzvārds, e-pasta adrese, parole (glabājam tikai jaucējkodu), valodas izvēle, laika josla, datuma/laika attēlošanas preferences, MFA iestatījumi, paziņojumu preferences un tabulas saskarnes izvēles (kolonnu redzamība, statusu grupu kārtošana).",
           },
           {
             key: "legal.privacy.data.p2",
@@ -717,7 +717,7 @@ export function getCookiePolicyContent(t: Translate): LegalDocumentContent {
           {
             key: "legal.cookies.preferences.p1",
             fallback:
-              "Preferenču sīkdatnes atceras saskarnes izvēles, piemēram, saraksta logu (Uzdevumi, Faili, Saraksts) kārtību (routine-app-list-window-order), vēstures bloka redzamību (routine-app-history-pane), statusu kārtošanu (routine-app-status-group-sort) un tabulas kolonnu redzamību (routine-app-table-columns).",
+              "Preferenču sīkdatnes atceras saskarnes izvēles, piemēram, saraksta logu (Uzdevumi, Faili, Saraksts) kārtību (routine-app-list-window-order), vēstures bloka redzamību (routine-app-history-pane) un statusu grupu sakļaušanu (routine-app-status-group-collapsed).",
           },
           {
             key: "legal.cookies.preferences.p2",

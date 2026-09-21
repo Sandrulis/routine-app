@@ -6,6 +6,7 @@ import { createAdminClient } from "@/app/lib/supabase/admin";
 import { createClient } from "@/app/lib/supabase/server";
 import { isSupabaseAdminConfigured, isSupabaseConfigured } from "@/app/lib/supabase/env";
 import type { UserDisplayPreferences } from "@/app/lib/site-admin/display-preferences";
+import type { UserUiPreferences } from "@/app/lib/users/ui-preferences";
 import { isValidTimeZone } from "@/app/lib/cron-jobs/timezone";
 import { joinDisplayName } from "@/app/lib/users/display-name";
 
@@ -104,6 +105,33 @@ export async function saveUserDisplayPreferencesAction(
 
   revalidatePath("/", "layout");
   revalidatePath("/settings/profile");
+  return { ok: true };
+}
+
+export async function saveUserUiPreferencesAction(
+  patch: Partial<UserUiPreferences>,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const user = await getCurrentUser();
+  if (!user) {
+    return { ok: false, error: "errors.auth_required" };
+  }
+  if (!isSupabaseConfigured()) {
+    return { ok: false, error: "errors.db_not_configured" };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("set_current_user_ui_preferences", {
+    p_status_group_sort: patch.statusGroupSort ?? null,
+    p_hidden_table_columns:
+      patch.hiddenTableColumns !== undefined
+        ? patch.hiddenTableColumns
+        : null,
+  });
+
+  if (error) {
+    return { ok: false, error: "errors.user_profile_failed" };
+  }
+
   return { ok: true };
 }
 
