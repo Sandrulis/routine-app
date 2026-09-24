@@ -227,7 +227,7 @@ function ChecklistTimeBar({
   }, [running]);
 
   const elapsed = item.activeTimer
-    ? checklistActiveSpentMs(item.activeTimer, running ? nowMs : Date.now())
+    ? checklistActiveSpentMs(item.activeTimer, nowMs)
     : 0;
 
   if (!item.activeTimer && finished) {

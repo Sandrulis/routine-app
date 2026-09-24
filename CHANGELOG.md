@@ -4,6 +4,10 @@
 
 - (none)
 
+## v0.3.110
+
+- Check List laika rādījums vairs neizsauc `Date.now()` renderēšanas laikā, tāpēc lint vairs nekrīt
+
 ## v0.3.109
 
 - `module_factory`: maksājošai vai VIP komandai rūpnīcas lietotāji un `/factory` ielogošanās; apakšuzdevumu var koplietot ar uzgriežņu ikonu
