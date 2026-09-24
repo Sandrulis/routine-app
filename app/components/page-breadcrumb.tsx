@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useMemo, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { AdminPanelButton } from "@/app/components/admin-panel-button";
 import { LanguageSwitcher } from "@/app/components/language-switcher";
 import { ListBadge } from "@/app/components/list-badge";
@@ -12,21 +12,199 @@ import { Tooltip } from "@/app/components/tooltip";
 import { useTranslations } from "@/app/components/translations-provider";
 import { UserAvatar } from "@/app/components/user-avatar";
 import { FileIcon } from "@/app/components/file-icon";
-import { getTaskAncestors, workItemIcon } from "@/app/lib/lists";
+import {
+  getChildTasks,
+  getListTasks,
+  getTaskAncestors,
+  isWorkFolder,
+  workItemIcon,
+  type WorkTask,
+} from "@/app/lib/lists";
 import { useLists } from "@/app/lib/lists-store";
 import { useListFiles } from "@/app/lib/use-list-files";
 import { useTeam } from "@/app/lib/team-store";
 import { formatInteger } from "@/app/lib/format/numbers";
 import { useTemplates } from "@/app/lib/templates-store";
 
+type CrumbSwitcher = {
+  listId: string;
+  parentId: string | null;
+  kind: "folder" | "task";
+  currentId: string;
+};
+
 type Crumb = {
   href: string | null;
   label: string;
   icon?: ReactNode;
+  switcher?: CrumbSwitcher;
 };
 
 function CrumbIcon({ className }: { className: string }) {
   return <i className={`${className} text-[11px]`} aria-hidden="true" />;
+}
+
+function taskSwitcher(task: WorkTask): CrumbSwitcher {
+  return {
+    listId: task.listId,
+    parentId: task.parentId,
+    kind: isWorkFolder(task) ? "folder" : "task",
+    currentId: task.id,
+  };
+}
+
+function siblingsFor(
+  tasks: WorkTask[],
+  switcher: CrumbSwitcher,
+): WorkTask[] {
+  const pool = switcher.parentId
+    ? getChildTasks(tasks, switcher.parentId)
+    : getListTasks(tasks, switcher.listId);
+  return pool.filter((item) =>
+    switcher.kind === "folder" ? isWorkFolder(item) : !isWorkFolder(item),
+  );
+}
+
+function PathBranch({
+  task,
+  listId,
+  tasks,
+  depth,
+  currentId,
+  onNavigate,
+}: {
+  task: WorkTask;
+  listId: string;
+  tasks: WorkTask[];
+  depth: number;
+  currentId: string;
+  onNavigate: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const children = getChildTasks(tasks, task.id);
+  const current = task.id === currentId;
+  return (
+    <>
+      <div
+        className="flex items-center gap-0.5 pr-2"
+        style={{ paddingLeft: 8 + depth * 14 }}
+      >
+        {children.length > 0 ? (
+          <button
+            type="button"
+            aria-expanded={open}
+            onClick={() => setOpen((value) => !value)}
+            className="inline-flex size-5 shrink-0 items-center justify-center rounded-md text-zinc-400 hover:bg-zinc-100"
+          >
+            <i
+              className={`fas fa-chevron-down text-[9px] transition ${open ? "" : "-rotate-90"}`}
+              aria-hidden="true"
+            />
+          </button>
+        ) : (
+          <span className="inline-block size-5 shrink-0" aria-hidden="true" />
+        )}
+        <Link
+          href={`/lists/${listId}/tasks/${task.id}`}
+          onClick={onNavigate}
+          className={`flex min-w-0 flex-1 items-center gap-2 rounded-md px-1.5 py-1.5 text-left text-sm ${
+            current ? "bg-zinc-100 font-medium text-zinc-900" : "text-zinc-700 hover:bg-zinc-50"
+          }`}
+        >
+          <i className={`${workItemIcon(task)} w-3 shrink-0 text-[11px] text-zinc-400`} aria-hidden="true" />
+          <span className="truncate">{task.title}</span>
+        </Link>
+      </div>
+      {open
+        ? children.map((child) => (
+            <PathBranch
+              key={child.id}
+              task={child}
+              listId={listId}
+              tasks={tasks}
+              depth={depth + 1}
+              currentId={currentId}
+              onNavigate={onNavigate}
+            />
+          ))
+        : null}
+    </>
+  );
+}
+
+function PathItemMenu({
+  crumb,
+  tasks,
+  current,
+}: {
+  crumb: Crumb;
+  tasks: WorkTask[];
+  current: boolean;
+}) {
+  const switcher = crumb.switcher;
+  const [open, setOpen] = useState(false);
+  const rootRef = useRef<HTMLDivElement | null>(null);
+  const options = switcher ? siblingsFor(tasks, switcher) : [];
+
+  useEffect(() => {
+    if (!open) return;
+    function onPointerDown(event: PointerEvent) {
+      if (rootRef.current?.contains(event.target as Node)) return;
+      setOpen(false);
+    }
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") setOpen(false);
+    }
+    document.addEventListener("pointerdown", onPointerDown);
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", onPointerDown);
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [open]);
+
+  if (!switcher || !crumb.href || options.length <= 1) {
+    return null;
+  }
+
+  return (
+    <div ref={rootRef} className="relative min-w-0">
+      <button
+        type="button"
+        aria-expanded={open}
+        aria-haspopup="menu"
+        onClick={() => setOpen((value) => !value)}
+        className={`flex min-w-0 items-center gap-1.5 rounded-md ${
+          current ? "font-semibold text-zinc-900" : "text-zinc-400 hover:text-zinc-700"
+        }`}
+      >
+        <CrumbMark icon={crumb.icon} muted={!current} />
+        <span className="truncate">{crumb.label}</span>
+        <i
+          className={`fas fa-chevron-down shrink-0 text-[8px] text-zinc-400 transition ${open ? "" : "-rotate-90"}`}
+          aria-hidden="true"
+        />
+      </button>
+      {open ? (
+        <div
+          role="menu"
+          className="absolute top-full left-0 z-40 mt-1 max-h-80 w-72 overflow-y-auto rounded-xl bg-white py-1 shadow-[0_12px_40px_rgba(15,23,42,0.16)] ring-1 ring-zinc-200/80"
+        >
+          {options.map((item) => (
+            <PathBranch
+              key={item.id}
+              task={item}
+              listId={switcher.listId}
+              tasks={tasks}
+              depth={0}
+              currentId={switcher.currentId}
+              onNavigate={() => setOpen(false)}
+            />
+          ))}
+        </div>
+      ) : null}
+    </div>
+  );
 }
 
 function CrumbMark({ icon, muted }: { icon?: ReactNode; muted: boolean }) {
@@ -122,6 +300,7 @@ export function PageBreadcrumb({
               href: `/lists/${parts[1]}/tasks/${ancestor.id}`,
               label: ancestor.title,
               icon: <CrumbIcon className={workItemIcon(ancestor)} />,
+              switcher: taskSwitcher(ancestor),
             });
           }
         }
@@ -136,6 +315,7 @@ export function PageBreadcrumb({
               className={task ? workItemIcon(task) : "fas fa-list-check"}
             />
           ),
+          switcher: task ? taskSwitcher(task) : undefined,
         });
 
         if (parts[4] === "files" && parts[5]) {
@@ -165,12 +345,14 @@ export function PageBreadcrumb({
                 href: `/lists/${parts[1]}/tasks/${ancestor.id}`,
                 label: ancestor.title,
                 icon: <CrumbIcon className={workItemIcon(ancestor)} />,
+                switcher: taskSwitcher(ancestor),
               });
             }
             items.push({
               href: `/lists/${parts[1]}/tasks/${parent.id}`,
               label: parent.title,
               icon: <CrumbIcon className={workItemIcon(parent)} />,
+              switcher: taskSwitcher(parent),
             });
           }
         }
@@ -369,7 +551,10 @@ export function PageBreadcrumb({
                       /
                     </span>
                   ) : null}
-                  {isCurrent ? (
+                  {crumb.switcher ? (
+                    <PathItemMenu crumb={crumb} tasks={tasks} current={isCurrent} />
+                  ) : null}
+                  {crumb.switcher && siblingsFor(tasks, crumb.switcher).length > 1 ? null : isCurrent ? (
                     <span className="flex min-w-0 items-center gap-1.5 font-semibold text-zinc-900">
                       <CrumbMark icon={crumb.icon} muted={false} />
                       <span className="truncate">{crumb.label}</span>

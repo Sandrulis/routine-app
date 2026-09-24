@@ -4,6 +4,11 @@
 
 - (none)
 
+## v0.3.112
+
+- Sānjoslā ikona, kas pie hover nomainās uz bultiņu, ir ar noapaļotu fonu
+- Ceļa joslā mape vai uzdevums atver kaimiņu sarakstu; mapi var izvērst un atvērt citu mapi vai uzdevumu
+
 ## v0.3.111
 
 - Rūpnīcā valodas izvēle, sarakstu sakļaušana un statusi tikai aktīvajā posmā, ja punktu ir uzsācis darbinieks

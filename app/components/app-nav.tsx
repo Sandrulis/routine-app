@@ -486,7 +486,7 @@ function NavTreeSection({
                   event.stopPropagation();
                   onToggle();
                 }}
-                className="relative z-10 inline-flex size-5 shrink-0 items-center justify-center text-zinc-400"
+                className="relative z-10 inline-flex size-5 shrink-0 items-center justify-center rounded-md text-zinc-400 group-hover/row:bg-zinc-200 group-focus-within/row:bg-zinc-200"
               >
                 <i
                   className={`${icon} pointer-events-none text-[12px] transition group-hover/row:opacity-0 group-focus-within/row:opacity-0`}
