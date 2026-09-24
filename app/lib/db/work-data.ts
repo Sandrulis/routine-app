@@ -751,7 +751,7 @@ export async function fetchTeamWorkspace(teamId: string): Promise<TeamWorkspace>
       supabase
         .from("work_tasks")
         .select(
-          "id, list_id, parent_id, kind, title, description, status, status_changed_at, deleted_at, archived_at, start_date, due_date, sort_order, hidden_status_ids, status_order, status_group_overrides, created_at, checklists, custom_fields",
+          "id, list_id, parent_id, kind, title, description, status, status_changed_at, deleted_at, archived_at, start_date, due_date, sort_order, hidden_status_ids, status_order, status_group_overrides, created_at, checklists, factory_shared, custom_fields",
         )
         .eq("team_id", teamId)
         .order("sort_order", { ascending: true })
@@ -960,6 +960,7 @@ export async function fetchTeamWorkspace(teamId: string): Promise<TeamWorkspace>
       dueDate: row.due_date,
       sortOrder: row.sort_order,
       checklists: parseTaskChecklists(row.checklists),
+      factoryShared: row.factory_shared === true,
       hiddenStatusIds: parseIdList(row.hidden_status_ids),
       statusOrder: parseIdList(row.status_order),
       statusGroupOverrides: parseStatusGroupOverrides(row.status_group_overrides),
@@ -1180,6 +1181,7 @@ export async function insertTask(teamId: string, task: WorkTask) {
     due_date: dateOrNull(task.dueDate),
     sort_order: task.sortOrder,
     checklists: task.checklists ?? [],
+    factory_shared: task.factoryShared === true,
     hidden_status_ids: task.hiddenStatusIds ?? [],
     status_order: task.statusOrder ?? [],
     status_group_overrides: task.statusGroupOverrides ?? {},
@@ -1207,6 +1209,7 @@ export async function updateTaskRow(
       | "parentId"
       | "sortOrder"
       | "checklists"
+      | "factoryShared"
       | "hiddenStatusIds"
       | "statusOrder"
       | "statusGroupOverrides"
@@ -1233,6 +1236,7 @@ export async function updateTaskRow(
   if (patch.parentId !== undefined) row.parent_id = patch.parentId;
   if (patch.sortOrder !== undefined) row.sort_order = patch.sortOrder;
   if (patch.checklists !== undefined) row.checklists = patch.checklists;
+  if (patch.factoryShared !== undefined) row.factory_shared = patch.factoryShared;
   if (patch.hiddenStatusIds !== undefined) {
     row.hidden_status_ids = patch.hiddenStatusIds;
   }

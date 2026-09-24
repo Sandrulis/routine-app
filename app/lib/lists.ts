@@ -99,6 +99,7 @@ export type WorkTask = {
   dueDate: string | null;
   sortOrder: number;
   checklists: TaskChecklist[];
+  factoryShared?: boolean;
   hiddenStatusIds: string[];
   statusOrder: string[];
   statusGroupOverrides: Record<string, string>;

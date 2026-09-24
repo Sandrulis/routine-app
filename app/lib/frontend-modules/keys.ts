@@ -8,6 +8,8 @@ export const FRONTEND_MODULE_KEYS = {
   gmailPlugin: "module_gmail_plugin",
   onedrive: "module_onedrive",
   checklist: "module_checklist",
+  timeTracking: "module_timetracking",
+  factory: "module_factory",
   todo: "module_todo",
   automations: "module_automations",
   templates: "module_templates",
@@ -67,6 +69,18 @@ export function knownFrontendModuleLabel(
   }
   if (moduleKey === FRONTEND_MODULE_KEYS.checklist) {
     return { key: "subtasks.checklist.title", fallback: "Check List" };
+  }
+  if (moduleKey === FRONTEND_MODULE_KEYS.timeTracking) {
+    return {
+      key: "frontend_modules.label.module_timetracking",
+      fallback: "Laika uzskaite",
+    };
+  }
+  if (moduleKey === FRONTEND_MODULE_KEYS.factory) {
+    return {
+      key: "frontend_modules.label.module_factory",
+      fallback: "Rūpnīca",
+    };
   }
   if (moduleKey === FRONTEND_MODULE_KEYS.todo) {
     return { key: "user_todo.title", fallback: "Darāmo saraksts" };

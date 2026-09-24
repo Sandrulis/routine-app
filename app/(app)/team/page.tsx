@@ -30,6 +30,9 @@ import {
   resendTeamInvitationAction,
   transferTeamLeadershipAction,
 } from "@/app/lib/team/actions";
+import { useFactoryPresence } from "@/app/lib/factory/use-factory-presence";
+import { FRONTEND_MODULE_KEYS } from "@/app/lib/frontend-modules/keys";
+import { useFrontendModules } from "@/app/lib/frontend-modules/context";
 import {
   canAppointTeamLeader,
   canLeaveTeam,
@@ -38,6 +41,7 @@ import {
   canEditTeamSettings,
   isPendingTeamMember,
   isAwaitingPaymentSeat,
+  initialsFromName,
   memberDisplayName,
   MEMBER_TEAM_ROLE,
   teamRankLabel,
@@ -89,6 +93,11 @@ export default function TeamPage() {
         member.id === currentUser.id ||
         (member.userId && member.userId === currentUser.userId),
     ) ?? null;
+  const { isEnabled: isModuleEnabled } = useFrontendModules();
+  const showFactory =
+    (currentTeam?.paymentPlan.paid === true || currentTeam?.isVip === true) &&
+    isModuleEnabled(FRONTEND_MODULE_KEYS.factory);
+  const factoryUsers = useFactoryPresence(currentTeam?.id ?? null, showFactory);
   const isFreePlan = Boolean(
     currentTeam?.paymentPlan.planId &&
       freePlanIds.includes(currentTeam.paymentPlan.planId),
@@ -295,7 +304,7 @@ export default function TeamPage() {
         <div className="grid gap-3">
           {!isReady ? (
             <LoadingState />
-          ) : members.length === 0 ? (
+          ) : members.length === 0 && factoryUsers.length === 0 ? (
             <div className="rounded-3xl border border-dashed border-zinc-200 bg-white px-6 py-12 text-center text-sm text-zinc-500">
               {currentTeam
                 ? t("team.empty", "Komandā vēl nav lietotāju.")
@@ -467,6 +476,35 @@ export default function TeamPage() {
                 </div>
               );
             })}
+              {factoryUsers.length > 0 ? (
+                <>
+                  <div className="flex items-center gap-3 px-1 pt-2">
+                    <div className="h-px flex-1 bg-zinc-200" />
+                    <p className="text-[11px] font-medium uppercase tracking-wide text-zinc-400">
+                      {t("frontend_modules.label.module_factory", "Rūpnīca")}
+                    </p>
+                    <div className="h-px flex-1 bg-zinc-200" />
+                  </div>
+                  {factoryUsers.map((user) => {
+                    const name = `${user.firstName} ${user.lastName}`.trim();
+                    return (
+                      <div
+                        key={user.id}
+                        className="flex items-center gap-3 rounded-3xl border border-zinc-200 bg-white px-5 py-4 shadow-sm"
+                      >
+                        <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-zinc-100 text-xs font-semibold text-zinc-600">
+                          {initialsFromName(name)}
+                        </span>
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-semibold text-zinc-900">{name}</p>
+                          <p className="mt-0.5 truncate text-sm text-zinc-500">{user.email}</p>
+                        </div>
+                        <MemberLastOnline lastOnlineAt={user.lastOnlineAt} />
+                      </div>
+                    );
+                  })}
+                </>
+              ) : null}
             </>
           )}
         </div>

@@ -4,6 +4,16 @@
 
 - (none)
 
+## v0.3.109
+
+- `module_factory`: maksājošai vai VIP komandai rūpnīcas lietotāji un `/factory` ielogošanās; apakšuzdevumu var koplietot ar uzgriežņu ikonu
+- Rūpnīcas kontrolsarakstā laika uzskaite rāda, kurš iesāka; turpināt un pabeigt var tikai viņš, citi redz pauzi; aiz saraksta nosaukuma ir izdarīts / kopā
+
+## v0.3.108
+
+- Check List sarakstus un punktus var vilkt, lai mainītu secību
+- `module_timetracking`: katram punktam Sākt, Pauzēt un Apturēt; Stop atzīmē punktu izpildītu un rāda sākumu, beigas un kopējo laiku
+
 ## v0.3.107
 
 - Statusu grupu kārtošana un slēptās tabulas kolonnas saglabājas kontā (starp ierīcēm), ne profila formā

@@ -28,6 +28,7 @@ import {
   type ReactNode,
 } from "react";
 import { AssigneeFaces } from "@/app/components/assignee-faces";
+import { FactoryShareButton } from "@/app/components/factory-share-button";
 import { DragHandle, StatusReorderHandle } from "@/app/components/drag-handle";
 import {
   SortableTaskGroup,
@@ -612,9 +613,13 @@ function OverviewSubtaskRow({
   const { t } = useTranslations();
   const { statuses } = useTaskStatuses(listId, task.parentId);
   const { taskFiles, updateTask } = useLists();
-  const { currentUser, roles } = useTeam();
+  const { currentUser, roles, currentTeam } = useTeam();
   const { isAdmin } = useIsAdmin();
   const { isEnabled: isModuleEnabled } = useFrontendModules();
+  const showFactoryShare =
+    isWorkSubtask(task) &&
+    isModuleEnabled(FRONTEND_MODULE_KEYS.factory) &&
+    (currentTeam?.paymentPlan.paid === true || currentTeam?.isVip === true);
   const [checklistExpanded, setChecklistExpanded] = useState(false);
   const checklistsEnabled = isModuleEnabled(FRONTEND_MODULE_KEYS.checklist);
   const hasVisibleChecklists =
@@ -711,6 +716,7 @@ function OverviewSubtaskRow({
               : undefined
           }
         />
+        <div className="flex min-w-0 flex-1 items-center gap-1.5">
         <button
           type="button"
           onClick={onOpen}
@@ -730,6 +736,15 @@ function OverviewSubtaskRow({
             />
           ) : null}
         </button>
+        {showFactoryShare ? (
+          <FactoryShareButton
+            shared={task.factoryShared === true}
+            onToggle={() =>
+              updateTask(task.id, { factoryShared: task.factoryShared !== true })
+            }
+          />
+        ) : null}
+        </div>
         <AssigneeFaces assigneeIds={task.assigneeIds} />
       </div>
       {checklistExpanded && hasVisibleChecklists && !isDragging ? (

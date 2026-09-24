@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useRef, useState, type MouseEvent } from "react";
+import { useRouter } from "next/navigation";
 import { createPortal } from "react-dom";
 import { ConfirmModal } from "@/app/components/confirm-modal";
 import {
@@ -23,6 +24,8 @@ import {
   teamRankLabel,
   type WorkTeam,
 } from "@/app/lib/team";
+import { useFrontendModules } from "@/app/lib/frontend-modules/context";
+import { FRONTEND_MODULE_KEYS } from "@/app/lib/frontend-modules/keys";
 import { useIsAdmin } from "@/app/lib/users/use-is-admin";
 
 function TeamAvatar({
@@ -63,6 +66,12 @@ export function TeamSwitcher({ compact = false }: { compact?: boolean }) {
     rolesByTeam,
   } = useTeam();
   const { isAdmin } = useIsAdmin();
+  const router = useRouter();
+  const { isEnabled: isModuleEnabled } = useFrontendModules();
+  const showFactory =
+    Boolean(currentTeam) &&
+    (currentTeam?.paymentPlan.paid === true || currentTeam?.isVip === true) &&
+    isModuleEnabled(FRONTEND_MODULE_KEYS.factory);
   const canEditCurrentTeam = canEditTeamSettings(currentUser, roles, isAdmin);
   const canDeleteCurrentTeam = canDeleteTeam(currentUser, roles, isAdmin);
   const showCurrentTeamActions = canEditCurrentTeam || canDeleteCurrentTeam;
@@ -289,6 +298,27 @@ export function TeamSwitcher({ compact = false }: { compact?: boolean }) {
                   </div>
                 );
               })}
+              {showFactory ? (
+                <>
+                  <div className="my-1.5 border-t border-zinc-100" />
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onClick={() => {
+                      setOpen(false);
+                      router.push("/team/factory");
+                    }}
+                    className="flex w-full items-center gap-3 px-3 py-2 text-left transition hover:bg-zinc-100"
+                  >
+                    <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-zinc-100 text-zinc-500">
+                      <i className="fas fa-industry text-[11px]" aria-hidden="true" />
+                    </span>
+                    <span className="text-[13px] font-medium text-zinc-900">
+                      {t("frontend_modules.label.module_factory", "Rūpnīca")}
+                    </span>
+                  </button>
+                </>
+              ) : null}
               <div className="my-1.5 border-t border-zinc-100" />
               <button
                 type="button"

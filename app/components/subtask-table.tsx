@@ -18,6 +18,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { AssigneeFaces } from "@/app/components/assignee-faces";
+import { FactoryShareButton } from "@/app/components/factory-share-button";
 import { StatusReorderHandle } from "@/app/components/drag-handle";
 import { createMenuAnchorFromEvent, type CreateMenuAnchor } from "@/app/components/create-item-menu";
 import { IconActionButton } from "@/app/components/icon-action-button";
@@ -94,6 +95,7 @@ import {
   isClosedTaskStatus,
   isTaskActiveInLists,
   isTaskDeleted,
+  isWorkSubtask,
   workProgressById,
   workProgressFromItems,
   type TaskLocationSegment,
@@ -1540,10 +1542,14 @@ function SortableSubtaskRow({
 }) {
   const { t } = useTranslations();
   const [snoozeOpen, setSnoozeOpen] = useState(false);
-  const { taskFiles } = useLists();
-  const { currentUser, roles } = useTeam();
+  const { taskFiles, updateTask } = useLists();
+  const { currentUser, roles, currentTeam } = useTeam();
   const { isAdmin } = useIsAdmin();
   const { isEnabled: isModuleEnabled } = useFrontendModules();
+  const showFactoryShare =
+    isWorkSubtask(task) &&
+    isModuleEnabled(FRONTEND_MODULE_KEYS.factory) &&
+    (currentTeam?.paymentPlan.paid === true || currentTeam?.isVip === true);
   const checklistsEnabled = isModuleEnabled(FRONTEND_MODULE_KEYS.checklist);
   const fileUploadsEnabled = isModuleEnabled(FRONTEND_MODULE_KEYS.fileUpload);
   const hasAttachments =
@@ -1694,6 +1700,7 @@ function SortableSubtaskRow({
                   </Tooltip>
                 ) : null}
                 <div className="min-w-0 flex-1">
+                <div className="flex w-full min-w-0 items-center gap-1.5">
                   <button
                     type="button"
                     onClick={() => {
@@ -1704,7 +1711,7 @@ function SortableSubtaskRow({
                       onOpenTask(task);
                     }}
                     aria-label={deleted ? restoreLabel : undefined}
-                    className={`flex w-full min-w-0 items-center gap-1.5 text-left font-medium hover:text-blue-700 ${
+                    className={`flex min-w-0 flex-1 items-center gap-1.5 text-left font-medium hover:text-blue-700 ${
                       deleted ? "text-zinc-400 line-through" : "text-zinc-900"
                     }`}
                   >
@@ -1719,6 +1726,16 @@ function SortableSubtaskRow({
                       />
                     ) : null}
                   </button>
+                  {showFactoryShare && (canEdit || task.factoryShared) ? (
+                    <FactoryShareButton
+                      shared={task.factoryShared === true}
+                      disabled={!canEdit}
+                      onToggle={() =>
+                        updateTask(task.id, { factoryShared: task.factoryShared !== true })
+                      }
+                    />
+                  ) : null}
+                </div>
                   {locationSegments.length > 0 ? (
                     <TaskLocationPath
                       segments={locationSegments}

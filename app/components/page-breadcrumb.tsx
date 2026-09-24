@@ -212,6 +212,14 @@ export function PageBreadcrumb({
         });
         return items;
       }
+      if (parts[1] === "factory") {
+        items.push({
+          href: "/team/factory",
+          label: t("frontend_modules.label.module_factory", "Rūpnīca"),
+          icon: <CrumbIcon className="fas fa-industry" />,
+        });
+        return items;
+      }
       if (parts[1] === "billing") {
         items.push({
           href: "/team/billing",

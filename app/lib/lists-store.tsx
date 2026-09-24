@@ -224,7 +224,7 @@ type ListsContextValue = {
     patch: Partial<
       Pick<
         WorkTask,
-        "title" | "description" | "status" | "assigneeIds" | "startDate" | "dueDate" | "deletedAt" | "checklists"
+        "title" | "description" | "status" | "assigneeIds" | "startDate" | "dueDate" | "deletedAt" | "checklists" | "factoryShared"
         | "hiddenStatusIds" | "statusOrder" | "statusGroupOverrides" | "customFields"
       >
     >,
@@ -936,7 +936,7 @@ export function ListsProvider({ children }: { children: ReactNode }) {
       patch: Partial<
         Pick<
           WorkTask,
-          "title" | "description" | "status" | "assigneeIds" | "startDate" | "dueDate" | "deletedAt" | "checklists"
+          "title" | "description" | "status" | "assigneeIds" | "startDate" | "dueDate" | "deletedAt" | "checklists" | "factoryShared"
           | "hiddenStatusIds" | "statusOrder" | "statusGroupOverrides" | "customFields"
         >
       >,

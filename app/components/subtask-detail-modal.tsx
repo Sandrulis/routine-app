@@ -43,6 +43,7 @@ import { batchUploadPercent } from "@/app/lib/google-drive/queue-upload";
 import { useTeamCloudStorage } from "@/app/lib/cloud-storage/context";
 import { FRONTEND_MODULE_KEYS } from "@/app/lib/frontend-modules/keys";
 import { useFrontendModules } from "@/app/lib/frontend-modules/context";
+import { FactoryShareButton } from "@/app/components/factory-share-button";
 import { useHistoryPaneOpen } from "@/app/lib/history-pane";
 import { useLists } from "@/app/lib/lists-store";
 import { fetchTaskDetails } from "@/app/lib/db/work-data";
@@ -277,7 +278,7 @@ export function SubtaskDetailModal({
     removeTaskFile,
     taskFiles,
   } = useLists();
-  const { members, currentUser, roles, duties } = useTeam();
+  const { members, currentUser, roles, duties, currentTeam } = useTeam();
   const { isAdmin } = useIsAdmin();
   const { isEnabled: isModuleEnabled } = useFrontendModules();
   const fileUploadsEnabled = isModuleEnabled(FRONTEND_MODULE_KEYS.fileUpload);
@@ -295,6 +296,7 @@ export function SubtaskDetailModal({
     sendFileEnabled &&
     canForwardAttachments(currentUser, roles, isAdmin);
   const checklistsEnabled = isModuleEnabled(FRONTEND_MODULE_KEYS.checklist);
+  const timeTrackingEnabled = isModuleEnabled(FRONTEND_MODULE_KEYS.timeTracking);
   const [draft, setDraft] = useState<SubtaskDraft>(emptyDraft);
   const [createdTaskId, setCreatedTaskId] = useState<string | null>(null);
   const [forceCreate, setForceCreate] = useState(false);
@@ -350,6 +352,11 @@ export function SubtaskDetailModal({
   const task = activeTaskId
     ? (tasks.find((item) => item.id === activeTaskId) ?? null)
     : null;
+  const showFactoryShare =
+    !isCreate &&
+    Boolean(task) &&
+    isModuleEnabled(FRONTEND_MODULE_KEYS.factory) &&
+    (currentTeam?.paymentPlan.paid === true || currentTeam?.isVip === true);
   const parentListId = task?.listId ?? createFor?.listId;
   const list = parentListId
     ? (lists.find((item) => item.id === parentListId) ?? null)
@@ -1133,6 +1140,7 @@ export function SubtaskDetailModal({
               <label htmlFor="subtask-title" className="sr-only">
                 {t("tasks.fields.title", "Nosaukums")}
               </label>
+              <div className="flex items-start gap-2">
               <textarea
                 ref={titleInputRef}
                 id="subtask-title"
@@ -1151,13 +1159,24 @@ export function SubtaskDetailModal({
                   event.preventDefault();
                   event.currentTarget.form?.requestSubmit();
                 }}
-                className="w-full resize-none overflow-hidden bg-transparent text-xl font-bold break-words text-zinc-900 outline-none placeholder:font-semibold placeholder:text-zinc-400 [overflow-wrap:anywhere]"
+                className="min-w-0 flex-1 resize-none overflow-hidden bg-transparent text-xl font-bold break-words text-zinc-900 outline-none placeholder:font-semibold placeholder:text-zinc-400 [overflow-wrap:anywhere]"
                 placeholder={t(
                   "subtasks.fields.title_placeholder",
                   "Apakšuzdevuma nosaukums",
                 )}
                 autoFocus={isCreate}
               />
+              {showFactoryShare && task ? (
+                <FactoryShareButton
+                  shared={task.factoryShared === true}
+                  disabled={!access.canEditTasks}
+                  className="mt-1.5 text-base"
+                  onToggle={() =>
+                    updateTask(task.id, { factoryShared: task.factoryShared !== true })
+                  }
+                />
+              ) : null}
+              </div>
             </div>
 
             <div>
@@ -1318,6 +1337,12 @@ export function SubtaskDetailModal({
                 }
                 structureLocked={
                   isCreate ? !access.canCreateTasks : !access.canEditTasks
+                }
+                timeTracking={timeTrackingEnabled}
+                actor={
+                  currentUser
+                    ? { id: currentUser.id, name: currentUser.name, kind: "member" }
+                    : null
                 }
                 onChange={commitChecklists}
               />

@@ -55,8 +55,9 @@ import { StatusPickerDropdown, StatusTreeDot } from "@/app/components/status-con
 import { WorkProgressFill } from "@/app/components/work-progress";
 import { useFileTypes } from "@/app/lib/file-types-context";
 import { fileBaseName, fileExtensionFromName } from "@/app/lib/file-types";
-import { FRONTEND_MODULE_KEYS } from "@/app/lib/frontend-modules/keys";
+import { useFactoryPresence } from "@/app/lib/factory/use-factory-presence";
 import { useFrontendModules } from "@/app/lib/frontend-modules/context";
+import { FRONTEND_MODULE_KEYS } from "@/app/lib/frontend-modules/keys";
 import { useListsActions, useListsNav } from "@/app/lib/lists-store";
 import {
   childListFiles,
@@ -113,6 +114,7 @@ import {
   canArchiveWorkItem,
   confirmedTeamMembers,
   hasTeamActionPermission,
+  initialsFromName,
   memberDisplayName,
   REQUEST_TEAM_INVITE_EVENT,
 } from "@/app/lib/team";
@@ -823,9 +825,17 @@ export function AppNav({
       isAdmin,
       "lists.automations.manage",
     ) && isModuleEnabled(FRONTEND_MODULE_KEYS.automations);
+  const canSeeFactory =
+    (currentTeam?.paymentPlan.paid === true || currentTeam?.isVip === true) &&
+    isModuleEnabled(FRONTEND_MODULE_KEYS.factory);
+  const factoryUsers = useFactoryPresence(currentTeam?.id ?? null, canSeeFactory);
   const showTeamMenu =
     canUseTeamOptions(currentUser, roles, isAdmin) &&
-    (canManageRoles || canSeeTemplates || canSeeGoogleDrive || canSeeOneDrive);
+    (canManageRoles ||
+      canSeeTemplates ||
+      canSeeGoogleDrive ||
+      canSeeOneDrive ||
+      canSeeFactory);
 
   useEffect(() => {
     if (!sidebarNavBlocked) return;
@@ -1568,8 +1578,7 @@ export function AppNav({
           >
             {teamReady ? (
               <>
-              {currentTeam && sidebarMembers.length > 0 ? (
-              sidebarMembers.map((member) => {
+              {sidebarMembers.map((member) => {
                 const href = `/team/${member.id}`;
                 const row = (
                   <>
@@ -1607,14 +1616,39 @@ export function AppNav({
                     {row}
                   </Link>
                 );
-              })
-            ) : (
+              })}
+              {factoryUsers.length > 0 ? (
+                <>
+                  <div className="mx-1.5 my-1.5 border-t border-zinc-200" />
+                  <p className="px-2 pb-0.5 text-[11px] font-medium uppercase tracking-wide text-zinc-400">
+                    {t("frontend_modules.label.module_factory", "Rūpnīca")}
+                  </p>
+                  {factoryUsers.map((user) => {
+                    const name = `${user.firstName} ${user.lastName}`.trim();
+                    return (
+                      <div
+                        key={user.id}
+                        className="flex h-8 w-full min-w-0 items-center gap-1.5 rounded-md px-1.5 text-[13px] text-zinc-700"
+                      >
+                        <span className="inline-flex size-5 shrink-0 items-center justify-center rounded-full bg-zinc-100 text-[9px] font-semibold text-zinc-600">
+                          {initialsFromName(name)}
+                        </span>
+                        <OverflowTooltip label={name} className="min-w-0 flex-1">
+                          <span className="block min-w-0 truncate">{name}</span>
+                        </OverflowTooltip>
+                        <MemberLastOnline lastOnlineAt={user.lastOnlineAt} />
+                      </div>
+                    );
+                  })}
+                </>
+              ) : null}
+              {sidebarMembers.length === 0 && factoryUsers.length === 0 ? (
               <p className="px-2 py-1.5 text-[12px] text-zinc-400">
                 {currentTeam
                   ? t("team.empty", "Komandā vēl nav lietotāju.")
                   : t("teams.required.empty_members", "Vispirms izveido komandu.")}
               </p>
-            )}
+            ) : null}
               </>
             ) : (
               <LoadingState compact />
@@ -1816,6 +1850,19 @@ export function AppNav({
                 },
               ]
             : []),
+          ...(canSeeFactory
+            ? [
+                {
+                  id: "factory",
+                  icon: "fas fa-industry",
+                  title: t("frontend_modules.label.module_factory", "Rūpnīca"),
+                  description: t(
+                    "factory.menu_description",
+                    "Rūpnīcas lietotāji, par kuriem nav jāmaksā atsevišķi",
+                  ),
+                },
+              ]
+            : []),
         ]}
         onClose={() => setTeamMenuAnchor(null)}
         onSelect={(id) => {
@@ -1824,6 +1871,7 @@ export function AppNav({
           if (id === "templates") router.push("/templates");
           if (id === "google-drive") router.push("/team/google-drive");
           if (id === "onedrive") router.push("/team/onedrive");
+          if (id === "factory") router.push("/team/factory");
         }}
       />
 

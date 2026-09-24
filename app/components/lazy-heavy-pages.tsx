@@ -21,6 +21,14 @@ export const TeamOneDrivePageLazy = dynamic(
   { ssr: false, loading },
 );
 
+export const FactoryPageLazy = dynamic(
+  () =>
+    import("@/app/components/factory-page").then((mod) => ({
+      default: mod.FactoryPage,
+    })),
+  { ssr: false, loading },
+);
+
 export const TeamBillingPageLazy = dynamic(
   () =>
     import("@/app/components/team-billing-page").then((mod) => ({
