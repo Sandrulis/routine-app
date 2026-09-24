@@ -34,7 +34,7 @@ export async function listFactorySharedJobsAction(): Promise<ActionResult<Factor
 export async function updateFactorySharedChecklistsAction(
   taskId: string,
   checklists: TaskChecklist[],
-): Promise<ActionResult<TaskChecklist[]>> {
+): Promise<ActionResult<{ checklists: TaskChecklist[]; removed: boolean }>> {
   return updateFactorySharedChecklists(taskId, checklists);
 }
 

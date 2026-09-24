@@ -9,6 +9,7 @@ import {
   authPrimaryButtonClassName,
 } from "@/app/components/auth-form-styles";
 import { useFeedbackToast } from "@/app/components/feedback-toast-provider";
+import { LanguageSwitcher } from "@/app/components/language-switcher";
 import { PasswordInput } from "@/app/components/password-input";
 import { TaskChecklists } from "@/app/components/task-checklists";
 import { useTranslations } from "@/app/components/translations-provider";
@@ -29,11 +30,13 @@ export function FactoryPortal({
   user,
   jobs,
   timeTracking,
+  initialJobId = null,
 }: {
   available: boolean;
   user: FactoryPortalUser | null;
   jobs: FactorySharedJob[];
   timeTracking: boolean;
+  initialJobId?: string | null;
 }) {
   const { t } = useTranslations();
   const router = useRouter();
@@ -42,7 +45,7 @@ export function FactoryPortal({
   const [password, setPassword] = useState("");
   const [pending, setPending] = useState(false);
   const [items, setItems] = useState(jobs);
-  const [openId, setOpenId] = useState<string | null>(null);
+  const [openId, setOpenId] = useState<string | null>(initialJobId);
   const savingRef = useRef(false);
 
   useEffect(() => {
@@ -116,7 +119,17 @@ export function FactoryPortal({
     savingRef.current = false;
     if (!result.ok) {
       showFeedback({ type: "error", text: translateActionError(t, result.error) });
+      return;
     }
+    if (result.data.removed) {
+      selectJob(null);
+      setItems((current) => current.filter((item) => item.id !== job.id));
+    }
+  }
+
+  function selectJob(id: string | null) {
+    setOpenId(id);
+    router.push(id ? `/factory?job=${encodeURIComponent(id)}` : "/factory");
   }
 
   if (user) {
@@ -133,21 +146,24 @@ export function FactoryPortal({
               {t("factory.portal.welcome", "Sveiki, {name}", { name })}
             </h1>
           </div>
-          <button
-            type="button"
-            disabled={pending}
-            onClick={() => void handleSignOut()}
-            className="shrink-0 rounded-lg border border-zinc-200 px-3 py-2 text-sm font-medium text-zinc-700"
-          >
-            {t("factory.portal.logout", "Izlogoties")}
-          </button>
+          <div className="flex shrink-0 items-center gap-2">
+            <LanguageSwitcher variant="menu" />
+            <button
+              type="button"
+              disabled={pending}
+              onClick={() => void handleSignOut()}
+              className="rounded-lg border border-zinc-200 px-3 py-2 text-sm font-medium text-zinc-700"
+            >
+              {t("factory.portal.logout", "Izlogoties")}
+            </button>
+          </div>
         </header>
         <main className={`mx-auto w-full px-4 py-6 ${open ? "max-w-6xl" : "max-w-3xl"}`}>
           {open ? (
             <div className="rounded-xl border border-zinc-200 bg-white p-4">
               <button
                 type="button"
-                onClick={() => setOpenId(null)}
+                onClick={() => selectJob(null)}
                 className="text-sm font-medium text-zinc-500"
               >
                 {t("tour.actions.back", "Atpakaļ")}
@@ -167,7 +183,10 @@ export function FactoryPortal({
                     checklists={open.checklists}
                     structureLocked
                     defaultExpanded
+                    listsCollapsible
                     timeTracking={timeTracking}
+                    itemStatuses={open.statuses}
+                    itemStatusGroup="active"
                     actor={{
                       id: user.id,
                       name: name,
@@ -188,7 +207,7 @@ export function FactoryPortal({
                 <li key={job.id}>
                   <button
                     type="button"
-                    onClick={() => setOpenId(job.id)}
+                    onClick={() => selectJob(job.id)}
                     className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-left"
                   >
                     <span className="block truncate text-xs text-zinc-500">{job.folderName}</span>

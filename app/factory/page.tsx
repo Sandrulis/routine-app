@@ -13,8 +13,13 @@ export const metadata: Metadata = {
   robots: NO_INDEX_ROBOTS,
 };
 
-export default async function FactoryPortalPage() {
-  const [available, user, timeTracking] = await Promise.all([
+export default async function FactoryPortalPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ job?: string }>;
+}) {
+  const [{ job }, available, user, timeTracking] = await Promise.all([
+    searchParams,
     factoryPortalAvailable(),
     loadFactoryPortalUser(),
     factoryPortalTimeTracking(),
@@ -27,6 +32,7 @@ export default async function FactoryPortalPage() {
       user={user}
       jobs={jobs}
       timeTracking={timeTracking}
+      initialJobId={typeof job === "string" && job ? job : null}
     />
   );
 }

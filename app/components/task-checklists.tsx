@@ -46,6 +46,75 @@ import {
 } from "@/app/lib/task-checklists";
 
 const CHECKLIST_TEXT_SAVE_MS = 500;
+const SHOWN_DONE_COOKIE = "routine-app-checklist-shown-done";
+
+function readShownDoneIds(): Set<string> {
+  if (typeof document === "undefined") return new Set();
+  const row = document.cookie
+    .split("; ")
+    .find((part) => part.startsWith(`${SHOWN_DONE_COOKIE}=`));
+  if (!row) return new Set();
+  try {
+    const parsed = JSON.parse(decodeURIComponent(row.slice(SHOWN_DONE_COOKIE.length + 1))) as unknown;
+    if (!Array.isArray(parsed)) return new Set();
+    return new Set(parsed.filter((id): id is string => typeof id === "string" && id.length > 0));
+  } catch {
+    return new Set();
+  }
+}
+
+function writeShownDoneIds(ids: Set<string>) {
+  const value = encodeURIComponent(JSON.stringify([...ids].slice(0, 200)));
+  document.cookie = `${SHOWN_DONE_COOKIE}=${value}; path=/; max-age=31536000; samesite=lax`;
+}
+
+type ActorFilter = { id: string; kind: ChecklistActor["kind"]; name: string };
+
+function actorKey(actor: { id: string; kind: string }) {
+  return `${actor.kind}:${actor.id}`;
+}
+
+function itemActorRefs(item: TaskChecklistItem): ActorFilter[] {
+  const refs: ActorFilter[] = [];
+  const timer = item.activeTimer;
+  if (timer?.actorId && timer.actorKind && timer.actorName) {
+    refs.push({ id: timer.actorId, kind: timer.actorKind, name: timer.actorName });
+  }
+  for (const log of item.timeLogs ?? []) {
+    if (log.actorId && log.actorKind && log.actorName) {
+      refs.push({ id: log.actorId, kind: log.actorKind, name: log.actorName });
+    }
+  }
+  return refs;
+}
+
+function checklistActors(checklists: TaskChecklist[]): ActorFilter[] {
+  const map = new Map<string, ActorFilter>();
+  for (const list of checklists) {
+    for (const item of list.items) {
+      for (const ref of itemActorRefs(item)) map.set(actorKey(ref), ref);
+    }
+  }
+  return [...map.values()].sort((left, right) => left.name.localeCompare(right.name));
+}
+
+function itemVisible(
+  item: TaskChecklistItem,
+  showCompleted: boolean,
+  actor: ActorFilter | null,
+) {
+  if (!item.title.trim()) return !actor;
+  if (actor) {
+    const inProgress =
+      item.activeTimer?.actorId === actor.id && item.activeTimer.actorKind === actor.kind;
+    const didIt =
+      item.done &&
+      itemActorRefs(item).some((ref) => actorKey(ref) === actorKey(actor));
+    if (!inProgress && !didIt) return false;
+  }
+  if (!showCompleted && item.done) return false;
+  return true;
+}
 
 type DragBinding = {
   attributes: DraggableAttributes;
@@ -190,12 +259,14 @@ function ReorderGrip({
 function ChecklistTimeSummary({
   label,
   value,
+  className = "",
 }: {
   label: string;
   value: string;
+  className?: string;
 }) {
   return (
-    <div className="min-w-0 text-right">
+    <div className={`min-w-0 text-right ${className}`.trim()}>
       <div className="text-[11px] font-medium leading-none text-zinc-500">{label}</div>
       <div className="mt-0.5 text-[10px] leading-none tabular-nums text-zinc-400">{value}</div>
     </div>
@@ -239,6 +310,7 @@ function ChecklistTimeBar({
           </span>
         ) : null}
         <ChecklistTimeSummary
+          className="hidden sm:block"
           label={t("subtasks.checklist.time.started", "Uzsāka")}
           value={formatDateTime(finished.startedAt)}
         />
@@ -247,6 +319,7 @@ function ChecklistTimeBar({
           value={formatDateTime(finished.endedAt)}
         />
         <ChecklistTimeSummary
+          className="hidden sm:block"
           label={t("subtasks.checklist.time.spent", "Kopā")}
           value={formatSpentDuration(finished.spentMs)}
         />
@@ -308,6 +381,85 @@ function ChecklistTimeBar({
   );
 }
 
+function ChecklistItemStatus({
+  statusId,
+  statuses,
+  choiceGroup = null,
+  onChange,
+}: {
+  statusId: string | null;
+  statuses: { id: string; label: string; color: string; groupKey?: string }[];
+  choiceGroup?: string | null;
+  onChange: (statusId: string) => void;
+}) {
+  const { t } = useTranslations();
+  const [open, setOpen] = useState(false);
+  const rootRef = useRef<HTMLDivElement | null>(null);
+  const current = statuses.find((status) => status.id === statusId) ?? null;
+  const choices = choiceGroup
+    ? statuses.filter((status) => status.groupKey === choiceGroup)
+    : statuses;
+
+  useEffect(() => {
+    if (!open) return;
+    function handlePointerDown(event: PointerEvent) {
+      if (rootRef.current?.contains(event.target as Node)) return;
+      setOpen(false);
+    }
+    document.addEventListener("pointerdown", handlePointerDown);
+    return () => document.removeEventListener("pointerdown", handlePointerDown);
+  }, [open]);
+
+  return (
+    <div ref={rootRef} className="relative shrink-0">
+      <button
+        type="button"
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        aria-label={t("subtasks.table.status", "Statuss")}
+        onClick={() => setOpen((currentOpen) => !currentOpen)}
+        className="inline-flex h-7 max-w-40 items-center gap-1.5 rounded-full bg-zinc-100 px-2 text-[12px] font-medium text-zinc-700"
+      >
+        <span
+          className="size-2 shrink-0 rounded-full"
+          style={{ backgroundColor: current?.color ?? "#a1a1aa" }}
+          aria-hidden="true"
+        />
+        <span className="truncate">{current?.label ?? t("subtasks.table.status", "Statuss")}</span>
+      </button>
+      {open ? (
+        <div
+          role="listbox"
+          className="absolute right-0 z-20 mt-1 max-h-64 w-52 overflow-y-auto rounded-xl bg-white py-1 shadow-[0_12px_40px_rgba(15,23,42,0.16)] ring-1 ring-zinc-200/80"
+        >
+          {choices.map((status) => (
+            <button
+              key={status.id}
+              type="button"
+              role="option"
+              aria-selected={status.id === statusId}
+              onClick={() => {
+                onChange(status.id);
+                setOpen(false);
+              }}
+              className={`flex w-full items-center gap-2 px-3 py-2 text-left text-sm ${
+                status.id === statusId ? "bg-zinc-100 font-medium text-zinc-900" : "text-zinc-700"
+              }`}
+            >
+              <span
+                className="size-2 shrink-0 rounded-full"
+                style={{ backgroundColor: status.color }}
+                aria-hidden="true"
+              />
+              <span className="min-w-0 flex-1 truncate">{status.label}</span>
+            </button>
+          ))}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 function ChecklistCard({
   list,
   disabled,
@@ -315,6 +467,10 @@ function ChecklistCard({
   listDrag = null,
   timeTracking = false,
   actor = null,
+  collapsible = false,
+  itemStatuses = [],
+  itemStatusGroup = null,
+  actorFilter = null,
   onChange,
   onRemove,
   onSnapshot,
@@ -325,12 +481,17 @@ function ChecklistCard({
   listDrag?: DragBinding | null;
   timeTracking?: boolean;
   actor?: ChecklistActor | null;
+  collapsible?: boolean;
+  itemStatuses?: { id: string; label: string; color: string; groupKey?: string }[];
+  itemStatusGroup?: string | null;
+  actorFilter?: ActorFilter | null;
   onChange: (list: TaskChecklist) => void;
   onRemove: () => void;
   onSnapshot: (list: TaskChecklist) => void;
 }) {
   const { t } = useTranslations();
   const lastItemRef = useRef<HTMLInputElement | null>(null);
+  const focusItemIdRef = useRef<string | null>(null);
   const itemCountRef = useRef(list.items.length);
   const textTimerRef = useRef<number | null>(null);
   const editingTextRef = useRef(false);
@@ -340,6 +501,11 @@ function ChecklistCard({
   onChangeRef.current = onChange;
   onSnapshotRef.current = onSnapshot;
   const [local, setLocal] = useState(list);
+  const [itemsOpen, setItemsOpen] = useState(true);
+  const [showCompleted, setShowCompleted] = useState(false);
+  useEffect(() => {
+    setShowCompleted(readShownDoneIds().has(list.id));
+  }, [list.id]);
   const lockStructure = disabled || structureLocked;
   const canReorderItems = !lockStructure && local.items.length > 1;
   const dragLabel = t("subtasks.drag", "Mainīt secību");
@@ -354,7 +520,14 @@ function ChecklistCard({
   }, [local]);
 
   useEffect(() => {
-    if (local.items.length > itemCountRef.current) {
+    const focusId = focusItemIdRef.current;
+    if (focusId) {
+      const input = document.getElementById(`checklist-item-title-${focusId}`);
+      if (input instanceof HTMLInputElement) {
+        focusItemIdRef.current = null;
+        input.focus();
+      }
+    } else if (local.items.length > itemCountRef.current) {
       const input = lastItemRef.current;
       if (input) {
         input.focus();
@@ -448,6 +621,24 @@ function ChecklistCard({
     });
   }
 
+  function insertItemAfter(itemId: string) {
+    const source = latestList();
+    const index = source.items.findIndex((row) => row.id === itemId);
+    const current = index >= 0 ? source.items[index] : null;
+    if (!current?.title.trim()) return;
+    const id = createChecklistItemId();
+    const items = source.items.slice();
+    items.splice(index + 1, 0, {
+      id,
+      title: "",
+      done: false,
+      timeLogs: [],
+      activeTimer: null,
+    });
+    focusItemIdRef.current = id;
+    commitNow({ ...source, items });
+  }
+
   function reorderItems(activeId: string, overId: string) {
     const source = latestList();
     const items = reorderById(source.items, activeId, overId);
@@ -480,6 +671,7 @@ function ChecklistCard({
           <i className="fas fa-check text-[9px]" aria-hidden="true" />
         </button>
         <input
+          id={`checklist-item-title-${item.id}`}
           ref={index === local.items.length - 1 ? lastItemRef : undefined}
           value={item.title}
           readOnly={lockStructure}
@@ -510,12 +702,26 @@ function ChecklistCard({
             flushText();
           }}
           onKeyDown={(event) => {
-            if (event.key === "Enter") event.preventDefault();
+            if (event.key !== "Enter") return;
+            event.preventDefault();
+            if (lockStructure) return;
+            insertItemAfter(item.id);
           }}
           className={`min-h-8 min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-zinc-400 ${
             item.done ? "text-zinc-400 line-through" : "text-zinc-800"
           }`}
         />
+        {itemStatuses.length > 0 &&
+        !item.done &&
+        (Boolean(item.activeTimer?.actorId) ||
+          item.timeLogs.some((log) => log.actorId)) ? (
+          <ChecklistItemStatus
+            statusId={item.statusId ?? null}
+            statuses={itemStatuses}
+            choiceGroup={itemStatusGroup}
+            onChange={(statusId) => updateItem(item.id, { statusId })}
+          />
+        ) : null}
         {timeTracking ? (
           <ChecklistTimeBar
             item={item}
@@ -573,8 +779,14 @@ function ChecklistCard({
     </li>
   ) : null;
 
-  const itemRows = local.items.map((item, index) =>
-    canReorderItems ? (
+  const completedCount = local.items.filter((item) => item.title.trim() && item.done).length;
+  const visibleItems = local.items.filter((item) =>
+    itemVisible(item, showCompleted, actorFilter),
+  );
+  const hidingItems = visibleItems.length !== local.items.length;
+  const itemRows = visibleItems.map((item) => {
+    const index = local.items.findIndex((row) => row.id === item.id);
+    return canReorderItems && !hidingItems ? (
       <SortableChecklistItem
         key={item.id}
         id={item.id}
@@ -586,8 +798,8 @@ function ChecklistCard({
       <li key={item.id} className="group/item flex items-start gap-2">
         {renderItem(item, index, null)}
       </li>
-    ),
-  );
+    );
+  });
 
   return (
     <div
@@ -597,35 +809,67 @@ function ChecklistCard({
     >
       <div className="flex items-center gap-2">
         {listDrag ? <ReorderGrip label={dragLabel} binding={listDrag} /> : null}
-        <label htmlFor={`checklist-title-${list.id}`} className="sr-only">
-          {t("subtasks.checklist.name_placeholder", "Saraksta nosaukums")}
-        </label>
-        <input
-          id={`checklist-title-${list.id}`}
-          value={local.title}
-          readOnly={lockStructure}
-          onFocus={() => {
-            editingTextRef.current = true;
-          }}
-          onChange={(event) => {
-            editingTextRef.current = true;
-            commitText({ ...latestList(), title: event.target.value });
-          }}
-          onBlur={() => {
-            if (lockStructure) return;
-            flushText();
-          }}
-          onKeyDown={(event) => {
-            if (event.key === "Enter") event.preventDefault();
-          }}
-          className="min-h-8 min-w-0 flex-1 bg-transparent text-sm font-semibold text-zinc-900 outline-none placeholder:font-medium placeholder:text-zinc-400"
-          placeholder={t(
-            "subtasks.checklist.name_placeholder",
-            "Saraksta nosaukums",
-          )}
-        />
+        {collapsible && lockStructure ? null : (
+          <label htmlFor={`checklist-title-${list.id}`} className="sr-only">
+            {t("subtasks.checklist.name_placeholder", "Saraksta nosaukums")}
+          </label>
+        )}
+        {collapsible && lockStructure ? (
+          <span className="min-w-0 truncate text-sm font-semibold text-zinc-900">
+            {local.title}
+          </span>
+        ) : (
+          <input
+            id={`checklist-title-${list.id}`}
+            value={local.title}
+            readOnly={lockStructure}
+            onFocus={() => {
+              editingTextRef.current = true;
+            }}
+            onChange={(event) => {
+              editingTextRef.current = true;
+              commitText({ ...latestList(), title: event.target.value });
+            }}
+            onBlur={() => {
+              if (lockStructure) return;
+              flushText();
+            }}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") event.preventDefault();
+            }}
+            className="min-h-8 min-w-0 flex-1 bg-transparent text-sm font-semibold text-zinc-900 outline-none placeholder:font-medium placeholder:text-zinc-400"
+            placeholder={t(
+              "subtasks.checklist.name_placeholder",
+              "Saraksta nosaukums",
+            )}
+          />
+        )}
+        {collapsible ? (
+          <button
+            type="button"
+            aria-expanded={itemsOpen}
+            aria-label={
+              itemsOpen
+                ? t("nav.collapse", "Sakļaut")
+                : t("nav.expand", "Izvērst")
+            }
+            onClick={() => setItemsOpen((current) => !current)}
+            className="inline-flex size-7 shrink-0 items-center justify-center rounded-lg text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-700"
+          >
+            <i
+              className={`fas fa-chevron-down text-[10px] transition-transform ${
+                itemsOpen ? "" : "-rotate-90"
+              }`}
+              aria-hidden="true"
+            />
+          </button>
+        ) : null}
         {local.items.some((item) => item.title.trim()) ? (
-          <span className="shrink-0 text-[12px] font-medium tabular-nums text-zinc-400">
+          <span
+            className={`shrink-0 text-[12px] font-medium tabular-nums text-zinc-400${
+              collapsible ? " ml-auto" : ""
+            }`}
+          >
             {local.items.filter((item) => item.title.trim() && item.done).length}
             {" / "}
             {local.items.filter((item) => item.title.trim()).length}
@@ -645,22 +889,50 @@ function ChecklistCard({
         ) : null}
       </div>
 
-      {canReorderItems ? (
-        <VerticalSortable
-          as="ul"
-          ids={local.items.map((item) => item.id)}
-          className="mt-2 space-y-1"
-          onReorder={reorderItems}
+      {itemsOpen || !collapsible ? (
+        canReorderItems && !hidingItems ? (
+          <VerticalSortable
+            as="ul"
+            ids={local.items.map((item) => item.id)}
+            className="mt-2 space-y-1"
+            onReorder={reorderItems}
+          >
+            {itemRows}
+            {addRow}
+          </VerticalSortable>
+        ) : (
+          <ul className="mt-2 space-y-1">
+            {itemRows}
+            {addRow}
+          </ul>
+        )
+      ) : null}
+      {(itemsOpen || !collapsible) && completedCount > 0 ? (
+        <button
+          type="button"
+          onClick={() => {
+            setShowCompleted((current) => {
+              const next = !current;
+              const ids = readShownDoneIds();
+              if (next) ids.add(list.id);
+              else ids.delete(list.id);
+              writeShownDoneIds(ids);
+              return next;
+            });
+          }}
+          className="mt-1.5 inline-flex h-4 items-center gap-1 rounded-[2px] px-1.5 text-[11px] font-medium text-zinc-500 hover:bg-zinc-100"
         >
-          {itemRows}
-          {addRow}
-        </VerticalSortable>
-      ) : (
-        <ul className="mt-2 space-y-1">
-          {itemRows}
-          {addRow}
-        </ul>
-      )}
+          <i
+            className={`fas fa-chevron-${showCompleted ? "up" : "down"} text-[8px]`}
+            aria-hidden="true"
+          />
+          {showCompleted
+            ? t("subtasks.checklist.filter.hide_done", "Paslēpt pabeigtos")
+            : t("subtasks.checklist.filter.show_done_count", "Rādīt {count} pabeigtos", {
+                count: completedCount,
+              })}
+        </button>
+      ) : null}
     </div>
   );
 }
@@ -674,6 +946,9 @@ export function TaskChecklists({
   forceCollapsed = false,
   timeTracking = false,
   actor = null,
+  listsCollapsible = false,
+  itemStatuses = [],
+  itemStatusGroup = null,
 }: {
   checklists: TaskChecklist[];
   onChange: (checklists: TaskChecklist[]) => void;
@@ -683,8 +958,14 @@ export function TaskChecklists({
   forceCollapsed?: boolean;
   timeTracking?: boolean;
   actor?: ChecklistActor | null;
+  listsCollapsible?: boolean;
+  itemStatuses?: { id: string; label: string; color: string; groupKey?: string }[];
+  itemStatusGroup?: string | null;
 }) {
   const { t } = useTranslations();
+  const [actorFilterKey, setActorFilterKey] = useState<string | null>(null);
+  const actors = checklistActors(checklists);
+  const actorFilter = actors.find((actor) => actorKey(actor) === actorFilterKey) ?? null;
   const checklistsRef = useRef(checklists);
   const liveRef = useRef(new Map<string, TaskChecklist>());
   const hasChecklists = checklists.length > 0;
@@ -763,16 +1044,42 @@ export function TaskChecklists({
 
   return (
     <section>
-      <button
-        type="button"
-        disabled={forceCollapsed}
-        onClick={() => setExpanded((current) => !current)}
-        className="inline-flex items-center gap-2 text-sm font-medium text-zinc-700 disabled:cursor-default disabled:opacity-80"
-        aria-expanded={isExpanded}
-      >
-        {chevron}
-        {title}
-      </button>
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          disabled={forceCollapsed}
+          onClick={() => setExpanded((current) => !current)}
+          className="inline-flex min-w-0 items-center gap-2 text-sm font-medium text-zinc-700 disabled:cursor-default disabled:opacity-80"
+          aria-expanded={isExpanded}
+        >
+          {chevron}
+          {title}
+        </button>
+        <div className="ml-auto flex shrink-0 items-center gap-1.5">
+          {actors.map((person) => {
+            const key = actorKey(person);
+            const selected = key === actorFilterKey;
+            return (
+              <button
+                key={key}
+                type="button"
+                aria-pressed={selected}
+                onClick={() => setActorFilterKey((current) => (current === key ? null : key))}
+                className={`inline-flex h-7 max-w-40 items-center rounded-full px-2.5 text-[12px] font-medium ${
+                  selected
+                    ? "bg-emerald-600 text-white"
+                    : "bg-zinc-100 text-zinc-700"
+                }`}
+              >
+                <span className="truncate">{person.name}</span>
+                {selected ? (
+                  <i className="fas fa-xmark ml-1 text-[10px]" aria-hidden="true" />
+                ) : null}
+              </button>
+            );
+          })}
+        </div>
+      </div>
 
       {isExpanded ? (
         <div className="mt-3 space-y-3">
@@ -792,6 +1099,10 @@ export function TaskChecklists({
                       listDrag={binding}
                       timeTracking={timeTracking}
                       actor={actor}
+                      collapsible={listsCollapsible}
+                      itemStatuses={itemStatuses}
+                      itemStatusGroup={itemStatusGroup}
+                      actorFilter={actorFilter}
                       onChange={replaceList}
                       onRemove={() => removeList(list.id)}
                       onSnapshot={rememberList}
@@ -809,6 +1120,10 @@ export function TaskChecklists({
                 structureLocked={structureLocked}
                 timeTracking={timeTracking}
                 actor={actor}
+                collapsible={listsCollapsible}
+                itemStatuses={itemStatuses}
+                itemStatusGroup={itemStatusGroup}
+                actorFilter={actorFilter}
                 onChange={replaceList}
                 onRemove={() => removeList(list.id)}
                 onSnapshot={rememberList}

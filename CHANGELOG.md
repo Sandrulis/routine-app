@@ -4,6 +4,12 @@
 
 - (none)
 
+## v0.3.111
+
+- Rūpnīcā valodas izvēle, sarakstu sakļaušana un statusi tikai aktīvajā posmā, ja punktu ir uzsācis darbinieks
+- Check List filtrs pēc darbinieka un pabeigtajiem; pabeigtie pēc noklusējuma paslēpti un izvēle paliek sīkdatnē
+- Atvērts rūpnīcas bloks paliek adresē `/factory?job=`, Enter pievieno nākamo punktu
+
 ## v0.3.110
 
 - Check List laika rādījums vairs neizsauc `Date.now()` renderēšanas laikā, tāpēc lint vairs nekrīt

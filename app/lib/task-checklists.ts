@@ -2,6 +2,7 @@ export type TaskChecklistItem = {
   id: string;
   title: string;
   done: boolean;
+  statusId?: string | null;
   timeLogs: ChecklistTimeLog[];
   activeTimer: ChecklistActiveTimer | null;
 };
@@ -228,6 +229,10 @@ function parseItem(value: unknown): TaskChecklistItem | null {
   const title =
     "title" in value && typeof value.title === "string" ? value.title : "";
   const done = "done" in value && value.done === true;
+  const statusId =
+    "statusId" in value && typeof value.statusId === "string" && value.statusId.trim()
+      ? value.statusId.trim()
+      : null;
   const timeLogs =
     "timeLogs" in value && Array.isArray(value.timeLogs)
       ? value.timeLogs
@@ -236,7 +241,7 @@ function parseItem(value: unknown): TaskChecklistItem | null {
       : [];
   const activeTimer =
     "activeTimer" in value ? parseActiveTimer(value.activeTimer) : null;
-  return { id, title, done, timeLogs, activeTimer };
+  return { id, title, done, statusId, timeLogs, activeTimer };
 }
 
 function parseChecklist(value: unknown): TaskChecklist | null {
@@ -274,6 +279,7 @@ export function normalizeTaskChecklists(
         id: item.id,
         title: item.title.trim(),
         done: item.done,
+        ...(item.statusId ? { statusId: item.statusId } : {}),
         timeLogs: (item.timeLogs ?? []).map((entry) => ({
           id: entry.id,
           startedAt: entry.startedAt,
@@ -354,6 +360,7 @@ export function checklistsEqual(
         item.id === otherItem.id &&
         item.title === otherItem.title &&
         item.done === otherItem.done &&
+        (item.statusId ?? null) === (otherItem.statusId ?? null) &&
         timersEqual(item.activeTimer, otherItem.activeTimer) &&
         timeLogsEqual(item.timeLogs, otherItem.timeLogs)
       );
