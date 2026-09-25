@@ -69,14 +69,12 @@ function PathBranch({
   task,
   listId,
   tasks,
-  depth,
   currentId,
   onNavigate,
 }: {
   task: WorkTask;
   listId: string;
   tasks: WorkTask[];
-  depth: number;
   currentId: string;
   onNavigate: () => void;
 }) {
@@ -85,10 +83,7 @@ function PathBranch({
   const current = task.id === currentId;
   return (
     <>
-      <div
-        className="flex items-center gap-0.5 pr-2"
-        style={{ paddingLeft: 8 + depth * 14 }}
-      >
+      <div className="flex w-full items-center pr-1">
         {children.length > 0 ? (
           <button
             type="button"
@@ -101,9 +96,7 @@ function PathBranch({
               aria-hidden="true"
             />
           </button>
-        ) : (
-          <span className="inline-block size-5 shrink-0" aria-hidden="true" />
-        )}
+        ) : null}
         <Link
           href={`/lists/${listId}/tasks/${task.id}`}
           onClick={onNavigate}
@@ -115,19 +108,20 @@ function PathBranch({
           <span className="truncate">{task.title}</span>
         </Link>
       </div>
-      {open
-        ? children.map((child) => (
+      {open ? (
+        <div className="ml-[15px] border-l border-zinc-200 pl-1.5">
+          {children.map((child) => (
             <PathBranch
               key={child.id}
               task={child}
               listId={listId}
               tasks={tasks}
-              depth={depth + 1}
               currentId={currentId}
               onNavigate={onNavigate}
             />
-          ))
-        : null}
+          ))}
+        </div>
+      ) : null}
     </>
   );
 }
@@ -188,7 +182,7 @@ function PathItemMenu({
       {open ? (
         <div
           role="menu"
-          className="absolute top-full left-0 z-40 mt-1 max-h-80 w-72 overflow-y-auto rounded-xl bg-white py-1 shadow-[0_12px_40px_rgba(15,23,42,0.16)] ring-1 ring-zinc-200/80"
+          className="absolute top-full left-0 z-40 mt-1 max-h-80 w-max max-w-64 overflow-y-auto rounded-xl bg-white p-1 shadow-[0_12px_40px_rgba(15,23,42,0.16)] ring-1 ring-zinc-200/80"
         >
           {options.map((item) => (
             <PathBranch
@@ -196,7 +190,6 @@ function PathItemMenu({
               task={item}
               listId={switcher.listId}
               tasks={tasks}
-              depth={0}
               currentId={switcher.currentId}
               onNavigate={() => setOpen(false)}
             />

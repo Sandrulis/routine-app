@@ -4,6 +4,12 @@
 
 - (none)
 
+## v0.3.113
+
+- Ceļa izvēlne uzdevumiem ir šaurāka, bez tukšas vietas kreisajā pusē
+- Sānjoslā Rūpnīcas līnija ir zem virsraksta
+- Sānjoslas kokam un ceļa izvēlnei katram slānim ir vertikāla līnija
+
 ## v0.3.112
 
 - Sānjoslā ikona, kas pie hover nomainās uz bultiņu, ir ar noapaļotu fonu
