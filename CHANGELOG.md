@@ -4,6 +4,11 @@
 
 - (none)
 
+## v0.3.116
+
+- Apakšuzdevumu tabula paliek lapas platumā; nosaukuma kolonna sašaurinās
+- Statusa kolonna ir tik plata, cik garākais statusa nosaukums, lai darbību pogas paliek redzamas
+
 ## v0.3.115
 
 - Uzdevumu tabulas kolonnas dala pieejamo platumu, un rindas darbības parādās aiz statusa pogas

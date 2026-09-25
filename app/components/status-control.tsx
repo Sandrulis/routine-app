@@ -347,9 +347,7 @@ export function StatusControl({
       : "text-white"
     : statusClassName(status, muted);
   const extraActionsClassName = `${
-    splitOnHover && !extrasVisible
-      ? "w-0 min-w-0 overflow-hidden group-hover/row:w-auto group-hover/row:overflow-visible group-focus-within/row:w-auto group-focus-within/row:overflow-visible"
-      : ""
+    splitOnHover ? "absolute top-0 left-full z-10 ml-1" : ""
   } inline-flex shrink-0 items-center gap-1 ${hoverRevealClassName}`.trim();
   const checklistTotal = checklistProgress?.total ?? 0;
   const checklistDone = checklistProgress?.done ?? 0;
@@ -388,7 +386,7 @@ export function StatusControl({
       <div
         className={
           splitOnHover
-            ? "relative flex h-8 min-w-0 max-w-full"
+            ? "relative inline-flex h-8 w-max"
             : `inline-flex h-8 shrink-0 overflow-hidden rounded-md ${pillColorClass}`
         }
         style={splitOnHover ? undefined : pillStyle}
@@ -413,11 +411,7 @@ export function StatusControl({
           }
           className={`${
             splitOnHover
-              ? `min-w-0 flex-1 truncate px-2.5 text-left ${pillColorClass} ${
-                  extrasVisible
-                    ? "rounded-l-md"
-                    : "rounded-md group-hover/row:rounded-l-md group-focus-within/row:rounded-l-md"
-                }`
+              ? `w-max shrink-0 whitespace-nowrap rounded-md px-2.5 text-left ${pillColorClass}`
               : "whitespace-nowrap px-2.5"
           } text-[11px] font-semibold tracking-wide uppercase disabled:cursor-not-allowed`}
           style={splitOnHover ? pillStyle : undefined}
@@ -460,6 +454,38 @@ export function StatusControl({
             <i className="fas fa-angle-right text-[12px]" aria-hidden="true" />
           </button>
         </Tooltip>
+        {splitOnHover ? (
+          <span className={extraActionsClassName}>
+            <Tooltip
+              label={
+                completeBlocked && !isDone && completeBlockedLabel
+                  ? completeBlockedLabel
+                  : t("status.complete", "Pabeigt")
+              }
+            >
+              <button
+                type="button"
+                disabled={controlsDisabled || isDone || (completeBlocked && !isDone)}
+                onClick={() => {
+                  if (completeBlocked && !isDone) return;
+                  onChange(closedStatus as WorkTaskStatus);
+                }}
+                aria-label={t("status.complete", "Pabeigt")}
+                aria-pressed={isDone}
+                className={`inline-flex size-8 items-center justify-center rounded-md transition ${
+                  deleted
+                    ? "bg-red-100 text-red-600"
+                    : isDone
+                      ? "bg-emerald-100 text-emerald-700"
+                      : "bg-zinc-100 text-zinc-500 hover:bg-zinc-200"
+                } disabled:cursor-not-allowed`}
+              >
+                <i className="fas fa-check text-[12px]" aria-hidden="true" />
+              </button>
+            </Tooltip>
+            {trailing}
+          </span>
+        ) : null}
       </div>
       {showChecklistProgress ? (
         <Tooltip label={checklistCountHint} className="w-full">
@@ -497,6 +523,7 @@ export function StatusControl({
       ) : null}
       </div>
 
+      {splitOnHover ? null : (
       <span className={extraActionsClassName}>
       <Tooltip
         label={
@@ -527,6 +554,7 @@ export function StatusControl({
       </Tooltip>
       {trailing}
       </span>
+      )}
 
       {open && mounted && !deleted
         ? createPortal(
