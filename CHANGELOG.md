@@ -4,6 +4,11 @@
 
 - (none)
 
+## v0.3.114
+
+- Rūpnīcā bloka virsraksts ir mape; uzdevuma nosaukums paliek tikai tad, ja tas nav mapē
+- Apakšuzdevuma nosaukuma laukā, kad tas mainīts, labajā malā ir saglabāšanas ikona ar paskaidrojumu, kas nepabīda saturu
+
 ## v0.3.113
 
 - Ceļa izvēlne uzdevumiem ir šaurāka, bez tukšas vietas kreisajā pusē

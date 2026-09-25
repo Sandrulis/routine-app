@@ -25,6 +25,10 @@ import type { FactoryPortalUser, FactorySharedJob } from "@/app/lib/factory/port
 import { translateActionError } from "@/app/lib/i18n/action-errors";
 import type { TaskChecklist } from "@/app/lib/task-checklists";
 
+function factoryJobHeading(job: FactorySharedJob) {
+  return job.hasFolder ? job.folderName : job.taskName;
+}
+
 export function FactoryPortal({
   available,
   user,
@@ -168,9 +172,10 @@ export function FactoryPortal({
               >
                 {t("tour.actions.back", "Atpakaļ")}
               </button>
-              <p className="mt-3 text-xs text-zinc-500">{open.folderName}</p>
-              <h2 className="text-lg font-semibold text-zinc-900">{open.taskName}</h2>
-              {open.subtaskTitle !== open.taskName ? (
+              <h2 className="mt-3 text-lg font-semibold text-zinc-900">
+                {factoryJobHeading(open)}
+              </h2>
+              {open.subtaskTitle !== factoryJobHeading(open) ? (
                 <p className="mt-0.5 text-sm text-zinc-600">{open.subtaskTitle}</p>
               ) : null}
               <div className="mt-4">
@@ -210,11 +215,10 @@ export function FactoryPortal({
                     onClick={() => selectJob(job.id)}
                     className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-left"
                   >
-                    <span className="block truncate text-xs text-zinc-500">{job.folderName}</span>
-                    <span className="mt-0.5 block truncate text-sm font-semibold text-zinc-900">
-                      {job.taskName}
+                    <span className="block truncate text-sm font-semibold text-zinc-900">
+                      {factoryJobHeading(job)}
                     </span>
-                    {job.subtaskTitle !== job.taskName ? (
+                    {job.subtaskTitle !== factoryJobHeading(job) ? (
                       <span className="mt-0.5 block truncate text-sm text-zinc-600">{job.subtaskTitle}</span>
                     ) : null}
                   </button>

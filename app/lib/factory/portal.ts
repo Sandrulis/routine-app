@@ -147,6 +147,7 @@ export type FactoryItemStatus = {
 export type FactorySharedJob = {
   id: string;
   folderName: string;
+  hasFolder: boolean;
   taskName: string;
   subtaskTitle: string;
   checklists: TaskChecklist[];
@@ -377,16 +378,22 @@ export async function listFactorySharedJobs(): Promise<FactorySharedJob[]> {
       const list = listById.get(row.list_id);
       let folderName = list?.name ?? "";
       let taskName = parent?.title ?? row.title;
+      let hasFolder = false;
       if (parent?.kind === "folder") {
         folderName = parent.title;
         taskName = row.title;
+        hasFolder = true;
       } else if (parent?.parent_id) {
         const folder = byId.get(parent.parent_id);
-        if (folder?.kind === "folder") folderName = folder.title;
+        if (folder?.kind === "folder") {
+          folderName = folder.title;
+          hasFolder = true;
+        }
       }
       return {
         id: row.id,
         folderName,
+        hasFolder,
         taskName,
         subtaskTitle: row.title,
         checklists: parseTaskChecklists(row.checklists),

@@ -922,6 +922,8 @@ export function SubtaskDetailModal({
     dirty &&
     !deleted &&
     (isCreate ? access.canCreateTasks : access.canEditTasks || access.canChangeStatus);
+  const titleDirty =
+    canSave && trimmedTitle !== snapshotRef.current.title.trim();
   const showAddNew =
     Boolean(trimmedTitle) &&
     !canSave &&
@@ -1140,7 +1142,8 @@ export function SubtaskDetailModal({
               <label htmlFor="subtask-title" className="sr-only">
                 {t("tasks.fields.title", "Nosaukums")}
               </label>
-              <div className="flex items-start gap-2">
+              <div className="flex min-w-0 flex-1 items-start gap-2">
+              <div className="relative min-w-0 flex-1">
               <textarea
                 ref={titleInputRef}
                 id="subtask-title"
@@ -1159,13 +1162,29 @@ export function SubtaskDetailModal({
                   event.preventDefault();
                   event.currentTarget.form?.requestSubmit();
                 }}
-                className="min-w-0 flex-1 resize-none overflow-hidden bg-transparent text-xl font-bold break-words text-zinc-900 outline-none placeholder:font-semibold placeholder:text-zinc-400 [overflow-wrap:anywhere]"
+                className="w-full resize-none overflow-hidden bg-transparent pr-9 text-xl font-bold break-words text-zinc-900 outline-none placeholder:font-semibold placeholder:text-zinc-400 [overflow-wrap:anywhere]"
                 placeholder={t(
                   "subtasks.fields.title_placeholder",
                   "Apakšuzdevuma nosaukums",
                 )}
                 autoFocus={isCreate}
               />
+              {titleDirty ? (
+                <Tooltip
+                  label={t("actions.save", "Saglabāt")}
+                  align="end"
+                  className="absolute top-0.5 right-0"
+                >
+                  <button
+                    type="submit"
+                    aria-label={t("actions.save", "Saglabāt")}
+                    className="inline-flex size-7 items-center justify-center rounded-md bg-blue-700 text-white"
+                  >
+                    <i className="fas fa-check text-[11px]" aria-hidden="true" />
+                  </button>
+                </Tooltip>
+              ) : null}
+              </div>
               {showFactoryShare && task ? (
                 <FactoryShareButton
                   shared={task.factoryShared === true}
