@@ -4,6 +4,10 @@
 
 - (none)
 
+## v0.3.115
+
+- Uzdevumu tabulas kolonnas dala pieejamo platumu, un rindas darbības parādās aiz statusa pogas
+
 ## v0.3.114
 
 - Rūpnīcā bloka virsraksts ir mape; uzdevuma nosaukums paliek tikai tad, ja tas nav mapē

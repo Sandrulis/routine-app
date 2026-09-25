@@ -119,44 +119,51 @@ export { statusClassName };
 
 const EXIT_MS = 280;
 
-const TASK_TABLE_COLS = {
-  handle: "3.5rem",
-  title: "16rem",
-  assignee: "7rem",
-  date: "6.5rem",
-  status: "16rem",
-  custom: "8.5rem",
-  actions: "2.75rem",
+const COLUMN_WEIGHT = {
+  handle: 0.55,
+  title: 5,
+  assignee: 1.35,
+  date: 1.25,
+  status: 1.7,
+  custom: 1.35,
+  actions: 0.4,
 } as const;
 
-function columnWidth(column: ResolvedTableColumn): string | undefined {
-  if (column.kind === "title") return undefined;
-  if (column.kind === "assignee") return TASK_TABLE_COLS.assignee;
+function columnWeight(column: ResolvedTableColumn) {
+  if (column.kind === "title") return COLUMN_WEIGHT.title;
+  if (column.kind === "assignee") return COLUMN_WEIGHT.assignee;
   if (column.kind === "startDate" || column.kind === "dueDate") {
-    return TASK_TABLE_COLS.date;
+    return COLUMN_WEIGHT.date;
   }
-  if (column.kind === "status") return TASK_TABLE_COLS.status;
-  return TASK_TABLE_COLS.custom;
+  if (column.kind === "status") return COLUMN_WEIGHT.status;
+  return COLUMN_WEIGHT.custom;
 }
 
-function columnBoxStyle(column: ResolvedTableColumn) {
-  const width = columnWidth(column);
-  if (!width) return undefined;
-  return { width, maxWidth: width };
+function tableLayout(columns: ResolvedTableColumn[]) {
+  const total =
+    COLUMN_WEIGHT.handle +
+    COLUMN_WEIGHT.actions +
+    columns.reduce((sum, column) => sum + columnWeight(column), 0);
+  const percent = (weight: number) => `${((weight / total) * 100).toFixed(2)}%`;
+  return {
+    handle: percent(COLUMN_WEIGHT.handle),
+    actions: percent(COLUMN_WEIGHT.actions),
+    column: (column: ResolvedTableColumn) => percent(columnWeight(column)),
+  };
+}
+
+function columnBoxStyle(
+  column: ResolvedTableColumn,
+  columns: ResolvedTableColumn[],
+) {
+  const width = tableLayout(columns).column(column);
+  return { width, maxWidth: width, minWidth: 0 };
 }
 
 function tableColCount(visibleColumns: ResolvedTableColumn[]) {
   return 2 + visibleColumns.length;
 }
 
-function tableMinWidth(visibleColumns: ResolvedTableColumn[]) {
-  const parts: string[] = [TASK_TABLE_COLS.handle];
-  for (const column of visibleColumns) {
-    parts.push(columnWidth(column) ?? TASK_TABLE_COLS.title);
-  }
-  parts.push(TASK_TABLE_COLS.actions);
-  return `calc(${parts.join(" + ")})`;
-}
 
 function collectTableColumns(
   lists: WorkList[],
@@ -775,7 +782,6 @@ export function SubtaskTable({
     (column) => column.kind === "title" || !isHidden(column.id),
   );
   const colCount = tableColCount(visibleColumns);
-  const minWidth = tableMinWidth(visibleColumns);
   const showStatusColumn = visibleColumns.some((column) => column.kind === "status");
   const editableList =
     editableListId != null
@@ -1068,7 +1074,7 @@ export function SubtaskTable({
       </div>
     <div
       ref={tableScrollRef}
-      className={`w-full overflow-x-auto ${
+      className={`w-full overflow-x-clip ${
         virtualizeUngrouped
           ? "max-h-[min(70vh,42rem)] overflow-y-auto"
           : "overflow-y-visible"
@@ -1095,25 +1101,19 @@ export function SubtaskTable({
             );
           }}
         >
-        <table
-          className="group/table w-full table-fixed text-left text-sm"
-          style={{ minWidth: minWidth }}
-        >
+        <table className="group/table w-full min-w-0 table-fixed text-left text-sm">
           <colgroup>
-            <col style={{ width: TASK_TABLE_COLS.handle }} />
-            {visibleColumns.map((column) => {
-              const width = columnWidth(column);
-              return (
-                <col
-                  key={column.id}
-                  style={width ? { width } : undefined}
-                />
-              );
-            })}
-            <col style={{ width: TASK_TABLE_COLS.actions }} />
+            <col style={{ width: tableLayout(visibleColumns).handle }} />
+            {visibleColumns.map((column) => (
+              <col
+                key={column.id}
+                style={{ width: tableLayout(visibleColumns).column(column) }}
+              />
+            ))}
+            <col style={{ width: tableLayout(visibleColumns).actions }} />
           </colgroup>
           <thead>
-            <tr className="group/row border-b border-zinc-100 text-[12px] font-medium whitespace-nowrap text-zinc-400">
+            <tr className="group/row border-b border-zinc-100 text-[12px] font-medium text-zinc-400">
               <th className="py-1.5 pr-1 pl-3">
                 {selectableIds.length > 0 ? (
                   <SubtaskSelectCheckbox
@@ -1127,7 +1127,7 @@ export function SubtaskTable({
                 ) : null}
               </th>
               {visibleColumns.map((column) => {
-                const widthStyle = columnBoxStyle(column);
+                const widthStyle = columnBoxStyle(column, visibleColumns);
                 const label =
                   column.kind === "custom"
                     ? column.column.name
@@ -1151,12 +1151,10 @@ export function SubtaskTable({
                     )}
                     className={
                       column.kind === "title"
-                        ? "min-w-0 px-2 py-1.5 font-medium"
+                        ? "min-w-0 overflow-hidden px-2 py-1.5 font-medium"
                         : column.kind === "assignee"
-                          ? "px-3 py-1.5 font-medium"
-                          : column.kind === "status"
-                            ? "px-3 py-1.5 font-medium whitespace-nowrap"
-                            : "px-2 py-1.5 font-medium"
+                          ? "min-w-0 overflow-hidden px-3 py-1.5 font-medium"
+                          : "min-w-0 overflow-hidden px-2 py-1.5 font-medium"
                     }
                     style={widthStyle}
                   >
@@ -1197,8 +1195,8 @@ export function SubtaskTable({
               <th
                 className="px-1 py-1.5 text-center"
                 style={{
-                  width: TASK_TABLE_COLS.actions,
-                  maxWidth: TASK_TABLE_COLS.actions,
+                  width: tableLayout(visibleColumns).actions,
+                  maxWidth: tableLayout(visibleColumns).actions,
                 }}
               >
                 <Tooltip label={t("subtasks.columns.add", "Pievienot kolonnu")}>
@@ -1757,11 +1755,8 @@ function SortableSubtaskRow({
           return (
             <td
               key={column.id}
-              className="px-3 py-1.5"
-              style={{
-                width: TASK_TABLE_COLS.assignee,
-                maxWidth: TASK_TABLE_COLS.assignee,
-              }}
+              className="overflow-hidden px-2 py-1.5"
+              style={columnBoxStyle(column, visibleColumns)}
             >
               <AssigneeCell task={task} disabled={!canEdit || deleted} />
             </td>
@@ -1771,8 +1766,8 @@ function SortableSubtaskRow({
           return (
             <td
               key={column.id}
-              className="px-2 py-1.5"
-              style={{ width: TASK_TABLE_COLS.date, maxWidth: TASK_TABLE_COLS.date }}
+              className="overflow-hidden px-2 py-1.5"
+              style={columnBoxStyle(column, visibleColumns)}
             >
               <DateCell
                 value={task.startDate}
@@ -1789,8 +1784,8 @@ function SortableSubtaskRow({
           return (
             <td
               key={column.id}
-              className="px-2 py-1.5"
-              style={{ width: TASK_TABLE_COLS.date, maxWidth: TASK_TABLE_COLS.date }}
+              className="overflow-hidden px-2 py-1.5"
+              style={columnBoxStyle(column, visibleColumns)}
             >
               <DateCell
                 value={task.dueDate}
@@ -1807,11 +1802,8 @@ function SortableSubtaskRow({
           return (
             <td
               key={column.id}
-              className="whitespace-nowrap px-3 py-1.5"
-              style={{
-                width: TASK_TABLE_COLS.status,
-                maxWidth: TASK_TABLE_COLS.status,
-              }}
+              className="min-w-0 overflow-hidden px-2 py-1.5"
+              style={columnBoxStyle(column, visibleColumns)}
             >
               <StatusControl
                 listId={listId}
@@ -1848,8 +1840,8 @@ function SortableSubtaskRow({
         return (
           <td
             key={column.id}
-            className="px-2 py-1.5"
-            style={{ width: TASK_TABLE_COLS.custom, maxWidth: TASK_TABLE_COLS.custom }}
+            className="overflow-hidden px-2 py-1.5"
+            style={columnBoxStyle(column, visibleColumns)}
           >
             <CustomTableFieldCell
               value={task.customFields?.[column.column.id] ?? ""}
@@ -1870,8 +1862,8 @@ function SortableSubtaskRow({
       <td
         className="px-1 py-1.5"
         style={{
-          width: TASK_TABLE_COLS.actions,
-          maxWidth: TASK_TABLE_COLS.actions,
+          width: tableLayout(visibleColumns).actions,
+          maxWidth: tableLayout(visibleColumns).actions,
         }}
       />
     </tr>

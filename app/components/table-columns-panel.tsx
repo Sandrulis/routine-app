@@ -717,7 +717,7 @@ export function CustomTableFieldCell({
         (event.currentTarget as HTMLInputElement).blur();
       }}
       onPointerDown={(event) => event.stopPropagation()}
-      className="h-8 w-full min-w-[7rem] rounded-md border border-transparent bg-transparent px-1.5 text-[13px] text-zinc-800 outline-none placeholder:text-zinc-300 hover:border-zinc-200 focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-100 disabled:cursor-not-allowed"
+      className="h-8 w-full min-w-0 rounded-md border border-transparent bg-transparent px-1.5 text-[13px] text-zinc-800 outline-none placeholder:text-zinc-300 hover:border-zinc-200 focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-100 disabled:cursor-not-allowed"
     />
   );
 }

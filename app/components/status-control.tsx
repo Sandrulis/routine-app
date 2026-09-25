@@ -346,7 +346,11 @@ export function StatusControl({
       ? ""
       : "text-white"
     : statusClassName(status, muted);
-  const extraActionsClassName = `inline-flex items-center gap-1 ${hoverRevealClassName}`.trim();
+  const extraActionsClassName = `${
+    splitOnHover && !extrasVisible
+      ? "w-0 min-w-0 overflow-hidden group-hover/row:w-auto group-hover/row:overflow-visible group-focus-within/row:w-auto group-focus-within/row:overflow-visible"
+      : ""
+  } inline-flex shrink-0 items-center gap-1 ${hoverRevealClassName}`.trim();
   const checklistTotal = checklistProgress?.total ?? 0;
   const checklistDone = checklistProgress?.done ?? 0;
   const checklistPercent = checklistProgress?.percent ?? 0;
@@ -365,13 +369,26 @@ export function StatusControl({
   );
 
   return (
-    <div className="inline-flex flex-col items-stretch gap-0.5">
-      <div ref={rootRef} className="relative inline-flex items-start gap-1">
-      <div className="inline-flex flex-col overflow-visible">
+    <div
+      className={
+        splitOnHover
+          ? "relative flex w-full min-w-0 flex-col items-stretch gap-0.5"
+          : "inline-flex flex-col items-stretch gap-0.5"
+      }
+    >
+      <div
+        ref={rootRef}
+        className={
+          splitOnHover
+            ? "relative flex w-full min-w-0 items-start gap-1"
+            : "relative inline-flex items-start gap-1"
+        }
+      >
+      <div className={splitOnHover ? "flex min-w-0 flex-1 flex-col overflow-visible" : "inline-flex flex-col overflow-visible"}>
       <div
         className={
           splitOnHover
-            ? "inline-flex h-8 shrink-0"
+            ? "relative flex h-8 min-w-0 max-w-full"
             : `inline-flex h-8 shrink-0 overflow-hidden rounded-md ${pillColorClass}`
         }
         style={splitOnHover ? undefined : pillStyle}
@@ -394,15 +411,15 @@ export function StatusControl({
               ? t("subtasks.restore", "Atjaunot")
               : t("subtasks.table.status", "Statuss")
           }
-          className={`whitespace-nowrap px-2.5 text-[11px] font-semibold tracking-wide uppercase disabled:cursor-not-allowed ${
+          className={`${
             splitOnHover
-              ? `${pillColorClass} ${
+              ? `min-w-0 flex-1 truncate px-2.5 text-left ${pillColorClass} ${
                   extrasVisible
                     ? "rounded-l-md"
-                    : "rounded-md group-hover/row:rounded-r-none group-focus-within/row:rounded-r-none"
+                    : "rounded-md group-hover/row:rounded-l-md group-focus-within/row:rounded-l-md"
                 }`
-              : ""
-          }`}
+              : "whitespace-nowrap px-2.5"
+          } text-[11px] font-semibold tracking-wide uppercase disabled:cursor-not-allowed`}
           style={splitOnHover ? pillStyle : undefined}
         >
           {statusLabel}
@@ -425,7 +442,15 @@ export function StatusControl({
               onChange(nextStatus);
             }}
             aria-label={t("status.next", "Nākamais statuss")}
-            className={`inline-flex h-full w-7 items-center justify-center border-l ${
+            className={`inline-flex h-full shrink-0 items-center justify-center border-l ${
+              splitOnHover && !extrasVisible
+                ? `w-0 min-w-0 overflow-hidden border-transparent group-hover/row:w-7 group-focus-within/row:w-7 ${
+                    muted
+                      ? "group-hover/row:border-current/20 group-focus-within/row:border-current/20"
+                      : "group-hover/row:border-white/30 group-focus-within/row:border-white/30"
+                  }`
+                : "w-7"
+            } ${
               muted ? "border-current/20" : "border-white/30"
             } disabled:cursor-not-allowed disabled:opacity-40 ${
               splitOnHover ? `rounded-r-md ${pillColorClass}` : ""

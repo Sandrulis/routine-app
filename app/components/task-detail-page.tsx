@@ -179,7 +179,7 @@ export function TaskDetailPage({
           onOpenSubtask={(task) => setBoardSubtaskId(task.id)}
         />
       ) : (
-        <div className="overflow-x-auto rounded-xl border border-zinc-200 bg-white px-3 py-3">
+        <div className="min-w-0 overflow-hidden rounded-xl border border-zinc-200 bg-white px-3 py-3">
           <GroupedSubtaskTables
             listId={list.id}
             tasks={children}
